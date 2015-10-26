@@ -39,6 +39,7 @@ object ClauseConverters {
     case c: Create => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
     case c: Delete => addDeleteToLogicalPlanInput(acc, c)
+    case c: Remove => addRemoveToLogicalPlanInput(acc, c)
 
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
@@ -312,4 +313,15 @@ object ClauseConverters {
         .addHints(hints)
     }
   }
+
+    def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {
+      clause.items.foldLeft(acc) {
+        // REMOVE n:Foo
+        case (builder, RemoveLabelItem(identifier, labelNames)) =>
+          builder.amendUpdateGraph(ug => ug.addRemoveLabelPatterns(RemoveLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+
+        case (builder, _) =>
+          throw new CantHandleQueryException("Remove supported yet")
+      }
+    }
 }

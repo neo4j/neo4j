@@ -35,7 +35,8 @@ case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val cached = state.repeatableReads.getOrElseUpdate(this, input.toList)
 
-    cached.toIterator
+    //cached results must propagate initial results
+    cached.map(_ ++ state.initialContext.getOrElse(ExecutionContext.empty)).toIterator
   }
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)

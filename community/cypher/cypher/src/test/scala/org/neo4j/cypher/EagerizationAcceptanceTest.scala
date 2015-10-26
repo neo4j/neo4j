@@ -230,14 +230,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("should introduce eagerness for match create match create") {
-    createNode()
-    createNode()
+    createNode("prop" -> 42)
+    createNode("prop" -> 43)
 
-    val query = "MATCH () CREATE () WITH * MATCH () CREATE ()"
+    val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN k.prop, l.prop, m.prop, n.prop"
 
     val result = updateWithBothPlanners(query)
     result should use("RepeatableRead", "EagerApply")
-    assertStats(result, nodesCreated = 10)
+    assertStats(result, nodesCreated = 10, propertiesSet = 10)
     assertNumberOfEagerness(query, 2)
   }
 
@@ -1152,6 +1152,101 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH ()-[r]-() WHERE has(r.prop1) SET r.prop2 = 'foo'"
 
     assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  //REMOVE LABEL
+  test("matching label and removing different label should not be eager") {
+    createLabeledNode(Map("prop" -> 5), "Node", "Lol")
+    val query = "MATCH (n:Node) REMOVE n:Lol"
+
+    assertStats(updateWithBothPlanners(query), labelsRemoved = 1)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching label and removing same label should not be eager") {
+    createLabeledNode(Map("prop" -> 5), "Node")
+    val query = "MATCH (n:Node) REMOVE n:Node"
+
+    assertStats(updateWithBothPlanners(query), labelsRemoved = 1)
+    assertNumberOfEagerness(query, 0)
+  }
+
+
+  test("matching label on right-hand side and removing same label should not be eager") {
+    createLabeledNode("Lol")
+    createNode()
+    val query = "MATCH  (m:Lol), (n) REMOVE n:Lol RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, labelsRemoved = 1)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("remove same label without anything else reading it should not be eager") {
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+    val query = "MATCH  (m1:A), (m2:B), (n:C) REMOVE n:C RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsRemoved = 1)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("matching label on right-hand side and removing same label should be eager and get the count right") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) REMOVE n:Two RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsRemoved = 2)
+    assertNumberOfEagerness(query, 1)
+    result.toList should equal(List(Map("c" -> 12)))
+  }
+
+  test("matching label on right-hand side and removing different label should not be eager") {
+    createLabeledNode("Lol", "Rofl")
+    createLabeledNode("Lol", "Rofl")
+    createLabeledNode("Rofl")
+    val query = "MATCH (n), (m1:Lol), (m2:Lol) REMOVE n:Rofl RETURN count(*)"
+
+    assertStats(updateWithBothPlanners(query), labelsRemoved = 3)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("removing label in tail should be eager if overlap") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo")
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Foo) REMOVE n:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsRemoved = 2, nodesCreated = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("removing label in tail should not be eager if no overlap") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo")
+    createLabeledNode("Bar")
+    createLabeledNode("Bar")
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Bar) REMOVE n:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsRemoved = 2, nodesCreated = 4)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("undirected expand followed by remove label need not to be eager") {
+    relate(createLabeledNode("Foo"), createLabeledNode("Foo"))
+    relate(createLabeledNode("Foo"), createLabeledNode("Foo"))
+
+    val query = "MATCH (n:Foo)--(m) REMOVE m:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsRemoved = 4)
     assertNumberOfEagerness(query, 0)
   }
 

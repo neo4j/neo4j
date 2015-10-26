@@ -50,21 +50,46 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromIdentifier)
   }).toSet
 
+  def removeLabelPatterns = mutatingPatterns.collect {
+    case p: RemoveLabelPattern => p
+  }
+
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     nodePatterns.map(p => p.nodeName -> p.labels.toSet).toMap
 
-  def labels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
+  def writeLabels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
+
+  def removeLabels: Set[LabelName] = removeLabelPatterns.flatMap(_.labels).toSet
+
+  def removeLabelsOnNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) if n == idName => labels
+  }.flatten.toSet
 
   def relTypes: Set[RelTypeName] = relPatterns.map(_.relType).toSet
+
+  def updateNodes = nodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
 
   def overlaps(qg: QueryGraph) =
     qg.patternNodes.nonEmpty &&
       nonEmpty &&
-      (nodeOverlap(qg) || relationshipOverlap(qg) || deleteOverlap(qg))
+      (nodeOverlap(qg) || relationshipOverlap(qg) || deleteOverlap(qg) || removeLabelOverlap(qg))
 
   private def nodeOverlap(qg: QueryGraph) = {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
-      (qg.patternNodeLabels.values.flatten.toSet intersect labels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
+      (qg.patternNodeLabels.values.flatten.toSet intersect writeLabels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
+  }
+
+  private def removeLabelOverlap(qg: QueryGraph) = {
+    removeLabelPatterns.exists {
+      case RemoveLabelPattern(removeId, labelsToRemove) =>
+        //does any other identifier match on the labels I am deleting?
+        //MATCH (a:BAR)..(b) REMOVE b:BAR
+        labelsToRemove.exists(l => {
+          val otherLabelsRead = qg.patternNodes.filterNot(_ == removeId).flatMap(qg.knownLabelsOnNode)
+          otherLabelsRead(l)
+        })
+    }
+
   }
 
   def relationshipOverlap(qg: QueryGraph) = {
@@ -87,6 +112,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
   }
 
+
+
   def deleteOverlap(qg: QueryGraph): Boolean = {
     val identifiersToDelete = deleteIdentifiers
     val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
@@ -101,6 +128,9 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   def addSetLabel(setLabelPatterns: SetLabelPattern*): UpdateGraph =
     copy(mutatingPatterns = this.mutatingPatterns ++ setLabelPatterns)
+
+  def addRemoveLabelPatterns(removeLabelPatterns: RemoveLabelPattern*): UpdateGraph =
+    copy(mutatingPatterns = this.mutatingPatterns ++ removeLabelPatterns)
 
   def addDeleteExpression(deleteExpressions: DeleteExpression*) =
     copy(mutatingPatterns = this.mutatingPatterns ++ deleteExpressions)
@@ -126,5 +156,7 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 }
 
 case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
+
+case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern

@@ -19,13 +19,37 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{QueryStatisticsTestSupport, NewPlannerTestSupport, ExecutionEngineFunSuite}
 
-class RemoveAcceptanceTest extends ExecutionEngineFunSuite {
+class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
   test("should ignore nulls") {
     val n = createNode("apa" -> 42)
 
-    val result = execute("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
+    val result = executeWithRulePlanner("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
     result.toList should equal(List(Map("n" -> n)))
+  }
+
+  test("remove a single label") {
+    // GIVEN
+    createLabeledNode(Map("prop" -> 42), "L")
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n:L RETURN n.prop")
+
+    //THEN
+    assertStats(result, labelsRemoved = 1)
+    result.toList should equal(List(Map("n.prop" -> 42)))
+  }
+
+  test("remove multiple labels") {
+    // GIVEN
+    createLabeledNode(Map("prop" -> 42), "L1", "L2", "L3")
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n:L1:L3 RETURN labels(n)")
+
+    //THEN
+    assertStats(result, labelsRemoved = 2)
+    result.toList should equal(List(Map("labels(n)" -> List("L2"))))
   }
 }

@@ -330,7 +330,7 @@ object StatementConverters {
       case c: ast.Remove =>
         c.items.map {
           case remItem: ast.RemoveLabelItem =>
-            commands.LabelAction(toCommandExpression(remItem.expression), commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(remItem.identifier), commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case remItem: ast.RemovePropertyItem =>
             mutation.DeletePropertyAction(toCommandExpression(remItem.property.map), commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
         }

@@ -310,6 +310,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case SetLabels(_, IdName(name), labels) =>
       SetLabelsPipe(source, name, labels)()
 
+    case RemoveLabels(_, IdName(name), labels) =>
+      RemoveLabelsPipe(source, name, labels)()
+
     case DeleteNode(_, expression) =>
       DeleteNodePipe(source, toCommandExpression(expression))()
 
