@@ -55,7 +55,6 @@ public class RrdFactoryTest
 {
     private Config config;
     private Database db;
-    private String storeDir;
 
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
@@ -65,7 +64,7 @@ public class RrdFactoryTest
     @Before
     public void setUp() throws IOException
     {
-        storeDir = directory.graphDbDir().getAbsolutePath();
+        String storeDir = directory.graphDbDir().getAbsolutePath();
         db = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
         config = new Config();
     }
@@ -74,25 +73,15 @@ public class RrdFactoryTest
     public void shouldTakeDirectoryLocationFromConfig() throws Exception
     {
         // Given
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, storeDir );
+        String rrdPath = directory.directory( "rrd" ).getAbsolutePath();
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdPath );
         TestableRrdFactory factory = createRrdFactory();
 
         // When
         factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
         // Then
-        assertThat( factory.directoryUsed, is( storeDir ) );
-    }
-
-    @Test
-    public void recreateDatabaseIfWrongStepsize() throws Exception
-    {
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, storeDir );
-        TestableRrdFactory factory = createRrdFactory();
-
-        factory.createRrdDbAndSampler( db, new NullJobScheduler() );
-
-        assertThat( factory.directoryUsed, is( storeDir ) );
+        assertThat( factory.directoryUsed, is( rrdPath ) );
     }
 
     @Test
@@ -101,17 +90,16 @@ public class RrdFactoryTest
         //Given
         File rrdDir = new File( directory.directory(), ServerInternalSettings.rrd_store.getDefaultValue() );
         assertTrue( rrdDir.mkdirs() );
-        String rrdFilePath = new File( rrdDir, "rrd-test" ).getAbsolutePath();
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdFilePath );
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdDir.getAbsolutePath() );
 
         TestableRrdFactory factory = createRrdFactory();
-        createInvalidRrdFile( rrdFilePath );
+        createInvalidRrdFile( new File( rrdDir, "rrd" ).getAbsolutePath() );
 
         //When
         RrdDbWrapper rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
         //Then
-        assertSubdirectoryExists( "rrd-test-invalid", factory.directoryUsed );
+        assertSubdirectoryExists( "rrd-invalid", rrdDir );
 
         rrdDbAndSampler.close();
     }
@@ -147,7 +135,7 @@ public class RrdFactoryTest
     public void shouldDeleteOldRrdFileFromDbDirectoryIfItExists() throws Exception
     {
         // given
-        File oldRrdFile = new File( storeDir, "rrd" );
+        File oldRrdFile = new File( directory.graphDbDir(), "rrd" );
         assertTrue( oldRrdFile.createNewFile() );
         TestableRrdFactory factory = createRrdFactory();
 
@@ -165,11 +153,9 @@ public class RrdFactoryTest
         config.applyChanges( params );
     }
 
-    private void assertSubdirectoryExists( final String directoryThatShouldExist, String directoryUsed )
+    private void assertSubdirectoryExists( final String directoryThatShouldExist, File directoryUsed )
     {
-        File parentFile = new File( directoryUsed ).getParentFile();
-        String[] list = parentFile.list();
-
+        String[] list = directoryUsed.list();
         for ( String aList : list )
         {
             if ( aList.startsWith( directoryThatShouldExist ) )
@@ -177,7 +163,6 @@ public class RrdFactoryTest
                 return;
             }
         }
-
         fail( String.format( "Didn't find [%s] in [%s]", directoryThatShouldExist, directoryUsed ) );
     }
 
@@ -196,10 +181,11 @@ public class RrdFactoryTest
         }
 
         @Override
-        protected RrdDbWrapper createRrdb( File inDirectory, Sampleable... sampleables )
+        protected RrdDbWrapper createRrdb( File rrdFile, boolean ephemeral, Sampleable... sampleables )
         {
-            directoryUsed = inDirectory.getAbsolutePath();
-            return super.createRrdb( inDirectory, sampleables );
+            assertFalse( ephemeral );
+            directoryUsed = rrdFile.getParent();
+            return super.createRrdb( rrdFile, ephemeral, sampleables );
         }
     }
 
