@@ -30,207 +30,183 @@ import scala.collection.mutable.ListBuffer
 
 object ClauseConverters {
 
-  implicit class OptionalWhereConverter(val optWhere: Option[Where]) extends AnyVal {
-    def asSelections = Selections(optWhere.
-      map(_.expression.asPredicates).
-      getOrElse(Set.empty))
+  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause): PlannerQueryBuilder = clause match {
+    case c: Return => addReturnToLogicalPlanInput(acc, c)
+    case c: Match => addMatchToLogicalPlanInput(acc, c)
+    case c: With => addWithToLogicalPlanInput(acc, c)
+    case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
+    case c: Start => addStartToLogicalPlanInput(acc, c)
+    case c: Create => addCreateToLogicalPlanInput(acc, c)
+    case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
+    case c: Delete => addDeleteToLogicalPlanInput(acc, c)
+
+    case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
 
-  implicit class SelectionsSubQueryExtraction(val selections: Selections) extends AnyVal {
-    def getContainedPatternExpressions: Set[PatternExpression] =
-      selections.flatPredicates.flatMap(_.extractPatternExpressions).toSet
+  private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
+    map(_.expression.asPredicates).
+    getOrElse(Set.empty))
+
+  private def asQueryShuffle(optOrderBy: Option[OrderBy]) = {
+    val sortItems: Seq[SortItem] = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
+    QueryShuffle(sortItems, None, None)
   }
 
-  implicit class SortItems(val optOrderBy: Option[OrderBy]) extends AnyVal {
-    def asQueryShuffle = {
-      val sortItems: Seq[SortItem] = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
-      QueryShuffle(sortItems, None, None)
+  private def asQueryProjection(distinct: Boolean, items: Seq[ReturnItem]): QueryProjection = {
+    val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
+      items.partition(item => IsAggregate(item.expression))
+
+    def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+
+    val projectionMap = turnIntoMap(groupingKeys)
+    val aggregationsMap = turnIntoMap(aggregatingItems)
+
+    if (projectionMap.values.exists(containsAggregate))
+      throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
+
+    if (aggregationsMap.nonEmpty || distinct)
+      AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
+    else
+      RegularQueryProjection(projections = projectionMap)
+  }
+
+  private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
+                                          clause: Return): PlannerQueryBuilder = clause match {
+    case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
+
+      val shuffle = asQueryShuffle(optOrderBy).
+        withSkip(skip).
+        withLimit(limit)
+
+      val projection = asQueryProjection(distinct, ri.items).
+        withShuffle(shuffle)
+      val returns = ri.items.collect {
+        case AliasedReturnItem(_, identifier) => IdName.fromIdentifier(identifier)
+      }
+      acc.
+        withHorizon(projection).
+        withReturns(returns)
+    case _ =>
+      throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+  }
+
+  private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder = {
+    clause.items.foldLeft(acc) {
+      // SET n:Foo
+      case (builder, SetLabelItem(identifier, labelNames)) =>
+        builder.amendUpdateGraph(ug => ug.addSetLabel(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+
+      // SET n.prop = ...
+      case (builder, SetPropertyItem(_, _)) =>
+        throw new CantHandleQueryException("Setting properties not supported yet")
+
+      // SET n = { id: 0, name: 'Mats', ... }
+      case (builder, SetExactPropertiesFromMapItem(_, _)) =>
+        throw new CantHandleQueryException("Setting properties using '=' not supported yet")
+
+      // SET n += { id: 10, ... }
+      case (builder, SetIncludingPropertiesFromMapItem(_, _)) =>
+        throw new CantHandleQueryException("Setting properties using '+=' not supported yet")
     }
   }
 
-  implicit class ReturnItemConverter(val items: Seq[ReturnItem]) extends AnyVal {
-    def asQueryProjection(distinct: Boolean): QueryProjection = {
-      val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
-        items.partition(item => IsAggregate(item.expression))
+  private def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
+    clause.pattern.patternParts.foldLeft(acc) {
+      //CREATE (n :L1:L2 {prop: 42})
+      case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
+        builder
+          .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
 
-      def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+      //CREATE (n)-[r: R]->(m)
+      case (builder, EveryPath(pattern: RelationshipChain)) =>
 
-      val projectionMap = turnIntoMap(groupingKeys)
-      val aggregationsMap = turnIntoMap(aggregatingItems)
+        val (nodes, rels) = allCreatePatterns(pattern)
+        //remove duplicates from loops, (a:L)-[:ER1]->(a)
+        val dedupedNodes = dedup(nodes)
 
-      if (projectionMap.values.exists(containsAggregate))
-        throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
+        //create nodes that are not already matched or created
+        val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
 
-      if (aggregationsMap.nonEmpty || distinct)
-        AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
-      else
-        RegularQueryProjection(projections = projectionMap)
-    }
-  }
-
-  implicit class ClauseConverter(val clause: Clause) extends AnyVal {
-    def addToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case c: Return => c.addReturnToLogicalPlanInput(acc)
-      case c: Match => c.addMatchToLogicalPlanInput(acc)
-      case c: With => c.addWithToLogicalPlanInput(acc)
-      case c: Unwind => c.addUnwindToLogicalPlanInput(acc)
-      case c: Start => c.addStartToLogicalPlanInput(acc)
-      case c: Create => c.addCreateToLogicalPlanInput(acc)
-      case c: SetClause => c.addSetClauseToLogicalPlanInput(acc)
-      case c: Delete => c.addDeleteToLogicalPlanInput(acc)
-
-      case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
-    }
-  }
-
-  implicit class ReturnConverter(val clause: Return) extends AnyVal {
-    def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
-      case Return(distinct, ri, optOrderBy, skip, limit) if !ri.includeExisting =>
-
-        val shuffle = optOrderBy.asQueryShuffle.
-          withSkip(skip).
-          withLimit(limit)
-
-        val projection = ri.items.
-          asQueryProjection(distinct).
-          withShuffle(shuffle)
-        val returns = ri.items.collect {
-          case AliasedReturnItem(_, identifier) => IdName.fromIdentifier(identifier)
+        //we must check that we are not trying to set a pattern or label on any already created nodes
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+        nodesCreatedBefore.collectFirst {
+          case c if c.labels.nonEmpty || c.properties.nonEmpty =>
+            throw new SyntaxException(
+              s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
         }
-        acc.
-          withHorizon(projection).
-          withReturns(returns)
-      case _ =>
-        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
+
+        builder
+          .amendUpdateGraph(ug => ug
+            .addNodePatterns(nodesToCreate: _*)
+            .addRelPatterns(rels: _*))
+
+      case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
     }
   }
 
-  implicit class SetClauseConverter(val clause: SetClause) extends AnyVal {
-
-    def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
-      clause.items.foldLeft(acc) {
-        // SET n:Foo
-        case (builder, SetLabelItem(identifier, labelNames)) =>
-          builder.amendUpdateGraph(ug => ug.addSetLabel(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
-
-        // SET n.prop = ...
-        case (builder, SetPropertyItem(_, _)) =>
-          throw new CantHandleQueryException("Setting properties not supported yet")
-
-        // SET n = { id: 0, name: 'Mats', ... }
-        case (builder, SetExactPropertiesFromMapItem(_, _)) =>
-          throw new CantHandleQueryException("Setting properties using '=' not supported yet")
-
-        // SET n += { id: 10, ... }
-        case (builder, SetIncludingPropertiesFromMapItem(_, _)) =>
-          throw new CantHandleQueryException("Setting properties using '+=' not supported yet")
+  private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
+    val seen = mutable.Set.empty[IdName]
+    val result = mutable.ListBuffer.empty[CreateNodePattern]
+    nodePatterns.foreach { pattern =>
+      if (!seen(pattern.nodeName)) result.append(pattern)
+      else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
+        //reused patterns must be pure identifier
+        throw new SyntaxException(s"Can't create node ${
+          pattern.nodeName.name
+        } with labels or properties here. It already exists in this context")
       }
+      seen.add(pattern.nodeName)
     }
+    result.toVector
   }
 
-  implicit class CreateConverter(val clause: Create) extends AnyVal {
-    def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
-      clause.pattern.patternParts.foldLeft(acc) {
-        //CREATE (n :L1:L2 {prop: 42})
-        case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
-          builder
-            .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
+  private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
+    case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
+    //CREATE ()
+    case NodePattern(Some(identifier), labels, props) =>
+      (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
 
-        //CREATE (n)-[r: R]->(m)
-        case (builder, EveryPath(pattern:RelationshipChain)) =>
+    //CREATE ()-[:R]->()
+    case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
+      val leftIdName = IdName.fromIdentifier(leftNode.identifier.get)
+      val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
 
-          val (nodes, rels) = allCreatePatterns(pattern)
-          //remove duplicates from loops, (a:L)-[:ER1]->(a)
-          val dedupedNodes = dedup(nodes)
+      (Vector(
+        CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
+        CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+      ), Vector(CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get),
+        leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
 
-          //create nodes that are not already matched or created
-          val nodesToCreate = dedupedNodes.filterNot(pattern => builder.allSeenPatternNodes(pattern.nodeName))
+    //CREATE ()->[:R]->()-[:R]->...->()
+    case RelationshipChain(left, rel, rightNode) =>
+      val (nodes, rels) = allCreatePatterns(left)
+      val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
 
-          //we must check that we are not trying to set a pattern or label on any already created nodes
-          val nodesCreatedBefore = dedupedNodes.filter(pattern => builder.allSeenPatternNodes(pattern.nodeName))
-          nodesCreatedBefore.collectFirst {
-            case c if c.labels.nonEmpty || c.properties.nonEmpty =>
-              throw new SyntaxException(s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
-          }
-
-          builder
-            .amendUpdateGraph(ug => ug
-              .addNodePatterns(nodesToCreate:_*)
-              .addRelPatterns(rels:_*))
-
-        case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
-      }
-    }
-
-    private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
-      val seen = mutable.Set.empty[IdName]
-      val result = mutable.ListBuffer.empty[CreateNodePattern]
-      nodePatterns.foreach { pattern =>
-        if (!seen(pattern.nodeName)) result.append(pattern)
-        else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
-          //reused patterns must be pure identifier
-          throw new SyntaxException(s"Can't create node ${pattern.nodeName.name} with labels or properties here. It already exists in this context")
-        }
-        seen.add(pattern.nodeName)
-      }
-      result.toVector
-    }
-
-    private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
-      case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
-      //CREATE ()
-      case NodePattern(Some(identifier), labels, props) =>
-        (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
-
-      //CREATE ()-[:R]->()
-      case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
-        val leftIdName = IdName.fromIdentifier(leftNode.identifier.get)
-        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
-
-        (Vector(
-          CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
-          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
-        ), Vector(CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get),
-          leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
-
-      //CREATE ()->[:R]->()-[:R]->...->()
-      case RelationshipChain(left, rel, rightNode) =>
-        val (nodes, rels) = allCreatePatterns(left)
-        val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
-
-        (nodes :+
-          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
+      (nodes :+
+        CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
         , rels :+
-          CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head, rightIdName, rel.properties, rel.direction))
-    }
+        CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head,
+          rightIdName, rel.properties, rel.direction))
   }
 
-  implicit class DeleteConverter(val clause: Delete) extends AnyVal {
-    def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
-      acc.amendUpdateGraph(ug => ug.addDeleteExpression(clause.expressions.map(DeleteExpression(_, clause.forced)):_*))
-    }
+  private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
+    acc.amendUpdateGraph(ug => ug.addDeleteExpression(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
   }
 
-  implicit class ReturnItemsConverter(val clause: ReturnItems) extends AnyVal {
-    def asReturnItems(current: QueryGraph): Seq[ReturnItem] =
-      if (clause.includeExisting)
-        QueryProjection.forIds(current.allCoveredIds) ++ clause.items
-      else
-        clause.items
+  private def asReturnItems(current: QueryGraph, clause: ReturnItems): Seq[ReturnItem] =
+    if (clause.includeExisting)
+      QueryProjection.forIds(current.allCoveredIds) ++ clause.items
+    else
+      clause.items
 
-    def getContainedPatternExpressions: Set[PatternExpression] =
-      clause.items.flatMap(_.expression.extractPatternExpressions).toSet
-  }
+  private def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Match): PlannerQueryBuilder = {
+    val patternContent = clause.pattern.destructed
 
-  implicit class MatchConverter(val clause: Match) extends AnyVal {
-    def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder): PlannerQueryBuilder = {
-      val patternContent = clause.pattern.destructed
+    val selections = asSelections(clause.where)
 
-      val selections = clause.where.asSelections
-
-      if (clause.optional) {
-        acc.
-          amendQueryGraph { qg => qg.withAddedOptionalMatch(
+    if (clause.optional) {
+      acc.
+        amendQueryGraph { qg => qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
@@ -241,109 +217,99 @@ object ClauseConverters {
             shortestPathPatterns = patternContent.shortestPaths.toSet
           ))
         }
-      } else {
-        acc.amendQueryGraph {
-          qg => qg.
-            addSelections(selections).
-            addPatternNodes(patternContent.nodeIds: _*).
-            addPatternRelationships(patternContent.rels).
-            addHints(clause.hints).
-            addShortestPaths(patternContent.shortestPaths: _*)
-        }
+    } else {
+      acc.amendQueryGraph {
+        qg => qg.
+          addSelections(selections).
+          addPatternNodes(patternContent.nodeIds: _*).
+          addPatternRelationships(patternContent.rels).
+          addHints(clause.hints).
+          addShortestPaths(patternContent.shortestPaths: _*)
       }
     }
   }
 
-  implicit class WithConverter(val clause: With) extends AnyVal {
+  private implicit def returnItemsToIdName(s: Seq[ReturnItem]): Set[IdName] =
+    s.map(item => IdName(item.name)).toSet
 
-    private implicit def returnItemsToIdName(s: Seq[ReturnItem]):Set[IdName] =
-      s.map(item => IdName(item.name)).toSet
+  private def addWithToLogicalPlanInput(builder: PlannerQueryBuilder,
+                                        clause: With): PlannerQueryBuilder = clause match {
 
-    def addWithToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = clause match {
+    /*
+    When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
+    we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
+    a lot of queries have these WITH clauses.
 
-      /*
-      When encountering a WITH that is not an event horizon, and we have no optional matches in the current QueryGraph,
-      we simply continue building on the current PlannerQuery. Our ASTRewriters rewrite queries in such a way that
-      a lot of queries have these WITH clauses.
-
-      Handles: ... WITH * [WHERE <predicate>] ...
-       */
-      case With(false, ri, None, None, None, where)
-        if !builder.currentQueryGraph.hasOptionalPatterns
-          && ri.items.forall(item => !containsAggregate(item.expression))
-          && ri.items.forall {
-          case item: AliasedReturnItem => item.expression == item.identifier
-          case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
-        } && builder.readOnly =>
-        val selections = where.asSelections
-        builder.
-          amendQueryGraph(_.addSelections(selections))
-
-      /*
-      When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
-
-      Handles all other WITH clauses
-       */
-      case With(distinct, projection, orderBy, skip, limit, where) =>
-        val selections = where.asSelections
-        val returnItems = projection.asReturnItems(builder.currentQueryGraph)
-
-        val shuffle =
-          orderBy.
-            asQueryShuffle.
-            withLimit(limit).
-            withSkip(skip)
-
-        val queryProjection =
-          returnItems.
-            asQueryProjection(distinct).
-            withShuffle(shuffle)
-
-        builder.
-          withHorizon(queryProjection).
-          withTail(PlannerQuery(QueryGraph(selections = selections)))
-
-
-      case _ =>
-        throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)    }
-  }
-
-  implicit class UnwindConverter(val clause: Unwind) extends AnyVal {
-
-    def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder =
+    Handles: ... WITH * [WHERE <predicate>] ...
+     */
+    case With(false, ri, None, None, None, where)
+      if !builder.currentQueryGraph.hasOptionalPatterns
+        && ri.items.forall(item => !containsAggregate(item.expression))
+        && ri.items.forall {
+        case item: AliasedReturnItem => item.expression == item.identifier
+        case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
+      } && builder.readOnly =>
+      val selections = asSelections(where)
       builder.
-        withHorizon(
-          UnwindProjection(
-            identifier = IdName(clause.identifier.name),
-            exp = clause.expression)
-        ).
-        withTail(PlannerQuery.empty)
+        amendQueryGraph(_.addSelections(selections))
+
+    /*
+    When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
+
+    Handles all other WITH clauses
+     */
+    case With(distinct, projection, orderBy, skip, limit, where) =>
+      val selections = asSelections(where)
+      val returnItems = asReturnItems(builder.currentQueryGraph, projection)
+
+      val shuffle =
+        asQueryShuffle(orderBy).
+          withLimit(limit).
+          withSkip(skip)
+
+      val queryProjection =
+        asQueryProjection(distinct, returnItems).
+          withShuffle(shuffle)
+
+      builder.
+        withHorizon(queryProjection).
+        withTail(PlannerQuery(QueryGraph(selections = selections)))
+
+    case _ =>
+      throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  implicit class StartConverter(val clause: Start) extends AnyVal {
-    def addStartToLogicalPlanInput(builder: PlannerQueryBuilder): PlannerQueryBuilder = {
-        builder.amendQueryGraph { qg =>
-          val items = clause.items.map {
-            case hints: LegacyIndexHint => Right(hints)
-            case item              => Left(item)
-          }
+  private def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Unwind): PlannerQueryBuilder =
+    builder.
+      withHorizon(
+        UnwindProjection(
+          identifier = IdName(clause.identifier.name),
+          exp = clause.expression)
+      ).
+      withTail(PlannerQuery.empty)
 
-          val hints = items.collect { case Right(hint) => hint }
-          val nonHints = items.collect { case Left(item) => item }
+  private def addStartToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Start): PlannerQueryBuilder = {
+    builder.amendQueryGraph { qg =>
+      val items = clause.items.map {
+        case hints: LegacyIndexHint => Right(hints)
+        case item => Left(item)
+      }
 
-          if (nonHints.nonEmpty) {
-            // all other start queries is delegated to legacy planner
-            throw new CantHandleQueryException()
-          }
+      val hints = items.collect { case Right(hint) => hint }
+      val nonHints = items.collect { case Left(item) => item }
 
-          val nodeIds = hints.collect { case n: NodeHint => IdName(n.identifier.name)}
+      if (nonHints.nonEmpty) {
+        // all other start queries is delegated to legacy planner
+        throw new CantHandleQueryException()
+      }
 
-          val selections = clause.where.asSelections
+      val nodeIds = hints.collect { case n: NodeHint => IdName(n.identifier.name) }
 
-          qg.addPatternNodes(nodeIds: _*)
-            .addSelections(selections)
-            .addHints(hints)
-        }
+      val selections = asSelections(clause.where)
+
+      qg.addPatternNodes(nodeIds: _*)
+        .addSelections(selections)
+        .addHints(hints)
     }
   }
 }
