@@ -168,6 +168,9 @@ public class HighlyAvailableEditionModule
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
         final LifeSupport life = platformModule.life;
+        final LifeSupport paxosLife = new LifeSupport();
+        final LifeSupport clusteringLife = new LifeSupport();
+
         final FileSystemAbstraction fs = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
         final Config config = platformModule.config;
@@ -240,12 +243,12 @@ public class HighlyAvailableEditionModule
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        ClusterClientModule clusterClientModule = new ClusterClientModule(life, dependencies, monitors, config, logging, electionCredentialsProvider );
-        final ClusterClient clusterClient = clusterClientModule.clusterClient;
+        ClusterClientModule clusterClientModule = new ClusterClientModule( clusteringLife, dependencies, monitors,
+                config, logging, electionCredentialsProvider );
+        ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
-                new org.neo4j.function.Predicate<PaxosClusterMemberEvents
-                        .ClusterMembersSnapshot>()
+                new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
                 {
                     @Override
                     public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
@@ -317,8 +320,6 @@ public class HighlyAvailableEditionModule
                 logging.getInternalLogProvider() );
 
         members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, stateMachine ) );
-
-        LifeSupport paxosLife = new LifeSupport();
 
         memberStateMachine = paxosLife.add( stateMachine );
         electionProviderRef.set( memberStateMachine );
@@ -482,7 +483,6 @@ public class HighlyAvailableEditionModule
 
         life.add( requestContextFactory );
         life.add( responseUnpacker );
-        life.add( paxosLife );
 
         platformModule.diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
                 clusterClient ) );
@@ -535,6 +535,10 @@ public class HighlyAvailableEditionModule
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 
         publishEditionInfo( config, dependencies.resolveDependency( UsageData.class ) );
+
+        // Ordering of lifecycles is important. Clustering infrastructure should start before paxos components
+        life.add( clusteringLife );
+        life.add( paxosLife );
     }
 
     private void publishEditionInfo( Config config, UsageData sysInfo )

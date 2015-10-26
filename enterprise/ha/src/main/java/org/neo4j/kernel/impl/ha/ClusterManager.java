@@ -1036,7 +1036,7 @@ public class ClusterManager
                     }
                 }, clusterClientModule.clusterClient.getServerId() ) );
 
-                life.add( new FutureLifecycleAdapter<>( clusterClientModule.life ) );
+                life.add( new FutureLifecycleAdapter<>( clusterClientLife ) );
             }
         }
 
