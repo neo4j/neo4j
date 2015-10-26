@@ -37,27 +37,27 @@ public enum NotificationCode
        " query processing. " +
        "While occasionally intended, it may often be possible to reformulate the query that avoids the " +
        "use of this cross " +
-       "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"
+       "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH."
     ),
     LEGACY_PLANNER(
         SeverityLevel.WARNING,
         Status.Statement.DeprecationWarning,
-        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"
+        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead."
     ),
     PLANNER_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.PlannerUnsupportedWarning,
-        "Using COST planner is unsupported for this query, please use RULE planner instead"
+        "Using COST planner is unsupported for this query, please use RULE planner instead."
     ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.RuntimeUnsupportedWarning,
-        "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"
+        "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead."
     ),
     INDEX_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
         Status.Schema.NoSuchIndex,
-        "The hinted index does not exist, please check the schema"
+        "The hinted index does not exist, please check the schema."
     ),
     JOIN_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
@@ -67,22 +67,22 @@ public enum NotificationCode
     JOIN_HINT_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.JoinHintUnsupportedWarning,
-        "Using RULE planner is unsupported for queries with join hints, please use COST planner instead"
+        "Using RULE planner is unsupported for queries with join hints, please use COST planner instead."
     ),
     LENGTH_ON_NON_PATH(
         SeverityLevel.WARNING,
         Status.Statement.DeprecationWarning,
-        "Using 'length' on anything that is not a path is deprecated, please use 'size' instead"
+        "Using 'length' on anything that is not a path is deprecated, please use 'size' instead."
     ),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
         SeverityLevel.WARNING,
         Status.Statement.DynamicPropertyWarning,
-        "Using a dynamic property makes it impossible to use an index lookup for this query"
+        "Using a dynamic property makes it impossible to use an index lookup for this query."
     ),
     BARE_NODE_SYNTAX_DEPRECATED( // This notification is no longer produced by current Cypher compilers
         SeverityLevel.WARNING,   // but it is left here for backwards compatibility.
         Status.Statement.DeprecationWarning,
-        "Use of bare node patterns has been deprecated. Please enclose the identifier in parenthesis."
+        "Use of bare node patterns has been deprecated. Please enclose the identifier in parentheses."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,
@@ -101,19 +101,19 @@ public enum NotificationCode
     MISSING_LABEL(
             SeverityLevel.WARNING,
             Status.Statement.LabelMissingWarning,
-            "One of the labels in your query is not available in the database, make sure you didn't " +
-            "misspell it or that the label is available when you run this statement in your application"
+            "One of the labels in your query is not available in the database. Make sure you didn't " +
+            "misspell it or that the label is available when you run this statement in your application."
     ),
     MISSING_REL_TYPE(
             SeverityLevel.WARNING,
             Status.Statement.RelTypeMissingWarning,
-            "One of the relationship types in your query is not available in the database, make sure you didn't " +
-            "misspell it or that the label is available when you run this statement in your application"
+            "One of the relationship types in your query is not available in the database. Make sure you didn't " +
+            "misspell it or that the label is available when you run this statement in your application."
     ),
     MISSING_PROPERTY_NAME(
             SeverityLevel.WARNING,
             Status.Statement.PropertyNameMissingWarning,
-            "One of the property names in your query is not available in the database, make sure you didn't " +
+            "One of the property names in your query is not available in the database. Make sure you didn't " +
             "misspell it or that the label is available when you run this statement in your application"
     ),
     UNBOUNDED_SHORTEST_PATH(
