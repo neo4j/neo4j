@@ -30,7 +30,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -192,7 +191,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         PhysicalLogVersionedStoreChannel logChannel = openForVersion( logFiles, fileSystem, position.getLogVersion() );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge, DEFAULT_READ_AHEAD_SIZE );
+        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,

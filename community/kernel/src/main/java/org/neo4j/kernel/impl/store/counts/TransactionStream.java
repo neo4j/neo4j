@@ -43,11 +43,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
-import static javax.transaction.xa.Xid.MAXBQUALSIZE;
-import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
-
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 class TransactionStream
@@ -61,7 +58,7 @@ class TransactionStream
     {
         this.fs = fs;
         { // read metadata from all files in the directory
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
+            ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
             File[] files = fs.listFiles( path, new TxFileFilter( fs ) );
             ArrayList<LogFile> logFiles = new ArrayList<>( files.length );
             for ( File file : files )
@@ -126,7 +123,7 @@ class TransactionStream
 
     private class Cursor implements IOCursor<CommittedTransactionRepresentation>
     {
-        private final ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
+        private final ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
         private int file;
         private CommittedTransactionRepresentation current;
         private IOCursor<LogEntry> entries;
@@ -310,7 +307,7 @@ class TransactionStream
     {
         return new LogEntryCursor( new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( channel, header.logVersion, header.logFormatVersion ),
-                NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE ) );
+                NO_MORE_CHANNELS ) );
     }
 
     private static class TxFileFilter implements FilenameFilter

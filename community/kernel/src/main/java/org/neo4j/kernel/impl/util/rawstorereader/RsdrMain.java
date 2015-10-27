@@ -52,10 +52,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.logging.NullLogProvider;
 
-import static javax.transaction.xa.Xid.MAXBQUALSIZE;
-import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class RsdrMain
@@ -264,14 +263,13 @@ public class RsdrMain
     {
         File file = new File( neoStores.getStoreDir(), fname );
         StoreChannel fileChannel = files.open( file, "r" );
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
-        LogHeader logHeader = readLogHeader( buffer, fileChannel, false );
+        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false );
         console.printf( "Logical log version: %s with prev committed tx[%s]%n",
                 logHeader.logVersion, logHeader.lastCommittedTxId );
 
         PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-        ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
+        ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
         return new LogEntryCursor( logChannel );
     }
 

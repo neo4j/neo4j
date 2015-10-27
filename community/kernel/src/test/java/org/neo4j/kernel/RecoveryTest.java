@@ -25,11 +25,10 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Pair;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,16 +68,14 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.any;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -162,8 +159,8 @@ public class RecoveryTest
                         @Override
                         public boolean visit( LogVersionedStoreChannel element ) throws IOException
                         {
-                            try ( ReadableVersionableLogChannel channel =
-                                          new ReadAheadLogChannel( element, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE ) )
+                            try ( ReadableVersionableLogChannel channel = new ReadAheadLogChannel( element,
+                                    NO_MORE_CHANNELS ) )
                             {
                                 assertEquals( lastCommittedTxStartEntry, reader.readLogEntry( channel ) );
                                 assertEquals( lastCommittedTxCommitEntry, reader.readLogEntry( channel ) );

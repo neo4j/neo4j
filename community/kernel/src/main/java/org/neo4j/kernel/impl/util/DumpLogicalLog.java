@@ -45,11 +45,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static java.util.TimeZone.getTimeZone;
-import static javax.transaction.xa.Xid.MAXBQUALSIZE;
-import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class DumpLogicalLog
@@ -72,12 +71,11 @@ public class DumpLogicalLog
             logsFound++;
             out.println( "=== " + fileName + " ===" );
             StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
-            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + MAXGTRIDSIZE + MAXBQUALSIZE * 10 );
 
             LogHeader logHeader;
             try
             {
-                logHeader = readLogHeader( buffer, fileChannel, false );
+                logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false );
             }
             catch ( IOException ex )
             {
@@ -89,12 +87,9 @@ public class DumpLogicalLog
             out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
-//            LogDeserializer deserializer = new LogDeserializer();
-
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableVersionableLogChannel logChannel =
-                    new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
+            ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
             try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
             {
@@ -105,12 +100,6 @@ public class DumpLogicalLog
             }
         }
         return logsFound;
-    }
-
-    protected static boolean isAGraphDatabaseDirectory( String fileName )
-    {
-        File file = new File( fileName );
-        return file.isDirectory() && new File( file, MetaDataStore.DEFAULT_NAME ).exists();
     }
 
     public static void main( String args[] ) throws IOException
