@@ -141,6 +141,14 @@ class HeartbeatContextImpl
     @Override
     public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
+        // A failed instance might suspect instances which are alive so ignore it
+        if ( isFailed( from ) )
+        {
+            getInternalLog( HeartbeatContext.class ).info(
+                    "Ignoring suspicions from failed instance " + from + ": " + Iterables.toString( suspicions, "," ) );
+            return;
+        }
+
         Set<InstanceId> serverSuspicions = suspicionsFor( from );
 
         // Check removals
@@ -244,6 +252,12 @@ class HeartbeatContextImpl
                 (commonState.configuration().getMembers().size() - failed.size() - adjust) / 2;
     }
 
+    /**
+     * Get the suspicions as reported by a specific server.
+     *
+     * @param server which might suspect someone.
+     * @return a list of those members which server suspects.
+     */
     @Override
     public List<InstanceId> getSuspicionsOf( InstanceId server )
     {
@@ -261,6 +275,12 @@ class HeartbeatContextImpl
         return suspicions;
     }
 
+    /**
+     * Get all of the servers which suspect a specific member.
+     *
+     * @param uri for the member of interest.
+     * @return a set of servers which suspect the specified member.
+     */
     @Override
     public Set<InstanceId> getSuspicionsFor( InstanceId uri )
     {
