@@ -21,6 +21,8 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +32,10 @@ import java.util.Set;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.impl.notification.NotificationCode;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -67,6 +71,7 @@ public class CypherAdapterStreamTest
         Result result = mock( Result.class );
         when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
         CypherAdapterStream stream = new CypherAdapterStream( result );
 
@@ -99,6 +104,7 @@ public class CypherAdapterStreamTest
         Result result = mock( Result.class );
         when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
                 plan("Join", map( "arg1", 1 ), asList( "id1" ),
                 plan("Scan", map( "arg2", 1 ), asList("id2")) ) );
@@ -121,9 +127,10 @@ public class CypherAdapterStreamTest
         Result result = mock( Result.class );
         when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.getExecutionPlanDescription() ).thenReturn(
-                plan("Join", map( "arg1", 1 ), 2, 1, asList( "id1" ),
-                        plan("Scan", map( "arg2", 1 ), 2, 1, asList("id2")) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 1, asList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 1, asList( "id2" ) ) ) );
 
         CypherAdapterStream stream = new CypherAdapterStream( result );
 
@@ -132,6 +139,32 @@ public class CypherAdapterStreamTest
 
         // Then
         assertThat( meta.get( "profile" ).toString(), equalTo( "{args={arg1=1}, children=[{args={arg2=1}, children=[], dbHits=2, identifiers=[id2], operatorType=Scan, rows=1}], dbHits=2, identifiers=[id1], operatorType=Join, rows=1}" ));
+    }
+
+    @Test
+    public void shouldIncludeNotificationsIfPresent() throws Throwable
+    {
+        // Given
+        Result result = mock( Result.class );
+
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+
+        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
+
+        when( result.getNotifications() ).thenReturn( Arrays.asList(
+                NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
+                NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
+        ) );
+        CypherAdapterStream stream = new CypherAdapterStream( result );
+
+        // When
+        Map<String,Object> meta = metadataOf( stream );
+
+        // Then
+        assertThat( meta.get( "notifications" ).toString(), equalTo(
+                "[{title=The request (directly or indirectly) referred to an index that does not exist., description=The hinted index does not exist, please check the schema, code=Neo.ClientError.Schema.NoSuchIndex}, {description=Using COST planner is unsupported for this query, please use RULE planner instead, code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, title=This query is not supported by the COST planner.}]" ) );
     }
 
     private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception
