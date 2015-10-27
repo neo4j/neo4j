@@ -293,6 +293,9 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * List all labels.
+     * 
+     * By default, the server will return labels in use only. If you want to also return not in use labels, 
+     * append the "in_use=0" query parameter. 
      */
     @Test
     @Documented
