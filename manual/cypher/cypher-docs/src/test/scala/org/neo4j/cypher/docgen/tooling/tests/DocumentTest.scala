@@ -275,17 +275,21 @@ class DocumentAsciiDocTest extends CypherFunSuite {
     val consoleData = ConsoleData(Seq("global1", "global2"), Seq("local1", "local2"), "myquery")
 
     consoleData.asciiDoc(0) should equal(
-      """.Try this query live
-        |[console]
-        |----
+      """ifndef::nonhtmloutput[]
+        |[subs="none"]
+        |++++
+        |<formalpara role="cypherconsole">
+        |<title>Try this query live</title>
+        |<para><database><![CDATA[
         |global1
         |global2
-        |
         |local1
         |local2
-        |
+        |]]></database><command><![CDATA[
         |myquery
-        |----
+        |]]></command></para></formalpara>
+        |++++
+        |endif::nonhtmloutput[]
         |
         |""".stripMargin)
   }

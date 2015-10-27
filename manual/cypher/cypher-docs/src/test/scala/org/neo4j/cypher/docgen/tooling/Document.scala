@@ -209,15 +209,23 @@ case class ConsoleData(globalInitQueries: Seq[String], localInitQueries: Seq[Str
   override def asciiDoc(level: Int): String = {
     val globalInitQueryRows = globalInitQueries.mkString(NewLine)
     val localInitQueryRows = localInitQueries.mkString(NewLine)
-    s""".Try this query live
-       |[console]
-       |----
-       |$globalInitQueryRows
-       |
-       |$localInitQueryRows
-       |
+    val initQueries =
+      if (globalInitQueryRows.isEmpty() && localInitQueryRows.isEmpty())
+          "none"
+        else
+          globalInitQueryRows + "\n" + localInitQueryRows
+    s"""ifndef::nonhtmloutput[]
+       |[subs="none"]
+       |++++
+       |<formalpara role="cypherconsole">
+       |<title>Try this query live</title>
+       |<para><database><![CDATA[
+       |$initQueries
+       |]]></database><command><![CDATA[
        |$query
-       |----
+       |]]></command></para></formalpara>
+       |++++
+       |endif::nonhtmloutput[]
        |
        |""".stripMargin
   }
