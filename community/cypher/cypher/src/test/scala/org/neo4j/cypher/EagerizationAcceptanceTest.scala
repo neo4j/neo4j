@@ -978,14 +978,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   }
 
   test("setting label in tail should be eager if overlap within tail") {
-    createNode()
-    createNode()
-    createLabeledNode("Foo")
-    createLabeledNode("Foo")
-    val query = "MATCH (n) CREATE (m) WITH * MATCH (o) SET o:Foo RETURN count(*)"
+    createLabeledNode("A")
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("B")
+    val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, labelsAdded = 6, nodesCreated = 4)
+    assertStats(result, labelsAdded = 4, nodesCreated = 2)
     assertNumberOfEagerness(query, 2)
   }
 
@@ -1275,7 +1275,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("undirected expand followed by remove label need not to be eager") {
+  test("undirected expand followed by remove label needn't to be eager") {
     relate(createLabeledNode("Foo"), createLabeledNode("Foo"))
     relate(createLabeledNode("Foo"), createLabeledNode("Foo"))
 

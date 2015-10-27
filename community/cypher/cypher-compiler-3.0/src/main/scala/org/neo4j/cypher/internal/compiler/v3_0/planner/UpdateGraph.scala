@@ -45,7 +45,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case p: DeleteExpression => p
   }
 
-  def deleteIdentifiers = (deleteExpressions flatMap {
+  def identifiersToDelete = (deleteExpressions flatMap {
     case DeleteExpression(identifier:Identifier, _) => Seq(IdName.fromIdentifier(identifier))
     case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromIdentifier)
   }).toSet
@@ -59,15 +59,15 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   def writeLabels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
 
-  def removeLabels: Set[LabelName] = removeLabelPatterns.flatMap(_.labels).toSet
+  def labelsToRemove: Set[LabelName] = removeLabelPatterns.flatMap(_.labels).toSet
 
-  def removeLabelsOnNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
+  def labelsToRemoveForNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
     case RemoveLabelPattern(n, labels) if n == idName => labels
   }.flatten.toSet
 
   def relTypes: Set[RelTypeName] = relPatterns.map(_.relType).toSet
 
-  def updateNodes = nodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
+  def updatesNodes = nodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
 
   def overlaps(qg: QueryGraph) =
     qg.patternNodes.nonEmpty &&
@@ -86,7 +86,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
         //does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.exists(l => {
-          val otherLabelsRead = qg.patternNodes.filterNot(_ == removeId).flatMap(qg.knownLabelsOnNode)
+          val otherLabelsRead = qg.patternNodes.filterNot(_ == removeId).flatMap(qg.allKnownLabelsOnNode)
           otherLabelsRead(l)
         })
     }
@@ -112,10 +112,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
   }
 
-
-
   def deleteOverlap(qg: QueryGraph): Boolean = {
-    val identifiersToDelete = deleteIdentifiers
     val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }

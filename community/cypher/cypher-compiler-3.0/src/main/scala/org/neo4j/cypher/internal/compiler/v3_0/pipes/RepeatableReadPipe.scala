@@ -36,6 +36,8 @@ case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double
     val cached = state.repeatableReads.getOrElseUpdate(this, input.toList)
 
     //cached results must propagate initial results
+    //so that it is only caching the results from inner pipe
+    //and not results coming from e.g. the left-hand-side of an APPLY
     cached.map(_ ++ state.initialContext.getOrElse(ExecutionContext.empty)).toIterator
   }
 

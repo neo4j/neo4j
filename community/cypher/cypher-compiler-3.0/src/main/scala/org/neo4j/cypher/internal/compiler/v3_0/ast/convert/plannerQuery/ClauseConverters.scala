@@ -320,8 +320,8 @@ object ClauseConverters {
         case (builder, RemoveLabelItem(identifier, labelNames)) =>
           builder.amendUpdateGraph(ug => ug.addRemoveLabelPatterns(RemoveLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
 
-        case (builder, _) =>
-          throw new CantHandleQueryException("Remove supported yet")
+        case (builder, other) =>
+          throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")
       }
     }
 }

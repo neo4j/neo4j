@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
+
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{SetLabel, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.graphdb.Node
-
 case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
@@ -55,7 +55,7 @@ case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    SetLabelsPipe(onlySource, identifier, labels)(estimatedCardinality)
+    RemoveLabelsPipe(onlySource, identifier, labels)(estimatedCardinality)
   }
 
   override def localEffects = Effects(labels.map(label => SetLabel(label.name)): _*)

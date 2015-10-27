@@ -84,16 +84,16 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
   private def nodeOverlap(start: IdName, plannerQuery: PlannerQuery, stableId: IdName): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
     val writeLabels = plannerQuery.updateGraph.writeLabels
-    val removeLabels = plannerQuery.updateGraph.removeLabelsOnNode(start)
+    val removeLabels = plannerQuery.updateGraph.labelsToRemoveForNode(start)
 
     plannerQuery.updatesNodes && (
-      ( (startLabels.isEmpty && plannerQuery.createNodes) || //MATCH () CREATE (...)?
+      ( (startLabels.isEmpty && plannerQuery.createsNodes) || //MATCH () CREATE (...)?
         (startLabels intersect writeLabels).nonEmpty) || //MATCH (:A) CREATE (:A)?
         //MATCH (n:A), (m:B) REMOVE (n:B)
         removeLabels.exists(l => {
           //it is ok to have overlap on the stable id
           val labels = plannerQuery.queryGraph.patternNodes.filterNot(i => i == stableId || i == start )
-            .flatMap(plannerQuery.queryGraph.knownLabelsOnNode)
+            .flatMap(plannerQuery.queryGraph.allKnownLabelsOnNode)
           labels(l)
         })
       )
