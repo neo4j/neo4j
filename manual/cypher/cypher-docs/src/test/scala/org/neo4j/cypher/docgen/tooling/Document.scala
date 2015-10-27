@@ -205,6 +205,24 @@ case class Query(queryText: String, assertions: QueryAssertions, myInitQueries: 
     content.runnableContent(initQueries ++ myInitQueries :+ queryText)
 }
 
+case class ConsoleData(globalInitQueries: Seq[String], localInitQueries: Seq[String], query: String) extends Content with NoQueries {
+  override def asciiDoc(level: Int): String = {
+    val globalInitQueryRows = globalInitQueries.mkString(NewLine)
+    val localInitQueryRows = localInitQueries.mkString(NewLine)
+    s""".Try this query live
+       |[console]
+       |----
+       |$globalInitQueryRows
+       |
+       |$localInitQueryRows
+       |
+       |$query
+       |----
+       |
+       |""".stripMargin
+  }
+}
+
 case class GraphViz(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }

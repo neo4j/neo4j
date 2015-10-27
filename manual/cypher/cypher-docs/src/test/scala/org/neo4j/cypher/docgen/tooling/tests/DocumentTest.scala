@@ -270,6 +270,25 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |
         |""".stripMargin)
   }
+
+  test("Simple console data") {
+    val consoleData = ConsoleData(Seq("global1", "global2"), Seq("local1", "local2"), "myquery")
+
+    consoleData.asciiDoc(0) should equal(
+      """.Try this query live
+        |[console]
+        |----
+        |global1
+        |global2
+        |
+        |local1
+        |local2
+        |
+        |myquery
+        |----
+        |
+        |""".stripMargin)
+  }
 }
 
 class DocumentQueryTest extends CypherFunSuite {

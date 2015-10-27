@@ -59,6 +59,16 @@ trait DocBuilder {
 
   def graphViz(options: String = "") = current.addContent(new GraphVizPlaceHolder(options))
 
+  def consoleData() = {
+    val docScope = scope.collectFirst {
+      case d: DocScope => d
+    }.get
+    val queryScope = scope.collectFirst {
+      case q: QueryScope => q
+    }.get
+    queryScope.addContent(ConsoleData(docScope.initQueries, queryScope.initQueries, queryScope.queryText))
+  }
+
   def synopsis(text: String) = current.addContent(Abstract(text))
 
   // Scopes
@@ -74,8 +84,11 @@ trait DocBuilder {
   def tip(f: => Unit) = inScope(AdmonitionScope(Tip.apply), f)
   def note(f: => Unit) = inScope(AdmonitionScope(Note.apply), f)
 
-  def query(q: String, assertions: QueryAssertions)(f: => Unit) = inScope(QueryScope(q.stripMargin, assertions), f)
-
+  def query(q: String, assertions: QueryAssertions)(f: => Unit) =
+    inScope(QueryScope(q.stripMargin, assertions), {
+      f
+      consoleData() // Always append console data
+    })
 }
 
 object DocBuilder {
@@ -100,7 +113,7 @@ object DocBuilder {
     def toContent: Content
   }
 
-  case class DocScope(val title: String, val id: String) extends Scope {
+  case class DocScope(title: String, id: String) extends Scope {
     override def toContent = throw new LiskovSubstitutionPrincipleException
   }
 
