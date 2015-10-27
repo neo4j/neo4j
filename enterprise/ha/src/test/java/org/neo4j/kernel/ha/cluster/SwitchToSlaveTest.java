@@ -112,7 +112,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, neoStoreDataSource, new URI("cluster://localhost?serverId=1"), false );
+            switchToSlave.checkDataConsistency( masterClient, neoStoreDataSource, new URI("cluster://localhost?serverId=1") );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -129,6 +129,7 @@ public class SwitchToSlaveTest
     {
         // Given
         SwitchToSlave switchToSlave = newSwitchToSlaveSpy();
+        URI masterUri = new URI( "cluster://localhost?serverId=1" );
 
         MasterClient masterClient = mock( MasterClient.class );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenThrow( new BranchedDataException( "" ) );
@@ -136,7 +137,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, dataSourceMock(), null, true );
+            switchToSlave.checkDataConsistency( masterClient, dataSourceMock(), masterUri );
             fail( "Should have thrown " + BranchedDataException.class.getSimpleName() + " exception" );
         }
         catch ( BranchedDataException e )

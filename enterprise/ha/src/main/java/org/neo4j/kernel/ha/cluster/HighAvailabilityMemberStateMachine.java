@@ -28,7 +28,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -48,7 +48,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
     private final StringLogger logger;
-    private final ClusterMembers members;
+    private final ObservedClusterMembers observedMembers;
     private final Election election;
 
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
@@ -57,12 +57,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
                                                AvailabilityGuard availabilityGuard,
-                                               ClusterMembers members, ClusterMemberEvents events, Election election,
+                                               ObservedClusterMembers observedMembers,
+                                               ClusterMemberEvents events,
+                                               Election election,
                                                StringLogger logger )
     {
         this.context = context;
         this.availabilityGuard = availabilityGuard;
-        this.members = members;
+        this.observedMembers = observedMembers;
         this.events = events;
         this.election = election;
         this.logger = logger;
@@ -337,12 +339,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
         private long getAliveCount()
         {
-            return Iterables.count( Iterables.filter( ClusterMembers.ALIVE, members.getMembers() ) );
+            return Iterables.count( observedMembers.getAliveMembers() );
         }
 
         private long getTotalCount()
         {
-            return Iterables.count( members.getMembers() );
+            return Iterables.count( observedMembers.getMembers() );
         }
     }
 }

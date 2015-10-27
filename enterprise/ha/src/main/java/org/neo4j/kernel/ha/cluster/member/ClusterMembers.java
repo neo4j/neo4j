@@ -19,40 +19,22 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.cluster.protocol.cluster.Cluster;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 /**
- * Keeps an up to date list of members, their roles and availability for
- * display for example in JMX.
+ * Keeps a list of members, their roles and availability for display for example in JMX or REST.
+ * <p>
+ * Member state info is based on {@link ObservedClusterMembers} and {@link HighAvailabilityMemberStateMachine}.
+ * State of the current member is always valid, all other instances are only 'best effort'.
  */
 public class ClusterMembers
 {
-    public static final Predicate<ClusterMember> ALIVE = new Predicate<ClusterMember>()
-    {
-        @Override
-        public boolean accept( ClusterMember item )
-        {
-            return item.isAlive();
-        }
-    };
-
-    private final InstanceId me;
-
     public static Predicate<ClusterMember> inRole( final String role )
     {
         return new Predicate<ClusterMember>()
@@ -77,161 +59,70 @@ public class ClusterMembers
         };
     }
 
-    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
+    private final ObservedClusterMembers observedClusterMembers;
+    private final HighAvailabilityMemberStateMachine stateMachine;
 
-    public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events, InstanceId me )
+    public ClusterMembers( ObservedClusterMembers observedClusterMembers,
+            HighAvailabilityMemberStateMachine stateMachine )
     {
-        this.me = me;
-        cluster.addClusterListener( new HAMClusterListener() );
-        heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
-        events.addClusterMemberListener( new HAMClusterMemberListener() );
+        this.observedClusterMembers = observedClusterMembers;
+        this.stateMachine = stateMachine;
+    }
+
+    public ClusterMember getCurrentMember()
+    {
+        ClusterMember currentMember = observedClusterMembers.getCurrentMember();
+        if ( currentMember == null )
+        {
+            return null;
+        }
+        String currentRole = roleOf( stateMachine.getCurrentState() );
+        return currentMember.availableAs( currentRole, currentMember.getHAUri(), currentMember.getStoreId() );
+    }
+
+    public String getCurrentMemberRole()
+    {
+        ClusterMember currentMember = getCurrentMember();
+        return (currentMember == null) ? HighAvailabilityModeSwitcher.UNKNOWN : currentMember.getHARole();
     }
 
     public Iterable<ClusterMember> getMembers()
     {
-        return members.values();
+        return getActualMembers( observedClusterMembers.getMembers() );
     }
 
-    public ClusterMember getSelf()
+    public Iterable<ClusterMember> getAliveMembers()
     {
-        for ( ClusterMember clusterMember : getMembers() )
-        {
-            if ( clusterMember.getInstanceId().equals( me ) )
-            {
-                return clusterMember;
-            }
-        }
-        return null;
+        return getActualMembers( observedClusterMembers.getAliveMembers() );
     }
 
-    public synchronized void waitForEvent( long timeout ) throws InterruptedException
+    private Iterable<ClusterMember> getActualMembers( Iterable<ClusterMember> members )
     {
-        wait( timeout );
+        final ClusterMember currentMember = getCurrentMember();
+        if ( currentMember == null )
+        {
+            return members;
+        }
+        return Iterables.map( new Function<ClusterMember,ClusterMember>()
+        {
+            @Override
+            public ClusterMember apply( ClusterMember member ) throws RuntimeException
+            {
+                return currentMember.getInstanceId().equals( member.getInstanceId() ) ? currentMember : member;
+            }
+        }, members );
     }
 
-    private synchronized void eventOccurred()
+    private static String roleOf( HighAvailabilityMemberState state )
     {
-        notifyAll();
-    }
-
-    private ClusterMember getMember( InstanceId server )
-    {
-        ClusterMember clusterMember = members.get( server );
-        if ( clusterMember == null )
+        switch ( state )
         {
-            throw new IllegalStateException( "Member " + server + " not found in " + new HashMap<>( members ) );
-        }
-        return clusterMember;
-    }
-
-    private class HAMClusterListener extends ClusterListener.Adapter
-    {
-        @Override
-        public void enteredCluster( ClusterConfiguration configuration )
-        {
-            Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
-            for ( InstanceId memberClusterId : configuration.getMemberIds() )
-            {
-                newMembers.put( memberClusterId, new ClusterMember( memberClusterId, true ) );
-            }
-            members.clear();
-            members.putAll( newMembers );
-        }
-
-        @Override
-        public void leftCluster()
-        {
-            members.clear();
-        }
-
-        @Override
-        public void joinedCluster( InstanceId member, URI memberUri )
-        {
-            members.put( member, new ClusterMember( member ) );
-        }
-
-        @Override
-        public void leftCluster( InstanceId instanceId, URI member )
-        {
-            members.remove( instanceId );
-        }
-    }
-
-    private class HAMClusterMemberListener extends ClusterMemberListener.Adapter
-    {
-        private InstanceId masterId = null;
-
-        @Override
-        public void coordinatorIsElected( InstanceId coordinatorId )
-        {
-            if ( coordinatorId.equals( this.masterId ) )
-            {
-                return;
-            }
-            this.masterId = coordinatorId;
-            Map<InstanceId, ClusterMember> newMembers = new HashMap<>();
-            for ( Map.Entry<InstanceId, ClusterMember> memberEntry : members.entrySet() )
-            {
-                newMembers.put( memberEntry.getKey(), memberEntry.getValue().unavailableAs(
-                        HighAvailabilityModeSwitcher.MASTER ).unavailableAs( HighAvailabilityModeSwitcher.SLAVE ) );
-            }
-            members.clear();
-            members.putAll( newMembers );
-        }
-
-        @Override
-        public void memberIsAvailable( String role, InstanceId instanceId, URI roleUri, StoreId storeId )
-        {
-            members.put( instanceId, getMember( instanceId ).availableAs( role, roleUri, storeId ) );
-            eventOccurred();
-        }
-
-        @Override
-        public void memberIsUnavailable( String role, InstanceId unavailableId )
-        {
-            ClusterMember member;
-            try
-            {
-                member = getMember( unavailableId );
-                members.put( unavailableId, member.unavailableAs( role ) );
-            }
-            catch ( IllegalStateException e )
-            {
-                // Unknown member
-            }
-        }
-
-        @Override
-        public void memberIsFailed( InstanceId instanceId )
-        {
-            // Make it unavailable for all its current roles
-            ClusterMember member = getMember( instanceId );
-            for ( String role : member.getRoles() )
-            {
-                member = member.unavailableAs( role ); // ClusterMember is copy-on-write
-            }
-            members.put( instanceId, member ); // replace with the new copy
-        }
-    }
-
-    private class HAMHeartbeatListener extends HeartbeatListener.Adapter
-    {
-        @Override
-        public void failed( InstanceId server )
-        {
-            if ( members.containsKey( server ) )
-            {
-                members.put( server, getMember( server ).failed() );
-            }
-        }
-
-        @Override
-        public void alive( InstanceId server )
-        {
-            if ( members.containsKey( server ) )
-            {
-                members.put( server, getMember( server ).alive() );
-            }
+        case MASTER:
+            return HighAvailabilityModeSwitcher.MASTER;
+        case SLAVE:
+            return HighAvailabilityModeSwitcher.SLAVE;
+        default:
+            return HighAvailabilityModeSwitcher.UNKNOWN;
         }
     }
 }

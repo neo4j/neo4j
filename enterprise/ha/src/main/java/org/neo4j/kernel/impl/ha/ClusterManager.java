@@ -40,7 +40,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -75,6 +74,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -89,7 +89,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -435,7 +434,7 @@ public class ClusterManager
                     }
                 }
 
-                for ( ClusterMembers clusterMembers : cluster.getArbiters() )
+                for ( ObservedClusterMembers clusterMembers : cluster.getArbiters() )
                 {
                     if ( count( clusterMembers.getMembers() ) < nrOfMembers )
                     {
@@ -790,7 +789,7 @@ public class ClusterManager
         private final Clusters.Cluster spec;
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
-        private final List<ClusterMembers> arbiters = new ArrayList<>();
+        private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -842,7 +841,7 @@ public class ClusterManager
             }, members.values() );
         }
 
-        public Iterable<ClusterMembers> getArbiters()
+        public Iterable<ObservedClusterMembers> getArbiters()
         {
             return arbiters;
         }
@@ -1028,20 +1027,21 @@ public class ClusterManager
                         clientLogging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
                         objectStreamFactory );
 
-                arbiters.add( new ClusterMembers( clusterClient, clusterClient, new ClusterMemberEvents()
-                {
-                    @Override
-                    public void addClusterMemberListener( ClusterMemberListener listener )
-                    {
-                        // noop
-                    }
+                arbiters.add( new ObservedClusterMembers( clientLogging, clusterClient, clusterClient,
+                        new ClusterMemberEvents()
+                        {
+                            @Override
+                            public void addClusterMemberListener( ClusterMemberListener listener )
+                            {
+                                // noop
+                            }
 
-                    @Override
-                    public void removeClusterMemberListener( ClusterMemberListener listener )
-                    {
-                        // noop
-                    }
-                }, clusterClient.getServerId() ) );
+                            @Override
+                            public void removeClusterMemberListener( ClusterMemberListener listener )
+                            {
+                                // noop
+                            }
+                        }, clusterClient.getServerId() ) );
 
                 life.add( new FutureLifecycleAdapter<>( clusterClient ) );
             }

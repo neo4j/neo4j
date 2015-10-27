@@ -36,26 +36,18 @@ public class ClusterMember
     private final Map<String, URI> roles;
     private final StoreId storeId;
     private final boolean alive;
-    private final boolean initiallyKnown;
 
     public ClusterMember( InstanceId instanceId )
     {
-        this( instanceId, false );
+        this( instanceId, Collections.<String,URI>emptyMap(), StoreId.DEFAULT, true );
     }
 
-    ClusterMember( InstanceId instanceId, boolean initiallyKnown )
-    {
-        this( instanceId, Collections.<String, URI>emptyMap(), StoreId.DEFAULT, true, initiallyKnown );
-    }
-
-    ClusterMember( InstanceId instanceId, Map<String, URI> roles, StoreId storeId,
-                   boolean alive, boolean initiallyKnown )
+    ClusterMember( InstanceId instanceId, Map<String,URI> roles, StoreId storeId, boolean alive )
     {
         this.instanceId = instanceId;
         this.roles = roles;
         this.storeId = storeId;
         this.alive = alive;
-        this.initiallyKnown = initiallyKnown;
     }
 
     public InstanceId getInstanceId()
@@ -111,11 +103,6 @@ public class ClusterMember
         return alive;
     }
 
-    public boolean isInitiallyKnown()
-    {
-        return initiallyKnown;
-    }
-
     ClusterMember availableAs( String role, URI roleUri, StoreId storeId )
     {
         Map<String, URI> copy = new HashMap<>( roles );
@@ -129,30 +116,33 @@ public class ClusterMember
             copy.remove( OnlineBackupKernelExtension.BACKUP );
         }
         copy.put( role, roleUri );
-        return new ClusterMember( this.instanceId, copy, storeId, this.alive, this.initiallyKnown );
+        return new ClusterMember( this.instanceId, copy, storeId, this.alive );
     }
 
     ClusterMember unavailableAs( String role )
     {
-        return new ClusterMember( this.instanceId, MapUtil.copyAndRemove( roles, role ),
-                this.storeId, this.alive, this.initiallyKnown );
+        return new ClusterMember( this.instanceId, MapUtil.copyAndRemove( roles, role ), this.storeId, this.alive );
     }
 
     ClusterMember alive()
     {
-        return new ClusterMember( this.instanceId, roles, storeId, true, this.initiallyKnown );
+        return new ClusterMember( this.instanceId, roles, storeId, true );
     }
 
     ClusterMember failed()
     {
-        return new ClusterMember( this.instanceId, roles, storeId, false, this.initiallyKnown );
+        return new ClusterMember( this.instanceId, roles, storeId, false );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "cluster URI=%s, alive=%s, initial=%s, roles=%s, store=%s",
-                instanceId, alive, initiallyKnown, roles, storeId );
+        return "ClusterMember{" +
+               "instanceId=" + instanceId +
+               ", roles=" + roles +
+               ", storeId=" + storeId +
+               ", alive=" + alive +
+               '}';
     }
 
     @Override

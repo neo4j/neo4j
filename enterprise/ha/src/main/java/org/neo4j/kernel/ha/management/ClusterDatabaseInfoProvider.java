@@ -44,14 +44,16 @@ public class ClusterDatabaseInfoProvider
 
     public ClusterDatabaseInfo getInfo()
     {
-        ClusterMember self = members.getSelf();
-        if (self == null)
+        ClusterMember currentMember = members.getCurrentMember();
+        if (currentMember == null)
+        {
             return null;
+        }
 
-        return new ClusterDatabaseInfo( new ClusterMemberInfo( self.getInstanceId().toString(), self.getHAUri() != null,
-                true, self.getHARole(),
-                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, self.getRoleURIs() ) ),
-                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, self.getRoles() ) ) ),
+        return new ClusterDatabaseInfo( new ClusterMemberInfo( currentMember.getInstanceId().toString(),
+                currentMember.getHAUri() != null, true, currentMember.getHARole(),
+                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoleURIs() ) ),
+                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoles() ) ) ),
                 txIdGetter.getLastTxId(), lastUpdateTime.getLastUpdateTime() );
     }
 }

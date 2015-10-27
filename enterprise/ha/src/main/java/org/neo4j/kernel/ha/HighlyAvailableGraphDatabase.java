@@ -73,6 +73,7 @@ import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -370,11 +371,16 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
-        members = dependencies.satisfyDependency( new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                config.get( ClusterSettings.server_id ) ) );
-        memberStateMachine = paxosLife.add( new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard,
-                members, clusterEvents, clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class
-        ) ) );
+        ObservedClusterMembers observedMembers = new ObservedClusterMembers( logging, clusterClient, clusterClient,
+                clusterEvents, config.get( ClusterSettings.server_id ) );
+
+        HighAvailabilityMemberStateMachine stateMachine = new HighAvailabilityMemberStateMachine( memberContext,
+                availabilityGuard, observedMembers, clusterEvents, clusterClient,
+                logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
+
+        members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, stateMachine ) );
+
+        memberStateMachine = paxosLife.add( stateMachine );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
                 .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
@@ -714,12 +720,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     public String role()
     {
-        return members.getSelf().getHARole();
+        return members.getCurrentMemberRole();
     }
 
     public boolean isMaster()
     {
-        return memberStateMachine.getCurrentState() == HighAvailabilityMemberState.MASTER;
+        return HighAvailabilityModeSwitcher.MASTER.equals( role() );
     }
 
     @Override
