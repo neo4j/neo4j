@@ -24,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cluster.BindingListener;
@@ -99,7 +98,6 @@ public class HighAvailabilityModeSwitcher
     private volatile URI me;
     private volatile Future<?> modeSwitcherFuture;
     private volatile HighAvailabilityMemberState currentTargetState;
-    private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
 
     public HighAvailabilityModeSwitcher( SwitchToSlave switchToSlave,
                                          SwitchToMaster switchToMaster,
@@ -211,13 +209,9 @@ public class HighAvailabilityModeSwitcher
         modeSwitchListeners = Listeners.removeListener( modeSwitcher, modeSwitchListeners );
     }
 
-    public void forceElections()
+    public void postMemberUnavailable()
     {
-        if ( canAskForElections.compareAndSet( true, false ) )
-        {
-            clusterMemberAvailability.memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
-            election.performRoleElections();
-        }
+        clusterMemberAvailability.memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
     }
 
     private void stateChanged( HighAvailabilityMemberChangeEvent event )
@@ -241,12 +235,6 @@ public class HighAvailabilityModeSwitcher
         switch ( event.getNewState() )
         {
             case TO_MASTER:
-
-                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                }
-
                 switchToMaster();
                 break;
             case TO_SLAVE:
@@ -302,7 +290,6 @@ public class HighAvailabilityModeSwitcher
                 try
                 {
                     masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
-                    canAskForElections.set( true );
                 }
                 catch ( Throwable e )
                 {
@@ -382,7 +369,6 @@ public class HighAvailabilityModeSwitcher
                     else
                     {
                         slaveHaURI = resultingSlaveHaURI;
-                        canAskForElections.set( true );
                     }
                 }
                 catch ( HighAvailabilityStoreFailureException e )
