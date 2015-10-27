@@ -154,6 +154,22 @@ public class HeartbeatContextTest
     }
 
     @Test
+    public void testFailedInstanceReportingSuspicions()
+    {
+        InstanceId suspect = instanceIds[1];
+        InstanceId newSuspiciousBastard = instanceIds[2];
+        toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
+        toTest.suspect( suspect );
+
+        // Just make sure
+        assertTrue( toTest.isFailed( suspect ) );
+
+        // Suspicions of a failed instance should be ignored
+        toTest.suspicions( suspect, Collections.singleton( newSuspiciousBastard ) );
+        assertTrue( "Suspicions should have been ignored", toTest.getSuspicionsOf( newSuspiciousBastard ).isEmpty() );
+    }
+
+    @Test
     public void testFailedInstanceBecomingAlive()
     {
         InstanceId suspect = instanceIds[1];
