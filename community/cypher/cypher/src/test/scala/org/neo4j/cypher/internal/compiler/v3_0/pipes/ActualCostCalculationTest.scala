@@ -81,6 +81,32 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
+  ignore("cost for eagerness") {
+    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
+    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
+    try {
+      graph.createIndex(LABEL, PROPERTY)
+      val results = ResultTable.empty
+      val chunk = N / STEPS
+      for (count <- 1 to STEPS) {
+        setUpDb(graph, chunk)
+        results.addAll("Eager", runSimulation(graph, eager(allNodes)))
+      }
+
+      results.foreach {
+        case (_, dps) =>
+          val res = dps.toList.sortBy(_.numberOfRows)
+          println(res.map(_.elapsed).mkString(","))
+      }
+      results.result.foreach {
+        case (name, slope) => println(s"$name: COST = $slope * NROWS")
+      }
+    }
+    finally {
+      graph.shutdown()
+    }
+  }
+
   ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
     val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
@@ -133,6 +159,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val minValue = result.values.min
       result.mapValues(_/minValue)
     }
+
+    def result = table.mapValues(calculateSimpleResult)
 
     override def toString: String = table.map{
       case (name, dataPoints) => s"$name: $dataPoints"
@@ -248,6 +276,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def expand(l: Pipe, t: String) = new ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
 
   private def allNodes = new AllNodesScanPipe("x")()
+
+  private def eager(pipe: Pipe) = new EagerPipe(pipe)()
 
   private def indexSeek(graph: GraphDatabaseService) = {
     graph.withTx { _ =>
