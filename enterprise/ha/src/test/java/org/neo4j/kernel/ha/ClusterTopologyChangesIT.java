@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -42,25 +41,20 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -75,7 +69,7 @@ public class ClusterTopologyChangesIT
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
-    protected ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup() throws Exception
@@ -88,12 +82,7 @@ public class ClusterTopologyChangesIT
                 .startCluster();
     }
 
-    @After
-    public void cleanup()
-    {
-        cluster = null;
-    }
-    
+
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
@@ -242,14 +231,6 @@ public class ClusterTopologyChangesIT
         assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
     }
 
-    private static long nodeCountOn( HighlyAvailableGraphDatabase db )
-    {
-        try ( Transaction ignored = db.beginTx() )
-        {
-            return Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() );
-        }
-    }
-
     private static ClusterClient clusterClientOf( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver().resolveDependency( ClusterClient.class );
@@ -297,19 +278,5 @@ public class ClusterTopologyChangesIT
             {
             }
         }
-    }
-
-    private static void assertHasInvalidEpoch( HighlyAvailableGraphDatabase db )
-    {
-        InvalidEpochException invalidEpochException = null;
-        try
-        {
-            createNodeOn( db );
-        }
-        catch ( InvalidEpochException e )
-        {
-            invalidEpochException = e;
-        }
-        assertNotNull( "Expected InvalidEpochException was not thrown", invalidEpochException );
     }
 }
