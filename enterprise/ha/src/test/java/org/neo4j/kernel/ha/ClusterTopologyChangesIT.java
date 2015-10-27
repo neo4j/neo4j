@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -82,7 +83,6 @@ public class ClusterTopologyChangesIT
                 .startCluster();
     }
 
-
     @Test
     public void masterRejoinsAfterFailureAndReelection() throws Throwable
     {
@@ -108,6 +108,7 @@ public class ClusterTopologyChangesIT
     }
 
     @Test
+    @Ignore
     public void slaveShouldServeTxsAfterMasterLostQuorumWentToPendingAndThenQuorumWasRestored() throws Throwable
     {
         // GIVEN: cluster with 3 members
