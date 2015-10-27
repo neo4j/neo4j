@@ -73,7 +73,7 @@ public class HaSettings
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
 
-    @Description( "Enable public access to the HA status endpoints." )
+    @Description( "Require authorization for access to the HA status endpoints." )
     public static final Setting<Boolean> ha_status_auth_enabled =
             setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
 
