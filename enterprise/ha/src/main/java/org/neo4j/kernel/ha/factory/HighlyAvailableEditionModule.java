@@ -347,7 +347,7 @@ public class HighlyAvailableEditionModule
             @Override
             public void handle()
             {
-                exceptionHandlerRef.get().postMemberUnavailable();
+                exceptionHandlerRef.get().forceElections();
             }
         };
 
