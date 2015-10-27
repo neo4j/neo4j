@@ -761,6 +761,39 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldPrintUserFriendlyMessageAboutUnsupportedMultilineFields() throws Exception
+    {
+        // GIVEN
+        File data = data(
+                ":ID,name",
+                "1,\"one\ntwo\nthree\"",
+                "2,four" );
+
+        // WHEN
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+        PrintStream prevErr = System.err;
+        System.setErr( new PrintStream( errBuffer ) );
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", data.getAbsolutePath(),
+                    "--multiline-fields", "false" );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( errBuffer.toString(), containsString( "Detected field which spanned multiple lines" ) );
+            assertThat( errBuffer.toString(), containsString( "multiline-fields" ) );
+        }
+        finally
+        {
+            System.setErr( prevErr );
+        }
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );

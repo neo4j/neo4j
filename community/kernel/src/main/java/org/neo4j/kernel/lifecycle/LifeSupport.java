@@ -21,7 +21,6 @@ package org.neo4j.kernel.lifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
