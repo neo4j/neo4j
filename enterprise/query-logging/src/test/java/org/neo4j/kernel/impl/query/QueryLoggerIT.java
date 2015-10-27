@@ -29,10 +29,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
@@ -77,8 +82,56 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s",
+        assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s - {}",
                 QueryEngineProvider.embeddedSession(), QUERY ) ) );
+    }
+
+    @Test
+    public void shouldLogParametersWhenNestedMap() throws Exception
+    {
+        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .newGraphDatabase();
+
+        Map<String, Object> props = new HashMap<>();
+        props.put( "name", "Roland" );
+        props.put( "position", "Gunslinger" );
+        props.put( "followers", Arrays.asList("Jake", "Eddie", "Susannah") );
+
+        Map<String, Object> params = new HashMap<>();
+        params.put( "props", props );
+
+        String query = "CREATE ({props})";
+        executeQueryAndShutdown( database, query, params );
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                Matchers.endsWith( String.format(
+                        " ms: %s - %s - {props: {followers: [Jake, Eddie, Susannah], name: Roland, position: Gunslinger}}",
+                QueryEngineProvider.embeddedSession(), query) ) );
+    }
+
+    @Test
+    public void shouldLogParametersWhenList() throws Exception
+    {
+        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .newGraphDatabase();
+
+        Map<String, Object> params = new HashMap<>();
+        params.put( "ids", Arrays.asList( 0, 1, 2 ) );
+        String query = "MATCH (n) WHERE id(n) in {ids} RETURN n.name";
+        executeQueryAndShutdown( database, query, params );
+
+        List<String> logLines = readAllLines( logFilename );
+        assertEquals( 1, logLines.size() );
+        assertThat( logLines.get( 0 ),
+                Matchers.endsWith( String.format(
+                        " ms: %s - %s - {ids: [0, 1, 2]}",
+                        QueryEngineProvider.embeddedSession(), query) ) );
     }
 
     @Test
@@ -136,7 +189,13 @@ public class QueryLoggerIT
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
     {
-        database.execute( QUERY );
+       executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );
+    }
+
+    private void executeQueryAndShutdown( GraphDatabaseService database, String query, Map<String, Object> params )
+    {
+        Result execute = database.execute( query, params );
+        execute.close();
         database.shutdown();
     }
 

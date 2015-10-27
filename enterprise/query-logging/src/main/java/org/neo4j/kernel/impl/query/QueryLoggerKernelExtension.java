@@ -22,10 +22,13 @@ package org.neo4j.kernel.impl.query;
 import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -138,6 +141,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
         private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
+        @SuppressWarnings( "unchecked" )
+        private static final MetadataKey<Map<String, Object>> PARAMS = new MetadataKey<>( (Class<Map<String, Object>>) (Class<?>) Map.class , "parameters" );
 
         private final Clock clock;
         private final Log log;
@@ -151,11 +156,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         }
 
         @Override
-        public void startQueryExecution( QuerySession session, String query )
+        public void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters)
         {
             long startTime = clock.currentTimeMillis();
             Object oldTime = session.put( START_TIME, startTime );
             Object oldQuery = session.put( QUERY_STRING, query );
+            session.put(PARAMS, parameters);
             if ( oldTime != null || oldQuery != null )
             {
                 log.error( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
@@ -168,11 +174,12 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         {
             String query = session.remove( QUERY_STRING );
             Long startTime = session.remove( START_TIME );
+            Map<String,Object> params = session.remove( PARAMS );
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
-                log.error( String.format( "%d ms: %s - %s", time, session.toString(),
-                        query == null ? "<unknown query>" : query ), failure );
+                log.error( String.format( "%d ms: %s - %s - %s", time, session.toString(),
+                        query == null ? "<unknown query>" : query , mapToString( params )), failure );
             }
         }
 
@@ -184,12 +191,43 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
+                Map<String,Object> params = session.remove( PARAMS );
                 if ( time >= thresholdMillis )
                 {
-                    log.info( "%d ms: %s - %s", time, session.toString(),
-                            query == null ? "<unknown query>" : query );
+                    log.info( "%d ms: %s - %s - %s", time, session.toString(),
+                            query == null ? "<unknown query>" : query, mapToString( params ) );
                 }
             }
+        }
+
+        @SuppressWarnings( "unchecked" )
+        private String mapToString( Map<String,Object> params )
+        {
+            if ( params == null )
+            {
+                return "{}";
+            }
+
+            StringBuilder builder = new StringBuilder( "{" );
+            String sep = "";
+            for ( Entry<String,Object> entry : params.entrySet() )
+            {
+                builder.append( sep ).append( entry.getKey() ).append( ": " );
+
+                Object value = entry.getValue();
+                if ( value instanceof Map<?,?> )
+                {
+                    builder.append( mapToString( (Map<String,Object>) value ) );
+                }
+                else
+                {
+                    builder.append( Strings.prettyPrint( value ) );
+                }
+                sep = ", ";
+            }
+            builder.append( "}" );
+
+            return builder.toString();
         }
     }
 }
