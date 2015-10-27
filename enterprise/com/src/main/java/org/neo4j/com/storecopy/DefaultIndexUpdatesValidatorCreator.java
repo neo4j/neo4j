@@ -38,9 +38,8 @@ class DefaultIndexUpdatesValidatorCreator implements
     public IndexUpdatesValidator apply( DependencyResolver resolver )
     {
         NeoStore neoStore = resolver.resolveDependency( NeoStoreProvider.class ).evaluate();
-        KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
         IndexingService indexing = resolver.resolveDependency( IndexingService.class );
         PropertyLoader propertyLoader = new PropertyLoader( neoStore );
-        return new OnlineIndexUpdatesValidator( neoStore, kernelHealth, propertyLoader, indexing, BATCHED );
+        return new OnlineIndexUpdatesValidator( neoStore, propertyLoader, indexing, BATCHED );
     }
 }

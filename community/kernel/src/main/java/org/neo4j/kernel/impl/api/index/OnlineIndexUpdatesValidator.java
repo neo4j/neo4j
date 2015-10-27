@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
  * {@link org.neo4j.kernel.impl.transaction.command.Command}s in transaction state.
  * It is done by inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands and asking
  * {@link org.neo4j.kernel.impl.api.index.IndexingService} to check those via
- * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable,IndexUpdateMode)}.
+ * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable, IndexUpdateMode)}.
  */
 public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
 {
@@ -43,13 +42,11 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
     private final IndexingService indexing;
-    private final KernelHealth kernelHealth;
     private final IndexUpdateMode updateMode;
 
-    public OnlineIndexUpdatesValidator( NeoStore neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
+    public OnlineIndexUpdatesValidator( NeoStore neoStore, PropertyLoader propertyLoader,
             IndexingService indexing, IndexUpdateMode updateMode )
     {
-        this.kernelHealth = kernelHealth;
         this.updateMode = updateMode;
         this.nodeStore = neoStore.getNodeStore();
         this.propertyStore = neoStore.getPropertyStore();
@@ -61,15 +58,7 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     public ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException
     {
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
-        try
-        {
-            transaction.accept( extractor );
-        }
-        catch ( IOException cause )
-        {
-            kernelHealth.panic( cause );
-            throw cause;
-        }
+        transaction.accept( extractor );
 
         if ( !extractor.containsAnyNodeOrPropertyUpdate() )
         {
