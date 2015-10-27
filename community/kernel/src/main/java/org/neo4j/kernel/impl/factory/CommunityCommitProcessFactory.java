@@ -17,16 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 
-public interface CommitProcessFactory
+public class CommunityCommitProcessFactory implements CommitProcessFactory
 {
-    TransactionCommitProcess create( TransactionAppender appender, TransactionRepresentationStoreApplier storeApplier,
-            NeoStoreInjectedTransactionValidator txValidator, IndexUpdatesValidator indexUpdatesValidator,
-            Config config );
+    @Override
+    public TransactionCommitProcess create( TransactionAppender appender,
+            TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator txValidator,
+            IndexUpdatesValidator indexUpdatesValidator, Config config )
+    {
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTransactionCommitProcess();
+        }
+        return new TransactionRepresentationCommitProcess( appender, storeApplier, indexUpdatesValidator );
+    }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.client;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -26,8 +28,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -41,6 +41,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
@@ -53,6 +54,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
@@ -80,27 +82,17 @@ public class ClusterClientModule
     public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",
             Settings.DURATION, "0s" );
 
-    public final LifeSupport life;
     public final ClusterClient clusterClient;
-    public final ProtocolServer server;
-    public final InMemoryAcceptorInstanceStore acceptorInstanceStore;
-    public final MessageTimeoutStrategy timeoutStrategy;
-    public final NetworkReceiver receiver;
+    private final ProtocolServer server;
 
-    public ClusterClientModule( LifeSupport parentLife, Dependencies dependencies, final Monitors monitors, final
-    Config config, LogService logService, ElectionCredentialsProvider electionCredentialsProvider )
+    public ClusterClientModule( LifeSupport life, Dependencies dependencies, final Monitors monitors,
+            final Config config, LogService logService, ElectionCredentialsProvider electionCredentialsProvider )
     {
-        this.life = new LifeSupport();
-        if (parentLife != null)
-        {
-            parentLife.add( this.life );
-        }
-
         final LogProvider internalLogProvider = logService.getInternalLogProvider();
 
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( internalLogProvider ) );
 
-        timeoutStrategy = new MessageTimeoutStrategy(
+        TimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
                 new FixedTimeoutStrategy( config.get( ClusterSettings.default_timeout ) ) )
                 .timeout( HeartbeatMessage.sendHeartbeat, config.get( ClusterSettings.heartbeat_interval ) )
                 .timeout( HeartbeatMessage.timed_out, config.get( ClusterSettings.heartbeat_timeout ) )
@@ -116,7 +108,7 @@ public class ClusterClientModule
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config.get( ClusterSettings.cluster_name ),
                 internalLogProvider ), logService, monitors.newMonitor( StateMachines.Monitor.class ));
 
-        receiver = dependencies.satisfyDependency( new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+        NetworkReceiver receiver = dependencies.satisfyDependency( new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
                 new NetworkReceiver.Configuration()
         {
             @Override
@@ -199,21 +191,21 @@ public class ClusterClientModule
 
 
 
-        acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
+        AcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
         server = protocolServerFactory.newProtocolServer( config.get( ClusterSettings.server_id ), timeoutStrategy,
                 receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
                 objectOutputStreamFactory );
 
-        this.life.add( sender );
-        this.life.add( stateMachineExecutor );
-        this.life.add( receiver );
+        life.add( sender );
+        life.add( stateMachineExecutor );
+        life.add( receiver );
 
         // Timeout timer - triggers every 10 ms
-        this.life.add( new TimeoutTrigger(server, monitors) );
+        life.add( new TimeoutTrigger(server, monitors) );
 
-        this.life.add( new ClusterJoin( new ClusterJoin.Configuration()
+        life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {
             @Override
             public List<HostnamePort> getInitialHosts()
@@ -240,9 +232,7 @@ public class ClusterClientModule
             }
         }, server, logService ) );
 
-
-
-        clusterClient =  dependencies.satisfyDependency(new ClusterClient( this.life, server ));
+        clusterClient =  dependencies.satisfyDependency(new ClusterClient( life, server ));
     }
 
     private static class TimeoutTrigger implements Lifecycle

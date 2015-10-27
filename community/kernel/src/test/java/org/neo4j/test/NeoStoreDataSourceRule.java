@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -92,7 +92,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
-                CommunityEditionModule.createCommitProcessFactory(), mock( PageCache.class ),
+                new CommunityCommitProcessFactory(), mock( PageCache.class ),
                 mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
         return dataSource;

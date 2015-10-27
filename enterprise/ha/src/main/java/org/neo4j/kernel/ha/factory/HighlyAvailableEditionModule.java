@@ -60,14 +60,12 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
-import org.neo4j.kernel.ha.CommitProcessSwitcher;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighAvailabilityDiagnostics;
@@ -116,14 +114,9 @@ import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -144,10 +137,8 @@ import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -174,6 +165,14 @@ public class HighlyAvailableEditionModule
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
         final LifeSupport life = platformModule.life;
+
+        // All mode switchers should start up before any clustering communication starts up because they all are
+        // listeners to mode switches and can't miss any of those. That is why we add all ModeSwitchers to separate
+        // lifecycle which is added to main lifecycle before paxos and cluster lifecycles.
+        final LifeSupport modeSwitchersLife = new LifeSupport();
+        final LifeSupport paxosLife = new LifeSupport();
+        final LifeSupport clusteringLife = new LifeSupport();
+
         final FileSystemAbstraction fs = platformModule.fileSystem;
         final File storeDir = platformModule.storeDir;
         final Config config = platformModule.config;
@@ -246,7 +245,8 @@ public class HighlyAvailableEditionModule
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        ClusterClientModule clusterClientModule = new ClusterClientModule(life, dependencies, monitors, config, logging, electionCredentialsProvider );
+        ClusterClientModule clusterClientModule = new ClusterClientModule( clusteringLife, dependencies, monitors,
+                config, logging, electionCredentialsProvider );
         final ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
@@ -329,8 +329,6 @@ public class HighlyAvailableEditionModule
         platformModule.availabilityGuard.addListener( highAvailabilityLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityLogger );
         clusterClient.addClusterListener( highAvailabilityLogger );
-
-        LifeSupport paxosLife = new LifeSupport();
 
         paxosLife.add( memberStateMachine );
         paxosLife.add( (Lifecycle)clusterEvents );
@@ -489,41 +487,40 @@ public class HighlyAvailableEditionModule
          * We always need the mode switcher and we need it to restart on switchover.
          */
         paxosLife.add( highAvailabilityModeSwitcher );
-        paxosLife.add(
+        modeSwitchersLife.add(
                 new UpdatePullerModeSwitcher( highAvailabilityModeSwitcher, updatePullerDelegate, pullerFactory ) );
 
 
         life.add( requestContextFactory );
-
         life.add( responseUnpacker );
-
-        life.add( paxosLife );
 
         platformModule.diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine,
                 clusterClient ) );
 
         // Create HA services
-        lockManager = dependencies.satisfyDependency(
-                createLockManager( highAvailabilityModeSwitcher, paxosLife, config, masterDelegateInvocationHandler,
-                        requestContextFactory, platformModule.availabilityGuard, logging ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( highAvailabilityModeSwitcher,
+                modeSwitchersLife, config, masterDelegateInvocationHandler, requestContextFactory,
+                platformModule.availabilityGuard, logging ) );
 
         propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
-                createPropertyKeyCreator( config, paxosLife, highAvailabilityModeSwitcher,
+                createPropertyKeyCreator( config, modeSwitchersLife, highAvailabilityModeSwitcher,
                         masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
         labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
-                paxosLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory,
+                modeSwitchersLife, highAvailabilityModeSwitcher, masterDelegateInvocationHandler, requestContextFactory,
                 kernelProvider ) ) );
         relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
-                createRelationshipTypeCreator( config, paxosLife, highAvailabilityModeSwitcher,
+                createRelationshipTypeCreator( config, modeSwitchersLife, highAvailabilityModeSwitcher,
                         masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
 
         dependencies.satisfyDependency(
                 createKernelData( config, platformModule.graphDatabaseFacade, members, fs, platformModule.pageCache,
                         storeDir, lastUpdateTime, dependencies.provideDependency( NeoStores.class ), life ) );
 
-        commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
-                clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
-                highAvailabilityModeSwitcher );
+        TransactionPropagator transactionPropagator = createTransactionPropagator( paxosLife, dependencies,
+                clusterClient, platformModule.jobScheduler, config, logging, monitors );
+
+        commitProcessFactory = new HighlyAvailableCommitProcessFactory( modeSwitchersLife, master,
+                transactionPropagator, requestContextFactory, highAvailabilityModeSwitcher );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -550,6 +547,11 @@ public class HighlyAvailableEditionModule
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 
         publishEditionInfo( config, dependencies.resolveDependency( UsageData.class ) );
+
+        // Ordering of lifecycles is important. ModeSwitches should go before any clustering communication is started.
+        life.add( modeSwitchersLife );
+        life.add( clusteringLife );
+        life.add( paxosLife );
     }
 
     private void publishEditionInfo( Config config, UsageData sysInfo )
@@ -574,16 +576,10 @@ public class HighlyAvailableEditionModule
         };
     }
 
-    protected CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
-                                                               Monitors monitors, Config config, final LifeSupport paxosLife,
-                                                               ClusterClient clusterClient, ClusterMembers members,
-                                                               JobScheduler jobScheduler, final Master master,
-                                                               final RequestContextFactory requestContextFactory,
-                                                               final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher )
+    private TransactionPropagator createTransactionPropagator( LifeSupport paxosLife, Dependencies dependencies,
+            ClusterClient clusterClient, JobScheduler jobScheduler, Config config, LogService logging,
+            Monitors monitors )
     {
-        final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
-                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
-
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency(
                 new DefaultSlaveFactory( logging.getInternalLogProvider(), monitors,
                         config.get( HaSettings.com_chunk_size ).intValue() ) );
@@ -591,36 +587,8 @@ public class HighlyAvailableEditionModule
         Slaves slaves = dependencies.satisfyDependency(
                 paxosLife.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
 
-        final TransactionPropagator pusher = paxosLife.add( new TransactionPropagator( TransactionPropagator.from( config ),
+        return paxosLife.add( new TransactionPropagator( TransactionPropagator.from( config ),
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) ) );
-
-        return new CommitProcessFactory()
-        {
-            @Override
-            public TransactionCommitProcess create( TransactionAppender appender,
-                                                    KernelHealth kernelHealth, NeoStores neoStores,
-                                                    TransactionRepresentationStoreApplier storeApplier,
-                                                    NeoStoreInjectedTransactionValidator txValidator,
-                                                    IndexUpdatesValidator indexUpdatesValidator,
-                                                    Config config )
-            {
-                if ( config.get( GraphDatabaseSettings.read_only ) )
-                {
-                    return new ReadOnlyTransactionCommitProcess();
-                }
-                else
-                {
-                    TransactionCommitProcess inner = new TransactionRepresentationCommitProcess( appender, storeApplier,
-                            indexUpdatesValidator );
-                    paxosLife.add( new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            highAvailabilityModeSwitcher, txValidator, inner ) );
-
-                    return (TransactionCommitProcess)
-                            newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
-                                    new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
-                }
-            }
-        };
     }
 
     protected IdGeneratorFactory createIdGeneratorFactory(
@@ -642,8 +610,8 @@ public class HighlyAvailableEditionModule
         return idGeneratorFactory;
     }
 
-    protected Locks createLockManager( final HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
-                                       final LifeSupport paxosLife, final Config config,
+    protected Locks createLockManager( HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
+                                       LifeSupport modeSwitchersLife, final Config config,
                                        DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                        RequestContextFactory requestContextFactory,
                                        AvailabilityGuard availabilityGuard, final LogService logging )
@@ -652,7 +620,7 @@ public class HighlyAvailableEditionModule
         final Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(),
                 new Class[]{Locks.class},
                 lockManagerDelegate );
-        paxosLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
+        modeSwitchersLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
                 masterDelegateInvocationHandler,
                 requestContextFactory, availabilityGuard, new Factory<Locks>()
         {
@@ -665,7 +633,7 @@ public class HighlyAvailableEditionModule
         return lockManager;
     }
 
-    protected TokenCreator createRelationshipTypeCreator( Config config, LifeSupport paxosLife,
+    protected TokenCreator createRelationshipTypeCreator( Config config, LifeSupport modeSwitchersLife,
                                                           HighAvailabilityModeSwitcher haModeSwitcher,
                                                           DelegateInvocationHandler<Master> masterInvocationHandler,
                                                           RequestContextFactory requestContextFactory,
@@ -682,14 +650,14 @@ public class HighlyAvailableEditionModule
             TokenCreator relationshipTypeCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
 
-            paxosLife.add( new RelationshipTypeCreatorModeSwitcher( haModeSwitcher, relationshipTypeCreatorDelegate,
+            modeSwitchersLife.add( new RelationshipTypeCreatorModeSwitcher( haModeSwitcher, relationshipTypeCreatorDelegate,
                     masterInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
 
             return relationshipTypeCreator;
         }
     }
 
-    protected TokenCreator createPropertyKeyCreator( Config config, LifeSupport paxosLife,
+    protected TokenCreator createPropertyKeyCreator( Config config, LifeSupport modeSwitchersLife,
                                                      HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                      DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                      RequestContextFactory requestContextFactory,
@@ -705,13 +673,13 @@ public class HighlyAvailableEditionModule
                     new DelegateInvocationHandler<>( TokenCreator.class );
             TokenCreator propertyTokenCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
-            paxosLife.add( new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
+            modeSwitchersLife.add( new PropertyKeyCreatorModeSwitcher( highAvailabilityModeSwitcher, propertyKeyCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return propertyTokenCreator;
         }
     }
 
-    protected TokenCreator createLabelIdCreator( Config config, LifeSupport paxosLife,
+    protected TokenCreator createLabelIdCreator( Config config, LifeSupport modeSwitchersLife,
                                                  HighAvailabilityModeSwitcher highAvailabilityModeSwitcher,
                                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                                  RequestContextFactory requestContextFactory,
@@ -727,7 +695,7 @@ public class HighlyAvailableEditionModule
                     new DelegateInvocationHandler<>( TokenCreator.class );
             TokenCreator labelIdCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
                     new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
-            paxosLife.add( new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
+            modeSwitchersLife.add( new LabelTokenCreatorModeSwitcher( highAvailabilityModeSwitcher, labelIdCreatorDelegate,
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory ) );
             return labelIdCreator;
         }
