@@ -87,28 +87,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.option( new ClusterMember( INSTANCE_ID ) ) );
-
-        SlaveFactory slaveFactory = mock( SlaveFactory.class );
-
-        HighAvailabilitySlaves slaves = new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory );
-        slaves.init();
-
-        // when
-        Iterable<Slave> memberSlaves = slaves.getSlaves();
-
-        // then
-        assertThat( count( memberSlaves ), equalTo( 0L ) );
-    }
-
-    @Test
-    public void shouldNotReturnAvailableButFailedSlaves()
-    {
-        // given
-        Cluster cluster = mock( Cluster.class );
-        ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
-                new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ).failed() ) );
+        when( clusterMembers.getAliveMembers() ).thenReturn( Iterables.option( new ClusterMember( INSTANCE_ID ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
 
@@ -128,7 +107,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
+        when( clusterMembers.getAliveMembers() ).thenReturn( Iterables.option(
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
@@ -151,7 +130,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        when( clusterMembers.getMembers() ).thenReturn( Iterables.option(
+        when( clusterMembers.getAliveMembers() ).thenReturn( Iterables.option(
                 new ClusterMember( INSTANCE_ID ).availableAs( SLAVE, HA_URI, StoreId.DEFAULT ) ) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
@@ -214,7 +193,7 @@ public class HighAvailabilitySlavesTest
         }
 
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
-        when( clusterMembers.getMembers() ).thenReturn( members );
+        when( clusterMembers.getAliveMembers() ).thenReturn( members );
 
         return clusterMembers;
     }

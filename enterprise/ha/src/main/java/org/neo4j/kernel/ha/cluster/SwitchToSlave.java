@@ -56,8 +56,6 @@ import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.UpdatePullerScheduler;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
-import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck;
-import org.neo4j.kernel.ha.cluster.member.ClusterMemberVersionCheck.Outcome;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -69,9 +67,7 @@ import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.store.ForeignStoreException;
-import org.neo4j.kernel.ha.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
-import org.neo4j.kernel.ha.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -88,9 +84,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -127,11 +121,8 @@ public class SwitchToSlave
         void catchupCompleted();
     }
 
-    private static final int VERSION_CHECK_TIMEOUT = 10;
-
     private final File storeDir;
     private final Supplier<NeoStoreDataSource> neoDataSourceSupplier;
-    private final ClusterMembers clusterMembers;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Function<Slave,SlaveServer> slaveServerFactory;
     private final UpdatePuller updatePuller;
@@ -155,7 +146,6 @@ public class SwitchToSlave
     public SwitchToSlave( File storeDir,
             LogService logService,
             FileSystemAbstraction fileSystemAbstraction,
-            ClusterMembers clusterMembers,
             Config config,
             DependencyResolver resolver,
             HaIdGeneratorFactory idGeneratorFactory,
@@ -177,7 +167,6 @@ public class SwitchToSlave
     {
         this( storeDir,
                 logService,
-                clusterMembers,
                 config,
                 resolver,
                 idGeneratorFactory,
@@ -200,7 +189,6 @@ public class SwitchToSlave
 
     SwitchToSlave( File storeDir,
             LogService logService,
-            ClusterMembers clusterMembers,
             Config config,
             DependencyResolver resolver,
             HaIdGeneratorFactory idGeneratorFactory,
@@ -219,7 +207,6 @@ public class SwitchToSlave
             Monitors monitors,
             TransactionCounters transactionCounters )
     {
-        this.clusterMembers = clusterMembers;
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.slaveServerFactory = slaveServerFactory;
@@ -303,7 +290,7 @@ public class SwitchToSlave
             StoreId myStoreId = neoDataSource.getStoreId();
 
             boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks(
-                    myId, transactionIdStoreSupplier.get(), masterUri, myStoreId, cancellationRequest );
+                    transactionIdStoreSupplier.get(), masterUri, myStoreId, cancellationRequest );
 
             if ( !consistencyChecksExecutedSuccessfully )
             {
@@ -368,8 +355,7 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( InstanceId myId,
-            TransactionIdStore txIdStore,
+    private boolean executeConsistencyChecks( TransactionIdStore txIdStore,
             URI masterUri,
             StoreId storeId,
             CancellationRequest cancellationRequest ) throws Throwable
@@ -380,31 +366,12 @@ public class SwitchToSlave
             MasterClient masterClient = newMasterClient( masterUri, storeId, consistencyCheckLife );
             consistencyCheckLife.start();
 
-            boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
-
-            if ( masterIsOld )
-            {
-                ClusterMemberVersionCheck checker = new ClusterMemberVersionCheck( clusterMembers, myId, SYSTEM_CLOCK );
-
-                Outcome outcome = checker.doVersionCheck( storeId, VERSION_CHECK_TIMEOUT, SECONDS );
-                msgLog.info( "Cluster members version  checked: " + outcome );
-
-                if ( outcome.hasUnavailable() )
-                {
-                    throw new UnavailableMembersException( outcome.getUnavailable() );
-                }
-                if ( outcome.hasMismatched() )
-                {
-                    throw new InconsistentlyUpgradedClusterException( storeId, outcome.getMismatched() );
-                }
-            }
-
             if ( cancellationRequest.cancellationRequested() )
             {
                 return false;
             }
 
-            checkDataConsistency( masterClient, txIdStore, storeId, masterUri, masterIsOld );
+            checkDataConsistency( masterClient, txIdStore, storeId, masterUri );
         }
         finally
         {
@@ -413,13 +380,13 @@ public class SwitchToSlave
         return true;
     }
 
-    void checkDataConsistency( MasterClient masterClient, TransactionIdStore txIdStore, StoreId storeId, URI masterUri,
-            boolean masterIsOld ) throws Throwable
+    void checkDataConsistency( MasterClient masterClient, TransactionIdStore txIdStore, StoreId storeId, URI masterUri )
+        throws Throwable
     {
         try
         {
             userLog.info( "Checking store consistency with master" );
-            checkMyStoreIdAndMastersStoreId( storeId, masterIsOld, masterUri );
+            checkMyStoreIdAndMastersStoreId( storeId, masterUri );
             checkDataConsistencyWithMaster( masterUri, masterClient, storeId, txIdStore );
             userLog.info( "Store is consistent" );
         }
@@ -455,31 +422,28 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, boolean masterIsOld, URI masterUri )
+    private void checkMyStoreIdAndMastersStoreId( StoreId myStoreId, URI masterUri )
     {
-        if ( !masterIsOld )
+        ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
+        InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
+        Iterable<ClusterMember> members = clusterMembers.getMembers();
+        ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
+        if ( master == null )
         {
-            ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
-            InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
-            Iterable<ClusterMember> members = clusterMembers.getMembers();
-            ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
-            if ( master == null )
-            {
-                throw new IllegalStateException( "Cannot find the master among " + members +
-                                                 " with master serverId=" + serverId + " and uri="+masterUri  );
-            }
+            throw new IllegalStateException( "Cannot find the master among " + members +
+                                             " with master serverId=" + serverId + " and uri=" + masterUri );
+        }
 
-            StoreId masterStoreId = master.getStoreId();
+        StoreId masterStoreId = master.getStoreId();
 
-            if ( !myStoreId.equals( masterStoreId ) )
-            {
-                throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
-            }
-            else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
-            {
-                throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
-                                                 "master's store " + masterStoreId );
-            }
+        if ( !myStoreId.equals( masterStoreId ) )
+        {
+            throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
+        }
+        else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
+        {
+            throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
+                                             "master's store " + masterStoreId );
         }
     }
 

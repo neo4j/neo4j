@@ -89,9 +89,8 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
         // Return all cluster members which are currently SLAVEs,
         // are alive, and convert to Slave with a cache if possible
         return map( withDefaults( slaveForMember(), Functions.map( slaves ) ),
-                filter( ClusterMembers.ALIVE,
                         filter( inRole( HighAvailabilityModeSwitcher.SLAVE ),
-                                clusterMembers.getMembers() ) ) );
+                                clusterMembers.getAliveMembers() ) );
     }
 
     @Override
