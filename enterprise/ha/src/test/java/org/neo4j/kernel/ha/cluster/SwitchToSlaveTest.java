@@ -79,6 +79,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -94,9 +95,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveTest
@@ -106,6 +104,7 @@ public class SwitchToSlaveTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+    private final StoreId storeId = new StoreId( 42, 42, 42, 42 );
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -165,7 +164,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1"), false );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, new URI("cluster://localhost?serverId=1") );
             fail( "Should have thrown " + MismatchingStoreIdException.class.getSimpleName() + " exception" );
         }
         catch ( MismatchingStoreIdException e )
@@ -182,6 +181,7 @@ public class SwitchToSlaveTest
     {
         // Given
         SwitchToSlave switchToSlave = newSwitchToSlaveSpy();
+        URI masterUri = new URI( "cluster://localhost?serverId=1" );
 
         MasterClient masterClient = mock( MasterClient.class );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenThrow( new BranchedDataException( "" ) );
@@ -193,7 +193,7 @@ public class SwitchToSlaveTest
         // When
         try
         {
-            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, null, null, true );
+            switchToSlave.checkDataConsistency( masterClient, transactionIdStore, storeId, masterUri );
             fail( "Should have thrown " + BranchedDataException.class.getSimpleName() + " exception" );
         }
         catch ( BranchedDataException e )
@@ -278,7 +278,7 @@ public class SwitchToSlaveTest
     {
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         ClusterMember master = mock( ClusterMember.class );
-        when( master.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
+        when( master.getStoreId() ).thenReturn( storeId );
         when( master.getHARole() ).thenReturn( HighAvailabilityModeSwitcher.MASTER );
         when( master.hasRole( eq( HighAvailabilityModeSwitcher.MASTER ) ) ).thenReturn( true );
         when( master.getInstanceId() ).thenReturn( new InstanceId( 1 ) );
@@ -295,7 +295,7 @@ public class SwitchToSlaveTest
                 );
 
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.getStoreId() ).thenReturn( new StoreId( 42, 42, 42, 42 ) );
+        when( dataSource.getStoreId() ).thenReturn( storeId );
 
         TransactionCounters transactionCounters = mock( TransactionCounters.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
@@ -314,7 +314,6 @@ public class SwitchToSlaveTest
                 any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
-                clusterMembers,
                 configMock(), resolver,
                 mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),

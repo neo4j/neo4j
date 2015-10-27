@@ -95,6 +95,7 @@ import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
@@ -315,13 +316,16 @@ public class HighlyAvailableEditionModule
         clusterEventsDelegateInvocationHandler.setDelegate( localClusterEvents );
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
-        members = dependencies.satisfyDependency( new ClusterMembers( clusterClient, clusterClient,
-                clusterEvents,
-                config.get( ClusterSettings.server_id ) ) );
-        memberStateMachine = new HighAvailabilityMemberStateMachine(
-                memberContext, platformModule.availabilityGuard, members,
-                clusterEvents,
-                clusterClient, logging.getInternalLogProvider() );
+        ObservedClusterMembers observedMembers = new ObservedClusterMembers( logging.getInternalLogProvider(),
+                clusterClient, clusterClient, clusterEvents, config.get( ClusterSettings.server_id ) );
+
+        HighAvailabilityMemberStateMachine stateMachine = new HighAvailabilityMemberStateMachine( memberContext,
+                platformModule.availabilityGuard, observedMembers, clusterEvents, clusterClient,
+                logging.getInternalLogProvider() );
+
+        members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, stateMachine ) );
+
+        memberStateMachine = paxosLife.add( stateMachine );
         electionProviderRef.set( memberStateMachine );
 
         HighAvailabilityLogger highAvailabilityLogger = new HighAvailabilityLogger( logging.getUserLogProvider(),
@@ -330,7 +334,6 @@ public class HighlyAvailableEditionModule
         clusterEvents.addClusterMemberListener( highAvailabilityLogger );
         clusterClient.addClusterListener( highAvailabilityLogger );
 
-        paxosLife.add( memberStateMachine );
         paxosLife.add( (Lifecycle)clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
@@ -384,7 +387,7 @@ public class HighlyAvailableEditionModule
 
 
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,
-                platformModule.fileSystem, members, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
                 masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory, pullerFactory,
                 platformModule.kernelExtensions.listFactories(), masterClientResolver,
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),

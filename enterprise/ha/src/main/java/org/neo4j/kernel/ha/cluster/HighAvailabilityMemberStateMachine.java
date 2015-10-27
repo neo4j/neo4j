@@ -28,7 +28,7 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -51,20 +51,24 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
  */
 public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
-    public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "High Availability member state not ready" );
+    public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT =
+            availabilityRequirement( "High Availability member state not ready" );
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
     private Log log;
+
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
-    private final ClusterMembers members;
+    private final ObservedClusterMembers members;
     private final Election election;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
                                                AvailabilityGuard availabilityGuard,
-                                               ClusterMembers members, ClusterMemberEvents events, Election election,
+                                               ObservedClusterMembers members,
+                                               ClusterMemberEvents events,
+                                               Election election,
                                                LogProvider logProvider )
     {
         this.context = context;
@@ -345,7 +349,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
         private long getAliveCount()
         {
-            return Iterables.count( Iterables.filter( ClusterMembers.ALIVE, members.getMembers() ) );
+            return Iterables.count( members.getAliveMembers() );
         }
 
         private long getTotalCount()

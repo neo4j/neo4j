@@ -74,6 +74,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -434,7 +435,7 @@ public class ClusterManager
                     }
                 }
 
-                for ( ClusterMembers arbiter : cluster.getArbiters() )
+                for ( ObservedClusterMembers arbiter : cluster.getArbiters() )
                 {
                     if ( count( arbiter.getMembers() ) < clusterSize )
                     {
@@ -788,7 +789,7 @@ public class ClusterManager
         private final Clusters.Cluster spec;
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
-        private final List<ClusterMembers> arbiters = new ArrayList<>();
+        private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -841,7 +842,7 @@ public class ClusterManager
             }, members.values() );
         }
 
-        public Iterable<ClusterMembers> getArbiters()
+        public Iterable<ObservedClusterMembers> getArbiters()
         {
             return arbiters;
         }
@@ -1014,11 +1015,13 @@ public class ClusterManager
                         GraphDatabaseSettings.class );
 
                 LifeSupport clusterClientLife = new LifeSupport();
+                NullLogService logService = NullLogService.getInstance();
                 ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,
-                        new Dependencies(), new Monitors(), config1, NullLogService.getInstance(),
+                        new Dependencies(), new Monitors(), config1, logService,
                         new NotElectableElectionCredentialsProvider() );
 
-                arbiters.add( new ClusterMembers( clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
+                arbiters.add( new ObservedClusterMembers(  logService.getInternalLogProvider(),
+                        clusterClientModule.clusterClient, clusterClientModule.clusterClient, new ClusterMemberEvents()
                 {
                     @Override
                     public void addClusterMemberListener( ClusterMemberListener listener )
