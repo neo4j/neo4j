@@ -72,7 +72,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def overlaps(qg: QueryGraph) =
     qg.patternNodes.nonEmpty &&
       nonEmpty &&
-      (nodeOverlap(qg) || relationshipOverlap(qg) || deleteOverlap(qg) || removeLabelOverlap(qg))
+      (nodeOverlap(qg) || relationshipOverlap(qg) ||
+        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg))
 
   private def nodeOverlap(qg: QueryGraph) = {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
@@ -89,7 +90,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
           otherLabelsRead(l)
         })
     }
-
   }
 
   def relationshipOverlap(qg: QueryGraph) = {

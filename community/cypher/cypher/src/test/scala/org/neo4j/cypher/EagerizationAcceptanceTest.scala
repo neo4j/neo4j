@@ -965,6 +965,42 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
+  test("setting label in tail should be eager if overlap") {
+    createNode()
+    createNode()
+    createLabeledNode("Foo")
+    createLabeledNode("Foo")
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Foo) SET n:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 2, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("setting label in tail should be eager if overlap within tail") {
+    createNode()
+    createNode()
+    createLabeledNode("Foo")
+    createLabeledNode("Foo")
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o) SET o:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 6, nodesCreated = 4)
+    assertNumberOfEagerness(query, 2)
+  }
+
+  test("setting label in tail should not be eager if no overlap") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo")
+    createLabeledNode("Bar")
+    createLabeledNode("Bar")
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Bar) SET n:Foo RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 2, nodesCreated = 4)
+    assertNumberOfEagerness(query, 0)
+  }
+
   test("matching property and setting label should not be eager") {
     createNode(Map("name" -> "thing"))
     val query = "MATCH (n {name : 'thing'}) SET n:Lol"
