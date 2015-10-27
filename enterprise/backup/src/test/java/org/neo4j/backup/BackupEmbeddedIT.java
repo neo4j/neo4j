@@ -40,6 +40,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -49,11 +50,12 @@ public class BackupEmbeddedIT
     @ClassRule
     public static TargetDirectory.TestDirectory testDirectory =
             TargetDirectory.testDirForTest( BackupEmbeddedIT.class );
-
-    public final File backupPath = testDirectory.directory( "backup-db" );
-
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
+
+    public final File backupPath = testDirectory.directory( "backup-db" );
     private String ip;
 
     @Before

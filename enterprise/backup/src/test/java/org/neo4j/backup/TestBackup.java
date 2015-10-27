@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
@@ -77,16 +78,17 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestBackup
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     private File serverPath;
     private File otherServerPath;
     private File backupPath;
     private List<ServerInterface> servers;
-
-    @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
-
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void before() throws Exception
