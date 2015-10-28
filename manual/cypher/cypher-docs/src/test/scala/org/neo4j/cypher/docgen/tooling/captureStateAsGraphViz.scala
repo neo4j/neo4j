@@ -24,7 +24,7 @@ import java.io.ByteArrayOutputStream
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphvizWriter}
 import org.neo4j.walk.Walker
 
 /**
@@ -33,11 +33,11 @@ import org.neo4j.walk.Walker
  */
 object captureStateAsGraphViz extends GraphIcing {
 
-  def apply(db: GraphDatabaseService, name: String, count: Int): GraphViz = GraphViz(emitGraphviz(s"$name-$count", "", db))
+  def apply(db: GraphDatabaseService, name: String, count: Int, options: String): GraphViz = GraphViz(emitGraphviz(s"$name-$count", options, db))
 
   private def emitGraphviz(testid: String, graphVizOptions: String, db: GraphDatabaseService): String = {
     val out = new ByteArrayOutputStream()
-    val writer = new GraphvizWriter(AsciiDocStyle.withAutomaticRelationshipTypeColors())
+    val writer = new GraphvizWriter(AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors())
 
     db.inTx {
       writer.emit(out, Walker.fullGraph(db))

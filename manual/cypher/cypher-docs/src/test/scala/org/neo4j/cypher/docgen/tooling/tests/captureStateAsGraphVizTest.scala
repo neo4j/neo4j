@@ -26,8 +26,17 @@ class captureStateAsGraphVizTest extends ExecutionEngineFunSuite {
   test("creates graphviz object representing the current db state") {
     createNode()
 
-    val result = captureStateAsGraphViz(graph, "apa", 0)
+    val result = captureStateAsGraphViz(graph, "apa", 0, "")
 
     result shouldBe a[GraphViz]
+  }
+
+  test("graphviz handles options correctly") {
+    createNode()
+
+    val result = captureStateAsGraphViz(graph, "apa", 0, "graph [layout=neato]")
+
+    result shouldBe a[GraphViz]
+    result.s should include("graph [layout=neato]")
   }
 }

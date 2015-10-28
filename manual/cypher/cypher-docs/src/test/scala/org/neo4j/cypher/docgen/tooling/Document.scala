@@ -174,14 +174,17 @@ case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: 
       s"$columnHeader\n$tableRows"
     }
 
-   s""".Result
-      |[role="queryresult",options="${header}footer",cols="$cols*<m"]
-      ||===
-      |$rowsOutput
-      |$cols+|$footer
-      ||===
-      |
-      |""".stripMargin
+    // Remove trailing white space, then add <space>+ at the end of all rows (except the last one)
+    val footerRows = footer.replaceAll("\\s+$", "").replaceAllLiterally("\n", " +\n")
+
+    s""".Result
+       |[role="queryresult",options="${header}footer",cols="$cols*<m"]
+       ||===
+       |$rowsOutput
+       |$cols+|$footerRows
+       ||===
+       |
+       |""".stripMargin
   }
 }
 
@@ -189,8 +192,8 @@ case class Query(queryText: String, assertions: QueryAssertions, myInitQueries: 
 
   override def asciiDoc(level: Int) = {
     val inner = Prettifier(queryText)
-    s"""[source,cypher]
-       |.Query
+    s""".Query
+       |[source,cypher]
        |----
        |$inner
        |----
@@ -200,6 +203,32 @@ case class Query(queryText: String, assertions: QueryAssertions, myInitQueries: 
 
   override def runnableContent(initQueries: Seq[String]) =
     content.runnableContent(initQueries ++ myInitQueries :+ queryText)
+}
+
+case class ConsoleData(globalInitQueries: Seq[String], localInitQueries: Seq[String], query: String) extends Content with NoQueries {
+  override def asciiDoc(level: Int): String = {
+    val globalInitQueryRows = globalInitQueries.mkString(NewLine)
+    val localInitQueryRows = localInitQueries.mkString(NewLine)
+    val initQueries =
+      if (globalInitQueryRows.isEmpty() && localInitQueryRows.isEmpty())
+          "none"
+        else
+          globalInitQueryRows + "\n" + localInitQueryRows
+    s"""ifndef::nonhtmloutput[]
+       |[subs="none"]
+       |++++
+       |<formalpara role="cypherconsole">
+       |<title>Try this query live</title>
+       |<para><database><![CDATA[
+       |$initQueries
+       |]]></database><command><![CDATA[
+       |$query
+       |]]></command></para></formalpara>
+       |++++
+       |endif::nonhtmloutput[]
+       |
+       |""".stripMargin
+  }
 }
 
 case class GraphViz(s: String) extends Content with NoQueries {
@@ -233,6 +262,7 @@ trait QueryResultPlaceHolder {
   override def runnableContent(initQueries: Seq[String]) = Seq(ContentWithInit(initQueries, this))
 }
 
+// NOTE: These must _not_ be case classes, otherwise they will not be compared by identity
 class TablePlaceHolder(val assertions: QueryAssertions) extends Content with QueryResultPlaceHolder
-class GraphVizPlaceHolder() extends Content with QueryResultPlaceHolder
+class GraphVizPlaceHolder(val options: String) extends Content with QueryResultPlaceHolder
 class ErrorPlaceHolder() extends Content with QueryResultPlaceHolder
