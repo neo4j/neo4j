@@ -48,7 +48,8 @@ public class BadCollector implements Collector
 
     public static final int BAD_RELATIONSHIPS = 0x1;
     public static final int DUPLICATE_NODES = 0x2;
-    public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES;
+    public static final int EXTRA_COLUMNS = 0x4;
+    public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
 
     private final PrintStream out;
     private final int tolerance;
@@ -112,6 +113,28 @@ public class BadCollector implements Collector
             leftOverDuplicateNodeIds = Arrays.copyOf( leftOverDuplicateNodeIds, leftOverDuplicateNodeIds.length*2 );
         }
         leftOverDuplicateNodeIds[leftOverDuplicateNodeIdsCursor++] = actualId;
+    }
+
+    @Override
+    public void collectExtraColumns( final String source, final long row, final String value )
+    {
+        checkTolerance( EXTRA_COLUMNS, new ProblemReporter()
+        {
+            private final String message = format( "Extra column not present in header on line %d in %s with value %s",
+                    row, source, value );
+
+            @Override
+            public String message()
+            {
+                return message;
+            }
+
+            @Override
+            public InputException exception()
+            {
+                return new InputException( message );
+            }
+        } );
     }
 
     @Override

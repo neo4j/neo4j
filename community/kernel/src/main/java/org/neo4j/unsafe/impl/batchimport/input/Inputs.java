@@ -44,7 +44,7 @@ public class Inputs
     public static Input input(
             final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
             final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds,
-            final int badTolerance )
+            final Collector badCollector )
     {
         return new Input()
         {
@@ -79,20 +79,20 @@ public class Inputs
             }
 
             @Override
-            public Collector badCollector( OutputStream out )
+            public Collector badCollector()
             {
-                return Collectors.badCollector( out, badTolerance );
+                return badCollector;
             }
         };
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,
-            Configuration configuration )
+            Configuration configuration, Collector badCollector )
     {
         return new CsvInput(
                 nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
                 relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader(), idType, configuration,
-                Collectors.badCollector( 0 ) );
+                badCollector );
     }
 }

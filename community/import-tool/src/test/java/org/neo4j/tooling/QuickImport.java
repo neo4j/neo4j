@@ -40,6 +40,7 @@ import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneNodeHeader;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -78,7 +79,8 @@ public class QuickImport
 
         Input input = new CsvDataGeneratorInput(
                 nodeHeader, relationshipHeader,
-                COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount );
+                COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount,
+                silentBadCollector( 0 ));
         BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, new SystemOutLogging(), defaultVisible() );
         importer.doImport( input );
     }

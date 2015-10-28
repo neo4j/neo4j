@@ -193,7 +193,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldPrintWarningsIfHeaderHasLessColumnsThanData() throws Exception
+    public void shouldFailIfHeaderHasLessColumnsThanData() throws Exception
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
@@ -201,8 +201,42 @@ public class ImportToolTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        String output = executeImportAndCatchOutput(
+        try
+        {
+            executeImportAndCatchOutput(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--delimiter", "TAB",
+                    "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            nodeData( false, config, nodeIds, alwaysTrue(), Charset.defaultCharset(), extraColumns )
+                                    .getAbsolutePath(),
+                    "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+
+            fail( "Should have thrown exception" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
+        }
+    }
+
+    @Test
+    public void shouldWarnIfHeaderHasLessColumnsThanDataWhenToldTo() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+        File bad = file( "bad.log" );
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        executeImportAndCatchOutput(
                 "--into", dbRule.getStoreDirAbsolutePath(),
+                "--bad", bad.getAbsolutePath(),
+                "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
+                "--ignore-extra-columns",
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
@@ -212,7 +246,8 @@ public class ImportToolTest
                         relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
-        assertTrue( "Should warn when columns are ignored:\n" + output, output.contains( "Warning: ignored columns" ) );
+        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        assertTrue( badContents.contains( "Extra column not present in header on line" ) );
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.UnexpectedEndOfInputException;
@@ -51,12 +52,12 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     private final Function<ENTITY,ENTITY> decorator;
     private final Deserialization<ENTITY> deserialization;
     private final Validator<ENTITY> validator;
-    private final ArrayList<Pair<Long,String>> ignoredRowsSample = new ArrayList<>();
     private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false );
+    private final Collector badCollector;
 
     InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
             Deserialization<ENTITY> deserialization, Function<ENTITY,ENTITY> decorator,
-            Validator<ENTITY> validator )
+            Validator<ENTITY> validator, Collector badCollector )
     {
         this.header = header;
         this.data = data;
@@ -64,6 +65,7 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
         this.deserialization = deserialization;
         this.decorator = decorator;
         this.validator = validator;
+        this.badCollector = badCollector;
     }
 
     public void initialize()
@@ -87,23 +89,15 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
 
             // Ignore additional values on this, but log it in case user doesn't realise that the header specifies
             // less columns than the data. Prints in close() so it only happens once per file.
-            int ignoredValues = 0;
-            StringBuilder restOfLine = new StringBuilder();
             while ( !mark.isEndOfLine() )
             {
                 data.seek( mark, delimiter );
                 data.extract( mark, stringExtractor );
-                restOfLine.append( String.valueOf( Character.toChars( delimiter ) ) ).append( stringExtractor.value() );
-                ignoredValues++;
+                badCollector.collectExtraColumns( data.sourceDescription(), data.lineNumber(), stringExtractor.value() );
             }
 
             entity = decorator.apply( entity );
             validator.validate( entity );
-
-            if ( ignoredValues > 0 && ignoredRowsSample.size() < 9 )
-            {
-                ignoredRowsSample.add( Pair.of( data.lineNumber(), restOfLine.toString() ) );
-            }
 
             return entity;
         }
@@ -191,18 +185,6 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     @Override
     public void close()
     {
-        if ( ignoredRowsSample.size() > 0 )
-        {
-            System.out.println( "\nWarning: ignored columns which were not present in header for" );
-            System.out.println( String.format( "    %s", data.sourceDescription() ) );
-
-            for ( Pair<Long,String> x : ignoredRowsSample )
-            {
-                System.out.println( String.format( "Row %d: %s", x.first(), x.other() ) );
-            }
-            System.out.println( "...\n" );
-        }
-
         try
         {
             data.close();

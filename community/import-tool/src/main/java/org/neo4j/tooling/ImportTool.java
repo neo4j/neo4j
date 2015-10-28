@@ -19,8 +19,10 @@
  */
 package org.neo4j.tooling;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.charset.Charset;
@@ -53,6 +55,7 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -176,7 +179,12 @@ public class ImportTool
                         + "nodes within the same group having the same id, the first encountered will be imported "
                         + "whereas consecutive such nodes will be skipped. "
                         + "Skipped nodes will be logged"
-                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + "." );
+                        + ", containing at most number of entities specified by " + BAD_TOLERANCE.key() + "." ),
+        IGNORE_EXTRA_COLUMNS( "ignore-extra-columns", Boolean.FALSE,
+                "<true/false>",
+                "Whether or not to ignore extra columns in the data not specified by the header. "
+                        + "Skipped columns will be logged, containing at most number of entities specified by "
+                        + BAD_TOLERANCE.key() + "." );
 
         private final String key;
         private final Object defaultValue;
@@ -293,12 +301,15 @@ public class ImportTool
         Input input = null;
         int badTolerance;
         Charset inputEncoding;
-        boolean skipBadRelationships, skipDuplicateNodes;
+        boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
 
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+
+            File badFile = new File( storeDir, BAD_FILE_NAME );
+            OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -313,15 +324,23 @@ public class ImportTool
                     (Boolean)Options.SKIP_BAD_RELATIONSHIPS.defaultValue(), true );
             skipDuplicateNodes = args.getBoolean( Options.SKIP_DUPLICATE_NODES.key(),
                     (Boolean)Options.SKIP_DUPLICATE_NODES.defaultValue(), true );
-            input = new CsvInput(
-                    nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
+            ignoreExtraColumns = args.getBoolean( Options.IGNORE_EXTRA_COLUMNS.key(),
+                    (Boolean)Options.IGNORE_EXTRA_COLUMNS.defaultValue(), true );
+
+            Collector badCollector = badCollector( badOutput, badTolerance, collect( skipBadRelationships,
+                    skipDuplicateNodes, ignoreExtraColumns ) );
+
+            input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ),
-                    badCollector( badTolerance, collect( skipBadRelationships, skipDuplicateNodes ) ) );
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
         }
         catch ( IllegalArgumentException e )
         {
             throw andPrintError( "Input error", e, false );
+        }
+        catch ( IOException e )
+        {
+            throw andPrintError( "File error", e, false );
         }
 
         LifeSupport life = new LifeSupport();
@@ -347,11 +366,16 @@ public class ImportTool
         }
         finally
         {
-            File badFile = new File( storeDir, BAD_FILE_NAME );
-            if ( badFile.exists() )
+            input.badCollector().close();
+
+            if ( input.badCollector().badEntries() > 0 )
             {
-                out.println( "There were bad entries which were skipped and logged into " +
-                        badFile.getAbsolutePath() );
+                File badFile = new File( storeDir, BAD_FILE_NAME );
+                if ( badFile.exists() )
+                {
+                    out.println(
+                            "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
+                }
             }
 
             life.shutdown();

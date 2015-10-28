@@ -23,6 +23,7 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
@@ -58,14 +59,14 @@ public class ExternalPropertiesDecorator implements Function<InputNode,InputNode
      * and which properties to extract. All other should be {@link Type#IGNORE ignored}. I think.
      */
     public ExternalPropertiesDecorator( DataFactory<InputNode> data, Header.Factory headerFactory,
-            Configuration config, IdType idType, UpdateBehaviour updateBehaviour )
+            Configuration config, IdType idType, UpdateBehaviour updateBehaviour, Collector badCollector )
     {
         this.updateBehaviour = updateBehaviour;
         CharSeeker dataStream = data.create( config ).stream();
         Header header = headerFactory.create( dataStream, config, idType );
         this.deserializer = new InputEntityDeserializer<>( header, dataStream, config.delimiter(),
                 new InputNodeDeserialization( dataStream, header, new Groups(), idType.idsAreExternal() ),
-                Functions.<InputNode>identity(), Validators.<InputNode>emptyValidator() );
+                Functions.<InputNode>identity(), Validators.<InputNode>emptyValidator(), badCollector );
     }
 
     @Override
