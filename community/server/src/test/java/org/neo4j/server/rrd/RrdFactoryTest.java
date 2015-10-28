@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -43,19 +44,20 @@ import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Double.NaN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.Double.NaN;
+
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class RrdFactoryTest
 {
     private Config config;
     private Database db;
-    private String storeDir;
 
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
@@ -65,7 +67,7 @@ public class RrdFactoryTest
     @Before
     public void setUp() throws IOException
     {
-        storeDir = directory.graphDbDir().getAbsolutePath();
+        String storeDir = directory.graphDbDir().getAbsolutePath();
         db = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
         config = new Config();
     }
@@ -74,25 +76,15 @@ public class RrdFactoryTest
     public void shouldTakeDirectoryLocationFromConfig() throws Exception
     {
         // Given
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, storeDir );
+        String rrdPath = directory.directory( "rrd" ).getAbsolutePath();
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdPath );
         TestableRrdFactory factory = createRrdFactory();
 
         // When
         factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
         // Then
-        assertThat( factory.directoryUsed, is( storeDir ) );
-    }
-
-    @Test
-    public void recreateDatabaseIfWrongStepsize() throws Exception
-    {
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, storeDir );
-        TestableRrdFactory factory = createRrdFactory();
-
-        factory.createRrdDbAndSampler( db, new NullJobScheduler() );
-
-        assertThat( factory.directoryUsed, is( storeDir ) );
+        assertThat( factory.directoryUsed, is( rrdPath ) );
     }
 
     @Test
@@ -101,17 +93,16 @@ public class RrdFactoryTest
         //Given
         File rrdDir = new File( directory.directory(), ServerInternalSettings.rrd_store.getDefaultValue() );
         assertTrue( rrdDir.mkdirs() );
-        String rrdFilePath = new File( rrdDir, "rrd-test" ).getAbsolutePath();
-        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdFilePath );
+        addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdDir.getAbsolutePath() );
 
         TestableRrdFactory factory = createRrdFactory();
-        createInvalidRrdFile( rrdFilePath );
+        createInvalidRrdFile( new File( rrdDir, "rrd" ).getAbsolutePath() );
 
         //When
         RrdDbWrapper rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
         //Then
-        assertSubdirectoryExists( "rrd-test-invalid", factory.directoryUsed );
+        assertSubdirectoryExists( "rrd-invalid", rrdDir );
 
         rrdDbAndSampler.close();
     }
@@ -147,7 +138,11 @@ public class RrdFactoryTest
     public void shouldDeleteOldRrdFileFromDbDirectoryIfItExists() throws Exception
     {
         // given
-        File oldRrdFile = new File( storeDir, "rrd" );
+        File rrdDir = new File( ServerInternalSettings.rrd_store.getDefaultValue() ).getAbsoluteFile();
+        FileUtils.deleteFile( rrdDir ); // migration thing, it was a file in previous versions
+        FileUtils.deleteRecursively( rrdDir );
+
+        File oldRrdFile = new File( directory.graphDbDir(), "rrd" );
         assertTrue( oldRrdFile.createNewFile() );
         TestableRrdFactory factory = createRrdFactory();
 
@@ -165,11 +160,9 @@ public class RrdFactoryTest
         config.applyChanges( params );
     }
 
-    private void assertSubdirectoryExists( final String directoryThatShouldExist, String directoryUsed )
+    private void assertSubdirectoryExists( final String directoryThatShouldExist, File directoryUsed )
     {
-        File parentFile = new File( directoryUsed ).getParentFile();
-        String[] list = parentFile.list();
-
+        String[] list = directoryUsed.list();
         for ( String aList : list )
         {
             if ( aList.startsWith( directoryThatShouldExist ) )
@@ -177,7 +170,6 @@ public class RrdFactoryTest
                 return;
             }
         }
-
         fail( String.format( "Didn't find [%s] in [%s]", directoryThatShouldExist, directoryUsed ) );
     }
 
@@ -196,10 +188,11 @@ public class RrdFactoryTest
         }
 
         @Override
-        protected RrdDbWrapper createRrdb( File inDirectory, Sampleable... sampleables )
+        protected RrdDbWrapper createRrdb( File rrdFile, boolean ephemeral, Sampleable... sampleables )
         {
-            directoryUsed = inDirectory.getAbsolutePath();
-            return super.createRrdb( inDirectory, sampleables );
+            assertFalse( ephemeral );
+            directoryUsed = rrdFile.getParent();
+            return super.createRrdb( rrdFile, ephemeral, sampleables );
         }
     }
 

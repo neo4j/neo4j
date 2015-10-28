@@ -38,7 +38,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void setupServer() throws IOException
     {
         logProvider = new AssertableLogProvider();
-        server = ServerHelper.createPersistentServer( folder.directory( name.getMethodName() ), logProvider );
+        server = ServerHelper.createNonPersistentServer( logProvider );
         ServerHelper.cleanTheDatabase( server );
     }
 

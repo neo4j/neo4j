@@ -32,8 +32,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -45,15 +48,16 @@ import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.server.web.ServerInternalSettings;
 
+import static org.rrd4j.ConsolFun.AVERAGE;
+import static org.rrd4j.ConsolFun.MAX;
+import static org.rrd4j.ConsolFun.MIN;
+
 import static java.lang.Double.NaN;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.rrd4j.ConsolFun.AVERAGE;
-import static org.rrd4j.ConsolFun.MAX;
-import static org.rrd4j.ConsolFun.MIN;
 
 public class RrdFactory
 {
@@ -89,16 +93,18 @@ public class RrdFactory
             oldRrdFile.delete();
         }
 
-        File rrdFile = config.get( ServerSettings.rrdb_location );
-        if ( rrdFile == null )
+        File rrdDir = config.get( ServerSettings.rrdb_location );
+        if ( rrdDir == null )
         {
             Map<String,String> params = config.getParams();
-            params.put( ServerSettings.rrdb_location.name(), getDefaultRrdFile( config ).getAbsolutePath() );
+            String rrdPath = config.get( ServerInternalSettings.rrd_store ).getAbsolutePath();
+            params.put( ServerSettings.rrdb_location.name(), rrdPath );
             config.applyChanges( params );
-            rrdFile = config.get( ServerSettings.rrdb_location );
+            rrdDir = config.get( ServerSettings.rrdb_location );
         }
 
-        final RrdDbWrapper rrdb = createRrdb( rrdFile, join( primitives, usage ) );
+        File rrdFile = getRrdFile( db.getGraph(), rrdDir );
+        final RrdDbWrapper rrdb = createRrdb( rrdFile, isEphemereal( db.getGraph() ), join( primitives, usage ) );
 
         scheduler.scheduleAtFixedRate(
                 new RrdJob( new RrdSamplerImpl( rrdb.get(), primitives ) ),
@@ -108,6 +114,62 @@ public class RrdFactory
         );
 
         return rrdb;
+    }
+
+    private File getRrdFile( GraphDatabaseAPI db, File rrdDir ) throws IOException
+    {
+        if ( isEphemereal( db ) )
+        {
+            rrdDir = tempRrdDir();
+        }
+
+        if ( !rrdDir.exists() && !rrdDir.mkdirs() )
+        {
+            throw new IOException( "Cannot create directory " + rrdDir );
+        }
+
+        return new File( rrdDir, "rrd" );
+    }
+
+    protected File tempRrdDir() throws IOException
+    {
+        final File tempFile = File.createTempFile( "neo4j", "rrd" );
+        if ( !tempFile.delete() )
+        {
+            throw new IOException( "cannot delete temp file: " + tempFile );
+        }
+
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    FileUtils.deleteRecursively( tempFile );
+                }
+                catch ( IOException e )
+                {
+                    // Ignore
+                }
+            }
+        } );
+
+        return tempFile;
+    }
+
+    private boolean isEphemereal( GraphDatabaseAPI db )
+    {
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        if ( config == null )
+        {
+            return false;
+        }
+        else
+        {
+            Boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+            return ephemeral != null && ephemeral;
+        }
     }
 
     private Sampleable[] join( Sampleable[]... sampleables )
@@ -120,18 +182,7 @@ public class RrdFactory
         return result.toArray( new Sampleable[result.size()] );
     }
 
-    private File getDefaultRrdFile( Config config ) throws IOException
-    {
-        String path = config.get( ServerInternalSettings.rrd_store ).getAbsolutePath();
-        File rrdStore = new File( path );
-        if ( !rrdStore.exists() && !rrdStore.mkdirs() )
-        {
-            throw new IOException( "Cannot create directory " + rrdStore );
-        }
-        return rrdStore;
-    }
-
-    protected RrdDbWrapper createRrdb( File rrdFile, Sampleable... sampleables )
+    protected RrdDbWrapper createRrdb( File rrdFile, boolean ephemeral, Sampleable... sampleables )
     {
         if ( rrdFile.exists() )
         {
@@ -139,7 +190,7 @@ public class RrdFactory
             {
                 if ( !validateStepSize( rrdFile ) )
                 {
-                    return recreateArchive( rrdFile, sampleables );
+                    return recreateArchive( rrdFile, ephemeral, sampleables );
                 }
 
                 Sampleable[] missing = checkDataSources( rrdFile.getAbsolutePath(), sampleables );
@@ -147,19 +198,19 @@ public class RrdFactory
                 {
                     updateDataSources( rrdFile.getAbsolutePath(), missing );
                 }
-                return new RrdDbWrapper.Plain( new RrdDb( rrdFile.getAbsolutePath() ) );
+                return wrap( new RrdDb( rrdFile.getAbsolutePath() ), ephemeral );
             }
             catch ( IOException e )
             {
                 // RRD file may have become corrupt
                 log.error( "Unable to open rrd store, attempting to recreate it", e );
-                return recreateArchive( rrdFile, sampleables );
+                return recreateArchive( rrdFile, ephemeral, sampleables );
             }
             catch ( IllegalArgumentException e )
             {
                 // RRD file may have become corrupt
                 log.error( "Unable to open rrd store, attempting to recreate it", e );
-                return recreateArchive( rrdFile, sampleables );
+                return recreateArchive( rrdFile, ephemeral, sampleables );
             }
         }
         else
@@ -169,7 +220,7 @@ public class RrdFactory
             addArchives( rrdDef );
             try
             {
-                return new RrdDbWrapper.Plain( new RrdDb( rrdDef ) );
+                return wrap( new RrdDb( rrdDef ), ephemeral );
             }
             catch ( IOException e )
             {
@@ -179,6 +230,35 @@ public class RrdFactory
         }
     }
 
+    private RrdDbWrapper wrap( RrdDb db, boolean ephemeral ) throws IOException
+    {
+        return ephemeral ? cleaningRrdDb( db ) : new RrdDbWrapper.Plain( db );
+    }
+
+    private RrdDbWrapper cleaningRrdDb( final RrdDb db )
+    {
+        return new RrdDbWrapper()
+        {
+            @Override
+            public RrdDb get()
+            {
+                return db;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                try
+                {
+                    db.close();
+                }
+                finally
+                {
+                    new File( db.getPath() ).delete();
+                }
+            }
+        };
+    }
 
     private boolean validateStepSize( File rrdFile ) throws IOException
     {
@@ -197,19 +277,21 @@ public class RrdFactory
         }
     }
 
-    private RrdDbWrapper recreateArchive( File rrdFile, Sampleable[] sampleables )
+    private RrdDbWrapper recreateArchive( File rrdFile, boolean ephemeral, Sampleable[] sampleables )
     {
-        File file = new File( rrdFile.getParentFile(),
-                rrdFile.getName() + "-invalid-" + System.currentTimeMillis() );
-
-        if ( rrdFile.renameTo( file ) )
+        File file = new File( rrdFile.getParentFile(), rrdFile.getName() + "-invalid-" + System.currentTimeMillis() );
+        try
         {
-            log.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
-            return createRrdb( rrdFile, sampleables );
+            FileUtils.moveFile( rrdFile, file );
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException( "RRD file ['" + rrdFile.getAbsolutePath()
+                    + "'] is invalid, but I do not have write permissions to recreate it.", e );
         }
 
-        throw new RuntimeException( "RRD file ['" + rrdFile.getAbsolutePath()
-                                    + "'] is invalid, but I do not have write permissions to recreate it." );
+        log.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
+        return createRrdb( rrdFile, ephemeral, sampleables );
     }
 
     private static Sampleable[] checkDataSources( String rrdPath, Sampleable[] sampleables ) throws IOException
