@@ -34,6 +34,7 @@ import org.neo4j.function.Function2;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
@@ -469,7 +470,10 @@ public class ImportTool
                     " read more about how to use id spaces in the manual:" +
                     manualReference( "import-tool-header-format.html#_id_spaces" ), e, stackTrace );
         }
-        else if ( e.getClass().equals( IllegalMultilineFieldException.class ) )
+        // This type of exception is wrapped since our input code throws InputException consistently,
+        // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
+        // therefore it's wrapped.
+        else if ( Exceptions.contains( e, IllegalMultilineFieldException.class ) )
         {
             printErrorMessage( "Detected field which spanned multiple lines for an import where " +
                     Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data include " +
@@ -499,6 +503,7 @@ public class ImportTool
     private static void printErrorMessage( String string, Exception e, boolean stackTrace )
     {
         System.err.println( string );
+        System.err.println( "Caused by:" + e.getMessage() );
         if ( stackTrace )
         {
             e.printStackTrace( System.err );
