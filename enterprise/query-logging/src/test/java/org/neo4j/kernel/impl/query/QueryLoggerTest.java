@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -39,6 +43,7 @@ public class QueryLoggerTest
     public static final String QUERY_1 = "MATCH (n) RETURN n";
     public static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
     public static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";
+    public static final String QUERY_4 = "MATCH (n) WHERE n.age IN {ages} RETURN n";
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
@@ -50,13 +55,13 @@ public class QueryLoggerTest
         QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1 );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 11, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).info( "%d ms: %s - %s", 11L, SESSION_1_NAME, QUERY_1 )
+                inLog( getClass() ).info( "%d ms: %s - %s - %s", 11L, SESSION_1_NAME, QUERY_1, "{}" )
         );
     }
 
@@ -70,7 +75,7 @@ public class QueryLoggerTest
         QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1 );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 9, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
 
@@ -90,11 +95,11 @@ public class QueryLoggerTest
         QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        queryLogger.startQueryExecution( session1, QUERY_1 );
+        queryLogger.startQueryExecution( session1, QUERY_1, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session2, QUERY_2 );
+        queryLogger.startQueryExecution( session2, QUERY_2, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
-        queryLogger.startQueryExecution( session3, QUERY_3 );
+        queryLogger.startQueryExecution( session3, QUERY_3, Collections.emptyMap() );
         clock.forward( 7, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session3 );
         clock.forward( 7, TimeUnit.MILLISECONDS );
@@ -104,8 +109,8 @@ public class QueryLoggerTest
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).info( "%d ms: %s - %s", 15L, SESSION_2_NAME, QUERY_2 ),
-                inLog( getClass() ).info( "%d ms: %s - %s", 23L, SESSION_1_NAME, QUERY_1 )
+                inLog( getClass() ).info( "%d ms: %s - %s - %s", 15L, SESSION_2_NAME, QUERY_2, "{}" ),
+                inLog( getClass() ).info( "%d ms: %s - %s - %s", 23L, SESSION_1_NAME, QUERY_1, "{}" )
         );
     }
 
@@ -120,13 +125,58 @@ public class QueryLoggerTest
         RuntimeException failure = new RuntimeException();
 
         // when
-        queryLogger.startQueryExecution( session, QUERY_1 );
+        queryLogger.startQueryExecution( session, QUERY_1, Collections.emptyMap() );
         clock.forward( 1, TimeUnit.MILLISECONDS );
         queryLogger.endFailure( session, failure );
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) RETURN n" ), sameInstance( failure ) )
+                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) RETURN n - {}" ), sameInstance( failure ) )
+        );
+    }
+
+    @Test
+    public void shouldLogQueryParameters() throws Exception
+    {
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
+        FakeClock clock = new FakeClock();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
+
+        // when
+        Map<String, Object> params = new HashMap<>(  );
+        params.put("ages", Arrays.asList(41, 42, 43));
+        queryLogger.startQueryExecution( session, QUERY_4, params );
+        clock.forward( 11, TimeUnit.MILLISECONDS );
+        queryLogger.endSuccess( session );
+
+        // then
+        logProvider.assertExactly(
+                inLog( getClass() ).info( "%d ms: %s - %s - %s", 11L, SESSION_1_NAME, QUERY_4, "{ages: [41, 42, 43]}" )
+        );
+    }
+
+    @Test
+    public void shouldLogQueryParametersOnFailure() throws Exception
+    {
+        // given
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
+        QuerySession session = session( SESSION_1_NAME );
+        FakeClock clock = new FakeClock();
+        QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
+        RuntimeException failure = new RuntimeException();
+
+        // when
+        Map<String, Object> params = new HashMap<>(  );
+        params.put("ages", Arrays.asList(41, 42, 43));
+        queryLogger.startQueryExecution( session, QUERY_4, params );
+        clock.forward( 1, TimeUnit.MILLISECONDS );
+        queryLogger.endFailure( session, failure );
+
+        // then
+        logProvider.assertExactly(
+                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ), sameInstance( failure ) )
         );
     }
 
