@@ -26,16 +26,11 @@ import java.lang.reflect.Proxy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
@@ -49,14 +44,12 @@ public class HighlyAvailableCommitProcessFactoryTest
     public void createReadOnlyCommitProcess()
     {
         HighlyAvailableCommitProcessFactory factory = new HighlyAvailableCommitProcessFactory(
-                new ComponentSwitcherContainer(), mock( Master.class ), mock( TransactionPropagator.class ),
-                mock( RequestContextFactory.class ) );
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( TransactionRepresentationStoreApplier.class ), mock( IntegrityValidator.class ),
-                mock( IndexUpdatesValidator.class ), config );
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ), config );
 
         assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
     }
@@ -65,12 +58,11 @@ public class HighlyAvailableCommitProcessFactoryTest
     public void createRegularCommitProcess()
     {
         HighlyAvailableCommitProcessFactory factory = new HighlyAvailableCommitProcessFactory(
-                new ComponentSwitcherContainer(), mock( Master.class ), mock( TransactionPropagator.class ),
-                mock( RequestContextFactory.class ) );
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( TransactionRepresentationStoreApplier.class ), mock( IntegrityValidator.class ),
-                mock( IndexUpdatesValidator.class ), new Config() );
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ),
+                new Config() );
 
         assertThat( commitProcess, not( instanceOf( ReadOnlyTransactionCommitProcess.class ) ) );
         assertThat( Proxy.getInvocationHandler( commitProcess ), instanceOf( DelegateInvocationHandler.class ) );

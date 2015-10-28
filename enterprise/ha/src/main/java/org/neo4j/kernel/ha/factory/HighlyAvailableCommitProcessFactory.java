@@ -22,59 +22,32 @@ package org.neo4j.kernel.ha.factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.cluster.modeswitch.CommitProcessSwitcher;
-import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
 
 class HighlyAvailableCommitProcessFactory implements CommitProcessFactory
 {
-    private final ComponentSwitcherContainer componentSwitcherContainer;
-    private final Master master;
-    private final TransactionPropagator transactionPropagator;
-    private final RequestContextFactory requestContextFactory;
+    private final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate;
 
-    private final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
-            new DelegateInvocationHandler<>( TransactionCommitProcess.class );
-
-    HighlyAvailableCommitProcessFactory( ComponentSwitcherContainer componentSwitcherContainer, Master master,
-            TransactionPropagator transactionPropagator, RequestContextFactory requestContextFactory )
+    HighlyAvailableCommitProcessFactory( DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate )
     {
-        this.componentSwitcherContainer = componentSwitcherContainer;
-        this.master = master;
-        this.transactionPropagator = transactionPropagator;
-        this.requestContextFactory = requestContextFactory;
+        this.commitProcessDelegate = commitProcessDelegate;
     }
 
     @Override
-    public TransactionCommitProcess create( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier, IntegrityValidator integrityValidator,
+    public TransactionCommitProcess create( TransactionAppender appender, TransactionRepresentationStoreApplier applier,
             IndexUpdatesValidator indexUpdatesValidator, Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
             return new ReadOnlyTransactionCommitProcess();
         }
-
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender, storeApplier,
-                indexUpdatesValidator );
-
-        CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, integrityValidator, commitProcess );
-
-        componentSwitcherContainer.add( commitProcessSwitcher );
-
         return (TransactionCommitProcess) newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
                 new Class[]{TransactionCommitProcess.class}, commitProcessDelegate );
     }

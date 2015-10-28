@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterTransactionCommitProcess;
 import org.neo4j.kernel.ha.SlaveTransactionCommitProcess;
@@ -26,31 +27,47 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 public class CommitProcessSwitcher extends AbstractComponentSwitcher<TransactionCommitProcess>
 {
-    private final MasterTransactionCommitProcess masterImpl;
-    private final SlaveTransactionCommitProcess slaveImpl;
+    private final TransactionPropagator txPropagator;
+    private final Master master;
+    private final RequestContextFactory requestContextFactory;
+    private final DependencyResolver dependencyResolver;
 
-    public CommitProcessSwitcher( TransactionPropagator pusher, Master master,
+    public CommitProcessSwitcher( TransactionPropagator txPropagator, Master master,
             DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
-            IntegrityValidator integrityValidator, TransactionCommitProcess innerCommitProcess )
+            DependencyResolver dependencyResolver )
     {
         super( delegate );
-        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, integrityValidator );
-        this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
+        this.txPropagator = txPropagator;
+        this.master = master;
+        this.requestContextFactory = requestContextFactory;
+        this.dependencyResolver = dependencyResolver;
     }
 
     @Override
     protected TransactionCommitProcess getSlaveImpl()
     {
-        return slaveImpl;
+        return new SlaveTransactionCommitProcess( master, requestContextFactory );
     }
 
     @Override
     protected TransactionCommitProcess getMasterImpl()
     {
-        return masterImpl;
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+                dependencyResolver.resolveDependency( TransactionAppender.class ),
+                dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+                dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
+
+        return new MasterTransactionCommitProcess(
+                commitProcess,
+                txPropagator,
+                dependencyResolver.resolveDependency( IntegrityValidator.class ) );
     }
 }

@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -46,8 +45,7 @@ public class CommunityCommitProcessFactoryTest
         Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( TransactionRepresentationStoreApplier.class ), mock( IntegrityValidator.class ),
-                mock( IndexUpdatesValidator.class ), config );
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ), config );
 
         assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
     }
@@ -58,8 +56,8 @@ public class CommunityCommitProcessFactoryTest
         CommunityCommitProcessFactory factory = new CommunityCommitProcessFactory();
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( TransactionRepresentationStoreApplier.class ), mock( IntegrityValidator.class ),
-                mock( IndexUpdatesValidator.class ), new Config() );
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ),
+                new Config() );
 
         assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
     }

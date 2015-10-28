@@ -34,16 +34,16 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
  */
 public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
-    private final TransactionPropagator pusher;
+    private final TransactionPropagator txPropagator;
     private final IntegrityValidator validator;
     private final TransactionCommitProcess inner;
 
     public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess,
-                                           TransactionPropagator pusher,
+                                           TransactionPropagator txPropagator,
                                            IntegrityValidator validator )
     {
         this.inner = commitProcess;
-        this.pusher = pusher;
+        this.txPropagator = txPropagator;
         this.validator = validator;
     }
 
@@ -55,7 +55,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
 
         long result = inner.commit( representation, locks, commitEvent, mode );
 
-        pusher.committed( result, representation.getAuthorId() );
+        txPropagator.committed( result, representation.getAuthorId() );
 
         return result;
     }

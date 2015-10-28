@@ -1042,7 +1042,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storeApplier,
-                integrityValidator, indexUpdatesValidator, config );
+                indexUpdatesValidator, config );
 
         /*
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned

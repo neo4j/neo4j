@@ -91,6 +91,7 @@ import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.CommitProcessSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.LabelTokenCreatorSwitcher;
@@ -578,8 +579,14 @@ public class HighlyAvailableEditionModule
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) );
         paxosLife.add( transactionPropagator );
 
-        return new HighlyAvailableCommitProcessFactory( componentSwitcherContainer, master, transactionPropagator,
-                requestContextFactory );
+        DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate = new DelegateInvocationHandler<>(
+                TransactionCommitProcess.class );
+
+        CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
+                master, commitProcessDelegate, requestContextFactory, dependencies );
+        componentSwitcherContainer.add( commitProcessSwitcher );
+
+        return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );
     }
 
     private IdGeneratorFactory createIdGeneratorFactory(
