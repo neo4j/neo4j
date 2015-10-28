@@ -89,7 +89,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
   private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], columns: Seq[String], sources: SourceSink = None): GeneratedQuery = {
     import LogicalPlanConverter._
     implicit val context = new CodeGenContext(semantics, ids)
-    val (_, instructions) = plan.asCodeGenPlan.produce(context)
+    val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id
     }.toMap, columns, sources)
