@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -70,9 +69,8 @@ class LegacyLogEntryReader
     public Pair<LogHeader, IOCursor<LogEntry>> openReadableChannel( File logFile ) throws IOException
     {
         final StoreChannel rawChannel = fs.open( logFile, "r" );
-        final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
 
-        final LogHeader header = readLogHeader( buffer, rawChannel, false );
+        final LogHeader header = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), rawChannel, false );
         LogEntryReader<ReadableVersionableLogChannel> reader = readerFactory.apply( header );
 
         // this ensures that the last committed txId field in the header is initialized properly
@@ -80,8 +78,7 @@ class LegacyLogEntryReader
 
         final PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( rawChannel, header.logVersion, header.logFormatVersion );
-        final ReadableVersionableLogChannel readableChannel =
-                new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+        final ReadableVersionableLogChannel readableChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
         final IOCursor<LogEntry> cursor = new LogEntrySortingCursor( reader, readableChannel );
 
         return Pair.of( new LogHeader( CURRENT_LOG_VERSION, header.logVersion, lastCommittedTxId ), cursor );

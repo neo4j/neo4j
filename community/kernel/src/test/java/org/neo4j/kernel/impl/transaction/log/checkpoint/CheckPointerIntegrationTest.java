@@ -52,7 +52,6 @@ import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 public class CheckPointerIntegrationTest
 {
@@ -221,8 +220,7 @@ public class CheckPointerIntegrationTest
                     break;
                 }
 
-                ReadableLogChannel recoveredDataChannel =
-                        new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+                ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {

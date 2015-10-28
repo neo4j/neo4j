@@ -32,12 +32,17 @@ import static java.lang.System.arraycopy;
  */
 public class ReadAheadLogChannel implements ReadableVersionableLogChannel
 {
-    public static final int DEFAULT_READ_AHEAD_SIZE = 1024*4;
+    private static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
 
     private final ByteBuffer aheadBuffer;
     private LogVersionedStoreChannel channel;
     private final LogVersionBridge bridge;
     private final int readAheadSize;
+
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge )
+    {
+        this(startingChannel, bridge, DEFAULT_READ_AHEAD_SIZE);
+    }
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, int readAheadSize )
     {

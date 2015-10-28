@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.RecoverableTransaction;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
 {
@@ -45,8 +44,7 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
     @Override
     public boolean visit( LogVersionedStoreChannel channel ) throws IOException
     {
-        final ReadableVersionableLogChannel recoveredDataChannel =
-                new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+        final ReadableVersionableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
         try ( final PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
                       new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )

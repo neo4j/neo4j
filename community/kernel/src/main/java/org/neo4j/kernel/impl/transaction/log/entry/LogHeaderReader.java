@@ -46,7 +46,7 @@ public class LogHeaderReader
     {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
-            return readLogHeader( ByteBuffer.allocateDirect( 100 * 1000 ), channel, true );
+            return readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), channel, true );
         }
     }
 

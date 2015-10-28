@@ -73,7 +73,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 class RebuildFromLogs
@@ -179,8 +178,7 @@ class RebuildFromLogs
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
         ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel(
-                PhysicalLogFile.openForVersion( logFiles, fs, highestVersion ),
-                NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+                PhysicalLogFile.openForVersion( logFiles, fs, highestVersion ), NO_MORE_CHANNELS );
 
         long lastTransactionId = -1;
 
@@ -238,8 +236,7 @@ class RebuildFromLogs
             int startVersion = 0;
             ReaderLogVersionBridge versionBridge = new ReaderLogVersionBridge( fs, logFiles );
             PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, fs, startVersion );
-            ReadableVersionableLogChannel channel =
-                    new ReadAheadLogChannel( startingChannel, versionBridge, DEFAULT_READ_AHEAD_SIZE );
+            ReadableVersionableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )

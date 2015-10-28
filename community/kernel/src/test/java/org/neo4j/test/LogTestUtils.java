@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
@@ -134,13 +134,12 @@ public class LogTestUtils
         try
         {
             channel = fs.open( log, "r" );
-            ByteBuffer buffer = ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE );
-            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true );
+            LogHeader header = LogHeaderReader.readLogHeader( ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE ), channel, true );
 
             PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
                     header.logVersion, header.logFormatVersion );
             ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
-                    LogVersionBridge.NO_MORE_CHANNELS, ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
+                    LogVersionBridge.NO_MORE_CHANNELS );
 
             return new LogEntryCursor( logChannel );
         }
@@ -199,16 +198,14 @@ public class LogTestUtils
         try ( StoreChannel in = fileSystem.open( file, "r" );
                 StoreChannel out = fileSystem.open( tempFile, "rw" ) )
         {
-            ByteBuffer buffer = ByteBuffer.allocate( 1024 * 1024 );
-            LogHeader logHeader = transferLogicalLogHeader( in, out, buffer );
+            LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
             PhysicalLogVersionedStoreChannel outChannel =
                     new PhysicalLogVersionedStoreChannel( out, logHeader.logVersion, logHeader.logFormatVersion );
             final WritableLogChannel outBuffer = new PhysicalWritableLogChannel( outChannel );
 
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS,
-                    DEFAULT_READ_AHEAD_SIZE );
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
             LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
             LogEntry entry;
