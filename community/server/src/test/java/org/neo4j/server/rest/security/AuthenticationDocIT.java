@@ -315,7 +315,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     public void startServer(boolean authEnabled) throws IOException
     {
-        FileUtils.deleteRecursively( new File( "neo4j-home/data/" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
+        FileUtils.deleteFile( new File( "neo4j-home/data/dbms/authorization" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
         server = CommunityServerBuilder.server()
                 .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
