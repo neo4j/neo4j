@@ -40,6 +40,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.logging.Netty4LoggerFactory;
+import org.neo4j.server.logging.NullPrintStream;
 
 import static java.lang.String.format;
 import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
@@ -76,6 +77,7 @@ public abstract class Bootstrapper
     public int start( File configFile, Pair<String, String> ... configOverrides )
     {
         LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
+        System.setOut( NullPrintStream.getInstance() );
 
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
