@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.tracing;
+package org.neo4j.kernel.impl.api;
 
-public interface CheckPointTracer
+public interface LogRotationMonitor
 {
-    CheckPointTracer NULL = new CheckPointTracer()
-    {
-        @Override
-        public LogCheckPointEvent beginCheckPoint()
-        {
-            return LogCheckPointEvent.NULL;
-        }
-    };
+    long lastLogRotationStartTime();
 
-    /**
-     * Begin a check point write to the log
-     */
-    LogCheckPointEvent beginCheckPoint();
+    long lastLogRotationEndTime();
+
+    long lastLogRotationTotalTime();
 }
