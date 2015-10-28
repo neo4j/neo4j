@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -58,6 +59,11 @@ public class DBMetrics extends LifecycleAdapter
     private static final String CHECK_POINT_END_TIME = name( CHECK_POINT_PREFIX, "end_time" );
     private static final String CHECK_POINT_TOTAL_TIME = name( CHECK_POINT_PREFIX, "total_time" );
 
+    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
+    private static final String LOG_ROTATION_START_TIME = name( LOG_ROTATION_PREFIX, "start_time" );
+    private static final String LOG_ROTATION_END_TIME = name( LOG_ROTATION_PREFIX, "end_time" );
+    private static final String LOG_ROTATION_TOTAL_TIME = name( LOG_ROTATION_PREFIX, "total_time" );
+
     private static final String COUNTS_PREFIX = "neo4j.ids_in_use";
     private static final String COUNTS_RELATIONSHIP_TYPE = name( COUNTS_PREFIX, "relationship_type" );
     private static final String COUNTS_PROPERTY = name( COUNTS_PREFIX, "property" );
@@ -69,11 +75,12 @@ public class DBMetrics extends LifecycleAdapter
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
     private final CheckPointerMonitor checkPointerMonitor;
+    private final LogRotationMonitor logRotationMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public DBMetrics( MetricRegistry registry, Config config, TransactionCounters transactionCounters,
             PageCacheMonitor pageCacheCounters, CheckPointerMonitor checkPointerMonitor,
-            IdGeneratorFactory idGeneratorFactory )
+            LogRotationMonitor logRotationMonitor, IdGeneratorFactory idGeneratorFactory )
     {
         this.registry = registry;
         this.config = config;
@@ -81,6 +88,7 @@ public class DBMetrics extends LifecycleAdapter
         this.transactionCounters = transactionCounters;
         this.pageCacheCounters = pageCacheCounters;
         this.checkPointerMonitor = checkPointerMonitor;
+        this.logRotationMonitor = logRotationMonitor;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
@@ -235,6 +243,37 @@ public class DBMetrics extends LifecycleAdapter
             } );
         }
 
+        // log rotation
+        if ( config.get( MetricsSettings.neoLogRotationEnabled ) )
+        {
+            registry.register( LOG_ROTATION_START_TIME, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return logRotationMonitor.lastLogRotationStartTime();
+                }
+            } );
+
+            registry.register( LOG_ROTATION_END_TIME, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return logRotationMonitor.lastLogRotationEndTime();
+                }
+            } );
+
+            registry.register( LOG_ROTATION_TOTAL_TIME, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return logRotationMonitor.lastLogRotationTotalTime();
+                }
+            } );
+        }
+
         // Node/rel count metrics
         if ( config.get( MetricsSettings.neoCountsEnabled ) )
         {
@@ -309,6 +348,14 @@ public class DBMetrics extends LifecycleAdapter
             registry.remove( CHECK_POINT_START_TIME );
             registry.remove( CHECK_POINT_END_TIME );
             registry.remove( CHECK_POINT_TOTAL_TIME );
+        }
+
+        // log rotation
+        if ( config.get( MetricsSettings.neoCheckPointingEnabled ) )
+        {
+            registry.remove( LOG_ROTATION_START_TIME );
+            registry.remove( LOG_ROTATION_END_TIME );
+            registry.remove( LOG_ROTATION_TOTAL_TIME );
         }
 
         // Node/rel count metrics
