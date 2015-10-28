@@ -23,30 +23,32 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test implementation of Clock that increments time by given amount on each call to currentTimeMillis.
  */
 public class TickingClock implements Clock
 {
-    private long current;
-    private long tick;
+    private long currentNanoTime;
+    private long tickNanos;
 
     private Map<Long, List<Runnable>> actions = new HashMap<>();
 
-    public TickingClock( long current, long tick )
+    public TickingClock( long current, long tick, TimeUnit timeUnit )
     {
-        this.current = current;
-        this.tick = tick;
+        this.currentNanoTime = timeUnit.toNanos( current );
+        this.tickNanos = timeUnit.toNanos( tick );
     }
 
-    public TickingClock at( long time, Runnable action )
+    public TickingClock at( long time, TimeUnit timeUnit, Runnable action )
     {
-        List<Runnable> actionList = actions.get( time );
+        long timeNanos = timeUnit.toNanos( time );
+        List<Runnable> actionList = actions.get( timeNanos );
         if ( actionList == null )
         {
             actionList = new ArrayList<>();
-            actions.put( time, actionList );
+            actions.put( timeNanos, actionList );
         }
 
         actionList.add( action );
@@ -57,7 +59,13 @@ public class TickingClock implements Clock
     @Override
     public long currentTimeMillis()
     {
-        List<Runnable> actionList = actions.get( current );
+        return TimeUnit.NANOSECONDS.toMillis( nanoTime() );
+    }
+
+    @Override
+    public long nanoTime()
+    {
+        List<Runnable> actionList = actions.get( currentNanoTime );
         if ( actionList != null )
         {
             for ( Runnable runnable : actionList )
@@ -68,11 +76,11 @@ public class TickingClock implements Clock
 
         try
         {
-            return current;
+            return currentNanoTime;
         }
         finally
         {
-            current += tick;
+            currentNanoTime += tickNanos;
         }
     }
 }

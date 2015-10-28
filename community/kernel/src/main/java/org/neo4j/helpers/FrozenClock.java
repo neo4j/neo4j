@@ -19,18 +19,26 @@
  */
 package org.neo4j.helpers;
 
+import java.util.concurrent.TimeUnit;
+
 public class FrozenClock implements Clock
 {
-    private final long millis;
+    private final long nanos;
 
-    public FrozenClock( long millis )
+    public FrozenClock( long time, TimeUnit timeUnit )
     {
-        this.millis = millis;
+        this.nanos = timeUnit.toNanos( time );
     }
 
     @Override
     public long currentTimeMillis()
     {
-        return millis;
+        return TimeUnit.NANOSECONDS.toMillis( nanos );
+    }
+
+    @Override
+    public long nanoTime()
+    {
+        return nanos;
     }
 }
