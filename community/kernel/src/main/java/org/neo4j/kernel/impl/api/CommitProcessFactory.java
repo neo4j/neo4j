@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 public interface CommitProcessFactory
 {
     TransactionCommitProcess create( TransactionAppender appender, TransactionRepresentationStoreApplier storeApplier,
-            NeoStoreInjectedTransactionValidator txValidator, IndexUpdatesValidator indexUpdatesValidator,
-            Config config );
+            IntegrityValidator integrityValidator, IndexUpdatesValidator indexUpdatesValidator, Config config );
 }

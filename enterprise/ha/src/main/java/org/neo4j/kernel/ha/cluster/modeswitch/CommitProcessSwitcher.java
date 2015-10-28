@@ -26,7 +26,7 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 public class CommitProcessSwitcher extends AbstractComponentSwitcher<TransactionCommitProcess>
 {
@@ -35,10 +35,10 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
 
     public CommitProcessSwitcher( TransactionPropagator pusher, Master master,
             DelegateInvocationHandler<TransactionCommitProcess> delegate, RequestContextFactory requestContextFactory,
-            NeoStoreInjectedTransactionValidator validator, TransactionCommitProcess innerCommitProcess )
+            IntegrityValidator integrityValidator, TransactionCommitProcess innerCommitProcess )
     {
         super( delegate );
-        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, validator );
+        this.masterImpl = new MasterTransactionCommitProcess( innerCommitProcess, pusher, integrityValidator );
         this.slaveImpl = new SlaveTransactionCommitProcess( master, requestContextFactory );
     }
 

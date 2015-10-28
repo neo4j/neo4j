@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
 
@@ -59,7 +59,7 @@ class HighlyAvailableCommitProcessFactory implements CommitProcessFactory
 
     @Override
     public TransactionCommitProcess create( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier, NeoStoreInjectedTransactionValidator txValidator,
+            TransactionRepresentationStoreApplier storeApplier, IntegrityValidator integrityValidator,
             IndexUpdatesValidator indexUpdatesValidator, Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
@@ -71,7 +71,7 @@ class HighlyAvailableCommitProcessFactory implements CommitProcessFactory
                 indexUpdatesValidator );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, txValidator, commitProcess );
+                master, commitProcessDelegate, requestContextFactory, integrityValidator, commitProcess );
 
         componentSwitcherContainer.add( commitProcessSwitcher );
 
