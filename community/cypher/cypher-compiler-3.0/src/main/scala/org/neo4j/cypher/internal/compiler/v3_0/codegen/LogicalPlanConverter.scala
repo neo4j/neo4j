@@ -35,8 +35,8 @@ object LogicalPlanConverter {
     case p: SingleRow => singleRowAsCodeGenPlan(p)
     case p: AllNodesScan => allNodesScanAsCodeGenPlan(p)
     case p: NodeByLabelScan => nodeByLabelScanAsCodeGenPlan(p)
-    case p: NodeIndexSeek => p.nodeIndexSeekAsCodeGenPlan
-    case p: NodeUniqueIndexSeek => p.nodeIndexSeekAsCodeGenPlan
+    case p: NodeIndexSeek => nodeIndexSeekAsCodeGenPlan(p)
+    case p: NodeUniqueIndexSeek => nodeUniqueIndexSeekAsCodeGen(p)
     case p: Expand => expandAsCodeGenPlan(p)
     case p: OptionalExpand => optExpandAsCodeGenPlan(p)
     case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
@@ -130,12 +130,11 @@ object LogicalPlanConverter {
     }
   }
 
-  abstract class IndexSeek(idName: String, valueExpr: QueryExpression[Expression], indexSeek: LogicalPlan) {
+  private type IndexSeekFun = (String, String, CodeGenExpression, Variable, Instruction) => Instruction
 
-    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
-                  nodeVar: Variable, actions: Instruction): Instruction
-
-    def nodeIndexSeekAsCodeGenPlan = new CodeGenPlan with LeafCodeGenPlan {
+  // Used by both nodeIndexSeekAsCodeGenPlan and nodeUniqueIndexSeekAsCodeGenPlan
+  private def sharedIndexSeekAsCodeGenPlan(indexSeekFun: IndexSeekFun)(idName: String, valueExpr: QueryExpression[Expression], indexSeek: LogicalPlan) =
+    new CodeGenPlan with LeafCodeGenPlan {
       override val logicalPlan: LogicalPlan = indexSeek
 
       override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
@@ -148,21 +147,19 @@ object LogicalPlanConverter {
           //single expression, do a index lookup for that value
           case SingleQueryExpression(e) =>
             val expression = ExpressionConverter.createExpression(e)(context)
-            indexSeek(opName, context.namer.newVarName(), expression, nodeVar, actions)
+            indexSeekFun(opName, context.namer.newVarName(), expression, nodeVar, actions)
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.Collection) =>
             val expression = ToSet(ExpressionConverter.createExpression(e)(context))
             val expressionVar = context.namer.newVarName()
             ForEachExpression(expressionVar, expression,
-                              indexSeek(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-                                        actions))
+              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
             val expressionVar = context.namer.newVarName()
             ForEachExpression(expressionVar, expression,
-                              indexSeek(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-                                        actions))
+              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
           case e: RangeQueryExpression[_] =>
             throw new CantCompileQueryException(s"To be done")
@@ -173,24 +170,24 @@ object LogicalPlanConverter {
         (methodHandle, Seq(indexSeekInstruction))
       }
     }
-  }
 
-  private implicit class NodeIndexSeekCodeGen(indexSeek: NodeIndexSeek)
-    extends IndexSeek(indexSeek.idName.name, indexSeek.valueExpr, indexSeek) {
 
-    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
+  private def nodeIndexSeekAsCodeGenPlan(indexSeek: NodeIndexSeek) = {
+    def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                   nodeVar: Variable, actions: Instruction) =
       WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
-                                   descriptorVar, expression), actions)
+          descriptorVar, expression), actions)
+
+    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
   }
 
-  private implicit class NodeIndexUniqueSeekCodeGen(indexSeek: NodeUniqueIndexSeek)
-    extends IndexSeek(indexSeek.idName.name, indexSeek.valueExpr, indexSeek) {
-
-    def indexSeek(opName: String, descriptorVar: String, expression: CodeGenExpression,
+  private def nodeUniqueIndexSeekAsCodeGen(indexSeek: NodeUniqueIndexSeek) = {
+    def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
                   nodeVar: Variable, actions: Instruction) =
       IndexUniqueSeek(opName, indexSeek.label.name, indexSeek.propertyKey.name,
-                      descriptorVar, expression, nodeVar, actions)
+        descriptorVar, expression, nodeVar, actions)
+
+    sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
   }
 
   private def nodeHashJoinAsCodeGenPlan(nodeHashJoin: NodeHashJoin) = new CodeGenPlan {
