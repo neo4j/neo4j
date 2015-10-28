@@ -88,7 +88,7 @@ angular.module('neo4jApp.services')
           existingNodeIds = existingNodes.map((node) -> node.id).concat(newNodeIds)
           Cypher.transaction()
           .commit("""
-            MATCH a -[r]- b WHERE id(a) IN[#{existingNodeIds.join(',')}]
+            MATCH (a)-[r]-(b) WHERE id(a) IN[#{existingNodeIds.join(',')}]
             AND id(b) IN[#{newNodeIds.join(',')}]
             RETURN r;"""
           )
