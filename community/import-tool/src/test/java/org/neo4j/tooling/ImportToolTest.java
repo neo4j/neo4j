@@ -59,6 +59,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,11 +69,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -765,6 +763,31 @@ public class ImportToolTest
             Node node = single( GlobalGraphOperations.at( db ).getAllNodes() );
             assertEquals( "three", single( node.getPropertyKeys() ) );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldPrintUserFriendlyMessageAboutUnsupportedMultilineFields() throws Exception
+    {
+        // GIVEN
+        File data = data(
+                ":ID,name",
+                "1,\"one\ntwo\nthree\"",
+                "2,four" );
+
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", data.getAbsolutePath(),
+                    "--multiline-fields", "false" );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertTrue( suppressOutput.getErrorVoice().containsMessage( "Detected field which spanned multiple lines" ) );
+            assertTrue( suppressOutput.getErrorVoice().containsMessage( "multiline-fields" ) );
         }
     }
 
