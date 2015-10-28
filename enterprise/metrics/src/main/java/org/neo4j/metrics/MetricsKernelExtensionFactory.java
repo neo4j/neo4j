@@ -25,6 +25,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -41,6 +42,8 @@ public class MetricsKernelExtensionFactory
         TransactionCounters transactionCounters();
 
         PageCacheMonitor pageCacheCounters();
+
+        CheckPointerMonitor checkPointerCounters();
 
         IdGeneratorFactory idGeneratorFactory();
 

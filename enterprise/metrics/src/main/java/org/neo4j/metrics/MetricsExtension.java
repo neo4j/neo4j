@@ -27,6 +27,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -44,6 +45,7 @@ public class MetricsExtension implements Lifecycle
     private final Monitors monitors;
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
+    private final CheckPointerMonitor checkPointerMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
 
 
@@ -55,6 +57,7 @@ public class MetricsExtension implements Lifecycle
         monitors = dependencies.monitors();
         transactionCounters = dependencies.transactionCounters();
         pageCacheCounters = dependencies.pageCacheCounters();
+        checkPointerMonitor = dependencies.checkPointerCounters();
         idGeneratorFactory = dependencies.idGeneratorFactory();
     }
 
@@ -77,7 +80,7 @@ public class MetricsExtension implements Lifecycle
 
         // Setup metric gathering
         Neo4jMetricsFactory factory = new Neo4jMetricsFactory( logService, registry, configuration, monitors,
-                transactionCounters, pageCacheCounters, idGeneratorFactory );
+                transactionCounters, pageCacheCounters, checkPointerMonitor, idGeneratorFactory );
         life.add( factory.newInstance() );
 
         life.init();

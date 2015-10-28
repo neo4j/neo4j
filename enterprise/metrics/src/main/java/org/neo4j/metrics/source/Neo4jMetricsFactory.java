@@ -29,6 +29,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -41,11 +42,12 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final Monitors monitors;
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
+    private final CheckPointerMonitor checkPointerMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public Neo4jMetricsFactory( LogService logService, MetricRegistry registry, Config config, Monitors monitors,
-             TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
-            IdGeneratorFactory idGeneratorFactory )
+            TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
+            CheckPointerMonitor checkPointerMonitor, IdGeneratorFactory idGeneratorFactory )
     {
         this.logService = logService;
         this.registry = registry;
@@ -53,13 +55,15 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         this.monitors = monitors;
         this.transactionCounters = transactionCounters;
         this.pageCacheCounters = pageCacheCounters;
+        this.checkPointerMonitor = checkPointerMonitor;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
     public Lifecycle newInstance()
     {
-        final DBMetrics dbMetrics = new DBMetrics( registry, config, transactionCounters, pageCacheCounters, idGeneratorFactory );
+        final DBMetrics dbMetrics = new DBMetrics( registry, config,
+                transactionCounters, pageCacheCounters, checkPointerMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final JvmMetrics jvmMetrics = new JvmMetrics( logService, config, registry );
         return new LifecycleAdapter()
