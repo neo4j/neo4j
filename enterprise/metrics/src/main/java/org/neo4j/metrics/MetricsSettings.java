@@ -75,6 +75,10 @@ public class MetricsSettings
                   "complete." )
     public static Setting<Boolean> neoCheckPointingEnabled = setting(
             "metrics.neo4j.checkpointing.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about the Neo4j log rotation; when it occurs and how much time it takes to "
+                  + "complete." )
+    public static Setting<Boolean> neoLogRotationEnabled = setting(
+            "metrics.neo4j.logrotation.enabled", Settings.BOOLEAN, neoEnabled );
 
     @Description( "Enable reporting metrics about the duration of garbage collections of the HA cluster component." )
     public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, neoEnabled );
