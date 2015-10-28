@@ -26,9 +26,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.PropertyValueException;
 
 /**
@@ -36,9 +36,9 @@ import org.neo4j.server.rest.web.PropertyValueException;
  */
 public class PropertySettingStrategy
 {
-    private final GraphDatabaseAPI db;
+    private final GraphDatabaseService db;
 
-    public PropertySettingStrategy( GraphDatabaseAPI db )
+    public PropertySettingStrategy( GraphDatabaseService db )
     {
         this.db = db;
     }

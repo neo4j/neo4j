@@ -19,13 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Consumers;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,9 +34,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -48,9 +45,8 @@ import static org.junit.Assert.fail;
 
 public class TestAutoIndexing
 {
-    private GraphDatabaseAPI graphDb;
+    private TestGraphDatabase graphDb;
     private Transaction tx;
-    private Map<String, String> config;
 
     private void newTransaction()
     {
@@ -62,20 +58,11 @@ public class TestAutoIndexing
         tx = graphDb.beginTx();
     }
 
-    private Map<String, String> getConfig()
+    private void startDb( Consumer<TestGraphDatabase.EphemeralBuilder> configure )
     {
-        if ( config == null )
-        {
-            config = new HashMap<>();
-        }
-        return config;
-    }
-
-    @Before
-    public void startDb()
-    {
-        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-                newImpermanentDatabaseBuilder().setConfig( getConfig() ).newGraphDatabase();
+        final TestGraphDatabase.EphemeralBuilder builder = TestGraphDatabase.buildEphemeral();
+        configure.accept( builder );
+        graphDb = builder.open();
     }
 
     @After
@@ -90,13 +77,13 @@ public class TestAutoIndexing
             graphDb.shutdown();
         }
         tx = null;
-        config = null;
         graphDb = null;
     }
 
     @Test
     public void testNodeAutoIndexFromAPISanity()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "test_uuid" );
         autoIndexer.setEnabled( true );
@@ -123,6 +110,7 @@ public class TestAutoIndexing
     @Test
     public void testAutoIndexesReportReadOnly()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -141,6 +129,7 @@ public class TestAutoIndexing
     @Test
     public void testChangesAreVisibleInTransaction()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "nodeProp" );
         autoIndexer.setEnabled( true );
@@ -178,6 +167,7 @@ public class TestAutoIndexing
     @Test
     public void testRelationshipAutoIndexFromAPISanity()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         final String propNameToIndex = "test";
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
         autoIndexer.startAutoIndexingProperty( propNameToIndex );
@@ -211,13 +201,17 @@ public class TestAutoIndexing
     @Test
     public void testConfigAndAPICompatibility()
     {
-        stopDb();
-        config = new HashMap<>();
-        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
-        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
-        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
-        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
-        startDb();
+        startDb( new Consumer<TestGraphDatabase.EphemeralBuilder>()
+        {
+            @Override
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
+            {
+                builder.withSetting( GraphDatabaseSettings.node_keys_indexable, "nodeProp1, nodeProp2" );
+                builder.withSetting( GraphDatabaseSettings.node_auto_indexing, "true" );
+                builder.withSetting( GraphDatabaseSettings.relationship_keys_indexable, "relProp1, relProp2" );
+                builder.withSetting( GraphDatabaseSettings.relationship_auto_indexing, "true" );
+            }
+        } );
 
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
         assertTrue( graphDb.index().getRelationshipAutoIndexer().isEnabled() );
@@ -238,13 +232,17 @@ public class TestAutoIndexing
     @Test
     public void testSmallGraphWithNonIndexableProps() throws Exception
     {
-        stopDb();
-        config = new HashMap<>();
-        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
-        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
-        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
-        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "true" );
-        startDb();
+        startDb( new Consumer<TestGraphDatabase.EphemeralBuilder>()
+        {
+            @Override
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
+            {
+                builder.withSetting( GraphDatabaseSettings.node_keys_indexable, "nodeProp1, nodeProp2" );
+                builder.withSetting( GraphDatabaseSettings.node_auto_indexing, "true" );
+                builder.withSetting( GraphDatabaseSettings.relationship_keys_indexable, "relProp1, relProp2" );
+                builder.withSetting( GraphDatabaseSettings.relationship_auto_indexing, "true" );
+            }
+        } );
 
         assertTrue( graphDb.index().getNodeAutoIndexer().isEnabled() );
         assertTrue( graphDb.index().getRelationshipAutoIndexer().isEnabled() );
@@ -342,6 +340,7 @@ public class TestAutoIndexing
     @Test
     public void testDefaultIsOff()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         newTransaction();
         Node node1 = graphDb.createNode();
         node1.setProperty( "testProp", "node1" );
@@ -354,6 +353,7 @@ public class TestAutoIndexing
     @Test
     public void testDefaulIfOffIsForEverything()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         newTransaction();
         Node node1 = graphDb.createNode();
@@ -372,42 +372,19 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaultIsOffIfExplicit() throws Exception
-    {
-        stopDb();
-        config = new HashMap<>();
-        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "nodeProp1, nodeProp2" );
-        config.put( GraphDatabaseSettings.relationship_keys_indexable.name(), "relProp1, relProp2" );
-        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "false" );
-        config.put( GraphDatabaseSettings.relationship_auto_indexing.name(), "false" );
-        startDb();
-
-        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
-        autoIndexer.startAutoIndexingProperty( "testProp" );
-        newTransaction();
-
-        Node node1 = graphDb.createNode();
-        node1.setProperty( "nodeProp1", "node1" );
-        node1.setProperty( "nodeProp2", "node1" );
-        node1.setProperty( "testProp", "node1" );
-
-        newTransaction();
-
-        assertFalse( autoIndexer.getAutoIndex().get( "nodeProp1", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getAutoIndex().get( "nodeProp2", "node1" ).hasNext() );
-        assertFalse( autoIndexer.getAutoIndex().get( "testProp", "node1" ).hasNext() );
-    }
-
-    @Test
     public void testDefaultsAreSeparateForNodesAndRelationships()
             throws Exception
     {
-        stopDb();
-        config = new HashMap<>();
-        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
-        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
-        startDb();
+        startDb( new Consumer<TestGraphDatabase.EphemeralBuilder>()
+        {
+            @Override
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
+            {
+                builder.withSetting( GraphDatabaseSettings.node_keys_indexable, "propName" );
+                builder.withSetting( GraphDatabaseSettings.node_auto_indexing, "true" );
+            }
+        } );
 
         newTransaction();
 
@@ -433,12 +410,16 @@ public class TestAutoIndexing
     @Test
     public void testStartStopAutoIndexing() throws Exception
     {
-        stopDb();
-        config = new HashMap<>();
-        config.put( GraphDatabaseSettings.node_keys_indexable.name(), "propName" );
-        config.put( GraphDatabaseSettings.node_auto_indexing.name(), "true" );
         // Now only node properties named propName should be indexed.
-        startDb();
+        startDb( new Consumer<TestGraphDatabase.EphemeralBuilder>()
+        {
+            @Override
+            public void accept( TestGraphDatabase.EphemeralBuilder builder )
+            {
+                builder.withSetting( GraphDatabaseSettings.node_keys_indexable, "propName" );
+                builder.withSetting( GraphDatabaseSettings.node_auto_indexing, "true" );
+            }
+        } );
 
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         assertTrue( autoIndexer.isEnabled() );
@@ -465,6 +446,7 @@ public class TestAutoIndexing
     @Test
     public void testStopMonitoringProperty()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
         autoIndexer.setEnabled( true );
         autoIndexer.startAutoIndexingProperty( "propName" );
@@ -501,6 +483,7 @@ public class TestAutoIndexing
     @Test
     public void testGettingAutoIndexByNameReturnsSomethingReadOnly()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         // Create the node and relationship auto-indexes
         graphDb.index().getNodeAutoIndexer().setEnabled( true );
         graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
@@ -556,6 +539,7 @@ public class TestAutoIndexing
     @Test
     public void testRemoveUnloadedHeavyProperty()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         /*
          * Checks a bug where removing non-cached heavy properties
          * would cause NPE in auto indexer.
@@ -585,6 +569,7 @@ public class TestAutoIndexing
     @Test
     public void testRemoveRelationshipRemovesDocument()
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Relationship> autoIndexer = graphDb.index().getRelationshipAutoIndexer();
         autoIndexer.startAutoIndexingProperty( "foo" );
         autoIndexer.setEnabled( true );
@@ -614,6 +599,7 @@ public class TestAutoIndexing
     @Test
     public void testDeletingNodeRemovesItFromAutoIndex() throws Exception
     {
+        startDb( Consumers.<TestGraphDatabase.EphemeralBuilder>noop() );
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( "foo" );
         nodeAutoIndexer.setEnabled( true );

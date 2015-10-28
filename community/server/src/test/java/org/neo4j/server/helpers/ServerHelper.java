@@ -27,12 +27,12 @@ import java.net.ServerSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -53,7 +53,7 @@ public class ServerHelper
         removeLogs( server );
     }
 
-    public static void cleanTheDatabase( GraphDatabaseAPI db )
+    public static void cleanTheDatabase( GraphDatabaseService db )
     {
         new Transactor( db, new DeleteAllData( db ), 10 ).execute();
         new Transactor( db, new DeleteAllSchema( db ), 10 ).execute();
@@ -151,9 +151,9 @@ public class ServerHelper
 
     private static class DeleteAllData implements UnitOfWork
     {
-        private final GraphDatabaseAPI db;
+        private final GraphDatabaseService db;
 
-        public DeleteAllData( GraphDatabaseAPI db )
+        public DeleteAllData( GraphDatabaseService db )
         {
             this.db = db;
         }
@@ -227,9 +227,9 @@ public class ServerHelper
 
     private static class DeleteAllSchema implements UnitOfWork
     {
-        private final GraphDatabaseAPI db;
+        private final GraphDatabaseService db;
 
-        public DeleteAllSchema( GraphDatabaseAPI db )
+        public DeleteAllSchema( GraphDatabaseService db )
         {
             this.db = db;
         }

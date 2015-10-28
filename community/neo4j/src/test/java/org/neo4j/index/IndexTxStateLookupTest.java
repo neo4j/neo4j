@@ -32,8 +32,7 @@ import java.util.Random;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -185,7 +184,7 @@ public class IndexTxStateLookupTest
     }
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private final Object store;
     private final Object lookup;
@@ -205,7 +204,7 @@ public class IndexTxStateLookupTest
     @Before
     public void given()
     {
-        graphDb = db.getGraphDatabaseService();
+        graphDb = dbRule.get();
         // database with an index on `(:Node).prop`
         try ( Transaction tx = graphDb.beginTx() )
         {

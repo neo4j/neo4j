@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.api;
 import org.junit.After;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public class LabelRecoveryTest
     public void shouldRecoverNodeWithDynamicLabelRecords() throws Exception
     {
         // GIVEN
-        database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        database = TestGraphDatabase.buildEphemeral().withFileSystem( fs ).open();
         Node node;
         Label[] labels = new Label[] { label( "a" ),
                 label( "b" ),
@@ -76,7 +76,7 @@ public class LabelRecoveryTest
         }
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         database.shutdown();
-        database = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase();
+        database = TestGraphDatabase.buildEphemeral().withFileSystem( snapshot ).open();
 
         // THEN
         try ( Transaction ignored = database.beginTx() )
@@ -100,5 +100,5 @@ public class LabelRecoveryTest
     }
 
     public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private GraphDatabaseService database;
+    private GraphDatabase database;
 }

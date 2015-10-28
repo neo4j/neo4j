@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.embedded.GraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
@@ -34,11 +35,9 @@ import org.neo4j.logging.LogProvider;
 import static java.util.Arrays.asList;
 
 /**
- * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
- * <p>
- * Use {@link #newEmbeddedDatabase(File)} or
- * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
+ * @deprecated Use {@link GraphDatabase} instead
  */
+@Deprecated
 public class GraphDatabaseFactory
 {
     private final GraphDatabaseFactoryState state;
@@ -64,7 +63,7 @@ public class GraphDatabaseFactory
     }
 
     /**
-     * @deprecated use {@link #newEmbeddedDatabase(File)} instead.
+     * @deprecated use {@link GraphDatabase#open(File)} instead
      * @param storeDir the location of the database
      * @return the database
      */
@@ -74,13 +73,17 @@ public class GraphDatabaseFactory
         return newEmbeddedDatabase( new File( storeDir ) );
     }
 
+    /**
+     * @deprecated use {@link GraphDatabase#open(File)} instead
+     */
+    @Deprecated
     public GraphDatabaseService newEmbeddedDatabase( File storeDir )
     {
         return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
     /**
-     * @deprecated use {@link #newEmbeddedDatabaseBuilder(File)} instead
+     * @deprecated use {@link GraphDatabase#build()} instead
      * @param storeDir the location of the database
      * @return a builder which is used to configure and start a database
      */
@@ -90,6 +93,10 @@ public class GraphDatabaseFactory
         return newEmbeddedDatabaseBuilder( new File( storeDir ) );
     }
 
+    /**
+     * @deprecated use {@link GraphDatabase#build()} instead
+     */
+    @Deprecated
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         final GraphDatabaseFactoryState state = getStateCopy();

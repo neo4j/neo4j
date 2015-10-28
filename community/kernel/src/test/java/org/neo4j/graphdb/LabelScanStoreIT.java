@@ -24,8 +24,7 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
@@ -133,7 +132,7 @@ public class LabelScanStoreIT
     public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
     {
         // Given
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseService db = dbRule.get();
         int labelsToAdd = 80;
         int labelsToRemove = 40;
 
@@ -173,7 +172,7 @@ public class LabelScanStoreIT
     
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -185,7 +184,7 @@ public class LabelScanStoreIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             node.delete();
             tx.success();
@@ -194,17 +193,17 @@ public class LabelScanStoreIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( dbRule.get().findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = dbRule.get().createNode( labels );
             tx.success();
             return node;
         }
@@ -212,7 +211,7 @@ public class LabelScanStoreIT
     
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -222,7 +221,8 @@ public class LabelScanStoreIT
         }
     }
 
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
     
     private static enum Labels implements Label
     {

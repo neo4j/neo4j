@@ -26,14 +26,17 @@ import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import java.io.File;
+
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestKernelEvents
 {
-    private static final String PATH = "target/var/neodb";
+    private static final File PATH = new File( "target/var/neodb" );
     
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
@@ -47,7 +50,7 @@ public class TestKernelEvents
     @Test
     public void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabase graphDb = TestGraphDatabase.openEphemeral();
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             @Override
@@ -107,7 +110,7 @@ public class TestKernelEvents
     @Test
     public void testShutdownEvents()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        GraphDatabase graphDb = TestGraphDatabase.openEphemeral();
         DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
             @Override

@@ -34,8 +34,7 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 import org.neo4j.walk.Walker;
 
 public class TestNewGraphvizWriter
@@ -45,12 +44,13 @@ public class TestNewGraphvizWriter
 		KNOWS, WORKS_FOR
 	}
 
-	public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
+	@Rule
+	public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
 	@Test
 	public void testSimpleGraph() throws Exception
 	{
-	    GraphDatabaseService neo = dbRule.getGraphDatabaseService();
+	    GraphDatabaseService neo = dbRule.get();
 		try ( Transaction tx = neo.beginTx() )
 		{
 			final Node emil = neo.createNode();

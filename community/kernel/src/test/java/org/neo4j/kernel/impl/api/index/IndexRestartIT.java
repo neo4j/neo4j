@@ -21,22 +21,18 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
-
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -54,27 +50,15 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 
 public class IndexRestartIT
 {
-
     private GraphDatabaseService db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TestGraphDatabaseFactory factory;
     private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
-
-
-    @Before
-    public void before() throws Exception
-    {
-        factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Collections.<KernelExtensionFactory<?>>singletonList(
-                singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
-    }
 
     @After
     public void after() throws Exception
     {
-        db.shutdown();
+        stopDb();
     }
 
     /* This is somewhat difficult to test since dropping an index while it's populating forces it to be cancelled
@@ -169,12 +153,11 @@ public class IndexRestartIT
 
     private void startDb()
     {
-        if ( db != null )
-        {
-            db.shutdown();
-        }
-
-        db = factory.newImpermanentDatabase();
+        stopDb();
+        db = TestGraphDatabase.buildEphemeral()
+                .withFileSystem( fs.get() )
+                .addKernelExtension( singleInstanceSchemaIndexProviderFactory( "test", provider ) )
+                .open();
     }
 
     private void stopDb()

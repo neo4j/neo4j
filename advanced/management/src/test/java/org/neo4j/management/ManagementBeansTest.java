@@ -25,11 +25,11 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -37,13 +37,13 @@ import static org.junit.Assert.assertTrue;
 public class ManagementBeansTest
 {
     @ClassRule
-    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ManagementBeansTest.class );
-    private static GraphDatabaseAPI graphDb;
+    public static final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
+    private static TestGraphDatabase graphDb;
 
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        graphDb = dbRule.getGraphDatabaseAPI();
+        graphDb = dbRule.get();
     }
 
     @Test

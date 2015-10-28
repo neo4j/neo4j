@@ -28,12 +28,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.embedded.GraphDatabase;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Test atomicity of Neo4j. How to get consistent results with or without locks?
@@ -41,14 +43,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 @Ignore( "unstable" )
 public class TestIsolationMultipleThreads
 {
-    GraphDatabaseService database;
+    GraphDatabase database;
 
     private static final int COUNT = 1000;
 
     @Before
     public void setup()
     {
-        database = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        database = TestGraphDatabase.openEphemeral();
         try ( Transaction tx = database.beginTx() )
         {
             for ( int i = 0; i < COUNT; i++ )

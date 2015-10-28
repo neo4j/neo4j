@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -26,14 +27,14 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 class TransitionalTxManagementKernelTransaction
 {
-    private final TransactionTerminator txTerminator;
+    private final Transaction tx;
     private final ThreadToStatementContextBridge bridge;
 
     private TopLevelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( TransactionTerminator txTerminator, ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( Transaction tx, ThreadToStatementContextBridge bridge )
     {
-        this.txTerminator = txTerminator;
+        this.tx = tx;
         this.bridge = bridge;
     }
 
@@ -53,7 +54,7 @@ class TransitionalTxManagementKernelTransaction
 
     public void terminate()
     {
-        txTerminator.terminate();
+        tx.terminate();
     }
 
     public void rollback()

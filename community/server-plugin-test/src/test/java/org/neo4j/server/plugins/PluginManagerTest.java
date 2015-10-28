@@ -27,11 +27,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.repr.formats.NullFormat;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertNotNull;
@@ -40,12 +39,12 @@ import static org.junit.Assert.assertThat;
 public class PluginManagerTest
 {
     private static PluginManager manager;
-    private static GraphDatabaseAPI graphDb;
+    private static TestGraphDatabase graphDb;
 
     @BeforeClass
     public static void loadExtensionManager() throws Exception
     {
-        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graphDb = TestGraphDatabase.openEphemeral();
         manager = new PluginManager( null, NullLogProvider.getInstance() );
     }
 
@@ -72,7 +71,7 @@ public class PluginManagerTest
     @Test
     public void canInvokeExtension() throws Exception
     {
-        manager.invoke( graphDb, FunctionalTestPlugin.class.getSimpleName(), GraphDatabaseService.class,
+        manager.invoke( graphDb.getGraphDatabaseAPI(), FunctionalTestPlugin.class.getSimpleName(), GraphDatabaseService.class,
                 FunctionalTestPlugin.CREATE_NODE, graphDb,
                 new NullFormat( null, (MediaType[]) null ).readParameterList( "" ) );
     }

@@ -23,18 +23,18 @@ import java.rmi.RemoteException;
 
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 
 public class TestReadOnlyServer extends AbstractShellTest
 {
     @Override
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( TestGraphDatabase db ) throws ShellException, RemoteException
     {
-        return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
+        return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db.getGraphDatabaseAPI() ) );
     }
 
     @Test

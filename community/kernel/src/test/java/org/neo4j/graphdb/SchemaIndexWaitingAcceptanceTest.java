@@ -26,12 +26,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -44,23 +45,23 @@ public class SchemaIndexWaitingAcceptanceTest
     private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
 
     @Rule
-    public ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule()
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral( new Consumer<TestGraphDatabase.EphemeralBuilder>()
     {
         @Override
-        protected void configure( GraphDatabaseFactory databaseFactory )
+        public void accept( TestGraphDatabase.EphemeralBuilder builder )
         {
             List<KernelExtensionFactory<?>> extensions;
             extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory(
                     "test", provider ) );
-            databaseFactory.addKernelExtensions( extensions );
+            builder.addKernelExtensions( extensions );
         }
-    };
+    } );
 
     @Test
     public void shouldTimeoutWatingForIndexToComeOnline() throws Exception
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         IndexDefinition index;
@@ -95,7 +96,7 @@ public class SchemaIndexWaitingAcceptanceTest
     public void shouldTimeoutWatingForAllIndexesToComeOnline() throws Exception
     {
         // given
-        GraphDatabaseService db = rule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.get();
         DoubleLatch latch = provider.installPopulationJobCompletionLatch();
 
         try ( Transaction tx = db.beginTx() )

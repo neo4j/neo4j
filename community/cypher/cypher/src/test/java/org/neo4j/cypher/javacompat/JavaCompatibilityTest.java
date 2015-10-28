@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.javacompat;
 
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isA;
@@ -39,7 +39,7 @@ public class JavaCompatibilityTest
     @Before
     public void setUp() throws IOException
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        GraphDatabaseService db = TestGraphDatabase.openEphemeral();
         engine = new ExecutionEngine( db );
     }
 

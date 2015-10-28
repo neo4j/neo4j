@@ -20,13 +20,13 @@ package org.neo4j.examples;
 
 import org.junit.BeforeClass;
 
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.embedded.TestGraphDatabase;
 
 public class ImpermanentGraphJavaDocTestBase extends AbstractJavaDocTestBase
 {
     @BeforeClass
     public static void init()
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        db = TestGraphDatabase.openEphemeral();
     }
 }

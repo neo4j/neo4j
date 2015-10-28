@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -131,9 +130,8 @@ public class StoreUpgradeOnStartupTest
 
     private GraphDatabaseService createGraphDatabaseService()
     {
-        return new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( workingDirectory )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
-                .newGraphDatabase();
+        return TestGraphDatabase.build()
+                .allowStoreUpgrade()
+                .open( workingDirectory );
     }
 }

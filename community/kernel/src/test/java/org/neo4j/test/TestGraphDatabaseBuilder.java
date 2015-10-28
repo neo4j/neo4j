@@ -19,9 +19,14 @@
  */
 package org.neo4j.test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
+/**
+ * @deprecated use {@link TestGraphDatabase} instead
+ */
+@Deprecated
 public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {
     public TestGraphDatabaseBuilder( DatabaseCreator creator )

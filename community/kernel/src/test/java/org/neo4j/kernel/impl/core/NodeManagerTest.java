@@ -26,14 +26,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -45,12 +44,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 public class NodeManagerTest
 {
-    private GraphDatabaseAPI db;
+    private TestGraphDatabase db;
 
     @Before
     public void init()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = TestGraphDatabase.openEphemeral();
     }
 
     @After

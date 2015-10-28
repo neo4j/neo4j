@@ -19,10 +19,12 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -30,13 +32,41 @@ import static org.junit.Assert.assertThat;
 public class IdReuseTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IdReuseTest.class );
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public TestGraphDatabase db;
+
+    @Before
+    public void before()
+    {
+        startDB();
+    }
+
+    private TestGraphDatabase startDB()
+    {
+        assert (db == null);
+        db = TestGraphDatabase.buildEphemeral().withFileSystem( fsRule.get() ).open();
+        return db;
+    }
+
+    private TestGraphDatabase restartDB()
+    {
+        db.shutdown();
+        db = null;
+        return startDB();
+    }
+
+    public void after()
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+    }
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try (Transaction tx = db.beginTx())
         {
             db.createNode();
@@ -44,7 +74,7 @@ public class IdReuseTest
             tx.failure();
         }
 
-        db = dbRule.restartDatabase();
+        db = restartDB();
 
         // When
         Node node;
@@ -63,7 +93,6 @@ public class IdReuseTest
     public void shouldReuseRelationshipIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         Node node1, node2;
         try (Transaction tx = db.beginTx())
         {
@@ -80,7 +109,7 @@ public class IdReuseTest
             tx.failure();
         }
 
-        db = dbRule.restartDatabase();
+        db = restartDB();
 
         // When
         Relationship relationship;

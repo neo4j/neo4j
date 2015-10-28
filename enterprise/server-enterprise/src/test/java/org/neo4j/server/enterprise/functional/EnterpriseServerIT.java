@@ -37,6 +37,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -71,9 +72,9 @@ public class EnterpriseServerIT
         try
         {
             server.start();
-            server.getDatabase();
+            Database db = server.getDatabase();
 
-            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
+            assertThat( db.getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
             ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +

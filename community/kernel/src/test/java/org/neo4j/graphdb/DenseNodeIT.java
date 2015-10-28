@@ -22,26 +22,24 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.embedded.TestGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class DenseNodeIT
 {
-    @Rule
-    public ImpermanentDatabaseRule databaseRule = new ImpermanentDatabaseRule();
+    @Rule public TestGraphDatabaseRule databaseRule = TestGraphDatabaseRule.ephemeral();
 
     @Test
     public void testBringingNodeOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
-
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         try( Transaction tx = db.beginTx() )
@@ -84,7 +82,7 @@ public class DenseNodeIT
     public void deletingRelationshipsFromDenseNodeIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         try( Transaction tx = db.beginTx() )
@@ -118,7 +116,7 @@ public class DenseNodeIT
     public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node root;
         // WHEN
@@ -149,7 +147,7 @@ public class DenseNodeIT
     public void testBringingTwoConnectedNodesOverDenseThresholdIsConsistent() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = databaseRule.getGraphDatabaseService();
+        GraphDatabaseService db = databaseRule.get();
 
         Node source;
         Node sink;
@@ -214,7 +212,7 @@ public class DenseNodeIT
         try ( Transaction tx = databaseRule.beginTx() )
         {
             node = databaseRule.createNode();
-            createRelationshipsBetweenNodes( node, databaseRule.createNode(), denseNodeThreshold( databaseRule ) + 1 );
+            createRelationshipsBetweenNodes( node, databaseRule.createNode(), denseNodeThreshold( databaseRule.get() ) + 1 );
             tx.success();
         }
         try ( Transaction tx = databaseRule.beginTx() )
@@ -239,7 +237,7 @@ public class DenseNodeIT
         }
     }
 
-    private int denseNodeThreshold( GraphDatabaseAPI db )
+    private int denseNodeThreshold( TestGraphDatabase db )
     {
         return db.getDependencyResolver()
                 .resolveDependency( Config.class ).get( GraphDatabaseSettings.dense_node_threshold );

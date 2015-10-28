@@ -26,19 +26,19 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.embedded.TestGraphDatabase;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
+import org.neo4j.test.TestGraphDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -67,7 +67,8 @@ public class ReadTransactionLogWritingTest
                 logEntriesWrittenBeforeReadOperations, actualCount );
     }
 
-    public final @Rule DatabaseRule dbr = new ImpermanentDatabaseRule();
+    @Rule
+    public final TestGraphDatabaseRule dbRule = TestGraphDatabaseRule.ephemeral();
 
     private final Label label = label( "Test" );
     private Node node;
@@ -77,7 +78,7 @@ public class ReadTransactionLogWritingTest
     @Before
     public void createDataset() throws IOException
     {
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
+        GraphDatabaseService db = dbRule.get();
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( label );
@@ -93,9 +94,9 @@ public class ReadTransactionLogWritingTest
 
     private long countLogEntries()
     {
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
+        TestGraphDatabase db = dbRule.get();
         FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
-        File storeDir = new File( db.getStoreDir() );
+        File storeDir = db.storeDir();
         try
         {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();
@@ -130,7 +131,7 @@ public class ReadTransactionLogWritingTest
 
     private void executeTransaction( Runnable runnable, boolean success )
     {
-        try ( Transaction tx = dbr.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.get().beginTx() )
         {
             runnable.run();
             if ( success )
@@ -174,8 +175,8 @@ public class ReadTransactionLogWritingTest
             @Override
             public void run()
             {
-                dbr.getGraphDatabaseService().getNodeById( node.getId() );
-                dbr.getGraphDatabaseService().getRelationshipById( relationship.getId() );
+                dbRule.get().getNodeById( node.getId() );
+                dbRule.get().getRelationshipById( relationship.getId() );
             }
         };
     }
