@@ -46,8 +46,9 @@ public class TransactionTimespanThresholdTest
     public void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
     {
         // given
+        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
         final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( new FrozenClock( 1000l ), TimeUnit.MILLISECONDS, 200 );
+                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 200 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
 
@@ -63,8 +64,9 @@ public class TransactionTimespanThresholdTest
     public void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
     {
         // given
+        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
         final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( new FrozenClock( 1000l ), TimeUnit.MILLISECONDS, 100 );
+                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
 
@@ -80,8 +82,9 @@ public class TransactionTimespanThresholdTest
     public void shouldReturnTrueIfTheLogHasAnOlderVersion() throws IOException
     {
         // given
+        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
         final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( new FrozenClock( 1000l ), TimeUnit.MILLISECONDS, 100 );
+                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( new IllegalLogFormatException( version, 3 ) );
 
@@ -97,8 +100,9 @@ public class TransactionTimespanThresholdTest
     public void shouldThrowIfTheLogHasANewerVersion() throws IOException
     {
         // given
+        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
         final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( new FrozenClock( 1000l ), TimeUnit.MILLISECONDS, 100 );
+                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         final IllegalLogFormatException ex = new IllegalLogFormatException( version, 5 );
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );
@@ -113,12 +117,14 @@ public class TransactionTimespanThresholdTest
             assertEquals( ex, e.getCause() );
         }
     }
+
     @Test
     public void shouldThrowIfTheLogCannotBeRead() throws IOException
     {
         // given
+        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
         final TransactionTimespanThreshold threshold =
-                new TransactionTimespanThreshold( new FrozenClock( 1000l ), TimeUnit.MILLISECONDS, 100 );
+                new TransactionTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
         final IOException ex = new IOException(  );
         when( source.getFirstStartRecordTimestamp( version ) ).thenThrow( ex );

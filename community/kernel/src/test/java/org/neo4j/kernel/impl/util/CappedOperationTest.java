@@ -80,7 +80,7 @@ public class CappedOperationTest
     {
         // GIVEN
         AtomicInteger triggerCount = new AtomicInteger();
-        FakeClock clock = new FakeClock( 12345678 );
+        FakeClock clock = new FakeClock( 12345678, TimeUnit.MILLISECONDS );
         CappedOperation<String> operation = countingCappedOperations( triggerCount,
                 CappedOperation.time( clock, 1500, TimeUnit.MILLISECONDS ) );
 

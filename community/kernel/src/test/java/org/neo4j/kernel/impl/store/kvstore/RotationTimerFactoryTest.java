@@ -32,8 +32,11 @@ public class RotationTimerFactoryTest
     @Test
     public void testTimer() throws Exception
     {
+        // GIVEN
+        FrozenClock clock = new FrozenClock( 10000, TimeUnit.MILLISECONDS );
+
         // WHEN
-        RotationTimerFactory timerFactory = new RotationTimerFactory( new FrozenClock(10000), 1000);
+        RotationTimerFactory timerFactory = new RotationTimerFactory( clock, 1000);
         RotationTimerFactory.RotationTimer timer = timerFactory.createTimer();
         RotationTimerFactory.RotationTimer anotherTimer = timerFactory.createTimer();
 

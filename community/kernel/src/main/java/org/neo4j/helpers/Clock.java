@@ -28,7 +28,15 @@ public interface Clock
         {
             return System.currentTimeMillis();
         }
+
+        @Override
+        public long nanoTime()
+        {
+            return System.nanoTime();
+        }
     };
 
     long currentTimeMillis();
+
+    long nanoTime();
 }
