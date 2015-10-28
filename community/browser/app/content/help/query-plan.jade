@@ -109,3 +109,18 @@ article.help
           code hasProp(born)
           |  or it can be a graph pattern to be expanded such as&nbsp;
           code ()-[r]-()
+        p
+          table.table-condensed.table-help
+            tr
+              th Reference:
+              td
+                code
+                  a(href='http://neo4j.com/docs/{{neo4j.version}}/execution-plans.html') Execution Plans
+                |  manual page
+            tr
+              th Related:
+              td
+                a(help-topic='explain') :help EXPLAIN
+                | &nbsp;
+                a(help-topic='profile') :help PROFILE
+                | &nbsp;
