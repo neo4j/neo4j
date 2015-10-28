@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -42,13 +43,15 @@ import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupTests
 {
-    private File serverPath;
-    private File backupPath;
-
     @Rule
     public TestName testName = new TestName();
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
+    private File serverPath;
+    private File backupPath;
     private ServerInterface server;
     private GraphDatabaseService db;
 

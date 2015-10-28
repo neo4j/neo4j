@@ -41,6 +41,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -54,6 +55,9 @@ public class RebuildFromLogsTest
 {
     @Rule
     public final TargetDirectory.TestDirectory dir = testDirForTest( RebuildFromLogsTest.class );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test

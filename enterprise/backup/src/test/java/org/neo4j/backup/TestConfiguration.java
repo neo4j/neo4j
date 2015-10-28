@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,15 +29,19 @@ import java.net.InetAddress;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Settings;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
 
 public class TestConfiguration
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     private static final String SOURCE_DIR = "target/db";
     private static final String BACKUP_DIR = "target/full-backup";
-    
+
     @Before
     public void before() throws Exception
     {

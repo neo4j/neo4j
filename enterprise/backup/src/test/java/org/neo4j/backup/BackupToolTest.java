@@ -58,11 +58,12 @@ import static org.mockito.Mockito.when;
 
 public class BackupToolTest
 {
-
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public SystemExitRule systemExitRule = SystemExitRule.none();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldToolFailureExceptionCauseExitCode()
@@ -77,9 +78,6 @@ public class BackupToolTest
         systemExitRule.expectExit( 1 );
         BackupTool.main( new String[]{} );
     }
-
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
