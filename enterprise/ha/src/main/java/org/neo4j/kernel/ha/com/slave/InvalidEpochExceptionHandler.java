@@ -22,4 +22,13 @@ package org.neo4j.kernel.ha.com.slave;
 public interface InvalidEpochExceptionHandler
 {
     void handle();
+
+    InvalidEpochExceptionHandler NONE = new  InvalidEpochExceptionHandler()
+    {
+        @Override
+        public void handle()
+        {
+
+        }
+    };
 }
