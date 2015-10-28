@@ -2,8 +2,11 @@
 = Using
 
 [abstract]
+--
 `USING` is used to influence the decisions of the planner when building an execution plan for a query.
-NOTE: Forcing planner behaviour is an advanced feature, and should be used with caution by experienced developers and/or database administrators only, as it may cause queries to perform poorly.
+--
+
+CAUTION: Forcing planner behavior is an advanced feature, and should be used with caution by experienced developers and/or database administrators only, as it may cause queries to perform poorly.
 
 When executing a query, Neo4j needs to decide where in the query graph to start matching.
 This is done by looking at the `MATCH` clause and the `WHERE` conditions and using that information to find useful indexes.
