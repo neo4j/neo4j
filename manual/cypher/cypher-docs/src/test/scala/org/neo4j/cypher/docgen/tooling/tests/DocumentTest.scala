@@ -233,10 +233,9 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |[role="queryresult",options="footer",cols="1*<m"]
         ||===
         |1+|(empty result)
-        |1+|0 rows
-        |Nodes created: 2
+        |1+|0 rows +
+        |Nodes created: 2 +
         |Relationships created: 1
-        |
         ||===
         |
         |""".stripMargin)
@@ -271,6 +270,25 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |
         |""".stripMargin)
   }
+
+  test("Simple console data") {
+    val consoleData = ConsoleData(Seq("global1", "global2"), Seq("local1", "local2"), "myquery")
+
+    consoleData.asciiDoc(0) should equal(
+      """.Try this query live
+        |[console]
+        |----
+        |global1
+        |global2
+        |
+        |local1
+        |local2
+        |
+        |myquery
+        |----
+        |
+        |""".stripMargin)
+  }
 }
 
 class DocumentQueryTest extends CypherFunSuite {
@@ -278,7 +296,7 @@ class DocumentQueryTest extends CypherFunSuite {
 
   test("finds all queries and the init-queries they need") {
     val tableV = new TablePlaceHolder(NoAssertions)
-    val graphV: GraphVizPlaceHolder = new GraphVizPlaceHolder()
+    val graphV: GraphVizPlaceHolder = new GraphVizPlaceHolder("")
     val doc = Document("title", "myId", Seq("1"), Section("h1", Seq("2"),
       Section("h2", Seq("3"),
         Query("q", NoAssertions, Seq.empty, tableV)
@@ -301,8 +319,8 @@ class DocumentQueryTest extends CypherFunSuite {
       """[[myId]]
         |= title
         |
-        |[source,cypher]
         |.Query
+        |[source,cypher]
         |----
         |MATCH (n)
         |RETURN n

@@ -28,7 +28,7 @@ class ContentAndResultMergerTest extends CypherFunSuite {
   val TABLE_RESULT = Paragraph("14")
   val QUERY = "match (n) return n"
   val TABLE_PLACEHOLDER = new TablePlaceHolder(NoAssertions)
-  val GRAPHVIZ_PLACEHOLDER = new GraphVizPlaceHolder
+  val GRAPHVIZ_PLACEHOLDER = new GraphVizPlaceHolder("")
 
   test("simple doc with query") {
     // given
