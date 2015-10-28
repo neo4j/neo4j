@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidSemanticsException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
+import org.neo4j.kernel.api.properties.Property
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -125,14 +126,13 @@ case class MergeIntoPipe(source: Pipe,
     val relationships = query.getRelationshipsForIds(start, localDirection, Some(Seq(typeId)))
 
     new PrefetchingIterator[Relationship] {
-      //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[Relationship](2)
 
       private def hasCorrectProperties(rel: Relationship): Boolean = props.forall { case (key, expression) =>
         val expressionValue = expression(execution)(queryState)
         val propertyKeyId = key.getOptId(query)
-
-        propertyKeyId.exists { id => query.relationshipOps.getProperty(rel.getId, id) == expressionValue }
+        propertyKeyId.exists { id =>
+          toComparableProperty(query.relationshipOps.getProperty(rel.getId, id)) == expressionValue
+        }
       }
 
       override def fetchNextOrNull(): Relationship = {
@@ -140,15 +140,20 @@ case class MergeIntoPipe(source: Pipe,
           val rel = relationships.next()
           val other = rel.getOtherNode(start)
           if (end == other) {
-            if (hasCorrectProperties(rel)) {
-              connectedRelationships.append(rel)
-              return rel
-            }
+            if (hasCorrectProperties(rel)) return rel
           }
         }
         null
       }
     }.asScala
+  }
+
+  /*
+   * Properties can contain arrays which are not comparable with ==
+   */
+  private def toComparableProperty(property: Any) = property match {
+    case a: Array[_] => a.toVector
+    case o => o
   }
 
   private def getDegree(node: Node, typeId: Int, direction: SemanticDirection, query: QueryContext) = {

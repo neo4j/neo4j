@@ -25,7 +25,7 @@ import org.mockito.Mockito.{mock => jmock, _}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Property, Expression, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{PropertySetAction, SetAction}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
@@ -282,6 +282,29 @@ class MergeIntoPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
     val result = createPipeAndRun(query, left, INCOMING, "A", Map("key" -> Literal(42),
       "foo" -> Literal("bar")))
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> node_a, "r" -> rel_a_A_b, "b" -> node_b))
+    verify(query.relationshipOps).getProperty(1, "key".hashCode())
+    verify(query.relationshipOps).getProperty(1, "foo".hashCode())
+    verifyNoMoreInteractions(query.relationshipOps)
+  }
+
+  test("should find a matching relationship between two nodes with matching array properties") {
+    // given
+    implicit val query = setupMockingInQueryContext()
+    markAsNotDense(node_a)
+    markAsNotDense(node_b)
+
+    // when
+    setupRelationshipFromNode(node_a, INCOMING, rel_a_A_b)
+    when(query.relationshipOps.getProperty(1, "key".hashCode())).thenReturn(Array(42, 43), Seq.empty: _*)
+    when(query.relationshipOps.getProperty(1, "foo".hashCode())).thenReturn(Array("foo", "bar"), Seq.empty: _*)
+
+    val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
+    val result = createPipeAndRun(query, left, INCOMING, "A", Map("key" -> Collection(Literal(42), Literal(43)),
+      "foo" -> Collection(Literal("foo"), Literal("bar"))))
 
     // then
     val (single :: Nil) = result
