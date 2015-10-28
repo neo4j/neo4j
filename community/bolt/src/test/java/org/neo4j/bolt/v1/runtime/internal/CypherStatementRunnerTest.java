@@ -20,15 +20,12 @@
 package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
-import org.mockito.Mockito;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
 import static java.util.Collections.EMPTY_MAP;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;

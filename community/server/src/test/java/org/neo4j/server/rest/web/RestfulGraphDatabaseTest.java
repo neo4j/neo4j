@@ -25,7 +25,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -47,6 +47,9 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.exceptions.Status.Request;
+import org.neo4j.kernel.api.exceptions.Status.Schema;
+import org.neo4j.kernel.api.exceptions.Status.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.configuration.ServerSettings;
@@ -66,8 +69,6 @@ import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
-import static java.lang.Long.parseLong;
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -80,10 +81,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.exceptions.Status.Request;
+
+import static java.lang.Long.parseLong;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
-import static org.neo4j.kernel.api.exceptions.Status.Schema;
-import static org.neo4j.kernel.api.exceptions.Status.Statement;
 
 public class RestfulGraphDatabaseTest
 {

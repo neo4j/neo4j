@@ -28,8 +28,6 @@ import java.util.Collection;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.bolt.v1.docs.DocSerialization.normalizedHex;
-import static org.neo4j.bolt.v1.docs.DocSerialization.pack;
 
 @RunWith( Parameterized.class )
 public class BoltPackStreamDocTest

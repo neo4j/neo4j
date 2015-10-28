@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import static java.lang.String.format;
-
 import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExceptions;
 
 /**

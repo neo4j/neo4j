@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-
-import javax.ws.rs.core.HttpHeaders;
-
+import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
+import javax.ws.rs.core.HttpHeaders;
+
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -43,7 +44,6 @@ import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import com.sun.jersey.core.util.Base64;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -162,7 +162,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     public void startServer(boolean authEnabled) throws IOException
     {
-        new File( "neo4j-home/data/dbms/authorization" ).delete(); // TODO: Implement a common component for managing Neo4j file structure and use that here
+        FileUtils.deleteFile( new File( "neo4j-home/data/dbms/authorization" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
         server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(),
                 Boolean.toString( authEnabled ) ).build();
         server.start();

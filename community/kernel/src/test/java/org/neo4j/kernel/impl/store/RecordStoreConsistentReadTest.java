@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.internal.AssumptionViolatedException;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;

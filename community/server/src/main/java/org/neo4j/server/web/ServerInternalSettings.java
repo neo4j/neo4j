@@ -26,6 +26,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Obsoleted;
 
 import static java.io.File.separator;
+
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
@@ -78,6 +79,9 @@ public class ServerInternalSettings
     public static final Setting<Long> startup_timeout = setting( "org.neo4j.server.startup_timeout", DURATION, "120s" );
 
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
+
+    @Obsoleted( "RRDB was removed in 3.0" )
+    public static final Setting<File> rrd_store = setting("org.neo4j.server.webadmin.rrdb.location", PATH, "data/rrd");
 
     public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
 

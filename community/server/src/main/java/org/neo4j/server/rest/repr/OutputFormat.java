@@ -21,7 +21,6 @@ package org.neo4j.server.rest.repr;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 
 import javax.ws.rs.WebApplicationException;
