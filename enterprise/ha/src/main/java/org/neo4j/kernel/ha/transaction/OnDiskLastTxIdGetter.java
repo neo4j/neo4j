@@ -33,11 +33,15 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
         this.neoStoresSupplier = neoStoresSupplier;
     }
 
+    // This method is used to construct credentials for election process.
+    // And can be invoked at any moment of instance lifecycle.
+    // It mean that its possible that we will be invoked when neo stores are stopped
+    // (for example while we copy store)
     @Override
     public long getLastTxId()
     {
         TransactionIdStore neoStore = getNeoStores().getMetaDataStore();
-        return neoStore.getLastCommittedTransactionId();
+        return neoStore != null ? neoStore.getLastCommittedTransactionId() : TransactionIdStore.BASE_TX_ID;
     }
 
     private NeoStores getNeoStores()
