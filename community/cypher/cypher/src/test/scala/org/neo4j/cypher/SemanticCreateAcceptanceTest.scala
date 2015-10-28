@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.scalacheck.Gen
+import org.scalacheck.{Shrink, Gen}
 
 /*
  * Tests create on random patterns.
@@ -28,6 +28,9 @@ import org.scalacheck.Gen
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
 class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport {
+
+  //we don't want scala check to shrink patterns here and leave things in the database
+  implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)
 
   test("create and match random patterns") {
     forAll(patterns) { pattern =>
@@ -37,21 +40,22 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
+        withClue(s"failing on pattern $patternString") {
+          //update
+          updateWithBothPlanners(s"CREATE $patternString")
 
-        //update
-        updateWithBothPlanners(s"CREATE $patternString")
+          //find created pattern (cannot return * since everything might be unnamed)
+          val result = executeWithAllPlannersAndRuntimes(s"MATCH $patternString RETURN 42")
+          result.toList should have size 1
 
-        //find created pattern (cannot return * since everything might be unnamed)
-        val result = executeWithAllPlannersAndRuntimes(s"MATCH $patternString RETURN 42")
-        result.toList should have size 1
-
-        //clean up
-        updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
+          //clean up
+          updateWithBothPlanners(s"MATCH (n) DETACH DELETE n")
+        }
       }
     }
   }
 
-  override protected def numberOfTestRuns: Int = 20
+  override protected def numberOfTestRuns: Int = 1000
 
   override def relGen = Gen.oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
 

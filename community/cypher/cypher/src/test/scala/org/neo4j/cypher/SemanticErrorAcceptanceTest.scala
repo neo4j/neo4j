@@ -545,6 +545,26 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
                           "Invalid input '1.7' is not a valid value, must be a positive integer (line 1, column 26 (offset: 25))")
   )
 
+  test("should fail when invalid percentile in percentileDisc") (
+    executeAndEnsureError("MATCH (n) RETURN percentileDisc(n.prop, 95)",
+      "Invalid input '95' is not a valid argument, must be a number in the range 0.0 to 1.0 (line 1, column 41 (offset: 40))")
+  )
+
+  test("should fail when floating number is not in range in percentileDisc") (
+    executeAndEnsureError("MATCH (n) RETURN percentileDisc(n.prop, 1.1)",
+      "Invalid input '1.1' is not a valid argument, must be a number in the range 0.0 to 1.0 (line 1, column 41 (offset: 40))")
+  )
+
+  test("should fail when invalid percentile in percentileCont") (
+    executeAndEnsureError("MATCH (n) RETURN percentileCont(n.prop, 95)",
+      "Invalid input '95' is not a valid argument, must be a number in the range 0.0 to 1.0 (line 1, column 41 (offset: 40))")
+  )
+
+  test("should fail when floating number is not in range in percentileCont") (
+    executeAndEnsureError("MATCH (n) RETURN percentileCont(n.prop, -0.1)",
+      "Invalid input '-0.1' is not a valid argument, must be a number in the range 0.0 to 1.0 (line 1, column 41 (offset: 40))")
+  )
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
 

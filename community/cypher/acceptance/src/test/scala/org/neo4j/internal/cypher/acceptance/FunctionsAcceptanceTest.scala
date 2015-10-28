@@ -219,6 +219,23 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("n" -> node)))
   }
 
+  test("percentileDisc should work in the valid range") {
+    createNode("prop" -> 10.0)
+    createNode("prop" -> 20.0)
+    createNode("prop" -> 30.0)
 
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.0)") should equal (10.0 +- 0.1)
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 0.5)") should equal (20.0 +- 0.1)
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileDisc(n.prop, 1.0)") should equal (30.0 +- 0.1)
+  }
 
+  test("percentileCont should work in the valid range") {
+    createNode("prop" -> 10.0)
+    createNode("prop" -> 20.0)
+    createNode("prop" -> 30.0)
+
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 0)") should equal (10.0 +- 0.1)
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 0.5)") should equal (20.0 +- 0.1)
+    executeScalarWithAllPlanners[Double]("MATCH (n) RETURN percentileCont(n.prop, 1)") should equal (30.0 +- 0.1)
+  }
 }

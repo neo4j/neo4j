@@ -40,15 +40,16 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
+        withClue(s"failing on pattern $patternString") {
+          //update
+          updateWithBothPlanners(s"CREATE $patternString")
+          //delete
+          val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
+          updateWithBothPlanners(s"MATCH $patternString DELETE ${identifiers.mkString(",")} RETURN count(*)")
 
-        //update
-        updateWithBothPlanners(s"CREATE $patternString")
-        //delete
-        val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
-        updateWithBothPlanners(s"MATCH $patternString DELETE ${identifiers.mkString(",")} RETURN count(*)")
-
-        //now db should be empty
-        executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          //now db should be empty
+          executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+        }
       }
     }
   }
@@ -61,15 +62,16 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
+        withClue(s"failing on pattern $patternString") {
+          //update
+          updateWithBothPlanners(s"CREATE $patternString")
+          //delete
+          val identifiers = findAllNodeNames(pattern)
+          updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${identifiers.mkString(",")} RETURN count(*)")
 
-        //update
-        updateWithBothPlanners(s"CREATE $patternString")
-        //delete
-        val identifiers = findAllNodeNames(pattern)
-        updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${identifiers.mkString(",")} RETURN count(*)")
-
-        //now db should be empty
-        executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          //now db should be empty
+          executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+        }
       }
     }
   }
@@ -82,16 +84,17 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
+        withClue(s"failing on pattern $patternString") {
+          //update
+          updateWithBothPlanners(s"CREATE $patternString")
+          //delete
+          val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
+          val undirected = makeUndirected(pattern).map(_.string).mkString
+          updateWithBothPlanners(s"MATCH $undirected DELETE ${identifiers.mkString(",")}")
 
-        //update
-        updateWithBothPlanners(s"CREATE $patternString")
-        //delete
-        val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
-        val undirected = makeUndirected(pattern).map(_.string).mkString
-        updateWithBothPlanners(s"MATCH $undirected DELETE ${identifiers.mkString(",")}")
-
-        //now db should be empty
-        executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          //now db should be empty
+          executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+        }
       }
     }
   }
@@ -104,16 +107,17 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
+        withClue(s"failing on pattern $patternString") {
+          //update
+          updateWithBothPlanners(s"CREATE $patternString")
+          //delete
+          val identifiers = findAllNodeNames(pattern)
+          val undirected = makeUndirected(pattern).map(_.string).mkString
+          updateWithBothPlanners(s"MATCH $undirected DETACH DELETE ${identifiers.mkString(",")}")
 
-        //update
-        updateWithBothPlanners(s"CREATE $patternString")
-        //delete
-        val identifiers = findAllNodeNames(pattern)
-        val undirected = makeUndirected(pattern).map(_.string).mkString
-        updateWithBothPlanners(s"MATCH $undirected DETACH DELETE ${identifiers.mkString(",")}")
-
-        //now db should be empty
-        executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          //now db should be empty
+          executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+        }
       }
     }
   }
