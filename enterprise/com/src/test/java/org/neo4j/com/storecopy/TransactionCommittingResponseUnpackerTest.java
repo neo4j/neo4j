@@ -31,16 +31,24 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -49,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -60,9 +69,12 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -88,6 +100,8 @@ public class TransactionCommittingResponseUnpackerTest
     public final @Rule LifeRule life = new LifeRule();
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
+    private final LogService logging = new SimpleLogService(
+            new AssertableLogProvider(), new AssertableLogProvider() );
 
     /*
      * Tests that shutting down the response unpacker while in the middle of committing a transaction will
@@ -108,7 +122,7 @@ public class TransactionCommittingResponseUnpackerTest
         final BatchingTransactionRepresentationStoreApplier applier =
                 mock( BatchingTransactionRepresentationStoreApplier.class );
         final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking();
-        final KernelHealth kernelHealth = mock( KernelHealth.class );
+        final KernelHealth kernelHealth = newKernelHealth();
 
           /*
            * The tx handler is called on every transaction applied after setting its id to committing
@@ -178,7 +192,7 @@ public class TransactionCommittingResponseUnpackerTest
         final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking(  );
         final LogFile logFile = mock( LogFile.class );
         final LogRotation logRotation = mock( LogRotation.class );
-        final KernelHealth kernelHealth = mock( KernelHealth.class );
+        final KernelHealth kernelHealth = newKernelHealth();
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( logFile,
                 logRotation, indexUpdatesValidator, applier, appender,
@@ -223,7 +237,7 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     @Test
-    public void shouldIssueKernelPanicInCaseOfFailureToAppendOrApply() throws Throwable
+    public void shouldThrowInCaseOfFailureToAppend() throws Throwable
     {
         // GIVEN
         final TransactionAppender appender = mock( TransactionAppender.class );
@@ -234,8 +248,7 @@ public class TransactionCommittingResponseUnpackerTest
         final LogRotation logRotation = mock( LogRotation.class );
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( logFile, logRotation,
-                mock( IndexUpdatesValidator.class ), applier, appender, obligationFulfiller,
-                mock( KernelHealth.class ) );
+                mock( IndexUpdatesValidator.class ), applier, appender, obligationFulfiller, newKernelHealth() );
 
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -255,8 +268,100 @@ public class TransactionCommittingResponseUnpackerTest
         }
     }
 
+    private KernelHealth newKernelHealth()
+    {
+        Log log = logging.getInternalLog( getClass() );
+        return new KernelHealth( new KernelPanicEventGenerator( new KernelEventHandlers( log ) ), log );
+    }
+
     @Test
-    public void shouldNotApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
+    public void shouldThrowInCaseOfFailureToApply() throws Throwable
+    {
+        // GIVEN
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn(
+                new FakeCommitment( BASE_TX_ID + 1, txIdStore ) );
+
+        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        LogFile logFile = mock( LogFile.class );
+        KernelHealth kernelHealth = mock( KernelHealth.class );
+        when( kernelHealth.isHealthy() ).thenReturn( true );
+        LogRotation logRotation = mock( LogRotation.class );
+        BatchingTransactionRepresentationStoreApplier applier =
+                mock( BatchingTransactionRepresentationStoreApplier.class );
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                buildDependencies( logFile, logRotation, mock( IndexUpdatesValidator.class ), applier,
+                        appender, obligationFulfiller, kernelHealth ) );
+        unpacker.start();
+
+        // WHEN failing to append one or more transactions from a transaction stream response
+        UnderlyingStorageException failure = new UnderlyingStorageException( "Expected failure" );
+        doThrow( failure ).when( applier ).apply( any( TransactionRepresentation.class ),
+                any( ValidatedIndexUpdates.class ), any( LockGroup.class ), anyLong(),
+                any( TransactionApplicationMode.class ) );
+        try
+        {
+            unpacker.unpackResponse(
+                    new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 10 ), NO_OP_TX_HANDLER );
+            fail( "Should have failed" );
+        }
+        catch ( UnderlyingStorageException e )
+        {
+            assertThat( e.getMessage(), containsString( failure.getMessage() ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowIOExceptionIfKernelIsNotHealthy() throws Throwable
+    {
+        // GIVEN
+        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn(
+                new FakeCommitment( BASE_TX_ID + 1, txIdStore ) );
+        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+
+        TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
+        LogFile logFile = mock( LogFile.class );
+        KernelHealth kernelHealth = mock( KernelHealth.class );
+        when( kernelHealth.isHealthy() ).thenReturn( false );
+        Throwable causeOfPanic = new Throwable( "BOOM!" );
+        when( kernelHealth.getCauseOfPanic() ).thenReturn( causeOfPanic );
+        LogRotation logRotation = mock( LogRotation.class );
+        Function<DependencyResolver,IndexUpdatesValidator> indexUpdatesValidatorFunction =
+                Functions.constant( mock( IndexUpdatesValidator.class ) );
+        BatchingTransactionRepresentationStoreApplier applier =
+                mock( BatchingTransactionRepresentationStoreApplier.class );
+        Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> transactionStoreApplierFunction =
+                Functions.constant( applier );
+
+        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+                buildDependencies( logFile, logRotation, mock( IndexUpdatesValidator.class ), applier,
+                        appender, obligationFulfiller, kernelHealth ) );
+        unpacker.start();
+
+        try
+        {
+            // WHEN failing to append one or more transactions from a transaction stream response
+            unpacker.unpackResponse(
+                    new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 10 ), NO_OP_TX_HANDLER );
+            fail( "should have thrown" );
+        }
+        catch ( IOException e )
+        {
+            assertEquals( TransactionCommittingResponseUnpacker.msg, e.getMessage() );
+            assertEquals( causeOfPanic, e.getCause() );
+            ((AssertableLogProvider)logging.getInternalLogProvider()).assertContainsMessageContaining(
+                    TransactionCommittingResponseUnpacker.msg + " Original kernel panic cause was:\n" +
+                            causeOfPanic.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAppendOrApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
     {
         // Given
         final TransactionAppender appender = mockedTransactionAppender();
@@ -269,7 +374,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionCommittingResponseUnpacker.Dependencies deps =
                 buildDependencies( mock( LogFile.class ), mock( LogRotation.class ),
                         validator, storeApplier, appender, mock( TransactionObligationFulfiller.class ),
-                        mock( KernelHealth.class ) );
+                        newKernelHealth() );
 
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -402,6 +507,12 @@ public class TransactionCommittingResponseUnpackerTest
             public KernelHealth kernelHealth()
             {
                 return kernelHealth;
+            }
+
+            @Override
+            public LogService logService()
+            {
+                return logging;
             }
         };
     }

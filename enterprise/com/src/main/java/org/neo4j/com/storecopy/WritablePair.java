@@ -19,20 +19,13 @@
  */
 package org.neo4j.com.storecopy;
 
-import java.io.IOException;
-
-import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
-
-/**
- * Visits queued transactions.
- *
- * @see TransactionQueue
- */
-interface TransactionVisitor
+public interface WritablePair<FIRST, OTHER>
 {
-    void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-            WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException;
+    FIRST getFirst();
+
+    OTHER getOther();
+
+    void setFirst( FIRST value );
+
+    void setOther( OTHER value );
 }
