@@ -54,8 +54,9 @@ import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.System.currentTimeMillis;
 
 public class BackupServiceStressTestingBuilder
 {

@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
  * {@link org.neo4j.kernel.impl.transaction.command.Command}s in transaction state.
  * It is done by inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands and asking
  * {@link org.neo4j.kernel.impl.api.index.IndexingService} to check those via
- * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable)}.
+ * {@link org.neo4j.kernel.impl.api.index.IndexingService#validate(Iterable, IndexUpdateMode)}.
  */
 public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
 {
@@ -58,8 +58,7 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     }
 
     @Override
-    public ValidatedIndexUpdates validate( TransactionRepresentation transaction )
-            throws IOException
+    public ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException
     {
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
         try

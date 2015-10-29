@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -59,9 +59,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -241,17 +238,6 @@ public class OnlineIndexUpdatesValidatorTest
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
         return new OnlineIndexUpdatesValidator( neoStores, null, propertyLoader, indexingService, ONLINE );
-    }
-
-    private static Command nodeAddRandomLabelsCommand( long nodeId )
-    {
-        NodeRecord before = new NodeRecord( nodeId, true, false, NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_PROPERTY.intValue(), NO_LABELS_FIELD.intValue() );
-        NodeRecord after = new NodeRecord( nodeId, true, false, NO_NEXT_RELATIONSHIP.intValue(),
-                NO_NEXT_PROPERTY.intValue(), ThreadLocalRandom.current().nextLong( 100 ) );
-        NodeCommand command = new NodeCommand();
-        command.init( before, after );
-        return command;
     }
 
     private static NodePropertyCommands createNodeWithLabelAndPropertyCommands( long nodeId, int label, int property )

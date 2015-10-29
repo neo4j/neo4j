@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -120,5 +121,11 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
                 return resolver.resolveDependency( TransactionAppender.class );
             }
         };
+    }
+
+    @Override
+    public LogService logService()
+    {
+        return resolver.resolveDependency( LogService.class );
     }
 }
