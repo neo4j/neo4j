@@ -24,10 +24,12 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -44,11 +46,13 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final CheckPointerMonitor checkPointerMonitor;
     private final LogRotationMonitor logRotationMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final DependencyResolver dependencyResolver;
+    private final LogService logService;
 
     public Neo4jMetricsFactory( MetricRegistry registry, Config config, Monitors monitors,
             TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
             CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
-            IdGeneratorFactory idGeneratorFactory )
+            IdGeneratorFactory idGeneratorFactory, DependencyResolver dependencyResolver, LogService logService )
     {
         this.registry = registry;
         this.config = config;
@@ -58,6 +62,8 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         this.checkPointerMonitor = checkPointerMonitor;
         this.logRotationMonitor = logRotationMonitor;
         this.idGeneratorFactory = idGeneratorFactory;
+        this.dependencyResolver = dependencyResolver;
+        this.logService = logService;
     }
 
     @Override
@@ -66,9 +72,10 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         final DBMetrics dbMetrics = new DBMetrics( registry, config,
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
-        final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry );
-        final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );
+        final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry, dependencyResolver,
+                logService );
         final CypherMetrics cypherMetrics = new CypherMetrics( config, monitors, registry );
+        final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );
         return new LifecycleAdapter()
         {
             @Override

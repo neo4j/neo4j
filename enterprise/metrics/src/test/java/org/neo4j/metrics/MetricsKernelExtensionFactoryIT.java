@@ -19,7 +19,6 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,24 +26,27 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.metrics.source.CypherMetrics;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.CsvFile.single;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvFile;
@@ -54,34 +56,32 @@ public class MetricsKernelExtensionFactoryIT
 {
     @Rule
     public final TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    GraphDatabaseService db;
     private File outputFile;
+    private ClusterManager.ManagedCluster cluster;
+    private HighlyAvailableGraphDatabase db;
 
     @Before
-    public void setup() throws IOException
+    public void setup() throws Exception
     {
-        String dbPath = folder.directory( "data" ).getAbsolutePath();
         outputFile = folder.file( "metrics.csv" );
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).
-                setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).
-                setConfig( GraphDatabaseSettings.cypher_min_replan_interval, "0" ).
-                setConfig( csvEnabled, Settings.TRUE ).
-                setConfig( csvFile, single.name() ).
-                setConfig( csvPath, outputFile.getAbsolutePath() ).newGraphDatabase();
-    }
-
-    @After
-    public void shutdown()
-    {
-        db.shutdown();
+        Map<String,String> config = new HashMap<>();
+        config.put( csvEnabled.name(), Settings.TRUE );
+        config.put( cypher_min_replan_interval.name(), "0" );
+        config.put( csvFile.name(), single.name() );
+        config.put( csvPath.name(), outputFile.getAbsolutePath() );
+        cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
+        db = cluster.getMaster();
     }
 
     @Test
-    public void mustLoadMetricsExtensionWhenConfigured() throws Exception
+    public void mustLoadMetricsExtensionWhenConfigured() throws Throwable
     {
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
+        cluster.stop();
 
         // Awesome. Let's get some metric numbers.
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
@@ -106,12 +106,12 @@ public class MetricsKernelExtensionFactoryIT
     }
 
     @Test
-    public void showReplanEvents() throws Exception
+    public void showReplanEvents() throws Throwable
     {
         //do a simple query to populate cache
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "match (n:Label {name: 'Pontus'}) return n.name");
+            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
             tx.success();
         }
         //add some data, should make plan stale
@@ -124,12 +124,13 @@ public class MetricsKernelExtensionFactoryIT
         }
         //add more data just to make sure metrics are flushed
         addNodes( 1000 );
+        cluster.stop();
 
         //now we should have one replan event
         try ( BufferedReader reader = new BufferedReader( new FileReader( outputFile ) ) )
         {
             String[] headers = reader.readLine().split( "," );
-            int replanColumn = Arrays.binarySearch( headers, CypherMetrics.REPLAN_EVENTS);
+            int replanColumn = Arrays.binarySearch( headers, CypherMetrics.REPLAN_EVENTS );
             assertThat( replanColumn, is( not( -1 ) ) );
 
             // Now we can verify that the number of committed transactions should never decrease.
@@ -147,7 +148,8 @@ public class MetricsKernelExtensionFactoryIT
         }
     }
 
-    private void addNodes( int numberOfNodes ) {
+    private void addNodes( int numberOfNodes )
+    {
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             try ( Transaction tx = db.beginTx() )
@@ -158,5 +160,4 @@ public class MetricsKernelExtensionFactoryIT
             }
         }
     }
-
 }
