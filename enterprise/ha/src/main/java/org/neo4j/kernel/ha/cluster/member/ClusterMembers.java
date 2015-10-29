@@ -76,8 +76,8 @@ public class ClusterMembers
         {
             return null;
         }
-        String currentRole = roleOf( stateMachine.getCurrentState() );
-        return currentMember.availableAs( currentRole, currentMember.getHAUri(), currentMember.getStoreId() );
+        HighAvailabilityMemberState currentState = stateMachine.getCurrentState();
+        return updateRole( currentMember, currentState );
     }
 
     public String getCurrentMemberRole()
@@ -113,16 +113,16 @@ public class ClusterMembers
         }, members );
     }
 
-    private static String roleOf( HighAvailabilityMemberState state )
+    private static ClusterMember updateRole( ClusterMember member, HighAvailabilityMemberState state )
     {
         switch ( state )
         {
         case MASTER:
-            return HighAvailabilityModeSwitcher.MASTER;
+            return member.availableAs( HighAvailabilityModeSwitcher.MASTER, member.getHAUri(), member.getStoreId() );
         case SLAVE:
-            return HighAvailabilityModeSwitcher.SLAVE;
+            return member.availableAs( HighAvailabilityModeSwitcher.SLAVE, member.getHAUri(), member.getStoreId() );
         default:
-            return HighAvailabilityModeSwitcher.UNKNOWN;
+            return member.unavailable();
         }
     }
 }
