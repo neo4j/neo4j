@@ -74,7 +74,7 @@ public class TransactionRepresentationCommitProcessTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
-                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
+                transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
@@ -108,7 +108,7 @@ public class TransactionRepresentationCommitProcessTest
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
                 any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
-                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
+                transactionIdStore, storeApplier, mockedIndexUpdatesValidator() );
         TransactionRepresentation transaction = mockedTransaction();
 
         // WHEN
@@ -137,7 +137,7 @@ public class TransactionRepresentationCommitProcessTest
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ) ) ).thenThrow( error );
 
         TransactionRepresentationCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                mock( LogicalTransactionStore.class ), mock( KernelHealth.class ), mock( TransactionIdStore.class ),
+                mock( LogicalTransactionStore.class ), mock( TransactionIdStore.class ),
                 mock( TransactionRepresentationStoreApplier.class ), indexUpdatesValidator );
 
         try ( LockGroup lockGroup = new LockGroup() )

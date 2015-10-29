@@ -49,7 +49,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -110,6 +109,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -128,9 +128,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1458,8 +1455,9 @@ public class NeoStoreTransactionTest
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
     {
-        return commitProcess( indexing, new OnlineIndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ),
-                indexing, IndexUpdateMode.ONLINE ) );
+        OnlineIndexUpdatesValidator indexUpdatesValidator = new OnlineIndexUpdatesValidator( neoStore,
+                new PropertyLoader( neoStore ), indexing, IndexUpdateMode.ONLINE );
+        return commitProcess( indexing, indexUpdatesValidator);
     }
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
@@ -1475,14 +1473,12 @@ public class NeoStoreTransactionTest
         Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
         when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null, null );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStore.nextCommittingTransactionId();
-
-        return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
-                neoStore, applier, indexUpdatesValidator );
+        return new TransactionRepresentationCommitProcess( txStoreMock, neoStore, applier, indexUpdatesValidator );
     }
 
     @After

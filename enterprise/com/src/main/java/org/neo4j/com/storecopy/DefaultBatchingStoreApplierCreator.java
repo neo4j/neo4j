@@ -21,6 +21,7 @@ package org.neo4j.com.storecopy;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
@@ -45,7 +46,7 @@ class DefaultBatchingStoreApplierCreator implements
                 resolver.resolveDependency( LockService.class ),
                 resolver.resolveDependency( LegacyIndexApplierLookup.class ),
                 resolver.resolveDependency( IndexConfigStore.class ),
-
+                resolver.resolveDependency( KernelHealth.class ),
                 // Ideally we don't want/need a real IdOrderingQueue here because we know that
                 // we only have a single thread applying updates as a slave anyway. But the thing
                 // is that it's hard to change a TransactionAppender depending on role, so we

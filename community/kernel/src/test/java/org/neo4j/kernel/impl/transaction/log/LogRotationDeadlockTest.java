@@ -101,9 +101,8 @@ public class LogRotationDeadlockTest
         // commit process
         LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
         when( txStore.getAppender() ).thenReturn( appender );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( txStore,
-                health, txIdStore, mock( TransactionRepresentationStoreApplier.class ),
-                mock( IndexUpdatesValidator.class ) );
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( txStore, txIdStore,
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ) );
 
         // WHEN
         // trapping an appender in between having its transaction committed and closed

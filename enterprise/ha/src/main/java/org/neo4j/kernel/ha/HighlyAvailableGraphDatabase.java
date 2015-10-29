@@ -55,7 +55,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -434,23 +433,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return new CommitProcessFactory()
         {
             @Override
-            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
-                                                    KernelHealth kernelHealth, NeoStore neoStore,
+            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
                                                     NeoStoreInjectedTransactionValidator txValidator,
                                                     IndexUpdatesValidator indexUpdatesValidator, Config config )
             {
                 if ( config.get( GraphDatabaseSettings.read_only ) )
                 {
-                    return defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
+                    return defaultCommitProcessFactory.create( logicalTransactionStore, neoStore,
                             storeApplier, txValidator, indexUpdatesValidator, config );
                 }
                 else
                 {
-
-                    TransactionCommitProcess inner =
-                            defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                                    storeApplier, txValidator, indexUpdatesValidator, config );
+                    TransactionCommitProcess inner = defaultCommitProcessFactory.create( logicalTransactionStore,
+                            neoStore, storeApplier, txValidator, indexUpdatesValidator, config );
                     paxosLife.add( new CommitProcessSwitcher( pusher, master, commitProcessDelegate,
                             requestContextFactory, highAvailabilityModeSwitcher, txValidator, inner ) );
 

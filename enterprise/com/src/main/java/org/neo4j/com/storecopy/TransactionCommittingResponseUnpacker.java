@@ -43,8 +43,9 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.util.Access;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
@@ -54,27 +55,27 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
  * store},
  * in batches.
- * <p>
+ * <p/>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
  * and same thread.
  */
 public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
 {
-    private final DependencyResolver resolver;
-    private final Function<DependencyResolver,IndexUpdatesValidator> validatorFunction;
-    private final TransactionQueue transactionQueue;
     // Visits all queued transactions, committing them
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
+                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
         {
             // Tuck away the Commitment returned from the call to append. We'll use each Commitment right before
             // applying each transaction.
-            Commitment commitment = appender.append( transaction.getTransactionRepresentation(),
-                    transaction.getCommitEntry().getTxId() );
-            commitmentAccess.set( commitment );
+            TransactionRepresentation representation = transaction.getTransactionRepresentation();
+            ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation );
+            Commitment commitment = appender.append( representation, transaction.getCommitEntry().getTxId() );
+            pair.setFirst( commitment );
+            pair.setOther( indexUpdates );
+
         }
     };
     // Visits all queued, and recently appended, transactions, applying them to the store
@@ -82,13 +83,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
+                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            commitmentAccess.get().publishAsCommitted();
+            pair.getFirst().publishAsCommitted();
             try ( LockGroup locks = new LockGroup();
-                  ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation ) )
+                  ValidatedIndexUpdates indexUpdates = pair.getOther() )
             {
                 storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
                 handler.accept( transaction );
@@ -99,14 +100,23 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
+                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
         {
-            if ( commitmentAccess.get().markedAsCommitted() )
+            if ( pair.getFirst().markedAsCommitted() )
             {
                 transactionIdStore.transactionClosed( transaction.getCommitEntry().getTxId() );
             }
         }
     };
+
+    static final String msg = "Kernel panic detected: pulled transactions cannot be applied to a non-healthy database. "
+                              + "In order to resolve this issue a manual restart of this instance is required.";
+
+    private final DependencyResolver resolver;
+    private final Function<DependencyResolver,IndexUpdatesValidator> validatorFunction;
+    private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
+    private final TransactionQueue transactionQueue;
+
     private TransactionAppender appender;
     private BatchingTransactionRepresentationStoreApplier storeApplier;
     private IndexUpdatesValidator indexUpdatesValidator;
@@ -114,18 +124,18 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
     private LogRotation logRotation;
-    private volatile boolean stopped;
     private KernelHealth kernelHealth;
-    private final Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> applierFunction;
+    private StringLogger log;
+
+    private volatile boolean stopped;
 
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize )
     {
-        this.resolver = resolver;
-        this.validatorFunction = new DefaultIndexUpdatesValidatorCreator();
-        this.applierFunction = new DefaultBatchingStoreApplierCreator();
-        this.transactionQueue = new TransactionQueue( maxBatchSize );
+        this( resolver, maxBatchSize,
+                new DefaultIndexUpdatesValidatorCreator(), new DefaultBatchingStoreApplierCreator() );
     }
 
+    // test only
     public TransactionCommittingResponseUnpacker( DependencyResolver resolver, int maxBatchSize,
             // These two are just for testing purposes, to inject different behaviour.
             // It's made hard by the fact this class is not accepting dependencies in its constructor,
@@ -188,6 +198,14 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             // Check rotation explicitly, since the version of append that we're calling isn't doing that.
             logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
 
+            // Check kernel health after log rotation
+            if ( !kernelHealth.isHealthy() )
+            {
+                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
+                log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
+                throw new IOException( msg, causeOfPanic );
+            }
+
             try
             {
                 // Apply whatever is in the queue
@@ -219,12 +237,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     }
                 }
             }
-            catch ( IOException e )
-            {
-                // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
-                kernelHealth.panic( e );
-                throw e;
-            }
             finally
             {
                 transactionQueue.clear();
@@ -248,6 +260,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.logFile = resolver.resolveDependency( LogFile.class );
         this.logRotation = resolver.resolveDependency( LogRotation.class );
         this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        this.log = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
         this.stopped = false;
     }
 

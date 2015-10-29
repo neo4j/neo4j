@@ -48,7 +48,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.util.Condition;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -211,7 +210,7 @@ public class BackupServiceStressTestingBuilder
                 executor.execute( new Runnable()
                 {
                     private final BackupService backupService = new BackupService(
-                            fileSystem, StringLogger.DEV_NULL, new Monitors() );
+                            fileSystem, DevNullLoggingService.DEV_NULL, new Monitors() );
 
                     @Override
                     public void run()

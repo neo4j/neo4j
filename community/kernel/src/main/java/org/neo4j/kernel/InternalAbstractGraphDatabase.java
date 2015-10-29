@@ -226,8 +226,7 @@ public abstract class InternalAbstractGraphDatabase
     public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()
     {
         @Override
-        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
-                                                KernelHealth kernelHealth, NeoStore neoStore,
+        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, NeoStore neoStore,
                                                 TransactionRepresentationStoreApplier storeApplier,
                                                 NeoStoreInjectedTransactionValidator txValidator,
                                                 IndexUpdatesValidator indexUpdatesValidator, Config config )
@@ -238,8 +237,8 @@ public abstract class InternalAbstractGraphDatabase
             }
             else
             {
-                return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                        neoStore, storeApplier, indexUpdatesValidator );
+                return new TransactionRepresentationCommitProcess( logicalTransactionStore, neoStore, storeApplier,
+                        indexUpdatesValidator );
             }
         }
     };
