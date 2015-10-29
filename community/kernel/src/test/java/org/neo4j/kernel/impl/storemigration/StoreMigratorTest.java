@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.io.Reader;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -43,9 +44,15 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 
 @RunWith(Parameterized.class)
 public class StoreMigratorTest
@@ -59,15 +66,21 @@ public class StoreMigratorTest
 
     @Parameterized.Parameter(0)
     public  String version;
+    @Parameterized.Parameter(1)
+    public LogPosition expectedLogPosition;
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
-                new Object[]{Legacy19Store.LEGACY_VERSION},
-                new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION}
+                new Object[]{
+                        Legacy19Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy20Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy21Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )}
         );
     }
 
@@ -132,5 +145,40 @@ public class StoreMigratorTest
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
         storeFactory.openNeoStoresEagerly().close();
+    }
+
+    @Test
+    public void shouldComputeTheLastTxLogPositionCorrectly() throws Throwable
+    {
+        // GIVEN a legacy database
+        File storeDirectory = directory.graphDbDir();
+        File prepare = directory.directory( "prepare" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
+        // and a state of the migration saying that it has done the actual migration
+        LogService logService = NullLogService.getInstance();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        UpgradableDatabase upgradableDatabase =
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
+        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
+        fs.mkdirs( migrationDir );
+
+        // WHEN migrating
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+
+        // THEN it should compute the correct last tx log position
+
+        try ( Reader reader = fs.openAsReader( new File( migrationDir, "lastxlogposition" ), Charsets.UTF_8.name() ) )
+        {
+            char[] buffer = new char[4096];
+            int chars = reader.read( buffer );
+            String s = String.valueOf( buffer, 0, chars );
+            String[] split = s.split( "A" );
+            assertEquals( expectedLogPosition,
+                    new LogPosition( Long.parseLong( split[0] ), Long.parseLong( split[1] ) ) );
+        }
     }
 }

@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicatio
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -105,6 +106,7 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -155,7 +157,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
         long lastTxChecksum = extractTransactionChecksum( neoStore, storeDir, lastTxId );
-        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, lastTxId );
+        LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, storeDir, lastTxId );
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
@@ -265,24 +267,33 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private LogPosition extractTransactionLogPosition( File neoStore, long lastTxId ) throws IOException
+    private LogPosition extractTransactionLogPosition( File neoStore, File storeDir, long lastTxId ) throws IOException
     {
-        try
+        long lastClosedTxLogVersion =
+                MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+        long lastClosedTxLogByteOffset =
+                MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+        if ( lastClosedTxLogVersion != MetaDataStore.FIELD_NOT_PRESENT &&
+             lastClosedTxLogByteOffset != MetaDataStore.FIELD_NOT_PRESENT )
         {
-            long lastClosedTxLogVersion =
-                    MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
-            long lastClosedTxLogByteOffset =
-                    MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
             return new LogPosition( lastClosedTxLogVersion, lastClosedTxLogByteOffset );
         }
-        catch ( IllegalStateException e )
+
+        // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
+        if ( lastTxId == TransactionIdStore.BASE_TX_ID )
         {
-            // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
-            return lastTxId == TransactionIdStore.BASE_TX_ID
-                   ? new LogPosition(TransactionIdStore.BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )
-                   : new LogPosition( MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION ),
-                           BASE_TX_LOG_BYTE_OFFSET );
+            return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
+
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fileSystem );
+        long logVersion = logFiles.getHighestLogVersion();
+        if ( logVersion == -1 )
+        {
+            return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+        }
+        long offset = fileSystem.getFileSize( logFiles.getLogFileForVersion( logVersion ) );
+        return new LogPosition( logVersion, offset );
+
     }
 
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
