@@ -51,8 +51,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.subprocess.BreakpointTrigger;
-import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.startsWith;
@@ -75,10 +73,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    @BreakpointTrigger
-    private void performTest() throws Exception
+    private void performTest( String neostoreFileName ) throws Exception
     {
-        File idFile = new File( storeDir, Thread.currentThread().getStackTrace()[2].getMethodName().replace( '_', '.' ) + ".id" );
+        File idFile = new File( storeDir, neostoreFileName + ".id" );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( idFile );
         NeoStores neoStores = null;
@@ -256,74 +253,64 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_nodestore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_arrays() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_ARRAYS_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index_keys() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_strings() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STRINGS_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshipstore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db_names() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
     }
 
     private IdGeneratorRebuildFailureEmulationTest()
