@@ -100,7 +100,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
+      <artifactId>neo4j-ha</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>test-jar</type>
@@ -135,6 +135,11 @@
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
