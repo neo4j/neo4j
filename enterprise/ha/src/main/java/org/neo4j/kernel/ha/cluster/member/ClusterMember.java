@@ -119,6 +119,11 @@ public class ClusterMember
         return new ClusterMember( this.instanceId, copy, storeId, this.alive );
     }
 
+    ClusterMember unavailable()
+    {
+        return new ClusterMember( this.instanceId, Collections.<String,URI>emptyMap(), storeId, this.alive );
+    }
+
     ClusterMember unavailableAs( String role )
     {
         return new ClusterMember( this.instanceId, MapUtil.copyAndRemove( roles, role ), this.storeId, this.alive );
