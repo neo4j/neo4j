@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
@@ -79,6 +80,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
             deleteIndexesContainingArrayValues( storeDir, schemaIndexProvider );
             break;
         case Legacy22Store.LEGACY_VERSION:
+        case Legacy23Store.LEGACY_VERSION:
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );

@@ -333,4 +333,16 @@ public class StoreUpgrader
             super( String.format( MESSAGE, filename, expectedVersion, actualVersion ) );
         }
     }
+
+    public static class DatabaseNotCleanlyShutDown extends UnableToUpgradeException
+    {
+        private static final String MESSAGE =
+                "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
+                + "please run the old version of the database on this store.";
+
+        public DatabaseNotCleanlyShutDown()
+        {
+            super( MESSAGE );
+        }
+    }
 }

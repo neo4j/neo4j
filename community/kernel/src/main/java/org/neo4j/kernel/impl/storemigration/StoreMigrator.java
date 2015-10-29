@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -114,10 +115,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
- * <p/>
+ * <p>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
- * <p/>
+ * <p>
  * Just one out of many potential participants in a {@link StoreUpgrader migration}.
  *
  * @see StoreUpgrader
@@ -163,9 +164,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-
         switch ( versionToMigrateFrom )
         {
+        case Legacy23Store.LEGACY_VERSION:
         case Legacy22Store.LEGACY_VERSION:
             // nothing to do
             break;
@@ -370,7 +371,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Configuration importConfig = new Configuration.Overridden( config );
         AdditionalInitialIds additionalInitialIds =
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum,  lastTxLogVersion, lastTxLogByteOffset );
+                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),
@@ -776,6 +777,7 @@ public class StoreMigrator implements StoreMigrationParticipant
             idFilesToDelete = new StoreFile[]{};
             break;
         case Legacy22Store.LEGACY_VERSION:
+        case Legacy23Store.LEGACY_VERSION:
             filesToMove = Collections.emptyList();
             idFilesToDelete = new StoreFile[]{};
             break;
@@ -795,7 +797,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                 true, // allow to overwrite target files
                 StoreFileType.values() );
 
-        StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
+        if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
+        {
+            StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
+        }
 
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long logVersion = MetaDataStore.getRecord( pageCache, neoStore, Position.LOG_VERSION );
@@ -807,8 +812,11 @@ public class StoreMigrator implements StoreMigrationParticipant
         // delete old logs
         legacyLogs.deleteUnusedLogFiles( storeDir );
 
-        // write a check point in the log in order to make recovery work in the newer version
-        new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
+        if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
+        {
+            // write a check point in the log in order to make recovery work in the newer version
+            new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
+        }
     }
 
     @Override
@@ -818,6 +826,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         {
         case Legacy19Store.LEGACY_VERSION:
         case Legacy20Store.LEGACY_VERSION:
+        case Legacy23Store.LEGACY_VERSION:
             // nothing to do
             break;
         case Legacy21Store.LEGACY_VERSION:
