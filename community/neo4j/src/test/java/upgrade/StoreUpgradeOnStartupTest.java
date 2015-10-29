@@ -44,10 +44,12 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -56,6 +58,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyS
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
 @RunWith( Parameterized.class )
@@ -65,7 +68,7 @@ public class StoreUpgradeOnStartupTest
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public String version;
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -79,7 +82,8 @@ public class StoreUpgradeOnStartupTest
                 new Object[]{Legacy19Store.LEGACY_VERSION},
                 new Object[]{Legacy20Store.LEGACY_VERSION},
                 new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION}
+                new Object[]{Legacy22Store.LEGACY_VERSION},
+                new Object[]{Legacy23Store.LEGACY_VERSION}
         );
     }
 
@@ -91,8 +95,8 @@ public class StoreUpgradeOnStartupTest
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertTrue( allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
-
+        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+                allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
 
     @Test
@@ -113,8 +117,7 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
-        truncateFile( fileSystem, file, "StringPropertyStore " + version );
+        makeDbNotCleanlyShutdown();
         try
         {
             // when
@@ -125,7 +128,21 @@ public class StoreUpgradeOnStartupTest
         catch ( RuntimeException e )
         {
             // then
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
+            assertThat( Exceptions.rootCause( e ),
+                    Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
+        }
+    }
+
+    private void makeDbNotCleanlyShutdown() throws IOException
+    {
+        if ( Legacy23Store.LEGACY_VERSION.equals( version ) )
+        {
+            removeCheckPointFromTxLog( fileSystem, workingDirectory );
+        }
+        else
+        {
+            File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
+            truncateFile( fileSystem, file, "StringPropertyStore " + version );
         }
     }
 
