@@ -47,7 +47,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class TestDynamicStore
 {
@@ -94,7 +93,7 @@ public class TestDynamicStore
 
     private DynamicArrayStore createDynamicArrayStore()
     {
-        neoStores = storeFactory.openNeoStores( SF_CREATE );
+        neoStores = storeFactory.openAllNeoStores( true );
         return neoStores.getPropertyStore().getArrayStore();
     }
 

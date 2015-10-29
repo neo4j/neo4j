@@ -66,7 +66,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             {
                 StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance() );
 
-                NeoStores neoStores = factory.openNeoStoresEagerly();
+                NeoStores neoStores = factory.openAllNeoStores();
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
             }
             else

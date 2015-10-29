@@ -153,7 +153,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
@@ -276,7 +275,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
-        neoStores = sf.openNeoStores( SF_CREATE );
+        neoStores = sf.openAllNeoStores( true );
         neoStores.verifyStoreOk();
 
         nodeStore = neoStores.getNodeStore();

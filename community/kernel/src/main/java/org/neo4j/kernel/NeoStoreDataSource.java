@@ -184,7 +184,6 @@ import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
@@ -659,7 +658,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             }
         } );
 
-        final NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
+        final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         return new NeoStoreModule()
         {
             @Override

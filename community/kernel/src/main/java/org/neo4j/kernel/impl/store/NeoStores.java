@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -54,6 +54,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  */
 public class NeoStores implements AutoCloseable
 {
+
+    private static final String STORE_ALREADY_CLOSED_MESSAGE = "Specified store was already closed.";
+    private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify" +
+                                                                 " %s as one of the stores types that should be open" +
+                                                                 " to be able to use it.";
+
     public static boolean isStorePresent( PageCache pageCache, File storeDir )
     {
         File metaDataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -67,7 +73,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    private enum StoreType
+    public enum StoreType
     {
         NODE_LABEL
         {
@@ -88,7 +94,7 @@ public class NeoStores implements AutoCloseable
             {
                 File fileName = me.getStoreFileName( StoreFactory.NODE_STORE_NAME );
                 return me.initialize( new NodeStore( fileName, me.config, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider, me.getNodeLabelStore() ) );
+                        me.logProvider, (DynamicArrayStore) me.getOrCreateStore( NODE_LABEL ) ) );
             }
         },
         PROPERTY_KEY_TOKEN_NAME
@@ -108,7 +114,8 @@ public class NeoStores implements AutoCloseable
             {
                 File fileName = me.getStoreFileName( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
                 return me.initialize( new PropertyKeyTokenStore( fileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider, me.getPropertyKeyTokenNamesStore() ) );
+                        me.pageCache, me.logProvider,
+                        (DynamicStringStore) me.getOrCreateStore( PROPERTY_KEY_TOKEN_NAME ) ) );
             }
         },
         PROPERTY_STRING
@@ -141,7 +148,10 @@ public class NeoStores implements AutoCloseable
                 File fileName = me.getStoreFileName( StoreFactory.PROPERTY_STORE_NAME );
                 return me.initialize( new PropertyStore(
                         fileName, me.config, me.idGeneratorFactory, me.pageCache, me.logProvider,
-                        me.getStringPropertyStore(), me.getPropertyKeyTokenStore(), me.getArrayPropertyStore() ) );
+                        (DynamicStringStore) me.getOrCreateStore( PROPERTY_STRING ),
+                        (PropertyKeyTokenStore) me.getOrCreateStore( PROPERTY_KEY_TOKEN ),
+                        (DynamicArrayStore) me.getOrCreateStore( PROPERTY_ARRAY )
+                ) );
             }
         },
         RELATIONSHIP
@@ -174,7 +184,8 @@ public class NeoStores implements AutoCloseable
             {
                 File fileName = me.getStoreFileName( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
                 return me.initialize( new RelationshipTypeTokenStore( fileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider, me.getRelationshipTypeTokenNamesStore() ) );
+                        me.pageCache, me.logProvider, (DynamicStringStore) me.getOrCreateStore(
+                        RELATIONSHIP_TYPE_TOKEN_NAME ) ) );
             }
         },
         LABEL_TOKEN_NAME
@@ -194,7 +205,7 @@ public class NeoStores implements AutoCloseable
             {
                 File fileName = me.getStoreFileName( StoreFactory.LABEL_TOKEN_STORE_NAME );
                 return me.initialize( new LabelTokenStore( fileName, me.config, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider, me.getLabelTokenNamesStore() ) );
+                        me.logProvider, (DynamicStringStore) me.getOrCreateStore( LABEL_TOKEN_NAME ) ) );
             }
         },
         SCHEMA
@@ -242,7 +253,7 @@ public class NeoStores implements AutoCloseable
                     @Override
                     public long initialVersion()
                     {
-                        return me.getMetaDataStore().getLastCommittedTransactionId();
+                        return ((MetaDataStore) me.getOrCreateStore( META_DATA )).getLastCommittedTransactionId();
                     }
                 } );
 
@@ -288,12 +299,12 @@ public class NeoStores implements AutoCloseable
 
         private final boolean recordStore;
 
-        private StoreType()
+        StoreType()
         {
             this( true );
         }
 
-        private StoreType( boolean recordStore )
+        StoreType( boolean recordStore )
         {
             this.recordStore = recordStore;
         }
@@ -324,12 +335,10 @@ public class NeoStores implements AutoCloseable
     private final boolean createIfNotExist;
     private final File storeDir;
     private final File neoStoreFileName;
+    private final StoreType[] initializedStores;
     private final FileSystemAbstraction fileSystemAbstraction;
     // All stores, as Object due to CountsTracker being different that all other stores.
     private final Object[] stores;
-    // The way a store is retrieved. As a function since if eagerly initialized then no synchronization
-    // is required for getting/initializing
-    private final Function<StoreType,Object> storeGetter;
 
     NeoStores(
             File neoStoreFileName,
@@ -339,7 +348,7 @@ public class NeoStores implements AutoCloseable
             final LogProvider logProvider,
             FileSystemAbstraction fileSystemAbstraction,
             boolean createIfNotExist,
-            boolean eagerlyInitializedStores )
+            StoreType... storeTypes )
     {
         this.neoStoreFileName = neoStoreFileName;
         this.config = config;
@@ -350,38 +359,12 @@ public class NeoStores implements AutoCloseable
         this.createIfNotExist = createIfNotExist;
         this.storeDir = neoStoreFileName.getParentFile();
 
-        final Object[] stores = new Object[STORE_TYPES.length];
-        if ( eagerlyInitializedStores )
+        stores = new Object[StoreType.values().length];
+        for ( StoreType type : storeTypes )
         {
-            // Ensure they're all instantiated and initialized
-            // So that we can just return from the array without fuzz
-            this.storeGetter = new Function<StoreType,Object>()
-            {
-                @Override
-                public Object apply( StoreType type )
-                {
-                    return stores[type.ordinal()];
-                }
-            };
-            for ( StoreType type : STORE_TYPES )
-            {
-                getInitializedStore( type, stores );
-            }
+            getOrCreateStore( type );
         }
-        else
-        {
-            // Do synchronization on every call since the stores are opened lazily.
-            this.storeGetter = new Function<StoreType,Object>()
-            {
-                @Override
-                public Object apply( StoreType type )
-                {
-                    return getInitializedStore( type, stores );
-                }
-            };
-        }
-
-        this.stores = stores;
+        initializedStores = storeTypes;
     }
 
     public File getStoreDir()
@@ -433,14 +416,12 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    private synchronized Object getInitializedStore( StoreType type, Object[] stores )
+    private Object openStore( StoreType type )
     {
-        int i = type.ordinal();
-        if ( stores[i] == null )
-        {
-            stores[i] = type.open( this );
-        }
-        return stores[i];
+        int storeIndex = type.ordinal();
+        Object store = type.open( this );
+        stores[storeIndex] = store;
+        return store;
     }
 
     <T extends CommonAbstractStore> T initialize( T store )
@@ -450,11 +431,50 @@ public class NeoStores implements AutoCloseable
     }
 
     /**
+     * Returns specified store by type from already opened store array. If store is not opened exception will be
+     * thrown.
+     *
+     * @see #getOrCreateStore
+     * @param storeType store type to retrieve
+     * @return store of requested type
+     * @throws IllegalStateException if opened store not found
+     */
+    private Object getStore(StoreType storeType)
+    {
+        Object store = stores[storeType.ordinal()];
+        if ( store == null )
+        {
+            String message = ArrayUtil.contains( initializedStores, storeType ) ? STORE_ALREADY_CLOSED_MESSAGE :
+                             String.format( STORE_NOT_INITIALIZED_TEMPLATE, storeType.name() );
+            throw new IllegalStateException( message );
+        }
+        return store;
+    }
+
+    /**
+     * Returns specified store by type from already opened store array. Will open a new store if can't find any.
+     * Should be used only during construction of stores.
+     *
+     * @see #getStore
+     * @param storeType store type to get or create
+     * @return store of requested type
+     */
+    private Object getOrCreateStore( StoreType storeType )
+    {
+        Object store = stores[storeType.ordinal()];
+        if ( store == null )
+        {
+            store = openStore( storeType );
+        }
+        return store;
+    }
+
+    /**
      * @return the NeoStore.
      */
     public MetaDataStore getMetaDataStore()
     {
-        return (MetaDataStore) storeGetter.apply( StoreType.META_DATA );
+        return (MetaDataStore) getStore( StoreType.META_DATA );
     }
 
     /**
@@ -462,12 +482,12 @@ public class NeoStores implements AutoCloseable
      */
     public NodeStore getNodeStore()
     {
-        return (NodeStore) storeGetter.apply( StoreType.NODE );
+        return (NodeStore) getStore( StoreType.NODE );
     }
 
     private DynamicArrayStore getNodeLabelStore()
     {
-        return (DynamicArrayStore) storeGetter.apply( StoreType.NODE_LABEL );
+        return (DynamicArrayStore) getStore( StoreType.NODE_LABEL );
     }
 
     /**
@@ -477,7 +497,7 @@ public class NeoStores implements AutoCloseable
      */
     public RelationshipStore getRelationshipStore()
     {
-        return (RelationshipStore) storeGetter.apply( StoreType.RELATIONSHIP );
+        return (RelationshipStore) getStore( StoreType.RELATIONSHIP );
     }
 
     /**
@@ -487,12 +507,12 @@ public class NeoStores implements AutoCloseable
      */
     public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
     {
-        return (RelationshipTypeTokenStore) storeGetter.apply( StoreType.RELATIONSHIP_TYPE_TOKEN );
+        return (RelationshipTypeTokenStore) getStore( StoreType.RELATIONSHIP_TYPE_TOKEN );
     }
 
     private DynamicStringStore getRelationshipTypeTokenNamesStore()
     {
-        return (DynamicStringStore) storeGetter.apply( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME );
+        return (DynamicStringStore) getStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME );
     }
 
     /**
@@ -502,12 +522,12 @@ public class NeoStores implements AutoCloseable
      */
     public LabelTokenStore getLabelTokenStore()
     {
-        return (LabelTokenStore) storeGetter.apply( StoreType.LABEL_TOKEN );
+        return (LabelTokenStore) getStore( StoreType.LABEL_TOKEN );
     }
 
     private DynamicStringStore getLabelTokenNamesStore()
     {
-        return (DynamicStringStore) storeGetter.apply( StoreType.LABEL_TOKEN_NAME );
+        return (DynamicStringStore) getStore( StoreType.LABEL_TOKEN_NAME );
     }
 
     /**
@@ -517,17 +537,17 @@ public class NeoStores implements AutoCloseable
      */
     public PropertyStore getPropertyStore()
     {
-        return (PropertyStore) storeGetter.apply( StoreType.PROPERTY );
+        return (PropertyStore) getStore( StoreType.PROPERTY );
     }
 
     private DynamicStringStore getStringPropertyStore()
     {
-        return (DynamicStringStore) storeGetter.apply( StoreType.PROPERTY_STRING );
+        return (DynamicStringStore) getStore( StoreType.PROPERTY_STRING );
     }
 
     private DynamicArrayStore getArrayPropertyStore()
     {
-        return (DynamicArrayStore) storeGetter.apply( StoreType.PROPERTY_ARRAY );
+        return (DynamicArrayStore) getStore( StoreType.PROPERTY_ARRAY );
     }
 
     /**
@@ -535,12 +555,12 @@ public class NeoStores implements AutoCloseable
      */
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
-        return (PropertyKeyTokenStore) storeGetter.apply( StoreType.PROPERTY_KEY_TOKEN );
+        return (PropertyKeyTokenStore) getStore( StoreType.PROPERTY_KEY_TOKEN );
     }
 
     private DynamicStringStore getPropertyKeyTokenNamesStore()
     {
-        return (DynamicStringStore) storeGetter.apply( StoreType.PROPERTY_KEY_TOKEN_NAME );
+        return (DynamicStringStore) getStore( StoreType.PROPERTY_KEY_TOKEN_NAME );
     }
 
     /**
@@ -548,7 +568,7 @@ public class NeoStores implements AutoCloseable
      */
     public RelationshipGroupStore getRelationshipGroupStore()
     {
-        return (RelationshipGroupStore) storeGetter.apply( StoreType.RELATIONSHIP_GROUP );
+        return (RelationshipGroupStore) getStore( StoreType.RELATIONSHIP_GROUP );
     }
 
     /**
@@ -556,12 +576,12 @@ public class NeoStores implements AutoCloseable
      */
     public SchemaStore getSchemaStore()
     {
-        return (SchemaStore) storeGetter.apply( StoreType.SCHEMA );
+        return (SchemaStore) getStore( StoreType.SCHEMA );
     }
 
     public CountsTracker getCounts()
     {
-        return (CountsTracker) storeGetter.apply( StoreType.COUNTS );
+        return (CountsTracker) getStore( StoreType.COUNTS );
     }
 
     private CountsTracker createWritableCountsTracker( File fileName )

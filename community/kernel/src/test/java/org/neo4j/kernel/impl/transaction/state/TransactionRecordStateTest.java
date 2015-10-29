@@ -73,7 +73,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
+
 
 public class TransactionRecordStateTest
 {
@@ -275,7 +275,7 @@ public class TransactionRecordStateTest
         Config configuration = new Config( stringMap( config ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
-        return cleanup.add( storeFactory.openNeoStores( SF_CREATE ) );
+        return cleanup.add( storeFactory.openAllNeoStores( true ) );
     }
 
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStores store,

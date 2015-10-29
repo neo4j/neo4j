@@ -65,7 +65,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
+
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -107,7 +107,7 @@ public class StoreMigratorFrom19IT
             database.shutdown();
         }
 
-        try ( NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE ) )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             verifyNeoStore( neoStores );
         }
@@ -170,7 +170,7 @@ public class StoreMigratorFrom19IT
 
         // THEN
         // verify that there are no duplicate keys in the store
-        try ( NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             PropertyKeyTokenStore tokenStore = neoStores.getPropertyKeyTokenStore();
             List<Token> tokens = tokenStore.getTokens( MAX_VALUE );

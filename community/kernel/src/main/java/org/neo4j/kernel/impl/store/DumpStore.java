@@ -44,6 +44,7 @@ import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createP
 
 public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore & RecordStore<RECORD>>
 {
+
     public static void main( String... args ) throws Exception
     {
         if ( args == null || args.length == 0 )
@@ -102,39 +103,42 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 throw new IllegalArgumentException( "No such file: " + arg );
             }
         }
-        try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStoresEagerly() )
+        NeoStores.StoreType storeType = STORE_FILENAME_TYPE_MAPPER.apply( file.getName() );
+        try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( storeType ) )
         {
-            switch ( file.getName() )
+            switch ( storeType )
             {
-            case "neostore.nodestore.db":
+            case NODE:
                 dumpNodeStore( neoStores, ids );
                 break;
-            case "neostore.relationshipstore.db":
+            case RELATIONSHIP:
                 dumpRelationshipStore( neoStores, ids );
                 break;
-            case "neostore.propertystore.db":
+            case PROPERTY:
                 dumpPropertyStore( neoStores, ids );
                 break;
-            case "neostore.schemastore.db":
+            case SCHEMA:
                 dumpSchemaStore( neoStores, ids );
                 break;
-            case "neostore.propertystore.db.index":
+            case PROPERTY_KEY_TOKEN:
                 dumpPropertyKeys( neoStores, ids );
                 break;
-            case "neostore.labeltokenstore.db":
+            case LABEL_TOKEN:
                 dumpLabels( neoStores, ids );
                 break;
-            case "neostore.relationshiptypestore.db":
+            case RELATIONSHIP_TYPE_TOKEN:
                 dumpRelationshipTypes( neoStores, ids );
                 break;
-            case "neostore.relationshipgroupstore.db":
+            case RELATIONSHIP_GROUP:
                 dumpRelationshipGroups( neoStores, ids );
                 break;
             default:
-                throw new IllegalArgumentException( "Unknown store file: " + arg );
+                throw new IllegalArgumentException( "Unsupported store type: " + storeType );
             }
         }
     }
+
+
 
     private static LogProvider logProvider()
     {
@@ -346,4 +350,33 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     {
         return record.inUse() ? record : null;
     }
+
+    static Function<String,NeoStores.StoreType> STORE_FILENAME_TYPE_MAPPER = new Function<String,NeoStores.StoreType>()
+    {
+        @Override
+        public NeoStores.StoreType apply( String filename )
+        {
+            switch ( filename )
+            {
+            case "neostore.nodestore.db":
+                return NeoStores.StoreType.NODE;
+            case "neostore.relationshipstore.db":
+                return NeoStores.StoreType.RELATIONSHIP;
+            case "neostore.propertystore.db":
+                return NeoStores.StoreType.PROPERTY;
+            case "neostore.schemastore.db":
+                return NeoStores.StoreType.SCHEMA;
+            case "neostore.propertystore.db.index":
+                return NeoStores.StoreType.PROPERTY_KEY_TOKEN;
+            case "neostore.labeltokenstore.db":
+                return NeoStores.StoreType.LABEL_TOKEN;
+            case "neostore.relationshiptypestore.db":
+                return NeoStores.StoreType.RELATIONSHIP_TYPE_TOKEN;
+            case "neostore.relationshipgroupstore.db":
+                return NeoStores.StoreType.RELATIONSHIP_GROUP;
+            default:
+                throw new IllegalArgumentException( "Unknown store file: " + filename );
+            }
+        }
+    };
 }

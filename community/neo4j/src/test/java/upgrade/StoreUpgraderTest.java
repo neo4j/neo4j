@@ -322,7 +322,7 @@ public class StoreUpgraderTest
         // Then
         StoreFactory storeFactory =
                 new StoreFactory( fileSystem, dbDirectory, pageCache, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStoresEagerly();
+        NeoStores neoStores = storeFactory.openAllNeoStores();
 
         assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
                 equalTo( neoStores.getMetaDataStore() .getLastCommittedTransaction() ) );

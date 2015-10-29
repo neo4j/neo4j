@@ -59,7 +59,6 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
@@ -92,7 +91,7 @@ public class StoreMigratorFrom20IT
             database.shutdown();
         }
 
-        try ( NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE ) )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             verifyNeoStore( neoStores );
         }
