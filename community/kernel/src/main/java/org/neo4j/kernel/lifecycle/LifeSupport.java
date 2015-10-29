@@ -68,15 +68,17 @@ public class LifeSupport
                 catch ( LifecycleException e )
                 {
                     status = changedStatus( this, status, LifecycleStatus.STOPPED );
+
                     try
                     {
                         shutdown();
-                        throw e;
                     }
                     catch ( LifecycleException shutdownErr )
                     {
-                        throw Exceptions.withSuppressed( e, shutdownErr.getCause() == null ? shutdownErr : shutdownErr.getCause() );
+                        e.addSuppressed( shutdownErr );
                     }
+
+                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STOPPED );
@@ -115,12 +117,14 @@ public class LifeSupport
                     try
                     {
                         stop();
-                        throw e;
+
                     }
                     catch ( LifecycleException stopErr )
                     {
-                        throw Exceptions.withSuppressed( e, stopErr.getCause() == null ? stopErr : stopErr.getCause() );
+                        e.addSuppressed( stopErr );
                     }
+
+                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STARTED );
