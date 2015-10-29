@@ -17,33 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
+import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.SlavePropertyTokenCreator;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
-public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
+public class PropertyKeyCreatorSwitcher extends AbstractComponentSwitcher<TokenCreator>
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final Supplier<KernelAPI> kernelSupplier;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public PropertyKeyCreatorModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
-                                           DelegateInvocationHandler<TokenCreator> delegate,
-                                           DelegateInvocationHandler<Master> master,
-                                           RequestContextFactory requestContextFactory,
-                                           Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+    public PropertyKeyCreatorSwitcher( DelegateInvocationHandler<TokenCreator> delegate,
+            DelegateInvocationHandler<Master> master, RequestContextFactory requestContextFactory,
+            Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
-        super( modeSwitcherNotifier, delegate );
+        super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.kernelSupplier = kernelSupplier;
@@ -51,13 +48,13 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
     }
 
     @Override
-    protected TokenCreator getMasterImpl( LifeSupport life )
+    protected TokenCreator getMasterImpl()
     {
         return new DefaultPropertyTokenCreator( kernelSupplier, idGeneratorFactory );
     }
 
     @Override
-    protected TokenCreator getSlaveImpl( LifeSupport life )
+    protected TokenCreator getSlaveImpl()
     {
         return new SlavePropertyTokenCreator( master.cement(), requestContextFactory );
     }

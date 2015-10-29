@@ -28,8 +28,8 @@ import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 
 /*
  * Filters existing events in a snapshot while adding new ones. Ensures that the snapshot is consistent in the

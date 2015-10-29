@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * <h1>Forseti, the Nordic god of justice</h1>
@@ -94,7 +93,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * The maps used by forseti should be replaced by faster concurrent maps, perhaps a striped hopscotch map or something
  * similar.
  */
-public class ForsetiLockManager extends LifecycleAdapter implements Locks
+public class ForsetiLockManager implements Locks
 {
     /** This is Forsetis internal lock API, which it uses to do deadlock detection. */
     interface Lock

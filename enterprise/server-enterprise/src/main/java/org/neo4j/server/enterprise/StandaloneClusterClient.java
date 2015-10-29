@@ -113,7 +113,10 @@ public class StandaloneClusterClient
             LifeSupport life = new LifeSupport();
             life.add(jobScheduler);
             Dependencies dependencies = new Dependencies();
-            ClusterClientModule clusterClientModule = new ClusterClientModule( life, dependencies, new Monitors(), new Config( config ), logService, new NotElectableElectionCredentialsProvider() );
+
+            // start network communication
+            new ClusterClientModule( life, dependencies, new Monitors(), new Config( config ), logService,
+                    new NotElectableElectionCredentialsProvider() );
 
             new StandaloneClusterClient( life );
         }

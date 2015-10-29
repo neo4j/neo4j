@@ -63,6 +63,9 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.ha.cluster.modeswitch.AbstractComponentSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.ComponentSwitcherContainer;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -96,10 +99,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.storeSupplierMock;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcherTest.storeSupplierMock;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -482,9 +484,10 @@ public class HighAvailabilityMemberStateMachineTest
                     }
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
 
+        ComponentSwitcherContainer switcherContainer = new ComponentSwitcherContainer();
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
-                mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
-                storeSupplierMock(), me, NullLogService.getInstance() );
+                        mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
+                        storeSupplierMock(), me, switcherContainer, NullLogService.getInstance() );
         haModeSwitcher.init();
         haModeSwitcher.start();
         haModeSwitcher.listeningAt( URI.create( "http://localhost:12345" ) );
@@ -494,11 +497,11 @@ public class HighAvailabilityMemberStateMachineTest
         final AtomicReference<Master> ref = new AtomicReference<>( null );
 
         //noinspection unchecked
-        AbstractModeSwitcher<Object> otherModeSwitcher = new AbstractModeSwitcher<Object>( haModeSwitcher, mock(
+        AbstractComponentSwitcher<Object> otherModeSwitcher = new AbstractComponentSwitcher<Object>( mock(
                 DelegateInvocationHandler.class ) )
         {
             @Override
-            protected Object getSlaveImpl( LifeSupport life )
+            protected Object getSlaveImpl()
             {
                 Master master = handler.cement();
                 ref.set( master );
@@ -507,14 +510,12 @@ public class HighAvailabilityMemberStateMachineTest
             }
 
             @Override
-            protected Object getMasterImpl( LifeSupport life )
+            protected Object getMasterImpl()
             {
                 return null;
             }
         };
-        otherModeSwitcher.init();
-        otherModeSwitcher.start();
-
+        switcherContainer.add( otherModeSwitcher );
         // When
         events.switchToSlave( me );
 
@@ -529,8 +530,6 @@ public class HighAvailabilityMemberStateMachineTest
         stateMachine.shutdown();
         haModeSwitcher.stop();
         haModeSwitcher.shutdown();
-        otherModeSwitcher.stop();
-        otherModeSwitcher.shutdown();
     }
 
     private ObservedClusterMembers mockClusterMembers( InstanceId me, InstanceId other )

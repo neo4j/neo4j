@@ -31,18 +31,11 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -58,12 +51,9 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
@@ -105,7 +95,7 @@ public class CommunityEditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        commitProcessFactory = createCommitProcessFactory();
+        commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();
 
@@ -157,30 +147,6 @@ public class CommunityEditionModule
         }
         return UsageDataKeys.Edition.community;
 
-    }
-
-    public static CommitProcessFactory createCommitProcessFactory()
-    {
-        return new CommitProcessFactory()
-        {
-            @Override
-            public TransactionCommitProcess create( TransactionAppender appender,
-                                                    KernelHealth kernelHealth, NeoStores neoStores,
-                                                    TransactionRepresentationStoreApplier storeApplier,
-                                                    NeoStoreInjectedTransactionValidator txValidator,
-                                                    IndexUpdatesValidator indexUpdatesValidator,
-                                                    Config config )
-            {
-                if ( config.get( GraphDatabaseSettings.read_only ) )
-                {
-                    return new ReadOnlyTransactionCommitProcess();
-                }
-                else
-                {
-                    return new TransactionRepresentationCommitProcess( appender, storeApplier, indexUpdatesValidator );
-                }
-            }
-        };
     }
 
     protected SchemaWriteGuard createSchemaWriteGuard()

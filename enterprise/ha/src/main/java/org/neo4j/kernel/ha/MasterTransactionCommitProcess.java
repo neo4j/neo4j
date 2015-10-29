@@ -24,9 +24,9 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
 /**
  * Commit process on the master side in HA, where transactions either comes in from slaves committing,
@@ -34,16 +34,16 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValida
  */
 public class MasterTransactionCommitProcess implements TransactionCommitProcess
 {
-    private final TransactionPropagator pusher;
-    private final NeoStoreInjectedTransactionValidator validator;
+    private final TransactionPropagator txPropagator;
+    private final IntegrityValidator validator;
     private final TransactionCommitProcess inner;
 
     public MasterTransactionCommitProcess( TransactionCommitProcess commitProcess,
-                                           TransactionPropagator pusher,
-                                           NeoStoreInjectedTransactionValidator validator )
+                                           TransactionPropagator txPropagator,
+                                           IntegrityValidator validator )
     {
         this.inner = commitProcess;
-        this.pusher = pusher;
+        this.txPropagator = txPropagator;
         this.validator = validator;
     }
 
@@ -51,11 +51,11 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
+        validator.validateTransactionStartKnowledge( representation.getLatestCommittedTxWhenStarted() );
 
         long result = inner.commit( representation, locks, commitEvent, mode );
 
-        pusher.committed( result, representation.getAuthorId() );
+        txPropagator.committed( result, representation.getAuthorId() );
 
         return result;
     }

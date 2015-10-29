@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class CommunityLockManger extends LifecycleAdapter implements Locks
+public class CommunityLockManger implements Locks
 {
     private final LockManagerImpl manager = new LockManagerImpl( new RagManager() );
 

@@ -17,11 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.cluster;
+package org.neo4j.kernel.ha.cluster.modeswitch;
 
-public interface ModeSwitcher
+/**
+ * Represents a component that differs between master, slave and pending HA instance states and can be switched to
+ * either of three.
+ */
+public interface ComponentSwitcher
 {
     void switchToMaster();
+
     void switchToSlave();
+
     void switchToPending();
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * API for managing locks.
@@ -42,7 +41,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * Each call to acquire a lock must be accompanied by a call to release that same lock. A user can call acquire on the
  * same lock multiple times, thus requiring an equal number of calls to release those locks.
  */
-public interface Locks extends Lifecycle
+public interface Locks
 {
     abstract class Factory extends Service
     {

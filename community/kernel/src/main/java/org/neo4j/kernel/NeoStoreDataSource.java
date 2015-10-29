@@ -153,7 +153,6 @@ import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -1042,10 +1041,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
             SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
     {
-        final TransactionCommitProcess transactionCommitProcess =
-                commitProcessFactory.create( appender, kernelHealth, neoStores, storeApplier,
-                        new NeoStoreInjectedTransactionValidator( integrityValidator ), indexUpdatesValidator,
-                        config );
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storeApplier,
+                indexUpdatesValidator, config );
 
         /*
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
