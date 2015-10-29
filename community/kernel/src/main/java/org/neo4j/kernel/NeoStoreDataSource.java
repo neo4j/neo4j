@@ -564,7 +564,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
     {
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
         storeMigrationProcess
                 .addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache ) );
         storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider );

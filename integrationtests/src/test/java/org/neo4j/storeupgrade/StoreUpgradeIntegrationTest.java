@@ -59,6 +59,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -138,6 +139,19 @@ public class StoreUpgradeIntegrationTest
                     selectivities( 1.0, 1.0, 1.0 ),
                     indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
             )} );
+    private static final List<Store[]> STORES23 = Arrays.asList(
+            new Store[]{new Store( "0.A.6-empty.zip",
+                    0 /* node count */,
+                    1 /* last txId */,
+                    selectivities(),
+                    indexCounts()
+            )},
+            new Store[]{new Store( "0.A.6-data.zip",
+                    174 /* node count */,
+                    30 /* last txId */,
+                    selectivities( 1.0, 1.0, 1.0 ),
+                    indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
+            )} );
 
     @RunWith( Parameterized.class )
     public static class StoreUpgradeTest
@@ -148,7 +162,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES19, STORES20, STORES21, STORES22 ) );
+            return IteratorUtil.asCollection( Iterables.concat( STORES19, STORES20, STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -289,7 +303,7 @@ public class StoreUpgradeIntegrationTest
             {
                 assertTrue( ex.getCause() instanceof LifecycleException );
                 Throwable realException = ex.getCause().getCause();
-                assertTrue( Exceptions.contains( realException, StoreFile.NODE_STORE.storeFileName(),
+                assertTrue( Exceptions.contains( realException, MetaDataStore.DEFAULT_NAME,
                         StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
             }
         }
@@ -304,7 +318,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES21, STORES22 ) );
+            return IteratorUtil.asCollection( Iterables.concat( STORES21, STORES22, STORES23 ) );
         }
 
         @Rule

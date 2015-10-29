@@ -268,7 +268,7 @@ public class StoreMigratorFrom19IT
         storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, NullLogProvider.getInstance() );
         upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
     }
 
     @After

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.test.PageCacheRule;
@@ -80,7 +81,8 @@ public class StoreMigratorTest
                 new Object[]{
                         Legacy21Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
                 new Object[]{
-                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )}
+                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{Legacy23Store.LEGACY_VERSION, new LogPosition( 3, 169 )}
         );
     }
 
@@ -95,7 +97,7 @@ public class StoreMigratorTest
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -126,7 +128,7 @@ public class StoreMigratorTest
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -158,7 +160,7 @@ public class StoreMigratorTest
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();

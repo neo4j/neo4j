@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -80,7 +81,8 @@ public class StoreUpgraderInterruptionTestIT
                 new Object[]{Legacy19Store.LEGACY_VERSION},
                 new Object[]{Legacy20Store.LEGACY_VERSION},
                 new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION}
+                new Object[]{Legacy22Store.LEGACY_VERSION},
+                new Object[]{Legacy23Store.LEGACY_VERSION}
         );
     }
 
@@ -94,7 +96,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( check, new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = new Config();
@@ -109,7 +111,8 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
+        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
         {
@@ -122,7 +125,8 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
+        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
@@ -144,7 +148,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( check, new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = new Config();
@@ -158,7 +162,8 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
+        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+                allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
         {

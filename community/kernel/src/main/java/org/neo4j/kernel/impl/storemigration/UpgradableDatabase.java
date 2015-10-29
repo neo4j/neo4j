@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
@@ -29,6 +31,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -36,11 +43,14 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
  */
 public class UpgradableDatabase
 {
+    private final FileSystemAbstraction fs;
     private final StoreVersionCheck storeVersionCheck;
     private final LegacyStoreVersionCheck legacyStoreVersionCheck;
 
-    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck )
+    public UpgradableDatabase( FileSystemAbstraction fs,
+            StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck )
     {
+        this.fs = fs;
         this.storeVersionCheck = storeVersionCheck;
         this.legacyStoreVersionCheck = legacyStoreVersionCheck;
     }
@@ -84,36 +94,82 @@ public class UpgradableDatabase
             return Legacy22Store.LEGACY_VERSION;
         }
 
+        result = checkUpgradeableFor( storeDirectory, Legacy23Store.LEGACY_VERSION );
+        if ( result.outcome.isSuccessful() )
+        {
+            return Legacy23Store.LEGACY_VERSION;
+        }
+
         // report error
-        String path = new File( storeDirectory, result.storeFilename ).getAbsolutePath();
         switch ( result.outcome )
         {
-            case missingStoreFile:
-                throw new StoreUpgrader.UpgradeMissingStoreFilesException( path );
+        case missingStoreFile:
+            throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( storeDirectory, result ) );
             case storeVersionNotFound:
-                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( path );
+                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
+                        getPathToStoreFile( storeDirectory, result ) );
             case unexpectedUpgradingStoreVersion:
                 throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                        path, Legacy21Store.LEGACY_VERSION, result.actualVersion );
+                        getPathToStoreFile( storeDirectory, result ),
+                        Legacy23Store.LEGACY_VERSION, result.actualVersion );
+            case storeNotCleanlyShutDown:
+                throw new StoreUpgrader.DatabaseNotCleanlyShutDown();
             default:
                 throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
     }
 
+    private String getPathToStoreFile( File storeDirectory, Result result )
+    {
+        return new File( storeDirectory, result.storeFilename ).getAbsolutePath();
+    }
+
     private Result checkUpgradeableFor( File storeDirectory, String version )
     {
-        Result result = null;
-        for ( StoreFile store : StoreFile.legacyStoreFilesForVersion( version ) )
+        if ( Legacy23Store.LEGACY_VERSION.equals( version ) )
         {
-            String expectedVersion = store.forVersion( version );
-            File storeFile = new File( storeDirectory, store.storeFileName() );
-            result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
+            // check version
+            File neoStore = new File( storeDirectory, MetaDataStore.DEFAULT_NAME );
+            Result result = storeVersionCheck.hasVersion( neoStore, version );
+
             if ( !result.outcome.isSuccessful() )
             {
-                break;
+                return result;
             }
+
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
+            LatestCheckPointFinder latestCheckPointFinder =
+                    new LatestCheckPointFinder( logFiles, fs, new VersionAwareLogEntryReader<>() );
+            try
+            {
+                LatestCheckPoint latestCheckPoint = latestCheckPointFinder.find( logFiles.getHighestLogVersion() );
+                if ( !latestCheckPoint.commitsAfterCheckPoint )
+                {
+                    return new Result( Result.Outcome.ok, null, null );
+                }
+            }
+            catch ( IOException e )
+            {
+                // ignore exception and return db not cleanly shutdown
+            }
+
+            return new Result( Result.Outcome.storeNotCleanlyShutDown, null, null );
         }
-        return result;
+        else
+        {
+            Result result = null;
+            for ( StoreFile store : StoreFile.legacyStoreFilesForVersion( version ) )
+            {
+                String expectedVersion = store.forVersion( version );
+                File storeFile = new File( storeDirectory, store.storeFileName() );
+                result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
+                if ( !result.outcome.isSuccessful() )
+                {
+                    break;
+                }
+            }
+            return result;
+        }
     }
 
     public boolean hasCurrentVersion( File storeDir )
