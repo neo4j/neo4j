@@ -106,6 +106,39 @@ public class ClusterMembersTest
         assertEquals( 2, countInstancesWithRole( currentMembers, HighAvailabilityModeSwitcher.MASTER ) );
     }
 
+    @Test
+    public void currentMemberHasCorrectRoleWhenInPendingState()
+    {
+        ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
+
+        when( observedClusterMembers.getCurrentMember() ).thenReturn( member );
+        when( stateMachine.getCurrentState() ).thenReturn( HighAvailabilityMemberState.PENDING );
+
+        assertEquals( HighAvailabilityModeSwitcher.UNKNOWN, clusterMembers.getCurrentMemberRole() );
+    }
+
+    @Test
+    public void currentMemberHasCorrectRoleWhenInToSlaveState()
+    {
+        ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
+
+        when( observedClusterMembers.getCurrentMember() ).thenReturn( member );
+        when( stateMachine.getCurrentState() ).thenReturn( HighAvailabilityMemberState.TO_SLAVE );
+
+        assertEquals( HighAvailabilityModeSwitcher.UNKNOWN, clusterMembers.getCurrentMemberRole() );
+    }
+
+    @Test
+    public void currentMemberHasCorrectRoleWhenInToMasterState()
+    {
+        ClusterMember member = createClusterMember( 1, HighAvailabilityModeSwitcher.MASTER );
+
+        when( observedClusterMembers.getCurrentMember() ).thenReturn( member );
+        when( stateMachine.getCurrentState() ).thenReturn( HighAvailabilityMemberState.TO_MASTER );
+
+        assertEquals( HighAvailabilityModeSwitcher.UNKNOWN, clusterMembers.getCurrentMemberRole() );
+    }
+
     private static int countInstancesWithRole( Iterable<ClusterMember> currentMembers, String role )
     {
         int counter = 0;
