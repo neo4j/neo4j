@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -46,12 +47,49 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(42)
   }
 
+  test("toInt should work on float") {
+    // When
+    val result = executeScalarWithAllPlanners[Long](
+      "WITH 82.9 as weight RETURN toInt(weight)"
+    )
+
+    // Then
+    result should equal(82)
+  }
+
+  test("toInt should return null on string that is not a number") {
+    // When
+    val result = executeWithAllPlanners(
+      "WITH 'foo' as foo_string, '' as empty_string RETURN toInt(foo_string) as foo, toInt(empty_string) as empty"
+    )
+
+    // Then
+    result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
+  }
+
   test("toInt should handle mixed number types") {
     // When
     val result = executeWithAllPlanners("WITH [2, 2.9] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
 
     // Then
     result.toList should equal(List(Map("int_numbers" -> List(2, 2))))
+  }
+
+  test("toInt should fail on type Any") {
+    // When
+    val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
+    val error = intercept[SyntaxException](executeWithAllPlanners(query))
+
+    // Then
+    assert(error.getMessage.contains("Type mismatch: expected Float, Integer, Number or String but was Any"))
+  }
+
+  test("toInt should work on string collection") {
+    // When
+    val result = executeWithAllPlanners("WITH ['2', '2.9', 'foo'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
+
+    // Then
+    result.toList should equal(List(Map("int_numbers" -> List(2, 2, null))))
   }
 
   test("toFloat should work as expected") {
@@ -73,6 +111,33 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     // Then
     result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0))))
+  }
+
+  test("toFloat should return null on string that is not a number") {
+    // When
+    val result = executeWithAllPlanners(
+      "WITH 'foo' as foo_string, '' as empty_string RETURN toFloat(foo_string) as foo, toFloat(empty_string) as empty"
+    )
+
+    // Then
+    result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
+  }
+
+  test("toFloat should fail on type Any") {
+    // When
+    val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
+    val error = intercept[SyntaxException](executeWithAllPlanners(query))
+
+    // Then
+    assert(error.getMessage.contains("Type mismatch: expected Float, Integer, Number or String but was Any"))
+  }
+
+  test("toFloat should work on string collection") {
+    // When
+    val result = executeWithAllPlanners("WITH ['1', '2', 'foo'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
+
+    // Then
+    result.toList should equal(List(Map("float_numbers" -> List(1.0, 2.0, null))))
   }
 
   test("toString should work as expected") {
