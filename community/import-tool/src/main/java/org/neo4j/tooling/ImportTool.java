@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -64,13 +65,11 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
-import static org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator.RUNTIME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -386,7 +385,7 @@ public class ImportTool
         printInputFiles( "Relationships", relationshipsFiles );
         System.out.println();
         System.out.println( "Available memory:" );
-        printIndented( "Free machine memory: " + bytes( RUNTIME.availableOffHeapMemory() ) );
+        printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ) );
         System.out.println();
     }
