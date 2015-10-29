@@ -68,7 +68,7 @@ public class MetricsSettings
                   "relationships, properties, etc." )
     public static Setting<Boolean> neoCountsEnabled = setting(
             "metrics.neo4j.counts.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the network usage of the HA cluster component." )
+    @Description( "Enable reporting metrics about the network usage." )
     public static Setting<Boolean> neoNetworkEnabled = setting(
             "metrics.neo4j.network.enabled", Settings.BOOLEAN, neoEnabled );
     @Description( "Enable reporting metrics about Neo4j check pointing; when it occurs and how much time it takes to " +
@@ -80,13 +80,13 @@ public class MetricsSettings
     public static Setting<Boolean> neoLogRotationEnabled = setting(
             "metrics.neo4j.logrotation.enabled", Settings.BOOLEAN, neoEnabled );
 
-    @Description( "Enable reporting metrics about the duration of garbage collections of the HA cluster component." )
+    @Description( "Enable reporting metrics about the duration of garbage collections" )
     public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the memory usage of the HA cluster component." )
+    @Description( "Enable reporting metrics about the memory usage." )
     public static Setting<Boolean> jvmMemoryEnabled = setting( "metrics.jvm.memory.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the buffer pools of the HA cluster component." )
+    @Description( "Enable reporting metrics about the buffer pools." )
     public static Setting<Boolean> jvmBuffersEnabled = setting( "metrics.jvm.buffers.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the current number of threads running on the HA cluster component." )
+    @Description( "Enable reporting metrics about the current number of threads running." )
     public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, neoEnabled );
 
     // CSV settings
