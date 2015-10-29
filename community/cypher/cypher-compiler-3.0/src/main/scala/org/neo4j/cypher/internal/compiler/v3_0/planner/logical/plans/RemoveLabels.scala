@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.ast
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckable}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
-sealed trait RemoveItem extends ASTNode with ASTPhrase with SemanticCheckable
+case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LazyLabel])
+                    (val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
 
-case class RemoveLabelItem(identifier: Identifier, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
-  def semanticCheck =
-    identifier.semanticCheck(Expression.SemanticContext.Simple) chain
-    identifier.expectType(CTNode.covariant)
-}
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-case class RemovePropertyItem(property: Property) extends RemoveItem {
-  def position = property.position
+  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
 
-  def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
+  override def rhs: Option[LogicalPlan] = None
+
+  override def strictness: StrictnessMode = source.strictness
 }

@@ -60,7 +60,9 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   def writes: Boolean = exists(_.updateGraph.nonEmpty)
 
-  def writesNodes: Boolean = exists(_.updateGraph.nodePatterns.nonEmpty)
+  def createsNodes: Boolean = exists(_.updateGraph.nodePatterns.nonEmpty)
+
+  def updatesNodes: Boolean = exists(_.updateGraph.updatesNodes)
 
   def writesRelationships: Boolean = exists(_.updateGraph.relPatterns.nonEmpty)
 

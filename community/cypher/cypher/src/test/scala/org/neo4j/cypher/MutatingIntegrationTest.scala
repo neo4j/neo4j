@@ -41,7 +41,6 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     }
   }
 
-
   test("create a single node with props and return it") {
     val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
 

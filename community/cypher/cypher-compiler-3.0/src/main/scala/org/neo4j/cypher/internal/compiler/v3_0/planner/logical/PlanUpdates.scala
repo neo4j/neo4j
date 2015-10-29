@@ -40,6 +40,8 @@ case object PlanUpdates
     case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(inner, p)
     //SET n:Foo:Bar
     case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(inner, pattern)
+    //REMOVE n:Foo:Bar
+    case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(inner, pattern)
     //DELETE a
     case p: DeleteExpression =>
       p.expression match {
