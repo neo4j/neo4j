@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object PathType {
-  val instance = new PathType() {
-    val parentType = CTAny
-    override val toString = "Path"
-  }
+  val instance = new PathType()
 }
 
-sealed abstract class PathType extends CypherType
+sealed class PathType extends CypherType {
+  val parentType = CTAny
+  override val toString = "Path"
+}

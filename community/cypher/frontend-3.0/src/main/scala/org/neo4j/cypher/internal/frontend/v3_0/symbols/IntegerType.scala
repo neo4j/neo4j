@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object IntegerType {
-  val instance = new IntegerType() {
-    val parentType = CTNumber
-    override lazy val coercibleTo: Set[CypherType] = Set(CTFloat)
-    override val toString = "Integer"
-  }
+  val instance = new IntegerType()
 }
 
-sealed abstract class IntegerType extends CypherType
+sealed class IntegerType extends CypherType  {
+  val parentType = CTNumber
+  override lazy val coercibleTo: Set[CypherType] = Set(CTFloat)
+  override val toString = "Integer"
+}

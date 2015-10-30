@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object RelationshipType {
-  val instance = new RelationshipType() {
-    val parentType = CTMap
-    override val toString = "Relationship"
-  }
+  val instance = new RelationshipType()
 }
 
-sealed abstract class RelationshipType extends CypherType
+sealed class RelationshipType extends CypherType {
+  val parentType = CTMap
+  override val toString = "Relationship"
+}

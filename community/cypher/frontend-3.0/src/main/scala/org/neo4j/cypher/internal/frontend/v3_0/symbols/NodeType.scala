@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
 object NodeType {
-  val instance = new NodeType() {
-    val parentType = CTMap
-    override val toString = "Node"
-  }
+  val instance = new NodeType()
 }
 
-sealed abstract class NodeType extends CypherType
+sealed class NodeType extends CypherType  {
+  val parentType = CTMap
+  override val toString = "Node"
+}
