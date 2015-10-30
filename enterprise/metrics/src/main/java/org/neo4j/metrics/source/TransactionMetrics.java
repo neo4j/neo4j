@@ -24,13 +24,8 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
@@ -40,12 +35,26 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class TransactionMetrics extends LifecycleAdapter
 {
     private static final String TRANSACTION_PREFIX = "neo4j.transaction";
-    private static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
+
     private static final String TX_STARTED = name( TRANSACTION_PREFIX, "started" );
-    private static final String TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated" );
-    private static final String TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks" );
-    private static final String TX_COMMITTED = name( TRANSACTION_PREFIX, "committed" );
+    private static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
+
     private static final String TX_ACTIVE = name( TRANSACTION_PREFIX, "active" );
+    private static final String READ_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_read" );
+    private static final String WRITE_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_write" );
+
+    private static final String TX_COMMITTED = name( TRANSACTION_PREFIX, "committed" );
+    private static final String READ_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_read" );
+    private static final String WRITE_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_write" );
+
+    private static final String TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks" );
+    private static final String READ_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_read" );
+    private static final String WRITE_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_write" );
+
+    private static final String TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated" );
+    private static final String READ_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_read" );
+    private static final String WRITE_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_write" );
+
     private static final String LAST_COMMITTED_TX_ID = name( TRANSACTION_PREFIX, "last_committed_tx_id" );
     private static final String LAST_CLOSED_TX_ID = name( TRANSACTION_PREFIX, "last_closed_tx_id" );
 
@@ -56,7 +65,6 @@ public class TransactionMetrics extends LifecycleAdapter
 
     public TransactionMetrics( MetricRegistry registry, Config config, DataSourceManager dataSourceManager,
             TransactionCounters transactionCounters )
-
     {
         this.registry = registry;
         this.config = config;
@@ -70,42 +78,6 @@ public class TransactionMetrics extends LifecycleAdapter
     {
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            registry.register( TX_ACTIVE, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return transactionCounters.getNumberOfActiveTransactions();
-                }
-            } );
-
-            registry.register( TX_COMMITTED, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return transactionCounters.getNumberOfCommittedTransactions();
-                }
-            } );
-
-            registry.register( TX_ROLLBACKS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return transactionCounters.getNumberOfRolledbackTransactions();
-                }
-            } );
-
-            registry.register( TX_TERMINATED, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return transactionCounters.getNumberOfTerminatedTransactions();
-                }
-            } );
-
             registry.register( TX_STARTED, new Gauge<Long>()
             {
                 @Override
@@ -121,6 +93,114 @@ public class TransactionMetrics extends LifecycleAdapter
                 public Long getValue()
                 {
                     return transactionCounters.getPeakConcurrentNumberOfTransactions();
+                }
+            } );
+
+            registry.register( TX_ACTIVE, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfActiveTransactions();
+                }
+            } );
+
+            registry.register( READ_TX_ACTIVE, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfActiveReadTransactions();
+                }
+            } );
+
+            registry.register( WRITE_TX_ACTIVE, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfActiveWriteTransactions();
+                }
+            } );
+
+            registry.register( TX_COMMITTED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfCommittedTransactions();
+                }
+            } );
+
+            registry.register( READ_TX_COMMITTED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfCommittedReadTransactions();
+                }
+            } );
+
+            registry.register( WRITE_TX_COMMITTED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfCommittedWriteTransactions();
+                }
+            } );
+
+            registry.register( TX_ROLLBACKS, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfRolledBackTransactions();
+                }
+            } );
+
+            registry.register( READ_TX_ROLLBACKS, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfRolledBackReadTransactions();
+                }
+            } );
+
+            registry.register( WRITE_TX_ROLLBACKS, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfRolledBackWriteTransactions();
+                }
+            } );
+
+            registry.register( TX_TERMINATED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfTerminatedTransactions();
+                }
+            } );
+
+            registry.register( READ_TX_TERMINATED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfTerminatedReadTransactions();
+                }
+            } );
+
+            registry.register( WRITE_TX_TERMINATED, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return transactionCounters.getNumberOfTerminatedWriteTransactions();
                 }
             } );
 
@@ -151,12 +231,25 @@ public class TransactionMetrics extends LifecycleAdapter
     {
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            registry.remove( TX_ACTIVE );
-            registry.remove( TX_COMMITTED );
-            registry.remove( TX_ROLLBACKS );
-            registry.remove( TX_TERMINATED );
             registry.remove( TX_STARTED );
             registry.remove( TX_PEAK_CONCURRENT );
+
+            registry.remove( TX_ACTIVE );
+            registry.remove( READ_TX_ACTIVE );
+            registry.remove( WRITE_TX_ACTIVE );
+
+            registry.remove( TX_COMMITTED );
+            registry.remove( READ_TX_COMMITTED );
+            registry.remove( WRITE_TX_COMMITTED );
+
+            registry.remove( TX_ROLLBACKS );
+            registry.remove( READ_TX_ROLLBACKS );
+            registry.remove( WRITE_TX_ROLLBACKS );
+
+            registry.remove( TX_TERMINATED );
+            registry.remove( READ_TX_TERMINATED );
+            registry.remove( WRITE_TX_TERMINATED );
+
             registry.remove( LAST_COMMITTED_TX_ID );
             registry.remove( LAST_CLOSED_TX_ID );
         }

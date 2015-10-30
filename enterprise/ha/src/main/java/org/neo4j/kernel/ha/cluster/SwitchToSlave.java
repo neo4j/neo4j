@@ -74,7 +74,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -129,7 +129,7 @@ public class SwitchToSlave
     private final UpdatePuller updatePuller;
     private final PageCache pageCache;
     private final Monitors monitors;
-    private final TransactionCounters transactionCounters;
+    private final TransactionStats transactionCounters;
 
     private final Log userLog;
     private final Log msgLog;
@@ -164,7 +164,7 @@ public class SwitchToSlave
             UpdatePuller updatePuller,
             PageCache pageCache,
             Monitors monitors,
-            TransactionCounters transactionCounters )
+            TransactionStats transactionCounters )
     {
         this( storeDir,
                 logService,
@@ -206,7 +206,7 @@ public class SwitchToSlave
             UpdatePuller updatePuller,
             PageCache pageCache,
             Monitors monitors,
-            TransactionCounters transactionCounters )
+            TransactionStats transactionCounters )
     {
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;

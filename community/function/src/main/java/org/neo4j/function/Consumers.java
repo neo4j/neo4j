@@ -33,6 +33,14 @@ public final class Consumers
             // noop
         }
     };
+    private static final ThrowingConsumer<?,?> TNOOP = new ThrowingConsumer()
+    {
+        @Override
+        public void accept( Object value )
+        {
+            // noop
+        }
+    };
 
     /**
      * @param <T> The type to be consumed
@@ -42,5 +50,15 @@ public final class Consumers
     public static <T> Consumer<T> noop()
     {
         return (Consumer<T>) NOOP;
+    }
+
+    /**
+     * @param <T> The type to be consumed
+     * @return a {@link Consumer} that does nothing.
+     */
+    @SuppressWarnings( "unchecked" )
+    public static <T, E extends Exception> ThrowingConsumer<T, E> throwingNoop()
+    {
+        return (ThrowingConsumer<T, E>) TNOOP;
     }
 }

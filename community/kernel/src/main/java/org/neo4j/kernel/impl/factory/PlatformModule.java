@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -102,7 +102,7 @@ public class PlatformModule
 
     public final AvailabilityGuard availabilityGuard;
 
-    public final TransactionCounters transactionMonitor;
+    public final TransactionStats transactionMonitor;
 
     public PlatformModule( File storeDir, Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
                                                   final GraphDatabaseFacade graphDatabaseFacade)
@@ -168,7 +168,7 @@ public class PlatformModule
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, logging.getInternalLog(
                 AvailabilityGuard.class ) );
 
-        transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
+        transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         KernelContext kernelContext = new KernelContext()
         {
@@ -285,9 +285,9 @@ public class PlatformModule
         return pageCache;
     }
 
-    protected TransactionCounters createTransactionCounters()
+    protected TransactionStats createTransactionStats()
     {
-        return new TransactionCounters();
+        return new TransactionStats();
     }
 
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,

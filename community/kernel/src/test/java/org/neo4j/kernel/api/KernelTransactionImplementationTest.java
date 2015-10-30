@@ -21,16 +21,23 @@ package org.neo4j.kernel.api;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.function.Consumers;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -57,6 +64,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -65,8 +73,35 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+@RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest
 {
+    @Parameterized.Parameter( 0 )
+    public ThrowingConsumer<KernelTransaction,Exception> transactionConsumer;
+
+    @Parameterized.Parameter( 1 )
+    public boolean isWriteTx;
+
+    @Parameterized.Parameter( 2 )
+    public String ignored; // to make JUnit happy...
+
+    @Parameterized.Parameters( name = "{2}" )
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(
+                new Object[]{Consumers.<KernelTransaction,Exception>throwingNoop(), false, "read"},
+                new Object[]{new ThrowingConsumer<KernelTransaction,Exception>()
+                {
+                    @Override
+                    public void accept( KernelTransaction kernelTransaction ) throws Exception
+                    {
+                        KernelStatement statement = (KernelStatement) kernelTransaction.acquireStatement();
+                        statement.txState().nodeDoCreate( 42 );
+                    }
+                }, true, "write"}
+        );
+    }
+
     @Test
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
@@ -74,12 +109,13 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.success();
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -89,11 +125,12 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -103,12 +140,13 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.failure();
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -119,6 +157,7 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.failure();
             transaction.success();
         }
@@ -130,8 +169,8 @@ public class KernelTransactionImplementationTest
 
         // THEN
         assertTrue( exceptionReceived );
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -142,6 +181,7 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.success();
             transaction.markForTermination();
         }
@@ -155,9 +195,9 @@ public class KernelTransactionImplementationTest
         assertTrue( exceptionReceived );
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -166,14 +206,15 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.markForTermination();
             assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -184,6 +225,7 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.markForTermination();
             transaction.success();
             assertTrue( transaction.shouldBeTerminated() );
@@ -196,9 +238,9 @@ public class KernelTransactionImplementationTest
 
         // THEN
         assertTrue( exceptionReceived );
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -207,51 +249,52 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
+            transactionConsumer.accept( transaction );
             transaction.markForTermination();
             transaction.failure();
             assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
         KernelTransaction transaction = newTransaction();
+        transactionConsumer.accept( transaction );
         transaction.success();
         transaction.close();
         transaction.markForTermination();
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
         KernelTransaction transaction = newTransaction();
+        transactionConsumer.accept( transaction );
         transaction.close();
         transaction.markForTermination();
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
-    @Test(expected = TransactionFailureException.class)
+    @Test( expected = TransactionFailureException.class )
     public void shouldThrowOnTerminationInCommit() throws Exception
     {
         KernelTransaction transaction = newTransaction();
+        transactionConsumer.accept( transaction );
         transaction.success();
         transaction.markForTermination();
-
         transaction.close();
     }
 
@@ -259,13 +302,14 @@ public class KernelTransactionImplementationTest
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
         KernelTransaction transaction = newTransaction();
+        transactionConsumer.accept( transaction );
         transaction.markForTermination();
         transaction.close();
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     class ChildException
@@ -280,6 +324,8 @@ public class KernelTransactionImplementationTest
         final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
         final KernelTransaction transaction = newTransaction();
+        transactionConsumer.accept( transaction );
+
         Thread thread = new Thread( new Runnable()
         {
             @Override
@@ -321,9 +367,9 @@ public class KernelTransactionImplementationTest
 
         // THEN
         assertTrue( exceptionReceived );
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
-        verifyNoMoreInteractions( transactionMonitor );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
@@ -356,7 +402,16 @@ public class KernelTransactionImplementationTest
         // THEN start time and last tx when started should have been taken from when the transaction started
         assertEquals( 5L, commitProcess.transaction.getLatestCommittedTxWhenStarted() );
         assertEquals( startingTime, commitProcess.transaction.getTimeStarted() );
-        assertEquals( startingTime+5, commitProcess.transaction.getTimeCommitted() );
+        assertEquals( startingTime + 5, commitProcess.transaction.getTimeCommitted() );
+    }
+
+    private void verifyExtraInteractionWithTheMonitor( TransactionMonitor transactionMonitor, boolean isWriteTx )
+    {
+        if ( isWriteTx )
+        {
+            verify( this.transactionMonitor, times( 1 ) ).upgradeToWriteTransaction();
+        }
+        verifyNoMoreInteractions( transactionMonitor );
     }
 
     @Test
@@ -403,8 +458,9 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
+
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, null, recordState, new NoOpClient(),
+                mock( StatementOperationParts.class ), null, null, recordState, new NoOpClient(),
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexState,
                 pool, mock( ConstraintSemantics.class ), clock, TransactionTracer.NULL,
                 storageEngine );
@@ -419,7 +475,7 @@ public class KernelTransactionImplementationTest
 
         @Override
         public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
-                            TransactionApplicationMode mode ) throws TransactionFailureException
+                TransactionApplicationMode mode ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
             transaction = representation;

@@ -136,16 +136,16 @@ public class CommitContentionTests
                 return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
                 {
                     @Override
-                    protected TransactionCounters createTransactionCounters()
+                    protected TransactionStats createTransactionStats()
                     {
-                        return new TransactionCounters()
+                        return new TransactionStats()
                         {
                             public boolean skip;
 
                             @Override
-                            public void transactionFinished( boolean successful )
+                            public void transactionFinished( boolean committed, boolean write )
                             {
-                                super.transactionFinished( successful );
+                                super.transactionFinished( committed, write );
 
                                 if ( isTheRemoveOrphanedConstraintIndexesOnStartupTransaction() )
                                 {
@@ -153,7 +153,7 @@ public class CommitContentionTests
                                 }
 
 
-                                if ( successful )
+                                if ( committed )
                                 {
                                     // skip signal and waiting for second transaction
                                     if ( skip )
