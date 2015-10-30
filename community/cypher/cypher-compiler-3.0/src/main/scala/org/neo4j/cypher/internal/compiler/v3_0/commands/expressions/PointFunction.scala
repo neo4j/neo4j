@@ -53,20 +53,42 @@ object Point {
     case _ => new GeographicPoint(entity.getProperty("longitude").asInstanceOf[Double], entity.getProperty("latitude").asInstanceOf[Double], CRS.WGS84)
   }
 
-  def apply(map: Map[String, Any]): Point = map.getOrElse("crs", None) match {
+  def apply(map: Map[String, Any]): Point = CRS.fromName(map.getOrElse("crs", CRS.WGS84.name).toString) match {
     case CRS.Cartesian => new CartesianPoint(map("x").asInstanceOf[Double], map("y").asInstanceOf[Double])
-    case _ => new GeographicPoint(map("longitude").asInstanceOf[Double], map("latitude").asInstanceOf[Double], CRS.WGS84)
+    case CRS.WGS84 => new GeographicPoint(map("longitude").asInstanceOf[Double], map("latitude").asInstanceOf[Double], CRS.WGS84)
+    case x => throw new UnsupportedOperationException("Unsupported SRC type of value: " + x)
   }
 }
 
+case class CRSType(name: String)
+
+object CRSType {
+  val Projected = CRSType("projected")
+  val Geographic = CRSType("geographic")
+}
+
+case class CRS(name: String, id: Int, crs_type: CRSType)
+
 object CRS {
-  val Cartesian = new Integer(0)
-  val WGS84 = new Integer(4326)
+  val Cartesian = CRS("cartesian", 7203, CRSType.Projected) // See http://spatialreference.org/ref/sr-org/7203/
+  val WGS84 = CRS("WGS-84", 4326, CRSType.Geographic)       // See http://spatialreference.org/ref/epsg/4326/
+
+  def fromName(name: String) = name match {
+    case Cartesian.name => Cartesian
+    case WGS84.name => WGS84
+    case _ => throw new UnsupportedOperationException("Invalid or unsupported CRS name: " + name)
+  }
+
+  def fromSRID(id: Int) = id match {
+    case Cartesian.id => Cartesian
+    case WGS84.id => WGS84
+    case _ => throw new UnsupportedOperationException("Invalid or unsupported SRID: " + id)
+  }
 }
 
 trait Geometry {
   def coordinates: Seq[Double]
-  def srs: Integer
+  def crs: CRS
 }
 
 trait Point extends Geometry {
@@ -76,10 +98,10 @@ trait Point extends Geometry {
 }
 
 case class CartesianPoint(x: Double, y: Double) extends Point {
-  def srs = CRS.Cartesian
+  def crs = CRS.Cartesian
 }
 
-case class GeographicPoint(longitude: Double, latitude: Double, srs: Integer) extends Point {
+case class GeographicPoint(longitude: Double, latitude: Double, crs: CRS) extends Point {
   def x: Double = longitude
   def y: Double = latitude
 }

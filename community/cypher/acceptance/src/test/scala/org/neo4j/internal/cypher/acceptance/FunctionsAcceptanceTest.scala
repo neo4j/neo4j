@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CartesianPoint, GeographicPoint}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -324,11 +324,11 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("point function should work with literal map") {
     val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, 4326))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   test("point function should work with literal map and cartesian coordinates") {
-    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 0}) as point")
+    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point")
     result should useProjectionWith("Point")
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5))))
   }
@@ -336,7 +336,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("point function should work with previous map") {
     val result = executeWithAllPlanners("WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point")
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, 4326))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   test("distance function should work on co-located points") {
@@ -348,7 +348,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("distance function should work on nearby cartesian points") {
     val result = executeWithAllPlanners(
       """
-        |WITH point({x: 2.3, y: 4.5, crs: 0}) as p1, point({x: 1.1, y: 5.4, crs: 0}) as p2
+        |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin)
     result should useProjectionWith("Point", "Distance")
@@ -394,7 +394,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     // Then
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, 4326))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   test("point function should work with node as map") {
@@ -406,7 +406,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     // Then
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, 4326))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
   ignore("point function should be assignable to node property") {
@@ -419,7 +419,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
 
     // Then
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, 4326))))
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
 }

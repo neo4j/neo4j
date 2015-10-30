@@ -70,7 +70,7 @@ trait DistanceCalculator {
 
 object CartesianCalculator extends DistanceCalculator {
   def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
-    p._1.srs == CRS.Cartesian && p._2.srs == CRS.Cartesian
+    p._1.crs == CRS.Cartesian && p._2.crs == CRS.Cartesian
   }
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {
@@ -85,7 +85,7 @@ object HaversinCalculator extends DistanceCalculator {
   val EARTH_RADIUS_METERS = 6378140.0
 
   def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
-    p._1.srs == CRS.WGS84 && p._2.srs == CRS.WGS84
+    p._1.crs == CRS.WGS84 && p._2.crs == CRS.WGS84
   }
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {
