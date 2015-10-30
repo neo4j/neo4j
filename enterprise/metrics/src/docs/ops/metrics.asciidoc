@@ -1,3 +1,4 @@
+
 [[metrics-extension]]
 = Metrics Reporting
 
@@ -82,5 +83,7 @@ include::configuration-attributes.asciidoc[]
 
 [[metrics-exposed-reference]]
 == Exposed Metrics ==
+
+NOTE: The JVM metrics are just an example. The actual metrics depend on the JVM configuration at runtime.
 
 include::metrics-list.adoc[]
