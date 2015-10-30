@@ -80,3 +80,7 @@ NOTE: The CSV exporter does not automatically rotate the output files, so it is 
 
 include::configuration-attributes.asciidoc[]
 
+[[metrics-exposed-reference]]
+== Exposed Metrics ==
+
+include::metrics-list.adoc[]
