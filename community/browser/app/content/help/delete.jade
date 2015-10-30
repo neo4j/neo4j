@@ -13,7 +13,8 @@ article.help
           code MATCH
           |  clause, possibly qualified by a&nbsp;
           code WHERE
-          | .
+          | . Remember that you can not delete a node 
+          | without also deleting relationships that start or end on said node.
         table.table-condensed.table-help
           tr
             th Reference:
@@ -24,11 +25,11 @@ article.help
           tr
             th Related:
             td
+              a(help-topic='detach-delete') :help DETACH DELETE
+              | &nbsp;
               a(help-topic='match') :help MATCH
               | &nbsp;
               a(help-topic='where') :help WHERE
-              | &nbsp;
-              a(help-topic='return') :help RETURN
               | &nbsp;
               a(help-topic='remove') :help REMOVE
               | &nbsp;
