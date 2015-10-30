@@ -150,6 +150,11 @@ object ExpressionConverters {
         else
           command
       case Pi => commandexpressions.PiFunction()
+      case Distance =>
+        val firstArg = toCommandExpression(invocation.arguments.head)
+        val secondArg = toCommandExpression(invocation.arguments(1))
+        commandexpressions.DistanceFunction(firstArg, secondArg)
+      case Point => commandexpressions.PointFunction(toCommandExpression(invocation.arguments.head))
       case Radians => commandexpressions.RadiansFunction(toCommandExpression(invocation.arguments.head))
       case Rand => commandexpressions.RandFunction()
       case functions.Range =>

@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0
+package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
-package object symbols {
-  val CTAny = AnyType.instance
-  val CTBoolean = BooleanType.instance
-  val CTString = StringType.instance
-  val CTNumber = NumberType.instance
-  val CTFloat = FloatType.instance
-  val CTInteger = IntegerType.instance
-  val CTMap = MapType.instance
-  val CTNode = NodeType.instance
-  val CTRelationship = RelationshipType.instance
-  val CTPoint = PointType.instance
-  val CTPath = PathType.instance
-  def CTCollection(inner: CypherType) = CollectionType(inner)
-
-  implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
+object PointType {
+  val instance = new PointType() {
+    val parentType = CTAny
+    override val toString = "Point"
+  }
 }
+
+sealed abstract class PointType extends CypherType
