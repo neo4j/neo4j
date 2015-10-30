@@ -181,7 +181,7 @@ case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: 
        |[role="queryresult",options="${header}footer",cols="$cols*<m"]
        ||===
        |$rowsOutput
-       |$cols+|$footerRows
+       |$cols+d|$footerRows
        ||===
        |
        |""".stripMargin

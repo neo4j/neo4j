@@ -233,7 +233,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |[role="queryresult",options="footer",cols="1*<m"]
         ||===
         |1+|(empty result)
-        |1+|0 rows +
+        |1+d|0 rows +
         |Nodes created: 2 +
         |Relationships created: 1
         ||===
@@ -250,7 +250,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         ||===
         ||n1|n2
         ||1|2
-        |2+|1 row
+        |2+d|1 row
         ||===
         |
         |""".stripMargin)
@@ -265,7 +265,7 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         ||===
         ||n1\|x1|n2
         ||1\|2|2
-        |2+|1 row
+        |2+d|1 row
         ||===
         |
         |""".stripMargin)
