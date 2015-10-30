@@ -23,45 +23,33 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.sun.management.GarbageCollectionNotificationInfo;
 
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import javax.management.ListenerNotFoundException;
-import javax.management.Notification;
-import javax.management.NotificationEmitter;
-import javax.management.NotificationListener;
-import javax.management.openmbean.CompositeData;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION;
 
 public class JvmMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "vm";
-    private static final String GC = name( NAME_PREFIX, "gc" );
+    private static final String GC_PREFIX = name( NAME_PREFIX, "gc" );
+    private static final String GC_TIME = name( GC_PREFIX, "time" );
+    private static final String GC_COUNT = name( GC_PREFIX, "count" );
     private static final String MEMORY_POOL = name( NAME_PREFIX, "memory.pool" );
     private static final String MEMORY_BUFFER = name( NAME_PREFIX, "memory.buffer" );
     private static final String THREAD = name( NAME_PREFIX, "thread" );
-    private final LogService logService;
     private final Config config;
     private final MetricRegistry registry;
-    private final List<Runnable> removeListenerHandlers = new ArrayList<>();
 
-    public JvmMetrics( LogService logService, Config config, MetricRegistry registry )
+    public JvmMetrics( Config config, MetricRegistry registry )
     {
-        this.logService = logService;
         this.config = config;
         this.registry = registry;
     }
@@ -73,56 +61,25 @@ public class JvmMetrics extends LifecycleAdapter
         // Garbage collection
         if ( config.get( MetricsSettings.jvmGcEnabled ) )
         {
-            for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
+            for ( final GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
             {
-                final AtomicLong periodGcDuration = new AtomicLong();
-                registry.register( name( GC, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
+                registry.register( name( GC_TIME, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
                 {
+                    @Override
                     public Long getValue()
                     {
-                        return periodGcDuration.get();
+                        return gcBean.getCollectionTime();
                     }
                 } );
 
-                if ( gcBean instanceof NotificationEmitter )
+                registry.register( name( GC_COUNT, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
                 {
-                    final NotificationEmitter emitter = (NotificationEmitter) gcBean;
-                    final NotificationListener listener = new NotificationListener()
+                    @Override
+                    public Long getValue()
                     {
-                        public void handleNotification( Notification notification, Object handback )
-                        {
-                            if ( notification.getType().equals( GARBAGE_COLLECTION_NOTIFICATION ) )
-                            {
-                                GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from(
-                                        (CompositeData) notification.getUserData() );
-                                long duration = info.getGcInfo().getDuration();
-                                periodGcDuration.addAndGet( duration );
-                            }
-                        }
-                    };
-
-                    emitter.addNotificationListener( listener, null, null );
-                    removeListenerHandlers.add( new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                emitter.removeNotificationListener( listener );
-                            }
-                            catch ( ListenerNotFoundException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-                    } );
-                }
-                else
-                {
-                    logService.getInternalLog( getClass() ).warn(
-                            "Failed to add listener for gc notifications on %s", gcBean );
-                }
+                        return gcBean.getCollectionCount();
+                    }
+                } );
             }
         }
 
@@ -133,6 +90,7 @@ public class JvmMetrics extends LifecycleAdapter
             {
                 registry.register( name( MEMORY_POOL, prettifyName( memPool.getName() ) ), new Gauge<Long>()
                 {
+                    @Override
                     public Long getValue()
                     {
                         return memPool.getUsage().getUsed();
@@ -148,6 +106,7 @@ public class JvmMetrics extends LifecycleAdapter
             {
                 registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "count" ), new Gauge<Long>()
                 {
+                    @Override
                     public Long getValue()
                     {
                         return pool.getCount();
@@ -156,20 +115,21 @@ public class JvmMetrics extends LifecycleAdapter
 
                 registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "used" ), new Gauge<Long>()
                 {
+                    @Override
                     public Long getValue()
                     {
                         return pool.getMemoryUsed();
                     }
                 } );
 
-                registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "capacity" ),
-                        new Gauge<Long>()
-                        {
-                            public Long getValue()
-                            {
-                                return pool.getTotalCapacity();
-                            }
-                        } );
+                registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "capacity" ), new Gauge<Long>()
+                {
+                    @Override
+                    public Long getValue()
+                    {
+                        return pool.getTotalCapacity();
+                    }
+                } );
             }
         }
 
@@ -178,6 +138,7 @@ public class JvmMetrics extends LifecycleAdapter
         {
             registry.register( name( THREAD, "count" ), new Gauge<Integer>()
             {
+                @Override
                 public Integer getValue()
                 {
                     return Thread.activeCount();
@@ -189,11 +150,6 @@ public class JvmMetrics extends LifecycleAdapter
     @Override
     public void stop() throws IOException
     {
-        for ( Runnable handle : removeListenerHandlers )
-        {
-            handle.run();
-        }
-
         registry.removeMatching( new MetricFilter()
         {
             @Override
