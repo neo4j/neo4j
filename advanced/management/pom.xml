@@ -28,63 +28,6 @@
 	  <url>https://github.com/neo4j/neo4j/tree/master/advanced/management</url>
   </scm>
 
-  <profiles>
-    <profile>
-      <id>Linux-dependency-jconsole.jar</id>
-      <activation>
-        <file>
-          <exists>${java.home}/../lib/jconsole.jar</exists>
-        </file>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/../lib/jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>Mac-OS-X-dependency-jconsole.jar</id>
-      <activation>
-        <file>
-          <exists>${java.home}/lib/jconsole.jar</exists>
-        </file>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/lib/jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>Windows-dependency-jconsole.jar</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}\\..\\lib\\jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
-
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
