@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 class PointTest extends FunctionTestBase("point")  {
 
   test("should accept correct types") {
-    testValidTypes(CTMap)(CTGeometry)
+    testValidTypes(CTMap)(CTPoint)
   }
 
   test("should fail type check for incompatible arguments") {

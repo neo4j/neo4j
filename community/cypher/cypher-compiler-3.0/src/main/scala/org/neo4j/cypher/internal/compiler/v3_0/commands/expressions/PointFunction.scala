@@ -40,7 +40,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   def arguments = data.arguments
 
-  def calculateType(symbols: SymbolTable): CypherType = CTGeometry
+  def calculateType(symbols: SymbolTable): CypherType = CTPoint
 
   def symbolTableDependencies = data.symbolTableDependencies
 

@@ -26,6 +26,6 @@ case object Point extends Function with SimpleTypedFunction {
   def name = "point"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTMap), outputType = CTGeometry)
+    Signature(argumentTypes = Vector(CTMap), outputType = CTPoint)
   )
 }

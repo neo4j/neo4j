@@ -24,16 +24,16 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 class DistanceTest extends FunctionTestBase("distance")  {
 
   test("should accept correct types") {
-    val t1 = CTGeometry
-    testValidTypes(t1, CTGeometry)(CTFloat)
+    val t1 = CTPoint
+    testValidTypes(t1, CTPoint)(CTFloat)
   }
 
   test("should fail type check for incompatible arguments") {
     testInvalidApplication(CTCollection(CTAny), CTCollection(CTAny))(
-      "Type mismatch: expected Geometry but was Collection<Any>"
+      "Type mismatch: expected Point but was Collection<Any>"
     )
     testInvalidApplication(CTString, CTString)(
-      "Type mismatch: expected Geometry but was String"
+      "Type mismatch: expected Point but was String"
     )
   }
 
@@ -44,7 +44,7 @@ class DistanceTest extends FunctionTestBase("distance")  {
     testInvalidApplication(CTMap)(
       "Insufficient parameters for function 'distance'"
     )
-    testInvalidApplication(CTGeometry, CTGeometry, CTGeometry)(
+    testInvalidApplication(CTPoint, CTPoint, CTPoint)(
       "Too many parameters for function 'distance'"
     )
   }

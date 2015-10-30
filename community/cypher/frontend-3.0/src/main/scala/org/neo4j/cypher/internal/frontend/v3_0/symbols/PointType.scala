@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.symbols
 
-object GeometryType {
-  val instance = new GeometryType() {
+object PointType {
+  val instance = new PointType() {
     val parentType = CTAny
-    override val toString = "Geometry"
+    override val toString = "Point"
   }
 }
 
-sealed abstract class GeometryType extends CypherType
+sealed abstract class PointType extends CypherType

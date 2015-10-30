@@ -32,20 +32,20 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
     val geometry2 = convertToGeometry(p2, ctx);
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
-    HaversinCalculator.distance(geometry1, geometry2).getOrElse(
-      CartesianCalculator.distance(geometry1, geometry2).getOrElse(
-        throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
-      )
-    )
+    Seq(
+      HaversinCalculator,
+      CartesianCalculator
+    ).collectFirst {
+      case distance: DistanceCalculator if distance.isDefinedAt(geometry1 -> geometry2) =>
+        distance(geometry1 -> geometry2)
+    }.getOrElse(
+      throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
+    ).get
   }
 
   def convertToGeometry(p: Expression, ctx: ExecutionContext)
-                       (implicit state: QueryState): Geometry = p match {
-    case Identifier(name) => ctx(name) match {
-      case p: PointFunction => p(ctx).asInstanceOf[Geometry]
-      case m: Geometry => m
-    }
-    case p: PointFunction => p(ctx).asInstanceOf[Geometry]
+                       (implicit state: QueryState): Geometry = p(ctx) match {
+    case g: Geometry => g
   }
 
   def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
@@ -60,17 +60,17 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 }
 
 trait DistanceCalculator {
-  def appliesTo(p1: Geometry, p2: Geometry): Boolean
+  def isDefinedAt(p: (Geometry, Geometry)): Boolean
 
   def calculateDistance(p1: Geometry, p2: Geometry): Double
 
-  def distance(p1: Geometry, p2: Geometry): Option[Double] =
-    if (appliesTo(p1, p2)) Some(calculateDistance(p1, p2)) else None
+  def apply(p: (Geometry, Geometry)): Option[Double] =
+    if (isDefinedAt(p._1, p._2)) Some(calculateDistance(p._1, p._2)) else None
 }
 
 object CartesianCalculator extends DistanceCalculator {
-  def appliesTo(p1: Geometry, p2: Geometry): Boolean = {
-    p1.srs == CRS.Cartesian && p2.srs == CRS.Cartesian
+  def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
+    p._1.srs == CRS.Cartesian && p._2.srs == CRS.Cartesian
   }
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {
@@ -84,8 +84,8 @@ object HaversinCalculator extends DistanceCalculator {
 
   val EARTH_RADIUS_METERS = 6378140.0
 
-  def appliesTo(p1: Geometry, p2: Geometry): Boolean = {
-    p1.srs == CRS.WGS84 && p2.srs == CRS.WGS84
+  def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
+    p._1.srs == CRS.WGS84 && p._2.srs == CRS.WGS84
   }
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {

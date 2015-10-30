@@ -29,7 +29,7 @@ package object symbols {
   val CTMap = MapType.instance
   val CTNode = NodeType.instance
   val CTRelationship = RelationshipType.instance
-  val CTGeometry = GeometryType.instance
+  val CTPoint = PointType.instance
   val CTPath = PathType.instance
   def CTCollection(inner: CypherType) = CollectionType(inner)
 
