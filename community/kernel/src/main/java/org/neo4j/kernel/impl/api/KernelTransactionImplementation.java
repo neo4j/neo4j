@@ -179,27 +179,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionEvent transactionEvent;
     private CloseListener closeListener;
 
-    public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard,
-                                            LabelScanStore labelScanStore,
-                                            IndexingService indexService,
-                                            UpdateableSchemaState schemaState,
-                                            TransactionRecordState recordState,
-                                            SchemaIndexProviderMap providerMap,
-                                            NeoStores neoStores,
-                                            Locks.Client locks,
-                                            TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator,
-                                            TransactionHeaderInformationFactory headerInformationFactory,
-                                            TransactionCommitProcess commitProcess,
-                                            TransactionMonitor transactionMonitor,
-                                            StoreReadLayer storeLayer,
-                                            LegacyIndexTransactionState legacyIndexTransactionState,
-                                            Pool<KernelTransactionImplementation> pool,
-                                            ConstraintSemantics constraintSemantics,
-                                            Clock clock,
-                                            TransactionTracer tracer,
-                                            ProcedureCache procedureCache )
+    public KernelTransactionImplementation( StatementOperationParts operations, SchemaWriteGuard schemaWriteGuard,
+            LabelScanStore labelScanStore, IndexingService indexService, UpdateableSchemaState schemaState,
+            TransactionRecordState recordState, SchemaIndexProviderMap providerMap, NeoStores neoStores,
+            Locks.Client locks, TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator,
+            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess,
+            TransactionMonitor transactionMonitor, StoreReadLayer storeLayer,
+            LegacyIndexTransactionState legacyIndexTransactionState, Pool<KernelTransactionImplementation> pool,
+            ConstraintSemantics constraintSemantics, Clock clock, TransactionTracer tracer,
+            ProcedureCache procedureCache )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -268,7 +256,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminated = true;
-            transactionMonitor.transactionTerminated();
+            if ( !closed )
+            {
+                transactionMonitor.transactionTerminated( txState != null );
+            }
         }
     }
 
@@ -284,8 +275,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         if ( currentStatement == null )
         {
-            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+            currentStatement =
+                    new KernelStatement( this, new IndexReaderFactory.Caching( indexService ), labelScanStore, this,
+                            locks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -338,6 +330,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( txState == null )
         {
+            transactionMonitor.upgradeToWriteTransaction();
             txState = new TxState();
         }
         return txState;
@@ -549,11 +542,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         PhysicalTransactionRepresentation transactionRepresentation =
                                 new PhysicalTransactionRepresentation( extractedCommands );
                         TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                        transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
-                                headerInformation.getMasterId(),
-                                headerInformation.getAuthorId(),
-                                startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                                locks.getLockSessionId() );
+                        transactionRepresentation
+                                .setHeader( headerInformation.getAdditionalHeader(), headerInformation.getMasterId(),
+                                        headerInformation.getAuthorId(), startTimeMillis, lastTransactionIdWhenStarted,
+                                        clock.currentTimeMillis(), locks.getLockSessionId() );
 
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
@@ -639,7 +631,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            transactionMonitor.transactionFinished( true );
+            transactionMonitor.transactionFinished( true, txState != null );
         }
     }
 
@@ -655,7 +647,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            transactionMonitor.transactionFinished( false );
+            transactionMonitor.transactionFinished( false, txState != null );
         }
     }
 
@@ -775,8 +767,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             catch ( EntityNotFoundException e )
             {
-                throw new IllegalStateException(
-                        "Relationship being deleted should exist along with its nodes.", e );
+                throw new IllegalStateException( "Relationship being deleted should exist along with its nodes.", e );
             }
 
             // record the state changes to be made to the store
@@ -902,19 +893,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                    .getProviderDescriptor();
+            SchemaIndexProvider.Descriptor providerDescriptor =
+                    providerMap.getDefaultProvider().getProviderDescriptor();
             IndexRule rule;
             if ( isConstraintIndex )
             {
                 rule = IndexRule.constraintIndexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                        element.getPropertyKeyId(), providerDescriptor,
-                        null );
+                        element.getPropertyKeyId(), providerDescriptor, null );
             }
             else
             {
-                rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
-                        element.getPropertyKeyId(), providerDescriptor );
+                rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(), element.getPropertyKeyId(),
+                        providerDescriptor );
             }
             recordState.createSchemaRule( rule );
         }
@@ -922,9 +912,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
-                    SchemaStorage.IndexRuleKind.CONSTRAINT
-                    : SchemaStorage.IndexRuleKind.INDEX;
+            SchemaStorage.IndexRuleKind kind =
+                    isConstraintIndex ? SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
             IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
             recordState.dropSchemaRule( rule );
         }
@@ -934,10 +923,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             clearState = true;
             long constraintId = schemaStorage.newRuleId();
-            IndexRule indexRule = schemaStorage.indexRule(
-                    element.label(),
-                    element.propertyKey(),
-                    SchemaStorage.IndexRuleKind.CONSTRAINT );
+            IndexRule indexRule = schemaStorage
+                    .indexRule( element.label(), element.propertyKey(), SchemaStorage.IndexRuleKind.CONSTRAINT );
             recordState.createSchemaRule( constraintSemantics
                     .writeUniquePropertyConstraint( constraintId, element.label(), element.propertyKey(),
                             indexRule.getId() ) );
@@ -950,14 +937,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             try
             {
                 clearState = true;
-                UniquePropertyConstraintRule rule = schemaStorage
-                        .uniquenessConstraint( element.label(), element.propertyKey() );
+                UniquePropertyConstraintRule rule =
+                        schemaStorage.uniquenessConstraint( element.label(), element.propertyKey() );
                 recordState.dropSchemaRule( rule );
             }
             catch ( SchemaRuleNotFoundException e )
             {
-                throw new ThisShouldNotHappenError(
-                        "Tobias Lindaaker",
+                throw new ThisShouldNotHappenError( "Tobias Lindaaker",
                         "Constraint to be removed should exist, since its existence should " +
                                 "have been validated earlier and the schema should have been locked." );
             }
@@ -974,8 +960,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throws CreateConstraintFailureException
         {
             clearState = true;
-            recordState.createSchemaRule( constraintSemantics.writeNodePropertyExistenceConstraint(
-                    schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
+            recordState.createSchemaRule( constraintSemantics
+                    .writeNodePropertyExistenceConstraint( schemaStorage.newRuleId(), element.label(),
+                            element.propertyKey() ) );
         }
 
         @Override
@@ -991,12 +978,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 throw new IllegalStateException(
                         "Node property existence constraint to be removed should exist, since its existence should " +
-                        "have been validated earlier and the schema should have been locked." );
+                                "have been validated earlier and the schema should have been locked." );
             }
             catch ( DuplicateSchemaRuleException de )
             {
-                throw new IllegalStateException( "Multiple node property constraints found for specified label and " +
-                                                 "property." );
+                throw new IllegalStateException(
+                        "Multiple node property constraints found for specified label and " + "property." );
             }
         }
 
@@ -1005,30 +992,31 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throws CreateConstraintFailureException
         {
             clearState = true;
-            recordState.createSchemaRule( constraintSemantics.writeRelationshipPropertyExistenceConstraint(
-                    schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
+            recordState.createSchemaRule( constraintSemantics
+                    .writeRelationshipPropertyExistenceConstraint( schemaStorage.newRuleId(),
+                            element.relationshipType(), element.propertyKey() ) );
         }
 
         @Override
-        public void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+        public void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint rpec )
         {
             try
             {
                 clearState = true;
-                SchemaRule rule = schemaStorage.relationshipPropertyExistenceConstraint( element.relationshipType(),
-                        element.propertyKey() );
+                SchemaRule rule = schemaStorage
+                        .relationshipPropertyExistenceConstraint( rpec.relationshipType(), rpec.propertyKey() );
                 recordState.dropSchemaRule( rule );
             }
             catch ( SchemaRuleNotFoundException e )
             {
                 throw new IllegalStateException(
                         "Relationship property existence constraint to be removed should exist, since its existence " +
-                        "should have been validated earlier and the schema should have been locked." );
+                                "should have been validated earlier and the schema should have been locked." );
             }
             catch ( DuplicateSchemaRuleException re )
             {
                 throw new IllegalStateException( "Multiple relationship property constraints found for specified " +
-                                                 "property and relationship type." );
+                        "property and relationship type." );
             }
         }
 
@@ -1051,13 +1039,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
+        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
         }
 
         @Override
-        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
         }
@@ -1065,7 +1053,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
         {
-            // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
+            // TODO: This is a temporary measure to allow trialing procedures without changing the store format.
+            // Clearly, this is not safe or useful for
             // production. This will need to be changed before we release a useful 3.x series release.
             procedureCache.createProcedure( procedureDescriptor );
         }
