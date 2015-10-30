@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -39,6 +40,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final MetricRegistry registry;
     private final Config config;
     private final Monitors monitors;
+    private final DataSourceManager dataSourceManager;
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
     private final CheckPointerMonitor checkPointerMonitor;
@@ -46,13 +48,14 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final IdGeneratorFactory idGeneratorFactory;
 
     public Neo4jMetricsFactory( MetricRegistry registry, Config config, Monitors monitors,
-            TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
-            CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
-            IdGeneratorFactory idGeneratorFactory )
+            DataSourceManager dataSourceManager, TransactionCounters transactionCounters,
+            PageCacheMonitor pageCacheCounters, CheckPointerMonitor checkPointerMonitor,
+            LogRotationMonitor logRotationMonitor, IdGeneratorFactory idGeneratorFactory )
     {
         this.registry = registry;
         this.config = config;
         this.monitors = monitors;
+        this.dataSourceManager = dataSourceManager;
         this.transactionCounters = transactionCounters;
         this.pageCacheCounters = pageCacheCounters;
         this.checkPointerMonitor = checkPointerMonitor;
@@ -63,7 +66,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     @Override
     public Lifecycle newInstance()
     {
-        final DBMetrics dbMetrics = new DBMetrics( registry, config,
+        final DBMetrics dbMetrics = new DBMetrics( registry, config, dataSourceManager,
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );

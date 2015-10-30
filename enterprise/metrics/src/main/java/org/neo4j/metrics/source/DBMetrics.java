@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
@@ -45,6 +46,8 @@ public class DBMetrics extends LifecycleAdapter
     private static final String TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks" );
     private static final String TX_COMMITTED = name( TRANSACTION_PREFIX, "committed" );
     private static final String TX_ACTIVE = name( TRANSACTION_PREFIX, "active" );
+    private static final String LAST_COMMITTED_TX_ID = name( TRANSACTION_PREFIX, "last_committed_tx_id" );
+    private static final String LAST_CLOSED_TX_ID = name( TRANSACTION_PREFIX, "last_closed_tx_id" );
 
     private static final String PAGE_CACHE_PREFIX = "neo4j.page_cache";
     private static final String PC_EVICTION_EXCEPTIONS = name( PAGE_CACHE_PREFIX, "eviction_exceptions" );
@@ -70,19 +73,22 @@ public class DBMetrics extends LifecycleAdapter
 
     private final MetricRegistry registry;
     private final Config config;
+    private final DataSourceManager dataSourceManager;
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
     private final CheckPointerMonitor checkPointerMonitor;
     private final LogRotationMonitor logRotationMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public DBMetrics( MetricRegistry registry, Config config, TransactionCounters transactionCounters,
-            PageCacheMonitor pageCacheCounters, CheckPointerMonitor checkPointerMonitor,
-            LogRotationMonitor logRotationMonitor, IdGeneratorFactory idGeneratorFactory )
+    public DBMetrics( MetricRegistry registry, Config config, DataSourceManager dataSourceManager,
+            TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
+            CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.registry = registry;
         this.config = config;
 
+        this.dataSourceManager = dataSourceManager;
         this.transactionCounters = transactionCounters;
         this.pageCacheCounters = pageCacheCounters;
         this.checkPointerMonitor = checkPointerMonitor;
@@ -148,6 +154,26 @@ public class DBMetrics extends LifecycleAdapter
                 public Long getValue()
                 {
                     return transactionCounters.getPeakConcurrentNumberOfTransactions();
+                }
+            } );
+
+            registry.register( LAST_COMMITTED_TX_ID, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return dataSourceManager.getDataSource().
+                            getNeoStores().getMetaDataStore().getLastCommittedTransactionId();
+                }
+            } );
+
+            registry.register( LAST_CLOSED_TX_ID, new Gauge<Long>()
+            {
+                @Override
+                public Long getValue()
+                {
+                    return dataSourceManager.getDataSource().
+                            getNeoStores().getMetaDataStore().getLastClosedTransactionId();
                 }
             } );
         }
@@ -289,8 +315,7 @@ public class DBMetrics extends LifecycleAdapter
                 @Override
                 public Long getValue()
                 {
-                    return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN )
-                            .getNumberOfIdsInUse();
+                    return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
                 }
             } );
         }
@@ -309,6 +334,8 @@ public class DBMetrics extends LifecycleAdapter
             registry.remove( TX_TERMINATED );
             registry.remove( TX_STARTED );
             registry.remove( TX_PEAK_CONCURRENT );
+            registry.remove( LAST_COMMITTED_TX_ID );
+            registry.remove( LAST_CLOSED_TX_ID );
         }
 
         // Page cache metrics
