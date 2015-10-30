@@ -19,22 +19,20 @@
  */
 package org.neo4j.metatest;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.test.subprocess.BreakPoint;
-import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SubProcessTest
 {
@@ -53,6 +51,7 @@ public class SubProcessTest
             started = true;
         }
 
+        @Override
         public String call() throws Exception
         {
             while ( !started )
@@ -73,30 +72,6 @@ public class SubProcessTest
         finally
         {
             SubProcess.stop( subprocess );
-        }
-    }
-
-    @Test
-    public void canDebugSubprocess() throws Exception
-    {
-        final AtomicBoolean called = new AtomicBoolean( false );
-        Callable<String> proc = new TestingProcess().start( MESSAGE,//
-                new BreakPoint( TestingProcess.class, "call" )
-                {
-                    @Override
-                    protected void callback( DebugInterface debug )
-                    {
-                        called.set( true );
-                    }
-                }.enable() );
-        try
-        {
-            assertEquals( MESSAGE, proc.call() );
-            assertTrue( "breakpoint callback never reached", called.get() );
-        }
-        finally
-        {
-            SubProcess.stop( proc );
         }
     }
 
