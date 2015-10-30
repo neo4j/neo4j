@@ -266,8 +266,10 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
     }
 
     @Test
-    @Documented( "When sending queries that return nested results like list and maps, these will get serialized into " +
-                 "nested JSON representations according to their types." )
+    @Documented( "When sending queries that\n" +
+                 "return nested results like list and maps,\n" +
+                 "these will get serialized into nested JSON representations\n" +
+                 "according to their types." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void nested_results() throws Exception {
         data.get();

@@ -101,9 +101,9 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    @Documented( "All responses from the REST API can be transmitted as JSON streams, resulting in better " +
-                 "performance and lower memory overhead on the server side. To use streaming, supply the header " +
-                 "`X-Stream: true` with each request." )
+    @Documented( "All responses from the REST API can be transmitted as JSON streams, resulting in\n" +
+                 "better performance and lower memory overhead on the server side. To use\n" +
+                 "streaming, supply the header `X-Stream: true` with each request." )
     @Test
     public void streaming() throws Exception
     {

@@ -86,7 +86,8 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
 
-    @Documented( "To delete a single property from a node, see the example below." )
+    @Documented( "To delete a single property\n" +
+                 "from a node, see the example below" )
     @Test
     public void delete_a_named_property_from_a_node()
     {
