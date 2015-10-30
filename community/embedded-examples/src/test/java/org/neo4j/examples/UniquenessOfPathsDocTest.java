@@ -18,11 +18,8 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
@@ -34,47 +31,51 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+
 public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
 {
-    /**
-     * Uniqueness of Paths in traversals.
-     * 
-     * This example is demonstrating the use of node uniqueness.
-     * Below an imaginary domain graph with Principals
-     * that own pets that are descendant to other pets.
-     * 
-     * @@graph
-     * 
-     * In order to return all descendants
-     * of +Pet0+ which have the relation +owns+ to +Principal1+ (+Pet1+ and +Pet3+),
-     * the Uniqueness of the traversal needs to be set to
-     * +NODE_PATH+ rather than the default +NODE_GLOBAL+ so that nodes
-     * can be traversed more that once, and paths that have
-     * different nodes but can have some nodes in common (like the
-     * start and end node) can be returned.
-     * 
-     * @@traverser
-     * 
-     * This will return the following paths:
-     * 
-     * @@output
-     * 
-     * In the default `path.toString()` implementation, `(1)--[knows,2]-->(4)` denotes
-     * a node with ID=1 having a relationship with ID 2 or type `knows` to a node with ID-4.
-     * 
-     * Let's create a new +TraversalDescription+ from the old one,
-     * having +NODE_GLOBAL+ uniqueness to see the difference.
-     * 
-     * TIP: The +TraversalDescription+ object is immutable,
-     *      so we have to use the new instance returned
-     *      with the new uniqueness setting.
-     * 
-     * @@traverseNodeGlobal
-     * 
-     * Now only one path is returned:
-     * 
-     * @@outNodeGlobal
-     */
+    private static final String UNIQUENESS_OF_PATHS_DOC =
+            "Uniqueness of Paths in traversals.\n" +
+            " \n" +
+            "This example is demonstrating the use of node uniqueness.\n" +
+            "Below an imaginary domain graph with Principals\n" +
+            "that own pets that are descendant to other pets.\n" +
+            " \n" +
+            "@@graph\n" +
+            " \n" +
+            "In order to return all descendants\n" +
+            "of +Pet0+ which have the relation +owns+ to +Principal1+ (+Pet1+ and +Pet3+),\n" +
+            "the Uniqueness of the traversal needs to be set to\n" +
+            "+NODE_PATH+ rather than the default +NODE_GLOBAL+ so that nodes\n" +
+            "can be traversed more that once, and paths that have\n" +
+            "different nodes but can have some nodes in common (like the\n" +
+            "start and end node) can be returned.\n" +
+            " \n" +
+            "@@traverser\n" +
+            " \n" +
+            "This will return the following paths:\n" +
+            " \n" +
+            "@@output\n" +
+            " \n" +
+            "In the default `path.toString()` implementation, `(1)--[knows,2]-->(4)` denotes\n" +
+            "a node with ID=1 having a relationship with ID 2 or type `knows` to a node with ID-4.\n" +
+            " \n" +
+            "Let's create a new +TraversalDescription+ from the old one,\n" +
+            "having +NODE_GLOBAL+ uniqueness to see the difference.\n" +
+            " \n" +
+            "TIP: The +TraversalDescription+ object is immutable,\n" +
+            "     so we have to use the new instance returned\n" +
+            "     with the new uniqueness setting.\n" +
+            " \n" +
+            "@@traverseNodeGlobal\n" +
+            " \n" +
+            "Now only one path is returned:\n" +
+            " \n" +
+            "@@outNodeGlobal";
+
     @Graph({"Pet0 descendant Pet1",
         "Pet0 descendant Pet2",
         "Pet0 descendant Pet3",
@@ -82,7 +83,7 @@ public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
         "Principal2 owns Pet2",
         "Principal1 owns Pet3"})
     @Test
-    @Documented
+    @Documented( UNIQUENESS_OF_PATHS_DOC )
     public void pathUniquenessExample()
     {
         Node start = data.get().get( "Pet0" );

@@ -19,16 +19,19 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -39,15 +42,11 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
@@ -139,10 +138,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
         }
     }
 
-    /**
-     * Get all relationships.
-     */
-    @Documented
+    @Documented( "Get all relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode()
             throws JsonParseException
@@ -166,10 +162,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
         verifyRelReps( 3, entity );
     }
 
-    /**
-     * Get incoming relationships.
-     */
-    @Documented
+    @Documented( "Get incoming relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode()
             throws JsonParseException
@@ -181,10 +174,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
         verifyRelReps( 1, entity );
     }
 
-    /**
-     * Get outgoing relationships.
-     */
-    @Documented
+    @Documented( "Get outgoing relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode()
             throws JsonParseException
@@ -196,13 +186,10 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
         verifyRelReps( 2, entity );
     }
 
-    /**
-     * Get typed relationships.
-     *
-     * Note that the "+&+" needs to be encoded like "+%26+" for example when
-     * using http://curl.haxx.se/[cURL] from the terminal.
-     */
-    @Documented
+    @Documented( "Get typed relationships.\n" +
+                 "\n" +
+                 "Note that the \"+&+\" needs to be encoded like \"+%26+\" for example when\n" +
+                 "using http://curl.haxx.se/[cURL] from the terminal." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode()
             throws JsonParseException
@@ -237,10 +224,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDo
         response.close();
     }
 
-    /**
-     * Get relationships on a node without relationships.
-     */
-    @Documented
+    @Documented( "Get relationships on a node without relationships." )
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships()
             throws JsonParseException

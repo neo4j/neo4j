@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
-import javax.ws.rs.core.Response.Status;
-
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -44,11 +44,9 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
-import com.sun.jersey.api.client.ClientResponse;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -63,11 +61,11 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
+    @Title("Remove properties from a relationship")
     @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
             @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
             type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
             .STRING)})})
-    @Title("Remove properties from a relationship")
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
     {
         Relationship loves = getFirstRelationshipFromRomeoNode();
@@ -94,16 +92,13 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
         assertTrue( JsonHelper.jsonToMap( response ).containsKey( "start" ) );
     }
 
-    /**
-     * See the example request below.
-     */
     @Test
-    @Documented
+    @Title("Remove property from a relationship")
+    @Documented( "See the example request below." )
     @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
             @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
             type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
             .STRING)})})
-    @Title("Remove property from a relationship")
     public void shouldReturn204WhenPropertyIsRemovedFromRelationship()
     {
         data.get();
@@ -115,13 +110,9 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
 
     }
 
-    /**
-     * Attempting to remove a property that doesn't exist results in
-     * an error.
-     */
     @Test
-    @Documented
     @Title("Remove non-existent property from a relationship")
+    @Documented( "Attempting to remove a property that doesn't exist results in an error." )
     @Graph(nodes = {@NODE(name = "Romeo", setNameProperty = true),
             @NODE(name = "Juliet", setNameProperty = true)}, relationships = {@REL(start = "Romeo", end = "Juliet",
             type = "LOVES", properties = {@PROP(key = "cost", value = "high", type = GraphDescription.PropType
@@ -149,14 +140,10 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
                 getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
 
-    /**
-     * Attempting to remove all properties from a relationship which doesn't
-     * exist results in an error.
-     */
     @Test
-    @Graph("I know you")
-    @Documented
-    @Title("Remove properties from a non-existing relationship")
+    @Graph( "I know you" )
+    @Title( "Remove properties from a non-existing relationship" )
+    @Documented( "Attempting to remove all properties from a relationship which doesn't exist results in an error." )
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
@@ -165,14 +152,10 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
                 .entity();
     }
 
-    /**
-     * Attempting to remove a property from a relationship which doesn't exist
-     * results in an error.
-     */
     @Test
-    @Graph("I know you")
-    @Documented
-    @Title("Remove property from a non-existing relationship")
+    @Graph( "I know you" )
+    @Title( "Remove property from a non-existing relationship" )
+    @Documented( "Attempting to remove a property from a relationship which doesn't exist results in an error." )
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();

@@ -42,7 +42,5 @@ import java.lang.annotation.Target;
 @Target( { ElementType.TYPE, ElementType.FIELD, ElementType.METHOD } )
 public @interface Documented
 {
-    static String DEFAULT_VALUE = "";
-
-    String value() default DEFAULT_VALUE;
+    String value();
 }

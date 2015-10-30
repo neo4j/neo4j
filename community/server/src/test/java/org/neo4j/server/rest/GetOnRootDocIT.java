@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
@@ -31,19 +32,17 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
 {
-    /**
-     * The service root is your starting point to discover the REST API. It
-     * contains the basic starting points for the database, and some version and
-     * extension information.
-     */
-    @Documented
+    @Title("Get service root")
+    @Documented( "The service root is your starting point to discover the REST API. It contains the basic starting " +
+                 "points for the database, and some version and extension information." )
     @Test
     @Graph("I know you")
-    @Title("Get service root")
     public void assert200OkFromGet() throws Exception
     {
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
@@ -102,12 +101,9 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    /**
-     * All responses from the REST API can be transmitted as JSON streams, resulting in
-     * better performance and lower memory overhead on the server side. To use
-     * streaming, supply the header `X-Stream: true` with each request.
-     */
-    @Documented
+    @Documented( "All responses from the REST API can be transmitted as JSON streams, resulting in better " +
+                 "performance and lower memory overhead on the server side. To use streaming, supply the header " +
+                 "`X-Stream: true` with each request." )
     @Test
     public void streaming() throws Exception
     {

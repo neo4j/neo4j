@@ -61,10 +61,7 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    /**
-     * Delete all properties from node.
-     */
-    @Documented
+    @Documented( "Delete all properties from node." )
     @Test
     public void shouldReturn204WhenAllPropertiesAreRemoved()
     {
@@ -89,11 +86,7 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
 
-    /**
-    * To delete a single property
-    * from a node, see the example below.
-    */
-    @Documented
+    @Documented( "To delete a single property from a node, see the example below." )
     @Test
     public void delete_a_named_property_from_a_node()
     {

@@ -287,16 +287,13 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 400, response.getStatus() );
     }
 
-    /**
-     * Get or create unique relationship (create).
-     *
-     * Create a unique relationship in an index.
-     * If a relationship matching the given key and value already exists in the index, it will be returned.
-     * If not, a new relationship will be created.
-     *
-     * NOTE: The type and direction of the relationship is not regarded when determining uniqueness.
-     */
-    @Documented
+    @Documented( "Get or create unique relationship (create).\n" +
+                 "\n" +
+                 "Create a unique relationship in an index.\n" +
+                 "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
+                 "If not, a new relationship will be created.\n" +
+                 "\n" +
+                 "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
     public void get_or_create_relationship() throws Exception
     {
@@ -315,14 +312,11 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .post( functionalTestHelper.relationshipIndexUri() + index + "/?uniqueness=get_or_create" );
     }
 
-    /**
-     * Get or create unique relationship (existing).
-     *
-     * Here, in case
-     * of an already existing relationship, the sent data is ignored and the
-     * existing relationship returned.
-     */
-    @Documented
+    @Documented( "Get or create unique relationship (existing).\n" +
+                 "\n" +
+                 "Here, in case\n" +
+                 "of an already existing relationship, the sent data is ignored and the\n" +
+                 "existing relationship returned." )
     @Test
     public void get_or_create_unique_relationship_existing() throws Exception
     {
@@ -349,14 +343,11 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=get_or_create" );
     }
 
-    /**
-    * Create a unique relationship or return fail (create).
-    *
-    * Here, in case
-    * of an already existing relationship, an error should be returned. In this
-    * example, no existing relationship is found and a new relationship is created.
-    */
-    @Documented
+    @Documented( "Create a unique relationship or return fail (create).\n" +
+                 "\n" +
+                 "Here, in case\n" +
+                 "of an already existing relationship, an error should be returned. In this\n" +
+                 "example, no existing relationship is found and a new relationship is created." )
     @Test
     public void create_a_unique_relationship_or_return_fail___create() throws Exception
     {
@@ -378,14 +369,11 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
     }
 
-    /**
-     * Create a unique relationship or return fail (fail).
-     *
-     * Here, in case
-     * of an already existing relationship, an error should be returned. In this
-     * example, an existing relationship is found and an error is returned.
-     */
-    @Documented
+    @Documented( "Create a unique relationship or return fail (fail).\n" +
+                 "\n" +
+                 "Here, in case\n" +
+                 "of an already existing relationship, an error should be returned. In this\n" +
+                 "example, an existing relationship is found and an error is returned." )
     @Test
     public void create_a_unique_relationship_or_return_fail___fail() throws Exception
     {
@@ -412,17 +400,14 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
     }
 
-    /**
-     * Add an existing relationship to a unique index (not indexed).
-     *
-     * If a relationship matching the given key and value already exists in the index, it will be returned.
-     * If not, an `HTTP 409` (conflict) status will be returned in this case, as we are using `create_or_fail`.
-     *
-     * It's possible to use `get_or_create` uniqueness as well.
-     *
-     * NOTE: The type and direction of the relationship is not regarded when determining uniqueness.
-     */
-    @Documented
+    @Documented( "Add an existing relationship to a unique index (not indexed).\n" +
+                 "\n" +
+                 "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
+                 "If not, an `HTTP 409` (conflict) status will be returned in this case, as we are using `create_or_fail`.\n" +
+                 "\n" +
+                 "It's possible to use `get_or_create` uniqueness as well.\n" +
+                 "\n" +
+                 "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
     public void put_relationship_or_fail_if_absent() throws Exception
     {
@@ -443,10 +428,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
     }
 
-    /**
-     * Add an existing relationship to a unique index (already indexed).
-     */
-    @Documented
+    @Documented( "Add an existing relationship to a unique index (already indexed)." )
     @Test
     public void put_relationship_if_absent_only_fail() throws Exception
     {

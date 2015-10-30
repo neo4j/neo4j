@@ -110,11 +110,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         }
     }
 
-    /**
-     * Get a specific node property existence constraint.
-     * Get a specific node property existence constraint for a label and a property.
-     */
-    @Documented
+    @Documented( "Get a specific node property existence constraint.\n" +
+                 "Get a specific node property existence constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelPropertyExistenceConstraint() throws JsonParseException
@@ -137,11 +134,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         assertThat( serializedList, hasItem( constraint ) );
     }
 
-    /**
-     * Get a specific relationship property existence constraint.
-     * Get a specific relationship property existence constraint for a label and a property.
-     */
-    @Documented
+    @Documented( "Get a specific relationship property existence constraint.\n" +
+                 "Get a specific relationship property existence constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getRelationshipTypePropertyExistenceConstraint() throws JsonParseException
@@ -164,11 +158,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         assertThat( serializedList, hasItem( constraint ) );
     }
 
-    /**
-     * Get all node property existence constraints for a label.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all node property existence constraints for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelPropertyExistenceConstraints() throws JsonParseException
@@ -199,11 +190,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
-    /**
-     * Get all relationship property existence constraints for a type.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all relationship property existence constraints for a type." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getRelationshipTypePropertyExistenceConstraints() throws JsonParseException
@@ -233,11 +221,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
-    /**
-     * Get all constraints for a label.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all constraints for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelPropertyConstraints() throws JsonParseException
@@ -267,11 +252,8 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
         assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
-    /**
-     * Get all constraints.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all constraints." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void get_constraints() throws JsonParseException

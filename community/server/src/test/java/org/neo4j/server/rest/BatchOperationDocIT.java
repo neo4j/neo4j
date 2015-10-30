@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.List;
-import java.util.Map;
-
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.codehaus.jackson.JsonNode;
 import org.json.JSONException;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,33 +41,30 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
 {
-    /**
-     * Execute multiple operations in batch.
-     *
-     * The batch service expects an array of job descriptions as input, each job
-     * description describing an action to be performed via the normal server
-     * API.
-     *
-     * Each job description should contain a +to+ attribute, with a value
-     * relative to the data API root (so http://localhost:7474/db/data/node becomes
-     * just /node), and a +method+ attribute containing HTTP verb to use.
-     *
-     * Optionally you may provide a +body+ attribute, and an +id+ attribute to
-     * help you keep track of responses, although responses are guaranteed to be
-     * returned in the same order the job descriptions are received.
-     *
-     * The following figure outlines the different parts of the job
-     * descriptions:
-     *
-     * image::batch-request-api.png[]
-     */
-    @Documented
+
+    @Documented( "Execute multiple operations in batch.\n" +
+                 "\n" +
+                 "The batch service expects an array of job descriptions as input, each job\n" +
+                 "description describing an action to be performed via the normal server\n" +
+                 "API.\n" +
+                 "\n" +
+                 "Each job description should contain a +to+ attribute, with a value\n" +
+                 "relative to the data API root (so http://localhost:7474/db/data/node becomes\n" +
+                 "just /node), and a +method+ attribute containing HTTP verb to use.\n" +
+                 "\n" +
+                 "Optionally you may provide a +body+ attribute, and an +id+ attribute to\n" +
+                 "help you keep track of responses, although responses are guaranteed to be\n" +
+                 "returned in the same order the job descriptions are received.\n" +
+                 "\n" +
+                 "The following figure outlines the different parts of the job\n" +
+                 "descriptions:\n" +
+                 "\n" +
+                 "image::batch-request-api.png[]" )
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph("Joe knows John")
@@ -148,17 +145,14 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
 
     }
 
-    /**
-     * Refer to items created earlier in the same batch job.
-     *
-     * The batch operation API allows you to refer to the URI returned from a
-     * created resource in subsequent job descriptions, within the same batch
-     * call.
-     *
-     * Use the +{[JOB ID]}+ special syntax to inject URIs from created resources
-     * into JSON strings in subsequent job descriptions.
-     */
-    @Documented
+    @Documented( "Refer to items created earlier in the same batch job.\n" +
+                 "\n" +
+                 "The batch operation API allows you to refer to the URI returned from a\n" +
+                 "created resource in subsequent job descriptions, within the same batch\n" +
+                 "call.\n" +
+                 "\n" +
+                 "Use the +{[JOB ID]}+ special syntax to inject URIs from created resources\n" +
+                 "into JSON strings in subsequent job descriptions." )
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception
     {

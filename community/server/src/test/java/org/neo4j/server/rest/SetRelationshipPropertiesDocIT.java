@@ -58,10 +58,7 @@ public class SetRelationshipPropertiesDocIT extends AbstractRestFunctionalDocTes
         badUri = new URI( functionalTestHelper.relationshipPropertiesUri( relationshipId + 1 * 99999 ) );
     }
 
-    /**
-     * Update relationship properties.
-     */
-    @Documented
+    @Documented( "Update relationship properties." )
     @Test
     @Graph
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
