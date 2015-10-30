@@ -68,15 +68,17 @@ public class LifeSupport
                 catch ( LifecycleException e )
                 {
                     status = changedStatus( this, status, LifecycleStatus.STOPPED );
+
                     try
                     {
                         shutdown();
-                        throw e;
                     }
                     catch ( LifecycleException shutdownErr )
                     {
-                        throw Exceptions.withSuppressed( e, shutdownErr.getCause() == null ? shutdownErr : shutdownErr.getCause() );
+                        e.addSuppressed( shutdownErr );
                     }
+
+                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STOPPED );
@@ -115,12 +117,14 @@ public class LifeSupport
                     try
                     {
                         stop();
-                        throw e;
+
                     }
                     catch ( LifecycleException stopErr )
                     {
-                        throw Exceptions.withSuppressed( e, stopErr.getCause() == null ? stopErr : stopErr.getCause() );
+                        e.addSuppressed( stopErr );
                     }
+
+                    throw e;
                 }
             }
             status = changedStatus( this, status, LifecycleStatus.STARTED );
@@ -209,86 +213,6 @@ public class LifeSupport
             if ( ex != null )
             {
                 throw ex;
-            }
-        }
-    }
-
-    /**
-     * Restart an individual instance. All instances "after" the instance will be stopped first,
-     * so that they don't try to use it during the restart. A restart is effectively a stop followed
-     * by a start.
-     *
-     * @throws LifecycleException       if any start or stop fails
-     * @throws IllegalArgumentException if instance is not registered
-     */
-    public synchronized void restart( Lifecycle instance )
-            throws LifecycleException, IllegalArgumentException
-    {
-        if ( status == LifecycleStatus.STARTED )
-        {
-            boolean foundRestartingInstance = false;
-            List<LifecycleInstance> restartingInstances = new ArrayList<>();
-            for ( LifecycleInstance lifecycleInstance : instances )
-            {
-                if ( lifecycleInstance.instance == instance )
-                {
-                    foundRestartingInstance = true;
-                }
-
-                if ( foundRestartingInstance )
-                {
-                    restartingInstances.add( lifecycleInstance );
-                }
-            }
-
-            if ( !foundRestartingInstance )
-            {
-                throw new IllegalArgumentException( "Instance is not registered" );
-            }
-
-            // Stop instances
-            status = changedStatus( this, status, LifecycleStatus.STOPPING );
-
-            LifecycleException ex = stopInstances( restartingInstances );
-
-            // Failed stop - stop the whole thing to be safe
-            if ( ex != null )
-            {
-                status = changedStatus( this, status, LifecycleStatus.STARTED );
-                try
-                {
-                    stop();
-                    throw ex;
-                }
-                catch ( LifecycleException e )
-                {
-                    throw Exceptions.withSuppressed( ex, e );
-                }
-            }
-
-            // Start instances
-            try
-            {
-                for ( int i = 0; i < restartingInstances.size(); i++ )
-                {
-                    LifecycleInstance lifecycle = restartingInstances.get( i );
-                    lifecycle.start();
-                }
-                status = changedStatus( this, status, LifecycleStatus.STARTED );
-            }
-            catch ( LifecycleException e )
-            {
-                // Failed restart - stop the whole thing to be safe
-                status = changedStatus( this, status, LifecycleStatus.STARTED );
-                try
-                {
-                    stop();
-                }
-                catch ( LifecycleException e1 )
-                {
-                    throw Exceptions.withSuppressed( e, e1 );
-                }
-                throw e;
             }
         }
     }
