@@ -177,7 +177,7 @@ public class TestGraphProperties
         Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStoresEagerly();
+        NeoStores neoStores = storeFactory.openAllNeoStores();
         long prop = neoStores.getMetaDataStore().getGraphNextProp();
         assertTrue( prop != 0 );
         neoStores.close();

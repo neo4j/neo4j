@@ -59,10 +59,6 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";
 
-    private static final byte SF_DEFAULT = 0;
-    public static final byte SF_CREATE = 1;
-    public static final byte SF_LAZY = 1 << 1;
-
     private Config config;
     @SuppressWarnings( "deprecation" )
     private IdGeneratorFactory idGeneratorFactory;
@@ -123,16 +119,47 @@ public class StoreFactory
         this.pageCache = pageCache;
     }
 
-    public NeoStores openNeoStoresEagerly()
+    /**
+     * Open {@link NeoStores} with all possible stores. If some store does not exist it will <b>not</b> be created.
+     * @return container with all opened stores
+     */
+    public NeoStores openAllNeoStores()
     {
-        return openNeoStores( SF_DEFAULT );
+        return openNeoStores( false, NeoStores.StoreType.values() );
     }
 
-    public NeoStores openNeoStores( int flags )
+    /**
+     * Open {@link NeoStores} with all possible stores with a possibility to create store if it not exist.
+     * @param createStoreIfNotExists - should store be created if it's not exist
+     * @return container with all opened stores
+     */
+    public NeoStores openAllNeoStores( boolean createStoreIfNotExists )
     {
-        boolean createIfNotExists = (flags & SF_CREATE) != 0;
-        boolean eagerlyInitializeStores = (flags & SF_LAZY) == 0;
-        if ( createIfNotExists )
+        return openNeoStores( createStoreIfNotExists, NeoStores.StoreType.values() );
+    }
+
+    /**
+     * Open {@link NeoStores} for requested and store types. If requested store depend from non request store,
+     * it will be automatically opened as well.
+     * If some store does not exist it will <b>not</b> be created.
+     * @param storeTypes - types of stores to be opened.
+     * @return container with opened stores
+     */
+    public NeoStores openNeoStores( NeoStores.StoreType... storeTypes )
+    {
+        return openNeoStores( false, storeTypes );
+    }
+
+    /**
+     * Open {@link NeoStores} for requested and store types. If requested store depend from non request store,
+     * it will be automatically opened as well.
+     * @param createStoreIfNotExists - should store be created if it's not exist
+     * @param storeTypes - types of stores to be opened.
+     * @return container with opened stores
+     */
+    public NeoStores openNeoStores( boolean createStoreIfNotExists, NeoStores.StoreType... storeTypes )
+    {
+        if ( createStoreIfNotExists )
         {
             try
             {
@@ -145,7 +172,7 @@ public class StoreFactory
             }
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, createIfNotExists, eagerlyInitializeStores );
+                fileSystemAbstraction, createStoreIfNotExists, storeTypes );
     }
 
     public abstract static class Configuration

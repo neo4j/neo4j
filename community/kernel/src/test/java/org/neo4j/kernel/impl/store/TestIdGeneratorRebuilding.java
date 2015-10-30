@@ -45,7 +45,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class TestIdGeneratorRebuilding
 {
@@ -129,7 +128,7 @@ public class TestIdGeneratorRebuilding
 
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
+        NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
         // ... that contain a number of records ...

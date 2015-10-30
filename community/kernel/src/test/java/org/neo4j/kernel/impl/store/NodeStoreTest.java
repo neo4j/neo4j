@@ -62,7 +62,6 @@ import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
 import static org.neo4j.helpers.Exceptions.forMethod;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -312,7 +311,7 @@ public class NodeStoreTest
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
-        neoStores = factory.openNeoStores( SF_CREATE );
+        neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;
     }

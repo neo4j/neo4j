@@ -45,16 +45,44 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
 
 public class SchemaIndexMigratorTest
 {
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
+    private final StoreFactory storeFactory = mock( StoreFactory.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final PageCache pageCache = mock( PageCache.class );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, pageCache, storeFactory );
+    private final SchemaStore schemaStore = mock( SchemaStore.class );
+    private final IndexAccessor accessor = mock( IndexAccessor.class );
+    private final IndexReader indexReader = mock( IndexReader.class );
+    private final File storeDir = new File( "store" );
+    private final File migrationDir = new File( "migration" );
+    private final IndexConfiguration indexConfig = new IndexConfiguration( false );
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+    private final int indexRuleId = 0;
+
+    @Before
+    public void setup() throws IOException
+    {
+        when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
+
+        when( storeFactory.openNeoStores( NeoStores.StoreType.SCHEMA) ).thenReturn( neoStores );
+        when( storeFactory.openAllNeoStores( anyBoolean() ) ).thenReturn( neoStores );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
+        when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );
+        when( schemaIndexProvider.getOnlineAccessor( indexRuleId, indexConfig, samplingConfig )).thenReturn( accessor );
+        when( accessor.newReader() ).thenReturn( indexReader );
+    }
+
     @Test
     public void shouldDeleteTheIndexIfItContainsIndexedArrayValues() throws Exception
     {
@@ -134,32 +162,5 @@ public class SchemaIndexMigratorTest
         return IndexRule.indexRule( id, labelId, propertyKeyId, schemaIndexProvider.getProviderDescriptor() );
     }
 
-    @Before
-    public void setup() throws IOException
-    {
-        when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        when( storeFactory.openNeoStoresEagerly() ).thenReturn( neoStores );
-        when( storeFactory.openNeoStores( anyInt() ) ).thenReturn( neoStores );
-        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
-        Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
-        when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );
-        when( schemaIndexProvider.getOnlineAccessor( indexRuleId, indexConfig, samplingConfig )).thenReturn( accessor );
-        when( accessor.newReader() ).thenReturn( indexReader );
-    }
-
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private final StoreFactory storeFactory = mock( StoreFactory.class );
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final PageCache pageCache = mock( PageCache.class );
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, pageCache, storeFactory );
-    private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexAccessor accessor = mock( IndexAccessor.class );
-    private final IndexReader indexReader = mock( IndexReader.class );
-    private final File storeDir = new File( "store" );
-    private final File migrationDir = new File( "migration" );
-    private final IndexConfiguration indexConfig = new IndexConfiguration( false );
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-    private final int indexRuleId = 0;
 }

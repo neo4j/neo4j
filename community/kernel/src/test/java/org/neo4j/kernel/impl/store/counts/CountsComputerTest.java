@@ -319,7 +319,7 @@ public class CountsComputerTest
 
         StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
         try ( Lifespan life = new Lifespan();
-              NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
+              NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();

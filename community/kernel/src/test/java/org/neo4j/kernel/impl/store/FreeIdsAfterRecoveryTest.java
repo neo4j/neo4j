@@ -39,8 +39,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_LAZY;
+
 import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.HEADER_SIZE;
 import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.markAsSticky;
 
@@ -59,7 +58,7 @@ public class FreeIdsAfterRecoveryTest
         StoreFactory storeFactory = new StoreFactory( fs, directory.directory(), pageCacheRule.getPageCache( fs ),
                 NullLogProvider.getInstance() );
         long highId;
-        try ( NeoStores stores = storeFactory.openNeoStores( SF_LAZY | SF_CREATE ) )
+        try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {
             // a node store with a "high" node
             NodeStore nodeStore = stores.getNodeStore();
@@ -83,7 +82,7 @@ public class FreeIdsAfterRecoveryTest
         }
 
         // WHEN
-        try ( NeoStores stores = storeFactory.openNeoStores( SF_LAZY | SF_CREATE ) )
+        try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {
             NodeStore nodeStore = stores.getNodeStore();
             assertFalse( nodeStore.getStoreOk() );

@@ -100,7 +100,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -316,7 +315,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         final StoreFactory storeFactory =
                 new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
@@ -496,7 +495,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         {   // The legacy property key token store contains duplicates, copy over and deduplicate
             // property key token store and go through property store with the new token ids.
             StoreFactory storeFactory = storeFactory( pageCache, migrationDir );
-            try ( NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE ) )
+            try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
             {
                 PropertyStore propertyStore = neoStores.getPropertyStore();
                 // dedup and write new property key token store (incl. names)

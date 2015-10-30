@@ -97,7 +97,7 @@ public class StoreAccess
     private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).openNeoStoresEagerly() );
+                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }
 
