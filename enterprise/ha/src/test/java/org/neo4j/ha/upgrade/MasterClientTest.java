@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -153,15 +154,18 @@ public class MasterClientTest
                 .thenReturn( ValidatedIndexUpdates.NONE );
 
         final Dependencies deps = new Dependencies();
+        KernelHealth health = mock( KernelHealth.class );
+        when( health.isHealthy() ).thenReturn( true );
         deps.satisfyDependencies(
                 mock( LogicalTransactionStore.class ),
                 mock( LogFile.class ),
                 mock( LogRotation.class),
-                mock( KernelHealth.class ),
+                health,
                 txAppender,
                 txApplier,
                 txIdStore,
-                indexUpdatesValidator
+                indexUpdatesValidator,
+                NullLogService.getInstance()
         );
 
         TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps )
