@@ -49,7 +49,6 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class TestArrayStore
 {
@@ -72,7 +71,7 @@ public class TestArrayStore
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory( dir, config, idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
-        neoStores = factory.openNeoStores( SF_CREATE );
+        neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }
 

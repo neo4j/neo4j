@@ -47,7 +47,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 public class ResponsePackerIT
 {
@@ -110,6 +109,6 @@ public class ResponsePackerIT
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
-        return storeFactory.openNeoStores( SF_CREATE );
+        return storeFactory.openAllNeoStores( true );
     }
 }

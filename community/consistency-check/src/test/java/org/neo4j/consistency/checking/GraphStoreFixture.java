@@ -105,8 +105,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() )
-                    .openNeoStoresEagerly();
+            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
             {

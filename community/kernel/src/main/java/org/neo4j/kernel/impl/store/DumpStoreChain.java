@@ -39,6 +39,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.DumpStore.STORE_FILENAME_TYPE_MAPPER;
 
 public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
 {
@@ -106,7 +107,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             Config config = new Config();
             StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider() );
 
-            try ( NeoStores neoStores = storeFactory.openNeoStoresEagerly() )
+            try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {
                 RecordStore<RECORD> store = store( neoStores );
                 for ( long next = first; next != -1; )
@@ -117,6 +118,13 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 }
             }
         }
+    }
+
+    private NeoStores.StoreType[] getStoreTypes()
+    {
+        return new NeoStores.StoreType[]{STORE_FILENAME_TYPE_MAPPER.apply( NODESTORE ),
+                STORE_FILENAME_TYPE_MAPPER.apply( PROPSTORE ),
+                STORE_FILENAME_TYPE_MAPPER.apply( RELSTORE )};
     }
 
     abstract long next( RECORD record );

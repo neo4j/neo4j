@@ -58,7 +58,7 @@ public class StoreMigratorTest
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     @Parameterized.Parameter(0)
-    public  String version;
+    public String version;
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> versions()
@@ -99,7 +99,7 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
-        storeFactory.openNeoStoresEagerly().close();
+        storeFactory.openAllNeoStores().close();
     }
 
     @Test
@@ -131,6 +131,6 @@ public class StoreMigratorTest
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
-        storeFactory.openNeoStoresEagerly().close();
+        storeFactory.openAllNeoStores().close();
     }
 }

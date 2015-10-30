@@ -49,7 +49,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -123,7 +122,7 @@ public class ManyPropertyKeysIT
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openNeoStores( SF_CREATE );
+        NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
         {

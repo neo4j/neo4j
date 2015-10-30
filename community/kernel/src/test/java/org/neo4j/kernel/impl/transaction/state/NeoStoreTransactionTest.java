@@ -144,7 +144,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.StoreFactory.SF_CREATE;
+
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -1295,7 +1295,7 @@ public class NeoStoreTransactionTest
 
         // WHEN
         neoStores.close();
-        neoStores = storeFactory.openNeoStoresEagerly();
+        neoStores = storeFactory.openAllNeoStores();
 
         // EXPECT
         long[] lastClosedTransactionFlags = neoStores.getMetaDataStore().getLastClosedTransaction();
@@ -1435,7 +1435,7 @@ public class NeoStoreTransactionTest
         File storeDir = new File( "dir" );
         fs.mkdir( storeDir );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, NULL_LOG_PROVIDER );
-        neoStores = storeFactory.openNeoStores( SF_CREATE );
+        neoStores = storeFactory.openAllNeoStores( true );
         neoStores.rebuildCountStoreIfNeeded();
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
