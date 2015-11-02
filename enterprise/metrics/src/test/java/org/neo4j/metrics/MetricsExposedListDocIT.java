@@ -55,7 +55,7 @@ public class MetricsExposedListDocIT
     @Rule
     public final TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
 
-    GraphDatabaseService db;
+    private GraphDatabaseService db;
     private File outputFile;
 
     @Before
@@ -64,7 +64,6 @@ public class MetricsExposedListDocIT
         String dbPath = folder.directory( "data" ).getAbsolutePath();
         outputFile = folder.file( "metrics.csv" );
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).
-                setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).
                 setConfig( csvEnabled, Settings.TRUE ).
                 setConfig( csvFile, single.name() ).
                 setConfig( csvPath, outputFile.getAbsolutePath() ).newGraphDatabase();
