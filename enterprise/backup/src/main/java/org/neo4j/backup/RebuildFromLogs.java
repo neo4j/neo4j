@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -227,6 +228,7 @@ class RebuildFromLogs
             this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
             this.indexingService = resolver.resolveDependency( IndexingService.class );
+            KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
             this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
                     neoStores, resolver.resolveDependency( KernelHealth.class ), new PropertyLoader( neoStores ),
                     indexingService, IndexUpdateMode.BATCHED );
