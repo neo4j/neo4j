@@ -22,10 +22,10 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.util.Access;
 
 /**
  * Queues {@link TransactionRepresentation} for application at a later point. Queued transactions can be visited
@@ -68,13 +68,11 @@ public class TransactionQueue
         queueIndex = 0;
     }
 
-
-    private static class Transaction implements WritablePair<Commitment,ValidatedIndexUpdates>
+    private static class Transaction implements Access<Commitment>
     {
         private CommittedTransactionRepresentation transaction;
         private TxHandler txHandler;
         private Commitment commitment;
-        private ValidatedIndexUpdates validatedIndexUpdates;
 
         void set( CommittedTransactionRepresentation transaction, TxHandler txHandler )
         {
@@ -84,27 +82,15 @@ public class TransactionQueue
         }
 
         @Override
-        public Commitment getFirst()
+        public Commitment get()
         {
             return commitment;
         }
 
         @Override
-        public ValidatedIndexUpdates getOther()
-        {
-            return validatedIndexUpdates;
-        }
-
-        @Override
-        public void setFirst( Commitment commitment )
+        public void set( Commitment commitment )
         {
             this.commitment = commitment;
-        }
-
-        @Override
-        public void setOther( ValidatedIndexUpdates validatedIndexUpdates )
-        {
-            this.validatedIndexUpdates = validatedIndexUpdates;
         }
     }
 }

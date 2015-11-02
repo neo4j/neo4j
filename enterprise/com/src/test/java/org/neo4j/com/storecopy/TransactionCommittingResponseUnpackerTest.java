@@ -361,7 +361,7 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     @Test
-    public void shouldNotAppendOrApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
+    public void shouldNotApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
     {
         // Given
         final TransactionAppender appender = mockedTransactionAppender();

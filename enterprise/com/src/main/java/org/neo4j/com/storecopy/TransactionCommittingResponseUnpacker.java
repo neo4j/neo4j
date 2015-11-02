@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.util.Access;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
@@ -87,16 +88,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
+                Access<Commitment> commitmentAccess ) throws IOException
         {
             // Tuck away the Commitment returned from the call to append. We'll use each Commitment right before
             // applying each transaction.
-            TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation );
-            Commitment commitment = appender.append( representation, transaction.getCommitEntry().getTxId() );
-            pair.setFirst( commitment );
-            pair.setOther( indexUpdates );
-
+            Commitment commitment = appender.append( transaction.getTransactionRepresentation(),
+                    transaction.getCommitEntry().getTxId() );
+            commitmentAccess.set( commitment );
         }
     };
     // Visits all queued, and recently appended, transactions, applying them to the store
@@ -104,13 +102,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
+                Access<Commitment> commitmentAccess ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            pair.getFirst().publishAsCommitted();
+            commitmentAccess.get().publishAsCommitted();
             try ( LockGroup locks = new LockGroup();
-                  ValidatedIndexUpdates indexUpdates = pair.getOther() )
+                  ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation ) )
             {
                 storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
                 handler.accept( transaction );
@@ -121,11 +119,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         @Override
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException
+                Access<Commitment> commitmentAccess ) throws IOException
         {
-            if ( pair.getFirst().markedAsCommitted() )
+            Commitment commitment = commitmentAccess.get();
+            if ( commitment.markedAsCommitted() )
             {
-                pair.getFirst().publishAsApplied();
+                commitment.publishAsApplied();
             }
         }
     };
