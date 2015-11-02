@@ -1,6 +1,14 @@
 3.0.0-M01
 ---------
 o Improved performance for counting queries by utilizing the counts store
+o The cost-based planner can now plan for `SET` with labels
+o The cost-based planner can now plan for `REMOVE` with labels
+o The cost-based planner can now plan for `CREATE` nodes and relationships
+o The cost-based planner can now plan for `DELETE` and `DETACH DELETE`
+o Replanning counts are now exposed through the `metrics` plugin
+o Fixes #5432 -- `percentileCont` and `percentileDisc` accepts bad arguments
+o The slow query logging now also logs parameter values
+o Removes eagerness from query execution plans in cases where it is not necessary
 
 2.3.1
 -----
