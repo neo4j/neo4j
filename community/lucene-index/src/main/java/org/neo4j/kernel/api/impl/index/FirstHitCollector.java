@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.SimpleCollector;
 
@@ -34,6 +35,7 @@ public final class FirstHitCollector extends SimpleCollector
     public static final int NO_MATCH = -1;
 
     private int result = NO_MATCH;
+    private int readerDocBase = 0;
 
     /**
      * @return true when this collector got a match, otherwise false.
@@ -54,7 +56,7 @@ public final class FirstHitCollector extends SimpleCollector
     @Override
     public void collect( int doc ) throws IOException
     {
-        result = doc;
+        result = readerDocBase + doc;
         throw new CollectionTerminatedException();
     }
 
@@ -62,5 +64,12 @@ public final class FirstHitCollector extends SimpleCollector
     public boolean needsScores()
     {
         return false;
+    }
+
+    @Override
+    protected void doSetNextReader( LeafReaderContext context ) throws IOException
+    {
+        super.doSetNextReader( context );
+        readerDocBase = context.docBase;
     }
 }

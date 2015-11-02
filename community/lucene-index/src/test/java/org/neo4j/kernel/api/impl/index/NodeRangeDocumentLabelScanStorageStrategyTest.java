@@ -22,18 +22,13 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.CollectionTerminatedException;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -251,29 +246,21 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         for ( int i = 0; i < documents.length; i++ )
         {
             final int docId = i;
-            doAnswer( new Answer<Void>()
-            {
-                @Override
-                public Void answer( InvocationOnMock invocation ) throws Throwable
+            doAnswer( invocation -> {
+                FirstHitCollector collector = (FirstHitCollector) invocation.getArguments()[1];
+                try
                 {
-                    Collector collector = (Collector) invocation.getArguments()[1];
-                    LeafCollector leafCollector = collector.getLeafCollector( null );
-                    try
-                    {
-                        leafCollector.collect( docId );
-                    }
-                    catch ( CollectionTerminatedException swallow )
-                    {
-                        // swallow
-                    }
-                    return null;
+                   collector.collect( docId );
                 }
+                catch ( CollectionTerminatedException swallow )
+                {
+                    // swallow
+                }
+                return null;
             } ).when( searcher ).search(
                     eq( new TermQuery( format.rangeTerm( documents[i] ) ) ),
-                    any( Collector.class )
+                    any( FirstHitCollector.class )
             );
-            when( searcher.search( new TermQuery( format.rangeTerm( documents[i] ) ), 1 ) )
-                    .thenReturn( docs( new ScoreDoc( i, 0.0f ) ) );
             when( searcher.doc( i ) ).thenReturn( documents[i] );
         }
         return storage;

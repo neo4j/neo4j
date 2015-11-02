@@ -37,11 +37,11 @@ import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 public abstract class AbstractJavaDocTestBase implements GraphHolder
 {
-    public @Rule
-    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+    @Rule
+    public TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    @Rule
+    public TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     protected static GraphDatabaseService db;
 

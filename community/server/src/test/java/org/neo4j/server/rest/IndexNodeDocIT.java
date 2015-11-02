@@ -294,6 +294,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 nodeMapOrdered.size() == nodeMapUnordered.size() + 1 );
     }
 
+    //TODO:add compatibility tests for old syntax
     @Test
     public void shouldAddToIndexAndRetrieveItByQuerySorted()
             throws JsonParseException
@@ -310,7 +311,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
         String entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                + "?query=" + key + ":Build~0.1%20AND%20Gender:Male&order=relevance" ).entity();
+                + "?query=" + key + ":Builder~%20AND%20Gender:Male&order=relevance" ).entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -335,7 +336,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Build~0.1%20AND%20Gender:Male&order=index" ).entity();
+                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=index" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -359,7 +360,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                        + "?query="+key+":Build~0.1%20AND%20Gender:Male&order=score" ).entity();
+                        + "?query="+key+":Builder~%20AND%20Gender:Male&order=score" ).entity();
 
         hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );

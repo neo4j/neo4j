@@ -29,7 +29,9 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
+  Lucene Common Analyzers
   Lucene Core
+  Lucene QueryParsers
   Metrics Core
   opencsv
   parboiled-core

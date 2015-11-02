@@ -37,6 +37,8 @@ import org.neo4j.graphdb.Transaction;
  */
 public abstract class UniqueFactory<T extends PropertyContainer>
 {
+    private final Index<T> index;
+
     public static class UniqueEntity<T extends PropertyContainer>
     {
         private final T entity;
@@ -165,6 +167,11 @@ public abstract class UniqueFactory<T extends PropertyContainer>
         }
     }
 
+    private UniqueFactory( Index<T> index )
+    {
+        this.index = index;
+    }
+
     /**
      * Implement this method to create the {@link Node} or {@link Relationship} to index.
      *
@@ -262,12 +269,5 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     protected final Index<T> index()
     {
         return index;
-    }
-
-    private final Index<T> index;
-
-    private UniqueFactory( Index<T> index )
-    {
-        this.index = index;
     }
 }

@@ -23,6 +23,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -65,6 +66,7 @@ import static org.junit.Assert.assertTrue;
  * of accidental syntax errors in the browser code. It may also provide early warning that examples need to be updated
  * when cypher syntax moves on.
  */
+@Ignore
 public class CannedCypherExecutionTest
 {
     @Test
@@ -97,6 +99,7 @@ public class CannedCypherExecutionTest
                         {
                             if ( shouldExplain( statement ) )
                             {
+                                System.out.println(statement);
                                 try ( Transaction transaction = database.beginTx() )
                                 {
                                     Iterable<Notification> actual = database.execute(

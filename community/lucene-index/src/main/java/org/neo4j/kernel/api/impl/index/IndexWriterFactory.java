@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 
+@FunctionalInterface
 public interface IndexWriterFactory<W extends LuceneIndexWriter>
 {
     W create( Directory directory ) throws IOException;
