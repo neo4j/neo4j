@@ -37,6 +37,7 @@ case class DeleteNodePipe(src: Pipe, expression: Expression)(val estimatedCardin
         case n: Node =>
           if (!state.query.nodeOps.isDeleted(n)) state.query.nodeOps.delete(n)
           row
+        case null => row
         case other => throw new
             CypherTypeException(s"Expected to delete a node but got a ${other.getClass.getSimpleName}")
       }

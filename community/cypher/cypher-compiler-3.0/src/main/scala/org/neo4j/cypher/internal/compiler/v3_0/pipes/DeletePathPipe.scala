@@ -40,6 +40,7 @@ case class DeletePathPipe(src: Pipe, expression: Expression, forced: Boolean)(va
         case p: Path =>
           p.iterator().asScala.foreach(pc => delete(pc, state, forced))
           row
+        case null => row
         case other => throw new
             CypherTypeException(s"Expected to delete a Path but got a ${other.getClass.getSimpleName}")
       }
