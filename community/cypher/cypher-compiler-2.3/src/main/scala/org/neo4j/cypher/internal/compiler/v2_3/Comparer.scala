@@ -32,7 +32,7 @@ trait Comparer extends StringHelper {
 
   def compare(l: Any, r: Any)(implicit qtx: QueryState): Int = {
     try {
-      if ( (isString(l) && isString(r)) || (isNumber(l) && isNumber(r)))
+      if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         CypherOrdering.DEFAULT.compare(l, r)
       else
         throw new IncomparableValuesException(textWithType(l), textWithType(r))
@@ -52,6 +52,11 @@ object Comparer {
 
   def isNumber(value: Any): Boolean = value match {
     case _: Number => true
+    case _ => value == null
+  }
+
+  def isBoolean(value: Any): Boolean = value match {
+    case _: Boolean => true
     case _ => value == null
   }
 }

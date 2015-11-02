@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
@@ -93,5 +93,37 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT 0").length should equal(0)
     executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT {limit}", "limit" -> -1).length should equal(0)
     a [SyntaxException] should be thrownBy executeWithAllPlanners("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT -1")
+  }
+
+  test("should be able to order booleans") {
+    val query = "UNWIND [true, false] AS bools RETURN bools ORDER BY bools"
+
+    val expected = List(Map("bools" -> false), Map("bools" -> true))
+    executeWithAllPlanners(query).toList should equal(expected)
+    executeWithAllPlanners(s"$query DESC").toList should equal(expected.reverse)
+  }
+
+  test("should be able to order strings") {
+    val query = "UNWIND ['.*', '', ' ', 'one'] AS strings RETURN strings ORDER BY strings"
+
+    val expected = List(Map("strings" -> ""), Map("strings" -> " "), Map("strings" -> ".*"), Map("strings" -> "one"))
+    executeWithAllPlanners(query).toList should equal(expected)
+    executeWithAllPlanners(s"$query DESC").toList should equal(expected.reverse)
+  }
+
+  test("should be able to order ints") {
+    val query = "UNWIND [1,3,2] as ints return ints order by ints"
+
+    val expected = List(Map("ints" -> 1), Map("ints" -> 2), Map("ints" -> 3))
+    executeWithAllPlanners(query).toList should equal(expected)
+    executeWithAllPlanners(s"$query DESC").toList should equal(expected.reverse)
+  }
+
+  test("should be able to order floats") {
+    val query = "UNWIND [1.5,1.3,999.99] as floats return floats order by floats"
+
+    val expected = List(Map("floats" -> 1.3), Map("floats" -> 1.5), Map("floats" -> 999.99))
+    executeWithAllPlanners(query).toList should equal(expected)
+    executeWithAllPlanners(s"$query DESC").toList should equal(expected.reverse)
   }
 }
