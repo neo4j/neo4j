@@ -55,7 +55,7 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
     }
   }
 
-  override protected def numberOfTestRuns: Int = 1000
+  override protected def numberOfTestRuns: Int = 20
 
   override def relGen = Gen.oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
 
