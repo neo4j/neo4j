@@ -1,6 +1,9 @@
 2.3.1
 -----
 o Allow exists() to accept maps, enabling IS NOT NULL to work with LOAD CSV
+o Specifying `planner=cost` now gives the correct cost-based planner (IDP)
+o Fixes a bug where `MERGE` would create duplicate relationships if it had an array property
+o Functions `toInt()` and `toFloat()` will now accept arguments of type `CTNumber`
 
 2.3.0
 -----
