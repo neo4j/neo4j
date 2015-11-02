@@ -127,4 +127,33 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 1, nodesDeleted = 1)
   }
 
+  test("should be able to delete on optional match relationship") {
+    createNode()
+
+    val query = "MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r"
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesDeleted = 1)
+  }
+
+  test("should be able to handle detach deleting null node") {
+    val query = "OPTIONAL MATCH (n) DETACH DELETE n"
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesDeleted = 0)
+  }
+
+  test("should be able to handle deleting null node") {
+    val query = "OPTIONAL MATCH (n) DELETE n"
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesDeleted = 0)
+  }
+
+  test("should be able to handle deleting null path") {
+    val query = "OPTIONAL MATCH p = (n)-->() DETACH DELETE p"
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesDeleted = 0)
+  }
 }

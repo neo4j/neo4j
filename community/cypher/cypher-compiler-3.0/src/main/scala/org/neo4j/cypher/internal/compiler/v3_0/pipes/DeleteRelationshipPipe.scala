@@ -37,6 +37,7 @@ case class DeleteRelationshipPipe(src: Pipe, expression: Expression)(val estimat
         case r: Relationship =>
           if (!state.query.relationshipOps.isDeleted(r)) state.query.relationshipOps.delete(r)
           row
+        case null => row
         case other => throw new
             CypherTypeException(s"Expected to delete a Relationship but got a ${other.getClass.getSimpleName}")
       }
