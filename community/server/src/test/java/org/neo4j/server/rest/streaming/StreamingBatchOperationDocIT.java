@@ -19,20 +19,14 @@
  */
 package org.neo4j.server.rest.streaming;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-
-import java.util.List;
-import java.util.Map;
-
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -43,9 +37,18 @@ import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
 {
@@ -313,10 +316,16 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
                 .header(StreamingFormat.STREAM_HEADER, "true")
                 .post(batchUri(), jsonString);
         assertEquals(200, response.getStatus());
-        assertTrue(((Map)singleResult( response, 1 ).get("body")).get("message").toString().contains( "java.util.ArrayList cannot be cast to java.util.Map" ));
-        assertEquals(400, singleResult( response, 1 ).get( "status" ));
-        assertEquals(originalNodeCount, countNodes());
 
+        // Message of the ClassCastException differs in Oracle JDK [typeX cannot be cast to typeY]
+        // and IBM JDK [typeX incompatible with typeY]. That is why we check parts of the message and exception class.
+        Map<String,String> body = (Map) singleResult( response, 1 ).get( "body" );
+        assertEquals( BadInputException.class.getSimpleName(), body.get( "exception" ) );
+        assertThat( body.get( "message" ), containsString( "java.util.ArrayList" ) );
+        assertThat( body.get( "message" ), containsString( "java.util.Map" ) );
+        assertEquals(400, singleResult( response, 1 ).get( "status" ));
+
+        assertEquals(originalNodeCount, countNodes());
     }
 
     @Test
