@@ -6,7 +6,6 @@
     <version>3.0.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
   <version>3.0.0-SNAPSHOT</version>
 
@@ -76,10 +75,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-analyzers-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-backward-codecs</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>

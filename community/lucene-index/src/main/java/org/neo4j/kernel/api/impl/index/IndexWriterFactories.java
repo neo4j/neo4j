@@ -21,9 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
 
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
@@ -37,38 +34,17 @@ public final class IndexWriterFactories
 
     public static IndexWriterFactory<ReservingLuceneIndexWriter> reserving()
     {
-        return new IndexWriterFactory<ReservingLuceneIndexWriter>()
-        {
-            @Override
-            public ReservingLuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new ReservingLuceneIndexWriter( directory, standardConfig() );
-            }
-        };
+        return directory -> new ReservingLuceneIndexWriter( directory, standardConfig() );
     }
 
     public static IndexWriterFactory<LuceneIndexWriter> tracking()
     {
-        return new IndexWriterFactory<LuceneIndexWriter>()
-        {
-            @Override
-            public LuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new TrackingLuceneIndexWriter( directory, standardConfig() );
-            }
-        };
+        return directory -> new TrackingLuceneIndexWriter( directory, standardConfig() );
     }
 
     public static IndexWriterFactory<LuceneIndexWriter> batchInsert( final IndexWriterConfig config )
     {
-        return new IndexWriterFactory<LuceneIndexWriter>()
-        {
-            @Override
-            public LuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new TrackingLuceneIndexWriter( directory, config );
-            }
-        };
+        return directory -> new TrackingLuceneIndexWriter( directory, config );
     }
 
     private static IndexWriterConfig standardConfig()

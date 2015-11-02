@@ -25,7 +25,7 @@
     <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
-    <lucene.version>5.3.0</lucene.version>
+    <lucene.version>5.3.1</lucene.version>
     <logback-classic.version>1.1.2</logback-classic.version>
     <bouncycastle.version>1.52</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
@@ -425,11 +425,6 @@
       </dependency>
       <dependency>
         <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-backward-codecs</artifactId>
-        <version>${lucene.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-core</artifactId>
         <version>${lucene.version}</version>
       </dependency>
@@ -437,6 +432,16 @@
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-queryparser</artifactId>
         <version>${lucene.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queries</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-sandbox</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <!-- special -->
       <dependency>

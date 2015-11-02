@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
@@ -26,6 +27,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -37,6 +40,7 @@ import org.apache.lucene.util.BytesRef;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
@@ -292,20 +296,31 @@ public class LuceneDocumentStructure
         return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
     }
 
-    public TermRangeQuery newRangeSeekByStringQuery( String lower, boolean includeLower,
-            String upper, boolean upperInclusive )
+    public Query newRangeSeekByStringQuery( String lower, boolean includeLower,
+            String upper, boolean includeUpper )
     {
-        BytesRef chosenLower = lower != null ? new BytesRef( lower ) : null;
-        boolean includeChosenLower = lower == null || includeLower;
-
-        BytesRef chosenUpper = upper != null ? new BytesRef( upper ) : null;
-        boolean includeChosenUpper = upper == null || upperInclusive;
-
-        return new TermRangeQuery(
-                ValueEncoding.String.key(),
-                chosenLower, chosenUpper,
-                includeChosenLower, includeChosenUpper
-        );
+        boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
+        boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
+        TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key(), lower, upper,
+                includeLowerBoundary, includeUpperBoundary );
+        //TODO check upper case
+        if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
+        {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            if (includeLowerBoundary != includeLower)
+            {
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), lower ) ), BooleanClause.Occur
+                        .MUST_NOT );
+            }
+            if (includeUpperBoundary != includeUpper)
+            {
+                builder.add( new TermQuery( new Term( ValueEncoding.String.key(), upper ) ), BooleanClause.Occur
+                        .MUST_NOT );
+            }
+            builder.add( termRangeQuery, BooleanClause.Occur.SHOULD );
+            return builder.build();
+        }
+        return termRangeQuery;
     }
 
     public PrefixQuery newRangeSeekByPrefixQuery( String prefix )

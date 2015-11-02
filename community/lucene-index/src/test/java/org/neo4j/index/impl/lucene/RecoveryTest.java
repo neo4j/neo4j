@@ -141,13 +141,8 @@ public class RecoveryTest
 
         // NB: AddRelToIndex will start and shutdown the db
         Process process = Runtime.getRuntime().exec( new String[]{
-                ProcessUtil.getJavaExecutable().toString(),
-                "-Xdebug",
-                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
-                "-cp",
-                ProcessUtil.getClassPath(),
-                AddRelToIndex.class.getName(),
-                storeDir
+                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
+                AddRelToIndex.class.getName(), storeDir
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 

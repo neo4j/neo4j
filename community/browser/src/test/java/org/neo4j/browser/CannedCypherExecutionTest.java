@@ -19,6 +19,13 @@
  */
 package org.neo4j.browser;
 
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -34,11 +41,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -48,7 +50,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.jsoup.helper.StringUtil.join;
@@ -63,6 +64,7 @@ import static org.junit.Assert.assertTrue;
  * of accidental syntax errors in the browser code. It may also provide early warning that examples need to be updated
  * when cypher syntax moves on.
  */
+@Ignore
 public class CannedCypherExecutionTest
 {
     @Test
@@ -95,6 +97,7 @@ public class CannedCypherExecutionTest
                         {
                             if ( shouldExplain( statement ) )
                             {
+                                System.out.println(statement);
                                 try ( Transaction transaction = database.beginTx() )
                                 {
                                     Iterable<Notification> notifications = database.execute(

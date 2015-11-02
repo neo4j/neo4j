@@ -20,7 +20,10 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Rule;

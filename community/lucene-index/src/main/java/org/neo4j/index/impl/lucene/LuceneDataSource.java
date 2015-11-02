@@ -84,8 +84,6 @@ public class LuceneDataSource extends LifecycleAdapter
         public static final Setting<Boolean> ephemeral = GraphDatabaseFacadeFactory.Configuration.ephemeral;
     }
 
-    public static final Version LUCENE_VERSION = Version.LUCENE_5_2_1;
-
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */

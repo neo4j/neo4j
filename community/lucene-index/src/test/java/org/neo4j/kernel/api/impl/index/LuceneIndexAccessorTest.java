@@ -33,9 +33,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -59,6 +61,76 @@ import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 @RunWith( Parameterized.class )
 public class LuceneIndexAccessorTest
 {
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+
+    @Parameterized.Parameter
+    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
+
+    private LuceneIndexAccessor accessor;
+    private final long nodeId = 1, nodeId2 = 2;
+    private final Object value = "value", value2 = 40;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
+    {
+        final File dir = new File( "dir" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        return Arrays.asList(
+                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
+                {
+                    @Override
+                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
+                            throws IOException
+                    {
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return NonUniqueLuceneIndexAccessor.class.getName();
+                    }
+                } ),
+                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
+                {
+                    @Override
+                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
+                            throws IOException
+                    {
+                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return UniqueLuceneIndexAccessor.class.getName();
+                    }
+                } )
+        );
+    }
+
+    private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
+            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
+    {
+        return new IOFunction[]{foo};
+    }
+
+    @Before
+    public void before() throws IOException
+    {
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        accessor = accessorFactory.apply( dirFactory );
+    }
+
+    @After
+    public void after() throws IOException
+    {
+        accessor.close();
+        dirFactory.close();
+    }
+
     @Test
     public void indexReaderShouldSupportScan() throws Exception
     {
@@ -74,6 +146,33 @@ public class LuceneIndexAccessorTest
         assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
+
+//TODO: make a proper test from experiment
+//    @Test
+//    public void testRangeQuery() throws IndexCapacityExceededException, IOException, IndexEntryConflictException
+//    {
+//        updateAndCommit( asList( add( 1, "A" ), add( 2, "B" ), add( 3, "C" ) ) );
+////
+//        IndexReader reader = accessor.newReader();
+//
+//        PrimitiveLongIterator rangeIterator = reader.rangeSeekByString( "B", true, null, false );
+//        System.out.println( "Experiment1:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator ) ) );
+//
+//        PrimitiveLongIterator rangeIterator2 = reader.rangeSeekByString( "A", false, null, false );
+//        System.out.println( "Experiment2:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator2 ) ) );
+//
+//        PrimitiveLongIterator rangeIterator3 = reader.rangeSeekByString( "", true, null, false );
+//        System.out.println( "Experiment3:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator3 ) ) );
+//
+//        PrimitiveLongIterator rangeIterator4 = reader.rangeSeekByString( "", false, null, false );
+//        System.out.println( "Experiment4:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator4 ) ) );
+//
+//        PrimitiveLongIterator rangeIterator5 = reader.rangeSeekByString( null, false, null, false );
+//        System.out.println( "Experiment5:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator5 ) ) );
+//
+//        PrimitiveLongIterator rangeIterator6 = reader.rangeSeekByString( null, true, null, false );
+//        System.out.println( "Experiment6:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator6 ) ) );
+//    }
 
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
@@ -190,75 +289,6 @@ public class LuceneIndexAccessorTest
         {
             drop.get();
         }
-    }
-
-    private final long nodeId = 1, nodeId2 = 2;
-    private final Object value = "value", value2 = 40;
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-
-    @Parameterized.Parameter
-    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
-    private LuceneIndexAccessor accessor;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
-    {
-        final File dir = new File( "dir" );
-        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-        return Arrays.asList(
-                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
-                {
-                    @Override
-                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
-                            throws IOException
-                    {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return NonUniqueLuceneIndexAccessor.class.getName();
-                    }
-                } ),
-                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
-                {
-                    @Override
-                    public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
-                            throws IOException
-                    {
-                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return UniqueLuceneIndexAccessor.class.getName();
-                    }
-                } )
-        );
-    }
-
-    private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
-            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
-    {
-        return new IOFunction[]{foo};
-    }
-
-    @Before
-    public void before() throws IOException
-    {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        accessor = accessorFactory.apply( dirFactory );
-    }
-
-    @After
-    public void after()
-    {
-        dirFactory.close();
     }
 
     private NodePropertyUpdate add( long nodeId, Object value )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -85,6 +86,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
+@Ignore
 @RunWith( Enclosed.class )
 public class StoreUpgradeIntegrationTest
 {

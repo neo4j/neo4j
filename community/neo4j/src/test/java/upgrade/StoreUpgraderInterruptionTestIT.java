@@ -19,6 +19,7 @@
  */
 package upgrade;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -65,6 +66,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 @RunWith( Parameterized.class )
+@Ignore
 public class StoreUpgraderInterruptionTestIT
 {
     @Parameterized.Parameter( 0 )

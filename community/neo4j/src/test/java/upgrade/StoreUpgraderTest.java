@@ -20,6 +20,7 @@
 package upgrade;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -96,6 +97,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
+@Ignore
 @RunWith(Parameterized.class)
 public class StoreUpgraderTest
 {
