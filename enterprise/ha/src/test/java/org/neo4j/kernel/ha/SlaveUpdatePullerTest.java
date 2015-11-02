@@ -46,13 +46,13 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SlaveUpdatePullerTest
@@ -61,12 +61,13 @@ public class SlaveUpdatePullerTest
     private final Config config = mock( Config.class );
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
-    private final Master master = mock( Master.class );
+    private final Master master = mock( Master.class, RETURNS_MOCKS );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
+    private final SlaveUpdatePuller.Monitor monitor = mock( SlaveUpdatePuller.Monitor.class );
     private final SlaveUpdatePuller updatePuller = new SlaveUpdatePuller( requestContextFactory,
-            master, lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler );
+            master, lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler, monitor );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
@@ -74,6 +75,7 @@ public class SlaveUpdatePullerTest
     @Before
     public void setup() throws Throwable
     {
+        when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
         when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( instanceId );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
@@ -91,6 +93,7 @@ public class SlaveUpdatePullerTest
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
         updatePuller.shutdown();
@@ -110,6 +113,7 @@ public class SlaveUpdatePullerTest
         verify( lastUpdateTime, times( 1 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 1 ) ).isAvailable( anyLong() );
         verify( master, times( 1 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( monitor, times( 1 ) ).pulledUpdates( anyLong() );
 
         // WHEN
         updatePuller.pullUpdates();
@@ -118,6 +122,7 @@ public class SlaveUpdatePullerTest
         verify( lastUpdateTime, times( 2 ) ).setLastUpdateTime( anyLong() );
         verify( availabilityGuard, times( 2 ) ).isAvailable( anyLong() );
         verify( master, times( 2 ) ).pullUpdates( Matchers.<RequestContext>any() );
+        verify( monitor, times( 2 ) ).pulledUpdates( anyLong() );
     }
 
     @Test

@@ -370,7 +370,7 @@ public class HighlyAvailableEditionModule
         PullerFactory pullerFactory = new PullerFactory( requestContextFactory, master, lastUpdateTime,
                 logging.getInternalLogProvider(), serverId, invalidEpochHandler,
                 config.get( HaSettings.pull_interval ), platformModule.jobScheduler,
-                dependencies, platformModule.availabilityGuard, memberStateMachine );
+                dependencies, platformModule.availabilityGuard, memberStateMachine, monitors );
 
         dependencies.satisfyDependency( pullerFactory.createObligationFulfiller( paxosLife, updatePullerProxy ) );
 
