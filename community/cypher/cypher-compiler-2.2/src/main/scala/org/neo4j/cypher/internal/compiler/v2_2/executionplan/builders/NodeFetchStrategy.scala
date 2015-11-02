@@ -137,20 +137,18 @@ object IndexSeekStrategy extends NodeStrategy {
     }
   }
 
-  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, CTNode)
-
+  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate],
+                                               symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
       case predicate @ Equals(Property(Identifier(id), propertyKey), expression)
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ AnyInCollection(expression, _, Equals(Property(Identifier(id), propertyKey),Identifier(_)))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
-  }
 }
 
 object GlobalStrategy extends NodeStrategy {
