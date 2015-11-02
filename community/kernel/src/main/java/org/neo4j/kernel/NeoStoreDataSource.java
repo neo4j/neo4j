@@ -744,7 +744,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
         final IndexUpdatesValidator indexUpdatesValidator = dependencies.satisfyDependency(
-                new OnlineIndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ),
+                new OnlineIndexUpdatesValidator( neoStore, kernelHealth, new PropertyLoader( neoStore ),
                         indexingService, IndexUpdateMode.ONLINE ) );
 
         // TODO Move to constructor

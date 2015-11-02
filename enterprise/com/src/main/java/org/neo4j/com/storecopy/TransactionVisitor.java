@@ -22,9 +22,9 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.util.Access;
 
 /**
  * Visits queued transactions.
@@ -33,6 +33,6 @@ import org.neo4j.kernel.impl.transaction.log.Commitment;
  */
 interface TransactionVisitor
 {
-    void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-            WritablePair<Commitment,ValidatedIndexUpdates> pair ) throws IOException;
+    void visit( CommittedTransactionRepresentation transaction, TxHandler handler, Access<Commitment> commitment )
+            throws IOException;
 }

@@ -34,6 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -224,8 +226,9 @@ class RebuildFromLogs
             this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
             this.indexingService = resolver.resolveDependency( IndexingService.class );
+            KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
             this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
-                    neoStore, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
+                    neoStore, kernelHealth, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
         }
 
         long applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException

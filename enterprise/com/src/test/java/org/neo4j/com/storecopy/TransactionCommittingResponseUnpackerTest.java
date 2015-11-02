@@ -474,7 +474,7 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     @Test
-    public void shouldNotAppendOrApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
+    public void shouldNotApplyTransactionIfIndexUpdatesValidationFails() throws Throwable
     {
         // Given
         DependencyResolver resolver = mock( DependencyResolver.class );
@@ -517,7 +517,7 @@ public class TransactionCommittingResponseUnpackerTest
         }
 
         // Then
-        verifyZeroInteractions( appender, storeApplier );
+        verifyZeroInteractions( storeApplier );
     }
 
     private Function<DependencyResolver,IndexUpdatesValidator> customValidator( final IndexUpdatesValidator validator )

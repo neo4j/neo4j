@@ -49,6 +49,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -109,7 +110,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -128,6 +128,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1455,7 +1458,9 @@ public class NeoStoreTransactionTest
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
     {
-        OnlineIndexUpdatesValidator indexUpdatesValidator = new OnlineIndexUpdatesValidator( neoStore,
+
+        KernelHealth kernelHealth = mock( KernelHealth.class );
+        OnlineIndexUpdatesValidator indexUpdatesValidator = new OnlineIndexUpdatesValidator( neoStore, kernelHealth,
                 new PropertyLoader( neoStore ), indexing, IndexUpdateMode.ONLINE );
         return commitProcess( indexing, indexUpdatesValidator);
     }
