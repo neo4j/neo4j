@@ -160,20 +160,18 @@ object IndexSeekStrategy extends NodeStrategy {
     result.flatten
   }
 
-  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, CTNode)
-
+  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate],
+                                               symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
       case predicate @ Equals(Property(Identifier(id), propertyKey), expression)
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ AnyInCollection(expression, _, Equals(Property(Identifier(id), propertyKey),Identifier(_)))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
-  }
 
   private def findIndexSeekByPrefixPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
     where.collect {
@@ -182,12 +180,10 @@ object IndexSeekStrategy extends NodeStrategy {
     }
   }
 
-  private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, CTNode)
-
+  private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
     where.collect {
       case predicate@AndedPropertyComparablePredicates(Identifier(id), Property(_, key), comparables)
-        if id == identifier && predicate.symbolDependenciesMet(symbols) =>
+        if id == identifier && comparables.forall(_.symbolDependenciesMet(symbols)) =>
         SolvedPredicate(key.name, predicate)
     }
   }
