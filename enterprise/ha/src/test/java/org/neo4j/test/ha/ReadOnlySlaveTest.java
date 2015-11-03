@@ -19,28 +19,25 @@
  */
 package org.neo4j.test.ha;
 
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
 /**
@@ -48,95 +45,66 @@ import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
  */
 public class ReadOnlySlaveTest
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( ReadOnlySlaveTest.class )
+            .withSharedSetting( tx_push_factor, "2" )
+            .withInstanceSetting( read_only, new IntFunction<String>()
+            {
+                @Override
+                public String apply( int oneBasedServerId )
+                {
+                    return oneBasedServerId == 2 ? Settings.TRUE : null;
+                }
+            } );
 
     @Test
     public void givenClusterWithReadOnlySlaveWhenWriteTxOnSlaveThenCommitFails() throws Throwable
     {
-        // Given
-        Map<String,String> config = stringMap(
-                tx_push_factor.name(), "2" );
-        ClusterManager clusterManager = new ClusterManager.Builder( folder.getRoot() )
-                .withCommonConfig( config )
-                .withInstanceConfig( 2, stringMap(
-                        GraphDatabaseSettings.read_only
-                                .name(),
-                        Settings.TRUE ) )
-                .build();
-        try
+        // When
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
+
+        try ( Transaction tx = readOnlySlave.beginTx() )
         {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
-            // When
-            HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
-
-            try ( Transaction tx = readOnlySlave.beginTx() )
-            {
-                readOnlySlave.createNode();
-                tx.success();
-            }
-            catch ( TransactionFailureException ex )
-            {
-                // Then
-                assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
-            }
+            readOnlySlave.createNode();
+            tx.success();
         }
-        finally
+        catch ( TransactionFailureException ex )
         {
-            clusterManager.shutdown();
+            // Then
+            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
-
     }
 
     @Test
     public void givenClusterWithReadOnlySlaveWhenChangePropertyOnSlaveThenThrowException() throws Throwable
     {
         // Given
-        Map<String,String> config = stringMap(
-                tx_push_factor.name(), "2" );
-        ClusterManager clusterManager = new ClusterManager.Builder( folder.getRoot() )
-                .withCommonConfig( config ).withInstanceConfig( 2, stringMap( GraphDatabaseSettings.read_only.name(),
-                        Settings.TRUE ) )
-                .build();
-        try
+        ManagedCluster cluster = clusterRule.startCluster();
+        Node node;
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
         {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
-            Node node;
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                node = master.createNode();
-                tx.success();
-            }
-
-            // When
-            HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
-
-            try ( Transaction tx = readOnlySlave.beginTx() )
-            {
-                Node slaveNode = readOnlySlave.getNodeById( node.getId() );
-
-
-                // Then
-                slaveNode.setProperty( "foo", "bar" );
-                tx.success();
-            }
-            catch ( TransactionFailureException ex )
-            {
-                // Ok!
-                assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
-            }
-
+            node = master.createNode();
+            tx.success();
         }
-        finally
+
+        // When
+        HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
+
+        try ( Transaction tx = readOnlySlave.beginTx() )
         {
-            clusterManager.shutdown();
+            Node slaveNode = readOnlySlave.getNodeById( node.getId() );
+
+
+            // Then
+            slaveNode.setProperty( "foo", "bar" );
+            tx.success();
+        }
+        catch ( TransactionFailureException ex )
+        {
+            // Ok!
+            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
         }
     }
 
@@ -144,101 +112,66 @@ public class ReadOnlySlaveTest
     public void givenClusterWithReadOnlySlaveWhenAddNewLabelOnSlaveThenThrowException() throws Throwable
     {
         // Given
-        Map<String,String> config = stringMap(
-                tx_push_factor.name(), "2" );
-        ClusterManager clusterManager = new ClusterManager.Builder( folder.getRoot() )
-                .withCommonConfig( config ).withInstanceConfig( 2,
-                        stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) )
-                .build();
-        try
+        ManagedCluster cluster = clusterRule.startCluster();
+        Node node;
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
         {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
-            Node node;
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                node = master.createNode();
-                tx.success();
-            }
-
-            // When
-            HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
-
-            try ( Transaction tx = readOnlySlave.beginTx() )
-            {
-                Node slaveNode = readOnlySlave.getNodeById( node.getId() );
-
-
-                // Then
-                slaveNode.addLabel( DynamicLabel.label( "FOO" ) );
-                tx.success();
-            }
-            catch ( TransactionFailureException ex )
-            {
-                // Ok!
-                assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
-            }
-        }
-        finally
-        {
-            clusterManager.shutdown();
+            node = master.createNode();
+            tx.success();
         }
 
+        // When
+        HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
+
+        try ( Transaction tx = readOnlySlave.beginTx() )
+        {
+            Node slaveNode = readOnlySlave.getNodeById( node.getId() );
+
+
+            // Then
+            slaveNode.addLabel( DynamicLabel.label( "FOO" ) );
+            tx.success();
+        }
+        catch ( TransactionFailureException ex )
+        {
+            // Ok!
+            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
+        }
     }
 
     @Test
     public void givenClusterWithReadOnlySlaveWhenAddNewRelTypeOnSlaveThenThrowException() throws Throwable
     {
         // Given
-        Map<String,String> config = stringMap(
-                tx_push_factor.name(), "2" );
-        ClusterManager clusterManager = new ClusterManager.Builder( folder.getRoot() )
-                .withCommonConfig( config )
-                .withInstanceConfig( 2, stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) )
-                .build();
-        try
+        ManagedCluster cluster = clusterRule.startCluster();
+        Node node;
+        Node node2;
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
         {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
-            Node node;
-            Node node2;
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                node = master.createNode();
-                node2 = master.createNode();
-                tx.success();
-            }
-
-            // When
-            HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
-
-            try ( Transaction tx = readOnlySlave.beginTx() )
-            {
-                Node slaveNode = readOnlySlave.getNodeById( node.getId() );
-                Node slaveNode2 = readOnlySlave.getNodeById( node2.getId() );
-
-
-                // Then
-                slaveNode.createRelationshipTo( slaveNode2, DynamicRelationshipType.withName( "KNOWS" ) );
-                tx.success();
-            }
-            catch ( TransactionFailureException ex )
-            {
-                // Ok!
-                assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
-            }
-
-        }
-        finally
-        {
-            clusterManager.shutdown();
+            node = master.createNode();
+            node2 = master.createNode();
+            tx.success();
         }
 
+        // When
+        HighlyAvailableGraphDatabase readOnlySlave = cluster.getMemberByServerId( new InstanceId( 2 ) );
+
+        try ( Transaction tx = readOnlySlave.beginTx() )
+        {
+            Node slaveNode = readOnlySlave.getNodeById( node.getId() );
+            Node slaveNode2 = readOnlySlave.getNodeById( node2.getId() );
+
+
+            // Then
+            slaveNode.createRelationshipTo( slaveNode2, DynamicRelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
+        catch ( TransactionFailureException ex )
+        {
+            // Ok!
+            assertThat( ex.getCause(), instanceOf( ReadOnlyDbException.class ) );
+        }
     }
 }

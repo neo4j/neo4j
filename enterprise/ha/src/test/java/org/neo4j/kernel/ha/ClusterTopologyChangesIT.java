@@ -58,10 +58,12 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -86,9 +88,9 @@ public class ClusterTopologyChangesIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                .config(HaSettings.read_timeout, "1s")
-                .config(HaSettings.state_switch_timeout, "2s")
-                .config(HaSettings.com_chunk_size, "1024")
+                .withSharedSetting( HaSettings.read_timeout, "1s" )
+                .withSharedSetting( HaSettings.state_switch_timeout, "2s" )
+                .withSharedSetting( HaSettings.com_chunk_size, "1024" )
                 .startCluster();
     }
 

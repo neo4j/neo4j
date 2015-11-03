@@ -19,107 +19,76 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class HACountsPropagationTest
 {
     private static final int PULL_INTERVAL = 100;
 
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( HACountsPropagationTest.class )
+            .withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" );
 
     @Test
     public void shouldPropagateNodeCountsInHA() throws Throwable
     {
-        File root = testDirectory.directory( "shouldPropagateNodeCountsInHA" );
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.pull_interval.name(), PULL_INTERVAL + "ms" ) );
-        clusterManager.start();
-        try
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
         {
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( allSeesAllAsAvailable() );
-
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                master.createNode();
-                master.createNode( DynamicLabel.label( "A" ) );
-                tx.success();
-            }
-
-            waitForPullUpdates();
-
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
-            {
-                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
-                assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
-                assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
-            }
+            master.createNode();
+            master.createNode( DynamicLabel.label( "A" ) );
+            tx.success();
         }
-        finally
-        {
 
-            clusterManager.shutdown();
+        waitForPullUpdates();
+
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            assertEquals( 2, counts.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
+            assertEquals( 1, counts.nodeCount( 0 /* A */, newDoubleLongRegister() ).readSecond() );
         }
     }
 
     @Test
     public void shouldPropagateRelationshipCountsInHA() throws Throwable
     {
-        File root = testDirectory.directory( "shouldPropagateRelationshipCountsInHA" );
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.pull_interval.name(), PULL_INTERVAL + "ms" ) );
-        clusterManager.start();
-        try
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
         {
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( allSeesAllAsAvailable() );
-
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-            try ( Transaction tx = master.beginTx() )
-            {
-                Node left = master.createNode();
-                Node right = master.createNode( DynamicLabel.label( "A" ) );
-                left.createRelationshipTo( right, DynamicRelationshipType.withName( "Type" ) );
-                tx.success();
-            }
-
-            waitForPullUpdates();
-
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
-            {
-                CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
-                assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
-                assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
-                assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );
-                assertEquals( 1, counts.relationshipCount( -1, 0, 0, newDoubleLongRegister() ).readSecond() );
-            }
+            Node left = master.createNode();
+            Node right = master.createNode( DynamicLabel.label( "A" ) );
+            left.createRelationshipTo( right, DynamicRelationshipType.withName( "Type" ) );
+            tx.success();
         }
-        finally
+
+        waitForPullUpdates();
+
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            clusterManager.shutdown();
+            CountsTracker counts = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
+            assertEquals( 1, counts.relationshipCount( -1, -1, -1, newDoubleLongRegister() ).readSecond() );
+            assertEquals( 1, counts.relationshipCount( -1, -1, 0, newDoubleLongRegister() ).readSecond() );
+            assertEquals( 1, counts.relationshipCount( -1, 0, -1, newDoubleLongRegister() ).readSecond() );
+            assertEquals( 1, counts.relationshipCount( -1, 0, 0, newDoubleLongRegister() ).readSecond() );
         }
     }
 

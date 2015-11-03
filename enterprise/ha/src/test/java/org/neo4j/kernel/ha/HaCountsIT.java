@@ -19,34 +19,82 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class HaCountsIT
 {
+    private static final Label LABEL = DynamicLabel.label( "label" );
+    private static final String PROPERTY_NAME = "prop";
+    private static final String PROPERTY_VALUE = "value";
+
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class );
+
+    private ManagedCluster cluster;
+    private HighlyAvailableGraphDatabase master;
+    private HighlyAvailableGraphDatabase slave1;
+    private HighlyAvailableGraphDatabase slave2;
+
+    @Before
+    public void setup() throws Exception
+    {
+        cluster = clusterRule.startCluster();
+        master = cluster.getMaster();
+        slave1 = cluster.getAnySlave();
+        slave2 = cluster.getAnySlave( slave1 );
+        clearDatabase();
+    }
+
+    private void clearDatabase() throws InterruptedException
+    {
+        try ( Transaction tx = master.beginTx() )
+        {
+            for ( IndexDefinition index : master.schema().getIndexes() )
+            {
+                index.drop();
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = master.beginTx() )
+        {
+            for ( Node node : at( master ).getAllNodes() )
+            {
+                for ( Relationship relationship : node.getRelationships() )
+                {
+                    relationship.delete();
+                }
+                node.delete();
+            }
+            tx.success();
+        }
+        cluster.sync();
+    }
+
     @Test
     public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster() throws Exception
     {
@@ -218,35 +266,5 @@ public class HaCountsIT
             }
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
-    }
-
-    private static final Label LABEL = DynamicLabel.label( "label" );
-    private static final String PROPERTY_NAME = "prop";
-    private static final String PROPERTY_VALUE = "value";
-
-    @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-    private ClusterManager clusterManager;
-    private ClusterManager.ManagedCluster cluster;
-    private HighlyAvailableGraphDatabase master;
-    private HighlyAvailableGraphDatabase slave1;
-    private HighlyAvailableGraphDatabase slave2;
-
-    @Before
-    public void setup() throws Throwable
-    {
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.graphDbDir(), stringMap() );
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-        master = cluster.getMaster();
-        slave1 = cluster.getAnySlave();
-        slave2 = cluster.getAnySlave( slave1 );
-    }
-
-    @After
-    public void teardown() throws Throwable
-    {
-        clusterManager.shutdown();
     }
 }

@@ -79,6 +79,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -236,9 +237,8 @@ public class StoreUpgradeIntegrationTest
             // start the cluster with the db migrated from the old instance
             File haDir = new File( dir.getParentFile(), "ha-stuff" );
             FileUtils.deleteRecursively( haDir );
-            ClusterManager clusterManager = new ClusterManager(
-                    new ClusterManager.Builder( haDir ).withSeedDir( dir ).withProvider( clusterOfSize( 2 ) )
-            );
+            ClusterManager clusterManager = new ClusterManager.Builder( haDir )
+                    .withSeedDir( dir ).withProvider( clusterOfSize( 2 ) ).build();
 
             clusterManager.start();
 

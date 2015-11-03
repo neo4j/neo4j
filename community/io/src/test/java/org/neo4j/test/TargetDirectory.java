@@ -89,7 +89,18 @@ public class TargetDirectory
             return dir;
         }
 
-        public File graphDbDir() {
+        public File cleanDirectory( String name ) throws IOException
+        {
+            File directory = directory( name );
+            for ( File file : fileSystem.listFiles( directory ) )
+            {
+                fileSystem.deleteRecursively( file );
+            }
+            return directory;
+        }
+
+        public File graphDbDir()
+        {
             return directory( "graph-db" );
         }
 

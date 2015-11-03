@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,9 +44,9 @@ public class BiggerThanLogTxIT
 {
     private static final String ROTATION_THRESHOLD = "1M";
 
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
-            .config( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( BiggerThanLogTxIT.class )
+            .withSharedSetting( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
 
     protected ClusterManager.ManagedCluster cluster;
 

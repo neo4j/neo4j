@@ -20,6 +20,7 @@
 package org.neo4j.kernel.index;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +37,7 @@ import org.neo4j.ha.FinishTx;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterRule;
@@ -47,8 +49,8 @@ import static org.junit.Assert.assertTrue;
 
 public class IndexOperationsIT
 {
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( IndexOperationsIT.class );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -81,7 +83,7 @@ public class IndexOperationsIT
     }
 
     @Test
-    public void index_objects_can_be_reused_after_role_switch() throws Exception
+    public void index_objects_can_be_reused_after_role_switch() throws Throwable
     {
         // GIVEN
         // -- an existing index
@@ -104,7 +106,7 @@ public class IndexOperationsIT
 
         // WHEN
         // -- there's a master switch
-        cluster.shutdown( master );
+        RepairKit repair = cluster.shutdown( master );
         indexManagers.remove( master );
         indexes.remove( master );
 
@@ -133,6 +135,7 @@ public class IndexOperationsIT
                 assertEquals( nodeId, index.get( key, value ).getSingle().getId() );
             }
         }
+        repair.repair();
     }
 
     @Test
@@ -140,7 +143,7 @@ public class IndexOperationsIT
     {
         // GIVEN
         // -- two instances, each begin a transaction
-        String key = "key", value = "value";
+        String key = "key2", value = "value2";
         HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );
         cluster.sync();

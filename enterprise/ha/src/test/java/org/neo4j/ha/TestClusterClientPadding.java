@@ -41,7 +41,7 @@ public class TestClusterClientPadding
     @Before
     public void setUp() throws Throwable
     {
-        cluster = clusterRule.provider( clusterWithAdditionalClients( 2, 1 ) )
+        cluster = clusterRule.withProvider( clusterWithAdditionalClients( 2, 1 ) )
                 .availabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
                 .startCluster();
     }

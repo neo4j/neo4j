@@ -19,26 +19,25 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * This is a test for the Neo4j HA self-inflicted DDOS "pull storm" phenomenon. In a 2 instance setup, whereby
@@ -50,108 +49,87 @@ import org.neo4j.test.TargetDirectory;
 @Ignore("A good idea but the test is too high level, is fragile and takes too long.")
 public class PullStormIT
 {
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( PullStormIT.class )
+            .withSharedSetting( HaSettings.pull_interval, "0" )
+            .withSharedSetting( HaSettings.tx_push_factor, "1" );
 
-    @Rule
-    public LoggerRule logger = new LoggerRule( Level.OFF );
+    @ClassRule
+    public static LoggerRule logger = new LoggerRule( Level.OFF );
 
     @Test
     public void testPullStorm() throws Throwable
     {
         // given
+        ManagedCluster cluster = clusterRule.startCluster();
 
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
-                testDirectory.directory(),
-                stringMap( HaSettings.pull_interval.name(), "0",
-                           HaSettings.tx_push_factor.name(), "1") );
-
-        clusterManager.start();
-
-        try
+        // Create data
+        final HighlyAvailableGraphDatabase master = cluster.getMaster();
         {
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.masterAvailable(  ) );
-            cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
-
-            // Create data
-            final HighlyAvailableGraphDatabase master = cluster.getMaster();
+            try ( Transaction tx = master.beginTx() )
             {
-                try ( Transaction tx = master.beginTx() )
+                for ( int i = 0; i < 1000; i++ )
                 {
-                    for ( int i = 0; i < 1000; i++ )
+                    master.createNode().setProperty( "foo", "bar" );
+                }
+                tx.success();
+            }
+        }
+
+        // Slave goes down
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        ClusterManager.RepairKit repairKit = cluster.fail( slave );
+
+        // Create more data
+        for ( int i = 0; i < 1000; i++ )
+        {
+            {
+                try (Transaction tx = master.beginTx())
+                {
+                    for ( int j = 0; j < 1000; j++ )
                     {
+                        master.createNode().setProperty( "foo", "bar" );
                         master.createNode().setProperty( "foo", "bar" );
                     }
                     tx.success();
                 }
             }
+        }
 
-            // Slave goes down
-            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            ClusterManager.RepairKit repairKit = cluster.fail( slave );
+        // Slave comes back online
+        repairKit.repair();
 
-            // Create more data
-            for ( int i = 0; i < 1000; i++ )
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
+
+        // when
+
+        // Create 20 concurrent transactions
+        ExecutorService executor = Executors.newFixedThreadPool( 20 );
+        for ( int i = 0; i < 20; i++ )
+        {
+            executor.submit( new Runnable()
             {
+                @Override
+                public void run()
                 {
-                    try (Transaction tx = master.beginTx())
+                    // Transaction close should cause lots of concurrent calls to pullUpdate()
+                    try ( Transaction tx = master.beginTx() )
                     {
-                        for ( int j = 0; j < 1000; j++ )
-                        {
-                            master.createNode().setProperty( "foo", "bar" );
-                            master.createNode().setProperty( "foo", "bar" );
-                        }
+                        master.createNode().setProperty( "foo", "bar" );
                         tx.success();
                     }
                 }
-            }
-
-            // Slave comes back online
-            repairKit.repair();
-
-            cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
-
-            // when
-
-            // Create 20 concurrent transactions
-            System.out.println( "Pull storm" );
-            ExecutorService executor = Executors.newFixedThreadPool( 20 );
-            for ( int i = 0; i < 20; i++ )
-            {
-                executor.submit( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        // Transaction close should cause lots of concurrent calls to pullUpdate()
-                        try ( Transaction tx = master.beginTx() )
-                        {
-                            master.createNode().setProperty( "foo", "bar" );
-                            tx.success();
-                        }
-                    }
-                } );
-            }
-
-            executor.shutdown();
-            executor.awaitTermination( 1, TimeUnit.MINUTES );
-
-            System.out.println( "Pull storm done" );
-
-            // then
-
-            long masterLastCommittedTxId = lastCommittedTxId( master );
-            for ( HighlyAvailableGraphDatabase member : cluster.getAllMembers() )
-            {
-                assertEquals( masterLastCommittedTxId, lastCommittedTxId( member ) );
-            }
+            } );
         }
-        finally
+
+        executor.shutdown();
+        executor.awaitTermination( 1, TimeUnit.MINUTES );
+
+        // then
+        long masterLastCommittedTxId = lastCommittedTxId( master );
+        for ( HighlyAvailableGraphDatabase member : cluster.getAllMembers() )
         {
-            System.err.println( "Shutting down" );
-            clusterManager.shutdown();
-            System.err.println( "Shut down" );
+            assertEquals( masterLastCommittedTxId, lastCommittedTxId( member ) );
         }
     }
 

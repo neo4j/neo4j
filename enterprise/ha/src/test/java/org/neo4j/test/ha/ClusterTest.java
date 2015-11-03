@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -44,11 +43,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.collection.MapUtil.entry;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbiters;
 import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.provided;
 
 public class ClusterTest
 {
@@ -57,14 +58,14 @@ public class ClusterTest
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-
     @Test
     public void testCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                testDirectory.directory(  "testCluster" ),
-                entry( HaSettings.ha_server.name(), "localhost:6001-6005" ).
-                        entry( HaSettings.tx_push_factor.name(), "2" ).create() );
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
+                .withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) )
+                .withSharedConfig( stringMap(
+                        HaSettings.ha_server.name(), "localhost:6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ) ).build();
         try
         {
             clusterManager.start();
@@ -107,10 +108,11 @@ public class ClusterTest
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
 
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                testDirectory.directory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), "localhost:6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ));
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
+                .withProvider( provided( clusters ) )
+                .withSharedConfig( stringMap(
+                        HaSettings.ha_server.name(), "localhost:6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ) ).build();
         try
         {
             clusterManager.start();
@@ -152,10 +154,11 @@ public class ClusterTest
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
 
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                testDirectory.directory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ));
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
+                .withProvider( provided( clusters ) )
+                .withSharedConfig( stringMap(
+                        HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ) ).build();
         try
         {
             clusterManager.start();
@@ -188,8 +191,8 @@ public class ClusterTest
     @Test @Ignore("JH: Ignored for by CG in March 2013, needs revisit. I added @ignore instead of commenting out to list this in static analysis.")
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
-                testDirectory.directory( "testCluster" ), MapUtil.stringMap());
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
+                .withProvider( clusterWithAdditionalArbiters( 2, 1 ) ).build();
         try
         {
             clusterManager.start();
@@ -297,8 +300,8 @@ public class ClusterTest
     @Test
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
-                testDirectory.directory( "4instances" ), MapUtil.stringMap() );
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "4instances" ) )
+                .withProvider( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ) ).build();
         try
         {
             clusterManager.start();
@@ -351,8 +354,8 @@ public class ClusterTest
     @Test
     public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                testDirectory.directory( "waitfortx" ), MapUtil.stringMap() );
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "waitfortx" ) )
+                .withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) ).build();
         try
         {
             clusterManager.start();

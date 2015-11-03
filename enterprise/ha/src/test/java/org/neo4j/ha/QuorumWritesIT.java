@@ -19,6 +19,7 @@
  */
 package org.neo4j.ha;
 
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,124 +38,107 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+
 
 @Ignore("To be rewritten")
 public class QuorumWritesIT
 {
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( QuorumWritesIT.class )
+            .withSharedSetting( HaSettings.tx_push_factor, "2" )
+            .withSharedSetting( HaSettings.state_switch_timeout, "5s" );
+
     @Test
     public void testMasterStopsWritesWhenMajorityIsUnavailable() throws Throwable
     {
-        File root = testDirectory.directory( "testMasterStopsWritesWhenMajorityIsUnavailable" );
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s"
-                ) );
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+
+        doTx( master );
+
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+        waitOnHeartbeatFail( master, latch1 );
+
+        HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
+        cluster.fail( slave1 );
+
+        latch1.await();
+        slave1.shutdown();
+
+        doTx( master );
+
+        final CountDownLatch latch2 = new CountDownLatch( 1 );
+        waitOnHeartbeatFail( master, latch2 );
+
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
+        ClusterManager.RepairKit rk2 = cluster.fail( slave2 );
+
+        latch2.await();
+
+        // The master should stop saying that it's master
+        assertFalse( master.isMaster() );
+
         try
         {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( ClusterManager.masterAvailable(  ) );
-            cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
-
-            HighlyAvailableGraphDatabase master = cluster.getMaster();
-
             doTx( master );
+            fail( "After both slaves fail txs should not go through" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            assertEquals( "Timeout waiting for cluster to elect master", e.getMessage() );
+        }
 
-            final CountDownLatch latch1 = new CountDownLatch( 1 );
-            waitOnHeartbeatFail( master, latch1 );
+        // This is not a hack, this simulates a period of inactivity in the cluster.
+        Thread.sleep( 120000 ); // TODO Define "inactivity" and await that condition instead of 120 seconds.
 
-            HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-            cluster.fail( slave1 );
-
-            latch1.await();
-            slave1.shutdown();
-
-            doTx( master );
-
-            final CountDownLatch latch2 = new CountDownLatch( 1 );
-            waitOnHeartbeatFail( master, latch2 );
-
-            HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
-            ClusterManager.RepairKit rk2 = cluster.fail( slave2 );
-
-            latch2.await();
-
-            // The master should stop saying that it's master
-            assertFalse( master.isMaster() );
-
-            try
-            {
-                doTx( master );
-                fail( "After both slaves fail txs should not go through" );
-            }
-            catch ( TransactionFailureException e )
-            {
-                assertEquals( "Timeout waiting for cluster to elect master", e.getMessage() );
-            }
-
-            // This is not a hack, this simulates a period of inactivity in the cluster.
-            Thread.sleep( 120000 ); // TODO Define "inactivity" and await that condition instead of 120 seconds.
-
-            final CountDownLatch latch3 = new CountDownLatch( 1 );
-            final CountDownLatch latch4 = new CountDownLatch( 1 );
-            final CountDownLatch latch5 = new CountDownLatch( 1 );
-            waitOnHeartbeatAlive( master, latch3 );
+        final CountDownLatch latch3 = new CountDownLatch( 1 );
+        final CountDownLatch latch4 = new CountDownLatch( 1 );
+        final CountDownLatch latch5 = new CountDownLatch( 1 );
+        waitOnHeartbeatAlive( master, latch3 );
 //            waitOnRoleIsAvailable( master, latch4, HighAvailabilityModeSwitcher.MASTER );
-            waitOnRoleIsAvailable( master, latch5, HighAvailabilityModeSwitcher.SLAVE );
+        waitOnRoleIsAvailable( master, latch5, HighAvailabilityModeSwitcher.SLAVE );
 
-            rk2.repair();
+        rk2.repair();
 
-            latch3.await();
+        latch3.await();
 
-            cluster.await( ClusterManager.masterAvailable( slave1, slave2 ) );
+        cluster.await( ClusterManager.masterAvailable( slave1, slave2 ) );
 
 //            latch4.await();
-            latch5.await();
+        latch5.await();
 
-            cluster.await( ClusterManager.masterAvailable(  ) );
+        cluster.await( ClusterManager.masterAvailable(  ) );
 
-            assertTrue( master.isMaster() );
-            assertFalse( slave2.isMaster() );
+        assertTrue( master.isMaster() );
+        assertFalse( slave2.isMaster() );
 
-            Node finalNode = doTx( master );
+        Node finalNode = doTx( master );
 
-            try ( Transaction transaction = slave2.beginTx() )
-            {
-                slave2.getNodeById( finalNode.getId() );
-                transaction.success();
-            }
-        }
-        finally
+        try ( Transaction transaction = slave2.beginTx() )
         {
-            clusterManager.stop();
+            slave2.getNodeById( finalNode.getId() );
+            transaction.success();
         }
     }
 
     @Test
     public void testInstanceCanBeReplacedToReestablishQuorum() throws Throwable
     {
-        File root = testDirectory.directory( "testInstanceCanBeReplacedToReestablishQuorum" );
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
-                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s" ) );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-
-        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
-
         doTx( master );
 
         final CountDownLatch latch1 = new CountDownLatch( 1 );
@@ -201,7 +185,8 @@ public class QuorumWritesIT
 
         HighlyAvailableGraphDatabase replacement =
                 (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( new File( root, "replacement" ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( new File( clusterRule.directory( "another" ),
+                        "replacement" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, ":5010" ).
                 setConfig( HaSettings.ha_server, ":6010" ).
                 setConfig( ClusterSettings.server_id, "3" ).
@@ -223,7 +208,6 @@ public class QuorumWritesIT
             replacement.getNodeById( finalNode.getId() );
         }
 
-        clusterManager.stop();
         replacement.shutdown();
     }
 

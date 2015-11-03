@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.After;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.logging.Level;
@@ -28,70 +27,56 @@ import java.util.logging.Level;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.LoggerRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-
 
 public class TestBasicHaOperations
 {
-    @Rule
-    public LoggerRule logger = new LoggerRule( Level.OFF );
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-    private ClusterManager clusterManager;
-
-    @After
-    public void after() throws Throwable
-    {
-        if ( clusterManager != null )
-        {
-            clusterManager.stop();
-            clusterManager = null;
-        }
-    }
+    @ClassRule
+    public static LoggerRule logger = new LoggerRule( Level.OFF );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( TestBasicHaOperations.class )
+            .withSharedSetting( HaSettings.tx_push_factor, "2" );
 
     @Test
     public void testBasicFailover() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), testDirectory.directory( "failover" ), stringMap() );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
 
         // When
         long start = System.nanoTime();
-        cluster.shutdown( master );
-        logger.getLogger().warning( "Shut down master" );
-
-        cluster.await( ClusterManager.masterAvailable() );
-        long end = System.nanoTime();
-
-        logger.getLogger().warning( "Failover took:" + (end - start) / 1000000 + "ms" );
-
-        // Then
-        boolean slave1Master = slave1.isMaster();
-        boolean slave2Master = slave2.isMaster();
-
-        if ( slave1Master )
+        RepairKit repair = cluster.shutdown( master );
+        try
         {
-            assertFalse( slave2Master );
+            logger.getLogger().warning( "Shut down master" );
+            cluster.await( ClusterManager.masterAvailable() );
+            long end = System.nanoTime();
+            logger.getLogger().warning( "Failover took:" + (end - start) / 1000000 + "ms" );
+            // Then
+            boolean slave1Master = slave1.isMaster();
+            boolean slave2Master = slave2.isMaster();
+            if ( slave1Master )
+            {
+                assertFalse( slave2Master );
+            }
+            else
+            {
+                assertTrue( slave2Master );
+            }
         }
-        else
+        finally
         {
-            assertTrue( slave2Master );
+            repair.repair();
         }
     }
 
@@ -99,20 +84,13 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
         // given
-        // a cluster of 2
-        clusterManager = new ClusterManager( clusterOfSize( 2 ), testDirectory.directory( "propagation" ),
-                stringMap(HaSettings.tx_push_factor.name(), "1" ) );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         long nodeId;
 
         // a node with a property
-        try( Transaction tx = master.beginTx() )
+        try ( Transaction tx = master.beginTx() )
         {
             Node node = master.createNode();
             nodeId = node.getId();
@@ -120,15 +98,7 @@ public class TestBasicHaOperations
             tx.success();
         }
 
-        try( Transaction tx = master.beginTx() )
-        {
-            // make sure it's in the cache
-            master.getNodeById( nodeId ).getProperty( "foo" );
-            tx.success();
-        }
-
-        // which has propagated to the slaves
-        slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        cluster.sync();
 
         // when
         // the slave does a change
@@ -151,13 +121,7 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), testDirectory.directory( "propagation" ),
-                stringMap( tx_push_factor.name(), "2" ) );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-
+        ManagedCluster cluster = clusterRule.startCluster();
         long nodeId = 4;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )

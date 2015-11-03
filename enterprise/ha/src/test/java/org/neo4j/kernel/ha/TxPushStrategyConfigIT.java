@@ -39,12 +39,14 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -172,9 +174,9 @@ public class TxPushStrategyConfigIT
     private ManagedCluster startCluster( int memberCount, final int pushFactor, final HaSettings.TxPushStrategy pushStrategy )
             throws Exception
     {
-        ManagedCluster cluster = clusterRule.provider( clusterOfSize( memberCount ) )
-                .config( HaSettings.tx_push_factor, "" + pushFactor )
-                .config( HaSettings.tx_push_strategy, pushStrategy.name() )
+        ManagedCluster cluster = clusterRule.withProvider( clusterOfSize( memberCount ) )
+                .withSharedSetting( HaSettings.tx_push_factor, "" + pushFactor )
+                .withSharedSetting( HaSettings.tx_push_strategy, pushStrategy.name() )
                 .startCluster();
 
         mapMachineIds( cluster );
