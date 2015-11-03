@@ -40,6 +40,7 @@ import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -98,13 +99,15 @@ public class HighAvailabilityModeSwitcher
     private volatile Future<?> modeSwitcherFuture;
     private volatile HighAvailabilityMemberState currentTargetState;
     private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
+    private final DataSourceManager neoStoreDataSourceSupplier;
 
     public HighAvailabilityModeSwitcher( SwitchToSlave switchToSlave,
                                          SwitchToMaster switchToMaster,
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          DependencyResolver dependencyResolver,
-                                         InstanceId instanceId, Logging logging )
+                                         InstanceId instanceId, Logging logging,
+                                         DataSourceManager neoStoreDataSourceSupplier )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
@@ -113,6 +116,7 @@ public class HighAvailabilityModeSwitcher
         this.instanceId = instanceId;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.consoleLog = logging.getConsoleLog( getClass() );
+        this.neoStoreDataSourceSupplier = neoStoreDataSourceSupplier;
         this.haCommunicationLife = new LifeSupport();
         this.dependencyResolver = dependencyResolver;
     }
@@ -456,6 +460,7 @@ public class HighAvailabilityModeSwitcher
                         listener.switchToPending();
                     }
                 } );
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
 
                 if ( cancellationHandle.cancellationRequested() )
                 {

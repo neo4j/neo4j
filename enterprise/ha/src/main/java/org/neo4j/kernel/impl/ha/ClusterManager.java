@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -89,6 +90,8 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
+
+import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -102,6 +105,23 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 public class ClusterManager
         extends LifecycleAdapter
 {
+    /**
+     * Network Flags for passing into {@link ManagedCluster#fail(HighlyAvailableGraphDatabase, NetworkFlag)}
+     */
+    public enum NetworkFlag
+    {
+        /**
+         * Fail outgoing cluster network traffic.
+         */
+        OUT,
+        /**
+         * Fail incoming cluster network traffic.
+         */
+        IN;
+    }
+
+    public static final int NF_OUT = 0x1, NF_IN = 0x2;
+
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
@@ -280,8 +300,8 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
-                        () ) >= count;
+                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class )
+                        .getSlaves() ) >= count;
             }
 
             @Override
@@ -303,8 +323,8 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
-                        () ) >= cluster.size() - 1;
+                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class )
+                        .getSlaves() ) >= cluster.size() - 1;
             }
 
             @Override
@@ -473,6 +493,42 @@ public class ClusterManager
                     }
                 }
                 return true;
+            }
+        };
+    }
+
+    public static Predicate<ManagedCluster> memberSeesOtherMemberAsFailed(
+            final HighlyAvailableGraphDatabase observer, final HighlyAvailableGraphDatabase observed )
+    {
+        return new Predicate<ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster cluster )
+            {
+                InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
+                        .get( ClusterSettings.server_id );
+                for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
+                        ClusterMembers.class ).getMembers() )
+                {
+                    if ( member.getInstanceId().equals( observedServerId ) )
+                    {
+                        return !member.isAlive();
+                    }
+                }
+                throw new IllegalStateException( observed + " not a member according to " + observer );
+            }
+        };
+    }
+
+    public static Predicate<ManagedCluster> memberThinksItIsRole(
+            final HighlyAvailableGraphDatabase member, final String role )
+    {
+        return new Predicate<ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster cluster )
+            {
+                return role.equals( member.role() );
             }
         };
     }
@@ -930,6 +986,11 @@ public class ClusterManager
                                                 stateToString( this ) );
         }
 
+        public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
+        {
+            return fail( db, NetworkFlag.values() );
+        }
+
         /**
          * WARNING: beware of hacks.
          * <p>
@@ -941,7 +1002,7 @@ public class ClusterManager
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
-        public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
+        public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags ) throws Throwable
         {
             assertMember( db );
 
@@ -950,13 +1011,18 @@ public class ClusterManager
                     "life" ) ).get( clusterClient );
 
             NetworkReceiver networkReceiver = instance( NetworkReceiver.class, clusterClientLife.getLifecycleInstances() );
-
             NetworkSender networkSender = instance( NetworkSender.class, clusterClientLife.getLifecycleInstances() );
 
-            networkReceiver.setPaused( true );
-            networkSender.setPaused( true );
+            if ( contains( flags, NetworkFlag.IN ) )
+            {
+                networkReceiver.setPaused( true );
+            }
+            if ( contains( flags, NetworkFlag.OUT ) )
+            {
+                networkSender.setPaused( true );
+            }
 
-            return new StartNetworkAgainKit( db, networkReceiver, networkSender );
+            return new StartNetworkAgainKit( db, networkReceiver, networkSender, flags );
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1170,21 +1236,30 @@ public class ClusterManager
         private final HighlyAvailableGraphDatabase db;
         private final NetworkReceiver networkReceiver;
         private final NetworkSender networkSender;
+        private final NetworkFlag[] flags;
 
         StartNetworkAgainKit( HighlyAvailableGraphDatabase db,
                 NetworkReceiver networkReceiver,
-                NetworkSender networkSender )
+                NetworkSender networkSender,
+                NetworkFlag... flags )
         {
             this.db = db;
             this.networkReceiver = networkReceiver;
             this.networkSender = networkSender;
+            this.flags = flags;
         }
 
         @Override
         public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            networkSender.setPaused( false );
-            networkReceiver.setPaused( false );
+            if ( contains( flags, NetworkFlag.OUT ) )
+            {
+                networkSender.setPaused( false );
+            }
+            if ( contains( flags, NetworkFlag.IN ) )
+            {
+                networkReceiver.setPaused( false );
+            }
 
             return db;
         }

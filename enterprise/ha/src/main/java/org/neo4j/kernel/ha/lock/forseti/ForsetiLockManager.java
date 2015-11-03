@@ -115,6 +115,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
     /** Pool forseti clients. */
     private final Pool<ForsetiClient> clientPool;
+    private volatile boolean closed;
 
     @SuppressWarnings( "unchecked" )
     public ForsetiLockManager( ResourceType... resourceTypes )
@@ -145,6 +146,14 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     @Override
     public Client newClient()
     {
+        // We check this volatile closed flag here, which may seem like a contention overhead, but as the time
+        // of writing we apply pooling of transactions and in extension pooling of lock clients,
+        // so this method is called very rarely.
+        if ( closed )
+        {
+            throw new IllegalStateException( this + " already closed" );
+        }
+
         return clientPool.acquire();
     }
 
@@ -175,6 +184,12 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         return max + 1;
     }
 
+    @Override
+    public void shutdown()
+    {
+        this.closed = true;
+    }
+
     private static class ForsetiClientFlyweightPool extends LinkedQueuePool<ForsetiClient>
     {
         /** Client id counter **/
@@ -203,14 +218,14 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            return new ForsetiClient(id, lockMaps, waitStrategies, this );
+            return new ForsetiClient( id, lockMaps, waitStrategies, this );
         }
 
         @Override
         protected void dispose( ForsetiClient resource )
         {
             super.dispose( resource );
-            if(resource.id() < 1024)
+            if ( resource.id() < 1024 )
             {
                 // Re-use all ids < 1024
                 unusedIds.offer( resource.id() );
