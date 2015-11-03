@@ -4,7 +4,7 @@
 This section discusses the semantic meaning and layout of protocol messages.
 For details on how Neo4j types are represented in binary form, see <<bolt-serialization,serialization>>.
 
-Clients may send request messages at any time after a session is <<bolt-message-structs-initialize,initialized>>.
+Clients may send request messages at any time after a session is <<bolt-message-structs-create,created>>.
 Clients may <<bolt-messaging-pipelining,pipeline>> requests, sending multiple requests together.
 
 Servers must fully respond to each request before the next request is processed and processing of requests within a session must be done in the same order in which the requests.
@@ -20,11 +20,11 @@ The diagrams below illustrates a basic exchange wherein the client sends a reque
 
 image:simple-exchange.png[]
 
-=== Initialization
+=== Creating a session
 
-Before a session can be used to <<bolt-message-structs-run,run>> queries, it must be <<bolt-message-structs-initialize,initialized>>.
-The `INIT` message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating
-protocol version>>.
+Before a session can be used to <<bolt-message-structs-run,run>> queries, it must be <<bolt-message-structs-create,created>>.
+The `CREATE` message should be sent by the client as the first message it sends after <<bolt-handshake,negotiating
+protocol version>> in order to create a session.
 
 [[bolt-messaging-pipelining]]
 === Pipelining
@@ -68,21 +68,21 @@ Once the client acknowledges the failure, it is then able to resend a corrected 
 
 Protocol messages are represented as <<bolt-packstream-structures,serialized structures>>.
 
-[[bolt-message-structs-initialize]]
-==== INIT
+[[bolt-message-structs-create]]
+==== CREATE
 
-The `INIT` message is a client message used once to initialize the session.
+The `CREATE` message is a client message sent once to create the session.
 This message is always the first message the client sends after <<bolt-handshake,negotiating protocol version>>.
-Sending any message other than `INIT` as the first message to the server will result in a `FAILURE` and the
+Sending any message other than `CREATE` as the first message to the server will result in a `FAILURE` and the
 server closing the connection.
 
-The server will reply with a `SUCCESS` message unless some parameter for initialization is malformed.
+The server will reply with a `SUCCESS` message unless a session creation parameter is malformed.
 
-All parameters in the `INIT` message are required.
+All parameters in the `CREATE` message are required.
 
 [source,bolt_message_struct]
 ----
-InitMessage (signature=0x01) {
+CreateMessage (signature=0x01) {
     Text clientName
 }
 ----
@@ -90,12 +90,12 @@ InitMessage (signature=0x01) {
 .Example
 [source,bolt_packstream_type]
 ----
-Value: INIT "MyClient/1.0"
+Value: CREATE "MyClient/1.0"
 
 B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30
 ----
 
-.Initialize message parameters
+.Create message parameters
 [cols="20,80",options="header"]
 |=======================
 |Parameter   |Description

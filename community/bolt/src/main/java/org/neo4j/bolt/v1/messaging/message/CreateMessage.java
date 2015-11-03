@@ -21,11 +21,11 @@ package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 
-public class InitMessage implements Message
+public class CreateMessage implements Message
 {
     private final String clientName;
 
-    public InitMessage( String clientName )
+    public CreateMessage( String clientName )
     {
         this.clientName = clientName;
     }
@@ -38,7 +38,7 @@ public class InitMessage implements Message
     @Override
     public <E extends Exception> void dispatch( MessageHandler<E> consumer ) throws E
     {
-        consumer.handleInitMessage( clientName );
+        consumer.handleCreateMessage( clientName );
     }
 
     @Override
@@ -49,7 +49,7 @@ public class InitMessage implements Message
         if ( o == null || getClass() != o.getClass() )
         { return false; }
 
-        InitMessage that = (InitMessage) o;
+        CreateMessage that = (CreateMessage) o;
 
         return !(clientName != null ? !clientName.equals( that.clientName ) : that.clientName != null);
 

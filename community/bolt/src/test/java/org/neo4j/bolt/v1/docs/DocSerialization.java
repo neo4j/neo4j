@@ -170,9 +170,9 @@ public class DocSerialization
                     Map<String, Object> meta = (Map<String,Object>) args.get( 0 );
                     writer.handleFailureMessage( Neo4jError.codeFromString( (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
                 }
-                else if( type.equals( "INIT" ))
+                else if( type.equals( "CREATE" ))
                 {
-                    writer.handleInitMessage( (String) args.get( 0 ) );
+                    writer.handleCreateMessage( (String) args.get( 0 ) );
                 }
                 else
                 {

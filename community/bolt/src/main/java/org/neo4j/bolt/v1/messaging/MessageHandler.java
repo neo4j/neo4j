@@ -42,7 +42,7 @@ public interface MessageHandler<E extends Exception>
 
     void handleIgnoredMessage() throws E;
 
-    void handleInitMessage( String clientName ) throws E;
+    void handleCreateMessage( String clientName ) throws E;
 
     class Adapter<E extends Exception> implements MessageHandler<E>
     {
@@ -95,7 +95,7 @@ public interface MessageHandler<E extends Exception>
         }
 
         @Override
-        public void handleInitMessage( String clientName ) throws E
+        public void handleCreateMessage( String clientName ) throws E
         {
 
         }

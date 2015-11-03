@@ -110,9 +110,9 @@ public interface Session extends AutoCloseable
     String key();
 
     /**
-     * Initialize the session.
+     * Create (initialize) the session.
      */
-    <A> void init( String clientName, A attachment, Callback<Void,A> callback );
+    <A> void create( String clientName, A attachment, Callback<Void, A> callback );
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.

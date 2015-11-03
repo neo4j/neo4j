@@ -169,7 +169,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packer.pack( message );
-            
+
             onMessageComplete.onMessageComplete();
         }
 
@@ -181,7 +181,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitMessage( String clientName ) throws IOException
+        public void handleCreateMessage( String clientName ) throws IOException
         {
             packer.packStructHeader( 1, MessageTypes.MSG_INIT );
             packer.pack( clientName );
@@ -251,7 +251,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                         unpackIgnoredMessage( output );
                         break;
                     case MessageTypes.MSG_INIT:
-                        unpackInitMessage( output );
+                        unpackCreateMessage( output );
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -339,10 +339,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             output.handlePullAllMessage();
         }
 
-        private <E extends Exception> void unpackInitMessage( MessageHandler<E> output ) throws IOException, E
+        private <E extends Exception> void unpackCreateMessage( MessageHandler<E> output ) throws IOException, E
         {
             String clientName = unpacker.unpackText();
-            output.handleInitMessage( clientName );
+            output.handleCreateMessage( clientName );
         }
 
     }

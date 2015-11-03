@@ -52,13 +52,13 @@ public class SessionStateMachine implements Session, SessionState
         /**
          * Before the session has been initialized.
          */
-        UNITIALIZED
+        VOID
                 {
                     @Override
-                    public State init( SessionStateMachine ctx, String clientName )
+                    public State create( SessionStateMachine ctx, String clientName )
                     {
                         ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
-                        return IDLE;
+                        return READY;
                     }
 
                     @Override
@@ -73,7 +73,7 @@ public class SessionStateMachine implements Session, SessionState
         /**
          * No open transaction, no open result.
          */
-        IDLE
+        READY
                 {
                     @Override
                     public State beginTransaction( SessionStateMachine ctx )
@@ -120,7 +120,7 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State runStatement( SessionStateMachine ctx, String statement, Map<String,Object> params )
                     {
-                        return IDLE.runStatement( ctx, statement, params );
+                        return READY.runStatement( ctx, statement, params );
                     }
 
                     @Override
@@ -139,7 +139,7 @@ public class SessionStateMachine implements Session, SessionState
                         {
                             ctx.currentTransaction = null;
                         }
-                        return IDLE;
+                        return READY;
                     }
 
                     @Override
@@ -152,7 +152,7 @@ public class SessionStateMachine implements Session, SessionState
 
                             tx.failure();
                             tx.close();
-                            return IDLE;
+                            return READY;
                         }
                         catch ( Throwable e )
                         {
@@ -189,7 +189,7 @@ public class SessionStateMachine implements Session, SessionState
 
                             if ( !ctx.hasTransaction() )
                             {
-                                return IDLE;
+                                return READY;
                             }
                             else if ( ctx.implicitTransaction )
                             {
@@ -212,28 +212,28 @@ public class SessionStateMachine implements Session, SessionState
 
                 },
 
-        /** An error has occurred, client must acknowledge it before anything else is allowed. */
-        ERROR
+        /** A failure has occurred, client must acknowledge it before anything else is allowed. */
+        FAILURE
                 {
                     @Override
                     public State acknowledgeError( SessionStateMachine ctx )
                     {
-                        return IDLE;
+                        return READY;
                     }
 
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.ignored();
-                        return ERROR;
+                        return FAILURE;
                     }
                 },
 
         /**
-         * A recoverable error has occurred within an explicitly opened transaction. After the client acknowledges
+         * A recoverable failure has occurred within an explicitly opened transaction. After the client acknowledges
          * it, we will move back to {@link #IN_TRANSACTION}.
          */
-        RECOVERABLE_ERROR
+        RECOVERABLE_FAILURE
                 {
                     @Override
                     public State acknowledgeError (SessionStateMachine ctx)
@@ -245,7 +245,7 @@ public class SessionStateMachine implements Session, SessionState
                     protected State onNoImplementation (SessionStateMachine ctx, String command)
                     {
                         ctx.ignored();
-                        return RECOVERABLE_ERROR;
+                        return RECOVERABLE_FAILURE;
                     }
                 },
 
@@ -269,9 +269,9 @@ public class SessionStateMachine implements Session, SessionState
 
         // Operations that a session can perform. Individual states override these if they want to support them.
 
-        public State init( SessionStateMachine ctx, String clientName )
+        public State create( SessionStateMachine ctx, String clientName )
         {
-            return onNoImplementation( ctx, "initializing the session" );
+            return onNoImplementation( ctx, "creating the session" );
         }
 
         public State runStatement( SessionStateMachine ctx, String statement, Map<String,Object> params )
@@ -344,7 +344,7 @@ public class SessionStateMachine implements Session, SessionState
         State error( SessionStateMachine ctx, Neo4jError err )
         {
             ctx.errorReporter.report( err );
-            State outcome = ERROR;
+            State outcome = FAILURE;
             if ( ctx.hasTransaction() )
             {
                 // Is this error bad enough that we should roll back, or did the failure occur in an implicit
@@ -373,7 +373,7 @@ public class SessionStateMachine implements Session, SessionState
                     // This is mainly to cover cases of direct user-driven work, where someone might have
                     // manually built up a large transaction, and we'd rather not have it all be thrown out
                     // because of a spelling mistake.
-                    outcome = RECOVERABLE_ERROR;
+                    outcome = RECOVERABLE_FAILURE;
                 }
             }
             ctx.error( err );
@@ -399,7 +399,7 @@ public class SessionStateMachine implements Session, SessionState
     };
 
     /** The current session state */
-    private State state = State.UNITIALIZED;
+    private State state = State.VOID;
 
     /** The current pending result, if present */
     private RecordStream currentResult;
@@ -444,12 +444,12 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, A attachment, Callback<Void,A> callback )
+    public <A> void create( String clientName, A attachment, Callback<Void, A> callback )
     {
         before( attachment, callback );
         try
         {
-            state = state.init( this, clientName );
+            state = state.create( this, clientName );
         }
         finally { after(); }
     }

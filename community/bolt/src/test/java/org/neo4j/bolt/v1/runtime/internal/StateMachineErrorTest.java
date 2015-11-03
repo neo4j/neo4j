@@ -80,14 +80,14 @@ public class StateMachineErrorTest
 
         // Then
         assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
     }
 
     private SessionStateMachine newIdleMachine()
     {
         SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
                 .getInstance() );
-        machine.init( "FunClient", null, Session.Callback.NO_OP );
+        machine.create( "FunClient", null, Session.Callback.NO_OP );
         return machine;
     }
 
@@ -116,7 +116,7 @@ public class StateMachineErrorTest
 
         // Then
         assertThat( failingCallback.next(), failedWith( Status.General.UnknownFailure ) );
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
     }
 
     @Test
@@ -135,7 +135,7 @@ public class StateMachineErrorTest
         machine.rollbackTransaction();
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
     }
 
     @Test
@@ -152,32 +152,32 @@ public class StateMachineErrorTest
         machine.commitTransaction(); // No tx to be committed!
 
         // Then it should be in an error state
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
 
         // and no action other than acknowledging the error should be possible
         machine.beginTransaction();
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
 
         machine.beginImplicitTransaction();
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
 
         machine.commitTransaction();
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
 
         machine.rollbackTransaction();
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
 
         // this includes externally triggered actions
         machine.run( "src/test", EMPTY_PARAMS, null, messages );
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
         assertThat( messages.next(), SessionMatchers.ignored() );
 
         machine.pullAll( null, pulling );
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
         assertThat( pulling.next(), SessionMatchers.ignored() );
 
-        machine.init( "", null, initializing );
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        machine.create( "", null, initializing );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
         assertThat( initializing.next(), SessionMatchers.ignored() );
 
         // And nothing at all should have been done
