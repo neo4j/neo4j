@@ -38,7 +38,6 @@ import org.neo4j.helpers.Clock
 
 trait AstRewritingMonitor {
   def abortedRewriting(obj: AnyRef)
-  def abortedRewritingDueToLargeDNF(obj: AnyRef)
 }
 
 trait CypherCacheFlushingMonitor[T] {

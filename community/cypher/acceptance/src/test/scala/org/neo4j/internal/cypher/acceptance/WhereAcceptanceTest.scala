@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
+import org.neo4j.cypher.{SyntaxException, ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
 
 class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -37,39 +37,5 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
 
     a[IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
-  }
-
-  test("should be able to handle a large DNF predicate without running out of memory") {
-    // given
-    val query = """MATCH (a)-[r]->(b) WHERE
-                  |(ID(a)= 12466 AND ID(b)= 12449 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12462 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12458 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12447 AND type(r)= 'class2') OR
-                  |(ID(a)= 12466 AND ID(b)= 12459 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12464 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12460 AND type(r)= 'class1') OR
-                  |(ID(a)= 12466 AND ID(b)= 12446 AND type(r)= 'class3') OR
-                  |(ID(a)= 12466 AND ID(b)= 12472 AND type(r)= 'class4') OR
-                  |(ID(a)= 12466 AND ID(b)= 12457 AND type(r)= 'class1') OR
-                  |(ID(a)= 12467 AND ID(b)= 12449 AND type(r)= 'class1') OR
-                  |(ID(a)= 12467 AND ID(b)= 12459 AND type(r)= 'class1') OR
-                  |(ID(a)= 12467 AND ID(b)= 12451 AND type(r)= 'class2') OR
-                  |(ID(a)= 12467 AND ID(b)= 12470 AND type(r)= 'class4') OR
-                  |(ID(a)= 12467 AND ID(b)= 12445 AND type(r)= 'class3') OR
-                  |(ID(a)= 12471 AND ID(b)= 12449 AND type(r)= 'class1') OR
-                  |(ID(a)= 12471 AND ID(b)= 12467 AND type(r)= 'class4') OR
-                  |(ID(a)= 12471 AND ID(b)= 12455 AND type(r)= 'class1') OR
-                  |(ID(a)= 12471 AND ID(b)= 12459 AND type(r)= 'class1') OR
-                  |(ID(a)= 12471 AND ID(b)= 12452 AND type(r)= 'class2') OR
-                  |(ID(a)= 12471 AND ID(b)= 12451 AND type(r)= 'class3') OR
-                  |(ID(a)= 12469 AND ID(b)= 12449 AND type(r)= 'class1') OR
-                  |(ID(a)= 12469 AND ID(b)= 12450 AND type(r)= 'class2') OR
-                  |(ID(a)= 12469 AND ID(b)= 12447 AND type(r)= 'class3')
-                  |RETURN ID(a), ID(b), type(r)""".stripMargin
-
-    // when
-    executeWithAllPlanners(query)
-    // then it should not fail or run out of memory
   }
 }
