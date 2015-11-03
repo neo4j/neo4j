@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.parser._
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -160,18 +158,16 @@ object IndexSeekStrategy extends NodeStrategy {
     result.flatten
   }
 
-  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, CTNode)
-
+  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
     where.collect {
       case predicate @ Equals(Property(Identifier(id), propertyKey), expression)
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
       case predicate @ AnyInCollection(expression, _, Equals(Property(Identifier(id), propertyKey),Identifier(_)))
-        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+        if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
   }
 
@@ -182,15 +178,12 @@ object IndexSeekStrategy extends NodeStrategy {
     }
   }
 
-  private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, CTNode)
-
+  private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
-      case predicate@AndedPropertyComparablePredicates(Identifier(id), Property(_, key), comparables)
-        if id == identifier && predicate.symbolDependenciesMet(symbols) =>
+      case predicate@AndedPropertyComparablePredicates(Identifier(id), prop@Property(_, key), comparables)
+        if id == identifier && comparables.forall(_.other(prop).symbolDependenciesMet(symbols)) =>
         SolvedPredicate(key.name, predicate)
     }
-  }
 }
 
 object GlobalStrategy extends NodeStrategy {
