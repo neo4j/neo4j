@@ -150,6 +150,8 @@ public class PlatformModule
         tracers = dependencies.satisfyDependency(
                 new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
+        dependencies.satisfyDependency( tracers.transactionTracer );
+        dependencies.satisfyDependency( tracers.checkPointTracer );
 
         pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers ) );
         life.add( new PageCacheLifecycle( pageCache ) );
