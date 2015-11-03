@@ -1,5 +1,0 @@
-2.3.0-RC1
----------
-o Adds configuration option for rotating the query log:
-  - dbms.querylog.rotation.threshold: Specifies at which file size the query log will auto-rotate
-  - dbms.querylog.max_archives: Specifies maximum number of history files to keep

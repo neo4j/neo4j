@@ -1,4 +1,0 @@
-2.3.0-RC1
----------
-o Initial version. Cap capture bsic JVM/memory metric, network and transaction metrics and feed
-  to consumers like Graphite, Ganglia or CSV.
