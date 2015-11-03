@@ -49,15 +49,15 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit))) =>
       val cannotEvaluateStableValue =
         simpleExpressionEvaluator.hasParameters(limit) ||
-          simpleExpressionEvaluator.hasRandomness(limit)
+          simpleExpressionEvaluator.isNonDeterministic(limit)
 
       val limitCardinality =
         if (cannotEvaluateStableValue) GraphStatistics.DEFAULT_LIMIT_CARDINALITY
         else {
           val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limit)
 
-          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[Long])
-            Cardinality(evaluatedValue.get.asInstanceOf[Long].toDouble)
+          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[Number])
+            Cardinality(evaluatedValue.get.asInstanceOf[Number].doubleValue())
           else GraphStatistics.DEFAULT_LIMIT_CARDINALITY
         }
 

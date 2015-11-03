@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.helpers
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{NullPipeDecorator, QueryState}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.{Rand, Timestamp}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{FunctionInvocation, FunctionName, Parameter, Expression}
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
 
@@ -35,9 +36,10 @@ object simpleExpressionEvaluator {
       case _ => false
     }
 
-  def hasRandomness(expr: Expression): Boolean =
+  def isNonDeterministic(expr: Expression): Boolean =
     expr.inputs.exists {
-      case (FunctionInvocation(FunctionName("rand"), _, _), _) => true
+      case (FunctionInvocation(FunctionName(Rand.name), _, _), _) => true
+      case (FunctionInvocation(FunctionName(Timestamp.name), _, _), _) => true
       case _ => false
     }
 
@@ -54,7 +56,6 @@ object simpleExpressionEvaluator {
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
-      case e: Throwable => throw e
     }
   }
 }
