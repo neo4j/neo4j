@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Identifier, _}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Has
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {

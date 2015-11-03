@@ -565,6 +565,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "Invalid input '-0.1' is not a valid argument, must be a number in the range 0.0 to 1.0 (line 1, column 41 (offset: 40))")
   )
 
+  test("should give a nice error message if a user tries to use HAS") (
+    executeAndEnsureError("MATCH (n) WHERE HAS(n.prop) RETURN n.prop",
+      "HAS is no longer supported in Cypher, please use EXISTS instead (line 1, column 17 (offset: 16))")
+  )
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
 

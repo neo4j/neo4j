@@ -1175,7 +1175,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop" -> 42)
     relate(createNode(), createNode())
 
-    val query = "MATCH ()-[r]-() WHERE has(r.prop) SET r.prop = 'foo'"
+    val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo'"
 
     assertStats(executeWithRulePlanner(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)
@@ -1185,7 +1185,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop1" -> 42)
     relate(createNode(), createNode())
 
-    val query = "MATCH ()-[r]-() WHERE has(r.prop1) SET r.prop2 = 'foo'"
+    val query = "MATCH ()-[r]-() WHERE exists(r.prop1) SET r.prop2 = 'foo'"
 
     assertStats(executeWithRulePlanner(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)

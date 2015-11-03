@@ -151,7 +151,7 @@ class WhereTest extends DocumentingTestBase {
         """"+Andres+" will be returned because he is the only one with a `belt` property.
           |
           |[IMPORTANT]
-          |The `HAS()` function has been superseded by `EXISTS()` and will be removed in a future release.
+          |The `HAS()` function has been superseded by `EXISTS()` and has been removed.
           |
         """.stripMargin,
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))

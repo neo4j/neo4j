@@ -111,7 +111,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = """When you set a property to an expression that returns a collection of values,
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
-      queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
+      queryText = "match (n) where exists(n.name) with collect(n.name) as names create (new { name : names }) return new",
       optionalResultExplanation = "A node with an array property named name is returned.",
       prepare = createTwoNodesWithProperty,
       assertions = (p) => {

@@ -19,28 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
-
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
-
-  test("should use index on has") {
-    // Given
-    val person = createLabeledNode(Map("name" -> "Smith"), "Person")
-     1 to 100 foreach (_ => createLabeledNode("Person"))
-    graph.createIndex("Person", "name")
-
-    // When
-    val result = executeWithCostPlannerOnly(
-      "MATCH (p:Person) WHERE has(p.name) RETURN p")
-
-    // Then
-    result should (use("NodeIndexScan") and evaluateTo(List(Map("p" -> person))))
-  }
 
   test("should use index on IS NOT NULL") {
     // Given

@@ -353,7 +353,7 @@ return r""")
   test("shouldHandleCheckingThatANodeDoesNotHaveAProp") {
     val a = createNode()
 
-    val result = executeWithAllPlanners("match (a) where id(a) = 0 and not has(a.propertyDoesntExist) return a")
+    val result = executeWithAllPlanners("match (a) where id(a) = 0 and not exists(a.propertyDoesntExist) return a")
     result.toList should equal(List(Map("a" -> a)))
   }
 

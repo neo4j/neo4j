@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => commande
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_0.parser.{LikePatternParser, ParsedLikePattern, convertLikePatternToRegex}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
@@ -88,10 +87,6 @@ object ExpressionConverters {
         }
       case Exp => commandexpressions.ExpFunction(toCommandExpression(invocation.arguments.head))
       case Floor => commandexpressions.FloorFunction(toCommandExpression(invocation.arguments.head))
-      case Has =>
-        val property = invocation.arguments.head.asInstanceOf[ast.Property]
-        commands.predicates.PropertyExists(toCommandExpression(property.map), PropertyKey(property.propertyKey.name))
-
       case Haversin => commandexpressions.HaversinFunction(toCommandExpression(invocation.arguments.head))
       case Head =>
         commandexpressions.ContainerIndex(

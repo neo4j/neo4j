@@ -352,7 +352,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("report deprecated use of property name with question mark") {
     expectError(
       "match (n) where id(n) = 0 return n.title? = \"foo\"",
-      "This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
+      "This syntax is no longer supported (missing properties are now returned as null). Please use (not(exists(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
     )
   }
 
