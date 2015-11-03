@@ -19,6 +19,17 @@
  */
 package org.neo4j.com;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -36,17 +47,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -63,6 +63,7 @@ import org.neo4j.logging.LogProvider;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
@@ -620,7 +621,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             targetBuffer.writeByte( 1 );
-            return new CommittedTransactionSerializer( targetBuffer );
+            return new CommittedTransactionSerializer( new NetworkWritableLogChannel(  targetBuffer ) );
         }
     }
 
