@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 import java.util.UUID;
 
+import org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -62,10 +63,16 @@ public class SessionStateMachine implements Session, SessionState
                     }
 
                     @Override
+                    public State destroy( SessionStateMachine ctx )
+                    {
+                        ctx.failure( new Neo4jError( Status.Request.Invalid, "DESTROY not allowed until you send a CREATE message." ) );
+                        return halt( ctx );
+                    }
+
+                    @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                                                           "INIT message." ));
+                        ctx.failure( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send a CREATE message." ) );
                         return halt( ctx );
                     }
                 },
@@ -95,7 +102,7 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            return failure( ctx, e );
                         }
                     }
 
@@ -133,7 +140,7 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            return failure( ctx, e );
                         }
                         finally
                         {
@@ -156,7 +163,7 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            return failure( ctx, e );
                         }
                     }
                 },
@@ -176,7 +183,7 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            return failure( ctx, e );
                         }
                     }
 
@@ -202,7 +209,7 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            return failure( ctx, e );
                         }
                         finally
                         {
@@ -216,7 +223,7 @@ public class SessionStateMachine implements Session, SessionState
         FAILURE
                 {
                     @Override
-                    public State acknowledgeError( SessionStateMachine ctx )
+                    public State acknowledgeFailure( SessionStateMachine ctx )
                     {
                         return READY;
                     }
@@ -236,7 +243,7 @@ public class SessionStateMachine implements Session, SessionState
         RECOVERABLE_FAILURE
                 {
                     @Override
-                    public State acknowledgeError (SessionStateMachine ctx)
+                    public State acknowledgeFailure( SessionStateMachine ctx )
                     {
                         return IN_TRANSACTION;
                     }
@@ -260,6 +267,13 @@ public class SessionStateMachine implements Session, SessionState
                     }
 
                     @Override
+                    public State destroy( SessionStateMachine ctx )
+                    {
+                        ctx.failure( new Neo4jError( Status.Request.Invalid, "A session must be destroyed once only." ) );
+                        return halt( ctx );
+                    }
+
+                    @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.ignored();
@@ -272,6 +286,11 @@ public class SessionStateMachine implements Session, SessionState
         public State create( SessionStateMachine ctx, String clientName )
         {
             return onNoImplementation( ctx, "creating the session" );
+        }
+
+        public State destroy( SessionStateMachine ctx )
+        {
+            return halt( ctx  );
         }
 
         public State runStatement( SessionStateMachine ctx, String statement, Map<String,Object> params )
@@ -309,7 +328,7 @@ public class SessionStateMachine implements Session, SessionState
             return onNoImplementation( ctx, "beginning implicit transaction" );
         }
 
-        public State acknowledgeError( SessionStateMachine ctx )
+        public State acknowledgeFailure( SessionStateMachine ctx )
         {
             return onNoImplementation( ctx, "acknowledging an error" );
         }
@@ -317,7 +336,7 @@ public class SessionStateMachine implements Session, SessionState
         protected State onNoImplementation( SessionStateMachine ctx, String command )
         {
             String msg = "'" + command + "' cannot be done when a session is in the '" + ctx.state.name() + "' state.";
-            return error( ctx, new Neo4jError( Status.Request.Invalid, msg ) );
+            return failure( ctx, new Neo4jError( Status.Request.Invalid, msg ) );
         }
 
         public State halt( SessionStateMachine ctx )
@@ -330,18 +349,18 @@ public class SessionStateMachine implements Session, SessionState
                 }
                 catch ( Throwable e )
                 {
-                    ctx.error( Neo4jError.from( e ) );
+                    ctx.failure( Neo4jError.from( e ) );
                 }
             }
             return STOPPED;
         }
 
-        State error( SessionStateMachine ctx, Throwable err )
+        State failure( SessionStateMachine ctx, Throwable err )
         {
-            return error( ctx, Neo4jError.from( err ) );
+            return failure( ctx, Neo4jError.from( err ) );
         }
 
-        State error( SessionStateMachine ctx, Neo4jError err )
+        State failure( SessionStateMachine ctx, Neo4jError err )
         {
             ctx.errorReporter.report( err );
             State outcome = FAILURE;
@@ -376,7 +395,7 @@ public class SessionStateMachine implements Session, SessionState
                     outcome = RECOVERABLE_FAILURE;
                 }
             }
-            ctx.error( err );
+            ctx.failure( err );
             return outcome;
         }
     }
@@ -494,7 +513,18 @@ public class SessionStateMachine implements Session, SessionState
         before( attachment, callback );
         try
         {
-            state = state.acknowledgeError( this );
+            state = state.acknowledgeFailure( this );
+        }
+        finally { after(); }
+    }
+
+    @Override
+    public <A> void destroy( A attachment, MessageProcessingCallback<Void> callback )
+    {
+        before( attachment, callback );
+        try
+        {
+            state = state.destroy( this );
         }
         finally { after(); }
     }
@@ -598,7 +628,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     /** Forward an error to the currently attached callback */
-    private void error( Neo4jError err )
+    private void failure( Neo4jError err )
     {
         if( err.status().code().classification() == Status.Classification.DatabaseError )
         {

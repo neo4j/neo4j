@@ -39,7 +39,7 @@ public class SessionWorker implements Runnable
         @Override
         public void accept( Session session )
         {
-
+            throw new IllegalStateException( "Should never execute SHUTDOWN consumer; used as marker only" );
         }
     };
 

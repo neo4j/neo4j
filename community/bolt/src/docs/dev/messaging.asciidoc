@@ -62,6 +62,13 @@ image:failure-optimistic.png[]
 Here, the client optimistically sends a pair of messages. The first of these fails and the second is consequently `IGNORED`.
 Once the client acknowledges the failure, it is then able to resend a corrected RUN message.
 
+=== Destroying a session
+
+When a client is done working with a session, it may explicitly <<bolt-message-structs-destroy,destroy>> it.
+
+The `DESTROY` message should be sent by the client as the last message on a connection to do so.
+Upon receipt of the `DESTROY`, the server will close the connection.
+
 
 [[bolt-message-structs]]
 === Messages
@@ -308,4 +315,29 @@ Note that the original `PULL_ALL` message was never processed by the server.
 Value: IGNORED
 
 B0 7E
+----
+
+[[bolt-message-structs-destroy]]
+==== DESTROY
+
+The `DESTROY` message is a client message sent once to destroy the session and terminate the connection.
+
+[source,bolt_message_struct]
+----
+DestroyMessage (signature=0x02) {
+}
+----
+
+This message is always the last message the client sends at the end of working with a session.
+If the `DESTROY` message is sent if no session has yet been created on the current connection, the server will reply with a recoverable `FAILURE` message.
+If the `DESTROY` message is sent after a session has been created on the current connection, the server will reply with a `SUCCESS` message or a `FAILURE` message and always close the connection.
+
+The `DESTROY` message has no parameters.
+
+.Example
+[source,bolt_packstream_type]
+----
+Value: DESTROY
+
+B0 02
 ----

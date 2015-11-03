@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public interface MessageHandler<E extends Exception>
 {
@@ -44,60 +44,58 @@ public interface MessageHandler<E extends Exception>
 
     void handleCreateMessage( String clientName ) throws E;
 
+    void handleDestroyMessage() throws E;
+
     class Adapter<E extends Exception> implements MessageHandler<E>
     {
         @Override
         public void handleRunMessage( String statement, Map<String,Object> params ) throws E
         {
-
         }
 
         @Override
         public void handlePullAllMessage() throws E
         {
-
         }
 
         @Override
         public void handleDiscardAllMessage() throws E
         {
-
         }
 
         @Override
         public void handleAckFailureMessage() throws E
         {
-
         }
 
         @Override
         public void handleRecordMessage( Record item ) throws E
         {
-
         }
 
         @Override
         public void handleSuccessMessage( Map<String,Object> metadata ) throws E
         {
-
         }
 
         @Override
         public void handleFailureMessage( Status status, String message ) throws E
         {
-
         }
 
         @Override
         public void handleIgnoredMessage() throws E
         {
-
         }
 
         @Override
         public void handleCreateMessage( String clientName ) throws E
         {
+        }
 
+        @Override
+        public void handleDestroyMessage() throws E
+        {
         }
     }
 }

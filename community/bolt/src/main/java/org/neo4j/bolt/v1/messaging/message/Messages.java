@@ -30,6 +30,7 @@ public class Messages
     private static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
     private static final AcknowledgeFailureMessage ACK_FAILURE = new AcknowledgeFailureMessage();
     private static final SuccessMessage SUCCESS = new SuccessMessage( Collections.emptyMap() );
+    private static final DestroyMessage DESTROY = new DestroyMessage();
 
     public static Message run( String statement )
     {
@@ -44,6 +45,11 @@ public class Messages
     public static Message create( String clientName )
     {
         return new CreateMessage( clientName );
+    }
+
+    public static Message destroy()
+    {
+        return DESTROY;
     }
 
     public static Message pullAll()

@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime.internal.concurrent;
 
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.function.Consumer;
@@ -75,6 +76,12 @@ public class SessionWorkerFacade implements Session
     public <A> void acknowledgeFailure( final A attachment, final Callback<Void,A> callback )
     {
         queue( session -> session.acknowledgeFailure( attachment, callback ) );
+    }
+
+    @Override
+    public <A> void destroy( A attachment, MessageProcessingCallback<Void> callback )
+    {
+        queue( session -> session.destroy( attachment, callback ) );
     }
 
     @Override

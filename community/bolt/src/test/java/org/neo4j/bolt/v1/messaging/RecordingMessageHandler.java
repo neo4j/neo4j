@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.message.DestroyMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
@@ -92,6 +93,12 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     public void handleCreateMessage( String clientName ) throws RuntimeException
     {
         messages.add( new CreateMessage( clientName ) );
+    }
+
+    @Override
+    public void handleDestroyMessage() throws RuntimeException
+    {
+        messages.add( new DestroyMessage() );
     }
 
     public List<Message> asList()

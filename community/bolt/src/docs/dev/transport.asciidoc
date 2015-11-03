@@ -123,4 +123,7 @@ header |         Data         |  Marker
 === Disconnecting
 
 A session ends when its communication socket is closed.
-Typically, this will be closed by the client.
+
+Typically, this will be closed by the server after the client has destroyed the session of when an unrecoverable failure arises.
+Alternatively, the client may close a connection after the handshake.
+Closing the connection in any other situation is considered un-orderly and should be reported to the user (by logging this or by raising an exception).

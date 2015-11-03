@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
@@ -142,11 +143,17 @@ public interface Session extends AutoCloseable
      * optimistically assuming they will succeed. If any of them fail all subsequent requests are declined until the
      * client has acknowledged it has seen the error and has taken it into account for upcoming requests.
      * <p/>
-     * Whenever an error has been acknowledged, the session will revert back to its intial state. Any ongoing
-     * statements
-     * or transactions will have been rolled back and/or disposed of.
+     * Whenever an error has been acknowledged, the session will revert back to its initial state. Any ongoing
+     * statements or transactions will have been rolled back and/or disposed of.
      */
     <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback );
+
+    /**
+     * The opposite of create. A session may no longer be used after destroy has been called.
+     * Calling destroy will also dispose any ongoing statements or transactions.
+     */
+    <A> void destroy( A attachment, MessageProcessingCallback<Void> callback );
+
 
     @Override
     void close();
