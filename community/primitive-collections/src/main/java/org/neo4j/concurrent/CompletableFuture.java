@@ -143,4 +143,8 @@ public class CompletableFuture<T> implements Future<T>
         }
         return state.get().get();
     }
+
+    public abstract static class AutoCloseable<T> extends CompletableFuture<T> implements AutoCloseableFuture<T>
+    {
+    }
 }
