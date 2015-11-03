@@ -79,7 +79,6 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
     val file = new File(s"$outputPathWithSeparator${doc.id}.adoc")
     val pw = new PrintWriter(file)
-    println(asciiDocTree)
     pw.write(asciiDocTree)
     pw.close()
   }

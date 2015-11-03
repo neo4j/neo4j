@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen.cookbook
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.tooling.{DocBuilder, DocumentingTest, ResultAssertions}
 
-class NewPrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
+class PrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
   override def outputPath = "target/docs/dev/ql/cookbook/"
   override def doc = new DocBuilder {
     doc("Pretty graphs", "cypher-cookbook-pretty-graphs")

@@ -66,8 +66,8 @@ class DocumentAsciiDocTest extends CypherFunSuite {
 
   test("Section inside Section") {
     val doc = Document("title", "myId", initQueries = Seq.empty,
-      Section("outer", Seq.empty,
-        Paragraph("first") ~ Section("inner", Seq.empty, Paragraph("second"))
+      Section("outer", None, Seq.empty,
+        Paragraph("first") ~ Section("inner", None, Seq.empty, Paragraph("second"))
       ))
 
     doc.asciiDoc should equal(
@@ -78,6 +78,29 @@ class DocumentAsciiDocTest extends CypherFunSuite {
         |
         |first
         |
+        |=== inner
+        |
+        |second
+        |
+        |""".stripMargin)
+  }
+
+  test("Section with IDREF") {
+    val doc = Document("title", "myId", initQueries = Seq.empty,
+      Section("outer", Some("IDREF1"), Seq.empty,
+        Paragraph("first") ~ Section("inner", Some("IDREF2"), Seq.empty, Paragraph("second"))
+      ))
+
+    doc.asciiDoc should equal(
+      """[[myId]]
+        |= title
+        |
+        |[[IDREF1]]
+        |== outer
+        |
+        |first
+        |
+        |[[IDREF2]]
         |=== inner
         |
         |second
@@ -301,8 +324,8 @@ class DocumentQueryTest extends CypherFunSuite {
   test("finds all queries and the init-queries they need") {
     val tableV = new TablePlaceHolder(NoAssertions)
     val graphV: GraphVizPlaceHolder = new GraphVizPlaceHolder("")
-    val doc = Document("title", "myId", Seq("1"), Section("h1", Seq("2"),
-      Section("h2", Seq("3"),
+    val doc = Document("title", "myId", Seq("1"), Section("h1", None, Seq("2"),
+      Section("h2", None, Seq("3"),
         Query("q", NoAssertions, Seq.empty, tableV)
       ) ~ Query("q2", NoAssertions, Seq.empty, graphV)
     ))
