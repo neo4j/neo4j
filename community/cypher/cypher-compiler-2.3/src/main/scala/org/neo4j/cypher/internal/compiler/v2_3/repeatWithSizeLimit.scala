@@ -47,7 +47,7 @@ case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewr
     val newSize = astNodeSize(t)
 
     if (newSize > limit) {
-      monitor.abortedRewriting(that )
+      monitor.abortedRewriting(that)
       that
     }
     else if (t == that) {
