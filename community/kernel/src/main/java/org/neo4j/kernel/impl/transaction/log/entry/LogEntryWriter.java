@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -76,6 +77,14 @@ public class LogEntryWriter
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
         tx.accept( serializer );
+    }
+
+    public void serialize( Collection<Command> commands ) throws IOException
+    {
+        for ( Command command : commands )
+        {
+            serializer.visit( command );
+        }
     }
 
     public void writeCheckPointEntry( LogPosition logPosition ) throws IOException
