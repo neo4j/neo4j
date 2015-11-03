@@ -330,7 +330,7 @@ public class ConstraintHaIT
         {
             // Given
             ClusterManager.ManagedCluster cluster =
-                    clusterRule.config( HaSettings.read_timeout, "4000s" ).startCluster();
+                    clusterRule.withSharedSetting( HaSettings.read_timeout, "4000s" ).startCluster();
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
             HighlyAvailableGraphDatabase master = cluster.getMaster();
 

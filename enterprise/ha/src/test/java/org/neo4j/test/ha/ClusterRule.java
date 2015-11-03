@@ -19,91 +19,148 @@
  */
 package org.neo4j.test.ha;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.IntFunction;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.ha.ClusterManager.Builder;
+import org.neo4j.kernel.impl.ha.ClusterManager.ClusterBuilder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.ha.ClusterManager.Provider;
+import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
-public class ClusterRule extends ExternalResource
+/**
+ * Starts, manages and in the end shuts down an HA cluster as a JUnit {@code Rule} or {@link ClassRule}.
+ * Basically this is {@link ClusterManager} in a JUnit {@link Rule} packaging.
+ */
+public class ClusterRule extends ExternalResource implements ClusterBuilder<ClusterRule>
 {
+    private ClusterManager.Builder clusterManagerBuilder;
     private ClusterManager clusterManager;
     private File storeDirectory;
-
-    private ClusterManager.Provider provider = clusterOfSize( 3 );
-    private final Map<String,String> config = new HashMap<>();
-    private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
     private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
     private final TargetDirectory.TestDirectory testDirectory;
+    private ManagedCluster cluster;
 
     public ClusterRule( Class<?> testClass )
     {
         this.testDirectory = TargetDirectory.testDirForTest( testClass );
-        config.putAll( stringMap(
-                GraphDatabaseSettings.store_internal_log_level.name(), "DEBUG",
-                default_timeout.name(), "1s",
-                tx_push_factor.name(), "0",
-                pagecache_memory.name(), "8m" ) );
+        this.clusterManagerBuilder = new ClusterManager.Builder()
+                .withSharedSetting( store_internal_log_level, "DEBUG" )
+                .withSharedSetting( default_timeout, "1s" )
+                .withSharedSetting( tx_push_factor, "0" )
+                .withSharedSetting( pagecache_memory, "8m" );
     }
 
-    public ClusterRule config( Setting<?> setting, String value )
+    @Override
+    public ClusterRule withRootDirectory( File root )
     {
-        config.put( setting.name(), value );
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ClusterRule withSeedDir( final File seedDir )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withSeedDir( seedDir );
         return this;
     }
 
-    public ClusterRule provider( ClusterManager.Provider provider )
+    @Override
+    public ClusterRule withStoreDirInitializer( StoreDirInitializer initializer )
     {
-        this.provider = provider;
+        clusterManagerBuilder = clusterManagerBuilder.withStoreDirInitializer( initializer );
         return this;
     }
 
-    public ClusterRule factory( HighlyAvailableGraphDatabaseFactory factory )
+    @Override
+    public ClusterRule withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
     {
-        this.factory = factory;
+        clusterManagerBuilder = clusterManagerBuilder.withDbFactory( dbFactory );
         return this;
     }
 
+    @Override
+    public ClusterRule withProvider( Provider provider )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withProvider( provider );
+        return this;
+    }
+
+    @Override
+    public ClusterRule withInstanceConfig( Map<String,IntFunction<String>> commonConfig )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withInstanceConfig( commonConfig );
+        return this;
+    }
+
+    @Override
+    public ClusterRule withInstanceSetting( Setting<?> setting, IntFunction<String> valueFunction )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withInstanceSetting( setting, valueFunction );
+        return this;
+    }
+
+    @Override
+    public ClusterRule withSharedConfig( Map<String,String> commonConfig )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withSharedConfig( commonConfig );
+        return this;
+    }
+
+    @Override
+    public ClusterRule withSharedSetting( Setting<?> setting, String value )
+    {
+        clusterManagerBuilder = clusterManagerBuilder.withSharedSetting( setting, value );
+        return this;
+    }
+
+    /**
+     * Specifies which availability checks are performed and awaited before considering the cluster
+     * up and running.
+     *
+     * @param checks availability checks to perform. There are default checks if no custom checks
+     * are provided. All previous checks will be replaced by these new ones.
+     * @return this {@link ClusterRule} instance, for builder convenience.
+     */
     @SafeVarargs
     public final ClusterRule availabilityChecks( Predicate<ManagedCluster>... checks )
     {
-        return availabilityChecks( Arrays.asList( checks ) );
-    }
-
-    public ClusterRule availabilityChecks( List<Predicate<ManagedCluster>> checks )
-    {
-        availabilityChecks = new ArrayList<>( checks );
+        availabilityChecks = Arrays.asList( checks );
         return this;
     }
 
+    /**
+     * Starts cluster with the configuration provided at instantiation time.
+     */
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
-        clusterManager = new Builder( storeDirectory )
-                .withCommonConfig( config ).withProvider( provider ).withDbFactory( factory ).build();
+        if ( cluster != null )
+        {
+            return cluster;
+        }
+
+        clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
         try
         {
             clusterManager.start();
@@ -117,7 +174,8 @@ public class ClusterRule extends ExternalResource
         {
             cluster.await( availabilityCheck );
         }
-        return cluster;
+
+        return this.cluster = cluster;
     }
 
     @Override
@@ -128,7 +186,11 @@ public class ClusterRule extends ExternalResource
             @Override
             public void evaluate() throws Throwable
             {
-                storeDirectory = testDirectory.directory( description.getMethodName() );
+                // If this is used as class rule then getMethodName() returns null, so use
+                // getClassName() instead.
+                String name = description.getMethodName() != null ?
+                        description.getMethodName() : description.getClassName();
+                storeDirectory = testDirectory.directory( name );
                 base.evaluate();
             }
         };
@@ -152,5 +214,71 @@ public class ClusterRule extends ExternalResource
         {
             throwable.printStackTrace();
         }
+    }
+
+    public File directory( String name )
+    {
+        return testDirectory.directory( name );
+    }
+
+    public File cleanDirectory( String name ) throws IOException
+    {
+        return testDirectory.cleanDirectory( name );
+    }
+
+    /**
+     * Adapter for providing a static config value into a setting where per-instances dynamic config values
+     * are supplied.
+     *
+     * @param value static config value.
+     * @return this {@link ClusterRule} instance, for builder convenience.
+     */
+    public static IntFunction<String> constant( String value )
+    {
+        return ClusterManager.constant( value );
+    }
+
+    /**
+     * Dynamic configuration value, of sorts. Can be used as input to {@link #config(Setting, IntFunction)}.
+     * Some configuration values are a function of server id of the cluster member and this is a utility
+     * for creating such dynamic configuration values.
+     *
+     * @param oneBasedServerId value onto which one-based server id is added. So for example
+     * a value of 10 would have cluster member with server id 2 that config value set to 12.
+     */
+    public static IntFunction<String> intBase( final int oneBasedServerId )
+    {
+        return new IntFunction<String>()
+        {
+            @Override
+            public String apply( int serverId )
+            {
+                return String.valueOf( oneBasedServerId + serverId );
+            }
+        };
+    }
+
+    /**
+     * Dynamic configuration value, of sorts. Can be used as input to {@link #config(Setting, IntFunction)}.
+     * Some configuration values are a function of server id of the cluster member and this is a utility
+     * for creating such dynamic configuration values.
+     *
+     * @param prefix string prefix for these config values.
+     * @param oneBasedServerId value onto which one-based server id is added. So for example
+     * a value of 10 would have cluster member with server id 2 that config value set to 12.
+     * @return a string which has a prefix and an integer part, where the integer part is a function of
+     * server id of the cluster member. Can be used to set config values like a host, where arguments could look
+     * something like: {@code prefix: "localhost:" oneBasedServerId: 5000}.
+     */
+    public static IntFunction<String> stringWithIntBase( final String prefix, final int oneBasedServerId )
+    {
+        return new IntFunction<String>()
+        {
+            @Override
+            public String apply( int serverId )
+            {
+                return prefix + (oneBasedServerId + serverId);
+            }
+        };
     }
 }

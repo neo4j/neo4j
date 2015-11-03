@@ -28,7 +28,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -57,9 +57,11 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Function;
+import org.neo4j.function.IntFunction;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -89,8 +91,8 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
@@ -123,54 +125,44 @@ public class ClusterManager
         HighlyAvailableGraphDatabase repair() throws Throwable;
     }
 
+    public static IntFunction<String> constant( final String value )
+    {
+        return new IntFunction<String>()
+        {
+            @Override
+            public String apply( int ignored )
+            {
+                return value;
+            }
+        };
+    }
+
     private final File root;
-    private final Map<String,String> commonConfig;
-    private final Map<Integer,Map<String,String>> instanceConfig;
+    private final Map<String,IntFunction<String>> commonConfig;
     private final Map<String,ManagedCluster> clusterMap = new HashMap<>();
     private final Provider clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
     LifeSupport life;
 
-    public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig,
-                           Map<Integer,Map<String,String>> instanceConfig,
-                           HighlyAvailableGraphDatabaseFactory dbFactory )
-    {
-        this.clustersProvider = clustersProvider;
-        this.root = root;
-        this.commonConfig = withDefaults( commonConfig );
-        this.instanceConfig = instanceConfig;
-        this.dbFactory = dbFactory;
-        this.storeDirInitializer = null;
-    }
-
-    public ClusterManager( Builder builder )
+    private ClusterManager( Builder builder )
     {
         this.clustersProvider = builder.provider;
         this.root = builder.root;
         this.commonConfig = withDefaults( builder.commonConfig );
-        this.instanceConfig = builder.instanceConfig;
         this.dbFactory = builder.factory;
         this.storeDirInitializer = builder.initializer;
     }
 
-    private Map<String,String> withDefaults( Map<String,String> commonConfig )
+    private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
     {
-        Map<String,String> result = new HashMap<>( CONFIG_FOR_SINGLE_JVM_CLUSTER );
+        Map<String,IntFunction<String>> result = new HashMap<>();
+        for ( Map.Entry<String,String> conf : CONFIG_FOR_SINGLE_JVM_CLUSTER.entrySet() )
+        {
+            result.put( conf.getKey(), constant( conf.getValue() ) );
+        }
         result.putAll( commonConfig );
         return result;
-    }
-
-    public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig,
-                           Map<Integer,Map<String,String>> instanceConfig )
-    {
-        this( clustersProvider, root, commonConfig, instanceConfig, new HighlyAvailableGraphDatabaseFactory() );
-    }
-
-    public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig )
-    {
-        this( clustersProvider, root, commonConfig, Collections.<Integer,Map<String,String>>emptyMap(),
-                new HighlyAvailableGraphDatabaseFactory() );
     }
 
     /**
@@ -576,12 +568,49 @@ public class ClusterManager
     {
     }
 
-    public static class Builder
+    public interface ClusterBuilder<SELF>
     {
-        private final File root;
-        private final Map<Integer,Map<String,String>> instanceConfig = new HashMap<>();
+        SELF withRootDirectory( File root );
+
+        SELF withSeedDir( File seedDir );
+
+        SELF withStoreDirInitializer( StoreDirInitializer initializer );
+
+        SELF withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory );
+
+        SELF withProvider( Provider provider );
+
+        /**
+         * Supplies configuration where config values, as opposed to {@link #withSharedConfig(Map)},
+         * are a function of (one-based) server id. The function may return {@code null} which means
+         * that the particular member doesn't have that config value, or at least not specifically
+         * set, such that any default value would be used.
+         */
+        SELF withInstanceConfig( Map<String,IntFunction<String>> commonConfig );
+
+        /**
+         * Like {@link #withInstanceConfig(Map)}, but for individual settings, conveniently using
+         * {@link Setting} instance as key as well.
+         */
+        SELF withInstanceSetting( Setting<?> setting, IntFunction<String> valueFunction );
+
+        /**
+         * Supplies configuration where config values are shared with all instances in the cluster.
+         */
+        SELF withSharedConfig( Map<String,String> commonConfig );
+
+        /**
+         * Like {@link #withInstanceSetting(Setting, IntFunction)}, but for individual settings, conveniently using
+         * {@link Setting} instance as key as well.
+         */
+        SELF withSharedSetting( Setting<?> setting, String value );
+    }
+
+    public static class Builder implements ClusterBuilder<Builder>
+    {
+        private File root;
         private Provider provider = clusterOfSize( 3 );
-        private Map<String,String> commonConfig = emptyMap();
+        private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
 
@@ -590,6 +619,20 @@ public class ClusterManager
             this.root = root;
         }
 
+        public Builder()
+        {
+            // We want this, at least in the ClusterRule case where we fill this Builder instances
+            // with all our behavior, but we don't know about the root directory until we evaluate the rule.
+        }
+
+        @Override
+        public Builder withRootDirectory( File root )
+        {
+            this.root = root;
+            return this;
+        }
+
+        @Override
         public Builder withSeedDir( final File seedDir )
         {
             return withStoreDirInitializer( new StoreDirInitializer()
@@ -602,34 +645,56 @@ public class ClusterManager
             } );
         }
 
+        @Override
         public Builder withStoreDirInitializer( StoreDirInitializer initializer )
         {
             this.initializer = initializer;
             return this;
         }
 
+        @Override
         public Builder withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
         {
             this.factory = dbFactory;
             return this;
         }
 
+        @Override
         public Builder withProvider( Provider provider )
         {
             this.provider = provider;
             return this;
         }
 
-        public Builder withCommonConfig( Map<String,String> commonConfig )
+        @Override
+        public Builder withInstanceConfig( Map<String,IntFunction<String>> commonConfig )
         {
-            this.commonConfig = commonConfig;
+            this.commonConfig.putAll( commonConfig );
             return this;
         }
 
-        public Builder withInstanceConfig( int instanceNr, Map<String,String> instanceConfig )
+        @Override
+        public Builder withInstanceSetting( Setting<?> setting, IntFunction<String> valueFunction )
         {
-            this.instanceConfig.put( instanceNr, instanceConfig );
+            this.commonConfig.put( setting.name(), valueFunction );
             return this;
+        }
+
+        @Override
+        public Builder withSharedConfig( Map<String,String> commonConfig )
+        {
+            Map<String,IntFunction<String>> dynamic = new HashMap<>();
+            for ( Map.Entry<String,String> entry : commonConfig.entrySet() )
+            {
+                dynamic.put( entry.getKey(), constant( entry.getValue() ) );
+            }
+            return withInstanceConfig( dynamic );
+        }
+
+        @Override
+        public Builder withSharedSetting( Setting<?> setting, String value )
+        {
+            return withInstanceSetting( setting, constant( value ) );
         }
 
         public ClusterManager build()
@@ -982,10 +1047,9 @@ public class ClusterManager
                 builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
                 builder.setConfig( HaSettings.ha_server, ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-                builder.setConfig( commonConfig );
-                if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
+                for ( Map.Entry<String,IntFunction<String>> conf : commonConfig.entrySet() )
                 {
-                    builder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );
+                    builder.setConfig( conf.getKey(), conf.getValue().apply( serverId.toIntegerIndex() ) );
                 }
 
                 config( builder, name, serverId );

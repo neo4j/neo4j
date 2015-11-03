@@ -19,22 +19,21 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.io.File;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -83,10 +82,11 @@ public class TestPullUpdates
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
         File root = testDirectory.directory( testName.getMethodName() );
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
+        ClusterManager clusterManager = new ClusterManager.Builder( root )
+                .withSharedConfig( MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms",
                 ClusterSettings.heartbeat_interval.name(), "2s",
-                ClusterSettings.heartbeat_timeout.name(), "30s") );
+                ClusterSettings.heartbeat_timeout.name(), "30s") ).build();
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
@@ -124,18 +124,22 @@ public class TestPullUpdates
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
         File root = testDirectory.directory( testName.getMethodName() );
-        Map<Integer, Map<String, String>> instanceConfig = new HashMap<>();
-        for (int i = 1; i <= 2; i++)
-        {
-            Map<String, String> thisInstance =
-                    MapUtil.stringMap( ShellSettings.remote_shell_port.name(), "" + (SHELL_PORT + i) );
-            instanceConfig.put( i, thisInstance );
-        }
-        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 2 ), root, MapUtil.stringMap(
-                HaSettings.pull_interval.name(), "0",
-                HaSettings.tx_push_factor.name(), "0" ,
-                ShellSettings.remote_shell_enabled.name(), "true"
-                ), instanceConfig );
+        ClusterManager clusterManager = new ClusterManager.Builder( root )
+                .withProvider( clusterOfSize( 2 ) )
+                .withSharedConfig( MapUtil.stringMap(
+                    HaSettings.pull_interval.name(), "0",
+                    HaSettings.tx_push_factor.name(), "0" ,
+                    ShellSettings.remote_shell_enabled.name(), "true" ) )
+                .withInstanceConfig( MapUtil.<String,IntFunction<String>>genericMap(
+                    ShellSettings.remote_shell_port.name(), new IntFunction<String>()
+                    {
+                        @Override
+                        public String apply( int oneBasedServerId )
+                        {
+                            return oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
+                                    "" + (SHELL_PORT + oneBasedServerId) : null;
+                        }
+                    } ) ).build();
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
 
