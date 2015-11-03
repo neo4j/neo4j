@@ -79,33 +79,6 @@ Value: false
 C2
 ----
 
-[[bolt-packstream-floats]]
-=== Floating Point Numbers
-These are double-precision floating points for approximations of any number, notably for representing fractions and decimal numbers.
-Floats are encoded as a single `0xC1` marker byte followed by 8 bytes, formatted according to the IEEE 754 floating-point "double format" bit layout.
-
-Bit 63 (the bit that is selected by the mask `0x8000000000000000`) represents the sign of the number.
-
-Bits 62-52 (the bits that are selected by the mask `0x7ff0000000000000`) represent the exponent.
-
-Bits 51-0 (the bits that are selected by the mask `0x000fffffffffffff`) represent the significand (sometimes called the mantissa) of the number.
-
-.Simple floating point
-[source,bolt_packstream_type]
-----
-Value: 1.1
-
-C1 3F F1 99 99 99 99 99 9A
-----
-
-.Negative floating point
-[source,bolt_packstream_type]
-----
-Value: -1.1
-
-C1 BF F1 99 99 99 99 99 9A
-----
-
 [[bolt-packstream-ints]]
 === Integers
 Integer values occupy either 1, 2, 3, 5 or 9 bytes depending on magnitude and are stored as big-endian signed values.
@@ -156,6 +129,34 @@ CB 7F FF FF  FF FF FF FF  FF
 |+32 768                     |+2 147 483 647             |`INT_32`
 |+2 147 483 648              |+9 223 372 036 854 775 807 |`INT_64`
 |=======================
+
+
+[[bolt-packstream-floats]]
+=== Floating Point Numbers
+These are double-precision floating points for approximations of any number, notably for representing fractions and decimal numbers.
+Floats are encoded as a single `0xC1` marker byte followed by 8 bytes, formatted according to the IEEE 754 floating-point "double format" bit layout.
+
+Bit 63 (the bit that is selected by the mask `0x8000000000000000`) represents the sign of the number.
+
+Bits 62-52 (the bits that are selected by the mask `0x7ff0000000000000`) represent the exponent.
+
+Bits 51-0 (the bits that are selected by the mask `0x000fffffffffffff`) represent the significand (sometimes called the mantissa) of the number.
+
+.Simple floating point
+[source,bolt_packstream_type]
+----
+Value: 1.1
+
+C1 3F F1 99 99 99 99 99 9A
+----
+
+.Negative floating point
+[source,bolt_packstream_type]
+----
+Value: -1.1
+
+C1 BF F1 99 99 99 99 99 9A
+----
 
 [[bolt-packstream-text]]
 === Text
@@ -407,8 +408,9 @@ Relationship (signature=0x52) {
 
 [[bolt-value-pathstruct]]
 ==== Path
-A Path represents a walk through a graph.
-Its representation consists of a set of distinct nodes included within the path, a similar set of distinct relationships and a sequence describing the shape of the path.
+A Path is a sequence of alternating nodes and relationships corresponding to a walk in the graph.
+The path always begins and ends with a node.
+Its representation consists of a list of distinct nodes, a list of distinct relationships and a sequence of integers describing the path traversal.
 The general serialised structure is as follows:
 
 [source,bolt_value_struct]
@@ -419,6 +421,61 @@ Path (signature=0x50) {
     List<Integer> sequence
 }
 ----
+
+The two lists `N` and `R` are defined as follows:
+
+- `N` contains all the unique nodes in the path
+- `R` contains all the unique relationships in the path
+- For `N`, the index is an integer commencing with 0 and incrementing by 1
+- For `R`, the index is an integer commencing with 1 and incrementing by 1
+- The value component for both `N` and `R` is the data corresponding to the node or relationship; this comprises the identifier, labels/type, properties etc
+- In `N`, the first element must _always_ be the first node in the path (thus having 0 as the index)
+- No other _explicit_ rules apply as to either (i) the ordering of the other nodes in `N`, or (ii) the ordering of any of the relationships in `R`. However, while not required, it is recommended that implementations aim to list entities (i.e. nodes and relationships) in the order in which they are first encountered while traversing the path. This may help with the efficiency of reading and writing
+
+When transmitting a path between a server and a client, the path is represented as a sequence of integers; we define `S` as the transmitted sequence, and `S'` as the full sequence.
+
+- `S` must always consist of an even number of integers, or be empty
+- The first, third, ... integer in `S` has a range encompassed by (..,-1] and [1,..). These represent the relationships in the path
+- The second, fourth, ... integer in `S` has a range encompassed by [0,..). These represent the nodes in the path
+- By definition, the first node in the path will _always_ have an index of 0, so we exclude this from `S` upon transmission. The idea is to construct `S'` by prepending 0 to `S` on the completion of a successful transmission
+- Let a path `P` be given by the following transmitted sequence [1, 1, -2, 2]. It follows that the corresponding full sequence, `S'`, is given by [0, 1, 1, -2, 2]
+- The first integer in `S` (1) is the index in `R` corresponding to the first relationship in `P`
+- The second integer in `S` (1) is the index in `N` corresponding to the second node in `P`
+- The last integer in `S` (2) is the index in `N` corresponding to the last node in `P`
+- When a relationship is represented by a positive integer in `S` - such as the 1 in position 1 - this means that the relationship is being traversed in the direction of the underlying relationship in the data graph
+- When a relationship is represented by a negative integer in `S` - such as the -2 in position 3 - this means that the relationship is being traversed against the direction of the underlying relationship in the data graph.
+For 'loops' - i.e. a relationship beginning and ending at the same node - a positive integer should be used
+
+.Example
+
+Consider the following path:
+
+`(A)-[:X]\->(B)-[:Y]\->\(C)\<-[:Z]-(B)\<-[:X]-(A)`
+
+The elements trasmitted would be as follows:
+
+- `N`: `(A)`, `(B)`, `\(C)`
+- `R`: `[:X]`, `[:Y]`, `[:Z]`
+- `S`: [1, 1, 2, 2, -3, 1, -1, 0]
+
+By definition, the following is also implied:
+
+- `S'`: [0, 1, 1, 2, 2, -3, 1, -1, 0]
+
+Similarily, consider the following zero-length path:
+
+`(A)`
+
+The elements transmitted would be as follows:
+
+- `N`: `(A)`
+- `R`: <empty>
+- `S`: <empty>
+
+where the following is implied:
+
+- `S'`: [0]
+
 
 [[bolt-value-unboundrelstruct]]
 ==== UnboundRelationship
