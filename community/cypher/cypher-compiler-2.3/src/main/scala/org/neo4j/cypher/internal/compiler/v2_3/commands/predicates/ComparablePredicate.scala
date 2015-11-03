@@ -48,6 +48,13 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
   def arguments = Seq(left, right)
 
   def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
+
+  def other(e: Expression): Expression = if (e != left) {
+    assert(e == right, "This expression is neither LHS nor RHS")
+    left
+  } else {
+    right
+  }
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {

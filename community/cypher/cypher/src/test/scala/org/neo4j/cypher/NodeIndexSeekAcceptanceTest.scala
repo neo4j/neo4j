@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{UniqueIndexSeekByRange, IndexSeekByRange}
-
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
@@ -102,6 +100,56 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     // Then
     result should (use("NodeIndexSeek") and evaluateTo(List(Map("p" -> null, "placeName" -> null))))
+  }
+
+  test("should not use indexes when RHS of property comparison depends on the node searched for (equality)") {
+    // Given
+    val n1 = createLabeledNode(Map("a" -> 1), "MyNodes")
+    val n2 = createLabeledNode(Map("a" -> 0), "MyNodes")
+    val n3 = createLabeledNode(Map("a" -> 1, "b" -> 1), "MyNodes")
+    val n4 = createLabeledNode(Map("a" -> 1, "b" -> 5), "MyNodes")
+
+    graph.createIndex("MyNodes", "a")
+
+    val query =
+      """|MATCH (m:MyNodes)
+        |WHERE m.a = coalesce(m.b, 0)
+        |RETURN m""".stripMargin
+
+    // When
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result.toList should equal(List(
+      Map("m" -> n2),
+      Map("m" -> n3)
+    ))
+    result.executionPlanDescription().toString shouldNot include("Index")
+  }
+
+  test("should not use indexes when RHS of property comparison depends on the node searched for (range query)") {
+    // Given
+    val n1 = createLabeledNode(Map("a" -> 1), "MyNodes")
+    val n2 = createLabeledNode(Map("a" -> 0), "MyNodes")
+    val n3 = createLabeledNode(Map("a" -> 1, "b" -> 1), "MyNodes")
+    val n4 = createLabeledNode(Map("a" -> 5, "b" -> 1), "MyNodes")
+
+    graph.createIndex("MyNodes", "a")
+
+    val query =
+      """|MATCH (m:MyNodes)
+        |WHERE m.a > coalesce(m.b, 0)
+        |RETURN m""".stripMargin
+
+    // When
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result.toList should equal(List(
+      Map("m" -> n1),
+      Map("m" -> n4)
+    ))
+    result.executionPlanDescription().toString shouldNot include("Index")
   }
 
   private def setUpDatabaseForTests() {
