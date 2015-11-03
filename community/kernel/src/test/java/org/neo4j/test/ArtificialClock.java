@@ -35,6 +35,12 @@ public class ArtificialClock implements Clock
         return NANOSECONDS.toMillis( currentTimeNanos );
     }
 
+    @Override
+    public long nanoTime()
+    {
+        return currentTimeNanos;
+    }
+
     public Progressor progressor( long time, TimeUnit unit )
     {
         return new Progressor( unit.toNanos( time ) );

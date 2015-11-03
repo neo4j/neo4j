@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_0, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
@@ -135,7 +137,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should monitor cache remove") {
     // given
     val counter = new CacheCounter()
-    val clock: Clock = new FrozenClock(1000)
+    val clock: Clock = new FrozenClock(1000, TimeUnit.MILLISECONDS)
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
@@ -156,7 +158,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val counter = new CacheCounter()
     val logProvider = new AssertableLogProvider()
-    val clock: Clock = new FrozenClock(1000)
+    val clock: Clock = new FrozenClock(1000, TimeUnit.MILLISECONDS)
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
