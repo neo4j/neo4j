@@ -38,7 +38,6 @@ abstract class MuninnPageCursor implements PageCursor
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
-    protected long lastPageId;
     protected long lockStamp;
 
     private boolean claimed;
@@ -71,7 +70,6 @@ abstract class MuninnPageCursor implements PageCursor
     {
         nextPageId = pageId;
         currentPageId = UNBOUND_PAGE_ID;
-        lastPageId = pagedFile.getLastPageId();
     }
 
     public final void reset( MuninnPage page )
@@ -226,7 +224,7 @@ abstract class MuninnPageCursor implements PageCursor
             // here, so the unmapping would have already happened. We do this
             // check before page.fault(), because that would otherwise reopen
             // the file channel.
-            assertPagedFileStillMapped();
+            assertPagedFileStillMappedAndGetIdOfLastPage();
             page.initBuffer();
             page.fault( swapper, filePageId, faultEvent );
         }
@@ -248,9 +246,9 @@ abstract class MuninnPageCursor implements PageCursor
         return page;
     }
 
-    protected void assertPagedFileStillMapped()
+    protected long assertPagedFileStillMappedAndGetIdOfLastPage()
     {
-        pagedFile.assertStillMapped();
+        return pagedFile.getLastPageId();
     }
 
     protected abstract void unpinCurrentPage();

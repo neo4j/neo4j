@@ -50,7 +50,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
-        assertPagedFileStillMapped();
+        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId )
         {
             return false;

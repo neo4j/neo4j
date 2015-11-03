@@ -86,6 +86,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -2315,13 +2316,13 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test
-    public void lastPageIdOfEmptyFileIsMinusOne() throws IOException
+    public void lastPageIdOfEmptyFileIsLessThanZero() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), is( -1L ) );
+            assertThat( pagedFile.getLastPageId(), lessThan( 0L ) );
         }
     }
 
@@ -2334,9 +2335,10 @@ public abstract class PageCacheTest<T extends PageCache>
 
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
-        PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-        assertThat( pagedFile.getLastPageId(), is( 0L ) );
-        pagedFile.close();
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            assertThat( pagedFile.getLastPageId(), is( 0L ) );
+        }
     }
 
     @Test
@@ -2467,6 +2469,20 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             pagedFile.close();
         }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void lastPageIdFromUnmappedFileMustThrow() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        PagedFile file;
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.CREATE ) )
+        {
+            file = pf;
+        }
+
+        file.getLastPageId();
     }
 
     @Test
@@ -3721,7 +3737,7 @@ public abstract class PageCacheTest<T extends PageCache>
             PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
-            long startingPage = maxPageId == -1? 0 : rng.nextLong( maxPageId + 1 );
+            long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
             int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
             int pageSize = pagedFile.pageSize();
 
@@ -4171,14 +4187,14 @@ public abstract class PageCacheTest<T extends PageCache>
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pf.io( 10, PF_EXCLUSIVE_LOCK ) )
         {
-            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertThat( pf.getLastPageId(), lessThan( 0L ) );
             assertTrue( cursor.next() );
             cursor.putInt( 0xcafebabe );
         }
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
               PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
         {
-            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertThat( pf.getLastPageId(), lessThan( 0L ) );
             assertFalse( cursor.next() );
         }
     }
@@ -4193,5 +4209,14 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             fail( "the second map call should have thrown" );
         }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowIfFileIsClosedMoreThanItIsMapped() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+        pf.close();
+        pf.close();
     }
 }

@@ -284,7 +284,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     {
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
-            if ( pagedFile.getLastPageId() != -1 )
+            if ( pagedFile.getLastPageId() >= 0 )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
                 {

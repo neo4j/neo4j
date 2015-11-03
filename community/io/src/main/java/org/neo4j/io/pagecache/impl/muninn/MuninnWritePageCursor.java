@@ -42,7 +42,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     public boolean next() throws IOException
     {
-        assertPagedFileStillMapped();
+        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )
@@ -82,7 +82,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // files have been unmapped, the page cache can be closed. And when
         // that happens, dirty contents in memory will no longer have a chance
         // to get flushed.
-        assertPagedFileStillMapped();
+        assertPagedFileStillMappedAndGetIdOfLastPage();
         page.incrementUsage();
         page.markAsDirty();
     }

@@ -228,20 +228,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         final MuninnPageCache pageCache = createPageCache( fs, 2, 8, PageCacheTracer.NULL );
         final PagedFile pagedFile = pageCache.map( file( "a" ), 8 );
 
-        Future<?> task = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
+        Future<?> task = executor.submit( () -> {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                    cursor.putLong( 41 );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                assertTrue( cursor.next() );
+                cursor.putLong( 41 );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         } );
         task.get();
@@ -303,6 +298,39 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         catch ( IOException ignore )
         {
             // Good.
+        }
+    }
+
+    @Test( expected = IllegalStateException.class, timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    public void mustThrowIfMappingFileWouldOverflowReferenceCount() throws Exception
+    {
+        File file = file( "a" );
+        writeInitialDataTo( file );
+        MuninnPageCache pageCache = createPageCache( fs, 30, pageCachePageSize, PageCacheTracer.NULL );
+        PagedFile pf = null;
+        int i = 0;
+
+        try
+        {
+            for ( ; i < Integer.MAX_VALUE; i++ )
+            {
+                pf = pageCache.map( file, filePageSize );
+            }
+        }
+        finally
+        {
+            for ( int j = 0; j < i; j++ )
+            {
+                try
+                {
+                    pf.close();
+                }
+                catch ( Exception e )
+                {
+                    //noinspection ThrowFromFinallyBlock
+                    throw new AssertionError( "Did not expect pf.close() to throw", e );
+                }
+            }
         }
     }
 }
