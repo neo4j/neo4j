@@ -43,11 +43,17 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-@RunWith(Parameterized.class)
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.storemigration.StoreMigrator.readLastTxLogPosition;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
+
+@RunWith( Parameterized.class )
 public class StoreMigratorTest
 {
     @Rule
@@ -57,17 +63,24 @@ public class StoreMigratorTest
     public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter( 0 )
     public String version;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameter( 1 )
+    public LogPosition expectedLogPosition;
+
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
-                new Object[]{Legacy19Store.LEGACY_VERSION},
-                new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION}
+                new Object[]{
+                        Legacy19Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy20Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy21Store.LEGACY_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                new Object[]{
+                        Legacy22Store.LEGACY_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )}
         );
     }
 
@@ -132,5 +145,31 @@ public class StoreMigratorTest
         StoreFactory storeFactory =
                 new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
+    }
+
+    @Test
+    public void shouldComputeTheLastTxLogPositionCorrectly() throws Throwable
+    {
+        // GIVEN a legacy database
+        File storeDirectory = directory.graphDbDir();
+        File prepare = directory.directory( "prepare" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDirectory, prepare );
+        // and a state of the migration saying that it has done the actual migration
+        LogService logService = NullLogService.getInstance();
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        UpgradableDatabase upgradableDatabase =
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
+        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
+        fs.mkdirs( migrationDir );
+
+        // WHEN migrating
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+
+        // THEN it should compute the correct last tx log position
+        assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );
     }
 }
