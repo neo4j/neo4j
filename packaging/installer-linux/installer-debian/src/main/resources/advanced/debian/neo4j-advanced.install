@@ -1,4 +1,3 @@
-server/CHANGES.txt  var/lib/neo4j
 server/LICENSES.txt var/lib/neo4j
 server/README.txt   var/lib/neo4j
 server/UPGRADE.txt  var/lib/neo4j

@@ -1,4 +1,3 @@
-server/CHANGES.txt      var/lib/neo4j-arbiter
 server/LICENSES.txt     var/lib/neo4j-arbiter
 server/README.txt       var/lib/neo4j-arbiter
 server/UPGRADE.txt      var/lib/neo4j-arbiter
