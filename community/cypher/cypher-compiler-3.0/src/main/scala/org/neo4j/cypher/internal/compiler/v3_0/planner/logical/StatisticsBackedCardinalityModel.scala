@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.MapSupport._
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
@@ -40,13 +41,27 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   }
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon): Cardinality = horizon match {
-    // Normal projection with LIMIT
+    // Normal projection with LIMIT integer literal
     case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit: IntegerLiteral))) =>
       Cardinality.min(in, limit.value.toDouble)
 
     // Normal projection with LIMIT
-    case RegularQueryProjection(_, QueryShuffle(_, None, Some(unknownLimit))) =>
-      Cardinality.min(in, GraphStatistics.DEFAULT_LIMIT_CARDINALITY)
+    case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit))) =>
+      val cannotEvaluateStableValue =
+        simpleExpressionEvaluator.hasParameters(limit) ||
+          simpleExpressionEvaluator.isNonDeterministic(limit)
+
+      val limitCardinality =
+        if (cannotEvaluateStableValue) GraphStatistics.DEFAULT_LIMIT_CARDINALITY
+        else {
+          val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limit)
+
+          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[Number])
+            Cardinality(evaluatedValue.get.asInstanceOf[Number].doubleValue())
+          else GraphStatistics.DEFAULT_LIMIT_CARDINALITY
+        }
+
+      Cardinality.min(in, limitCardinality)
 
     // Distinct
     case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>

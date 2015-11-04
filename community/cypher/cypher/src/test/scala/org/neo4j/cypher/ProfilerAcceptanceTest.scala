@@ -229,6 +229,32 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertEstimatedRows(10)(result)("Limit")
   }
 
+  test("LIMIT should influence cardinality estimation with independent parameterless expression") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(ceil(cos(0))) + 4")
+    assertEstimatedRows(5)(result)("Limit")
+  }
+
+  test("LIMIT should influence cardinality estimation by default value when expression contains parameter") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    val result = executeWithAllPlanners(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(sin({limit}))", "limit" -> 1)
+    assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+  }
+
+  test("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    // NOTE: We cannot executeWithAllPlanners because of random result
+    val result = executeWithCostPlannerOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
+    assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+  }
+
+  test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
+    (0 until 100).map(i => createLabeledNode("Person"))
+    // NOTE: We cannot executeWithAllPlanners because of random result
+    val result = executeWithCostPlannerOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
+    assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
+  }
+
   test ("should support profiling union queries") {
     val result = profileWithAllPlanners("return 1 as A union return 2 as A")
     result.toSet should equal(Set(Map("A" -> 1), Map("A" -> 2)))

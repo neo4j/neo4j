@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunctio
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case object Rand extends Function with SimpleTypedFunction {
-  def name = "rand"
+  val name = "rand"
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(), outputType = CTFloat)
