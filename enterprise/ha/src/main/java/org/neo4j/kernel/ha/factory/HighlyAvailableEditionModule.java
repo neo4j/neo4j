@@ -169,6 +169,8 @@ public class HighlyAvailableEditionModule
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
         final LifeSupport life = platformModule.life;
+        life.add( platformModule.dataSourceManager );
+
         final LifeSupport paxosLife = new LifeSupport();
         final LifeSupport clusteringLife = new LifeSupport();
 

@@ -163,7 +163,7 @@ public class PlatformModule
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
         // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
         // Anyways please fix this.
-        dataSourceManager = life.add( dependencies.satisfyDependency( new DataSourceManager() ) );
+        dataSourceManager = dependencies.satisfyDependency( new DataSourceManager() );
 
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, logging.getInternalLog(
                 AvailabilityGuard.class ) );

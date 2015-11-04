@@ -79,6 +79,8 @@ public class CommunityEditionModule
         File storeDir = platformModule.storeDir;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
+        life.add( platformModule.dataSourceManager );
+
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
