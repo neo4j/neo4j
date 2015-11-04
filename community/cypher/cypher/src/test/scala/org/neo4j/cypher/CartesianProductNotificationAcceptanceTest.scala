@@ -77,10 +77,23 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     //given
     val logger = mock[InternalNotificationLogger]
     val compiler = createCompiler()
-    val executionMode = NormalMode
 
     //when
     graph.inTx(compiler.planQuery("MATCH (a)-->(b) MATCH (c)-->(d) RETURN *", planContext, logger))
+
+    //then
+    verify(logger, never) += any()
+  }
+
+  test("this query does not contain a cartesian product") {
+    //given
+    val logger = mock[InternalNotificationLogger]
+    val compiler = createCompiler()
+
+    //when
+    graph.inTx(compiler.planQuery("""MATCH (p)-[r1]-(m),
+                                    |(m)-[r2]-(d), (d)-[r3]-(m2)
+                                    |RETURN DISTINCT d""".stripMargin, planContext, logger))
 
     //then
     verify(logger, never) += any()

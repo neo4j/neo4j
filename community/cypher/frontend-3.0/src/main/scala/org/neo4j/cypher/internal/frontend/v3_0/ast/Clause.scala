@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-import scala.annotation.tailrec
-
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
@@ -89,24 +87,15 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
-    val nodes = pattern.patternParts.map(_.fold(Set.empty[Identifier]) {
-      case NodePattern(Some(id), _, _) => list => list + id
-    })
-
-    @tailrec
-    def loop(compare: Set[Identifier], rest: Seq[Set[Identifier]], intermediateState: SemanticState): SemanticState = {
-      val updatedState = rest.filter { o =>
-        (compare intersect o).isEmpty
-      }.foldLeft(intermediateState) { (innerState, identifiers) =>
-        innerState.addNotification(CartesianProductNotification(position, identifiers.map(_.name)))
-      }
-
-      if (rest.nonEmpty) loop(rest.head, rest.tail, updatedState) else updatedState
+    import connectedComponents._
+    val cc = connectedComponents(pattern.patternParts)
+    //if we have multiple connected components we will have
+    //a cartesian product
+    val newState = cc.drop(1).foldLeft(state) { (innerState, component) =>
+      innerState.addNotification(CartesianProductNotification(position, component.identifiers.map(_.name)))
     }
 
-    val finalState = if (nodes.nonEmpty) loop(nodes.head, nodes.tail, state) else state
-
-    SemanticCheckResult(finalState, Seq.empty)
+    SemanticCheckResult(newState, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {

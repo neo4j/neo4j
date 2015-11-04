@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.AstRewritingMonitor
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Or
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-  val rewriter: Rewriter = distributeLawsRewriter()(mock[AstRewritingMonitor])
+  val monitor = mock[AstRewritingMonitor]
+  val rewriter: Rewriter = distributeLawsRewriter()(monitor)
 
   test("(P or (Q and R))  iff  (P or Q) and (P or R)") {
     or(P, and(Q, R)) <=> and(or(P, Q), or(P, R))
@@ -38,4 +41,35 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
   test("((Q and R and S) or P)  iff  (Q or P) and (R or P) and (S or P)") {
     or(and(Q, and(R, S)), P) <=> and(or(Q, P), and(or(R, P), or(S, P)))
   }
+
+  test("should not rewrite DNF predicates larger than the limit") {
+    // given
+    val start = or(and(P, Q), and(Q, R))
+    val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 2)
+
+    // when
+    val result = rewriter.apply(fullOr)
+
+    // then result should be the same and aborted due to DNF-limit
+    if (result == fullOr) verify(monitor).abortedRewritingDueToLargeDNF(fullOr)
+    else fail(s"result was different: $result")
+  }
+
+  test("should rewrite DNF predicates smaller than the limit") {
+    // given
+    val start = or(and(P, Q), and(Q, R))
+    val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 3)
+
+    // when
+    val result = rewriter.apply(fullOr)
+
+    // then result should be different, or equal but aborted due to repeatWithSizeLimit
+    if (result == fullOr) verify(monitor).abortedRewriting(fullOr)
+  }
+
+  private def combineUntilLimit(start: Or, limit: Int): Or =
+    if (limit > 0)
+      combineUntilLimit(or(start, and(P, Q)), limit - 1)
+    else
+      start
 }
