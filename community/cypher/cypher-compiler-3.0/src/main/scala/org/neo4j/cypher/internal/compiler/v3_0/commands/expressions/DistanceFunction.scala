@@ -22,56 +22,58 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import Math._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val geometry1 = convertToGeometry(p1, ctx);
-    val geometry2 = convertToGeometry(p2, ctx);
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
-    Seq(
-      HaversinCalculator,
-      CartesianCalculator
-    ).collectFirst {
-      case distance: DistanceCalculator if distance.isDefinedAt(geometry1 -> geometry2) =>
-        distance(geometry1 -> geometry2)
-    }.getOrElse(
-      throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
-    ).get
+    (p1(ctx), p2(ctx)) match {
+      case (null, _) => null
+      case (_, null) => null
+      case (geometry1: Geometry, geometry2: Geometry) =>
+        Seq(
+          HaversinCalculator,
+          CartesianCalculator
+        ).collectFirst {
+          case distance: DistanceCalculator if distance.isDefinedAt(geometry1, geometry2) =>
+            distance(geometry1, geometry2)
+        }.getOrElse(
+            throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
+          ).get
+      case (x, y) => throw new CypherTypeException(s"Expected two Points, but got $x and $y")
+    }
   }
 
-  def convertToGeometry(p: Expression, ctx: ExecutionContext)
-                       (implicit state: QueryState): Geometry = p(ctx) match {
-    case g: Geometry => g
-  }
+  override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
 
-  def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
-
-  def calculateType(symbols: SymbolTable): CypherType = CTFloat
+  override def calculateType(symbols: SymbolTable) = CTFloat
 
   override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
 
-  override def symbolTableDependencies: Set[String] = p1.symbolTableDependencies ++ p2.symbolTableDependencies
+  override def symbolTableDependencies = p1.symbolTableDependencies ++ p2.symbolTableDependencies
 
   override def toString = "Distance(" + p1 + ", " + p2 + ")"
 }
 
 trait DistanceCalculator {
-  def isDefinedAt(p: (Geometry, Geometry)): Boolean
+  def isDefinedAt(p1: Geometry, p2: Geometry): Boolean
 
   def calculateDistance(p1: Geometry, p2: Geometry): Double
 
-  def apply(p: (Geometry, Geometry)): Option[Double] =
-    if (isDefinedAt(p._1, p._2)) Some(calculateDistance(p._1, p._2)) else None
+  def apply(p1: Geometry, p2: Geometry): Option[Double] =
+    if (isDefinedAt(p1, p2))
+      Some(calculateDistance(p1, p2))
+    else
+      None
 }
 
 object CartesianCalculator extends DistanceCalculator {
-  def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
-    p._1.crs == CRS.Cartesian && p._2.crs == CRS.Cartesian
-  }
+  override def isDefinedAt(p1: Geometry, p2: Geometry) =
+    p1.crs == CRS.Cartesian && p2.crs == CRS.Cartesian
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {
     val d2: Seq[Double] = (p1.coordinates zip p2.coordinates).map(x => pow(x._2 - x._1, 2))
@@ -82,11 +84,10 @@ object CartesianCalculator extends DistanceCalculator {
 
 object HaversinCalculator extends DistanceCalculator {
 
-  val EARTH_RADIUS_METERS = 6378140.0
+  private val EARTH_RADIUS_METERS = 6378140.0
 
-  def isDefinedAt(p: (Geometry, Geometry)): Boolean = {
-    p._1.crs == CRS.WGS84 && p._2.crs == CRS.WGS84
-  }
+  override def isDefinedAt(p1: Geometry, p2: Geometry): Boolean =
+    p1.crs == CRS.WGS84 && p2.crs == CRS.WGS84
 
   override def calculateDistance(p1: Geometry, p2: Geometry): Double = {
     val c1: Seq[Double] = p1.coordinates.map(toRadians)

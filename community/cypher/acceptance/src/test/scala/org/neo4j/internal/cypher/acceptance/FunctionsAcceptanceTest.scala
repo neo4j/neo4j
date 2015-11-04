@@ -344,12 +344,46 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
   }
 
+  test("distance function should work with two null inputs") {
+    val result = executeWithAllPlanners("RETURN distance(null, null) as dist")
+    result.toList should equal(List(Map("dist" -> null)))
+  }
+
+  test("distance function should return null with lhs null input") {
+    val result = executeWithAllPlanners("""WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
+                                          |RETURN distance(null, p1) as dist""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+  }
+
+  test("distance function should return null with rhs null input") {
+    val result = executeWithAllPlanners("""WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
+                                          |RETURN distance(p1, null) as dist""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+  }
+
+  test("distance function should fail on wrong type") {
+    val error = intercept[SyntaxException](executeWithAllPlanners("RETURN distance(1, 2) as dist"))
+    assert(error.getMessage.contains("Type mismatch: expected Point but was Integer"))
+  }
+
   test("point function should work with node properties") {
     // Given
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
     val result = executeWithAllPlanners("MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point")
+
+    // Then
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+  }
+
+  test("point function should work with relationship properties") {
+    // Given
+    val r = relate(createNode(), createNode(), "PASS_THROUGH", Map("latitude" -> 12.78, "longitude" -> 56.7))
+
+    // When
+    val result = executeWithAllPlanners("MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point")
 
     // Then
     result should useProjectionWith("Point")
@@ -368,13 +402,22 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
+  test("point function should work with null input") {
+    val result = executeWithAllPlanners("RETURN point(null) as p")
+    result.toList should equal(List(Map("p" -> null)))
+  }
+
+  test("point function should fail on wrong type") {
+    val error = intercept[SyntaxException](executeWithAllPlanners("RETURN point(1) as dist"))
+    assert(error.getMessage.contains("Type mismatch: expected Map, Node or Relationship but was Integer"))
+  }
+
   ignore("point function should be assignable to node property") {
     // Given
     createLabeledNode("Place")
 
     // When
     val result = executeWithAllPlanners("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location")
-    println(result.executionPlanDescription())
 
     // Then
     result should useProjectionWith("Point")
