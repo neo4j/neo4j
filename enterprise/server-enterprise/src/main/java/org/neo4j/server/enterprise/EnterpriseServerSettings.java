@@ -38,7 +38,7 @@ public interface EnterpriseServerSettings
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
     Setting<Boolean> browser_storeCredentials = setting( "dbms.browser.store_credentials", BOOLEAN, TRUE );
 
-    @Description( "Configure the operating mode of the database - 'SINGLE' for stand-alone operation or 'HA'" +
+    @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation or 'HA' " +
                   "for operating as a member in a cluster." )
     Setting<String> mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
 
