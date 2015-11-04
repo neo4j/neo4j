@@ -321,7 +321,6 @@ BSD License
   JLine
   JQuery Easing Plugin
   Scala Compiler
-  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
