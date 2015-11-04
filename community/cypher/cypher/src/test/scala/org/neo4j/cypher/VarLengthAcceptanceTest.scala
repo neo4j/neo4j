@@ -4,288 +4,349 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.NoneInCollection
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.Direction._
 import org.scalatest.matchers.{MatchResult, Matcher}
+
+import scala.collection.mutable
 
 class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  private def makeTreeModel(relType: String) = {
+  /*
+  This tree model generator will generate a binary tree, starting with a single root(named "n0").
+  'maxNodeDepth' refers to the node depth, so a value of 4 will generate a root, 2 children, 4 grandchildren
+   and 8 grandchildren (so the depth of the tree is 3)
+  */
+  private def makeTreeModel(maxNodeDepth: Int, directions: Seq[Direction] = Seq()) = {
 
-    //TODO - ret nodes and put in results
-    //root
-    val n0 = createNode(Map("id" -> "A"))
-
-    //parents
-    val n00 = createNode(Map("id" -> "B-1"))
-    val n01 = createNode(Map("id" -> "B-2"))
-
-    //grandchildren
-    val n000 = createNode(Map("id" -> "C-1"))
-    val n001 = createNode(Map("id" -> "C-2"))
-
-    val n010 = createNode(Map("id" -> "C-3"))
-    val n011 = createNode(Map("id" -> "C-4"))
-
-    //great-grandchildren
-    val n0000 = createNode(Map("id" -> "D-1"))
-    val n0001 = createNode(Map("id" -> "D-2"))
-
-    val n0010 = createNode(Map("id" -> "D-3"))
-    val n0011 = createNode(Map("id" -> "D-4"))
-
-    val n0100 = createNode(Map("id" -> "D-5"))
-    val n0101 = createNode(Map("id" -> "D-6"))
-
-    val n0110 = createNode(Map("id" -> "D-7"))
-    val n0111 = createNode(Map("id" -> "D-8"))
-
-    //parents
-    relate(n0, n00, relType)
-    relate(n0, n01, relType)
-
-    //grandchildren
-    relate(n00, n000, relType)
-    relate(n00, n001, relType)
-
-    relate(n01, n010, relType)
-    relate(n01, n011, relType)
-
-    //great-grandchildren
-    relate(n000, n0000, relType)
-    relate(n000, n0001, relType)
-
-    relate(n001, n0010, relType)
-    relate(n001, n0011, relType)
-
-    relate(n010, n0100, relType)
-    relate(n010, n0101, relType)
-
-    relate(n011, n0110, relType)
-    relate(n011, n0111, relType)
+    val nodes = mutable.Map[String, Node]()
+    Range(0, maxNodeDepth).foreach { depth =>
+      val width = Range(0, depth).fold(1) { (acc, n) =>
+        acc * 2
+      }
+      Range(0, width).foreach { index =>
+        val inum = "0" * width + index.toBinaryString
+        val name = "n" + inum.substring(inum.length - (depth + 1), inum.length)
+        val parentName = name.substring(0, name.length - 1)
+        nodes(name) = createNode(Map("id" -> name))
+        if (nodes.isDefinedAt(parentName)) {
+          val dir = if (directions.length >= depth) directions(depth - 1) else OUTGOING
+          dir match {
+            case OUTGOING =>
+              relate(nodes(parentName), nodes(name), "LIKES")
+            case INCOMING =>
+              relate(nodes(name), nodes(parentName), "LIKES")
+            case _ =>
+              throw new UnsupportedOperationException("Only accept INCOMING and OUTGOING")
+          }
+        }
+      }
+    }
+    nodes.toMap
   }
 
-  //'.' indicates concatenation of relationship types
+  //The root will be generation 1
+  private def generation(gen: Int)(implicit nodes: Map[String, Node]): Set[Node] =
+    nodes.filter { elem =>
+      elem._1.length == gen + 1
+    }.values.toSet match {
+      case s: Set[Node] if s.nonEmpty => s
+      case _ => throw new UnsupportedOperationException("Unexpectedly empty test set")
+    }
 
   test("should handle LIKES*") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*]->(c) RETURN c")
     //Then
-    result.length should be(14)
+    result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
   }
 
   test("should handle LIKES*0") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*0]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->(c) RETURN c")
     //Then
-    result.length should be(1)
+    result.columnAs("c").toSet should be(Set(nodes("n0")))
   }
 
   test("should handle LIKES*0..2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*0..2]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..2]->(c) RETURN c")
     //Then
-    result.length should be(7)
+    result.columnAs("c").toSet should be(generation(1) ++ generation(2) ++ generation(3))
   }
 
   test("should handle LIKES*..") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..]->(c) RETURN c")
     //Then
-    result.length should be(14)
+    result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
   }
 
   test("should not accept LIKES..") {
     //Given
-    makeTreeModel("LIKES")
+    makeTreeModel(maxNodeDepth = 4)
     //Then
     a[SyntaxException] should be thrownBy {
-      executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES..]->(c) RETURN c")
+      executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES..]->(c) RETURN c")
     }
   }
 
   test("should handle LIKES*1") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->(c) RETURN c")
     //Then
-    result.length should be(2)
+    result.columnAs("c").toSet should be(generation(2))
   }
 
   test("should handle LIKES*1..2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..2]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..2]->(c) RETURN c")
     //Then
-    result.length should be(6)
+    result.columnAs("c").toSet should be(generation(2) ++ generation(3))
   }
 
   test("should handle LIKES*0..0") {
     //Given
-    makeTreeModel("LIKES")
+    val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*0..0]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..0]->(c) RETURN c")
     //Then
-    result.length should be(1)
+    result.columnAs("c").toSet should be(Set(nodes("n0")))
   }
 
   test("should handle LIKES*1..1") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..1]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..1]->(c) RETURN c")
     //Then
-    result.length should be(2)
+    result.columnAs("c").toSet should be(generation(2))
   }
 
   test("should handle LIKES*2..2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*2..2]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..2]->(c) RETURN c")
     //Then
-    result.length should be(4)
+    result.columnAs("c").toSet should be(generation(3))
+  }
+
+  test("should not return results for LIKES*2..1") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..1]->(c) RETURN c")
+    //Then
+    result.columnAs("c").toSet should be(empty)
   }
 
   test("should handle LIKES*2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*2]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->(c) RETURN c")
     //Then
-    result.length should be(4)
-
+    result.columnAs("c").toSet should be(generation(3))
   }
 
-  ignore("should handle LIKES*..0") {
+  test("should not accept LIKES*-2") {
     //Given
-    makeTreeModel("LIKES")
-    //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..0]->(c) RETURN c")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //Then
-    result.length should be(1)
+    a [SyntaxException] should be thrownBy {
+      executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*-2]->(c) RETURN c")
+    }
+  }
+
+  test("should handle LIKES*..0") {
+    //Given
+    makeTreeModel(maxNodeDepth = 4)
+    //When
+    val result = executeWithAllPlanners( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..0]->(c) RETURN c")
+    //Then
+    result.columnAs("c").toSet should be(empty)
+  }
+
+  test("should handle LIKES*1..0") {
+    //Given
+    makeTreeModel(maxNodeDepth = 4)
+    //When
+    val result = executeWithAllPlanners( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..0]->(c) RETURN c")
+    //Then
+    result.columnAs("c").toSet should be(empty)
   }
 
   test("should handle LIKES*..1") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..1]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..1]->(c) RETURN c")
     //Then
-    result.length should be(2)
-
+    result.columnAs("c").toSet should be(generation(2))
   }
 
   test("should handle LIKES*..2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*..2]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*..2]->(c) RETURN c")
     //Then
-    result.length should be(6)
-
+    result.columnAs("c").toSet should be(generation(2) ++ generation(3))
   }
 
   test("should handle LIKES*0..") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*0..]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0..]->(c) RETURN c")
     //Then
-    result.length should be(15)
-
+    result.columnAs("c").toSet should be(generation(1) ++ generation(2) ++ generation(3) ++ generation(4))
   }
 
   test("should handle LIKES*1..") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1..]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1..]->(c) RETURN c")
     //Then
-    result.length should be(14)
+    result.columnAs("c").toSet should be(generation(2) ++ generation(3) ++ generation(4))
 
   }
 
   test("should handle LIKES*2..") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly( "MATCH (p { id:'A' }) MATCH (p)-[:LIKES*2..]->(c) RETURN c")
+    val result = executeWithAllPlanners( "MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2..]->(c) RETURN c")
     //Then
-    result.length should be(12)
+    result.columnAs("c").toSet should be(generation(3) ++ generation(4))
 
   }
 
   test("should handle LIKES*0.LIKES") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*0]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(2)
+    result.columnAs("c").toSet should be(generation(2))
   }
 
   test("should handle LIKES.LIKES*0") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*0]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(2)
+    result.columnAs("c").toSet should be(generation(2))
   }
 
   test("should handle LIKES*1.LIKES") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(4)
+    result.columnAs("c").toSet should be(generation(3))
   }
 
   test("should handle LIKES.LIKES*1") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*1]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(4)
+    result.columnAs("c").toSet should be(generation(3))
   }
 
   test("should handle LIKES*2.LIKES") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(8)
+    result.columnAs("c").toSet should be(generation(4))
   }
 
   test("should handle LIKES.LIKES*2") {
     //Given
-    makeTreeModel("LIKES")
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
     //When
-    val result = executeWithCostPlannerOnly("MATCH (p { id:'A' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
     //Then
     result should haveNoneRelFilter
-    result.length should be(8)
+    result.columnAs("c").toSet should be(generation(4))
   }
 
+  test("should handle LIKES.LIKES*3") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 5)
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[r:LIKES*3]->(c) RETURN c")
+    //Then
+    result should haveNoneRelFilter
+    result.columnAs("c").toSet should be(generation(5))
+  }
 
-  def haveNoneRelFilter(): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+  test("should handle <-[:LIKES]-()-[r:LIKES*3]->") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 5, directions = Seq(INCOMING))
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)<-[:LIKES]-()-[r:LIKES*3]->(c) RETURN c")
+    //Then
+    result should haveNoneRelFilter
+    result.columnAs("c").toSet should be(generation(5))
+  }
+
+  test("should handle -[:LIKES]->()<-[r:LIKES*3]-") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 5, directions = Seq(OUTGOING, INCOMING, INCOMING, INCOMING))
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()<-[r:LIKES*3]->(c) RETURN c")
+    //Then
+    result should haveNoneRelFilter
+    result.columnAs("c").toSet should be(generation(5))
+  }
+
+  test("should handle LIKES*1.LIKES.LIKES*2") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 5)
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES*1]->()-[:LIKES]->()-[r:LIKES*2]->(c) RETURN c")
+    //Then
+    result should haveNoneRelFilter
+    result.columnAs("c").toSet should be(generation(5))
+  }
+
+  test("should handle LIKES.LIKES*2.LIKES") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 5)
+    //When
+    val result = executeWithAllPlanners("MATCH (p { id:'n0' }) MATCH (p)-[:LIKES]->()-[:LIKES*2]->()-[r:LIKES]->(c) RETURN c")
+    //Then
+    result should haveNoneRelFilter
+    result.columnAs("c").toSet should be(generation(5))
+  }
+
+  def haveNoneRelFilter: Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
       val res = plan.find("Filter").exists { p =>
