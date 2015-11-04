@@ -31,7 +31,6 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     protected void unpinCurrentPage()
     {
         MuninnPage p = page;
-        page = null;
 
         if ( p != null )
         {
@@ -44,18 +43,18 @@ final class MuninnReadPageCursor extends MuninnPageCursor
                 p.unlockRead( lockStamp );
             }
         }
-        lockStamp = 0;
+        clearPageState();
     }
 
     @Override
     public boolean next() throws IOException
     {
+        unpinCurrentPage();
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId )
         {
             return false;
         }
-        unpinCurrentPage();
         pin( nextPageId, false );
         currentPageId = nextPageId;
         nextPageId++;

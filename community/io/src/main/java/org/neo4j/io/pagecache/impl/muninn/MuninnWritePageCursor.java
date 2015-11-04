@@ -34,14 +34,14 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             pinEvent.done();
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             unlockPage( page );
-            page = null;
         }
-        lockStamp = 0;
+        clearPageState();
     }
 
     @Override
     public boolean next() throws IOException
     {
+        unpinCurrentPage();
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId )
         {
@@ -54,7 +54,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        unpinCurrentPage();
         pin( nextPageId, true );
         currentPageId = nextPageId;
         nextPageId++;
