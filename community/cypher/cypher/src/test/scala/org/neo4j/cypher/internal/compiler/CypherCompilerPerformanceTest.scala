@@ -94,7 +94,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   val qmul1 = "qmul1" ->
     """MATCH (a:Person)-->(m)-[r]->(n)-->(a)
-      |WHERE a.uid IN ['1195630902','1457065010'] AND HAS(m.location_lat) AND HAS(n.location_lat)
+      |WHERE a.uid IN ['1195630902','1457065010'] AND EXISTS(m.location_lat) AND EXISTS(n.location_lat)
       |RETURN count(r)""".stripMargin
 
   test("plans are built fast enough") {

@@ -60,7 +60,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(root, child1)
     relate(root, child2)
 
-    val query = "MATCH (:Root {name:'x'})-->(i) WHERE has(i.id) OR i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE exists(i.id) OR i.id =~ 'te.*' RETURN i"
     val result = executeWithAllPlanners(query)
 
     result.columnAs("i").toSet[Node] should equal(Set(child1, child2))
@@ -81,7 +81,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val child = createLabeledNode(Map("id" -> 0), "Child")
     relate(root, child)
 
-    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT has(i.id) OR i.id > 'te' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE NOT exists(i.id) OR i.id > 'te' RETURN i"
 
     an [IncomparableValuesException] should be thrownBy executeWithAllPlanners(query)
   }
@@ -861,7 +861,7 @@ return b
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
 
-  test("can rewrite has property") {
+  test("can rewrite exists property") {
     val a = createNode()
     val r1 = createNode("foo" -> "bar")
     val r2 = createNode()
@@ -872,7 +872,7 @@ return b
     relate(r1, b)
     relate(r2, b)
 
-    val result = executeWithAllPlanners("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND has(r.foo) RETURN r")
+    val result = executeWithAllPlanners("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND exists(r.foo) RETURN r")
 
     result.toList should equal (List(Map("r" -> r1)))
   }
@@ -1152,21 +1152,6 @@ return b
     ))
   }
 
-  test("should use the index for property existence queries (with has) for cost when asked for it") {
-    // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
-    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
-    graph.createIndex("User", "email")
-
-    // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
-
-    // then
-    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
-  }
-
   test("should use the index for property existence queries (with exists) for cost when asked for it") {
     // given
     val n = createLabeledNode(Map("email" -> "me@mine"), "User")
@@ -1214,7 +1199,7 @@ return b
     val nodes = setupIndexScanTest()
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.email) RETURN n")
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes(0)), Map("n" -> nodes(1))))
@@ -1226,7 +1211,7 @@ return b
     val nodes = setupIndexScanTest()
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.name) RETURN n")
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.name) RETURN n")
 
     // then
     result.toList.length should equal(100)
@@ -1238,12 +1223,12 @@ return b
     val nodes = setupIndexScanTest()
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE has(n.email) AND n.email = 'me@mine' RETURN n")
+    val result = executeWithCostPlannerOnly("MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes(0))))
     result.executionPlanDescription().toString should include("NodeIndexSeek")
-    result.executionPlanDescription().toString should not include("NodeIndexScan")
+    result.executionPlanDescription().toString should not include "NodeIndexScan"
   }
 
   test("should use the index for property existence queries for rule when asked for it") {
@@ -1254,7 +1239,7 @@ return b
     graph.createIndex("User", "email")
 
     // when
-    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
+    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -1269,11 +1254,11 @@ return b
     graph.createIndex("User", "email")
 
     // when
-    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) WHERE has(n.email) RETURN n")
+    val result = eengine.execute("CYPHER planner=rule MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
-    result.executionPlanDescription().toString should not include("SchemaIndex")
+    result.executionPlanDescription().toString should not include "SchemaIndex"
   }
 
   test("should handle cyclic patterns") {

@@ -20,20 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.{Exists, Has}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("a.prop IS NOT NULL rewritten to: exists(a.prop)") {
     val input: Expression = IsNotNull(Property(ident("a"), PropertyKeyName("prop")_)_)_
-    val output: Expression = Exists.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
-
-    normalizeSargablePredicates(input) should equal(output)
-  }
-
-  test("has(a.prop) is rewritten to: exists(a.prop)") {
-    val input: Expression = Has.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
     val output: Expression = Exists.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
 
     normalizeSargablePredicates(input) should equal(output)

@@ -248,11 +248,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     case _ => Double.MaxValue
   }
 
-  test("should plan index scan for has(n.prop)") {
+  test("should plan index scan for exists(n.prop)") {
     implicit val plan = new given {
       indexOn("Awesome", "prop")
       cost = nodeIndexScanCost
-    } planFor "MATCH (n:Awesome) WHERE has(n.prop) RETURN n"
+    } planFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n"
 
     plan.plan should equal(
       NodeIndexScan(
@@ -263,11 +263,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan unique index scan for has(n.prop)") {
+  test("should plan unique index scan for exists(n.prop)") {
     implicit val plan = new given {
       uniqueIndexOn("Awesome", "prop")
       cost = nodeIndexScanCost
-    } planFor "MATCH (n:Awesome) WHERE has(n.prop) RETURN n"
+    } planFor "MATCH (n:Awesome) WHERE exists(n.prop) RETURN n"
 
     plan.plan should equal(
       NodeIndexScan(
@@ -282,7 +282,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     implicit val plan = new given {
       indexOn("Awesome", "prop")
       cost = nodeIndexScanCost
-    } planFor "MATCH (n:Awesome) WHERE has(n.prop) AND n.prop = 42 RETURN n"
+    } planFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
       Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(ident("n"), PropertyKeyName("prop") _) _) _),

@@ -164,7 +164,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     )
   }
 
-  @Test def use_index_with_has_property() {
+  @Test def use_index_with_exists_property() {
     // Need to make index preferable in terms of cost
     executePreparationQueries((0 to 250).map { i =>
       "CREATE (:Person)"
@@ -173,7 +173,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       title = "Use index when checking for the existence of a property",
       text =
         "The `has(p.name)` predicate in the following query will use the `Person(name)` index, if it exists.",
-      queryText = "MATCH (p:Person) WHERE has(p.name) RETURN p",
+      queryText = "MATCH (p:Person) WHERE exists(p.name) RETURN p",
       assertions = {
         (p) =>
           assertEquals(2, p.size)

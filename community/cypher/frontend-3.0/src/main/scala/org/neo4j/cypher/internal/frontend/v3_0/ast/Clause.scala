@@ -146,7 +146,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
         case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
-          if id == identifier && (predicate.function.contains(functions.Exists) || predicate.function.contains(functions.Has)) =>
+          if id == identifier && predicate.function.contains(functions.Exists) =>
           (acc, _) => acc :+ name
         case IsNotNull(Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name

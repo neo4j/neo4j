@@ -260,47 +260,6 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe false
   }
 
-  test("HAS should work with maps") {
-    // GIVEN
-    val query = "WITH {name: 'Mats', name2: 'Pontus'} AS map RETURN has(map.name2)"
-
-    // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
-
-    // THEN
-    result shouldBe true
-  }
-
-  test("HAS should work with null in maps") {
-    // GIVEN
-    val query = "WITH {name: null} AS map RETURN has(map.name)"
-
-    // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
-
-    // THEN
-    result shouldBe false
-  }
-
-  test("HAS should work when key is missing") {
-    // GIVEN
-    val query = "WITH {name: null} AS map RETURN has(map.nonExistantKey)"
-
-    // WHEN
-    val result = executeScalarWithAllPlanners[Boolean](query)
-
-    // THEN
-    result shouldBe false
-  }
-
-  test("has should work with dynamic property look up") {
-    val node = createLabeledNode(Map("prop" -> "foo"), "Person")
-    createLabeledNode("Person")
-
-    val result = executeWithAllPlanners("MATCH (n:Person) WHERE has(n['prop']) RETURN n")
-    result.toList should equal(List(Map("n" -> node)))
-  }
-
   test("percentileDisc should work in the valid range") {
     createNode("prop" -> 10.0)
     createNode("prop" -> 20.0)

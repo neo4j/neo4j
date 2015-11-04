@@ -394,7 +394,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val query = """PROFILE CYPHER
                   |MATCH (a:X), (b:Y)
                   |MATCH p = shortestPath((a)-[rs:REL*]->(b))
-                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT has(b.property)
+                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT exists(b.property)
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
