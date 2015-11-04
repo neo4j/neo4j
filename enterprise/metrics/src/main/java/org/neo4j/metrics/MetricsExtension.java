@@ -82,7 +82,7 @@ public class MetricsExtension implements Lifecycle
         life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
 
         // Setup metric gathering
-        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( logService, registry, configuration, monitors,
+        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors,
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         life.add( factory.newInstance() );
 

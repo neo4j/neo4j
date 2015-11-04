@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class Neo4jMetricsFactory implements Factory<Lifecycle>
 {
-    private final LogService logService;
     private final MetricRegistry registry;
     private final Config config;
     private final Monitors monitors;
@@ -47,12 +45,11 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final LogRotationMonitor logRotationMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public Neo4jMetricsFactory( LogService logService, MetricRegistry registry, Config config, Monitors monitors,
+    public Neo4jMetricsFactory( MetricRegistry registry, Config config, Monitors monitors,
             TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
             CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
             IdGeneratorFactory idGeneratorFactory )
     {
-        this.logService = logService;
         this.registry = registry;
         this.config = config;
         this.monitors = monitors;
@@ -69,7 +66,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         final DBMetrics dbMetrics = new DBMetrics( registry, config,
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
-        final JvmMetrics jvmMetrics = new JvmMetrics( logService, config, registry );
+        final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );
         return new LifecycleAdapter()
         {
             @Override
