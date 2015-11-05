@@ -1,4 +1,1 @@
-2.1
----
-o Initial creation of component
-o Primitive long/int sets and maps using hop-scotch hashing
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog
