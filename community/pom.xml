@@ -27,7 +27,7 @@
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-	<url>https://github.com/neo4j/neo4j/tree/master/community</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/community</url>
   </scm>
 
   <modules>
@@ -57,7 +57,7 @@
     <module>server</module>
     <module>server-examples</module>
     <module>server-plugin-test</module>
-	<module>consistency-check-legacy</module>
+    <module>consistency-check-legacy</module>
     <module>consistency-check</module>
     <module>neo4j-harness</module>
     <module>licensecheck-config</module>
