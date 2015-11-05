@@ -90,7 +90,7 @@ abstract class ExecutionEngineFunSuite
     override def apply(result: InternalExecutionResult): MatchResult = {
       val plan: InternalPlanDescription = result.executionPlanDescription()
       MatchResult(
-        matches = otherText.forall(o => plan.find("Projection").filter({ (p) => p.toString.contains(o) }).nonEmpty),
+        matches = otherText.forall(o => plan.find("Projection").exists(_.toString.contains(o))),
         rawFailureMessage = s"Plan should use Projection with ${otherText.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use Projection with ${otherText.mkString(",")}:\n$plan")
     }
