@@ -58,6 +58,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,11 +68,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -192,6 +190,64 @@ public class ImportToolTest
             nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
             assertEquals( 1, IteratorUtil.asList( nodes ).size() );
         }
+    }
+
+    @Test
+    public void shouldFailIfHeaderHasLessColumnsThanData() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        try
+        {
+            executeImportAndCatchOutput(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--delimiter", "TAB",
+                    "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            nodeData( false, config, nodeIds, alwaysTrue(), Charset.defaultCharset(), extraColumns )
+                                    .getAbsolutePath(),
+                    "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+
+            fail( "Should have thrown exception" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
+        }
+    }
+
+    @Test
+    public void shouldWarnIfHeaderHasLessColumnsThanDataWhenToldTo() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+        File bad = file( "bad.log" );
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        executeImportAndCatchOutput(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--bad", bad.getAbsolutePath(),
+                "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
+                "--ignore-extra-columns",
+                "--delimiter", "TAB",
+                "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                        nodeData( false, config, nodeIds, alwaysTrue(), Charset.defaultCharset(), extraColumns )
+                                .getAbsolutePath(),
+                "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                        relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+
+        // THEN
+        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        assertTrue( badContents.contains( "Extra column not present in header on line" ) );
     }
 
     @Test
@@ -458,7 +514,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldLogRelationshipsReferingToMissingNode() throws Exception
+    public void shouldLogRelationshipsReferringToMissingNode() throws Exception
     {
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
@@ -940,6 +996,12 @@ public class ImportToolTest
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
             PrimitiveIntPredicate linePredicate, Charset encoding ) throws Exception
     {
+        return nodeData( includeHeader, config, nodeIds, linePredicate, encoding, 0 );
+    }
+
+    private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
+            PrimitiveIntPredicate linePredicate, Charset encoding, int extraColumns ) throws Exception
+    {
         File file = file( fileName( "nodes.csv" ) );
         try ( PrintStream writer = writer( file, encoding ) )
         {
@@ -947,7 +1009,7 @@ public class ImportToolTest
             {
                 writeNodeHeader( writer, config, null );
             }
-            writeNodeData( writer, config, nodeIds, linePredicate );
+            writeNodeData( writer, config, nodeIds, linePredicate, extraColumns );
         }
         return file;
     }
@@ -989,7 +1051,7 @@ public class ImportToolTest
     }
 
     private void writeNodeData( PrintStream writer, Configuration config, List<String> nodeIds,
-                                PrimitiveIntPredicate linePredicate )
+            PrimitiveIntPredicate linePredicate, int extraColumns )
     {
         char delimiter = config.delimiter();
         char arrayDelimiter = config.arrayDelimiter();
@@ -997,10 +1059,22 @@ public class ImportToolTest
         {
             if ( linePredicate.accept( i ) )
             {
-                writer.println( nodeIds.get( i ) + delimiter + randomName() +
-                                delimiter + randomLabels( arrayDelimiter ) );
+                writer.println( getLine( nodeIds.get( i ), delimiter, arrayDelimiter, extraColumns ) );
             }
         }
+    }
+
+    private String getLine( String nodeId, char delimiter, char arrayDelimiter, int extraColumns )
+    {
+        StringBuilder stringBuilder = new StringBuilder().append( nodeId ).append( delimiter ).append( randomName() )
+                .append( delimiter ).append( randomLabels( arrayDelimiter ) );
+
+        for ( int i = 0; i < extraColumns; i++ )
+        {
+            stringBuilder.append( delimiter ).append( "ExtraColumn" ).append( i );
+        }
+
+        return stringBuilder.toString();
     }
 
     private String randomLabels( char arrayDelimiter )

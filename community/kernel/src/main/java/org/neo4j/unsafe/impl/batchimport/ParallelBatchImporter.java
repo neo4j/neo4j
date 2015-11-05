@@ -19,10 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
@@ -128,12 +126,11 @@ public class ParallelBatchImporter implements BatchImporter
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
-              OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
-              Collector badCollector = input.badCollector( badOutput );
                 CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                       neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
+            Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();

@@ -71,5 +71,5 @@ public interface Input
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}
      * and {@link InputNode duplicate nodes} to an output stream for later handling.
      */
-    Collector badCollector( OutputStream out );
+    Collector badCollector();
 }

@@ -47,10 +47,11 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.InputRelationshipDeserializat
 public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelationship> implements Input
 {
     private final IdType idType;
+    private final Collector badCollector;
 
     public CsvDataGeneratorInput( final Header nodeHeader, final Header relationshipHeader,
             Configuration config, long nodes, long relationships, final Groups groups, final IdType idType,
-            int numberOfLabels, int numberOfRelationshipTypes )
+            int numberOfLabels, int numberOfRelationshipTypes, Collector badCollector )
     {
         super( nodeHeader, relationshipHeader, config, nodes, relationships,
                 new Function<SourceTraceability,Deserialization<InputNode>>()
@@ -71,6 +72,7 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
                 },
                 numberOfLabels, numberOfRelationshipTypes );
         this.idType = idType;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -130,8 +132,8 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
     }
 
     @Override
-    public Collector badCollector( OutputStream out )
+    public Collector badCollector()
     {
-        return Collectors.badCollector( out, 0 );
+        return badCollector;
     }
 }

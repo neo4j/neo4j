@@ -52,7 +52,7 @@ public class CsvInput implements Input
     private final IdType idType;
     private final Configuration config;
     private final Groups groups = new Groups();
-    private final Function<OutputStream,Collector> collectorFactory;
+    private final Collector badCollector;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -69,7 +69,7 @@ public class CsvInput implements Input
     public CsvInput(
             Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Function<OutputStream,Collector> collectorFactory )
+            IdType idType, Configuration config, Collector badCollector )
     {
         assertSaneConfiguration( config );
 
@@ -79,7 +79,7 @@ public class CsvInput implements Input
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
-        this.collectorFactory = collectorFactory;
+        this.badCollector = badCollector;
     }
 
     private void assertSaneConfiguration( Configuration config )
@@ -117,7 +117,7 @@ public class CsvInput implements Input
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
-                                decorator, Validators.<InputNode>emptyValidator() );
+                                decorator, Validators.<InputNode>emptyValidator(), badCollector );
                     }
                 };
             }
@@ -165,7 +165,7 @@ public class CsvInput implements Input
                                             throw new DataException( entity + " is missing " + Type.TYPE + " field" );
                                         }
                                     }
-                                } );
+                                }, badCollector );
                     }
                 };
             }
@@ -197,8 +197,8 @@ public class CsvInput implements Input
     }
 
     @Override
-    public Collector badCollector( OutputStream out )
+    public Collector badCollector()
     {
-        return collectorFactory.apply( out );
+        return badCollector;
     }
 }
