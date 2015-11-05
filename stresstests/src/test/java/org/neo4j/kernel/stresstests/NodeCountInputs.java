@@ -42,10 +42,12 @@ public class NodeCountInputs implements Input
     private static final String[] labels = new String[]{"a", "b", "c", "d"};
 
     private final long nodeCount;
+    private final Collector badCollector;
 
-    public NodeCountInputs( long nodeCount )
+    public NodeCountInputs( long nodeCount, Collector badCollector )
     {
         this.nodeCount = nodeCount;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -127,8 +129,8 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public Collector badCollector( OutputStream out )
+    public Collector badCollector()
     {
-        return new BadCollector( out, 0, 1000 );
+        return badCollector;
     }
 }
