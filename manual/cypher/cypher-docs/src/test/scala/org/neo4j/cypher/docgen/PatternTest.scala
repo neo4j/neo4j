@@ -71,8 +71,6 @@ For example:
 
 This simple pattern describes a single node, and names that node using the identifier `a`.
 
-Note that the parentheses may be omitted, but only when there are no labels or properties specified for the node pattern.
-
 == Patterns for related nodes ==
 
 More interesting is patterns that describe multiple nodes and relationships between them.
