@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.stresstests;
 
-import java.io.OutputStream;
-
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
-import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -42,6 +40,7 @@ public class NodeCountInputs implements Input
     private static final String[] labels = new String[]{"a", "b", "c", "d"};
 
     private final long nodeCount;
+    private final Collector bad = Collectors.silentBadCollector( 0 );
 
     public NodeCountInputs( long nodeCount )
     {
@@ -127,8 +126,8 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public Collector badCollector( OutputStream out )
+    public Collector badCollector()
     {
-        return new BadCollector( out, 0, 1000 );
+        return bad;
     }
 }
