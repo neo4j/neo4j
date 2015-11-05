@@ -38,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
@@ -57,7 +58,8 @@ public class ExternalPropertiesDecoratorTest
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
                 DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
-                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD );
+                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD,
+                silentBadCollector( 0 ));
 
         // WHEN
         assertProperties( externalPropertiesDecorator.apply( node( "1", "key", "value1" ) ),
@@ -84,7 +86,8 @@ public class ExternalPropertiesDecoratorTest
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
                 DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
-                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD );
+                defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD,
+                silentBadCollector( 0 ));
 
         // WHEN
         assertProperties( externalPropertiesDecorator.apply( node( "1", "key", "value1", "email", "existing" ) ),

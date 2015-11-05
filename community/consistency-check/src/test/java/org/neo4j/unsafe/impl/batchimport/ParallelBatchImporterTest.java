@@ -83,6 +83,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fro
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 
 @RunWith( Parameterized.class )
@@ -163,7 +164,8 @@ public class ParallelBatchImporterTest
                     nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, inputIdGenerator, groups ),
                     idMapper, idGenerator, false,
-                    RELATIONSHIP_COUNT/*insanely high bad tolerance, but it will actually never be that many*/ ) );
+                    /*insanely high bad tolerance, but it will actually never  be that many*/
+                    silentBadCollector( RELATIONSHIP_COUNT ) ) );
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );

@@ -278,12 +278,12 @@ public class Extractors
         protected abstract boolean extract0( char[] data, int offset, int length );
     }
 
-    private static class StringExtractor extends AbstractSingleValueExtractor<String>
+    public static class StringExtractor extends AbstractSingleValueExtractor<String>
     {
         private String value;
         private final boolean emptyStringsAsNull;
 
-        StringExtractor( boolean emptyStringsAsNull )
+        public StringExtractor( boolean emptyStringsAsNull )
         {
             super( String.class.getSimpleName() );
             this.emptyStringsAsNull = emptyStringsAsNull;
