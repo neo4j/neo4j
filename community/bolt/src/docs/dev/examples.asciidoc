@@ -436,3 +436,148 @@ Server: SUCCESS {
   74 69 66 69  65 72 73 91  83 6E 75 6D  00 00
 
 ----
+=== Accessing notifications
+When Neo4j executes a statement it may include notifications for the user.
+These notifications can be warnings about problematic statements or other valuable information for a client. 
+Unlike failures or errors, notifications do not affect the execution of a statement.
+
+.Notifications
+[source,bolt_exchange]
+----
+# Handshake
+Client: <connect>
+Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
+Server: 00 00 00 01
+
+Client: INIT "MyClient/1.0"
+
+  00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
+
+Server: SUCCESS {}
+
+  00 03 B1 70  A0 00 00
+
+# Sending a statement that would result in notifications
+Client: RUN "EXPLAIN MATCH (n), (m) RETURN n, m" {}
+  00 27 B2 10  D0 22 45 58  50 4C 41 49  4E 20 4D 41
+  54 43 48 20  28 6E 29 2C  20 28 6D 29  20 52 45 54
+  55 52 4E 20  6E 2C 20 6D  A0 00 00
+
+Server: SUCCESS { "fields": [] }
+
+  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+
+Client: PULL_ALL
+
+  00 02 B0 3F  00 00
+
+# Notifications are included in the response and each of them consists of `code`, `title` and `description`. A notification might also include `position` to indicate where the notification arises if it is applicable.
+Server: SUCCESS {
+          "type": "r",
+          "plan": {
+            "args": {
+              "runtime-impl": "INTERPRETED",
+              "planner-impl": "IDP",
+              "version": "CYPHER 3.0",
+              "KeyNames": "n, m",
+              "EstimatedRows": 0.0,
+              "planner": "COST",
+              "runtime": "INTERPRETED"
+            },
+            "children": [{
+              "args": {"EstimatedRows": 0.0},
+              "children": [{
+                "args": {"EstimatedRows": 0.0},
+                "children": [],
+                "identifiers": ["n"],
+                "operatorType": "AllNodesScan"
+                },{
+                "args": {"EstimatedRows": 0.0},
+                "children": [],
+                "identifiers": ["m"],
+                "operatorType": "AllNodesScan"
+              }],
+              "identifiers": ["m", "n"],
+              "operatorType": "CartesianProduct"
+            }],
+            "identifiers": ["m", "n"],
+            "operatorType": "ProduceResults"
+          },
+          "notifications": [{
+            "title": "This query builds a cartesian product between disconnected patterns.",
+            "code": "Neo.ClientNotification.Statement.CartesianProduct",
+            "description": "If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (m))",
+            "position": {
+              "offset": 0, "column": 1, "line": 1
+            }
+          }]
+        }
+  04 36 B1 70  A3 84 74 79  70 65 81 72  84 70 6C 61
+  6E A4 84 61  72 67 73 A7  8C 72 75 6E  74 69 6D 65
+  2D 69 6D 70  6C 8B 49 4E  54 45 52 50  52 45 54 45
+  44 8C 70 6C  61 6E 6E 65  72 2D 69 6D  70 6C 83 49
+  44 50 87 76  65 72 73 69  6F 6E 8A 43  59 50 48 45
+  52 20 33 2E  30 88 4B 65  79 4E 61 6D  65 73 84 6E
+  2C 20 6D 8D  45 73 74 69  6D 61 74 65  64 52 6F 77
+  73 C1 00 00  00 00 00 00  00 00 87 70  6C 61 6E 6E
+  65 72 84 43  4F 53 54 87  72 75 6E 74  69 6D 65 8B
+  49 4E 54 45  52 50 52 45  54 45 44 88  63 68 69 6C
+  64 72 65 6E  91 A4 84 61  72 67 73 A1  8D 45 73 74
+  69 6D 61 74  65 64 52 6F  77 73 C1 00  00 00 00 00
+  00 00 00 88  63 68 69 6C  64 72 65 6E  92 A4 84 61
+  72 67 73 A1  8D 45 73 74  69 6D 61 74  65 64 52 6F
+  77 73 C1 00  00 00 00 00  00 00 00 88  63 68 69 6C
+  64 72 65 6E  90 8B 69 64  65 6E 74 69  66 69 65 72
+  73 91 81 6E  8C 6F 70 65  72 61 74 6F  72 54 79 70
+  65 8C 41 6C  6C 4E 6F 64  65 73 53 63  61 6E A4 84
+  61 72 67 73  A1 8D 45 73  74 69 6D 61  74 65 64 52
+  6F 77 73 C1  00 00 00 00  00 00 00 00  88 63 68 69
+  6C 64 72 65  6E 90 8B 69  64 65 6E 74  69 66 69 65
+  72 73 91 81  6D 8C 6F 70  65 72 61 74  6F 72 54 79
+  70 65 8C 41  6C 6C 4E 6F  64 65 73 53  63 61 6E 8B
+  69 64 65 6E  74 69 66 69  65 72 73 92  81 6D 81 6E
+  8C 6F 70 65  72 61 74 6F  72 54 79 70  65 D0 10 43
+  61 72 74 65  73 69 61 6E  50 72 6F 64  75 63 74 8B
+  69 64 65 6E  74 69 66 69  65 72 73 92  81 6D 81 6E
+  8C 6F 70 65  72 61 74 6F  72 54 79 70  65 8E 50 72
+  6F 64 75 63  65 52 65 73  75 6C 74 73  8D 6E 6F 74
+  69 66 69 63  61 74 69 6F  6E 73 91 A4  85 74 69 74
+  6C 65 D0 44  54 68 69 73  20 71 75 65  72 79 20 62
+  75 69 6C 64  73 20 61 20  63 61 72 74  65 73 69 61
+  6E 20 70 72  6F 64 75 63  74 20 62 65  74 77 65 65
+  6E 20 64 69  73 63 6F 6E  6E 65 63 74  65 64 20 70
+  61 74 74 65  72 6E 73 2E  84 63 6F 64  65 D0 31 4E
+  65 6F 2E 43  6C 69 65 6E  74 4E 6F 74  69 66 69 63
+  61 74 69 6F  6E 2E 53 74  61 74 65 6D  65 6E 74 2E
+  43 61 72 74  65 73 69 61  6E 50 72 6F  64 75 63 74
+  8B 64 65 73  63 72 69 70  74 69 6F 6E  D1 01 A9 49
+  66 20 61 20  70 61 72 74  20 6F 66 20  61 20 71 75
+  65 72 79 20  63 6F 6E 74  61 69 6E 73  20 6D 75 6C
+  74 69 70 6C  65 20 64 69  73 63 6F 6E  6E 65 63 74
+  65 64 20 70  61 74 74 65  72 6E 73 2C  20 74 68 69
+  73 20 77 69  6C 6C 20 62  75 69 6C 64  20 61 20 63
+  61 72 74 65  73 69 61 6E  20 70 72 6F  64 75 63 74
+  20 62 65 74  77 65 65 6E  20 61 6C 6C  20 74 68 6F
+  73 65 20 70  61 72 74 73  2E 20 54 68  69 73 20 6D
+  61 79 20 70  72 6F 64 75  63 65 20 61  20 6C 61 72
+  67 65 20 61  6D 6F 75 6E  74 20 6F 66  20 64 61 74
+  61 20 61 6E  64 20 73 6C  6F 77 20 64  6F 77 6E 20
+  71 75 65 72  79 20 70 72  6F 63 65 73  73 69 6E 67
+  2E 20 57 68  69 6C 65 20  6F 63 63 61  73 69 6F 6E
+  61 6C 6C 79  20 69 6E 74  65 6E 64 65  64 2C 20 69
+  74 20 6D 61  79 20 6F 66  74 65 6E 20  62 65 20 70
+  6F 73 73 69  62 6C 65 20  74 6F 20 72  65 66 6F 72
+  6D 75 6C 61  74 65 20 74  68 65 20 71  75 65 72 79
+  20 74 68 61  74 20 61 76  6F 69 64 73  20 74 68 65
+  20 75 73 65  20 6F 66 20  74 68 69 73  20 63 72 6F
+  73 73 20 70  72 6F 64 75  63 74 2C 20  70 65 72 68
+  61 70 73 20  62 79 20 61  64 64 69 6E  67 20 61 20
+  72 65 6C 61  74 69 6F 6E  73 68 69 70  20 62 65 74
+  77 65 65 6E  20 74 68 65  20 64 69 66  66 65 72 65
+  6E 74 20 70  61 72 74 73  20 6F 72 20  62 79 20 75
+  73 69 6E 67  20 4F 50 54  49 4F 4E 41  4C 20 4D 41
+  54 43 48 20  28 69 64 65  6E 74 69 66  69 65 72 20
+  69 73 3A 20  28 6D 29 29  88 70 6F 73  69 74 69 6F
+  6E A3 86 6F  66 66 73 65  74 00 86 63  6F 6C 75 6D
+  6E 01 84 6C  69 6E 65 01  00 00
+----
