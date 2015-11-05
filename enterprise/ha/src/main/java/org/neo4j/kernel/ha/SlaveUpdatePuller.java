@@ -113,6 +113,11 @@ import static java.lang.System.currentTimeMillis;
  */
 public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, UpdatePuller
 {
+    public interface Monitor
+    {
+        void pulledUpdates( long lastAppliedTxId );
+    }
+
     public static String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
 
     static final Condition NEXT_TICKET = new Condition()
@@ -134,11 +139,12 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
     private InvalidEpochExceptionHandler invalidEpochHandler;
+    private final Monitor monitor;
     private Thread me;
 
     SlaveUpdatePuller( RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
             LogProvider logging, InstanceId instanceId, AvailabilityGuard availabilityGuard,
-            InvalidEpochExceptionHandler invalidEpochHandler )
+            InvalidEpochExceptionHandler invalidEpochHandler, Monitor monitor )
     {
         this.requestContextFactory = requestContextFactory;
         this.master = master;
@@ -146,9 +152,9 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.instanceId = instanceId;
         this.availabilityGuard = availabilityGuard;
         this.invalidEpochHandler = invalidEpochHandler;
+        this.monitor = monitor;
         this.logger = logging.getLog( getClass() );
-        this.cappedLogger = new CappedOperation<Pair<String,? extends Exception>>(
-                CappedOperation.count( 10 ) )
+        this.cappedLogger = new CappedOperation<Pair<String,? extends Exception>>( CappedOperation.count( 10 ) )
         {
             @Override
             protected void triggered( Pair<String,? extends Exception> event )
@@ -304,6 +310,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
             try ( Response<Void> ignored = master.pullUpdates( context ) )
             {
                 // Updates would be applied as part of response processing
+                monitor.pulledUpdates( context.lastAppliedTransaction() );
             }
         }
         catch ( InvalidEpochException e )

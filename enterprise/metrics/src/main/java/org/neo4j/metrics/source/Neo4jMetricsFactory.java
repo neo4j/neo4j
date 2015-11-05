@@ -67,6 +67,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );
+        final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry );
         return new LifecycleAdapter()
         {
             @Override
@@ -74,6 +75,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
             {
                 dbMetrics.start();
                 networkMetrics.start();
+                clusterMetrics.start();
                 jvmMetrics.start();
             }
 
@@ -82,6 +84,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
             {
                 dbMetrics.stop();
                 networkMetrics.stop();
+                clusterMetrics.stop();
                 jvmMetrics.stop();
             }
         };
