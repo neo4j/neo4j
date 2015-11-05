@@ -64,6 +64,7 @@ public class Chunker
             out.onMessageComplete();
         }
         out.flush();
+        out.close();
 
         byte[] bytes = new byte[outputBuffer.limit()];
         outputBuffer.position( 0 );
