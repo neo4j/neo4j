@@ -41,6 +41,7 @@ import static java.lang.System.getProperty;
 import static java.lang.System.getenv;
 import static org.neo4j.kernel.stresstests.mutation.RandomMutationFactory.defaultRandomMutation;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 
 /**
  * Notice the class name: this is _not_ going to be run as part of the main build.
@@ -72,7 +73,7 @@ public class CheckPointingLogRotationStressTesting
 
         System.out.println( "1/6\tBuilding initial store..." );
         new ParallelBatchImporter( storeDir, DEFAULT, NullLogService.getInstance(), ExecutionMonitors.defaultVisible() )
-                .doImport( new NodeCountInputs( nodeCount ) );
+                .doImport( new NodeCountInputs( nodeCount, silentBadCollector(0) ) );
 
         System.out.println( "2/6\tStarting database..." );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
