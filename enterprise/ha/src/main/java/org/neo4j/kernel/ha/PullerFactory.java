@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -47,12 +48,13 @@ public class PullerFactory
     private final DependencyResolver dependencyResolver;
     private final AvailabilityGuard availabilityGuard;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
+    private final Monitors monitors;
 
     public PullerFactory( RequestContextFactory requestContextFactory, Master master,
             LastUpdateTime lastUpdateTime, LogProvider logging, InstanceId serverId,
             InvalidEpochExceptionHandler invalidEpochHandler, long pullInterval,
             JobScheduler jobScheduler, DependencyResolver dependencyResolver, AvailabilityGuard availabilityGuard,
-            HighAvailabilityMemberStateMachine memberStateMachine )
+            HighAvailabilityMemberStateMachine memberStateMachine, Monitors monitors )
     {
 
         this.requestContextFactory = requestContextFactory;
@@ -66,12 +68,13 @@ public class PullerFactory
         this.dependencyResolver = dependencyResolver;
         this.availabilityGuard = availabilityGuard;
         this.memberStateMachine = memberStateMachine;
+        this.monitors = monitors;
     }
 
     public SlaveUpdatePuller createSlaveUpdatePuller()
     {
         return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler );
+                availabilityGuard, invalidEpochHandler, monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
     }
 
     public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )
