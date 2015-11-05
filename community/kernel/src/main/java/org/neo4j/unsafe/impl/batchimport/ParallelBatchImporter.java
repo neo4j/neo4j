@@ -19,10 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
