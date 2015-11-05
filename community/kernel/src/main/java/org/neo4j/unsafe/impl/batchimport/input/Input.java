@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.OutputStream;
-
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -71,5 +69,5 @@ public interface Input
      * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}
      * and {@link InputNode duplicate nodes} to an output stream for later handling.
      */
-    Collector badCollector( OutputStream out );
+    Collector badCollector();
 }

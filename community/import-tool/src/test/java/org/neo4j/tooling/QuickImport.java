@@ -42,6 +42,7 @@ import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneNodeHeader;
 import static org.neo4j.tooling.CsvDataGenerator.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -78,12 +79,13 @@ public class QuickImport
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
 
+        FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
         Input input = new CsvDataGeneratorInput(
                 nodeHeader, relationshipHeader,
-                COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount );
-        FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
-        BatchImporter importer = new ParallelBatchImporter(
-                dir, DEFAULT, new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible() );
+                COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount,
+                silentBadCollector( 0 ));
+        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT,
+                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible() );
         importer.doImport( input );
     }
 
