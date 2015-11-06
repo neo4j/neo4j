@@ -60,4 +60,10 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     {
         local.accept( visitor );
     }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        local.shutdown();
+    }
 }
