@@ -310,6 +310,14 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case SetLabels(_, IdName(name), labels) =>
       SetLabelsPipe(source, name, labels)()
 
+    case SetNodePropery(_, idName, propertyKey, expression) =>
+      SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
+
+    case SetRelationshipPropery(_, idName, propertyKey, expression) =>
+      SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
+
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()
 
@@ -336,7 +344,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
 
     case x =>
       throw new CantHandleQueryException(x.toString)
-
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): RonjaPipe = plan match {

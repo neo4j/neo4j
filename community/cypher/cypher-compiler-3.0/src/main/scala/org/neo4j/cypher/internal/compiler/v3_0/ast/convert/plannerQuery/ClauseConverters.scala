@@ -98,8 +98,14 @@ object ClauseConverters {
         builder.amendUpdateGraph(ug => ug.addSetLabel(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
 
       // SET n.prop = ...
-      case (builder, SetPropertyItem(_, _)) =>
-        throw new CantHandleQueryException("Setting properties not supported yet")
+      case (builder, SetPropertyItem(Property(node: Identifier, propertyKey), expr)) if acc.semanticTable.isNode(node) =>
+       builder.amendUpdateGraph(ug =>
+         ug.addSetNodeProperty(SetNodePropertyPattern(IdName.fromIdentifier(node), propertyKey, expr)))
+
+      // SET r.prop = ...
+      case (builder, SetPropertyItem(Property(rel: Identifier, propertyKey), expr)) if acc.semanticTable.isRelationship(rel) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addSetRelProperty(SetRelationshipPropertyPattern(IdName.fromIdentifier(rel), propertyKey, expr)))
 
       // SET n = { id: 0, name: 'Mats', ... }
       case (builder, SetExactPropertiesFromMapItem(_, _)) =>

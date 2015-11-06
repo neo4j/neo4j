@@ -912,9 +912,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   test("matching property and writing different property should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Node")
-    val query = "MATCH (n:Node {prop:5}) SET n.value = 10"
+    val query = "MATCH (n:Node {prop:5}) SET n.value = 10 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1011,9 +1011,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   test("single simple match followed by set property should not be eager") {
     createNode()
-    val query = "MATCH (n) SET n.prop = 5"
+    val query = "MATCH (n) SET n.prop = 5 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1021,15 +1021,15 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> 20))
     val query = "MATCH (n { prop: 20 }) SET n.prop = 10 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("single label match followed by set property should not be eager") {
     createLabeledNode("Node")
-    val query = "MATCH (n:Node) SET n.prop = 10"
+    val query = "MATCH (n:Node) SET n.prop = 10 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1052,92 +1052,95 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     executeWithRulePlanner("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
     updateWithBothPlanners("CREATE (b:Book {isbn : '123'})")
 
-    val query = "MATCH (a), (b :Book {isbn : '123'}) SET a.isbn = '456'"
+    val query = "MATCH (a), (b :Book {isbn : '123'}) SET a.isbn = '456' RETURN count(*)"
 
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 1)
   }
 
   test("match property on right-side followed by property write on left-side match needs eager") {
     createNode()
     createNode(Map("id" -> 0))
-    val query = "MATCH (a),(b {id: 0}) SET a.id = 0"
+    val query = "MATCH (a),(b {id: 0}) SET a.id = 0 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 1)
   }
 
   test("match property on right-side followed by property write on right-side match needs eager") {
-    val query = "MATCH (a),(b {id: 0}) SET b.id = 1"
+    val query = "MATCH (a),(b {id: 0}) SET b.id = 1 RETURN count(*)"
+
+    assertStats(updateWithBothPlanners(query))
     assertNumberOfEagerness(query, 1)
   }
 
   test("match property on left-side followed by property write does not need eager") {
     createNode()
     createNode(Map("id" -> 0))
-    val query = "MATCH (b {id: 0}) SET b.id = 1"
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    val query = "MATCH (b {id: 0}) SET b.id = 1 RETURN count(*)"
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using RegEx and writing should be eager") {
     createNode(Map("prop" -> "Fooo"))
-    val query = "MATCH (n) WHERE n.prop =~ 'Foo*' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE n.prop =~ 'Foo*' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using REPLACE and writing should be eager") {
     createNode(Map("prop" -> "baz"))
-    val query = "MATCH (n) WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux'"
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    val query = "MATCH (n) WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux' RETURN count(*)"
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using SUBSTRING and writing should be eager") {
     createNode(Map("prop" -> "aafooaaa"))
-    val query = "MATCH (n) WHERE substring(n.prop, 2, 3) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE substring(n.prop, 2, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using LEFT and writing should be eager") {
     createNode(Map("prop" -> "fooaaa"))
-    val query = "MATCH (n) WHERE left(n.prop, 3) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE left(n.prop, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using RIGHT and writing should be eager") {
     createNode(Map("prop" -> "aaafoo"))
-    val query = "MATCH (n) WHERE right(n.prop, 3) = 'foo' SET n.prop = 'bar'"
+    val query = "MATCH (n) WHERE right(n.prop, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using SPLIT and writing should be eager") {
     createNode(Map("prop" -> "foo,bar"))
-    val query = "MATCH (n) WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux'"
+    val query = "MATCH (n) WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing relationship property should not be eager") {
     relate(createNode(Map("prop" -> 5)),createNode())
-    val query = "MATCH (n {prop : 5})-[r]-() SET r.prop = 6"
+    val query = "MATCH (n {prop : 5})-[r]-() SET r.prop = 6 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing same node property should be eager") {
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m.prop = 5 RETURN count(*)"
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
     assertStats(result, propertiesSet = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
@@ -1148,7 +1151,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop" -> 3)
     val query = "MATCH ()-[r {prop : 3}]-() SET r.prop = 6 RETURN count(*) AS c"
 
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
     assertStats(result, propertiesSet = 2)
     result.toList should equal(List(Map("c" -> 2)))
 
@@ -1159,15 +1162,15 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop1" -> 3)
     val query = "MATCH ()-[r {prop1 : 3}]-() SET r.prop2 = 6"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching relationship property, writing node property should not be eager") {
     relate(createNode(), createNode(), "prop" -> 3)
-    val query = "MATCH (n)-[r {prop : 3}]-() SET n.prop = 6"
+    val query = "MATCH (n)-[r {prop : 3}]-() SET n.prop = 6 RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1175,9 +1178,9 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop" -> 42)
     relate(createNode(), createNode())
 
-    val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo'"
+    val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo' RETURN count(*)"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1187,7 +1190,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH ()-[r]-() WHERE exists(r.prop1) SET r.prop2 = 'foo'"
 
-    assertStats(executeWithRulePlanner(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
     assertNumberOfEagerness(query, 0)
   }
 
