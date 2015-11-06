@@ -78,18 +78,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.neoStoreDataSourceSupplierMock;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -446,7 +448,8 @@ public class HighAvailabilityMemberStateMachineTest
                 mock( RequestMonitor.class ), monitor, mock( StoreCopyClient.Monitor.class ) );
 
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
-                mock( SwitchToMaster.class ), election, clusterMemberAvailability, dependencyResolver, me, logging );
+                mock( SwitchToMaster.class ), election, clusterMemberAvailability, dependencyResolver, me, logging,
+                neoStoreDataSourceSupplierMock() );
         haModeSwitcher.init();
         haModeSwitcher.start();
         haModeSwitcher.listeningAt( URI.create( "http://localhost:12345" ) );

@@ -19,13 +19,14 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-
+import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -57,8 +58,20 @@ public class TargetDirectory
     public class TestDirectory implements TestRule
     {
         private File subdir = null;
+        private boolean keepDirectoryAfterSuccefulTest;
 
         private TestDirectory() { }
+
+        /**
+         * Tell this {@link Rule} to keep the store directory, even after a successful test.
+         * It's just a useful debug mechanism to have for analyzing store after a test.
+         * by default directories aren't kept.
+         */
+        public TestDirectory keepDirectoryAfterSuccefulTest()
+        {
+            keepDirectoryAfterSuccefulTest = true;
+            return this;
+        }
 
         public String absolutePath()
         {
@@ -88,7 +101,8 @@ public class TargetDirectory
             return dir;
         }
 
-        public File graphDbDir() {
+        public File graphDbDir()
+        {
             return directory( "graph-db" );
         }
 
@@ -124,7 +138,7 @@ public class TargetDirectory
 
         private void complete( boolean success )
         {
-            if ( success && subdir != null )
+            if ( success && subdir != null && !keepDirectoryAfterSuccefulTest )
             {
                 try
                 {
@@ -155,6 +169,7 @@ public class TargetDirectory
      * {@link org.neo4j.test.TargetDirectory} directly. The easiest way to do this is with
      * {@link #testDirForTest(Class)}.
      */
+    @Deprecated
     public static TargetDirectory forTest( Class<?> owningTest )
     {
         return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest );

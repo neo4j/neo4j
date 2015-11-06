@@ -69,9 +69,10 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
+
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
@@ -208,7 +209,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.terminated = closing = closed = failure = success = false;
+        this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
@@ -335,11 +336,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         closed = true;
-        if ( currentStatement != null )
-        {
-            currentStatement.forceClose();
-            currentStatement = null;
-        }
+        closeCurrentStatementIfAny();
         if ( closeListener != null )
         {
             closeListener.notify( success );
@@ -626,7 +623,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void release()
     {
         locks.releaseAll();
-        pool.release( this );
+        if ( terminated )
+        {
+            // This transaction has been externally marked for termination.
+            // Just dispose of this transaction and don't return it to the pool.
+            dispose();
+        }
+        else
+        {
+            // Return this instance to the pool so that another transaction may use it.
+            pool.release( this );
+        }
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -958,5 +965,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assert closeListener == null;
         closeListener = listener;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
     }
 }

@@ -39,16 +39,15 @@ import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyListOf;
@@ -57,7 +56,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class KernelTransactionImplementationTest
 {
@@ -353,6 +355,20 @@ public class KernelTransactionImplementationTest
         assertEquals( startingTime+5, commitProcess.transaction.getTimeCommitted() );
     }
 
+    @Test
+    public void shouldNotReturnTransactionInstanceWithTerminationMarkToPool() throws Exception
+    {
+        // GIVEN
+        KernelTransactionImplementation transaction = newTransaction();
+
+        // WHEN
+        transaction.markForTermination();
+        transaction.close();
+
+        // THEN
+        verifyZeroInteractions( pool );
+    }
+
     private final NeoStore neoStore = mock( NeoStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
@@ -364,6 +380,7 @@ public class KernelTransactionImplementationTest
     private final TransactionHeaderInformationFactory headerInformationFactory =
             mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
+    private final Pool pool = mock( Pool.class );
 
     @Before
     public void before()
@@ -377,7 +394,7 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 null, null, null, null, null, recordState, recordStateAccessor, null, neoStore, new NoOpClient(),
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, null, null,
-                legacyIndexState, mock( Pool.class ), clock, TransactionTracer.NULL );
+                legacyIndexState, pool, clock, TransactionTracer.NULL );
         transaction.initialize( 0 );
         return transaction;
     }

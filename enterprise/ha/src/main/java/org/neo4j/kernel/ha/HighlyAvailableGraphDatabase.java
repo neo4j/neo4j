@@ -528,7 +528,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
 
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
-                clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ), logging );
+                clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ),
+                logging, dataSourceManager );
 
         paxosLife.add( new UpdatePullerModeSwitcher( highAvailabilityModeSwitcher, updatePullerDelegate,
                 pullerFactory ) );
