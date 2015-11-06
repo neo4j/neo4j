@@ -26,6 +26,9 @@ In this release of Neo4j, the following upgrades are permitted.
 2.1.x -> {neo4j-version}::
 <<explicit-upgrade,Explicit configuration is required>>
 
+2.2.x -> {neo4j-version}::
+<<explicit-upgrade,Explicit configuration is required>>
+
 [NOTE]
 Downgrade is only supported between Neo4j versions that allow for automatic store upgrades.
 This typically means only within patch releases of the same Neo4j version.

@@ -28,6 +28,7 @@
     <lucene.version>3.6.2</lucene.version>
     <powermock.version>1.5.5</powermock.version>
     <logback-classic.version>1.1.2</logback-classic.version>
+    <bouncycastle.version>1.52</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings>-Xmx1G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true</test.runner.jvm.settings>
@@ -677,7 +678,12 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.52</version>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
