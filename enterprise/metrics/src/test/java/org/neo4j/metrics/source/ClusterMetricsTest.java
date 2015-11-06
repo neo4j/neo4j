@@ -35,6 +35,7 @@ import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
@@ -62,12 +64,16 @@ public class ClusterMetricsTest
     {
         // given
         MetricRegistry metricRegistry = new MetricRegistry();
-        Config config = new Config( stringMap( MetricsSettings.clusterEnabled.name(), Settings.TRUE ) );
-        ClusterMembers clusterMembers =
-                getClusterMembers( HighAvailabilityModeSwitcher.MASTER, HighAvailabilityMemberState.MASTER );
+        Config config = new Config( stringMap( MetricsSettings.neoClusterEnabled.name(), Settings.TRUE ) );
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
-        life.add( new ClusterMetrics( config, monitors, metricRegistry, clusterMembers ) );
+        ClusterMembers clusterMembers =
+                getClusterMembers( HighAvailabilityModeSwitcher.MASTER, HighAvailabilityMemberState.MASTER );
+        DependencyResolver dependencyResolver = mock(DependencyResolver.class);
+        when( dependencyResolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
+        LogService logService = mock( LogService.class );
+
+        life.add( new ClusterMetrics( config, monitors, metricRegistry, dependencyResolver, logService ) );
         life.start();
 
         // when
@@ -85,13 +91,16 @@ public class ClusterMetricsTest
     {
         // given
         MetricRegistry metricRegistry = new MetricRegistry();
-        Config config = new Config( stringMap( MetricsSettings.clusterEnabled.name(), Settings.TRUE ) );
+        Config config = new Config( stringMap( MetricsSettings.neoClusterEnabled.name(), Settings.TRUE ) );
         ClusterMembers clusterMembers =
                 getClusterMembers( HighAvailabilityModeSwitcher.SLAVE, HighAvailabilityMemberState.SLAVE );
+        DependencyResolver dependencyResolver = mock(DependencyResolver.class);
+        when( dependencyResolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
+        LogService logService = mock( LogService.class );
 
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
-        life.add( new ClusterMetrics( config, monitors, metricRegistry, clusterMembers ) );
+        life.add( new ClusterMetrics( config, monitors, metricRegistry, dependencyResolver, logService ) );
         life.start();
 
         // when
@@ -112,8 +121,7 @@ public class ClusterMetricsTest
         when( clusterMember.getHARole() ).thenReturn( memberRole );
         ObservedClusterMembers observedClusterMembers = mock( ObservedClusterMembers.class );
         when( observedClusterMembers.getCurrentMember() ).thenReturn( clusterMember );
-        ClusterMembers clusterMembers = new ClusterMembers( observedClusterMembers, stateMachine );
-        return clusterMembers;
+        return new ClusterMembers( observedClusterMembers, stateMachine );
     }
 
     @Test
@@ -121,13 +129,16 @@ public class ClusterMetricsTest
     {
         // given
         MetricRegistry metricRegistry = new MetricRegistry();
-        Config config = new Config( stringMap( MetricsSettings.clusterEnabled.name(), Settings.FALSE ) );
+        Config config = new Config( stringMap( MetricsSettings.neoClusterEnabled.name(), Settings.FALSE ) );
         ClusterMembers clusterMembers =
                 getClusterMembers( HighAvailabilityModeSwitcher.SLAVE, HighAvailabilityMemberState.SLAVE );
+        DependencyResolver dependencyResolver = mock(DependencyResolver.class);
+        when( dependencyResolver.resolveDependency( ClusterMembers.class ) ).thenReturn( clusterMembers );
+        LogService logService = mock( LogService.class );
 
         Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
-        life.add( new ClusterMetrics( config, monitors, metricRegistry, clusterMembers ) );
+        life.add( new ClusterMetrics( config, monitors, metricRegistry, dependencyResolver, logService ) );
         life.start();
 
         // when
@@ -150,7 +161,6 @@ public class ClusterMetricsTest
     class TestReporter extends ScheduledReporter
     {
         private int isMasterValue, isAvailableValue;
-        private volatile boolean reported;
 
         protected TestReporter( MetricRegistry registry )
         {
@@ -164,7 +174,6 @@ public class ClusterMetricsTest
 
             isMasterValue = (Integer) gauges.get( ClusterMetrics.IS_MASTER ).getValue();
             isAvailableValue = (Integer) gauges.get( ClusterMetrics.IS_AVAILABLE ).getValue();
-            reported = true;
         }
     }
 

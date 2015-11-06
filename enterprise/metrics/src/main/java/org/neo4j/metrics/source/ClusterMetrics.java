@@ -27,9 +27,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
@@ -50,15 +52,19 @@ public class ClusterMetrics extends LifecycleAdapter
     private final Config config;
     private final Monitors monitors;
     private final MetricRegistry registry;
+    private final DependencyResolver dependencyResolver;
+    private final LogService logService;
     private final SlaveUpdatePullerMonitor monitor = new SlaveUpdatePullerMonitor();
-    private final ClusterMembers clusterMembers;
+    private ClusterMembers clusterMembers = null;
 
-    public ClusterMetrics( Config config, Monitors monitors, MetricRegistry registry, ClusterMembers clusterMembers )
+    public ClusterMetrics( Config config, Monitors monitors, MetricRegistry registry, DependencyResolver
+            dependencyResolver, LogService logService )
     {
         this.config = config;
         this.monitors = monitors;
         this.registry = registry;
-        this.clusterMembers = clusterMembers;
+        this.dependencyResolver = dependencyResolver;
+        this.logService = logService;
     }
 
     @Override
@@ -66,6 +72,11 @@ public class ClusterMetrics extends LifecycleAdapter
     {
         if ( config.get( MetricsSettings.neoClusterEnabled ) )
         {
+            if(canResolveClusterMembersDependency())
+            {
+                registerClusterMemberMetrics();
+            }
+
             monitors.addMonitorListener( monitor );
 
             registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
@@ -85,6 +96,28 @@ public class ClusterMetrics extends LifecycleAdapter
                     return monitor.lastAppliedTxId;
                 }
             } );
+
+        }
+    }
+
+    private boolean canResolveClusterMembersDependency()
+    {
+        try
+        {
+            clusterMembers = dependencyResolver.resolveDependency( ClusterMembers.class );
+        }
+        catch(IllegalArgumentException e)
+        {
+            logService.getUserLog( getClass() ).warn("Cluster metrics was enabled but the appropriate " +
+                    "cluster dependencies were not available. Disabling cluster member metrics.");
+        }
+        return clusterMembers != null;
+    }
+
+    private void registerClusterMemberMetrics()
+    {
+        if(clusterMembers != null)
+        {
             registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
             registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
         }

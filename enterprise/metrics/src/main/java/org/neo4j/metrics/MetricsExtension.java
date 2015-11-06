@@ -22,6 +22,7 @@ package org.neo4j.metrics;
 import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -50,7 +51,7 @@ public class MetricsExtension implements Lifecycle
     private final CheckPointerMonitor checkPointerMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogRotationMonitor logRotationMonitor;
-    private final ClusterMembers clusterMembers;
+    private final DependencyResolver dependencyResolver;
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
@@ -63,7 +64,7 @@ public class MetricsExtension implements Lifecycle
         checkPointerMonitor = dependencies.checkPointerCounters();
         logRotationMonitor = dependencies.logRotationCounters();
         idGeneratorFactory = dependencies.idGeneratorFactory();
-        clusterMembers = dependencies.clusterMembers();
+        dependencyResolver = dependencies.getDependencyResolver();
     }
 
     @Override
@@ -85,7 +86,8 @@ public class MetricsExtension implements Lifecycle
 
         // Setup metric gathering
         Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors,
-                transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory, clusterMembers );
+                transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
+                dependencyResolver, logService);
         life.add( factory.newInstance() );
 
         life.init();

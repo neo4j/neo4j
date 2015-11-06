@@ -91,9 +91,6 @@ public class MetricsSettings
     public static Setting<Boolean> jvmBuffersEnabled = setting( "metrics.jvm.buffers.enabled", Settings.BOOLEAN, neoEnabled );
     @Description( "Enable reporting metrics about the current number of threads running." )
     public static Setting<Boolean> jvmThreadsEnabled = setting( "metrics.jvm.threads.enabled", Settings.BOOLEAN, neoEnabled );
-    @Description( "Enable reporting metrics about the current role status of this cluster member." )
-    public static Setting<? extends Boolean> clusterEnabled = setting( "metrics.neo4j.cluster.enabled",
-            Settings.BOOLEAN, neoEnabled);
 
 
     // CSV settings

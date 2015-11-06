@@ -24,6 +24,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -46,12 +47,13 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final CheckPointerMonitor checkPointerMonitor;
     private final LogRotationMonitor logRotationMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final ClusterMembers clusterMembers;
+    private final DependencyResolver dependencyResolver;
+    private final LogService logService;
 
     public Neo4jMetricsFactory( MetricRegistry registry, Config config, Monitors monitors,
             TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
             CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
-            IdGeneratorFactory idGeneratorFactory, ClusterMembers clusterMembers )
+            IdGeneratorFactory idGeneratorFactory, DependencyResolver dependencyResolver, LogService logService )
     {
         this.registry = registry;
         this.config = config;
@@ -61,7 +63,8 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
         this.checkPointerMonitor = checkPointerMonitor;
         this.logRotationMonitor = logRotationMonitor;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.clusterMembers = clusterMembers;
+        this.dependencyResolver = dependencyResolver;
+        this.logService = logService;
     }
 
     @Override
@@ -71,7 +74,8 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final JvmMetrics jvmMetrics = new JvmMetrics( config, registry );
-        final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry, clusterMembers );
+        final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry, dependencyResolver,
+                logService );
         return new LifecycleAdapter()
         {
             @Override
