@@ -1,3 +1,1 @@
-2.3
----
-o Initial creation of component
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog

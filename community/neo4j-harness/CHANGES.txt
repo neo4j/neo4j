@@ -1,5 +1,1 @@
-2.3.0-M01
----------
-o expose GraphDatabaseService to be used in assertions
-o support fixtures based on Function<GraphDatabaseService,Void>
-o support running Neo4jRule/TestServerBuilder with a existing databse
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog

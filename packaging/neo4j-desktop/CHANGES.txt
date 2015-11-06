@@ -1,14 +1,1 @@
-2.2.2
------
-o Fixes issue with starting/stopping databases multiple times, where seemingly
-  log lines where logged as many times as the database had been restarted.
-
-2.2.0
------
-o Added button to launch command prompt with shell scripts for
-  Neo4jShell and Neo4jImport available.
-
-1.9.4 (2013-09-19)
-------------------
-o Introduction of Neo4j Desktop, a Windows installer and Neo4j Server Runtime
-  manager.
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog
