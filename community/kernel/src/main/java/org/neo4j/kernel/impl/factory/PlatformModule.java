@@ -170,7 +170,7 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
-        KernelContext kernelContext = new KernelContext()
+        KernelContext kernelContext = dependencies.satisfyDependency( new KernelContext()
         {
             @Override
             public FileSystemAbstraction fileSystem()
@@ -183,7 +183,7 @@ public class PlatformModule
             {
                 return PlatformModule.this.storeDir;
             }
-        };
+        } );
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
                 kernelContext,

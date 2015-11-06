@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Test;
+
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.junit.Test;
 
 import static junit.framework.Assert.fail;
 import static org.hamcrest.Matchers.equalTo;
@@ -143,7 +143,7 @@ public class DependenciesTest
             dependencies.resolveDependency( Collection.class );
             fail();
         }
-        catch ( IllegalArgumentException e )
+        catch ( UnsatisfiedDependencyException e )
         {
             // Then
         }
