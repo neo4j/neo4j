@@ -19,6 +19,8 @@ For indexes, Neo4j needs to scan the full index to produce the selectivity numbe
 Since this is potentially a very time-consuming operation, these numbers are collected in the background when enough data on the index has been changed.
 
 == Configuration options
+Execution plans are cached and will not be replanned until the statistical information used to produce the plan has changed.
+The following configuration options allows you to control how sensitive replanning should be to updates of the database.
 
 `index_background_sampling_enabled`::
 Controls whether indexes will automatically be re-sampled when they have been updated enough.
