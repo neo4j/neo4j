@@ -547,7 +547,7 @@ order by a.COL1""")
 
   test("with should not forget parameters2") {
     val id = createNode().getId
-    val result = executeWithRulePlanner("match (n) where id(n) = {id} with n set n.foo={id} return n", "id" -> id).toList
+    val result = updateWithBothPlanners("match (n) where id(n) = {id} with n set n.foo={id} return n", "id" -> id).toList
 
     result should have size 1
     graph.inTx {

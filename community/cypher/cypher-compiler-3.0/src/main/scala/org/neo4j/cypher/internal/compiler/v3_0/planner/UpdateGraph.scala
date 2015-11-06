@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier, LabelName, PathExpression, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, Property, Expression, Identifier, LabelName, PathExpression, RelTypeName}
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
@@ -112,6 +112,28 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
   }
 
+  def setPropertyOverlap(qg: QueryGraph) = setNodePropertyOverlap(qg) || setRelPropertyOverlap(qg)
+
+  def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
+    val propertiesToSet = mutatingPatterns.collect {
+      case SetNodePropertyPattern(_, key, _) => key
+    }.toSet
+
+    val propertiesToRead = qg.allKnownNodeProperties.map(_.propertyKey)
+
+    (propertiesToRead intersect propertiesToSet).nonEmpty
+  }
+
+  def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
+    val propertiesToSet = mutatingPatterns.collect {
+      case SetRelationshipPropertyPattern(_, key, _) => key
+    }.toSet
+
+    val propertiesToRead = qg.allKnownRelProperties.map(_.propertyKey)
+
+    (propertiesToRead intersect propertiesToSet).nonEmpty
+  }
+
   def deleteOverlap(qg: QueryGraph): Boolean = {
     val identifiersToRead = qg.patternNodes ++ qg.patternRelationships.map(_.name)
     (identifiersToRead intersect identifiersToDelete).nonEmpty
@@ -125,6 +147,12 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   def addSetLabel(setLabelPatterns: SetLabelPattern*): UpdateGraph =
     copy(mutatingPatterns = this.mutatingPatterns ++ setLabelPatterns)
+
+  def addSetNodeProperty(setPropertyPatterns: SetNodePropertyPattern*): UpdateGraph =
+    copy(mutatingPatterns = this.mutatingPatterns ++ setPropertyPatterns)
+
+  def addSetRelProperty(setPropertyPatterns: SetRelationshipPropertyPattern*): UpdateGraph =
+    copy(mutatingPatterns = this.mutatingPatterns ++ setPropertyPatterns)
 
   def addRemoveLabelPatterns(removeLabelPatterns: RemoveLabelPattern*): UpdateGraph =
     copy(mutatingPatterns = this.mutatingPatterns ++ removeLabelPatterns)
@@ -153,6 +181,10 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 }
 
 case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
+
+case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
+
+case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
 
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 

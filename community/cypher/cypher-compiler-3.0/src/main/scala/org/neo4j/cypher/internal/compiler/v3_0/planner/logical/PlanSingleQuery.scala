@@ -66,12 +66,15 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       //overlap immediately
       (hasUnsafeRelationships(plannerQuery) &&
         (plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
-          plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))) ||
+          plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph) ||
+          plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph))
+      ) ||
         //otherwise only do checks if we have more that one leaf
         leaves.size > 1 && leaves.drop(1).exists(
           nodeOverlap(_, plannerQuery, leaves.head) ||
             plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
+            plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))
     }
   }

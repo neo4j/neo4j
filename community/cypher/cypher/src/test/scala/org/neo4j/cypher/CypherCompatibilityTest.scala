@@ -98,7 +98,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
     shouldHaveWarnings(result, List())
   }
 
-  private val queryThatCannotRunWithCostPlanner = "MATCH (n:Movie) SET n.title = 'The Movie'"
+  private val queryThatCannotRunWithCostPlanner = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
   private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
 
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
