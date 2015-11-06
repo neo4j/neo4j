@@ -32,6 +32,12 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 abstract class MuninnPageCursor implements PageCursor
 {
+    // Size of the respective primitive types in bytes.
+    private static final int SIZE_OF_BYTE = Byte.BYTES;
+    private static final int SIZE_OF_SHORT = Short.BYTES;
+    private static final int SIZE_OF_INT = Integer.BYTES;
+    private static final int SIZE_OF_LONG = Long.BYTES;
+
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
     protected PageCacheTracer tracer;
@@ -324,7 +330,7 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public final byte getByte()
     {
-        checkBounds( offset + 1 );
+        checkBounds( offset + SIZE_OF_BYTE );
         byte b = UnsafeUtil.getByte( pointer + offset );
         offset++;
         return b;
@@ -333,14 +339,14 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public byte getByte( int offset )
     {
-        checkBounds( offset + 1 );
+        checkBounds( offset + SIZE_OF_BYTE );
         return UnsafeUtil.getByte( pointer + offset );
     }
 
     @Override
     public void putByte( byte value )
     {
-        checkBounds( offset + 1 );
+        checkBounds( offset + SIZE_OF_BYTE );
         UnsafeUtil.putByte( pointer + offset, value );
         offset++;
     }
@@ -348,7 +354,7 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putByte( int offset, byte value )
     {
-        checkBounds( offset + 1 );
+        checkBounds( offset + SIZE_OF_BYTE );
         UnsafeUtil.putByte( pointer + offset, value );
     }
 
@@ -356,14 +362,14 @@ abstract class MuninnPageCursor implements PageCursor
     public long getLong()
     {
         long value = getLong( offset );
-        offset += 8;
+        offset += SIZE_OF_LONG;
         return value;
     }
 
     @Override
     public long getLong( int offset )
     {
-        checkBounds( offset + 8 );
+        checkBounds( offset + SIZE_OF_LONG );
         long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -398,13 +404,13 @@ abstract class MuninnPageCursor implements PageCursor
     public void putLong( long value )
     {
         putLong( offset, value );
-        offset += 8;
+        offset += SIZE_OF_LONG;
     }
 
     @Override
     public void putLong( int offset, long value )
     {
-        checkBounds( offset + 8 );
+        checkBounds( offset + SIZE_OF_LONG );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
@@ -433,14 +439,14 @@ abstract class MuninnPageCursor implements PageCursor
     public int getInt()
     {
         int i = getInt( offset );
-        offset += 4;
+        offset += SIZE_OF_INT;
         return i;
     }
 
     @Override
     public int getInt( int offset )
     {
-        checkBounds( offset + 4 );
+        checkBounds( offset + SIZE_OF_INT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( pointer + offset );
@@ -463,13 +469,13 @@ abstract class MuninnPageCursor implements PageCursor
     public void putInt( int value )
     {
         putInt( offset, value );
-        offset += 4;
+        offset += SIZE_OF_INT;
     }
 
     @Override
     public void putInt( int offset, int value )
     {
-        checkBounds( offset + 4 );
+        checkBounds( offset + SIZE_OF_INT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
@@ -543,14 +549,14 @@ abstract class MuninnPageCursor implements PageCursor
     public final short getShort()
     {
         short s = getShort( offset );
-        offset += 2;
+        offset += SIZE_OF_SHORT;
         return s;
     }
 
     @Override
     public short getShort( int offset )
     {
-        checkBounds( offset + 2 );
+        checkBounds( offset + SIZE_OF_SHORT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( pointer + offset );
@@ -571,13 +577,13 @@ abstract class MuninnPageCursor implements PageCursor
     public void putShort( short value )
     {
         putShort( offset, value );
-        offset += 2;
+        offset += SIZE_OF_SHORT;
     }
 
     @Override
     public void putShort( int offset, short value )
     {
-        checkBounds( offset + 2 );
+        checkBounds( offset + SIZE_OF_SHORT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
