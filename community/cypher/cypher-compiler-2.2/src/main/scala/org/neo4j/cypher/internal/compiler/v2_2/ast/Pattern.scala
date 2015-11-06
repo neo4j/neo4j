@@ -323,8 +323,5 @@ case class RelationshipPattern(
   private def checkProperties(ctx: SemanticContext): SemanticCheck =
     properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
 
-  def isSingleLength = length match {
-    case None => true
-    case _ => false
-  }
+  def isSingleLength = length.isEmpty
 }

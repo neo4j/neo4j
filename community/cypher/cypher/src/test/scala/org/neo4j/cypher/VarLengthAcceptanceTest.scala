@@ -31,48 +31,6 @@ import scala.collection.mutable
 
 class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  /*
-  This tree model generator will generate a binary tree, starting with a single root(named "n0").
-  'maxNodeDepth' refers to the node depth, so a value of 4 will generate a root, 2 children, 4 grandchildren
-   and 8 grandchildren (so the depth of the tree is 3)
-  */
-  private def makeTreeModel(maxNodeDepth: Int, directions: Seq[Direction] = Seq()) = {
-
-    val nodes = mutable.Map[String, Node]()
-    Range(0, maxNodeDepth).foreach { depth =>
-      val width = Range(0, depth).fold(1) { (acc, n) =>
-        acc * 2
-      }
-      Range(0, width).foreach { index =>
-        val inum = "0" * width + index.toBinaryString
-        val name = "n" + inum.substring(inum.length - (depth + 1), inum.length)
-        val parentName = name.substring(0, name.length - 1)
-        nodes(name) = createNode(Map("id" -> name))
-        if (nodes.isDefinedAt(parentName)) {
-          val dir = if (directions.length >= depth) directions(depth - 1) else OUTGOING
-          dir match {
-            case OUTGOING =>
-              relate(nodes(parentName), nodes(name), "LIKES")
-            case INCOMING =>
-              relate(nodes(name), nodes(parentName), "LIKES")
-            case _ =>
-              throw new UnsupportedOperationException("Only accept INCOMING and OUTGOING")
-          }
-        }
-      }
-    }
-    nodes.toMap
-  }
-
-  //The root will be generation 1
-  private def generation(gen: Int)(implicit nodes: Map[String, Node]): Set[Node] =
-    nodes.filter { elem =>
-      elem._1.length == gen + 1
-    }.values.toSet match {
-      case s: Set[Node] if s.nonEmpty => s
-      case _ => throw new UnsupportedOperationException("Unexpectedly empty test set")
-    }
-
   test("should handle LIKES*") {
     //Given
     implicit val nodes = makeTreeModel(maxNodeDepth = 4)
@@ -380,5 +338,47 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         rawNegatedFailureMessage = s"Plan should not have Filter with NONE comprehension:\n$plan")
     }
   }
+
+  /*
+  This tree model generator will generate a binary tree, starting with a single root(named "n0").
+  'maxNodeDepth' refers to the node depth, so a value of 4 will generate a root, 2 children, 4 grandchildren
+   and 8 grandchildren (so the depth of the tree is 3)
+  */
+  private def makeTreeModel(maxNodeDepth: Int, directions: Seq[Direction] = Seq()) = {
+
+    val nodes = mutable.Map[String, Node]()
+    for {
+      depth <- 0 until maxNodeDepth
+      width = math.pow(2, depth).toInt
+      index <- 0 until width
+    } {
+
+      val inum = "0" * width + index.toBinaryString
+      val name = "n" + inum.substring(inum.length - (depth + 1), inum.length)
+      val parentName = name.substring(0, name.length - 1)
+      nodes(name) = createNode(Map("id" -> name))
+      if (nodes.isDefinedAt(parentName)) {
+        val dir = if (directions.length >= depth) directions(depth - 1) else OUTGOING
+        dir match {
+          case OUTGOING =>
+            relate(nodes(parentName), nodes(name), "LIKES")
+          case INCOMING =>
+            relate(nodes(name), nodes(parentName), "LIKES")
+          case _ =>
+            throw new IllegalArgumentException("Only accept INCOMING and OUTGOING")
+        }
+      }
+    }
+    nodes.toMap
+  }
+
+  //The root will be generation 1
+  private def generation(gen: Int)(implicit nodes: Map[String, Node]): Set[Node] =
+    nodes.filter { elem =>
+      elem._1.length == gen + 1
+    }.values.toSet match {
+      case s: Set[Node] if s.nonEmpty => s
+      case _ => throw new UnsupportedOperationException("Unexpectedly empty test set")
+    }
 
 }
