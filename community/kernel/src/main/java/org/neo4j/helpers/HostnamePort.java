@@ -19,7 +19,9 @@
  */
 package org.neo4j.helpers;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static java.lang.String.format;
@@ -69,6 +71,11 @@ public class HostnamePort
         {
             throw new IllegalArgumentException( hostnamePort );
         }
+    }
+
+    public HostnamePort( InetSocketAddress address )
+    {
+        this( address.getHostName(), address.getPort() );
     }
 
     public HostnamePort( String host, int port )
@@ -216,5 +223,27 @@ public class HostnamePort
             return new String[]{host};
         }
         return hostnamePort.split( ":" );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+
+        HostnamePort that = (HostnamePort) o;
+
+        return !(host != null ? !host.equals( that.host ) : that.host != null) && Arrays.equals( ports, that.ports );
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = host != null ? host.hashCode() : 0;
+        result = 31 * result + (ports != null ? Arrays.hashCode( ports ) : 0);
+        return result;
     }
 }
