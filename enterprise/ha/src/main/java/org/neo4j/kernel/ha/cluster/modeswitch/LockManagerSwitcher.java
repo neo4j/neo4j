@@ -34,6 +34,8 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
 
+    private volatile Locks currentLocks;
+
     public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
             RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
             Factory<Locks> locksFactory )
@@ -48,13 +50,31 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     @Override
     protected Locks getMasterImpl()
     {
-        return locksFactory.newInstance();
+        currentLocks = locksFactory.newInstance();
+        return currentLocks;
     }
 
     @Override
     protected Locks getSlaveImpl()
     {
-        return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+        currentLocks = new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
                 availabilityGuard );
+        return currentLocks;
+    }
+
+    @Override
+    protected void shutdownCurrent()
+    {
+        super.shutdownCurrent();
+        closeCurrentLocks();
+    }
+
+    private void closeCurrentLocks()
+    {
+        if ( currentLocks != null )
+        {
+            currentLocks.close();
+            currentLocks = null;
+        }
     }
 }

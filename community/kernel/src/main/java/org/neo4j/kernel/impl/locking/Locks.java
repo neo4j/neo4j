@@ -118,9 +118,13 @@ public interface Locks
     /**
      * A client is able to grab and release locks, and compete with other clients for them. This can be re-used until
      * you call {@link Locks.Client#close()}.
+     *
+     * @throws IllegalStateException if this instance has been closed, i.e has had {@link #close()} called.
      */
     Client newClient();
 
     /** Visit all held locks. */
     void accept(Visitor visitor);
+
+    void close();
 }

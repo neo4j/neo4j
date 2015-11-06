@@ -24,10 +24,18 @@ import org.neo4j.kernel.impl.locking.Locks;
 public class CommunityLockManger implements Locks
 {
     private final LockManagerImpl manager = new LockManagerImpl( new RagManager() );
+    private volatile boolean closed;
 
     @Override
     public Client newClient()
     {
+        // We check this volatile closed flag here, which may seem like a contention overhead, but as the time
+        // of writing we apply pooling of transactions and in extension pooling of lock clients,
+        // so this method is called very rarely.
+        if ( closed )
+        {
+            throw new IllegalStateException( this + " already closed" );
+        }
         return new CommunityLockClient( manager );
     }
 
@@ -49,5 +57,11 @@ public class CommunityLockManger implements Locks
                 return false;
             }
         } );
+    }
+
+    @Override
+    public void close()
+    {
+        closed = true;
     }
 }

@@ -469,7 +469,8 @@ public class HighlyAvailableEditionModule
 
         HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
                 switchToSlaveInstance, switchToMasterInstance, clusterClient, clusterMemberAvailability, clusterClient,
-                storeIdSupplier, config.get( ClusterSettings.server_id ), componentSwitcherContainer, logging );
+                storeIdSupplier, config.get( ClusterSettings.server_id ), componentSwitcherContainer,
+                platformModule.dataSourceManager, logging );
 
         exceptionHandlerRef.set( highAvailabilityModeSwitcher );
 

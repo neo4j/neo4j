@@ -52,4 +52,10 @@ public class SlaveLockManager implements Locks
     {
         local.accept( visitor );
     }
+
+    @Override
+    public void close()
+    {
+        local.close();
+    }
 }

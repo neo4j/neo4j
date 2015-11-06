@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -486,8 +487,9 @@ public class HighAvailabilityMemberStateMachineTest
 
         ComponentSwitcherContainer switcherContainer = new ComponentSwitcherContainer();
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
-                        mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
-                        storeSupplierMock(), me, switcherContainer, NullLogService.getInstance() );
+                mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
+                storeSupplierMock(), me, switcherContainer, neoStoreDataSourceSupplierMock(),
+                NullLogService.getInstance() );
         haModeSwitcher.init();
         haModeSwitcher.start();
         haModeSwitcher.listeningAt( URI.create( "http://localhost:12345" ) );
@@ -547,6 +549,13 @@ public class HighAvailabilityMemberStateMachineTest
         when( members.getAliveMembers() ).thenReturn( Collections.singleton( thisMember ) );
 
         return members;
+    }
+
+    private static DataSourceManager neoStoreDataSourceSupplierMock()
+    {
+        DataSourceManager dataSourceManager = new DataSourceManager();
+        dataSourceManager.register( mock( NeoStoreDataSource.class ) );
+        return dataSourceManager;
     }
 
     private ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )

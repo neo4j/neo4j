@@ -45,6 +45,7 @@ import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -101,6 +102,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private volatile Future<?> modeSwitcherFuture;
     private volatile HighAvailabilityMemberState currentTargetState;
     private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
+    private final DataSourceManager neoStoreDataSourceSupplier;
 
     public HighAvailabilityModeSwitcher( SwitchToSlave switchToSlave,
                                          SwitchToMaster switchToMaster,
@@ -110,6 +112,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          Supplier<StoreId> storeIdSupplier,
                                          InstanceId instanceId,
                                          ComponentSwitcher componentSwitcher,
+                                         DataSourceManager neoStoreDataSourceSupplier,
                                          LogService logService )
     {
         this.switchToSlave = switchToSlave;
@@ -122,6 +125,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.componentSwitcher = componentSwitcher;
         this.msgLog = logService.getInternalLog( getClass() );
         this.userLog = logService.getUserLog( getClass() );
+        this.neoStoreDataSourceSupplier = neoStoreDataSourceSupplier;
         this.haCommunicationLife = new LifeSupport();
     }
 
@@ -431,6 +435,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
 
                 componentSwitcher.switchToPending();
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
 
                 if ( cancellationHandle.cancellationRequested() )
                 {
