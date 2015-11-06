@@ -39,7 +39,7 @@ final class MuninnPagedFile implements PagedFile
     private static final int translationTableChunkSizePower = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
-    private static final int translationTableChunkSizeMask = translationTableChunkSize - 1;
+    private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
     private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( MuninnPage[].class );
     private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( MuninnPage[].class );
 
@@ -450,12 +450,12 @@ final class MuninnPagedFile implements PagedFile
         return 1 + (int) (maxChunkId * 1.1);
     }
 
-    int computeChunkId( long filePageId )
+    static int computeChunkId( long filePageId )
     {
         return (int) (filePageId >>> translationTableChunkSizePower);
     }
 
-    long computeChunkOffset( long filePageId )
+    static long computeChunkOffset( long filePageId )
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );

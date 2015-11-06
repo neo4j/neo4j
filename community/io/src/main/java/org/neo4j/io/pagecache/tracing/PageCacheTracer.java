@@ -34,7 +34,7 @@ public interface PageCacheTracer extends PageCacheMonitor
     /**
      * A PageCacheTracer that does nothing other than return the NULL variants of the companion interfaces.
      */
-    public static final PageCacheTracer NULL = new PageCacheTracer()
+    PageCacheTracer NULL = new PageCacheTracer()
     {
         @Override
         public void mappedFile( File file )
@@ -140,12 +140,12 @@ public interface PageCacheTracer extends PageCacheMonitor
     /**
      * The given file has been mapped, where no existing mapping for that file existed.
      */
-    public void mappedFile( File file );
+    void mappedFile( File file );
 
     /**
      * The last reference to the given file has been unmapped.
      */
-    public void unmappedFile( File file );
+    void unmappedFile( File file );
 
     /**
      * A background eviction has begun. Called from the background eviction thread.
@@ -154,20 +154,20 @@ public interface PageCacheTracer extends PageCacheMonitor
      *
      * The method returns an EvictionRunEvent to represent the event of this eviction run.
      **/
-    public EvictionRunEvent beginPageEvictions( int pageCountToEvict );
+    EvictionRunEvent beginPageEvictions( int pageCountToEvict );
 
     /**
      * A page is to be pinned.
      */
-    public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
+    PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper );
 
     /**
      * A PagedFile wants to flush all its bound pages.
      */
-    public MajorFlushEvent beginFileFlush( PageSwapper swapper );
+    MajorFlushEvent beginFileFlush( PageSwapper swapper );
 
     /**
      * The PageCache wants to flush all its bound pages.
      */
-    public MajorFlushEvent beginCacheFlush();
+    MajorFlushEvent beginCacheFlush();
 }

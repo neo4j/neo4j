@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
@@ -32,6 +33,8 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 abstract class MuninnPageCursor implements PageCursor
 {
     protected MuninnPagedFile pagedFile;
+    protected PageSwapper swapper;
+    protected PageCacheTracer tracer;
     protected MuninnPage page;
     protected PinEvent pinEvent;
     protected long pageId;
@@ -48,6 +51,8 @@ abstract class MuninnPageCursor implements PageCursor
     public final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.pagedFile = pagedFile;
+        this.swapper = pagedFile.swapper;
+        this.tracer = pagedFile.tracer;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
     }
@@ -135,16 +140,15 @@ abstract class MuninnPageCursor implements PageCursor
      */
     protected void pin( long filePageId, boolean exclusive ) throws IOException
     {
-        PageSwapper swapper = pagedFile.swapper;
-        pinEvent = pagedFile.tracer.beginPin( exclusive, filePageId, swapper );
-        int chunkId = pagedFile.computeChunkId( filePageId );
+        pinEvent = tracer.beginPin( exclusive, filePageId, swapper );
+        int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
-        long chunkOffset = pagedFile.computeChunkOffset( filePageId );
+        long chunkOffset = MuninnPagedFile.computeChunkOffset( filePageId );
         Object[][] tt = pagedFile.translationTable;
         if ( tt.length <= chunkId )
         {
-            tt = pagedFile.expandCapacity( chunkId );
+            tt = expandTranslationTableCapacity( chunkId );
         }
         Object[] chunk = tt[chunkId];
 
@@ -158,18 +162,7 @@ abstract class MuninnPageCursor implements PageCursor
         do
         {
             item = UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
-            if ( item == null )
-            {
-                // Looks like there's no mapping, so we'd like to do a page fault.
-                BinaryLatch latch = new BinaryLatch();
-                if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
-                {
-                    // We managed to inject our latch, so we now own the right to perform the page fault. We also
-                    // have a duty to eventually release and remove the latch, no matter what happens now.
-                    item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
-                }
-            }
-            else if ( item.getClass() == MuninnPage.class )
+            if ( item != null && item.getClass() == MuninnPage.class )
             {
                 // We got *a* page, but we might be racing with eviction. To cope with that, we have to take some
                 // kind of lock on the page, and check that it is indeed bound to what we expect. If not, then it has
@@ -183,17 +176,46 @@ abstract class MuninnPageCursor implements PageCursor
                     item = null;
                 }
             }
+            else if ( item == null )
+            {
+                // Looks like there's no mapping, so we'd like to do a page fault.
+                item = initiatePageFault( filePageId, chunkOffset, chunk );
+            }
             else
             {
                 // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
                 // for them to finish, and grab the page then.
-                BinaryLatch latch = (BinaryLatch) item;
-                latch.await();
-                item = null;
+                item = awaitPageFault( item );
             }
         }
         while ( item == null );
         pinCursorToPage( (MuninnPage) item, filePageId, swapper );
+    }
+
+    private Object[][] expandTranslationTableCapacity( int chunkId )
+    {
+        return pagedFile.expandCapacity( chunkId );
+    }
+
+    private Object initiatePageFault( long filePageId, long chunkOffset, Object[] chunk )
+            throws IOException
+    {
+        BinaryLatch latch = new BinaryLatch();
+        Object item = null;
+        if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
+        {
+            // We managed to inject our latch, so we now own the right to perform the page fault. We also
+            // have a duty to eventually release and remove the latch, no matter what happens now.
+            item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
+        }
+        return item;
+    }
+
+    private Object awaitPageFault( Object item )
+    {
+        BinaryLatch latch = (BinaryLatch) item;
+        latch.await();
+        return null;
     }
 
     private MuninnPage pageFault(
