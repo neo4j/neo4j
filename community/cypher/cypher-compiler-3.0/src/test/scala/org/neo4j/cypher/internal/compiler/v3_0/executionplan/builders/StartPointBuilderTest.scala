@@ -185,7 +185,7 @@ class StartPointBuilderTest extends BuilderTest {
     val labelName: String = "Person"
     //GIVEN
     val q = PartiallySolvedQuery().copy(
-      where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
+      where = Seq(Unsolved(Equals(Property(Variable("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey.name, AnyIndex, Some(SingleQueryExpression(Literal("a")))))))
 
     when(context.getIndexRule(labelName, propertyKey.name)).thenReturn(Some(new IndexDescriptor(123,456)))
@@ -200,7 +200,7 @@ class StartPointBuilderTest extends BuilderTest {
     //GIVEN
     val propertyKey= PropertyKey("name")
     val q = PartiallySolvedQuery().copy(
-      where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
+      where = Seq(Unsolved(Equals(Property(Variable("n"), propertyKey), Literal("Stefan")))),
       start = Seq(Unsolved(SchemaIndex("n", "Person", "name", AnyIndex, None))))
 
     when(context.getIndexRule(any(), any())).thenReturn(None)

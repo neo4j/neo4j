@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, UnresolvedLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{CreateNode, CreateRelationship, RelationshipEndpoint}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
@@ -101,7 +101,7 @@ class CreateMissingNodesTest extends CypherFunSuite {
   }
 
   private def endPoint(name: String, props: Map[String, Expression] = Map.empty, labels: Seq[KeyToken] = Seq.empty) =
-    RelationshipEndpoint(Identifier(name), props, labels)
+    RelationshipEndpoint(Variable(name), props, labels)
 
   private def bareNode(name: String) = CreateNode(name, Map.empty, Seq.empty)
 }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
@@ -103,7 +103,7 @@ trait NoLushEntityCreation {
 
   private def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] =
     from match {
-      case RelationshipEndpoint(Identifier(key), props, labels) => Some(NamedExpectation(key, props, labels))
+      case RelationshipEndpoint(Variable(key), props, labels) => Some(NamedExpectation(key, props, labels))
       case _                                                    => None
     }
 

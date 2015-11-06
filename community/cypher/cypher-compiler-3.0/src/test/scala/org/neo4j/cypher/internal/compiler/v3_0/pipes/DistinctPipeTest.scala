@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal, Multiply}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal, Multiply}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -40,7 +40,7 @@ class DistinctPipeTest extends CypherFunSuite {
 
   test("distinct_executes_expressions") {
     //GIVEN
-    val expressions = Map("doubled" -> Multiply(Identifier("x"), Literal(2)))
+    val expressions = Map("doubled" -> Multiply(Variable("x"), Literal(2)))
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
 
     //WHEN
@@ -61,7 +61,7 @@ class DistinctPipeTest extends CypherFunSuite {
     result.toList should equal( List(Map("x" -> 1)))
   }
 
-  def createDistinctPipe(input: List[Map[String, Int]], expressions: Map[String, Expression] = Map("x" -> Identifier("x"))) = {
+  def createDistinctPipe(input: List[Map[String, Int]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {
     val source = new FakePipe(input, "x" -> CTNumber)
     new DistinctPipe(source, expressions)()
   }

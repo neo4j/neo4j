@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleNode
@@ -33,14 +33,14 @@ class FilterBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_solve_queries_without_start_items") {
     val q = PartiallySolvedQuery().
-      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
+      copy(where = Seq(Unsolved(Equals(Property(Variable("s"), PropertyKey("foo")), Literal("bar")))))
 
     assertRejects(q)
   }
 
   test("should_offer_to_filter_the_necessary_pipe_is_there") {
     val q = PartiallySolvedQuery().
-      copy(where = Seq(Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar")))))
+      copy(where = Seq(Unsolved(Equals(Property(Variable("s"), PropertyKey("foo")), Literal("bar")))))
 
     val pipe = createPipe(nodes = Seq("s"))
 
@@ -50,8 +50,8 @@ class FilterBuilderTest extends BuilderTest {
   test("should_solve_the_predicates_that_are_possible_to_solve") {
     val q = PartiallySolvedQuery().
       copy(where = Seq(
-      Unsolved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
-      Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar"))))
+      Unsolved(Equals(Property(Variable("s"), PropertyKey("foo")), Literal("bar"))),
+      Unsolved(Equals(Property(Variable("x"), PropertyKey("foo")), Literal("bar"))))
     )
 
     val pipe = createPipe(nodes = Seq("s"))
@@ -59,8 +59,8 @@ class FilterBuilderTest extends BuilderTest {
     val resultPlan = assertAccepts(pipe, q)
 
     resultPlan.query.where.toSet should equal(Set(
-      Solved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
-      Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar")))))
+      Solved(Equals(Property(Variable("s"), PropertyKey("foo")), Literal("bar"))),
+      Unsolved(Equals(Property(Variable("x"), PropertyKey("foo")), Literal("bar")))))
   }
 
   test("does_not_take_on_non_deterministic_predicates_until_the_whole_pattern_is_solved") {

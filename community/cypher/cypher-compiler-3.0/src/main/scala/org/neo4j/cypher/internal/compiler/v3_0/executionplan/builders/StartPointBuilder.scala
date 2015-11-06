@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Equals
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
@@ -80,7 +80,7 @@ class StartPointBuilder extends PlanBuilder {
         case (p: Pipe) if p.symbols.hasIdentifierNamed(item.identifierName) =>
           val compKey: String = s"  --rel-${item.identifierName}--"
           val relationshipByIndex = new RelationshipStartPipe(p, compKey, relationshipStart.apply((planContext, item)))()
-          val relEqualPred = Equals(Identifier(item.identifierName), Identifier(compKey))
+          val relEqualPred = Equals(Variable(item.identifierName), Variable(compKey))
           new FilterPipe(relationshipByIndex, relEqualPred)()
         case (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))()
       }

@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{SizeFunction, ExtractFunction, Identifier, LengthFunction}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{SizeFunction, ExtractFunction, Variable, LengthFunction}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class ExtractTest extends CypherFunSuite {
   test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
-    val expression = SizeFunction(Identifier("n"))
-    val collection = Identifier("l")
+    val expression = SizeFunction(Variable("n"))
+    val collection = Variable("l")
     val m = ExecutionContext.from("l" -> l)
 
     val extract = ExtractFunction(collection, "n", expression)

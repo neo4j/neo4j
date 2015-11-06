@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{PartiallySolvedQue
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.UniqueMergeNodeProducers
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.MergeNodeAction
@@ -89,10 +89,10 @@ class MergeStartPointBuilder extends PlanBuilder {
         val startItems: Seq[(KeyToken, KeyToken, RatedStartItem)] = indexes.map {
           case ((label, key)) =>
             val equalsPredicates = Seq(
-              Equals(Property(Identifier(identifier), key), props(key)),
-              Equals(props(key), Property(Identifier(identifier), key))
+              Equals(Property(Variable(identifier), key), props(key)),
+              Equals(props(key), Property(Variable(identifier), key))
             )
-            val predicates = equalsPredicates :+ HasLabel(Identifier(identifier), label)
+            val predicates = equalsPredicates :+ HasLabel(Variable(identifier), label)
             (label, key, RatedStartItem(SchemaIndex(identifier, label.name, key.name, UniqueIndex, Some(SingleQueryExpression(props(key)))), NodeFetchStrategy.IndexEquality, predicates))
         }
 

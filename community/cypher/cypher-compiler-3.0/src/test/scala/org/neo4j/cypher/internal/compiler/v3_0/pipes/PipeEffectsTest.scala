@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{HasLabel, True}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{RelatedTo, ReturnItem}
@@ -67,7 +67,7 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
   FilterPipe(SingleRowPipe(), True())()
     -> Effects(),
 
-  FilterPipe(SingleRowPipe(), HasLabel(Identifier("a"), UnresolvedLabel("Apa")))()
+  FilterPipe(SingleRowPipe(), HasLabel(Variable("a"), UnresolvedLabel("Apa")))()
     -> Effects(ReadsNodesWithLabels("Apa")),
 
   ColumnFilterPipe(SingleRowPipe(), Seq(ReturnItem(Literal(42), "a")))

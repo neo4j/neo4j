@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal, NumericHelper}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -28,7 +28,7 @@ trait PercentileTest {
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
   def getPercentile(percentile: Double, values: List[Any]): Any = {
-    val func = createAggregator(Identifier("x"), Literal(percentile))
+    val func = createAggregator(Variable("x"), Literal(percentile))
     values.foreach(value => {
       func(ExecutionContext.from("x" -> value))(QueryStateHelper.empty)
     })

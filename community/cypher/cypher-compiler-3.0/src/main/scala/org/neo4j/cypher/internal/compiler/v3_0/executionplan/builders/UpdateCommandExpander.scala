@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import commands.expressions.Identifier
+import commands.expressions.Variable
 import mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -49,7 +49,7 @@ trait UpdateCommandExpander {
 
     def addCreateNodeIfNecessary(e: RelationshipEndpoint) =
       e.node match {
-        case Identifier(name) if !symbols.checkType(name, CTNode) =>
+        case Variable(name) if !symbols.checkType(name, CTNode) =>
           add(CreateNode(name, e.props, e.labels))
           e.asBare
 

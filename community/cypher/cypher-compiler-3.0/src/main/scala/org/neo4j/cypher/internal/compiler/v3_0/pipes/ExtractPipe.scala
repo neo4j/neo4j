@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CachedExpression, Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CachedExpression, Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{PlanDescriptionImpl, SingleChild}
@@ -42,7 +42,7 @@ object ExtractPipe {
     val expressionsDependenciesMet = expressions.values.forall(_.symbolDependenciesMet(source.source.symbols))
     val expressionsDependOnIntroducedSymbols = expressions.values.exists {
       case e => e.exists {
-        case Identifier(x) => symbols.contains(x)
+        case Variable(x) => symbols.contains(x)
         case _             => false
       }
     }
@@ -70,7 +70,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
    */
   val applyExpressions: (ExecutionContext, QueryState) => ExecutionContext = {
     val overwritesAlreadyExistingIdentifiers = expressions.exists {
-      case (name, Identifier(originalName)) => name != originalName
+      case (name, Variable(originalName)) => name != originalName
       case (name, CachedExpression(originalName, _)) => name != originalName
       case (name, _) => source.symbols.hasIdentifierNamed(name)
     }

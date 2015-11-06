@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, Namer, PlanBuilder}
@@ -61,18 +61,18 @@ class PredicateRewriterTest extends BuilderTest {
   val varlengthRelatedToWithProps = varlengthRelatedToNoLabels.copy(properties = properties)
 
 
-  val predicateForLabelA = HasLabel(Identifier("a"), label)
-  val predicateForLabelB = HasLabel(Identifier("b"), label)
+  val predicateForLabelA = HasLabel(Variable("a"), label)
+  val predicateForLabelB = HasLabel(Variable("b"), label)
   val shortestPathNoLabels = ShortestPath("p", bareA, bareB, Seq.empty, SemanticDirection.OUTGOING, false, None, single = false, None)
 
   val prop = UnresolvedProperty("foo")
 
-  val predicateForPropertiedA = Equals(Property(Identifier("a"), prop), literal)
-  val predicateForPropertiedB = Equals(Property(Identifier("b"), prop), literal)
-  val predicateForPropertiedR = Equals(Property(Identifier("r"), prop), literal)
+  val predicateForPropertiedA = Equals(Property(Variable("a"), prop), literal)
+  val predicateForPropertiedB = Equals(Property(Variable("b"), prop), literal)
+  val predicateForPropertiedR = Equals(Property(Variable("r"), prop), literal)
 
   def predicateForPropertiedRelIterator(collection: String, innerSymbol: String) =
-    AllInCollection(Identifier(collection), innerSymbol, Equals(Property(Identifier(innerSymbol), prop), literal))
+    AllInCollection(Variable(collection), innerSymbol, Equals(Property(Variable(innerSymbol), prop), literal))
 
   test("should_rewrite_patterns_with_labels") {
 
@@ -185,7 +185,7 @@ class PredicateRewriterTest extends BuilderTest {
       // Given
       val q = Query.
         matches(inputMatchPattern).
-        returns(ReturnItem(Identifier("a"), "a"))
+        returns(ReturnItem(Variable("a"), "a"))
 
       // When supposed to reject...
       if (expectedPattern.isEmpty) {

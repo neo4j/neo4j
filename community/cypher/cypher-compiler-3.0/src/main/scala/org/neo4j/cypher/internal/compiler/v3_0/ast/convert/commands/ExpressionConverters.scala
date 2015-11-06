@@ -312,7 +312,7 @@ object ExpressionConverters {
   def toCommandExpression(expressions: Seq[ast.Expression]): Seq[CommandExpression] =
     expressions.map(toCommandExpression)
 
-  private def identifier(e: ast.Identifier) = commands.expressions.Identifier(e.name)
+  private def identifier(e: ast.Identifier) = commands.expressions.Variable(e.name)
 
   private def inequalityExpression(original: ast.InequalityExpression): predicates.ComparablePredicate = original match {
     case e: ast.LessThan => predicates.LessThan(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
@@ -335,7 +335,7 @@ object ExpressionConverters {
   }
 
   private def in(e: ast.In) = {
-    val innerEquals = predicates.Equals(toCommandExpression(e.lhs), commandexpressions.Identifier("-_-INNER-_-"))
+    val innerEquals = predicates.Equals(toCommandExpression(e.lhs), commandexpressions.Variable("-_-INNER-_-"))
     commands.AnyInCollection(toCommandExpression(e.rhs), "-_-INNER-_-", innerEquals)
   }
 

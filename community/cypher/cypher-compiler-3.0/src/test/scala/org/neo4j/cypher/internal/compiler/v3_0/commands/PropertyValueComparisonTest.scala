@@ -30,7 +30,7 @@ class PropertyValueComparisonTest extends CypherFunSuite {
   private val expectedNull = null.asInstanceOf[Any]
 
   test("nullNodeShouldGiveNullProperty") {
-    val p = Property(Identifier("identifier"), PropertyKey("property"))
+    val p = Property(Variable("identifier"), PropertyKey("property"))
     val ctx = ExecutionContext.from("identifier" -> null)
     val state = QueryStateHelper.empty
 
@@ -38,7 +38,7 @@ class PropertyValueComparisonTest extends CypherFunSuite {
   }
 
   test("nonExistentPropertyShouldEvaluateToNull") {
-    val p = Property(Identifier("identifier"), PropertyKey("nonExistent"))
+    val p = Property(Variable("identifier"), PropertyKey("nonExistent"))
     val ctx = ExecutionContext.from("identifier" -> Map("property" -> 42))
     val state = QueryStateHelper.empty
 

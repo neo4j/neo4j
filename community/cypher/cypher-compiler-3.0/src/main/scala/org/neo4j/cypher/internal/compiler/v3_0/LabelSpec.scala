@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
@@ -53,7 +53,7 @@ sealed abstract class LabelSpec {
    */
   def asLabelSet: LabelSet
 
-  def toPredicates(ident: Identifier): Seq[HasLabel] = asLabelSet.labelVals.map(HasLabel(ident,_))
+  def toPredicates(ident: Variable): Seq[HasLabel] = asLabelSet.labelVals.map(HasLabel(ident,_))
 
   /**
    * Reduce a LabelChoice to a LabelSet if possible

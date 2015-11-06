@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, NumericHelper}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -28,7 +28,7 @@ trait StdevTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def getStdev(values: List[Any]): Double = {
-    val func = createAggregator(Identifier("x"))
+    val func = createAggregator(Variable("x"))
     values.foreach(value => {
       func(ExecutionContext.from("x" -> value))(QueryStateHelper.empty)
     })

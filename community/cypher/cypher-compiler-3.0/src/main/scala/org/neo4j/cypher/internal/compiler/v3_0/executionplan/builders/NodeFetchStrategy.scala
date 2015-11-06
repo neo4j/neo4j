@@ -81,7 +81,7 @@ trait NodeStrategy {
 
   protected def findLabelsForNode(node: String, where: Seq[Predicate]): Seq[SolvedPredicate[LabelName]] =
     where.collect {
-      case predicate @ HasLabel(Identifier(identifier), label) if identifier == node => SolvedPredicate(label.name, predicate)
+      case predicate @ HasLabel(Variable(identifier), label) if identifier == node => SolvedPredicate(label.name, predicate)
     }
 
   case class SolvedPredicate[+T](solution: T, predicate: Predicate, newUnsolvedPredicate: Option[Predicate] = None)
@@ -104,13 +104,13 @@ object NodeByIdStrategy extends NodeStrategy {
     def computable(expression: Expression): Boolean = expression.symbolDependenciesMet(symbols)
 
     where.collect {
-      case predicate @ Equals(IdFunction(Identifier(id)), Literal(idValue: Number)) if id == identifier => SolvedPredicate(Literal(idValue.longValue()), predicate)
-      case predicate @ Equals(Literal(idValue: Number), IdFunction(Identifier(id))) if id == identifier => SolvedPredicate(Literal(idValue.longValue()), predicate)
+      case predicate @ Equals(IdFunction(Variable(id)), Literal(idValue: Number)) if id == identifier => SolvedPredicate(Literal(idValue.longValue()), predicate)
+      case predicate @ Equals(Literal(idValue: Number), IdFunction(Variable(id))) if id == identifier => SolvedPredicate(Literal(idValue.longValue()), predicate)
 
-      case predicate @ Equals(IdFunction(Identifier(id)), expression) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
-      case predicate @ Equals(expression, IdFunction(Identifier(id))) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
+      case predicate @ Equals(IdFunction(Variable(id)), expression) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
+      case predicate @ Equals(expression, IdFunction(Variable(id))) if id == identifier && computable(expression) => SolvedPredicate(expression, predicate)
 
-      case predicate @ AnyInCollection(collectionExpression, _, Equals(IdFunction(Identifier(id)), _)) if id == identifier && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
+      case predicate @ AnyInCollection(collectionExpression, _, Equals(IdFunction(Variable(id)), _)) if id == identifier && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
     }
   }
 }
@@ -160,27 +160,27 @@ object IndexSeekStrategy extends NodeStrategy {
 
   private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
     where.collect {
-      case predicate @ Equals(Property(Identifier(id), propertyKey), expression)
+      case predicate @ Equals(Property(Variable(id), propertyKey), expression)
         if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
-      case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
+      case predicate @ Equals(expression, Property(Variable(id), propertyKey))
         if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
 
-      case predicate @ AnyInCollection(expression, _, Equals(Property(Identifier(id), propertyKey),Identifier(_)))
+      case predicate @ AnyInCollection(expression, _, Equals(Property(Variable(id), propertyKey),Variable(_)))
         if id == identifier && expression.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
   }
 
   private def findIndexSeekByPrefixPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
     where.collect {
-      case literalPredicate@StartsWith(p@Property(Identifier(id), prop), _) if id == identifier =>
+      case literalPredicate@StartsWith(p@Property(Variable(id), prop), _) if id == identifier =>
         SolvedPredicate(prop.name, literalPredicate)
     }
   }
 
   private def findIndexSeekByRangePredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], symbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] =
     where.collect {
-      case predicate@AndedPropertyComparablePredicates(Identifier(id), prop@Property(_, key), comparables)
+      case predicate@AndedPropertyComparablePredicates(Variable(id), prop@Property(_, key), comparables)
         if id == identifier && comparables.forall(_.other(prop).symbolDependenciesMet(symbols)) =>
         SolvedPredicate(key.name, predicate)
     }

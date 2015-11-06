@@ -230,10 +230,10 @@ object PatternConverters {
       Seq(mutation.CreateNode(node.legacyName, node.legacyProperties, labels))
 
     def asAbstractPatterns: Seq[AbstractPattern] =
-      Seq(ParsedEntity(node.legacyName, commandexpressions.Identifier(node.legacyName), node.legacyProperties, labels))
+      Seq(ParsedEntity(node.legacyName, commandexpressions.Variable(node.legacyName), node.legacyProperties, labels))
 
     def asRelationshipEndpoint: mutation.RelationshipEndpoint =
-      mutation.RelationshipEndpoint(commandexpressions.Identifier(node.legacyName), node.legacyProperties, labels)
+      mutation.RelationshipEndpoint(commandexpressions.Variable(node.legacyName), node.legacyProperties, labels)
 
     def asLegacyNode = commands.SingleNode(node.legacyName, labels.map(x => commandvalues.UnresolvedLabel(x.name)), properties = node.legacyProperties)
 

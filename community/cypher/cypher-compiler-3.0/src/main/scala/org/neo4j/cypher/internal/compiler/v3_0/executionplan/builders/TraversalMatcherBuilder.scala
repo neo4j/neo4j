@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{IdFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{IdFunction, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{Trail, TraversalMatcher}
@@ -156,8 +156,8 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
         val compKey: String = s"--relId-${x.identifierName}--"
         (qt, AnyInCollection(
           x.expression, compKey,
-          Equals(IdFunction(Identifier(x.identifierName)),
-          Identifier(compKey))))
+          Equals(IdFunction(Variable(x.identifierName)),
+          Variable(compKey))))
     }
 
     val preds = plan.query.where.filter(_.unsolved).map(_.token).

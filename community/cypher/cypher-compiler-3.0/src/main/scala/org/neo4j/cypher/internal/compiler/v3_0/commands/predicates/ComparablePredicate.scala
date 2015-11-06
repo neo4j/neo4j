@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsCollection
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.IncomparableValuesException
@@ -86,7 +86,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   override def toString = s"$a == $b"
 
   def containsIsNull = (a, b) match {
-    case (Identifier(_), Literal(null)) => true
+    case (Variable(_), Literal(null)) => true
     case _                              => false
   }
 

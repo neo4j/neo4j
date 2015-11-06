@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{PipeMonitor, ExtractPipe}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, CachedExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, CachedExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.AllIdentifiers
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 
@@ -87,7 +87,7 @@ object ExtractBuilder {
 
     val expressions = expressionsToExtract.filter {
       case (k, CachedExpression(_, _))      => false
-      case (k1, Identifier(k2)) if k1 == k2 => false
+      case (k1, Variable(k2)) if k1 == k2 => false
       case _                                => true
     }
 

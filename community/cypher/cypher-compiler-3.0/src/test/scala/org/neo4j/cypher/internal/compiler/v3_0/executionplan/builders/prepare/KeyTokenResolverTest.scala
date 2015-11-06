@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{HasLabel, StartsWith}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType, UnresolvedLabel, UnresolvedProperty}
@@ -52,12 +52,12 @@ class KeyTokenResolverTest extends BuilderTest {
   test("should_resolve_label_keytoken_on_label_predicate") {
     val q = Query.
       matches(SingleNode("a")).
-      where(HasLabel(Identifier("a"), unresolvedFoo)).
+      where(HasLabel(Variable("a"), unresolvedFoo)).
       returns()
 
     val result = assertAccepts(q)
 
-    result.query.where should equal(Seq(Unsolved(HasLabel(Identifier("a"), resolvedFoo))))
+    result.query.where should equal(Seq(Unsolved(HasLabel(Variable("a"), resolvedFoo))))
   }
 
   test("should_resolve_label_keytoken_on_single_node_pattern") {
@@ -99,11 +99,11 @@ class KeyTokenResolverTest extends BuilderTest {
   test("should resolve property key for STARTS WITH expressions") {
     val q = Query.
       matches(SingleNode("n")).
-      where(StartsWith(Property(Identifier("x"), UnresolvedProperty("APA")), Literal("A"))).
+      where(StartsWith(Property(Variable("x"), UnresolvedProperty("APA")), Literal("A"))).
       returns()
 
     val result = assertAccepts(q)
-    result.query.where should equal(Seq(Unsolved(StartsWith(Property(Identifier("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A")))))
+    result.query.where should equal(Seq(Unsolved(StartsWith(Property(Variable("x"), Resolved("APA", 0, TokenType.PropertyKey)), Literal("A")))))
   }
 
   test("should_resolve_label_keytoken_on_unique_link_pattern") {

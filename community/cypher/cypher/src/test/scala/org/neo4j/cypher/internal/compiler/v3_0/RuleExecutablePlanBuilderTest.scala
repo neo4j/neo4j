@@ -25,7 +25,7 @@ import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{WrappedMonitors2_3, WrappedMonitors3_0}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.{Label, PropertyKey}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ReturnItem, _}
@@ -101,11 +101,11 @@ class RuleExecutablePlanBuilderTest
       val node = graph.createNode()
       node.setProperty("foo", 12l)
 
-      val identifier = Identifier("x")
+      val identifier = Variable("x")
       val q = Query
         .start(NodeById("x", node.getId))
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
-        .returns(ReturnItem(Identifier("x"), "x"))
+        .returns(ReturnItem(Variable("x"), "x"))
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
@@ -130,8 +130,8 @@ class RuleExecutablePlanBuilderTest
 
       val q = Query
         .start(NodeById("x", node.getId))
-        .where(HasLabel(Identifier("x"), Label("Person")))
-        .returns(ReturnItem(Identifier("x"), "x"))
+        .where(HasLabel(Variable("x"), Label("Person")))
+        .returns(ReturnItem(Variable("x"), "x"))
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
@@ -141,7 +141,7 @@ class RuleExecutablePlanBuilderTest
       // when
       val predicate = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[FilterPipe].predicate
 
-      assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
+      assertTrue("Label was not resolved", predicate == HasLabel(Variable("x"), Label("Person", labelId)))
     } finally {
       tx.close()
     }

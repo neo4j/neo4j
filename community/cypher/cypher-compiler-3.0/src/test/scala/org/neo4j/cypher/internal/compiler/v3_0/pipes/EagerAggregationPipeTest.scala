@@ -45,7 +45,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val groupings = createReturnItemsFor("name")
-    val aggregations = Map("count(*)" -> Count(Identifier("none-existing-identifier")))
+    val aggregations = Map("count(*)" -> Count(Variable("none-existing-identifier")))
     intercept[SyntaxException](new EagerAggregationPipe(source, groupings, aggregations)())
   }
 
@@ -73,12 +73,12 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     val returnItems = createReturnItemsFor()
     val grouping = Map(
       "count(*)" -> CountStar(),
-      "avg(name.age)" -> Avg(Property(Identifier("name"), PropertyKey("age"))),
-      "collect(name.age)" -> Collect(Property(Identifier("name"), PropertyKey("age"))),
-      "count(name.age)" -> Count(Property(Identifier("name"), PropertyKey("age"))),
-      "max(name.age)" -> Max(Property(Identifier("name"), PropertyKey("age"))),
-      "min(name.age)" -> Min(Property(Identifier("name"), PropertyKey("age"))),
-      "sum(name.age)" -> Sum(Property(Identifier("name"), PropertyKey("age")))
+      "avg(name.age)" -> Avg(Property(Variable("name"), PropertyKey("age"))),
+      "collect(name.age)" -> Collect(Property(Variable("name"), PropertyKey("age"))),
+      "count(name.age)" -> Count(Property(Variable("name"), PropertyKey("age"))),
+      "max(name.age)" -> Max(Property(Variable("name"), PropertyKey("age"))),
+      "min(name.age)" -> Min(Property(Variable("name"), PropertyKey("age"))),
+      "sum(name.age)" -> Sum(Property(Variable("name"), PropertyKey("age")))
     )
 
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
@@ -96,7 +96,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
       Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = createReturnItemsFor()
-    val grouping = Map("count(name)" -> Count(Identifier("name")))
+    val grouping = Map("count(name)" -> Count(Variable("name")))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should equal(List(Map("count(name)" -> 3)))

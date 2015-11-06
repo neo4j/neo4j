@@ -62,35 +62,35 @@ class IndexLookupBuilder extends PlanBuilder {
 
   private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(HasLabel(Identifier(identifier), label))
+      case predicate@QueryToken(HasLabel(Variable(identifier), label))
         if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
   private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(Equals(Property(Identifier(id), prop), expression))
+      case predicate@QueryToken(Equals(Property(Variable(id), prop), expression))
         if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
 
-      case predicate@QueryToken(Equals(expression, Property(Identifier(id), prop)))
+      case predicate@QueryToken(Equals(expression, Property(Variable(id), prop)))
         if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
 
-      case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Identifier(id), prop),Identifier(_))))
+      case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Variable(id), prop),Variable(_))))
         if id == hint.identifier && prop.name == hint.property => (predicate, ManyQueryExpression(expression))
 
-      case predicate@QueryToken(PropertyExists(expr@Identifier(id), prop))
+      case predicate@QueryToken(PropertyExists(expr@Variable(id), prop))
         if id == hint.identifier && prop.name == hint.property => (predicate, ScanQueryExpression(expr))
     }
 
   private def findStartsWithPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(StartsWith(Property(Identifier(id), prop), rhs))
+      case predicate@QueryToken(StartsWith(Property(Variable(id), prop), rhs))
        if id == hint.identifier && prop.name == hint.property =>
         (predicate, RangeQueryExpression(PrefixSeekRangeExpression(PrefixRange(rhs))))
     }
 
   private def findInequalityPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(AndedPropertyComparablePredicates(Identifier(id), Property(_, prop), comparables))
+      case predicate@QueryToken(AndedPropertyComparablePredicates(Variable(id), Property(_, prop), comparables))
         if id == hint.identifier && prop.name == hint.property =>
         val seekRange: InequalitySeekRange[Expression] = InequalitySeekRange.fromPartitionedBounds(comparables.partition {
           case GreaterThan(_, value) => Left(ExclusiveBound(value))

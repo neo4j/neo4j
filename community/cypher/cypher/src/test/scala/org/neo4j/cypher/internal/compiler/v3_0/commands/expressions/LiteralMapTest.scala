@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class LiteralMapTest extends CypherFunSuite {
 
   test("should_present_all_child_expressions") {
-    val x = Identifier("x")
+    val x = Variable("x")
     // given
     val propX = Property(x, UnresolvedProperty("foo"))
     val count = CountStar()

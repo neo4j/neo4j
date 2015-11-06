@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
@@ -34,7 +34,7 @@ abstract class ReturnColumn {
 case class AllIdentifiers() extends ReturnColumn {
   def expressions(symbols: SymbolTable): Map[String, Expression] = symbols.identifiers.keys.
     filter(isNamed).
-    map(n => n -> Identifier(n)).toMap
+    map(n => n -> Variable(n)).toMap
 
   def name = "*"
 }

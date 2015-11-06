@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Identifier(entityName: String) extends Expression with Typed {
+case class Variable(entityName: String) extends Expression with Typed {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
+    ctx.getOrElse(entityName, throw new NotFoundException("Unknown variable `%s`.".format(entityName)))
 
   override def toString: String = entityName
 

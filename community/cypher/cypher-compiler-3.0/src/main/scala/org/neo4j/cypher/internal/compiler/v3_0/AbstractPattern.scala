@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
@@ -52,7 +52,7 @@ object PatternWithEnds {
 }
 
 object ParsedEntity {
-  def apply(name:String) = new ParsedEntity(name, Identifier(name), Map.empty, Seq.empty)
+  def apply(name:String) = new ParsedEntity(name, Variable(name), Map.empty, Seq.empty)
 }
 
 case class ParsedEntity(name: String,
@@ -127,8 +127,8 @@ trait Turnable {
       case SemanticDirection.INCOMING => turn(start = end, end = start, dir = SemanticDirection.OUTGOING)
       case SemanticDirection.OUTGOING => this.asInstanceOf[AbstractPattern]
       case SemanticDirection.BOTH     => (start.expression, end.expression) match {
-        case (Identifier(a), Identifier(b)) if a < b  => this.asInstanceOf[AbstractPattern]
-        case (Identifier(a), Identifier(b)) if a >= b => turn(start = end, end = start, dir = dir)
+        case (Variable(a), Variable(b)) if a < b  => this.asInstanceOf[AbstractPattern]
+        case (Variable(a), Variable(b)) if a >= b => turn(start = end, end = start, dir = dir)
         case _                                        => this.asInstanceOf[AbstractPattern]
       }
     }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, True, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
@@ -69,8 +69,8 @@ class ExpanderStepReversalTest extends CypherFunSuite {
     // GIVEN
     // MATCH (a)-[r1]->(b) (b)-[r2]->(c)  (c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
-    val predForB = Equals(Property(Identifier("b"), PropertyKey("name")), Literal("b"))
-    val predForC = Equals(Property(Identifier("c"), PropertyKey("name")), Literal("c"))
+    val predForB = Equals(Property(Variable("b"), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(Variable("c"), PropertyKey("name")), Literal("c"))
 
     val forward3 = step(2, Seq(), SemanticDirection.INCOMING, None)
     val forward2 = step(1, Seq(), SemanticDirection.OUTGOING, Some(forward3), nodePredicate = predForC)

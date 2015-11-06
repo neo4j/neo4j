@@ -34,7 +34,7 @@ import scala.collection.Map
 
 class ExpressionTest extends CypherFunSuite {
   test("replacePropWithCache") {
-    val a = Collect(Property(Identifier("r"), PropertyKey("age")))
+    val a = Collect(Property(Variable("r"), PropertyKey("age")))
 
     val b = a.rewrite {
       case Property(n, p) => Literal(n + "." + p.name)
@@ -67,24 +67,24 @@ class ExpressionTest extends CypherFunSuite {
 
   test("should_find_inner_aggregations") {
     //GIVEN
-    val e = LengthFunction(Collect(Property(Identifier("n"), PropertyKey("bar"))))
+    val e = LengthFunction(Collect(Property(Variable("n"), PropertyKey("bar"))))
 
     //WHEN
     val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    aggregates.toList should equal( List(Collect(Property(Identifier("n"), PropertyKey("bar")))))
+    aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
   }
 
   test("should_find_inner_aggregations2") {
     //GIVEN
-    val r = ReturnItem(Avg(Property(Identifier("a"), PropertyKey("age"))), "avg(a.age)")
+    val r = ReturnItem(Avg(Property(Variable("a"), PropertyKey("age"))), "avg(a.age)")
 
     //WHEN
     val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    aggregates.toList should equal( List(Avg(Property(Identifier("a"), PropertyKey("age")))))
+    aggregates.toList should equal( List(Avg(Property(Variable("a"), PropertyKey("age")))))
   }
 
   test("should_handle_rewriting_to_non_predicates") {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ReturnItem, SortItem}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Effectful
@@ -79,7 +79,7 @@ object Effects {
 
   def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
     (expression match {
-      case i: Identifier => symbols.identifiers.get(i.entityName).map {
+      case i: Variable => symbols.identifiers.get(i.entityName).map {
         case _: NodeType => Effects(ReadsGivenNodeProperty(propertyKey))
         case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
         case _ => Effects()
@@ -90,7 +90,7 @@ object Effects {
 
   def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
     (expression match {
-      case i: Identifier => symbols.identifiers.get(i.entityName).map {
+      case i: Variable => symbols.identifiers.get(i.entityName).map {
         case _: NodeType => Effects(SetGivenNodeProperty(propertyKey))
         case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
         case _ => Effects()

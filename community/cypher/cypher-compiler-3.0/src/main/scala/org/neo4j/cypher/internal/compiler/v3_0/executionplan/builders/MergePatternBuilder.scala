@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import commands.{AllIdentifiers, Pattern, Query}
-import commands.expressions.Identifier
+import commands.expressions.Variable
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
@@ -109,7 +109,7 @@ object MergePatternBuilder {
     }
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
-    case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) =>
+    case RelationshipEndpoint(Variable(name), props, labels) if !symbols.hasIdentifierNamed(name) =>
       (symbols.add(name, CTNode), Some(CreateNode(name, props, labels)))
     case _ =>
       (symbols, None)

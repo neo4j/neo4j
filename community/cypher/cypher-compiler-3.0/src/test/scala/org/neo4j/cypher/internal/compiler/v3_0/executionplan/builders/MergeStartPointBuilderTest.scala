@@ -43,7 +43,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
   val otherProperty = "prop2"
   val otherPropertyKey = PropertyKey(otherProperty)
   val expression = Literal(42)
-  val mergeNodeAction = MergeNodeAction("x", Map.empty, Seq(Label("Label")), Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)
+  val mergeNodeAction = MergeNodeAction("x", Map.empty, Seq(Label("Label")), Seq(HasLabel(Variable("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)
 
   test("should_solved_merge_node_start_points") {
     // Given MERGE (x:Label)
@@ -70,7 +70,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
     val query = newQuery(
-      updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Identifier("x"))))))
+      updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Variable("x"))))))
     )
     when(context.getOptLabelId("Label")).thenReturn(Some(42))
     when(context.getUniquenessConstraint("Label", "prop")).thenReturn(None)

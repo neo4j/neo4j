@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
@@ -30,13 +30,13 @@ class UnwindPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
     val source = new FakePipe(data, "x" -> CTCollection(CTInteger))
-    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")()
+    val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
 
   test("symbols are correct") {
     val source = new FakePipe(List.empty, "x" -> CTCollection(CTInteger), "something else" -> CTCollection(CTAny))
-    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")()
+    val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
     unwindPipe.symbols.identifiers should equal(Map(
       "y" -> CTInteger,
       "something else" -> CTCollection(CTAny),

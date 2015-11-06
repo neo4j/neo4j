@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllIdentifiers, Query, ReturnItem, Unwind}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.UnwindPipe
 
@@ -30,7 +30,7 @@ class UnwindBuilderTest extends BuilderTest {
     val unwind = Unwind(Collection(Literal(1),Literal(2)),"y")
     val q = Query.
       start(unwind).
-      returns(ReturnItem(Identifier("y"),"y"))
+      returns(ReturnItem(Variable("y"),"y"))
 
     val result = assertAccepts(q)
 

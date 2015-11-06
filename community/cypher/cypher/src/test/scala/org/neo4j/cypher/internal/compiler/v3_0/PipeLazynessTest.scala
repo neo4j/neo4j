@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
@@ -81,7 +81,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private def distinctPipe = {
     val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
     val src = new FakePipe(iter, "x" -> CTNumber)
-    val pipe = new DistinctPipe(src, Map("x" -> Identifier("x")))()
+    val pipe = new DistinctPipe(src, Map("x" -> Variable("x")))()
     (pipe, iter)
   }
 
@@ -143,7 +143,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     (pipe, iter)
   }
 
-  private val sortByX: List[SortItem] = List(SortItem(Identifier("x"), ascending = true))
+  private val sortByX: List[SortItem] = List(SortItem(Variable("x"), ascending = true))
 
   private def startPipe = {
     val node = mock[Node]

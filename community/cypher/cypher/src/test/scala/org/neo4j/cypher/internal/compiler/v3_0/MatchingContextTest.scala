@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.PatternGraphBuilder
@@ -420,7 +420,7 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", SemanticDirection.OUTGOING))
 
-    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("r"), PropertyKey("age")), Literal(5))))
+    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Variable("r"), PropertyKey("age")), Literal(5))))
 
     assertMatches(getMatches("a" -> a), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
@@ -431,7 +431,7 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", SemanticDirection.OUTGOING))
-    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("a"), PropertyKey("prop")), Literal("not value"))))
+    createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Variable("a"), PropertyKey("prop")), Literal("not value"))))
 
     getMatches("a" -> a) shouldBe empty
   }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, True, Not}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNumber
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
@@ -97,7 +97,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = new FakePipe(Iterator.empty)
 
     val result =
-      SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
+      SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 2)))
   }
@@ -111,7 +111,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
       })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1), Map("a" -> 2)))
   }
@@ -125,7 +125,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
       })
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).createResults(QueryStateHelper.empty).toList
     result should equal(List.empty)
   }
 }

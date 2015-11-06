@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -96,7 +96,7 @@ class CollectionTest extends CypherFunSuite {
 
     private def check(expected: Any,
                       collectionFunction: (Expression, String, Predicate) => InCollection) {
-      val function = collectionFunction(Literal(values), "x", CoercedPredicate(Identifier("x")))
+      val function = collectionFunction(Literal(values), "x", CoercedPredicate(Variable("x")))
       val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
       result should equal(expected)
     }

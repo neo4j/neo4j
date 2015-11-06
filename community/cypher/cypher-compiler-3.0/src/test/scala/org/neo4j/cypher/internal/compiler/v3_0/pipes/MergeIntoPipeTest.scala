@@ -325,8 +325,8 @@ class MergeIntoPipeTest extends CypherFunSuite {
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
     val propertySetAction = Seq(
-      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
-      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
+      PropertySetAction(Property(Variable("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Variable("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, INCOMING, "A", relProperties = Map.empty,
       onCreateProperties = propertySetAction)
 
@@ -348,8 +348,8 @@ class MergeIntoPipeTest extends CypherFunSuite {
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
     val propertySetAction = Seq(
-      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
-      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
+      PropertySetAction(Property(Variable("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Variable("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, OUTGOING, "A", relProperties = Map.empty,
       onCreateProperties = propertySetAction)
 
@@ -370,8 +370,8 @@ class MergeIntoPipeTest extends CypherFunSuite {
     // when
     val left = newMockedPipe("a", row("a" -> node_a, "b" -> node_b))
     val propertySetAction = Seq(
-      PropertySetAction(Property(Identifier("r"), resolve("key")), Literal(42)),
-      PropertySetAction(Property(Identifier("r"), resolve("foo")), Literal("bar")))
+      PropertySetAction(Property(Variable("r"), resolve("key")), Literal(42)),
+      PropertySetAction(Property(Variable("r"), resolve("foo")), Literal("bar")))
     val result = createPipeAndRun(query, left, INCOMING, "A", relProperties = Map.empty,
       onCreateProperties = Seq.empty, onMatchProperties = propertySetAction)
 

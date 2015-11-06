@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.VariableLengthStepTrail
@@ -52,7 +52,7 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
     def transformToTrail(p: Pattern, done: Trail, patternsToDo: Seq[Pattern]): (Trail, Seq[Pattern]) = {
 
       def rewriteTo(originalName: String, newExpr: Expression)(e: Expression) = e match {
-        case Identifier(name) if name == originalName => newExpr
+        case Variable(name) if name == originalName => newExpr
         case _                                        => e
       }
 

@@ -254,10 +254,10 @@ object StatementConverters {
         mutation
           .PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
       case setItem: ast.SetExactPropertiesFromMapItem =>
-        mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name),
+        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name),
           toCommandExpression(setItem.expression), removeOtherProps = true)
       case setItem: ast.SetIncludingPropertiesFromMapItem =>
-        mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name),
+        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name),
           toCommandExpression(setItem.expression), removeOtherProps = false)
       case setItem: ast.SetLabelItem =>
         commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
@@ -321,9 +321,9 @@ object StatementConverters {
           case setItem: ast.SetLabelItem =>
             commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case setItem: ast.SetExactPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = true)
+            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = false)
+            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = false)
         }
       case c: ast.Delete =>
         c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e), c.forced))

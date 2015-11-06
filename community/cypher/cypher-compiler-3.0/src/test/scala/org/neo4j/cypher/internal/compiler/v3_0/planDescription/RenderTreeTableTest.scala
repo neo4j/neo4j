@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Property, LengthFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Property, LengthFunction, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel, PropertyExists, Not}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
@@ -357,7 +357,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))),
+      LegacyExpression(Not(Equals(Variable("  UNNAMED123"), Variable("  UNNAMED321")))),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
@@ -375,7 +375,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(HasLabel(Identifier("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))),
+      LegacyExpression(HasLabel(Variable("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
@@ -393,7 +393,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(LengthFunction(Identifier("n"))),
+      LegacyExpression(LengthFunction(Variable("n"))),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
@@ -411,7 +411,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(Identifier("  id@23")),
+      LegacyExpression(Variable("  id@23")),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("  n@76"))
@@ -432,7 +432,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       Rows(42),
       DbHits(33),
       Planner("COST"),
-      LegacyExpression(Identifier("  id@23")),
+      LegacyExpression(Variable("  id@23")),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
@@ -470,7 +470,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows( 42 ),
       DbHits( 33 ),
-      LegacyExpression( Property(Identifier( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))),
+      LegacyExpression( Property(Variable( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl( new Id, "NAME", NoChildren, arguments, Set( "n") )
@@ -487,7 +487,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows( 42 ),
       DbHits( 33 ),
-      LegacyExpression( PropertyExists(Identifier("x"), KeyToken.Resolved("prop", 42, TokenType.PropertyKey))),
+      LegacyExpression( PropertyExists(Variable("x"), KeyToken.Resolved("prop", 42, TokenType.PropertyKey))),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl( new Id, "NAME", NoChildren, arguments, Set( "n") )
