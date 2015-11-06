@@ -17,13 +17,16 @@ These upgrades are either automatic, or require explicit configuration to allow 
 
 In this release of Neo4j, the following upgrades are permitted.
 
-1.9.x -> {neo4j-version}::
-<<explicit-upgrade,Explicit configuration is required>>
-
 2.0.x -> {neo4j-version}::
 <<explicit-upgrade,Explicit configuration is required>>
 
 2.1.x -> {neo4j-version}::
+<<explicit-upgrade,Explicit configuration is required>>
+
+2.2.x -> {neo4j-version}::
+<<explicit-upgrade,Explicit configuration is required>>
+
+2.3.x -> {neo4j-version}::
 <<explicit-upgrade,Explicit configuration is required>>
 
 [NOTE]
