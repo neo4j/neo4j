@@ -11,6 +11,7 @@
 * `LOAD CSV` supports resources compressed with _gzip_, _Deflate_, as well as _ZIP_ archives.
 * CSV files can be stored on the database server and are then accessible using a `file:///` URL.
   Alternatively, `LOAD CSV` also supports accessing CSV files via _HTTPS_, _HTTP_, and _FTP_.
+* `LOAD CSV` will follow _HTTP_ redirects but for security reasons it will not follow redirects that changes the protocol, for example if the redirect is going from _HTTPS_ to _HTTP_.
 
 [NOTE]
 .Configuration settings for file URLs

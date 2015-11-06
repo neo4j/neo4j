@@ -11,6 +11,7 @@ In this example, we're given three CSV files: a list of persons, a list of movie
 
 CSV files can be stored on the database server and are then accessible using a +file://+ URL.
 Alternatively, +LOAD CSV+ also supports accessing CSV files via +HTTPS+, +HTTP+, and +FTP+.
++LOAD CSV+ will follow +HTTP+ redirects but for security reasons it will not follow redirects that changes the protocol, for example if the redirect is going from +HTTPS+ to +HTTP+.
 
 For more details, see <<query-load-csv>>.
 
