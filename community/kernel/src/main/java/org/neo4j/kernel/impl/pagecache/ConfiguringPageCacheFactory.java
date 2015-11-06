@@ -85,7 +85,9 @@ public class ConfiguringPageCacheFactory
         long totalPhysicalMemory = totalPhysicalMemory();
         String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
         long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
-        long pageCacheMb = (calculateMaxPages( config ) * calculatePageSize( config )) / 1024 / 1024;
+        long maxPages = calculateMaxPages( config );
+        long pageSize = calculatePageSize( config );
+        long pageCacheMb = (maxPages * pageSize) / 1024 / 1024;
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";
