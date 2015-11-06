@@ -20,15 +20,45 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.locking.Locks.Client;
+
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public CloseCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
+    }
+
+    @Test
+    public void shouldNotBeAbleToHandOutClientsIfShutDown() throws Throwable
+    {
+        // GIVEN a lock manager and working clients
+        try ( Client client = locks.newClient() )
+        {
+            client.acquireExclusive( ResourceTypes.NODE, 0 );
+        }
+
+        // WHEN
+        locks.stop();
+        locks.shutdown();
+
+        // THEN
+        try
+        {
+            locks.newClient();
+            fail( "Should fail" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // Good
+        }
     }
 
     @Test

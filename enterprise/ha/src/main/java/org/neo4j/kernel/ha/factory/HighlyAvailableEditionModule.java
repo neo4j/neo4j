@@ -480,7 +480,7 @@ public class HighlyAvailableEditionModule
                 return dependencies.resolveDependency( NeoStoreDataSource.class ).getStoreId();
             }
         }, config.get( ClusterSettings.server_id ),
-                logging );
+                logging, platformModule.dataSourceManager );
         exceptionHandlerRef.set( highAvailabilityModeSwitcher );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );

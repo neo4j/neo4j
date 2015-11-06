@@ -41,6 +41,7 @@ import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -98,6 +99,7 @@ public class HighAvailabilityModeSwitcher
     private volatile Future<?> modeSwitcherFuture;
     private volatile HighAvailabilityMemberState currentTargetState;
     private final AtomicBoolean canAskForElections = new AtomicBoolean( true );
+    private final DataSourceManager neoStoreDataSourceSupplier;
 
     public HighAvailabilityModeSwitcher( SwitchToSlave switchToSlave,
                                          SwitchToMaster switchToMaster,
@@ -105,7 +107,8 @@ public class HighAvailabilityModeSwitcher
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          ClusterClient clusterClient,
                                          Supplier<StoreId> storeIdSupplier,
-                                         InstanceId instanceId, LogService logService )
+                                         InstanceId instanceId, LogService logService,
+                                         DataSourceManager neoStoreDataSourceSupplier )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
@@ -116,6 +119,7 @@ public class HighAvailabilityModeSwitcher
         this.instanceId = instanceId;
         this.msgLog = logService.getInternalLog( getClass() );
         this.userLog = logService.getUserLog( getClass() );
+        this.neoStoreDataSourceSupplier = neoStoreDataSourceSupplier;
         this.haCommunicationLife = new LifeSupport();
     }
 
@@ -458,6 +462,7 @@ public class HighAvailabilityModeSwitcher
                         listener.switchToPending();
                     }
                 } );
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
 
                 if ( cancellationHandle.cancellationRequested() )
                 {

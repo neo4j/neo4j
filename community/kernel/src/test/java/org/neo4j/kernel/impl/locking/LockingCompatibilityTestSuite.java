@@ -31,13 +31,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */

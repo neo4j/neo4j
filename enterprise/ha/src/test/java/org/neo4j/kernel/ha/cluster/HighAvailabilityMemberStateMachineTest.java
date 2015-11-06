@@ -96,9 +96,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.neoStoreDataSourceSupplierMock;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcherTest.storeSupplierMock;
 
 public class HighAvailabilityMemberStateMachineTest
@@ -484,7 +484,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         HighAvailabilityModeSwitcher haModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
                 mock( SwitchToMaster.class ), election, clusterMemberAvailability, mock( ClusterClient.class ),
-                storeSupplierMock(), me, NullLogService.getInstance() );
+                storeSupplierMock(), me, NullLogService.getInstance(), neoStoreDataSourceSupplierMock() );
         haModeSwitcher.init();
         haModeSwitcher.start();
         haModeSwitcher.listeningAt( URI.create( "http://localhost:12345" ) );

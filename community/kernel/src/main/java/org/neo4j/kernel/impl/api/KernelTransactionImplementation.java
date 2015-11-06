@@ -30,10 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -48,12 +44,14 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -63,8 +61,10 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -230,7 +230,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.terminated = closing = closed = failure = success = false;
+        this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
@@ -359,11 +359,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         closed = true;
-        if ( currentStatement != null )
-        {
-            currentStatement.forceClose();
-            currentStatement = null;
-        }
+        closeCurrentStatementIfAny();
         if ( closeListener != null )
         {
             closeListener.notify( success );
@@ -669,11 +665,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void release()
     {
         locks.releaseAll();
-        pool.release( this );
-        if ( storeStatement != null )
+        if ( terminated )
         {
-            storeStatement.close();
-            storeStatement = null;
+            // This transaction has been externally marked for termination.
+            // Just dispose of this transaction and don't return it to the pool.
+            dispose();
+        }
+        else
+        {
+            // Return this instance to the pool so that another transaction may use it.
+            pool.release( this );
+            if ( storeStatement != null )
+            {
+                storeStatement.close();
+                storeStatement = null;
+            }
         }
     }
 
@@ -1119,5 +1125,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assert closeListener == null;
         closeListener = listener;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
     }
 }

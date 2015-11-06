@@ -1362,14 +1362,25 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     /**
-     * Hook that must be called whenever there is an HA mode switch (eg master/slave switch).
+     * Hook that must be called before there is an HA mode switch (eg master/slave switch),
+     * i.e. after state has changed to pending and before state is about to change to the new target state.
+     * This must only be called when the database is otherwise inaccessible.
+     */
+    public void beforeModeSwitch()
+    {
+        // Get rid of all pooled transactions, as they will otherwise reference
+        // components that have been swapped out during the mode switch.
+        kernelModule.kernelTransactions().disposeAll();
+    }
+
+    /**
+     * Hook that must be called after an HA mode switch (eg master/slave switch) have completed.
      * This must only be called when the database is otherwise inaccessible.
      */
     public void afterModeSwitch()
     {
         loadSchemaCache();
-
-        // Stop all running transactions and get rid of all pooled transactions, as they will otherwise reference
+        // Get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelModule.kernelTransactions().disposeAll();
     }
