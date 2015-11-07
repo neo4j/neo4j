@@ -54,13 +54,10 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
-    /**
-     * A simple query returning all nodes connected to some node, returning the
-     * node and the name property, if it exists, otherwise `NULL`:
-     */
     @Test
-    @Documented
     @Title( "Send a query" )
+    @Documented( "A simple query returning all nodes connected to some node, returning the node and the name " +
+                 "property, if it exists, otherwise `NULL`:" )
     @Graph( nodes = {
             @NODE( name = "I", setNameProperty = true ),
             @NODE( name = "you", setNameProperty = true ),
@@ -80,13 +77,10 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( response, not( containsString( "\"x\"" ) ) );
     }
 
-    /**
-     * By passing in an additional GET parameter when you execute Cypher queries, metadata about the query will
-     * be returned, such as how many labels were added or removed by the query.
-     */
     @Test
-    @Documented
     @Title( "Retrieve query metadata" )
+    @Documented("By passing in an additional GET parameter when you execute Cypher queries, metadata about the " +
+                "query will be returned, such as how many labels were added or removed by the query.")
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true, labels = { @LABEL( "Director" ) } ) } )
     public void testQueryStatistics() throws JsonParseException
     {
@@ -131,13 +125,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( response.indexOf( "columns" ) < response.indexOf( "data" ), is( true ));
     }
 
-    /**
-     * Errors on the server will be reported as a JSON-formatted message,
-     * exception name and stacktrace.
-     */
     @Test
-    @Documented
     @Title( "Errors" )
+    @Documented( "Errors on the server will be reported as a JSON-formatted message, exception name and stacktrace." )
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
         String response = cypherRestCall( "MATCH (x {name: 'I'}) RETURN x.dummy/0", Status.BAD_REQUEST );
@@ -147,12 +137,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "stackTrace" ) );
     }
 
-    /**
-     * Paths can be returned just like other return types.
-     */
     @Test
-    @Documented
     @Title( "Return paths" )
+    @Documented( "Paths can be returned just like other return types." )
     @Graph( "I know you" )
     public void return_paths() throws Exception {
         String script = "MATCH path = (x {name: 'I'})--(friend) RETURN path, friend.name";
@@ -163,13 +150,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "you" ) );
     }
 
-    /**
-     * Cypher supports queries with parameters
-     * which are submitted as JSON.
-     */
     @Test
-    @Documented
     @Title("Use parameters")
+    @Documented( "Cypher supports queries with parameters which are submitted as JSON." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_parameters() throws Exception {
         data.get();
@@ -183,12 +166,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "data" ) );
     }
 
-    /**
-     * Create a node with a label and a property using Cypher.
-     * See the request for the parameter sent with the query.
-     */
     @Test
-    @Documented
+    @Documented( "Create a node with a label and a property using Cypher. See the request for the parameter " +
+                 "sent with the query." )
     @Title( "Create a node" )
     @Graph
     public void send_query_to_create_a_node() throws Exception {
@@ -200,13 +180,10 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "Andres" ) );
     }
 
-    /**
-     * Create a node with a label and multiple properties using Cypher.
-     * See the request for the parameter sent with the query.
-     */
     @Test
-    @Documented
     @Title( "Create a node with multiple properties" )
+    @Documented( "Create a node with a label and multiple properties using Cypher. See the request for the parameter " +
+                 "sent with the query." )
     @Graph
     public void send_query_to_create_a_node_from_a_map() throws Exception
     {
@@ -219,12 +196,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "Michael" ) );
     }
 
-    /**
-     * Create multiple nodes with properties using Cypher. See the request for
-     * the parameter sent with the query.
-     */
     @Test
-    @Documented
+    @Documented( "Create multiple nodes with properties using Cypher. See the request for the parameter sent " +
+                 "with the query." )
     @Title( "Create multiple nodes with properties" )
     @Graph
     public void send_query_to_create_multipe_nodes_from_a_map() throws Exception
@@ -239,12 +213,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "Andres" ) );
     }
 
-    /**
-     * Set all properties on a node.
-     */
     @Test
-    @Documented
     @Title( "Set all properties on a node using Cypher" )
+    @Documented( "Set all properties on a node." )
     @Graph
     public void setAllPropertiesUsingMap() throws Exception
     {
@@ -277,13 +248,10 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "World" ) );
     }
 
-    /**
-     * Sending a query with syntax errors will give a bad request (HTTP 400)
-     * response together with an error message.
-     */
     @Test
-    @Documented
     @Title( "Syntax errors" )
+    @Documented( "Sending a query with syntax errors will give a bad request (HTTP 400) response together with " +
+                 "an error message." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_syntax_errors() throws Exception {
         data.get();
@@ -297,14 +265,11 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "stackTrace" ) );
     }
 
-    /**
-     * When sending queries that
-     * return nested results like list and maps,
-     * these will get serialized into nested JSON representations
-     * according to their types.
-     */
     @Test
-    @Documented
+    @Documented( "When sending queries that\n" +
+                 "return nested results like list and maps,\n" +
+                 "these will get serialized into nested JSON representations\n" +
+                 "according to their types." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void nested_results() throws Exception {
         data.get();
@@ -318,13 +283,10 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                         "\"you\", \"I\"" )) );
     }
 
-    /**
-     * By passing in an extra parameter, you can ask the cypher executor to return a profile of the query
-     * as it is executed. This can help in locating bottlenecks.
-     */
     @Test
-    @Documented
     @Title( "Profile a query" )
+    @Documented( "By passing in an extra parameter, you can ask the cypher executor to return a profile of the " +
+                 "query as it is executed. This can help in locating bottlenecks." )
     @Graph( nodes = {
             @NODE( name = "I", setNameProperty = true ),
             @NODE( name = "you", setNameProperty = true ),
@@ -376,13 +338,9 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         }
     }
 
-    /**
-     * This example shows what happens if you misspell
-     * an identifier.
-     */
     @Test
-    @Documented
     @Title( "Send queries with errors" )
+    @Documented( "This example shows what happens if you misspell an identifier." )
     @Graph( value = { "I know you" }, autoIndexNodes = true )
     public void send_queries_with_errors() throws Exception {
         data.get();

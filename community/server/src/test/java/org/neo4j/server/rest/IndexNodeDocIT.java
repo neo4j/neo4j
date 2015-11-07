@@ -76,10 +76,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         gen().setGraph( server().getDatabase().getGraph() );
     }
 
-    /**
-     * List node indexes.
-     */
-    @Documented
+    @Documented( "List node indexes." )
     @Test
     public void shouldGetListOfNodeIndexesWhenOneExist() throws JsonParseException
     {
@@ -100,13 +97,10 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 1, functionalTestHelper.removeAnyAutoIndex( theIndex ).size() );
     }
 
-    /**
-     * Create node index
-     *
-     * NOTE: Instead of creating the index this way, you can simply start to use
-     * it, and it will be created automatically with default configuration.
-     */
-    @Documented
+    @Documented( "Create node index\n" +
+                 "\n" +
+                 "NOTE: Instead of creating the index this way, you can simply start to use\n" +
+                 "it, and it will be created automatically with default configuration." )
     @Test
     public void shouldCreateANamedNodeIndex()
     {
@@ -143,14 +137,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( indexName ) );
     }
 
-    /**
-     * Create node index with configuration. This request is only necessary if
-     * you want to customize the index settings. If you are happy with the
-     * defaults, you can just start indexing nodes/relationships, as
-     * non-existent indexes will automatically be created as you do. See
-     * <<indexing-create-advanced>> for more information on index configuration.
-     */
-    @Documented
+    @Documented( "Create node index with configuration.\n\n" +
+                 "This request is only necessary if you want to customize the index settings. \n" +
+                 "If you are happy with the defaults, you can just start indexing nodes/relationships, as\n" +
+                 "non-existent indexes will automatically be created as you do. See\n" +
+                 "<<indexing-create-advanced>> for more information on index configuration." )
     @Test
     public void shouldCreateANamedNodeIndexWithConfiguration() throws Exception
     {
@@ -166,19 +157,16 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( "fulltext" ) );
     }
 
-    /**
-     * Add node to index.
-     *
-     * Associates a node with the given key/value pair in the given index.
-     *
-     * NOTE: Spaces in the URI have to be encoded as +%20+.
-     *
-     * CAUTION: This does *not* overwrite previous entries. If you index the
-     * same key/value/item combination twice, two index entries are created. To
-     * do update-type operations, you need to delete the old entry before adding
-     * a new one.
-     */
-    @Documented
+    @Documented( "Add node to index.\n" +
+                 "\n" +
+                 "Associates a node with the given key/value pair in the given index.\n" +
+                 "\n" +
+                 "NOTE: Spaces in the URI have to be encoded as +%20+.\n" +
+                 "\n" +
+                 "CAUTION: This does *not* overwrite previous entries. If you index the\n" +
+                 "same key/value/item combination twice, two index entries are created. To\n" +
+                 "do update-type operations, you need to delete the old entry before adding\n" +
+                 "a new one." )
     @Test
     public void shouldAddToIndex() throws Exception
     {
@@ -202,12 +190,9 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, hits.size() );
     }
 
-    /**
-     * Find node by exact match.
-     *
-     * NOTE: Spaces in the URI have to be encoded as +%20+.
-     */
-    @Documented
+    @Documented( "Find node by exact match.\n" +
+                 "\n" +
+                 "NOTE: Spaces in the URI have to be encoded as +%20+." )
     @Test
     public void shouldAddToIndexAndRetrieveItByExactMatch() throws Exception
     {
@@ -230,26 +215,23 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, hits.size() );
     }
 
-    /**
-     * Find node by query.
-     *
-     * The query language used here depends on what type of index you are
-     * querying. The default index type is Lucene, in which case you should use
-     * the Lucene query language here. Below an example of a fuzzy search over
-     * multiple keys.
-     *
-     * See: {lucene-base-uri}/queryparsersyntax.html
-     *
-     * Getting the results with a predefined ordering requires adding the
-     * parameter
-     *
-     * `order=ordering`
-     *
-     * where ordering is one of index, relevance or score. In this case an
-     * additional field will be added to each result, named score, that holds
-     * the float value that is the score reported by the query result.
-     */
-    @Documented
+    @Documented( "Find node by query.\n" +
+                 "\n" +
+                 "The query language used here depends on what type of index you are\n" +
+                 "querying. The default index type is Lucene, in which case you should use\n" +
+                 "the Lucene query language here. Below an example of a fuzzy search over\n" +
+                 "multiple keys.\n" +
+                 "\n" +
+                 "See: {lucene-base-uri}/queryparsersyntax.html\n" +
+                 "\n" +
+                 "Getting the results with a predefined ordering requires adding the\n" +
+                 "parameter\n" +
+                 "\n" +
+                 "`order=ordering`\n" +
+                 "\n" +
+                 "where ordering is one of index, relevance or score. In this case an\n" +
+                 "additional field will be added to each result, named score, that holds\n" +
+                 "the float value that is the score reported by the query result." )
     @Test
     public void shouldAddToIndexAndRetrieveItByQuery() throws JsonParseException
     {
@@ -532,10 +514,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    /**
-     * Delete node index.
-     */
-    @Documented
+    @Documented( "Delete node index." )
     @Test
     public void shouldReturn204WhenRemovingNodeIndexes()
     {
@@ -551,10 +530,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     // REMOVING ENTRIES
     //
 
-    /**
-     * Remove all entries with a given node from an index.
-     */
-    @Documented
+    @Documented( "Remove all entries with a given node from an index." )
     @Test
     public void shouldBeAbleToRemoveIndexingById()
     {
@@ -583,10 +559,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 .size() );
     }
 
-    /**
-     * Remove all entries with a given node and key from an index.
-     */
-    @Documented
+    @Documented( "Remove all entries with a given node and key from an index." )
     @Test
     public void shouldBeAbleToRemoveIndexingByIdAndKey()
     {
@@ -615,10 +588,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 .size() );
     }
 
-    /**
-     * Remove all entries with a given node, key and value from an index.
-     */
-    @Documented
+    @Documented( "Remove all entries with a given node, key and value from an index." )
     @Test
     public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue()
     {
@@ -690,12 +660,9 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    /**
-     * Get or create unique node (create).
-     *
-     * The node is created if it doesn't exist in the unique index already.
-     */
-    @Documented
+    @Documented( "Get or create unique node (create).\n" +
+                 "\n" +
+                 "The node is created if it doesn't exist in the unique index already." )
     @Test
     public void get_or_create_a_node_in_an_unique_index() throws Exception
     {
@@ -746,15 +713,12 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( node, inTx( graphdb(), hasProperty( "array" ).withValue( new int[]{1, 2, 3} ) ) );
     }
 
-    /**
-     * Get or create unique node (existing).
-     *
-     * Here,
-     * a node is not created but the existing unique node returned, since another node
-     * is indexed with the same data already. The node data returned is then that of the
-     * already existing node.
-     */
-    @Documented
+    @Documented( "Get or create unique node (existing).\n" +
+                 "\n" +
+                 "Here,\n" +
+                 "a node is not created but the existing unique node returned, since another node\n" +
+                 "is indexed with the same data already. The node data returned is then that of the\n" +
+                 "already existing node." )
     @Test
     public void get_or_create_unique_node_if_already_existing() throws Exception
     {
@@ -786,14 +750,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-    /**
-     * Create a unique node or return fail (create).
-     *
-     * Here, in case
-     * of an already existing node, an error should be returned. In this
-     * example, no existing indexed node is found and a new node is created.
-     */
-    @Documented
+    @Documented( "Create a unique node or return fail (create).\n" +
+                 "\n" +
+                 "Here, in case\n" +
+                 "of an already existing node, an error should be returned. In this\n" +
+                 "example, no existing indexed node is found and a new node is created." )
     @Test
     public void create_a_unique_node_or_fail_create() throws Exception
     {
@@ -817,15 +778,12 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     }
 
 
-    /**
-     * Create a unique node or return fail (fail).
-     *
-     * Here, in case
-     * of an already existing node, an error should be returned. In this
-     * example, an existing node indexed with the same data
-     * is found and an error is returned.
-     */
-    @Documented
+    @Documented( "Create a unique node or return fail (fail).\n" +
+                 "\n" +
+                 "Here, in case\n" +
+                 "of an already existing node, an error should be returned. In this\n" +
+                 "example, an existing node indexed with the same data\n" +
+                 "is found and an error is returned." )
     @Test
     public void create_a_unique_node_or_return_fail___fail() throws Exception
     {
@@ -862,15 +820,12 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-    /**
-     * Add an existing node to unique index (not indexed).
-     *
-     * Associates a node with the given key/value pair in the given unique
-     * index.
-     *
-     * In this example, we are using `create_or_fail` uniqueness.
-     */
-    @Documented
+    @Documented( "Add an existing node to unique index (not indexed).\n" +
+                 "\n" +
+                 "Associates a node with the given key/value pair in the given unique\n" +
+                 "index.\n" +
+                 "\n" +
+                 "In this example, we are using `create_or_fail` uniqueness." )
     @Test
     public void addExistingNodeToUniqueIndexAdded() throws Exception
     {
@@ -893,14 +848,10 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, hits.size() );
     }
 
-    /**
-     * Add an existing node to unique index (already indexed).
-     *
-     * In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,
-     * as we have set the uniqueness to `create_or_fail`.
-     *
-     */
-    @Documented
+    @Documented( "Add an existing node to unique index (already indexed).\n" +
+                 "\n" +
+                 "In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,\n" +
+                 "as we have set the uniqueness to `create_or_fail`." )
     @Test
     public void addExistingNodeToUniqueIndexExisting() throws Exception
     {
@@ -925,14 +876,11 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
     }
 
-    /**
-     * Backward Compatibility Test (using old syntax ?unique)
-     * Put node if absent - Create.
-     *
-     * Add a node to an index unless a node already exists for the given index data. In
-     * this case, a new node is created since nothing existing is found in the index.
-     */
-    @Documented
+    @Documented( "Backward Compatibility Test (using old syntax ?unique)\n" +
+                 "Put node if absent - Create.\n" +
+                 "\n" +
+                 "Add a node to an index unless a node already exists for the given index data. In\n" +
+                 "this case, a new node is created since nothing existing is found in the index." )
     @Test
     public void put_node_if_absent___create() throws Exception
     {

@@ -362,42 +362,6 @@
         </plugins>
       </build>
     </profile>
-    <profile><!-- used for testing -->
-      <id>unix-dependency-tools.jar</id>
-      <activation>
-        <file>
-          <exists>${java.home}/../lib/tools.jar</exists>
-        </file>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>tools</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/../lib/tools.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile><!-- used for testing -->
-      <id>Windows-dependency-tools.jar</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>tools</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
     <profile>
       <id>java8-set-javadoc-doclint</id>
       <activation>

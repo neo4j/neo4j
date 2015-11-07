@@ -108,17 +108,14 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.document( directory.getAbsolutePath(), sectionName );
     }
 
-    /**
-     * Title2.
-     *
-     * @@snippet1
-     *
-     *            more stuff
-     *
-     *
-     * @@snippet2
-     */
-    @Documented
+    @Documented( "Title2.\n" +
+                 "\n" +
+                 "@@snippet1\n" +
+                 "\n" +
+                 "           more stuff\n" +
+                 "\n" +
+                 "\n" +
+                 "@@snippet2" )
     @Test
     @Graph( "I know you" )
     public void canCreateDocsFromSnippetsInAnnotations() throws Exception

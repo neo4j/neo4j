@@ -50,11 +50,8 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 {
-    /**
-     * Create uniqueness constraint.
-     * Create a uniqueness constraint on a property.
-     */
-    @Documented
+    @Documented( "Create uniqueness constraint.\n" +
+                 "Create a uniqueness constraint on a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void createPropertyUniquenessConstraint() throws JsonParseException
@@ -77,11 +74,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         assertThat( serialized, equalTo( constraint ) );
     }
 
-    /**
-     * Get a specific uniqueness constraint.
-     * Get a specific uniqueness constraint for a label and a property.
-     */
-    @Documented
+    @Documented( "Get a specific uniqueness constraint.\n" +
+                 "Get a specific uniqueness constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelUniquenessPropertyConstraint() throws JsonParseException
@@ -104,11 +98,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItem( constraint ) );
     }
 
-    /**
-     * Get all uniqueness constraints for a label.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all uniqueness constraints for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelUniquenessPropertyConstraints() throws JsonParseException
@@ -136,11 +127,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItems( constraint1, constraint2 ) );
     }
 
-    /**
-     * Get all constraints for a label.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all constraints for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelPropertyConstraints() throws JsonParseException
@@ -162,11 +150,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItems( constraint1 ) );
     }
 
-    /**
-     * Get all constraints.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all constraints." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void get_constraints() throws JsonParseException
@@ -188,11 +173,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItems( constraint1 ) );
     }
 
-    /**
-     * Drop uniqueness constraint.
-     * Drop uniqueness constraint for a label and a property.
-     */
-    @Documented
+    @Documented( "Drop uniqueness constraint.\n" +
+                 "Drop uniqueness constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void drop_constraint() throws Exception

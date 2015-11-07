@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,10 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.ws.rs.core.Response.Status;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -40,7 +39,6 @@ import org.neo4j.test.GraphDescription.NODE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
@@ -133,15 +131,12 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertTrue( "Expected not empty:" + expected, expected.isEmpty() );
     }
 
-    /**
-     * Traversal using a return filter.
-     *
-     * In this example, the +none+ prune evaluator is used and a return filter
-     * is supplied in order to return all names containing "t".
-     * The result is to be returned as nodes and the max depth is
-     * set to 3.
-     */
-    @Documented
+    @Documented( "Traversal using a return filter.\n" +
+                 "\n" +
+                 "In this example, the +none+ prune evaluator is used and a return filter\n" +
+                 "is supplied in order to return all names containing \"t\".\n" +
+                 "The result is to be returned as nodes and the max depth is\n" +
+                 "set to 3." )
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription()
@@ -167,12 +162,9 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         expectNodes( entity, getNodes( "Root", "Mattias", "Peter", "Tobias" ) );
     }
 
-    /**
-     * Traversal returning nodes below a certain depth.
-     *
-     * Here, all nodes at a traversal depth below 3 are returned.
-     */
-    @Documented
+    @Documented( "Traversal returning nodes below a certain depth.\n" +
+                 "\n" +
+                 "Here, all nodes at a traversal depth below 3 are returned." )
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingAtDepth()
