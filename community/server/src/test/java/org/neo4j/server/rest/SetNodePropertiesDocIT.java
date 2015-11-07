@@ -19,17 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import org.junit.Test;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -39,18 +34,21 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 
+import static org.hamcrest.core.IsNot.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+
 public class SetNodePropertiesDocIT extends
         AbstractRestFunctionalTestBase
 {
 
-    /**
-     * Update node properties.
-     *
-     * This will replace all existing properties on the node with the new set
-     * of attributes.
-     */
     @Graph( "jim knows joe" )
-    @Documented
+    @Documented( "Update node properties.\n" +
+                 "\n" +
+                 "This will replace all existing properties on the node with the new set\n" +
+                 "of attributes." )
     @Test
     public void shouldReturn204WhenPropertiesAreUpdated()
             throws JsonParseException
@@ -112,15 +110,12 @@ public class SetNodePropertiesDocIT extends
         return new URI( getPropertiesUri( node ) + "/" + key );
     }
 
-    /**
-     * Set property on node.
-     *
-     * Setting different properties will retain the existing ones for this node.
-     * Note that a single value are submitted not as a map but just as a value
-     * (which is valid JSON) like in the example
-     * below.
-     */
-    @Documented
+    @Documented( "Set property on node.\n" +
+                 "\n" +
+                 "Setting different properties will retain the existing ones for this node.\n" +
+                 "Note that a single value are submitted not as a map but just as a value\n" +
+                 "(which is valid JSON) like in the example\n" +
+                 "below." )
     @Graph( nodes = {@NODE(name="jim", properties={@PROP(key="foo2", value="bar2")})} )
     @Test
     public void shouldReturn204WhenPropertyIsSet() throws Exception
@@ -132,13 +127,10 @@ public class SetNodePropertiesDocIT extends
         assertThat( jim, inTx(graphdb(), hasProperty( "foo2" ) ) );
     }
 
-    /**
-     * Property values can not be nested.
-     *
-     * Nesting properties is not supported. You could for example store the
-     * nested JSON as a string instead.
-     */
-    @Documented
+    @Documented( "Property values can not be nested.\n" +
+                 "\n" +
+                 "Nesting properties is not supported. You could for example store the\n" +
+                 "nested JSON as a string instead." )
     @Test
     public void shouldReturn400WhenSendinIncompatibleJsonProperty()
             throws Exception
