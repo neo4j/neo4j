@@ -61,7 +61,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[KeyToke
     Iterator(context)
   }
 
-  def identifiers = Seq.empty
+  def variables = Seq.empty
 
   def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }

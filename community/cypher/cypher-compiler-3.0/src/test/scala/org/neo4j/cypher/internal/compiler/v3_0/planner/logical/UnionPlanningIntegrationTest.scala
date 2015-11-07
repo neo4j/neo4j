@@ -70,7 +70,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
               Map("a" -> Variable("  a@39") _)
             )(solved)
           )(solved),
-          groupingExpressions = Map("a" -> ident("a")),
+          groupingExpressions = Map("a" -> variable("a")),
           aggregationExpression = Map.empty
         )(solved)
       )

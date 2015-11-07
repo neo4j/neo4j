@@ -54,7 +54,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
 
   def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
     case identifier: Variable if okToRewrite(identifier) =>
-      projections.get(identifier).map(_.endoRewrite(copyIdentifiers)).getOrElse(identifier.copyId)
+      projections.get(identifier).map(_.endoRewrite(copyVariables)).getOrElse(identifier.copyId)
   })
 
   def okToRewrite(i: Variable) =

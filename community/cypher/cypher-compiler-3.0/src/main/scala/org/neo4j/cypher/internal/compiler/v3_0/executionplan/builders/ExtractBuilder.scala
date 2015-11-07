@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{PipeMonitor, ExtractPipe}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, CachedExpression, Expression}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.AllIdentifiers
+import org.neo4j.cypher.internal.compiler.v3_0.commands.AllVariables
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 
 /**
@@ -33,8 +33,8 @@ class ExtractBuilder extends PlanBuilder {
     val q = plan.query
 
     // This is just a query part switch. No need to extract anything
-    if (q.tail.nonEmpty && q.returns == Seq(Unsolved(AllIdentifiers()))) {
-      plan.copy(query = q.copy(returns = Seq(Solved(AllIdentifiers()))))
+    if (q.tail.nonEmpty && q.returns == Seq(Unsolved(AllVariables()))) {
+      plan.copy(query = q.copy(returns = Seq(Solved(AllVariables()))))
     } else {
       val expressions: Map[String, Expression] =
         q.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap

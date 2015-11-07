@@ -271,7 +271,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       def run() = {
         // Given
         val labelPredicate = HasLabel(Variable(identifier), KeyToken.Unresolved(label, TokenType.Label))
-        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName(property)_)_, ast.StringLiteral("prefix")_)_
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(variable("n"), ast.PropertyKeyName(property)_)_, ast.StringLiteral("prefix")_)_
         val startsWithPredicate = toCommandPredicate(startsWith)
 
         val query = newQuery(
@@ -299,8 +299,8 @@ class StartPointChoosingBuilderTest extends BuilderTest {
       def run() = {
         // Given
         val labelPredicate = HasLabel(Variable(identifier), KeyToken.Unresolved(label, TokenType.Label))
-        val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val prop: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(variable("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
         val inequalityPredicate = toCommandPredicate(inequality)
 
         val query = newQuery(

@@ -91,7 +91,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     }
   }
 
-  def identifiers = Seq(key -> CTNode)
+  def variables = Seq(key -> CTNode)
 
   override def children = properties.map(_._2).toSeq ++ labels.flatMap(_.children)
 

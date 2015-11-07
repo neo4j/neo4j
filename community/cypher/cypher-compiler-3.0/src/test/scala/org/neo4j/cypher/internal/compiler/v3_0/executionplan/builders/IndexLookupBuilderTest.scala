@@ -66,7 +66,7 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
         val predicate = toCommandPredicate(startsWith)
 
         // WHAM
@@ -82,8 +82,8 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_
-        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.LessThanOrEqual(property, ast.StringLiteral("xxx")_)_))
+        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_
+        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.LessThanOrEqual(property, ast.StringLiteral("xxx")_)_))
         val predicate = toCommandPredicate(inequality)
 
         // WHAM
@@ -99,7 +99,7 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop")_)_
+        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_
         val inequality: ast.StartsWith = ast.StartsWith(property, ast.Parameter("paramName")_)_
         val predicate = toCommandPredicate(inequality)
 
@@ -116,8 +116,8 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("42") _) _))
         val predicate = toCommandPredicate(inequality)
 
         // WHAM
@@ -133,8 +133,8 @@ class IndexLookupBuilderTest extends BuilderTest {
     object inner extends AstConstructionTestSupport {
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(ident("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("10") _) _,
+        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("10") _) _,
                                                                                           ast.LessThan(property, ast.SignedDecimalIntegerLiteral("100") _) _,
                                                                                           ast.GreaterThanOrEqual(property, ast.DecimalDoubleLiteral("15.5") _) _))
         val predicate = toCommandPredicate(inequality)

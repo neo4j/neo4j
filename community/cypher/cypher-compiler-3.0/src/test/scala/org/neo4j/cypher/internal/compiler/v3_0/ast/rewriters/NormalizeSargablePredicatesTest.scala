@@ -33,36 +33,36 @@ class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructio
   }
 
   test("exists(a.prop) is not rewritten") {
-    val input: Expression = Exists.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
-    val output: Expression = Exists.asInvocation(Property(ident("a"), PropertyKeyName("prop")_)_)(pos)
+    val input: Expression = Exists.asInvocation(Property(variable("a"), PropertyKeyName("prop")_)_)(pos)
+    val output: Expression = Exists.asInvocation(Property(variable("a"), PropertyKeyName("prop")_)_)(pos)
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x < y rewritten to: x >= y") {
-    val input: Expression = Not(LessThan(ident("x"), ident("y"))_)_
-    val output: Expression = GreaterThanOrEqual(ident("x"), ident("y"))_
+    val input: Expression = Not(LessThan(variable("x"), variable("y"))_)_
+    val output: Expression = GreaterThanOrEqual(variable("x"), variable("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x <= y rewritten to: x > y") {
-    val input: Expression = Not(LessThanOrEqual(ident("x"), ident("y"))_)_
-    val output: Expression = GreaterThan(ident("x"), ident("y"))_
+    val input: Expression = Not(LessThanOrEqual(variable("x"), variable("y"))_)_
+    val output: Expression = GreaterThan(variable("x"), variable("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x > y rewritten to: x <= y") {
-    val input: Expression = Not(GreaterThan(ident("x"), ident("y"))_)_
-    val output: Expression = LessThanOrEqual(ident("x"), ident("y"))_
+    val input: Expression = Not(GreaterThan(variable("x"), variable("y"))_)_
+    val output: Expression = LessThanOrEqual(variable("x"), variable("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x >= y rewritten to: x < y") {
-    val input: Expression = Not(GreaterThanOrEqual(ident("x"), ident("y"))_)_
-    val output: Expression = LessThan(ident("x"), ident("y"))_
+    val input: Expression = Not(GreaterThanOrEqual(variable("x"), variable("y"))_)_
+    val output: Expression = LessThan(variable("x"), variable("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }

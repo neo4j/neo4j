@@ -28,11 +28,11 @@ class AstDocHandlerTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   val docGen = AstDocHandler.docGen.lift[Any] orElse SimpleDocHandler.docGen
 
   test("should work inside non-ast nodes") {
-    pprintToString[Container](Container(ident("a"))) should equal("Container(a)")
+    pprintToString[Container](Container(variable("a"))) should equal("Container(a)")
   }
 
   test("should work inside non-ast-nodes inside unknown ast nodes") {
-    pprintToString[UnExpected](UnExpected(Container(ident("a")))) should equal("UnExpected(Container(a))")
+    pprintToString[UnExpected](UnExpected(Container(variable("a")))) should equal("UnExpected(Container(a))")
   }
 
   case class UnExpected(v: Any) extends ASTNode { def position = null }

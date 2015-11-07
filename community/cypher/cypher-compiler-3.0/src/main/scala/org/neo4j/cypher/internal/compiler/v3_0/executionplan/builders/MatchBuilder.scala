@@ -60,7 +60,7 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     case Unsolved(x: Pattern)      => {
       val patternIdentifiers: Seq[String] = x.possibleStartPoints.map(_._1)
 
-      val areStartPointsResolved = start.forall(si => patternIdentifiers.find(_ == si.token.identifierName) match {
+      val areStartPointsResolved = start.forall(si => patternIdentifiers.find(_ == si.token.variableName) match {
         case Some(_) => si.solved
         case None    => true
       })

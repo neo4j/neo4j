@@ -44,7 +44,7 @@ trait UpdateCommandExpander {
 
     def add(action: UpdateAction) {
       actions += action
-      symbols  = symbols.add(action.identifiers.toMap)
+      symbols  = symbols.add(action.variables.toMap)
     }
 
     def addCreateNodeIfNecessary(e: RelationshipEndpoint) =

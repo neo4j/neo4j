@@ -72,7 +72,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   private def lockAndThenMatch(state: QueryState, ctx: ExecutionContext): Iterator[ExecutionContext] = {
     val lockingQueryContext = state.query.upgradeToLockingQueryContext
-    val patternIdentifiers = identifiers.map(p => p._1)
+    val patternIdentifiers = variables.map(p => p._1)
     ctx.collect { case (identifier, node: Node) if patternIdentifiers.contains(identifier) => node.getId }.toSeq.sorted.
       foreach( id => lockingQueryContext.getLabelsForNode(id) ) // TODO: This locks the nodes. Hack!
     matchPipe.createResults(state)
@@ -95,7 +95,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     temp
   }
 
-  def identifiers: Seq[(String, CypherType)] = patterns.flatMap(_.possibleStartPoints)
+  def variables: Seq[(String, CypherType)] = patterns.flatMap(_.possibleStartPoints)
 
   def rewrite(f: (Expression) => Expression): UpdateAction =
     MergePatternAction(
@@ -119,7 +119,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
   }
 
   private def readEffects(symbols: SymbolTable): Effects = {
-    val collect: Seq[Effect] = identifiers.collect {
+    val collect: Seq[Effect] = variables.collect {
       case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsAllNodes
       case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsAllRelationships
     }
@@ -141,7 +141,7 @@ case class MergePatternAction(patterns: Seq[Pattern],
     actionEffects ++ onCreateEffects ++ onMatchEffects ++ updateActionsEffects ++ effectsFromReading
   }
 
-  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
+  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
 
   override def arguments: Seq[Argument] = {
     val startPoint: Option[String] = maybeMatchPipe.map {

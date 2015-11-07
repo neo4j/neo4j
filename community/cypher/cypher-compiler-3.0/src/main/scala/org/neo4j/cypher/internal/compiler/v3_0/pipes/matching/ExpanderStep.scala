@@ -124,7 +124,7 @@ abstract class MiniMapProperty(originalName: String, propertyKeyName: String) ex
   protected def extract(m: MiniMap): PropertyContainer
 }
 
-abstract class MiniMapIdentifier() extends Expression {
+abstract class MiniMapVariable() extends Expression {
   protected def calculateType(symbols: SymbolTable) = fail()
 
   def arguments = Nil
@@ -143,11 +143,11 @@ abstract class MiniMapIdentifier() extends Expression {
   def fail() = throw new ThisShouldNotHappenError("Andres", "This predicate should never be used outside of the traversal matcher")
 }
 
-case class NodeIdentifier() extends MiniMapIdentifier() {
+case class NodeVariable() extends MiniMapVariable() {
   protected def extract(m: MiniMap) = m.node
 }
 
-case class RelationshipIdentifier() extends MiniMapIdentifier() {
+case class RelationshipVariable() extends MiniMapVariable() {
   protected def extract(m: MiniMap) = m.relationship
 }
 

@@ -128,11 +128,11 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
+    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
+    val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = true)(ast)
 
@@ -143,11 +143,11 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
+    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
+    val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = true)_
     val sp = ShortestPathPattern(None, patRel, single = true)(ast)
 
@@ -158,11 +158,11 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = allShortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(ident("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(ident("b")), Seq.empty, None)_
+    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
-    val relPat = RelationshipPattern(Some(ident("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
+    val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
     val ast = ShortestPaths(RelationshipChain(nodeA, relPat, nodeB)_, single = false)_
     val sp = ShortestPathPattern(Some(IdName("sp")), patRel, single = false)(ast)
 
@@ -177,11 +177,11 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
   }
 
   test("ORDER BY item") {
-    pprintToString(QueryShuffle(Seq(AscSortItem(ident("item")) _))) should equal("ORDER BY item")
+    pprintToString(QueryShuffle(Seq(AscSortItem(variable("item")) _))) should equal("ORDER BY item")
   }
 
   test("ORDER BY item DESC") {
-    pprintToString(QueryShuffle(Seq(DescSortItem(ident("item")) _))) should equal("ORDER BY item DESC")
+    pprintToString(QueryShuffle(Seq(DescSortItem(variable("item")) _))) should equal("ORDER BY item DESC")
   }
 
   test("SKIP 5") {
@@ -194,7 +194,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("ORDER BY item1, item2 DESC SKIP 5 LIMIT 5") {
     pprintToString(QueryShuffle(
-      Seq(AscSortItem(ident("item1")) _, DescSortItem(ident("item2")) _),
+      Seq(AscSortItem(variable("item1")) _, DescSortItem(variable("item2")) _),
       skip = Some(SignedDecimalIntegerLiteral("5") _),
       limit = Some(SignedDecimalIntegerLiteral("5") _)
     )) should equal("ORDER BY item1, item2 DESC SKIP 5 LIMIT 5")
@@ -252,7 +252,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     test("renders query graph selections") {
       pprintToString(QueryGraph(
         patternNodes = Set(IdName("a")),
-        selections = Selections( predicates = Set(Predicate(Set(IdName("a")), HasLabels(ident("a"), Seq(LabelName("Person")_))_)))
+        selections = Selections( predicates = Set(Predicate(Set(IdName("a")), HasLabels(variable("a"), Seq(LabelName("Person")_))_)))
       )) should equal("GIVEN * MATCH (a) WHERE Predicate[a](a:Person)")
     }
 
@@ -274,7 +274,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders hints") {
-      val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
+      val hint: UsingIndexHint = UsingIndexHint(variable("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
 
       pprintToString(QueryGraph(hints = Set(hint))) should equal("GIVEN * USING INDEX n:Person(name)")
     }
@@ -292,7 +292,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("calls down to astExpressionDocGen") {
-      pprintToString(ident("a")) should equal("a")
+      pprintToString(variable("a")) should equal("a")
     }
 
     test("renders star projections") {
@@ -300,12 +300,12 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders regular projections") {
-      pprintToString(RegularQueryProjection(projections = Map("a" -> ident("b")))) should equal("b AS `a`")
+      pprintToString(RegularQueryProjection(projections = Map("a" -> variable("b")))) should equal("b AS `a`")
     }
 
     test("renders aggregating projections") {
       pprintToString(AggregatingQueryProjection(
-        groupingKeys = Map("a" -> ident("b")),
+        groupingKeys = Map("a" -> variable("b")),
         aggregationExpressions = Map("x" -> CountStar()_)
       )) should equal("b AS `a`, count(*) AS `x`")
     }
@@ -319,12 +319,12 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders order by") {
-      pprintToString(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(AscSortItem(ident("a"))_)))) should equal("* ORDER BY a")
-      pprintToString(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(DescSortItem(ident("a"))_)))) should equal("* ORDER BY a DESC")
+      pprintToString(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(AscSortItem(variable("a"))_)))) should equal("* ORDER BY a")
+      pprintToString(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(DescSortItem(variable("a"))_)))) should equal("* ORDER BY a DESC")
     }
 
     test("renders unwind") {
-      pprintToString(UnwindProjection(identifier = IdName("name"), ident("n"))) should equal("UNWIND n AS `name`")
+      pprintToString(UnwindProjection(identifier = IdName("name"), variable("n"))) should equal("UNWIND n AS `name`")
     }
 
     test("renders tail free empty planner query") {

@@ -37,9 +37,9 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
 
     val contract = rewriterSequencer("ASTRewriter")(
       normalizeComparisons,
-      enableCondition(noReferenceEqualityAmongIdentifiers),
+      enableCondition(noReferenceEqualityAmongVariables),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
-      enableCondition(orderByOnlyOnIdentifiers),
+      enableCondition(orderByOnlyOnVariables),
       enableCondition(noDuplicatesInReturnItems),
       expandStar(semanticState),
       enableCondition(containsNoReturnAll),

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Bound, ExclusiveBound, Inclusive
 
 class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identifier = ident("n")
+  val identifier = variable("n")
   val propertyKeyName: PropertyKeyName = PropertyKeyName("prop")_
   val property: Property = Property(identifier, propertyKeyName)_
 

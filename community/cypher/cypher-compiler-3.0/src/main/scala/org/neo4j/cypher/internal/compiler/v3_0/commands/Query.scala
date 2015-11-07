@@ -103,7 +103,7 @@ case class Query(returns: Return,
   }
 
   private def compactableStart =
-    compactable && returns == Return(List("*"), AllIdentifiers())
+    compactable && returns == Return(List("*"), AllVariables())
 
   private def compactableTail =
     compactable && aggregation.isEmpty && !updatedCommands.exists(containsMergeForPattern)

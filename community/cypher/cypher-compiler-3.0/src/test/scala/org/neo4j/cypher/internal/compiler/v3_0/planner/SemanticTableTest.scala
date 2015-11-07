@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionTypeInfo, InputPositio
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  override implicit def ident(name: String): Variable = Variable(name)(pos)
+  override implicit def variable(name: String): Variable = Variable(name)(pos)
 
   test("can add nodes to a SemanticTable") {
     val table = SemanticTable().addNode("x")

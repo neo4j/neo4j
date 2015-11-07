@@ -52,7 +52,7 @@ final case class UniqueMergeNodeProducers(nodeProducers: Seq[IndexNodeProducer])
   def arguments: Seq[Argument] = nodeProducers.flatMap(_.arguments)
 }
 
-case class MergeNodeAction(identifier: String,
+case class MergeNodeAction(variable: String,
                            props: Map[KeyToken, Expression],
                            labels: Seq[KeyToken],
                            expectations: Seq[Predicate],
@@ -76,7 +76,7 @@ case class MergeNodeAction(identifier: String,
     if (foundNodes.isEmpty) {
       val query: QueryContext = state.query
       val createdNode: Node = query.createNode()
-      val newContext = context += (identifier -> createdNode)
+      val newContext = context += (variable -> createdNode)
 
       onCreate.foreach {
         action => action.exec(newContext, state)
@@ -110,7 +110,7 @@ case class MergeNodeAction(identifier: String,
     // fetch nodes from source
     case PlainMergeNodeProducer(nodeProducer) =>
       nodeProducer(context, state).
-        map(n => context.newWith(identifier -> n)).
+        map(n => context.newWith(variable -> n)).
         filter(ctx => expectations.forall(_.isTrue(ctx)(state)))
 
     // unique index lookup
@@ -136,7 +136,7 @@ case class MergeNodeAction(identifier: String,
 
       checkedOptNode match {
         case Some(node) =>
-          val resultContext = context.newWith(identifier -> node)
+          val resultContext = context.newWith(variable -> node)
           if (expectations.forall(_.isTrue(resultContext))) Iterator(resultContext) else Iterator.empty
         case None =>
           Iterator.empty
@@ -154,10 +154,10 @@ case class MergeNodeAction(identifier: String,
       None
     }
 
-  def identifiers: Seq[(String, CypherType)] = Seq(identifier -> CTNode)
+  def variables: Seq[(String, CypherType)] = Seq(variable -> CTNode)
 
   def rewrite(f: (Expression) => Expression) =
-    MergeNodeAction(identifier = identifier,
+    MergeNodeAction(variable = variable,
       props = props.map { case (k, v) => k.rewrite(f) -> v.rewrite(f) },
       labels = labels.map(_.rewrite(f)),
       expectations = expectations.map(_.rewriteAsPredicate(f)),
@@ -168,11 +168,11 @@ case class MergeNodeAction(identifier: String,
   def symbolTableDependencies =
     (expectations.flatMap(_.symbolTableDependencies)
       ++ onCreate.flatMap(_.symbolTableDependencies)
-      ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
+      ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - variable
 
   def localEffects(symbols: SymbolTable) =
     if (labels.isEmpty) Effects(CreatesAnyNode, ReadsAllNodes)
     else Effects(ReadsNodesWithLabels(labels.map(_.name).toSet), CreatesNodesWithLabels(labels.map(_.name).toSet))
 
-  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
+  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
 }

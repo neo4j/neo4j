@@ -19,23 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.Condition
+import org.neo4j.cypher.internal.frontend.v3_0.Ref
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 
-class NoReferenceEqualityAmongIdentifiersTest extends CypherFunSuite with AstConstructionTestSupport {
-
-  private val collector: (Any => Seq[String]) = noReferenceEqualityAmongIdentifiers
-
-  test("unhappy when same identifier instance is used multiple times") {
-    val id = ident("a")
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(id), Seq(), Some(id))_)))_, Seq(), None)_
-
-    collector(ast) should equal(Seq(s"The instance $id is used 2 times"))
+case object noReferenceEqualityAmongVariables extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val ids = collectNodesOfType[Variable].apply(that).map(Ref[Variable])
+    ids.groupBy(x => x).collect {
+      case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
+    }.toSeq
   }
 
-  test("happy when all identifier are no reference equal") {
-    val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(ident("a")), Seq(), Some(ident("a")))_)))_, Seq(), None)_
-
-    collector(ast) shouldBe empty
-  }
+  override def name: String = productPrefix
 }
+

@@ -29,7 +29,7 @@ class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {
 
   private val labelA = LabelName("A")(pos)
-  private val prop = ident("prop")
+  private val prop = variable("prop")
   private val propKeyName = PropertyKeyName(prop.name)(pos)
   private val A = IdName("a")
   private val B = IdName("b")
@@ -38,8 +38,8 @@ class QueryGraphConnectedComponentsTest
   private val R1 = PatternRelationship(IdName("r1"), (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val R2 = PatternRelationship(IdName("r3"), (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val R3 = PatternRelationship(IdName("r7"), (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val identA = ident(A.name)
-  private val identB = ident(B.name)
+  private val identA = variable(A.name)
+  private val identB = variable(B.name)
 
   test("empty query graph returns no connected querygraphs") {
     QueryGraph().connectedComponents shouldBe empty
@@ -144,7 +144,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected relationships with each predicate on one of the relationships") {
-    val propA = Property(ident(R1.name.name), propKeyName)(pos)
+    val propA = Property(variable(R1.name.name), propKeyName)(pos)
     val predicate = Equals(propA, StringLiteral("something")(pos))(pos)
 
     val graph = QueryGraph(
@@ -202,7 +202,7 @@ class QueryGraphConnectedComponentsTest
   test("a pattern node with a hint") {
     val graph = QueryGraph.empty.
       addPatternNodes(A).
-      addHints(Set(NodeByIdentifiedIndex(ident("a"), "index", "key", mock[Expression])(pos)))
+      addHints(Set(NodeByIdentifiedIndex(variable("a"), "index", "key", mock[Expression])(pos)))
 
     graph.connectedComponents should equal(Seq(graph))
   }

@@ -170,7 +170,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   override def children = links.flatMap(_.children)
 
-  def identifiers: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
+  def variables: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
 
   override def rewrite(f: (Expression) => Expression) = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 

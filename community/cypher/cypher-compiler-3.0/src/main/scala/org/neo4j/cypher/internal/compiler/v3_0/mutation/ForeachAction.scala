@@ -55,7 +55,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 
-  def identifiers = Nil
+  def variables = Nil
 
   def addInnerIdentifier(symbols: SymbolTable): SymbolTable = {
     val t = collection.evaluateType(CTCollection(CTAny), symbols).legacyIteratedType
@@ -66,7 +66,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def symbolTableDependencies = {
     val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
-    val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
+    val updateActionIdentifiers: Set[String] = actions.flatMap(_.variables.map(_._1)).toSet
     val collectionDeps = collection.symbolTableDependencies
 
     (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps -- Some(id)

@@ -40,7 +40,7 @@ case object projectNamedPaths extends Rewriter {
     def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
     def withRewrittenIdentifier(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry
-      copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyIdentifiers)))
+      copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
     }
 
     def returnItems = paths.map {

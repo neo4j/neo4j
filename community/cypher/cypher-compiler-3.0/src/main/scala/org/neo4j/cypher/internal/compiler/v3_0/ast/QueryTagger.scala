@@ -58,7 +58,7 @@ object QueryTags {
     FilteringExpressionTag,
     LiteralExpressionTag,
     ParameterExpressionTag,
-    IdentifierExpressionTag
+    VariableExpressionTag
   )
 
   private val tagsByName: Map[String, QueryTag] = all.map { tag => tag.name -> tag }.toMap
@@ -134,7 +134,7 @@ case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
 case object LiteralExpressionTag extends QueryTag("literal-expr")
 case object ParameterExpressionTag extends QueryTag("parameter-expr")
-case object IdentifierExpressionTag extends QueryTag("identifier-expr")
+case object VariableExpressionTag extends QueryTag("identifier-expr")
 
 object QueryTagger extends QueryTagger[String] {
 
@@ -197,7 +197,7 @@ object QueryTagger extends QueryTagger[String] {
 
     // subtype of <expr>
     lift[ASTNode] {
-      case x: Variable => Set(IdentifierExpressionTag)
+      case x: Variable => Set(VariableExpressionTag)
       case x: Literal => Set(LiteralExpressionTag)
       case x: Parameter => Set(ParameterExpressionTag)
       case x: FilteringExpression => Set(FilteringExpressionTag)

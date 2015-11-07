@@ -28,120 +28,120 @@ class AstExpressionDocGenTest extends DocHandlerTestSuite[Any] with AstConstruct
   val docGen = astExpressionDocGen.lift[Any] orElse astParticleDocGen.lift[Any] orElse SimpleDocHandler.docGen
 
   test("Identifier(\"a\") => a") {
-    pprintToString(ident("a")) should equal("a")
+    pprintToString(variable("a")) should equal("a")
   }
 
   test("Identifier(\"a.foo\") => `a.foo`") {
-    pprintToString(ident("a.foo")) should equal("`a.foo`")
+    pprintToString(variable("a.foo")) should equal("`a.foo`")
   }
 
   test("Property(map, name) => map.name") {
-    val expr: Expression = Property(ident("a"), PropertyKeyName("name")_)_
+    val expr: Expression = Property(variable("a"), PropertyKeyName("name")_)_
     pprintToString(expr) should equal("a.name")
   }
 
   test("HasLabel(n, Seq(LabelName(\"Label\"))) => n:Label") {
-    val expr: Expression = HasLabels(ident("a"), Seq(LabelName("Person")_))_
+    val expr: Expression = HasLabels(variable("a"), Seq(LabelName("Person")_))_
     pprintToString(expr) should equal("a:Person")
   }
 
   test("HasLabel(n, Seq(LabelName(\"Label1\"), LabelName(\"Label2\"))) => n:Label1:Label2") {
-    val expr: Expression = HasLabels(ident("a"), Seq(LabelName("Person")_, LabelName("PartyAnimal")_))_
+    val expr: Expression = HasLabels(variable("a"), Seq(LabelName("Person")_, LabelName("PartyAnimal")_))_
     pprintToString(expr) should equal("a:Person:PartyAnimal")
   }
 
   test("Not(left) => NOT left") {
-    val expr: Expression = Not(ident("a"))_
+    val expr: Expression = Not(variable("a"))_
     pprintToString(expr) should equal("NOT a")
   }
 
   test("IsNull(left) => left IS NULL") {
-    val expr: Expression = IsNull(ident("a"))_
+    val expr: Expression = IsNull(variable("a"))_
     pprintToString(expr) should equal("a IS NULL")
   }
 
   test("IsNotNull(left) => left IS NOT NULL") {
-    val expr: Expression = IsNotNull(ident("a"))_
+    val expr: Expression = IsNotNull(variable("a"))_
     pprintToString(expr) should equal("a IS NOT NULL")
   }
 
   test("And(left, right) => left AND right") {
-    val expr: Expression = And(ident("a"), ident("b"))_
+    val expr: Expression = And(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a AND b")
   }
 
   test("Ands(a, b, c) => a AND b AND c") {
-    val expr: Expression = Ands(Set(ident("a"), ident("b"), ident("c")))_
+    val expr: Expression = Ands(Set(variable("a"), variable("b"), variable("c")))_
     pprintToString(expr) should equal("a AND b AND c")
   }
 
   test("Ands(a) => a") {
-    val expr: Expression = Ands(Set(ident("a")))_
+    val expr: Expression = Ands(Set(variable("a")))_
     pprintToString(expr) should equal("a")
   }
 
   test("Or(left, right) => left OR right") {
-    val expr: Expression = Or(ident("a"), ident("b"))_
+    val expr: Expression = Or(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a OR b")
   }
 
   test("Or(a, b, c) => a OR b OR c") {
-    val expr: Expression = Ors(Set(ident("a"), ident("b"), ident("c")))_
+    val expr: Expression = Ors(Set(variable("a"), variable("b"), variable("c")))_
     pprintToString(expr) should equal("a OR b OR c")
   }
 
   test("Ors(a) => a") {
-    val expr: Expression = Ors(Set(ident("a")))_
+    val expr: Expression = Ors(Set(variable("a")))_
     pprintToString(expr) should equal("a")
   }
 
   test("Xor(left, right) => left XOR right") {
-    val expr: Expression = Xor(ident("a"), ident("b"))_
+    val expr: Expression = Xor(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a XOR b")
   }
 
   test("Equals(left, right) => left = right") {
-    val expr: Expression = Equals(ident("a"), ident("b"))_
+    val expr: Expression = Equals(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a = b")
   }
 
   test("NotEquals(left, right) => left <> right") {
-    val expr: Expression = NotEquals(ident("a"), ident("b"))_
+    val expr: Expression = NotEquals(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a <> b")
   }
 
   test("InvalidNotEquals(left, right) => left <> right") {
-    val expr: Expression = InvalidNotEquals(ident("a"), ident("b"))_
+    val expr: Expression = InvalidNotEquals(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a != b")
   }
 
   test("LessThan(left, right) => left < right") {
-    val expr: Expression = LessThan(ident("a"), ident("b"))_
+    val expr: Expression = LessThan(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a < b")
   }
 
   test("LessThanOrEqual(left, right) => left <= right") {
-    val expr: Expression = LessThanOrEqual(ident("a"), ident("b"))_
+    val expr: Expression = LessThanOrEqual(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a <= b")
   }
 
   test("GreaterThan(left, right) => left > right") {
-    val expr: Expression = GreaterThan(ident("a"), ident("b"))_
+    val expr: Expression = GreaterThan(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a > b")
   }
 
   test("GreaterThanOrEqual(left, right) => left >= right") {
-    val expr: Expression = GreaterThanOrEqual(ident("a"), ident("b"))_
+    val expr: Expression = GreaterThanOrEqual(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a >= b")
   }
 
   test("In(left, right) => left IN right") {
-    val expr: Expression = In(ident("a"), ident("b"))_
+    val expr: Expression = In(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a IN b")
   }
 
   test("RegexMatch(left, right) => left =~ right") {
-    val expr: Expression = RegexMatch(ident("a"), ident("b"))_
+    val expr: Expression = RegexMatch(variable("a"), variable("b"))_
     pprintToString(expr) should equal("a =~ b")
   }
 
@@ -187,13 +187,13 @@ class AstExpressionDocGenTest extends DocHandlerTestSuite[Any] with AstConstruct
   }
 
   test("Collection(a, b) => [a, b]") {
-    val expr: Collection = Collection(Seq(ident("a"), ident("b")))_
+    val expr: Collection = Collection(Seq(variable("a"), variable("b")))_
 
     pprintToString(expr) should equal("[a, b]")
   }
 
   test("Collection(a) => [a]") {
-    val expr: Collection = Collection(Seq(ident("a")))_
+    val expr: Collection = Collection(Seq(variable("a")))_
 
     pprintToString(expr) should equal("[a]")
   }

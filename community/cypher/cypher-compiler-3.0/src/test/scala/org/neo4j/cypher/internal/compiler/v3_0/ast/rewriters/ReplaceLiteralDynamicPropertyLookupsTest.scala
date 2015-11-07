@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Replaces literal dynamic property lookups") {
-    val input: ASTNode = ContainerIndex(ident("a"), StringLiteral("name")_)_
-    val output: ASTNode = Property(ident("a"), PropertyKeyName("name")_)_
+    val input: ASTNode = ContainerIndex(variable("a"), StringLiteral("name")_)_
+    val output: ASTNode = Property(variable("a"), PropertyKeyName("name")_)_
 
     replaceLiteralDynamicPropertyLookups(input) should equal(output)
   }
 
   test("Does not replaces non-literal dynamic property lookups") {
-    val input: ASTNode = ContainerIndex(ident("a"), ident("b"))_
+    val input: ASTNode = ContainerIndex(variable("a"), variable("b"))_
 
     replaceLiteralDynamicPropertyLookups(input) should equal(input)
   }

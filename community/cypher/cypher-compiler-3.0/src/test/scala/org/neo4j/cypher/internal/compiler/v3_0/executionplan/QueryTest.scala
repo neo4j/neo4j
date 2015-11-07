@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllIdentifiers, CreateNodeStartItem, Query}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllVariables, CreateNodeStartItem, Query}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.CreateNode
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -33,7 +33,7 @@ class QueryTest extends CypherFunSuite {
     val start = Query.
       start(CreateNodeStartItem(CreateNode("a", Map(), Seq.empty))).
       tail(end).
-      returns(AllIdentifiers())
+      returns(AllVariables())
 
     val compacted = start.compact
 

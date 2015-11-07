@@ -40,9 +40,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   // MATCH (a) WHERE (a)-->()
   val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(ident("a")), Seq(), None)_,
-    RelationshipPattern(Some(ident(relName)), optional = false, types, None, None, sdir) _,
-    NodePattern(Some(ident(nodeName)), Seq(), None)_
+    NodePattern(Some(variable("a")), Seq(), None)_,
+    RelationshipPattern(Some(variable(relName)), optional = false, types, None, None, sdir) _,
+    NodePattern(Some(variable(nodeName)), Seq(), None)_
   )_)_)
 
   val factory = newMockedMetricsFactory
@@ -146,7 +146,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
     // Given
     val equals = Equals(
-      Property(ident("a"), PropertyKeyName("prop")_)_,
+      Property(variable("a"), PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
     val orsExp: Ors = Ors(Set(patternExp, equals))_
@@ -183,7 +183,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
     // Given
     val equals = Equals(
-      Property(ident("a"), PropertyKeyName("prop")_)_,
+      Property(variable("a"), PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
     val orsExp = Ors(Set(Not(patternExp)(pos), equals))_
@@ -219,9 +219,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None)_,
-      RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
+      NodePattern(Some(variable("a")), Seq(), None)_,
+      RelationshipPattern(Some(variable("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      NodePattern(Some(variable("  UNNAMED4")), Seq(), None)_
     )_)_)
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -260,15 +260,15 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
+    result should equal(Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, variable("  FRESHID0"))(solved)))
   }
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None)_,
-      RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
+      NodePattern(Some(variable("a")), Seq(), None)_,
+      RelationshipPattern(Some(variable("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      NodePattern(Some(variable("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -306,15 +306,15 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg)
 
     // Then
-    result should equal(Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
+    result should equal(Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, variable("  FRESHID0"))(solved)))
   }
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None)_,
-      RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
+      NodePattern(Some(variable("a")), Seq(), None)_,
+      RelationshipPattern(Some(variable("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      NodePattern(Some(variable("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -352,20 +352,20 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved)))
+    result should equal(Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, variable("  FRESHID0"))(solved)))
   }
 
   test("should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val equals = Equals(
-      Property(ident("a"), PropertyKeyName("prop")_)_,
+      Property(variable("a"), PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None)_,
-      RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
+      NodePattern(Some(variable("a")), Seq(), None)_,
+      RelationshipPattern(Some(variable("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      NodePattern(Some(variable("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -403,20 +403,20 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg)
 
     // Then
-    result should equal(Seq(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved)))
+    result should equal(Seq(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, variable("  FRESHID0"))(solved)))
   }
 
   test("should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val equals = Equals(
-      Property(ident("a"), PropertyKeyName("prop")_)_,
+      Property(variable("a"), PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(ident("a")), Seq(), None)_,
-      RelationshipPattern(Some(ident("  UNNAMED3")), optional = false, types, None, None, sdir) _,
-      NodePattern(Some(ident("  UNNAMED4")), Seq(), None)_
+      NodePattern(Some(variable("a")), Seq(), None)_,
+      RelationshipPattern(Some(variable("  UNNAMED3")), optional = false, types, None, None, sdir) _,
+      NodePattern(Some(variable("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -454,6 +454,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved)))
+    result should equal(Seq(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, variable("  FRESHID0"))(solved)))
   }
 }

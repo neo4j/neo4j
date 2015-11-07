@@ -160,7 +160,7 @@ class RuleExecutablePlanBuilderTest
           .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
           .returns()
         )
-        .returns(AllIdentifiers())
+        .returns(AllVariables())
       val parsedQ = new FakePreparedQuery(q)
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
@@ -188,7 +188,7 @@ class RuleExecutablePlanBuilderTest
           )
           .returns()
         )
-        .returns(AllIdentifiers())
+        .returns(AllVariables())
       val parsedQ = new FakePreparedQuery(q)
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
@@ -214,7 +214,7 @@ class RuleExecutablePlanBuilderTest
           .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
           .returns()
         )
-        .returns(AllIdentifiers())
+        .returns(AllVariables())
       val parsedQ = new FakePreparedQuery(q)
 
 

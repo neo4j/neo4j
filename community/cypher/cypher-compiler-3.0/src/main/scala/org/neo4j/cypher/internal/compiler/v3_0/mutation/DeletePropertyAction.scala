@@ -57,7 +57,7 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
     Iterator(context)
   }
 
-  def identifiers = Nil
+  def variables = Nil
 
   def children = Seq(element)
 

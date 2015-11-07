@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should forbid aliased projections collisions, e.g., projecting more than one value to the same id") {
-    val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
-    val item2 = AliasedReturnItem(StringLiteral("b")_, ident("n"))_
+    val item1 = AliasedReturnItem(StringLiteral("a")_, variable("n"))_
+    val item2 = AliasedReturnItem(StringLiteral("b")_, variable("n"))_
 
     val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
 
@@ -49,8 +49,8 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should not forbid aliased projections of the same expression with different names") {
-    val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
-    val item2 = AliasedReturnItem(StringLiteral("a")_, ident("m"))_
+    val item1 = AliasedReturnItem(StringLiteral("a")_, variable("n"))_
+    val item2 = AliasedReturnItem(StringLiteral("a")_, variable("m"))_
 
     val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
 

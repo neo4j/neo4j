@@ -1747,7 +1747,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1764,7 +1764,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1844,7 +1844,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1859,7 +1859,7 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 0)).
         matches(RelatedTo("a", "b", "r", "REL", SemanticDirection.OUTGOING)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1875,7 +1875,7 @@ class CypherParserTest extends CypherFunSuite {
         matches(RelatedTo("a", "b", "r", "REL", SemanticDirection.OUTGOING)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), SemanticDirection.OUTGOING))).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1947,7 +1947,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1980,7 +1980,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         matches(SingleNode("n")).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -1994,7 +1994,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2010,7 +2010,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2027,7 +2027,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2041,7 +2041,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2055,7 +2055,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2071,7 +2071,7 @@ class CypherParserTest extends CypherFunSuite {
         matches(RelatedTo("a", "b", "r", "REL", SemanticDirection.OUTGOING)).
         namedPaths(NamedPath("p", ParsedRelation("r", "a", "b", Seq("REL"), SemanticDirection.OUTGOING))).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2080,7 +2080,7 @@ class CypherParserTest extends CypherFunSuite {
       "start s = NODE(1) return *",
       Query.
         start(NodeById("s", 1)).
-        returns(AllIdentifiers()))
+        returns(AllVariables()))
   }
 
   test("single create unique") {
@@ -2093,7 +2093,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2107,7 +2107,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2121,7 +2121,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2137,7 +2137,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2155,7 +2155,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2173,7 +2173,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2187,7 +2187,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
         tail(tail).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     )
   }
 
@@ -2211,7 +2211,7 @@ class CypherParserTest extends CypherFunSuite {
         UniqueLink("root", "x", "r2", "Y", SemanticDirection.OUTGOING))))
         .returns(ReturnItem(Variable("x"), "x"))
 
-      Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
+      Query.start(NodeById("root", 0)).tail(returns).returns(AllVariables())
     })
   }
 
@@ -2224,7 +2224,7 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 1),NodeById("x", 2,3)).
         matches(ShortestPath("p", SingleNode("a"), SingleNode("x"), Seq(), SemanticDirection.OUTGOING, false, None, single = true, relIterator = None)).
         makeOptional().
-        returns(AllIdentifiers())
+        returns(AllVariables())
     )
   }
 
@@ -2295,7 +2295,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2321,7 +2321,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("a", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2344,12 +2344,12 @@ class CypherParserTest extends CypherFunSuite {
       val end = NamedExpectation("  UNNAMED42", Map("*" -> ParameterExpression("param")), Seq.empty)
       val secondQ = Query.
         unique(UniqueLink(start, end, rel, "foo", SemanticDirection.OUTGOING)).
-        returns(AllIdentifiers())
+        returns(AllVariables())
 
       Query.
         start(NodeById("n", 0)).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2397,7 +2397,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers()))
+        returns(AllVariables()))
   }
 
   test("inclusive set to param") {
@@ -2411,7 +2411,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers()))
+        returns(AllVariables()))
   }
 
   test("set to map") {
@@ -2425,7 +2425,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2440,7 +2440,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2455,7 +2455,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2471,7 +2471,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2487,7 +2487,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2503,7 +2503,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2518,7 +2518,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2534,7 +2534,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         tail(q2).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -2956,13 +2956,13 @@ class CypherParserTest extends CypherFunSuite {
         ParsedEntity("wife", Variable("wife"), Map("name" -> Literal("Gunhild")), Seq.empty),
         Seq("MARRIED_TO"), SemanticDirection.OUTGOING, false))).
         tail(thirdQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
 
       Query.start(NodeById("me", 0)).
         matches(VarLengthRelatedTo("  UNNAMED30", SingleNode("me"), SingleNode("friendOfFriend"), Some(2), Some(2), Seq.empty, SemanticDirection.BOTH, None, Map.empty)).
         namedPaths(NamedPath("p1", ParsedVarLengthRelation("  UNNAMED30", Map.empty, ParsedEntity("me"), ParsedEntity("friendOfFriend"), Seq.empty, SemanticDirection.BOTH, false, Some(2), Some(2), None))).
         tail(secondQ).
-        returns(AllIdentifiers())
+        returns(AllVariables())
     })
   }
 
@@ -3081,9 +3081,9 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should handle optional match following optional match") {
-    val last = Query.matches(RelatedTo("n", "c", "r2", Seq.empty, SemanticDirection.INCOMING)).makeOptional().returns(AllIdentifiers())
-    val second = Query.matches(RelatedTo("n", "b", "r1", Seq.empty, SemanticDirection.OUTGOING)).makeOptional().tail(last).returns(AllIdentifiers())
-    val first = Query.matches(SingleNode("n")).tail(second).returns(AllIdentifiers())
+    val last = Query.matches(RelatedTo("n", "c", "r2", Seq.empty, SemanticDirection.INCOMING)).makeOptional().returns(AllVariables())
+    val second = Query.matches(RelatedTo("n", "b", "r1", Seq.empty, SemanticDirection.OUTGOING)).makeOptional().tail(last).returns(AllVariables())
+    val first = Query.matches(SingleNode("n")).tail(second).returns(AllVariables())
 
     expectQuery(
       "MATCH (n) OPTIONAL MATCH (n)-[r1]->(b) OPTIONAL MATCH (n)<-[r2]-(c) RETURN *",
@@ -3096,7 +3096,7 @@ class CypherParserTest extends CypherFunSuite {
       "MATCH (a { foo:x.bar })-->(x) RETURN *",
       Query.
         matches(RelatedTo(nodeA, SingleNode("x"), "  UNNAMED23", Seq.empty, SemanticDirection.OUTGOING, Map.empty)).
-        returns(AllIdentifiers()))
+        returns(AllVariables()))
   }
 
   test("should allow both relationships and nodes to be set with maps") {
@@ -3105,7 +3105,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         matches(RelatedTo("a", "b", "r", "KNOWS", SemanticDirection.OUTGOING)).
         tail(Query.updates(MapPropertySetAction(Variable("r"), LiteralMap(Map("id"->Literal(42))), removeOtherProps = true)).returns()).
-        returns(AllIdentifiers()))
+        returns(AllVariables()))
   }
 
   test("should allow whitespace in multiple word operators") {
@@ -3176,7 +3176,7 @@ class CypherParserTest extends CypherFunSuite {
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()
           ).
-          returns(AllIdentifiers()),
+          returns(AllVariables()),
         Some(10)
       )
     )
@@ -3192,7 +3192,7 @@ class CypherParserTest extends CypherFunSuite {
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()
           ).
-          returns(AllIdentifiers()),
+          returns(AllVariables()),
         None
       )
     )

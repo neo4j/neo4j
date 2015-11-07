@@ -62,7 +62,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   def planDescription = source.planDescription.andThen(this.id, "UpdateGraph", identifiers, commands.flatMap(_.arguments):_*)
 
-  def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
+  def symbols = source.symbols.add(commands.flatMap(_.variables).toMap)
 
   def sourceSymbols: SymbolTable = source.symbols
 
@@ -126,7 +126,7 @@ trait NoLushEntityCreation {
             }
         }
 
-        symbols = symbols.add(cmd.identifiers.toMap)
+        symbols = symbols.add(cmd.variables.toMap)
     }
   }
 

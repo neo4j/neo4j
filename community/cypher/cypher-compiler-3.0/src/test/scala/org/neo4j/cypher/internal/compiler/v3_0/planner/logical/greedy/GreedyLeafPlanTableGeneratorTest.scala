@@ -47,7 +47,7 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
   test("pattern with two nodes - one allnodes and one labelscan") {
     new given {
       val label: LabelName = LabelName("Label")(pos)
-      val hasLabels: Expression = HasLabels(ident("a"), Seq(label))(pos)
+      val hasLabels: Expression = HasLabels(variable("a"), Seq(label))(pos)
 
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -78,8 +78,8 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
     new given {
       val label1 = LabelName("Label1")(pos)
       val label2 = LabelName("Label2")(pos)
-      val hasLabels1 = HasLabels(ident("a"), Seq(label1))(pos)
-      val hasLabels2 = HasLabels(ident("a"), Seq(label2))(pos)
+      val hasLabels1 = HasLabels(variable("a"), Seq(label1))(pos)
+      val hasLabels2 = HasLabels(variable("a"), Seq(label2))(pos)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels1, hasLabels2)

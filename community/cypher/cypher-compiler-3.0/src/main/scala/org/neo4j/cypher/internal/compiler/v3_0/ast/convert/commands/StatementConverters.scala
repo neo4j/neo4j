@@ -129,7 +129,7 @@ object StatementConverters {
             case _                               => defaultClose(builder)
           })
 
-          (result, (_: commands.QueryBuilder).returns(commands.AllIdentifiers()))
+          (result, (_: commands.QueryBuilder).returns(commands.AllVariables()))
       }._1.get
 
     private def groupClauses(clauses: Seq[ast.Clause]): IndexedSeq[IndexedSeq[ast.Clause]] = {
@@ -347,7 +347,7 @@ object StatementConverters {
       val builderToClose = clause.where.fold(builder) { w =>
         val subBuilder = new commands.QueryBuilder().where(toCommandPredicate(w.expression))
         val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
-        builder.tail(tailQueryBuilder.returns(commands.AllIdentifiers()))
+        builder.tail(tailQueryBuilder.returns(commands.AllVariables()))
       }
       ProjectionClauseConverter(clause).closeQueryBuilder(builderToClose)
     }
@@ -373,7 +373,7 @@ object StatementConverters {
 
     private def returnColumns = {
       val maybeAllIdentifiers = if (clause.returnItems.includeExisting)
-        Some(commands.AllIdentifiers(): ReturnColumn)
+        Some(commands.AllVariables(): ReturnColumn)
       else
         None
 

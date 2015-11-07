@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
-  val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome")_))_
-  val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
+  val hasLabels: Expression = HasLabels(variable("n"), Seq(LabelName("Awesome")_))_
+  val property: Expression = Property(variable("n"), PropertyKeyName("prop") _)_
 
   val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property)_
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("")_)_
@@ -84,7 +84,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(variable("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
 
     new given {
       qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
@@ -106,7 +106,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(variable("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
 
     new given {
       qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))

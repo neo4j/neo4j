@@ -31,8 +31,8 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
   test("should_compact_query") {
     // Given CREATE a1 WITH * CREATE a2 WITH * CREATE a3
     val q1 = Query.start(createNode("a1")).returns()
-    val q2 = Query.start(createNode("a2")).tail(q1).returns(AllIdentifiers())
-    val q3 = Query.start(createNode("a3")).tail(q2).returns(AllIdentifiers())
+    val q2 = Query.start(createNode("a2")).tail(q1).returns(AllVariables())
+    val q3 = Query.start(createNode("a3")).tail(q2).returns(AllVariables())
 
     // When
     val psq = PartiallySolvedQuery(q3)
@@ -45,8 +45,8 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
     // Given MATCH (a) WITH a DELETE a WITH a CREATE (:Person)
     val deleteAction = DeleteEntityAction(Variable("a"), forced = false)
     val q3 = Query.start(createNode("a3")).returns()
-    val q2 = Query.updates(deleteAction).tail(q3).returns(AllIdentifiers())
-    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
+    val q2 = Query.updates(deleteAction).tail(q3).returns(AllVariables())
+    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllVariables())
 
     // When
     val psq = PartiallySolvedQuery(q1)
@@ -66,8 +66,8 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
   test("delete followed by merge node should not be compacted together") {
     // MATCH (a) DELETE a MERGE (b:B)
     val q3 = Query.updates(mergeNode("b")).returns()
-    val q2 = Query.updates(DeleteEntityAction(Variable("a"), forced = false)).tail(q3).returns(AllIdentifiers())
-    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
+    val q2 = Query.updates(DeleteEntityAction(Variable("a"), forced = false)).tail(q3).returns(AllVariables())
+    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllVariables())
 
     // When
     val psq = PartiallySolvedQuery(q1)
@@ -85,8 +85,8 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
   test("merge node followed by merge node should not be compacted together") {
     // MATCH () MERGE (a:A) MERGE (b:B)
     val q3 = Query.updates(mergeNode("b")).returns()
-    val q2 = Query.updates(mergeNode("a")).tail(q3).returns(AllIdentifiers())
-    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
+    val q2 = Query.updates(mergeNode("a")).tail(q3).returns(AllVariables())
+    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllVariables())
 
     // When
     val psq = PartiallySolvedQuery(q1)
@@ -105,8 +105,8 @@ class PartiallySolvedQueryTest extends CypherFunSuite {
     // MATCH (n) MERGE (n)-[t:T]->(n) MERGE (a:A)
     val pattern = mergePattern(RelatedTo("n", "n", "t", "T", SemanticDirection.OUTGOING))
     val q3 = Query.updates(mergeNode("a")).returns()
-    val q2 = Query.updates(pattern).tail(q3).returns(AllIdentifiers())
-    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllIdentifiers())
+    val q2 = Query.updates(pattern).tail(q3).returns(AllVariables())
+    val q1 = Query.matches(SingleNode("a")).tail(q2).returns(AllVariables())
 
     // When
     val psq = PartiallySolvedQuery(q1)

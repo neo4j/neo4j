@@ -70,7 +70,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[RatedStartItem] = {
     val disconnectedPatterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
-    val startPointNames = plan.query.start.map(_.token.identifierName)
+    val startPointNames = plan.query.start.map(_.token.variableName)
     val allPredicates = plan.query.where.map(_.token)
 
     def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[RatedStartItem] =
@@ -91,7 +91,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
       if (shortestPathPointsInPattern.nonEmpty) {
         startPoints.filter {
-          case RatedStartItem(si, r, _, _) => shortestPathPoints.contains(si.identifierName)
+          case RatedStartItem(si, r, _, _) => shortestPathPoints.contains(si.variableName)
         }.toSet union singleNodePoints.toSet
       } else if (singleNodePoints.nonEmpty) {
         // We want to keep all these start points because cartesian product with them is free

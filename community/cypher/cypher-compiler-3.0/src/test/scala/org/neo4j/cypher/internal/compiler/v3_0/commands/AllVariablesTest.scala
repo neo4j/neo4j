@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class AllIdentifiersTest extends CypherFunSuite {
-  val x = AllIdentifiers()
+class AllVariablesTest extends CypherFunSuite {
+  val x = AllVariables()
 
   test("nodes") {
     val symbols = getSymbols("n" -> CTNode)

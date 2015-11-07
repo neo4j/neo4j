@@ -66,7 +66,7 @@ class MergeStartPointBuilder extends PlanBuilder {
   private def findNodeProducer(mergeNodeAction: MergeNodeAction,
                                ctx: PlanContext,
                                symbols: SymbolTable): MergeNodeAction = {
-    val identifier = mergeNodeAction.identifier
+    val identifier = mergeNodeAction.variable
     val props = mergeNodeAction.props
     val propsByName = mergeNodeAction.props.map { case (k,v) => k.name->v }
     val labels = mergeNodeAction.labels

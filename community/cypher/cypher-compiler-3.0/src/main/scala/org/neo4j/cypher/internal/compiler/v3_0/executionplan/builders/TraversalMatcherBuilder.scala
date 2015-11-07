@@ -61,7 +61,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     }
 
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
-    val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> CTNode).toMap
+    val newIdentifiers = tokens.map(_.token).map(x => x.variableName -> CTNode).toMap
     val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
     validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
   }
@@ -116,7 +116,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
 
   def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
-    val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
+    val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.variableName }.head
     (startItemQueryToken, mapNodeStartCreator()((ctx, startItemQueryToken.token)))
   }
 
@@ -137,7 +137,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
 
   private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): (Option[LongestTrail], Seq[QueryToken[StartItem]]) = {
     val startPoints = plan.query.start.flatMap {
-      case Unsolved(x: NodeStartItemIdentifiers) => Some(x.identifierName)
+      case Unsolved(x: NodeStartItemVariables) => Some(x.variableName)
       case _            => None
     }
 
@@ -152,11 +152,11 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     }
 
     val relIdPreds = plan.query.start.collect[(QueryToken[StartItem], AnyInCollection), Seq[(QueryToken[StartItem], AnyInCollection)]] {
-      case qt@Unsolved(x: RelationshipById) if unsolvedRelNames.contains(x.identifierName) =>
-        val compKey: String = s"--relId-${x.identifierName}--"
+      case qt@Unsolved(x: RelationshipById) if unsolvedRelNames.contains(x.variableName) =>
+        val compKey: String = s"--relId-${x.variableName}--"
         (qt, AnyInCollection(
           x.expression, compKey,
-          Equals(IdFunction(Variable(x.identifierName)),
+          Equals(IdFunction(Variable(x.variableName)),
           Variable(compKey))))
     }
 

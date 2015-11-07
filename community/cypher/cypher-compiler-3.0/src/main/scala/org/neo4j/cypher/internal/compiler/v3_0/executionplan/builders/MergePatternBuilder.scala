@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import commands.{AllIdentifiers, Pattern, Query}
+import commands.{AllVariables, Pattern, Query}
 import commands.expressions.Variable
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
@@ -78,12 +78,12 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
         (symbols, foreachAction.copy(actions = newActions))
 
       case action =>
-        (symbols.add(action.identifiers.toMap), action)
+        (symbols.add(action.variables.toMap), action)
     }
 
     val (_, newUpdates) = plan.query.updates.foldMap(plan.pipe.symbols) {
       case (symbols, Unsolved(action)) if action.symbolDependenciesMet(symbols) => unsolved(rewrite(symbols, action))
-      case (symbols, qt) => (symbols.add(qt.token.identifiers.toMap), qt)
+      case (symbols, qt) => (symbols.add(qt.token.variables.toMap), qt)
     }
 
     plan.copy(query = plan.query.copy(updates = newUpdates))
@@ -92,7 +92,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
   private def createMatchQueryFor(patterns: Seq[Pattern]): PartiallySolvedQuery = PartiallySolvedQuery.apply(
     Query.
       matches(patterns: _*).
-      returns(AllIdentifiers())
+      returns(AllVariables())
   )
 }
 

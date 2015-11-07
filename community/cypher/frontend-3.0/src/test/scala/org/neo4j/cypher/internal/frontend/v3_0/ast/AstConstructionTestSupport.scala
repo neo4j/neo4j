@@ -27,13 +27,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-  def ident(name: String): Variable = Variable(name)(pos)
+  def variable(name: String): Variable = Variable(name)(pos)
 
   def hasLabels(identifier: String, label: String) =
-    HasLabels(ident(identifier), Seq(LabelName(label)(pos)))(pos)
+    HasLabels(variable(identifier), Seq(LabelName(label)(pos)))(pos)
 
   def propEquality(identifier: String, propKey: String, intValue: Int) = {
-    val prop: Expression = Property(ident(identifier), PropertyKeyName(propKey)(pos))(pos)
+    val prop: Expression = Property(variable(identifier), PropertyKeyName(propKey)(pos))(pos)
     val literal: Expression = SignedDecimalIntegerLiteral(intValue.toString)(pos)
     Equals(prop, literal)(pos)
   }

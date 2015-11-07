@@ -31,7 +31,7 @@ abstract class ReturnColumn {
   def name: String
 }
 
-case class AllIdentifiers() extends ReturnColumn {
+case class AllVariables() extends ReturnColumn {
   def expressions(symbols: SymbolTable): Map[String, Expression] = symbols.identifiers.keys.
     filter(isNamed).
     map(n => n -> Variable(n)).toMap

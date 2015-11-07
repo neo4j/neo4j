@@ -35,7 +35,7 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def exec(context: ExecutionContext, state: pipes.QueryState): Iterator[ExecutionContext]
 
-  def identifiers: Seq[(String, CypherType)]
+  def variables: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
 
@@ -62,7 +62,7 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   }
 
   // This is here to give FOREACH action a chance to introduce symbols
-  def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
+  def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(variables.toMap)
 
   def localEffects(symbols: SymbolTable): Effects
 }
