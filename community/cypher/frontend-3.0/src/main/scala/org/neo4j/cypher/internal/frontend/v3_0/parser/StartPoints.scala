@@ -27,7 +27,7 @@ trait StartPoints extends Parser
   with Base {
 
   def StartPoint: Rule1[ast.StartItem] = rule {
-    Identifier ~>> position ~~ operator("=") ~~ Lookup
+    Variable ~>> position ~~ operator("=") ~~ Lookup
   }
 
   private def Lookup: ReductionRule2[ast.Variable, InputPosition, ast.StartItem] = {

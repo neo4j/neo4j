@@ -27,7 +27,7 @@ trait Literals extends Parser
 
   def Expression: Rule1[ast.Expression]
 
-  def Identifier: Rule1[ast.Variable] =
+  def Variable: Rule1[ast.Variable] =
     rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
 
   def FunctionName: Rule1[ast.FunctionName] =

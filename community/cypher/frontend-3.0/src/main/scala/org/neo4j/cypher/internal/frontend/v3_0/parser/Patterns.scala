@@ -41,7 +41,7 @@ trait Patterns extends Parser
   }
 
   def PatternPart: Rule1[ast.PatternPart] = rule("a pattern") (
-      group(Identifier ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
+      group(Variable ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
     | AnonymousPatternPart
   )
 
@@ -109,11 +109,11 @@ trait Patterns extends Parser
 
   private def NodePattern: Rule1[ast.NodePattern] = rule("a node pattern") (
       group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _))
-    | group(Identifier ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
+    | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
   private def MaybeIdentifier: Rule1[Option[ast.Variable]] = rule("an identifier") {
-    optional(Identifier)
+    optional(Variable)
   }
 
   private def MaybeNodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") (

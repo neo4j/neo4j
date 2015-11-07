@@ -34,7 +34,7 @@ trait Clauses extends Parser
       keyword("LOAD CSV") ~~
       group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
       keyword("FROM") ~~ (Expression) ~~
-      keyword("AS") ~~ Identifier ~~
+      keyword("AS") ~~ Variable ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
   }
@@ -78,7 +78,7 @@ trait Clauses extends Parser
 
   def Foreach: Rule1[ast.Foreach] = rule("FOREACH") {
     group(
-      keyword("FOREACH") ~~ "(" ~~ Identifier ~~ keyword("IN") ~~ Expression ~~ "|" ~~
+      keyword("FOREACH") ~~ "(" ~~ Variable ~~ keyword("IN") ~~ Expression ~~ "|" ~~
       oneOrMore(Clause, separator = WS) ~~ ")") ~~>> (ast.Foreach(_, _, _))
   }
 
@@ -88,7 +88,7 @@ trait Clauses extends Parser
   )
 
   def Unwind: Rule1[ast.Unwind] = rule("UNWIND") (
-    group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.Unwind(_,_))
+    group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.Unwind(_,_))
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN") (
@@ -99,7 +99,7 @@ trait Clauses extends Parser
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (
         group(keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
-      | group(keyword("WITHOUT") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
+      | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
     )
   }
 
@@ -112,9 +112,9 @@ trait Clauses extends Parser
   )
 
   private def Hint: Rule1[ast.UsingHint] = rule("USING") (
-      group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
-    | group(keyword("USING JOIN ON") ~~ oneOrMore(Identifier, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
-    | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
+      group(keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
+    | group(keyword("USING JOIN ON") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
+    | group(keyword("USING SCAN") ~~ Variable ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
 
   private def MergeAction = rule("ON") (
@@ -124,13 +124,13 @@ trait Clauses extends Parser
 
   private def SetItem: Rule1[ast.SetItem] = rule (
       PropertyExpression ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertyItem(_, _))
-    | Identifier ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetExactPropertiesFromMapItem(_, _))
-    | Identifier ~~ group(operator("+=") ~~ Expression) ~~>> (ast.SetIncludingPropertiesFromMapItem(_, _))
-    | group(Identifier ~~ NodeLabels) ~~>> (ast.SetLabelItem(_, _))
+    | Variable ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetExactPropertiesFromMapItem(_, _))
+    | Variable ~~ group(operator("+=") ~~ Expression) ~~>> (ast.SetIncludingPropertiesFromMapItem(_, _))
+    | group(Variable ~~ NodeLabels) ~~>> (ast.SetLabelItem(_, _))
   )
 
   private def RemoveItem: Rule1[ast.RemoveItem] = rule (
-      group(Identifier ~~ NodeLabels) ~~>> (ast.RemoveLabelItem(_, _))
+      group(Variable ~~ NodeLabels) ~~>> (ast.RemoveLabelItem(_, _))
     | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
@@ -147,7 +147,7 @@ trait Clauses extends Parser
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule (
-      group(Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.AliasedReturnItem(_, _))
+      group(Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.AliasedReturnItem(_, _))
     | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 

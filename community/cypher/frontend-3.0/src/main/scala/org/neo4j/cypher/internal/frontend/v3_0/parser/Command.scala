@@ -70,18 +70,18 @@ trait Command extends Parser
     group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
-  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+  private def UniqueConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
+  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
     keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPatternSyntax = rule(
-    ("()-[" ~~ Identifier~~ RelType ~~ "]-()")
-      | ("()-[" ~~ Identifier~~ RelType ~~ "]->()")
-      | ("()<-[" ~~ Identifier~~ RelType ~~ "]-()")
+    ("()-[" ~~ Variable~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Variable~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Variable~~ RelType ~~ "]-()")
   )
 }
