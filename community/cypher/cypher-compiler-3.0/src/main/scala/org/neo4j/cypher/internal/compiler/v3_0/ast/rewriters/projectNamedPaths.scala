@@ -29,16 +29,16 @@ import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter {
 
-  case class Projectibles(paths: Map[Identifier, PathExpression] = Map.empty,
-                          protectedIdentifiers: Set[Ref[Identifier]] = Set.empty,
-                          identifierRewrites: Map[Ref[Identifier], PathExpression] = Map.empty) {
+  case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
+                          protectedIdentifiers: Set[Ref[Variable]] = Set.empty,
+                          identifierRewrites: Map[Ref[Variable], PathExpression] = Map.empty) {
 
     self =>
 
     def withoutNamedPaths = copy(paths = Map.empty)
-    def withProtectedIdentifier(ident: Ref[Identifier]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
-    def withNamedPath(entry: (Identifier, PathExpression)) = copy(paths = paths + entry)
-    def withRewrittenIdentifier(entry: (Ref[Identifier], PathExpression)) = {
+    def withProtectedIdentifier(ident: Ref[Variable]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
+    def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
+    def withRewrittenIdentifier(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry
       copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyIdentifiers)))
     }
@@ -49,7 +49,7 @@ case object projectNamedPaths extends Rewriter {
 
     def withIdentifierRewritesForExpression(expr: Expression) =
       expr.treeFold(self) {
-        case ident: Identifier =>
+        case ident: Variable =>
           (acc, children) =>
             acc.paths.get(ident) match {
               case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
@@ -66,7 +66,7 @@ case object projectNamedPaths extends Rewriter {
     val Projectibles(paths, protectedIdentifiers, identifierRewrites) = collectProjectibles(input)
     val applicator = Rewriter.lift {
 
-      case (ident: Identifier) if !protectedIdentifiers(Ref(ident)) =>
+      case (ident: Variable) if !protectedIdentifiers(Ref(ident)) =>
         identifierRewrites.getOrElse(Ref(ident), ident)
 
       case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
@@ -87,7 +87,7 @@ case object projectNamedPaths extends Rewriter {
       (acc, children) =>
         children(acc.withProtectedIdentifier(Ref(aliased.identifier)))
 
-    case ident: Identifier =>
+    case ident: Variable =>
       (acc, children) =>
         acc.paths.get(ident) match {
           case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))

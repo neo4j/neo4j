@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.conditions
 
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.Condition
 import org.neo4j.cypher.internal.frontend.v3_0.Ref
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 
 case object noReferenceEqualityAmongIdentifiers extends Condition {
   def apply(that: Any): Seq[String] = {
-    val ids = collectNodesOfType[Identifier].apply(that).map(Ref[Identifier])
+    val ids = collectNodesOfType[Variable].apply(that).map(Ref[Variable])
     ids.groupBy(x => x).collect {
       case (id, others) if others.size > 1 => s"The instance ${id.value} is used ${others.size} times"
     }.toSeq

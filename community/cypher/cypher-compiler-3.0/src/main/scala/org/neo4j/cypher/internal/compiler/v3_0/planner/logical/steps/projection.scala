@@ -31,7 +31,7 @@ object projection {
     val ids = plan.availableSymbols
 
     val projectAllCoveredIds: Set[(String, Expression)] = ids.map {
-      case IdName(id) => id -> ast.Identifier(id)(null)
+      case IdName(id) => id -> ast.Variable(id)(null)
     }
     val projections: Set[(String, Expression)] = projectionsMap.toSeq.toSet
 

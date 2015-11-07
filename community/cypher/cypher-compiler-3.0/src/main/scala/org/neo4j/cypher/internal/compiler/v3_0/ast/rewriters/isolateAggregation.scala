@@ -77,8 +77,8 @@ case object isolateAggregation extends Rewriter {
           }
 
           val withReturnItems: Set[ReturnItem] = expressionsToGoToWith.map {
-            case id: Identifier => AliasedReturnItem(id.copyId, id.copyId)(id.position)
-            case e              => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position))(e.position))(e.position)
+            case id: Variable => AliasedReturnItem(id.copyId, id.copyId)(id.position)
+            case e              => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{AllIterablePredicate, FilterScope, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AllIterablePredicate, FilterScope, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -77,7 +77,7 @@ object expandSolverStep {
         case length: VarPatternLength =>
           val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
           val (predicates, allPredicates) = availablePredicates.collect {
-            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Identifier(patternRel.name.name))
+            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Variable(patternRel.name.name))
               if identifier == relId || !innerPredicate.dependencies(relId) =>
               (identifier, innerPredicate) -> all
           }.unzip

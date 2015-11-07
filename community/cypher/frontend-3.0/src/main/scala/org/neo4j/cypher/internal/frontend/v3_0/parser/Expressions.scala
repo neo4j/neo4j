@@ -185,10 +185,10 @@ trait Expressions extends Parser
     )
   }
 
-  private def FilterExpression: Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
+  private def FilterExpression: Rule3[ast.Variable, ast.Expression, Option[ast.Expression]] =
     IdInColl ~ optional(WS ~ keyword("WHERE") ~~ Expression)
 
-  private def IdInColl: Rule2[ast.Identifier, ast.Expression] =
+  private def IdInColl: Rule2[ast.Variable, ast.Expression] =
     Identifier ~~ keyword("IN") ~~ Expression
 
   private def FunctionInvocation: Rule1[ast.FunctionInvocation] = rule("a function") {

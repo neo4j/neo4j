@@ -81,11 +81,11 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
     RelationshipChain(left, rel, right)_
   }
 
-  private def relationship(id: Option[Identifier]): RelationshipPattern = {
+  private def relationship(id: Option[Variable]): RelationshipPattern = {
     RelationshipPattern(id, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_
   }
 
-  private def node(id: Option[Identifier]): NodePattern = {
+  private def node(id: Option[Variable]): NodePattern = {
     NodePattern(id, Seq.empty, None)_
   }
 }

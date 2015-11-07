@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
+import scala.annotation.tailrec
+
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
@@ -32,7 +34,7 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
 
 sealed trait UpdateClause extends Clause
 
-case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   val name = "LOAD CSV"
 
   def semanticCheck: SemanticCheck =
@@ -87,20 +89,29 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
-    import connectedComponents._
-    val cc = connectedComponents(pattern.patternParts)
-    //if we have multiple connected components we will have
-    //a cartesian product
-    val newState = cc.drop(1).foldLeft(state) { (innerState, component) =>
-      innerState.addNotification(CartesianProductNotification(position, component.identifiers.map(_.name)))
+    val nodes = pattern.patternParts.map(_.fold(Set.empty[Variable]) {
+      case NodePattern(Some(id), _, _) => list => list + id
+    })
+
+    @tailrec
+    def loop(compare: Set[Variable], rest: Seq[Set[Variable]], intermediateState: SemanticState): SemanticState = {
+      val updatedState = rest.filter { o =>
+        (compare intersect o).isEmpty
+      }.foldLeft(intermediateState) { (innerState, identifiers) =>
+        innerState.addNotification(CartesianProductNotification(position, identifiers.map(_.name)))
+      }
+
+      if (rest.nonEmpty) loop(rest.head, rest.tail, updatedState) else updatedState
     }
 
-    SemanticCheckResult(newState, Seq.empty)
+    val finalState = if (nodes.nonEmpty) loop(nodes.head, nodes.tail, state) else state
+
+    SemanticCheckResult(finalState, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Identifier(identifier), LabelName(labelName), PropertyKeyName(property))
+      case hint@UsingIndexHint(Variable(identifier), LabelName(labelName), PropertyKeyName(property))
         if !containsLabelPredicate(identifier, labelName)
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
@@ -112,7 +123,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
             | The comparison cannot be performed between two property values.
             | Note that the label and property comparison must be specified on a
             | non-optional node""".stripLinesAndMargins, hint.position)
-      case hint@UsingScanHint(Identifier(identifier), LabelName(labelName))
+      case hint@UsingScanHint(Variable(identifier), LabelName(labelName))
         if !containsLabelPredicate(identifier, labelName) =>
         SemanticError(
           """|Cannot use label scan hint in this context.
@@ -128,27 +139,27 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def containsPropertyPredicate(identifier: String, property: String): Boolean = {
     val properties: Seq[String] = (where match {
       case Some(w) => w.treeFold(Seq.empty[String]) {
-        case Equals(Property(Identifier(id), PropertyKeyName(name)), other) if id == identifier && applicable(other) =>
+        case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
-        case Equals(other, Property(Identifier(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
+        case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
-        case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
+        case In(Property(Variable(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
         case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
           if id == identifier && predicate.function.contains(functions.Exists) =>
           (acc, _) => acc :+ name
-        case IsNotNull(Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
+        case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
-        case StartsWith(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+        case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
-        case EndsWith(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+        case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
-        case Contains(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+        case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
         case expr: InequalityExpression =>
           (acc, _) => Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
             expr match {
-              case Property(Identifier(id), PropertyKeyName(name)) if id == identifier =>
+              case Property(Variable(id), PropertyKeyName(name)) if id == identifier =>
                 acc :+ name
               case _ => acc
             }
@@ -160,7 +171,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(prop))) if identifier == id => {
+      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if identifier == id => {
         case (acc, _) =>
           acc ++ prop.map(_._1.name)
       }
@@ -184,12 +195,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def containsLabelPredicate(identifier: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(id)), labels, _) if identifier == id =>
+      case NodePattern(Some(Variable(id)), labels, _) if identifier == id =>
         list => list ++ labels.map(_.name)
     }
     labels = where match {
       case Some(where) => where.treeFold(labels) {
-        case HasLabels(Identifier(id), labels) if id == identifier =>
+        case HasLabels(Variable(id), labels) if id == identifier =>
           (acc, _) => acc ++ labels.map(_.name)
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
@@ -248,7 +259,7 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   def semanticCheck = items.semanticCheck
 }
 
-case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
+case class Foreach(identifier: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
   def name = "FOREACH"
 
   def semanticCheck =
@@ -261,7 +272,7 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
     }
 }
 
-case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
+case class Unwind(expression: Expression, identifier: Variable)(val position: InputPosition) extends Clause {
   def name = "UNWIND"
 
   override def semanticCheck =
@@ -380,7 +391,7 @@ case class Return(
       Seq()
 }
 
-case class PragmaWithout(excluded: Seq[Identifier])(val position: InputPosition) extends HorizonClause {
+case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {
   def name = "_PRAGMA WITHOUT"
   val excludedNames = excluded.map(_.name).toSet
 

@@ -34,10 +34,10 @@ object Pattern {
     case object Expression extends SemanticContext
   }
 
-  object findDuplicateRelationships extends (Pattern => Set[Seq[Identifier]]) {
+  object findDuplicateRelationships extends (Pattern => Set[Seq[Variable]]) {
 
-    def apply(pattern: Pattern): Set[Seq[Identifier]] = {
-      val (seen, duplicates) = pattern.fold((Set.empty[Identifier], Seq.empty[Identifier])) {
+    def apply(pattern: Pattern): Set[Seq[Variable]] = {
+      val (seen, duplicates) = pattern.fold((Set.empty[Variable], Seq.empty[Variable])) {
         case RelationshipChain(_, RelationshipPattern(Some(rel), _, _, None, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
@@ -51,10 +51,10 @@ object Pattern {
           identity
       }
 
-      val m0: Map[String, Seq[Identifier]] = duplicates.groupBy(_.name)
+      val m0: Map[String, Seq[Variable]] = duplicates.groupBy(_.name)
 
       val resultMap = seen.foldLeft(m0) {
-        case (m, ident @ Identifier(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
+        case (m, ident @ Variable(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
         case (m, _)                                            => m
       }
 
@@ -102,7 +102,7 @@ sealed abstract class PatternPart extends ASTNode with ASTParticle {
   def element: PatternElement
 }
 
-case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
+case class NamedPatternPart(identifier: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
   def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) chain identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
@@ -206,7 +206,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode with ASTParticle {
-  def identifier: Option[Identifier]
+  def identifier: Option[Variable]
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
@@ -216,7 +216,7 @@ sealed abstract class PatternElement extends ASTNode with ASTParticle {
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
   extends PatternElement {
 
-  def identifier: Option[Identifier] = relationship.identifier
+  def identifier: Option[Variable] = relationship.identifier
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) chain
@@ -230,11 +230,11 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 }
 
 object InvalidNodePattern {
-  def apply(id: Identifier, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
+  def apply(id: Variable, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
     new InvalidNodePattern(id)(position)
 }
 
-class InvalidNodePattern(val id: Identifier)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
+class InvalidNodePattern(val id: Variable)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = super.semanticCheck(ctx) chain
     SemanticError(s"Parentheses are required to identify nodes in patterns, i.e. (${id.name})", position)
 
@@ -251,7 +251,7 @@ class InvalidNodePattern(val id: Identifier)(position: InputPosition) extends No
 }
 
 case class NodePattern(
-  identifier: Option[Identifier],
+  identifier: Option[Variable],
   labels: Seq[LabelName],
   properties: Option[Expression])(val position: InputPosition) extends PatternElement with SemanticChecking {
 
@@ -284,7 +284,7 @@ case class NodePattern(
 
 
 case class RelationshipPattern(
-    identifier: Option[Identifier],
+    identifier: Option[Variable],
     optional: Boolean,
     types: Seq[RelTypeName],
     length: Option[Option[Range]],

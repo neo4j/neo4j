@@ -23,23 +23,23 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CTPath, TypeSpec}
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticDirection}
 
 sealed trait PathStep {
-  def dependencies: Set[Identifier]
+  def dependencies: Set[Variable]
 }
 
-final case class NodePathStep(node: Identifier, next: PathStep) extends PathStep {
+final case class NodePathStep(node: Variable, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: Identifier, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class SingleRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
-final case class MultiRelationshipPathStep(rel: Identifier, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class MultiRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
 case object NilPathStep extends PathStep {
-  def dependencies = Set.empty[Identifier]
+  def dependencies = Set.empty[Variable]
 }
 
 case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression with SimpleTyping {

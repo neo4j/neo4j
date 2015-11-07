@@ -56,7 +56,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case _            => false
   }
 
-  private def propertyPredicates(id: Identifier, props: Expression): Vector[Expression] = props match {
+  private def propertyPredicates(id: Variable, props: Expression): Vector[Expression] = props match {
     case mapProps: MapExpression =>
       mapProps.items.map {
         // MATCH (a {a: 1, b: 2}) => MATCH (a) WHERE a.a = 1 AND a.b = 2
@@ -68,9 +68,9 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
       Vector.empty
   }
 
-  private def varLengthPropertyPredicates(id: Identifier, props: Expression, patternPosition: InputPosition): Expression = {
+  private def varLengthPropertyPredicates(id: Variable, props: Expression, patternPosition: InputPosition): Expression = {
     val idName = FreshIdNameGenerator.name(patternPosition)
-    val newId = Identifier(idName)(id.position)
+    val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)
     AllIterablePredicate(newId, id.copyId, Some(conjunction))(props.position)

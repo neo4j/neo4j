@@ -26,9 +26,9 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     items.semanticCheck chain
     ensureProjectedToUniqueIds
 
-  def aliases: Set[Identifier] = items.flatMap(_.alias).toSet
+  def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
-  def passedThrough: Set[Identifier] = items.collect {
+  def passedThrough: Set[Variable] = items.collect {
     case item => item.alias.collect { case ident if ident == item.expression => ident }
   }.flatten.toSet
 
@@ -59,7 +59,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
 
 sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def expression: Expression
-  def alias: Option[Identifier]
+  def alias: Option[Variable]
   def name: String
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
 
@@ -68,7 +68,7 @@ sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
   val alias = expression match {
-    case i: Identifier => Some(i.bumpId)
+    case i: Variable => Some(i.bumpId)
     case _ => None
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }
@@ -77,7 +77,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
     throw new InternalException("Should have been aliased before this step")
 }
 
-case class AliasedReturnItem(expression: Expression, identifier: Identifier)(val position: InputPosition) extends ReturnItem {
+case class AliasedReturnItem(expression: Expression, identifier: Variable)(val position: InputPosition) extends ReturnItem {
   val alias = Some(identifier)
   val name = identifier.name
 

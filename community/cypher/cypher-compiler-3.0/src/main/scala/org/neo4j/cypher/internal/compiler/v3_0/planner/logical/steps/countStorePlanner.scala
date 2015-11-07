@@ -34,7 +34,7 @@ case object countStorePlanner {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, shuffle)
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 => aggregatingExpressions.head match {
 
-        case (aggregationIdent, FunctionInvocation(FunctionName("count"), false, Vector(Identifier(countName)))) =>
+        case (aggregationIdent, FunctionInvocation(FunctionName("count"), false, Vector(Variable(countName)))) =>
 
           query.queryGraph match {
 

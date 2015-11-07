@@ -27,7 +27,7 @@ import scala.collection.immutable
  */
 object connectedComponents {
 
-  type ComponentPart = Set[Identifier]
+  type ComponentPart = Set[Variable]
   type ConnectedComponent = Set[ComponentPart]
 
   //enable using the companion objects of the type aliases,
@@ -36,7 +36,7 @@ object connectedComponents {
   val ConnectedComponent = Set
 
   def apply(patternParts: Seq[PatternPart]): IndexedSeq[ConnectedComponent] = {
-    val parts: immutable.IndexedSeq[ComponentPart] = patternParts.map(_.fold(Set.empty[Identifier]) {
+    val parts: immutable.IndexedSeq[ComponentPart] = patternParts.map(_.fold(Set.empty[Variable]) {
       case NodePattern(Some(id), _, _) => list => list + id
     }).toIndexedSeq
 
@@ -65,6 +65,6 @@ object connectedComponents {
 
     def connectedTo(part: ComponentPart) = connectedComponent.exists(c => (c intersect part).nonEmpty)
 
-    def identifiers: Set[Identifier] = connectedComponent.flatten
+    def identifiers: Set[Variable] = connectedComponent.flatten
   }
 }

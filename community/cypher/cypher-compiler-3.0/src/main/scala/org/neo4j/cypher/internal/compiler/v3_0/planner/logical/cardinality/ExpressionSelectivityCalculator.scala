@@ -71,7 +71,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyExistence(scannable.name, selections, scannable.propertyKey)
 
     // Implicit relation uniqueness predicates
-    case Not(Equals(lhs: Identifier, rhs: Identifier))
+    case Not(Equals(lhs: Variable, rhs: Variable))
       if areRelationships(semanticTable, lhs, rhs) =>
       GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
@@ -99,7 +99,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean = {
+  def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
     val l = semanticTable.isRelationship(lhs)
     val r = semanticTable.isRelationship(rhs)
     l && r

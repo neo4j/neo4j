@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport, Predicate, Selections}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("a")(pos)), Seq.empty, None)_
-  val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("b")(pos)), Seq.empty, None)_
-  val unnamedIdentifier: ast.Identifier = ast.Identifier("  UNNAMED1")_
+  val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Variable("a")(pos)), Seq.empty, None)_
+  val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Variable("b")(pos)), Seq.empty, None)_
+  val unnamedIdentifier: ast.Variable = ast.Variable("  UNNAMED1")_
   val anonymousNode: ast.NodePattern = ast.NodePattern(Some(unnamedIdentifier), Seq.empty, None)_
-  val rRel: ast.RelationshipPattern = ast.RelationshipPattern(Some(ast.Identifier("r")(pos)), false, Seq.empty, None, None, SemanticDirection.OUTGOING)_
+  val rRel: ast.RelationshipPattern = ast.RelationshipPattern(Some(ast.Variable("r")(pos)), false, Seq.empty, None, None, SemanticDirection.OUTGOING)_
   val TYP: ast.RelTypeName = ast.RelTypeName("TYP")_
 
   val rRelWithType: ast.RelationshipPattern = rRel.copy(types = Seq(TYP)) _
@@ -40,7 +40,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
 
   private def projections(names: String*): Map[String, Expression] = names.map {
-    case x => x -> Identifier(x)(pos)
+    case x => x -> Variable(x)(pos)
   }.toMap
 
   test("(a)-[r]->(b)") {
@@ -94,7 +94,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val qg = patternExpression.asQueryGraph
 
     // Then
-    val predicate: ast.HasLabels = ast.HasLabels(ast.Identifier("b")(pos), Seq(labelName))_
+    val predicate: ast.HasLabels = ast.HasLabels(ast.Variable("b")(pos), Seq(labelName))_
     qg.selections should equal(Selections(Set(Predicate(Set(IdName("b")), predicate))))
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))

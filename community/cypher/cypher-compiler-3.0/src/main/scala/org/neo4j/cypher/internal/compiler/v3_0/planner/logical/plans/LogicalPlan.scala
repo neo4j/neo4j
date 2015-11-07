@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningF
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.perty._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewritable}
 
@@ -128,5 +128,5 @@ final case class IdName(name: String) extends PageDocFormatting // with ToPretty
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)
 
-  def fromIdentifier(identifier: Identifier) = IdName(identifier.name)
+  def fromIdentifier(identifier: Variable) = IdName(identifier.name)
 }

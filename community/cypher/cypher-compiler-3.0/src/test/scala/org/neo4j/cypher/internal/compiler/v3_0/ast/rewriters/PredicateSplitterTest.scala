@@ -40,7 +40,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("b"))
-      case _ => Set.empty[Identifier]
+      case _ => Set.empty[Variable]
     }
 
     val splitter = PredicateSplitter(lookup, statement)
@@ -55,7 +55,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
-      case _ => Set.empty[Identifier]
+      case _ => Set.empty[Variable]
     }
 
     val splitter = PredicateSplitter(lookup, statement)
@@ -74,7 +74,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
-      case _ => Set.empty[Identifier]
+      case _ => Set.empty[Variable]
     }
 
     val splitter = PredicateSplitter(lookup, statement)
@@ -95,7 +95,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val statement: Statement = query(MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case MATCH => Set(ident("a"), ident("b"))
-      case _ => Set.empty[Identifier]
+      case _ => Set.empty[Variable]
     }
 
     val splitter = PredicateSplitter(lookup, statement)
@@ -114,7 +114,7 @@ class PredicateSplitterTest extends CypherFunSuite with AstConstructionTestSuppo
     val statement: Statement = query(OPTIONAL_MATCH, RETURN_ALL)
     val lookup = (clause: Clause) => clause match {
       case OPTIONAL_MATCH => Set(ident("a"), ident("b"))
-      case _ => Set.empty[Identifier]
+      case _ => Set.empty[Variable]
     }
 
     val splitter = PredicateSplitter(lookup, statement)

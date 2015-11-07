@@ -120,6 +120,6 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
   private def freshId(patternExpression: PatternExpression) = {
     val name = FreshIdNameGenerator.name(patternExpression.position)
-    (IdName(name), Identifier(name)(patternExpression.position))
+    (IdName(name), Variable(name)(patternExpression.position))
   }
 }

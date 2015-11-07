@@ -27,7 +27,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-  def ident(name: String): Identifier = Identifier(name)(pos)
+  def ident(name: String): Variable = Variable(name)(pos)
 
   def hasLabels(identifier: String, label: String) =
     HasLabels(ident(identifier), Seq(LabelName(label)(pos)))(pos)

@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{DummyExpression, Expression, FilteringExpression, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{DummyExpression, Expression, FilteringExpression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticCheckResult, SemanticError, SemanticState}
 
 class FilteringExpressionTest extends CypherFunSuite {
 
-  case class TestableFilteringExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
+  case class TestableFilteringExpression(identifier: Variable, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
     def name = "Testable Filter Expression"
     def position = DummyPosition(0)
 
@@ -49,7 +49,7 @@ class FilteringExpressionTest extends CypherFunSuite {
       }
     }
 
-    val filter = TestableFilteringExpression(Identifier("x")(DummyPosition(2)), expression, Some(predicate))
+    val filter = TestableFilteringExpression(Variable("x")(DummyPosition(2)), expression, Some(predicate))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)

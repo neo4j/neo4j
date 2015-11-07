@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{AndedPropertyInequalities, Identifier, InequalityExpression, Property}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{AndedPropertyInequalities, Variable, InequalityExpression, Property}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.compiler.v3_0.planner.Predicate
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList._
@@ -83,7 +83,7 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
     inequalities.groupBy { (input: (Predicate, InequalityExpression)) =>
       val (_, inequality) = input
       inequality.lhs match {
-        case prop@Property(ident: Identifier, _) => Some(ident -> prop)
+        case prop@Property(ident: Variable, _) => Some(ident -> prop)
         case _ => None
       }
     }.toNonEmptyListOption.get

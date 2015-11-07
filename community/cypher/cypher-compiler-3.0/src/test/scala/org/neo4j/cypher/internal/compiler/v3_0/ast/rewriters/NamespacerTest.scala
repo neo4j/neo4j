@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, AstConstructionTestSupport, Identifier, Statement}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, AstConstructionTestSupport, Variable, Statement}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -77,10 +77,10 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("Renames identifiers in semantic table") {
-    val idA1 = Identifier("a")(InputPosition(1, 0, 1))
-    val idA2 = Identifier("a")(InputPosition(2, 0, 2))
-    val idA3 = Identifier("a")(InputPosition(3, 0, 3))
-    val idB5 = Identifier("b")(InputPosition(5, 0, 5))
+    val idA1 = Variable("a")(InputPosition(1, 0, 1))
+    val idA2 = Variable("a")(InputPosition(2, 0, 2))
+    val idA3 = Variable("a")(InputPosition(3, 0, 3))
+    val idB5 = Variable("b")(InputPosition(5, 0, 5))
 
     val infoA1 = mock[ExpressionTypeInfo]
     val infoA2 = mock[ExpressionTypeInfo]
@@ -96,8 +96,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     ))
 
     val renamings = Map(
-      Ref(idA1) -> Identifier("a@1")(InputPosition(1, 0, 1)),
-      Ref(idA2) -> Identifier("a@2")(InputPosition(2, 0, 2))
+      Ref(idA1) -> Variable("a@1")(InputPosition(1, 0, 1)),
+      Ref(idA2) -> Variable("a@2")(InputPosition(2, 0, 2))
 
     )
 
@@ -106,8 +106,8 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     val newTable = namespacer.tableRewriter(table)
 
     newTable.types should equal(ASTAnnotationMap(
-      Identifier("a@1")(InputPosition(1, 0, 1)) -> infoA1,
-      Identifier("a@2")(InputPosition(2, 0, 2)) -> infoA2,
+      Variable("a@1")(InputPosition(1, 0, 1)) -> infoA1,
+      Variable("a@2")(InputPosition(2, 0, 2)) -> infoA2,
       idA3 -> infoA3,
       idB5 -> infoB5
     ))

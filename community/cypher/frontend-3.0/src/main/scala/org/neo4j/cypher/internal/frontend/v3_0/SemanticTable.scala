@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, ASTNode, Expression, ASTAnnotationMap}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, ASTNode, Expression, ASTAnnotationMap}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 
 import scala.collection.mutable
@@ -40,7 +40,7 @@ class SemanticTable(
 
   def getTypeFor(s: String): TypeSpec = try {
     val reducedType = types.collect {
-      case (Identifier(name), typ) if name == s => typ.specified
+      case (Variable(name), typ) if name == s => typ.specified
     }.reduce(_ & _)
 
     if (reducedType.isEmpty)
@@ -56,20 +56,20 @@ class SemanticTable(
 
   def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant
 
-  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
+  def isNode(expr: Variable) = types(expr).specified == symbols.CTNode.invariant
 
-  def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
+  def isRelationship(expr: Variable) = types(expr).specified == symbols.CTRelationship.invariant
 
-  def addNode(expr: Identifier) =
+  def addNode(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTNode.invariant, None)))
 
-  def addRelationship(expr: Identifier) =
+  def addRelationship(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
-  def replaceKeys(replacements: (Identifier, Identifier)*): SemanticTable =
+  def replaceKeys(replacements: (Variable, Variable)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
 
-  def symbolDefinition(identifier: Identifier) =
+  def symbolDefinition(identifier: Variable) =
     recordedScopes(identifier).symbolTable(identifier.name).definition
 
   override def clone() = copy()

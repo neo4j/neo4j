@@ -46,15 +46,15 @@ object ExpressionConverter {
 
   def createPredicate(expression: ast.Expression)
                      (implicit context: CodeGenContext): CodeGenExpression = expression match {
-    case ast.HasLabels(ast.Identifier(name), label :: Nil) =>
+    case ast.HasLabels(ast.Variable(name), label :: Nil) =>
       val labelIdVariable = context.namer.newVarName()
       val nodeVariable = context.getVariable(name)
       HasLabel(nodeVariable, labelIdVariable, label.name).asPredicate
 
-    case exp@ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+    case exp@ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
       createExpression(exp).asPredicate
 
-    case exp@ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isRelationship(node) =>
+    case exp@ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isRelationship(node) =>
       createExpression(exp).asPredicate
 
     case ast.Not(e) => Not(createExpression(e)).asPredicate
@@ -75,10 +75,10 @@ object ExpressionConverter {
                       (implicit context: CodeGenContext): CodeGenExpression = {
 
     expression match {
-      case node@ast.Identifier(name) if context.semanticTable.isNode(node) =>
+      case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
         NodeProjection(context.getVariable(name))
 
-      case rel@ast.Identifier(name) if context.semanticTable.isRelationship(rel) =>
+      case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
         RelationshipProjection(context.getVariable(name))
 
       case e => expressionConverter(e, createProjection)
@@ -101,17 +101,17 @@ object ExpressionConverter {
                       (implicit context: CodeGenContext): CodeGenExpression = {
 
     expression match {
-      case node@ast.Identifier(name) if context.semanticTable.isNode(node) =>
+      case node@ast.Variable(name) if context.semanticTable.isNode(node) =>
         NodeExpression(context.getVariable(name))
 
-      case rel@ast.Identifier(name) if context.semanticTable.isRelationship(rel) =>
+      case rel@ast.Variable(name) if context.semanticTable.isRelationship(rel) =>
         RelationshipExpression(context.getVariable(name))
 
-      case ast.Property(node@ast.Identifier(name), propKey) if context.semanticTable.isNode(node) =>
+      case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case ast.Property(rel@ast.Identifier(name), propKey) if context.semanticTable.isRelationship(rel) =>
+      case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
         val token = propKey.id(context.semanticTable).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
@@ -144,7 +144,7 @@ object ExpressionConverter {
         }.toMap
         MyMap(map)
 
-      case ast.HasLabels(ast.Identifier(name), label :: Nil) =>
+      case ast.HasLabels(ast.Variable(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
         val nodeVariable = context.getVariable(name)
         HasLabel(nodeVariable, labelIdVariable, label.name)

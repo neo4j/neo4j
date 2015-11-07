@@ -81,7 +81,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
   def labelPredicates: Map[IdName, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
-      case (acc, Predicate(_, hasLabels@HasLabels(Identifier(name), labels))) =>
+      case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), labels))) =>
         // FIXME: remove when we have test for checking that we construct the expected plan
         if (labels.size > 1) {
           throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")

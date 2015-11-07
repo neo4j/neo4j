@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticState}
 
-class IdentifierTest extends CypherFunSuite {
+class VariableTest extends CypherFunSuite {
 
   test("shouldDefineIdentifierDuringSemanticCheckWhenUndefined") {
     val position = DummyPosition(0)
-    val identifier = Identifier("x")(position)
+    val identifier = Variable("x")(position)
 
     val result = identifier.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should have size 1

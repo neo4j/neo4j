@@ -72,8 +72,8 @@ case object inlineProjections extends Rewriter {
     input.endoRewrite(inliningRewriter)
   }
 
-  private def findAllDependencies(identifier: Identifier, context: InliningContext): Set[Identifier] = {
-    val (dependencies, _) = iterateUntilConverged[(Set[Identifier], List[Identifier])]({
+  private def findAllDependencies(identifier: Variable, context: InliningContext): Set[Variable] = {
+    val (dependencies, _) = iterateUntilConverged[(Set[Variable], List[Variable])]({
       case (deps, Nil) =>
         (deps, Nil)
       case (deps, queue) =>

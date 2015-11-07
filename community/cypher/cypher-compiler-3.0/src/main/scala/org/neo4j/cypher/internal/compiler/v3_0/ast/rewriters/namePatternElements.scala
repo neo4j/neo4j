@@ -31,11 +31,11 @@ case object nameAllPatternElements extends Rewriter {
   val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if !pattern.identifier.isDefined =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+      pattern.copy(identifier = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
     case pattern: RelationshipPattern if !pattern.identifier.isDefined  =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+      pattern.copy(identifier = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   })
 }
 

@@ -31,7 +31,7 @@ object PredicateSplitter {
     apply(lookup, statement)
   }
 
-  def apply(scopeLookup: Clause => Set[Identifier], statement: Statement): PredicateSplitter = {
+  def apply(scopeLookup: Clause => Set[Variable], statement: Statement): PredicateSplitter = {
     statement.treeFold(PredicateSplitter.empty) {
       case clause@Match(false, pattern, _, Some(where)) =>
         (acc, children) =>
@@ -47,7 +47,7 @@ object PredicateSplitter {
 
               val identifiersInScope = scopeLookup(clause)
               val returnItems = (identifiersInScope ++ namedPaths).map(_.asAlias).toSeq
-              val newWithWhere = optWhere(where, withPredicates).endoRewrite(bottomUp(Rewriter.lift { case ident: Identifier if namedPaths(ident) => ident.copyId }))
+              val newWithWhere = optWhere(where, withPredicates).endoRewrite(bottomUp(Rewriter.lift { case ident: Variable if namedPaths(ident) => ident.copyId }))
               val newWithClause = With(distinct = false, ReturnItems(includeExisting = false, returnItems)(where.position), None, None, None, newWithWhere)(where.position)
 
               acc + (Ref(clause) -> (newMatchClause -> newWithClause))
@@ -57,7 +57,7 @@ object PredicateSplitter {
     }
   }
 
-  private def namedPatternPartIdentifiers(pattern: Pattern): Set[Identifier] = pattern.patternParts.flatMap {
+  private def namedPatternPartIdentifiers(pattern: Pattern): Set[Variable] = pattern.patternParts.flatMap {
       case NamedPatternPart(_, _: ShortestPaths) => None
       case part: NamedPatternPart => Some(part.identifier)
       case _ => None

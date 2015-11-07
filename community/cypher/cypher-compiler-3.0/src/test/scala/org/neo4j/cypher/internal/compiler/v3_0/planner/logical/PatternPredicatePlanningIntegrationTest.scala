@@ -106,7 +106,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
         )(solved),
-        GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
       )(solved)
     )
   }
@@ -120,8 +120,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
         )(solved),
         Ors(Set(
-          In(Property(Identifier("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
-          GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
+          GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
         )) _
       )(solved)
     )
@@ -135,7 +135,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
         )(solved),
-        In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
       )(solved)
     )
   }
@@ -150,7 +150,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
           )(solved),
           "  FRESHID30",
-          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
         )(solved),
         Expand(
           Argument(Set("a"))(solved)(),

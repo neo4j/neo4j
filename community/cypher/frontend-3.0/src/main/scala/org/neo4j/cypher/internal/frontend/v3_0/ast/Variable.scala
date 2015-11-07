@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckResult, SemanticState, SymbolUse}
 
-case class Identifier(name: String)(val position: InputPosition) extends Expression {
+case class Variable(name: String)(val position: InputPosition) extends Expression {
 
   def toSymbolUse = SymbolUse(name, position)
 
@@ -55,9 +55,9 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
 }
 
-object Identifier {
+object Variable {
   implicit val byName =
-    Ordering.by { (identifier: Identifier) =>
+    Ordering.by { (identifier: Variable) =>
       (identifier.name, identifier.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
 }

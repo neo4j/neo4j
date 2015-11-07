@@ -30,7 +30,7 @@ class ListComprehensionTest extends CypherFunSuite {
     CTCollection(CTNode) | CTBoolean | CTCollection(CTString))
 
   test("withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression") {
-    val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
+    val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
@@ -39,7 +39,7 @@ class ListComprehensionTest extends CypherFunSuite {
   test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
     val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
-    val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
+    val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTNumber))
@@ -54,7 +54,7 @@ class ListComprehensionTest extends CypherFunSuite {
       }
     }
 
-    val filter = ListComprehension(Identifier("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
+    val filter = ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)

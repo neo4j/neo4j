@@ -242,7 +242,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       val (keys, exprs) = predicates.unzip
       val commands = exprs.map(buildPredicate)
       val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
-        keys.zip(commands).forall { case (identifier: Identifier, expr: Predicate) =>
+        keys.zip(commands).forall { case (identifier: Variable, expr: Predicate) =>
           context(identifier.name) = rel
           val result = expr.isTrue(context)(state)
           context.remove(identifier.name)

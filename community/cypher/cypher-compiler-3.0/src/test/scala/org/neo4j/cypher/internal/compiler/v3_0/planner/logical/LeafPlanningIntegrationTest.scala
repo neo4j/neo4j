@@ -55,7 +55,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       .plan should equal(
-      Selection(Seq(StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
+      Selection(Seq(StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -72,7 +72,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'longer' AND NOT a.lastname STARTS WITH 'short' RETURN a")
       .plan should equal(
-      Selection(Seq(Not(StartsWith(Property(Identifier("a") _, PropertyKeyName("lastname") _) _, StringLiteral("short") _) _) _),
+      Selection(Seq(Not(StartsWith(Property(Variable("a") _, PropertyKeyName("lastname") _) _, StringLiteral("short") _) _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -83,7 +83,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan property equality index seek instead of index seek by prefix") {
-    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+    val startsWith: StartsWith = StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _,
                                             StringLiteral("prefix") _) _
     (new given {
       indexOn("Person", "name")
@@ -100,7 +100,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan property equality index seek using IN instead of index seek by prefix") {
-    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+    val startsWith: StartsWith = StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _,
                                             StringLiteral("prefix%") _) _
     (new given {
       indexOn("Person", "name")
@@ -325,7 +325,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
       )(solved)
     )
@@ -336,7 +336,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Parameter("param")_), Set.empty)(solved)
       )(solved)
     )
@@ -361,7 +361,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
       )(solved)
     )
@@ -512,7 +512,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Aggregation(
         Apply(
           Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
-          NodeByIdSeek(IdName("n"), ManySeekableArgs(Identifier("arr")_),Set(IdName("arr")))(solved)
+          NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)
       )(solved)

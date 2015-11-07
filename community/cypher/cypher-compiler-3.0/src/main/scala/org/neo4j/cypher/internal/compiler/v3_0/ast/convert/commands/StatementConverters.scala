@@ -49,37 +49,37 @@ object StatementConverters {
         commands.CreateUniqueConstraint(
           id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropUniquePropertyConstraint =>
         commands.DropUniqueConstraint(
           id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.CreateNodePropertyExistenceConstraint =>
         commands.CreateNodePropertyExistenceConstraint(
           id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropNodePropertyExistenceConstraint =>
         commands.DropNodePropertyExistenceConstraint(
           id = s.identifier.name,
           label = s.label.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.CreateRelationshipPropertyExistenceConstraint =>
         commands.CreateRelationshipPropertyExistenceConstraint(
           id = s.identifier.name,
           relType = s.relType.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropRelationshipPropertyExistenceConstraint =>
         commands.DropRelationshipPropertyExistenceConstraint(
           id = s.identifier.name,
           relType = s.relType.name,
-          idForProperty = s.property.map.asInstanceOf[ast.Identifier].name,
+          idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown statement during transformation ($statement)")

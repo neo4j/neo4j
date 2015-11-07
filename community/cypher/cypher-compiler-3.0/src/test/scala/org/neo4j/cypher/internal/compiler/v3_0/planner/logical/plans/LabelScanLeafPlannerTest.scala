@@ -40,7 +40,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")
-    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
+    val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
@@ -73,7 +73,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val idName = IdName("n")
     val labelId = LabelId(12)
-    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
+    val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))

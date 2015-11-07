@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Identifier, _}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Variable, _}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -117,7 +117,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   private def id(name: String): FunctionInvocation =
-    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
+    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
 }
 
 

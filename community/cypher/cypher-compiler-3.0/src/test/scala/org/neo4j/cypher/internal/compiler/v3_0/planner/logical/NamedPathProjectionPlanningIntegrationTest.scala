@@ -33,14 +33,14 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Projection(
         Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
         expressions = Map(
-          "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+          "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
         )
       )(solved)
     )
   }
 
   test("should build plans containing path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan
 
@@ -58,7 +58,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   }
 
   test("should build plans containing multiple path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan
 
@@ -67,7 +67,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
         Seq(
           Equals(
             FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, ident("p")) _) _,
-            Identifier("a") _
+            Variable("a") _
           ) _,
           GreaterThan(
             FunctionInvocation(FunctionName("length") _, ident("p")) _,

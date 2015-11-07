@@ -43,7 +43,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       yield {
         val propertyName = propertyKeyName.name
         val hint = qg.hints.collectFirst {
-          case hint @ UsingIndexHint(Identifier(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
+          case hint @ UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
         }
         val entryConstructor: (Seq[Expression]) => LogicalPlan =
           constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),
@@ -52,7 +52,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       }
     }
 
-    val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
+    val arguments = qg.argumentIds.map(n => Variable(n.name)(null))
 
     val resultPlans = predicates.collect {
       // n.prop IN [ ... ]

@@ -34,7 +34,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("Does produce legacy hint leaf plan") {
-    val identifier: Identifier = Identifier("n")_
+    val identifier: Variable = Variable("n")_
     val hint: NodeByIndexQuery = NodeByIndexQuery(identifier, null, null)(pos)
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
@@ -60,7 +60,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
   }
 
   test("Does not produce legacy hint leaf plan if hinted identifier has already been solved") {
-    val identifier: Identifier = Identifier("n")_
+    val identifier: Variable = Variable("n")_
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
       argumentIds = Set(IdName("n")),

@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) = {
     val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
-    val arguments = queryGraph.argumentIds.map(n => Identifier(n.name)(null))
+    val arguments = queryGraph.argumentIds.map(n => Variable(n.name)(null))
 
-    val idSeekPredicates: Seq[(Expression, Identifier, SeekableArgs)] = predicates.collect {
+    val idSeekPredicates: Seq[(Expression, Variable, SeekableArgs)] = predicates.collect {
       // MATCH (a)-[r]-(b) WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
       case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
@@ -38,7 +38,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     }
 
     val candidatePlans = idSeekPredicates.collect {
-      case (predicate, idExpr @ Identifier(idName), idValues) if !queryGraph.argumentIds.contains(IdName(idName)) =>
+      case (predicate, idExpr @ Variable(idName), idValues) if !queryGraph.argumentIds.contains(IdName(idName)) =>
         queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
             val types = relationship.types.toList
@@ -63,7 +63,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     }
   }
 
-  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName])
+  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Variable, relTypes: List[RelTypeName])
                                (implicit context: LogicalPlanningContext): LogicalPlan = {
     relTypes match {
       case Seq(tpe) =>
@@ -85,6 +85,6 @@ object idSeekLeafPlanner extends LeafPlanner {
 
   private def relTypeAsStringLiteral(relType: RelTypeName) = StringLiteral(relType.name)(relType.position)
 
-  private def typeOfRelExpr(idExpr: Identifier) =
+  private def typeOfRelExpr(idExpr: Variable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 }

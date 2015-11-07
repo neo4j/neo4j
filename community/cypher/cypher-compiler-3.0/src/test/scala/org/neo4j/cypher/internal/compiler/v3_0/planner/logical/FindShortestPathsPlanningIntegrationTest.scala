@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Identifier, Not}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Variable, Not}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -76,7 +76,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val expected =
       FindShortestPaths(
         Selection(
-          Seq(Not(Equals(Identifier("r1") _, Identifier("r2") _) _) _),
+          Seq(Not(Equals(Variable("r1") _, Variable("r2") _) _) _),
           NodeHashJoin(
             Set(IdName("b")),
             Expand(

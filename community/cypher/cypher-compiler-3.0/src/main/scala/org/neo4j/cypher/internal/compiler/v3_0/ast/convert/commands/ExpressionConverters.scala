@@ -235,7 +235,7 @@ object ExpressionConverters {
     case e: ast.True => predicates.True()
     case e: ast.False => predicates.Not(predicates.True())
     case e: ast.Literal => commandexpressions.Literal(e.value)
-    case e: ast.Identifier => identifier(e)
+    case e: ast.Variable => identifier(e)
     case e: ast.Or => predicates.Or(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
     case e: ast.Xor => predicates.Xor(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
     case e: ast.And => predicates.And(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
@@ -312,7 +312,7 @@ object ExpressionConverters {
   def toCommandExpression(expressions: Seq[ast.Expression]): Seq[CommandExpression] =
     expressions.map(toCommandExpression)
 
-  private def identifier(e: ast.Identifier) = commands.expressions.Variable(e.name)
+  private def identifier(e: ast.Variable) = commands.expressions.Variable(e.name)
 
   private def inequalityExpression(original: ast.InequalityExpression): predicates.ComparablePredicate = original match {
     case e: ast.LessThan => predicates.LessThan(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
@@ -379,25 +379,25 @@ object ExpressionConverters {
   def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath = {
     def project(pathStep: PathStep): Projector = pathStep match {
 
-      case NodePathStep(Identifier(node), next) =>
+      case NodePathStep(Variable(node), next) =>
         singleNodeProjector(node, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.INCOMING, next) =>
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
         singleIncomingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.OUTGOING, next) =>
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
         singleOutgoingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Identifier(rel), SemanticDirection.BOTH, next) =>
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
         singleUndirectedRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.INCOMING, next) =>
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
         multiIncomingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.OUTGOING, next) =>
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
         multiOutgoingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Identifier(rel), SemanticDirection.BOTH, next) =>
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
         multiUndirectedRelationshipProjector(rel, project(next))
 
       case NilPathStep =>

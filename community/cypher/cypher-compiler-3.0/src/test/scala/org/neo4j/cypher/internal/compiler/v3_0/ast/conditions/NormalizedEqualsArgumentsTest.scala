@@ -63,5 +63,5 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
   }
 
   private def id(name: String): FunctionInvocation =
-    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
+    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
 }

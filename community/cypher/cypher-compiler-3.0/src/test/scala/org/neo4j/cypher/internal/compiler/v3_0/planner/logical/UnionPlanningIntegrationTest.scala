@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, LabelName}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -39,11 +39,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         Union(
           Projection(
             NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
-            Map("a" -> Identifier("  a@7") _)
+            Map("a" -> Variable("  a@7") _)
           )(solved),
           Projection(
             NodeByLabelScan("  a@43", LazyLabel(LabelName("B") _), Set.empty)(solved),
-            Map("a" -> Identifier("  a@43") _)
+            Map("a" -> Variable("  a@43") _)
           )(solved)
         )(solved)
       )
@@ -63,11 +63,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
           left = Union(
             Projection(
               NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
-              Map("a" -> Identifier("  a@7") _)
+              Map("a" -> Variable("  a@7") _)
             )(solved),
             Projection(
               NodeByLabelScan("  a@39", LazyLabel(LabelName("B") _), Set.empty)(solved),
-              Map("a" -> Identifier("  a@39") _)
+              Map("a" -> Variable("  a@39") _)
             )(solved)
           )(solved),
           groupingExpressions = Map("a" -> ident("a")),

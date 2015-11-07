@@ -31,7 +31,7 @@ class FilterExpressionTest extends CypherFunSuite {
 
   test("shouldHaveCollectionTypesOfInnerExpression") {
     val filter = FilterExpression(
-      identifier = Identifier("x")(DummyPosition(5)),
+      identifier = Variable("x")(DummyPosition(5)),
       expression = dummyExpression,
       innerPredicate = Some(True()(DummyPosition(5)))
     )(DummyPosition(0))
@@ -42,7 +42,7 @@ class FilterExpressionTest extends CypherFunSuite {
 
   test("shouldRaiseSyntaxErrorIfMissingPredicate") {
     val filter = FilterExpression(
-      identifier = Identifier("x")(DummyPosition(5)),
+      identifier = Variable("x")(DummyPosition(5)),
       expression = dummyExpression,
       innerPredicate = None
     )(DummyPosition(0))

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, OrderBy, SortItem}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, OrderBy, SortItem}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.Condition
 
 case object orderByOnlyOnIdentifiers extends Condition {
@@ -27,7 +27,7 @@ case object orderByOnlyOnIdentifiers extends Condition {
     val orderBys = collectNodesOfType[OrderBy].apply(that)
     orderBys.flatMap { orderBy =>
       orderBy.sortItems.collect {
-        case item: SortItem if !item.expression.isInstanceOf[Identifier] =>
+        case item: SortItem if !item.expression.isInstanceOf[Variable] =>
           s"OrderBy at ${orderBy.position} is ordering on an expression (${item.expression}) instead of an identifier"
       }
     }

@@ -46,7 +46,7 @@ object indexScanLeafPlanner extends LeafPlanner {
              labelId <- labelName.id)
           yield {
             val hint = qg.hints.collectFirst {
-              case hint@UsingIndexHint(Identifier(`name`), `labelName`, PropertyKeyName(`propertyKeyName`)) => hint
+              case hint@UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyKeyName`)) => hint
             }
             context.logicalPlanProducer.planNodeIndexScan(idName, LabelToken(labelName, labelId),
               PropertyKeyToken(propertyKey, propertyKey.id.head), Seq(scannable.expr, labelPredicate),

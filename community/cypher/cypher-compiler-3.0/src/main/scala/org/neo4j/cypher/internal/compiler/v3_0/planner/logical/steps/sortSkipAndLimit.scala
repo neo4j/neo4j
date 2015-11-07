@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{Ascending, Descending, Sor
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryProjection}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, ast}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
@@ -42,7 +42,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
           context.logicalPlanProducer.planSortedSkipAndLimit(plan, s, l, sortItems)
 
         case (sortItems, s, None) =>
-          require(sortItems.forall(_.expression.isInstanceOf[Identifier]))
+          require(sortItems.forall(_.expression.isInstanceOf[Variable]))
           val sortDescriptions = sortItems.map(sortDescription)
           val sortPlan = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
           addSkip(s, sortPlan)
@@ -54,8 +54,8 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   }
 
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
-    case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
-    case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
+    case ast.AscSortItem(ast.Variable(key)) => Ascending(key)
+    case ast.DescSortItem(ast.Variable(key)) => Descending(key)
     case _ => throw new InternalException("Sort items expected to only use single identifier expression")
   }
 

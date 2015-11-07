@@ -226,8 +226,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     val lblScan = NodeByLabelScan(IdName("a"), LazyLabel(aLabel), Set.empty)(solved)
     val expand1 = Expand(lblScan, IdName("a"), OUTGOING, r1Types.map(RelTypeName(_)(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
     val expand2 = Expand(expand1, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
-    val relationshipUniqueness = Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)
-    val labelPredicates = cLabels.map(lbl => HasLabels(Identifier("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
+    val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
+    val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
     val selection = Selection(labelPredicates :+ relationshipUniqueness, expand2)(solved)
     (expand1, selection)
   }
@@ -237,8 +237,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      r2Types: Seq[String] = Seq.empty, r2Direction: SemanticDirection = OUTGOING, cLabels: Seq[String] = Seq.empty) = {
     val argument = Argument(expand1.availableSymbols)(solved)()
     val expand2B = Expand(argument, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(solved)
-    val relationshipUniqueness = Not(Equals(Identifier("r1")(pos), Identifier("r2")(pos))(pos))(pos)
-    val labelPredicates = cLabels.map(lbl => HasLabels(Identifier("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
+    val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
+    val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
     val selectionB = Selection(labelPredicates :+ relationshipUniqueness, expand2B)(solved)
     TriadicSelection(predicateExpressionCase, expand1, IdName("a"), IdName("b"), IdName("c"), selectionB)(solved)
   }

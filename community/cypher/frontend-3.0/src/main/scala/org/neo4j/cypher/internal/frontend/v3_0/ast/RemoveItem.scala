@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckable
 
 sealed trait RemoveItem extends ASTNode with ASTPhrase with SemanticCheckable
 
-case class RemoveLabelItem(identifier: Identifier, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
+case class RemoveLabelItem(identifier: Variable, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) chain
     identifier.expectType(CTNode.covariant)

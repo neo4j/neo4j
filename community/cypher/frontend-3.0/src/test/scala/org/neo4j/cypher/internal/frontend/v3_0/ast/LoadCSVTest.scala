@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticError, Se
 class LoadCSVTest extends CypherFunSuite {
 
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
-  val identifier = Identifier("a")(DummyPosition(4))
+  val identifier = Variable("a")(DummyPosition(4))
 
   test("cannot overwrite existing identifier") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, identifier, None)(DummyPosition(6))

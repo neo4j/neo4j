@@ -190,14 +190,14 @@ object QueryTagger extends QueryTagger[String] {
 
     // <expr> unless identifier or literal
     lift[ASTNode] {
-      case x: Identifier => Set.empty
+      case x: Variable => Set.empty
       case x: Literal => Set.empty
       case x: Expression => Set(ComplexExpressionTag)
     } ++
 
     // subtype of <expr>
     lift[ASTNode] {
-      case x: Identifier => Set(IdentifierExpressionTag)
+      case x: Variable => Set(IdentifierExpressionTag)
       case x: Literal => Set(LiteralExpressionTag)
       case x: Parameter => Set(ParameterExpressionTag)
       case x: FilteringExpression => Set(FilteringExpressionTag)

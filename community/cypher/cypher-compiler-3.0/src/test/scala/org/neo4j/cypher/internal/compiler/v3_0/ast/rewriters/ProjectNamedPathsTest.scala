@@ -39,14 +39,14 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def parseReturnedExpr(queryText: String) =
     projectionInlinedAst(queryText) match {
-      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
+      case Query(_, SingleQuery(Seq(_, Return(_, ReturnItems(_, Seq(AliasedReturnItem(expr, Variable("p")))), _, _, _)))) => expr
     }
 
   test("MATCH p = (a) RETURN p" ) {
     val returns = parseReturnedExpr("MATCH p = (a) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("a")_, NilPathStep)
+      NodePathStep(Variable("a")_, NilPathStep)
     )_
 
     returns should equal(expected: PathExpression)
@@ -54,8 +54,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("MATCH p = (a) WITH p RETURN p" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH p RETURN p")
-    val a = Identifier("a")(pos)
-    val p = Identifier("p")(pos)
+    val a = Variable("a")(pos)
+    val p = Variable("p")(pos)
     val MATCH =
       Match(optional = false,
         Pattern(List(
@@ -83,8 +83,8 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   //don't project what is already projected
   test("MATCH p = (a) WITH p, a RETURN p" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH p, a RETURN p")
-    val a = Identifier("a")(pos)
-    val p = Identifier("p")(pos)
+    val a = Variable("a")(pos)
+    val p = Variable("p")(pos)
     val MATCH =
       Match(optional = false,
         Pattern(List(
@@ -112,10 +112,10 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("MATCH p = (a) WITH p MATCH q = (b) RETURN p, q" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH p MATCH q = (b) WITH p, q RETURN p, q")
-    val a = Identifier("a")(pos)
-    val b = Identifier("b")(pos)
-    val p = Identifier("p")(pos)
-    val q = Identifier("q")(pos)
+    val a = Variable("a")(pos)
+    val b = Variable("b")(pos)
+    val p = Variable("p")(pos)
+    val q = Variable("q")(pos)
 
     val MATCH1 =
       Match(optional = false,
@@ -160,7 +160,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("a")_, SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep))
+      NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -170,7 +170,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r]-(a) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("b")_, SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.INCOMING, NilPathStep))
+      NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -180,7 +180,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r*]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("a")_, MultiRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep))
+      NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -190,7 +190,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p AS p")
 
     val expected = PathExpression(
-      NodePathStep(Identifier("b")_, MultiRelationshipPathStep(Identifier("r")_, SemanticDirection.INCOMING, NilPathStep))
+      NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -199,13 +199,13 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH p = (a)-[r]->(b) RETURN p, 42 as order ORDER BY order") {
     val rewritten = projectionInlinedAst("MATCH p = (a)-[r]->(b) RETURN p, 42 as order ORDER BY order")
 
-    val aId = Identifier("a")(pos)
-    val fresh30: Identifier = Identifier("  FRESHID30")(pos)
-    val fresh33: Identifier = Identifier("  FRESHID33")(pos)
-    val orderId: Identifier = Identifier("order")(pos)
-    val rId = Identifier("r")(pos)
-    val pId = Identifier("p")(pos)
-    val bId = Identifier("b")(pos)
+    val aId = Variable("a")(pos)
+    val fresh30: Variable = Variable("  FRESHID30")(pos)
+    val fresh33: Variable = Variable("  FRESHID33")(pos)
+    val orderId: Variable = Variable("order")(pos)
+    val rId = Variable("r")(pos)
+    val pId = Variable("p")(pos)
+    val bId = Variable("b")(pos)
 
     val MATCH =
       Match(optional = false,
@@ -245,9 +245,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("MATCH p = (a)-[r]->(b) WHERE length(p) > 10 RETURN 1") {
     val rewritten = projectionInlinedAst("MATCH p = (a)-[r]->(b) WHERE length(p) > 10 RETURN 1 as x")
 
-    val aId = Identifier("a")(pos)
-    val rId = Identifier("r")(pos)
-    val bId = Identifier("b")(pos)
+    val aId = Variable("a")(pos)
+    val rId = Variable("r")(pos)
+    val bId = Variable("b")(pos)
 
     val WHERE =
       Where(
@@ -270,7 +270,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val RETURN =
       Return(distinct = false,
         ReturnItems(includeExisting = false, List(
-          AliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), Identifier("x")(pos))(pos)
+          AliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), Variable("x")(pos))(pos)
         ))(pos),
         None, None, None
       )(pos)

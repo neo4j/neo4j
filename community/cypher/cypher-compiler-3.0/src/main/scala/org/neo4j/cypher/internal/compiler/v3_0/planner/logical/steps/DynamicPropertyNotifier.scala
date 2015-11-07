@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 
 object DynamicPropertyNotifier {
 
-  def process(identifiers: Set[Identifier], notification: Set[String] => InternalNotification, qg: QueryGraph)
+  def process(identifiers: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph)
              (implicit context: LogicalPlanningContext) = {
 
     val indexedLabels = identifiers.flatMap { identifier =>

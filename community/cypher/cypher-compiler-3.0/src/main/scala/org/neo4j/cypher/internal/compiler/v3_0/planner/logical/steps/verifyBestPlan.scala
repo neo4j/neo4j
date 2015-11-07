@@ -81,11 +81,11 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property)
-      case hint@UsingIndexHint(Identifier(name), LabelName(label), PropertyKeyName(property))
+      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property))
         if planContext.getIndexRule( label, property ).isDefined ||
           planContext.getUniqueIndexRule( label, property ).isDefined => None
       // no such index exists
-      case hint@UsingIndexHint(Identifier(name), LabelName(label), PropertyKeyName(property)) => Option(hint)
+      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property)) => Option(hint)
       // don't care about other hints
       case hint => None
     }

@@ -80,8 +80,8 @@ trait Command extends Parser
     keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPatternSyntax = rule(
-    ("()-[" ~~ Identifier ~~ RelType ~~ "]-()")
-      | ("()-[" ~~ Identifier ~~ RelType ~~ "]->()")
-      | ("()<-[" ~~ Identifier ~~ RelType ~~ "]-()")
+    ("()-[" ~~ Identifier~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Identifier~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Identifier~~ RelType ~~ "]-()")
   )
 }

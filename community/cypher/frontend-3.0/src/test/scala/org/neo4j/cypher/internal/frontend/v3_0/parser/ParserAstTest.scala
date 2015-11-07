@@ -30,7 +30,7 @@ trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
 
   private type Expression = (InputPosition) => ast.Expression
 
-  final def id(id: String) = ast.Identifier(id)(_)
+  final def id(id: String) = ast.Variable(id)(_)
 
   final def lt(lhs: Expression, rhs: Expression): Expression = { pos => ast.LessThan(lhs(pos), rhs(pos))(pos) }
 

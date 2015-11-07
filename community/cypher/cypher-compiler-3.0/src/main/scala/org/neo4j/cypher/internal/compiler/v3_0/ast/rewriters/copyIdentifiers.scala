@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object copyIdentifiers extends Rewriter {
-  private val instance = Rewriter.lift { case identifier: Identifier => identifier.copyId }
+  private val instance = Rewriter.lift { case identifier: Variable => identifier.copyId }
 
   def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 }

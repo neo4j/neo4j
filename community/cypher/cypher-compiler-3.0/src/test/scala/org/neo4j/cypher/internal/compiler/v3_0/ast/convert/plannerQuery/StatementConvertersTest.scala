@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, inSequence}
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val nIdent: Identifier = Identifier("n")_
+  val nIdent: Variable = Variable("n")_
   val A: LabelName = LabelName("A")_
   val B: LabelName = LabelName("B")_
   val X: LabelName = LabelName("X")_
@@ -41,7 +41,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43")_
 
   val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-  val nProp: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
+  val nProp: Expression = Property( Variable( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
   def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
     val ast = parser.parse(query.replace("\r\n", "\n"))
@@ -149,7 +149,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), In(
-        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
         Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
       )_
       ))))
@@ -165,7 +165,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), In(
-        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
         Collection(Seq(lit42, lit43))_
       )_
       ))))
@@ -182,7 +182,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
       Predicate(Set(IdName("n")), In(
-        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Variable("n")(pos)))(pos),
         Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
       )_
       ))))
@@ -196,7 +196,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set[IdName]("a"))
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map[String, Expression](
-      "p" -> PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
+      "p" -> PathExpression(NodePathStep(Variable("a")_, NilPathStep))_
     )))
   }
 
@@ -206,8 +206,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set[IdName]("a", "b"))
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -217,12 +217,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), OUTGOING, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Variable("r")_, Variable("r2")_)_)_)
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_,
-      "b" -> Identifier("b")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_,
+      "b" -> Variable("b")_
     )))
   }
 
@@ -232,11 +232,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), OUTGOING, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Variable("r")_, Variable("r2")_)_)_)
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -246,11 +246,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Variable("r")_, Variable("r2")_)_)_)
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -260,11 +260,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Identifier("r")_, Identifier("r2")_)_)_)
+    val predicate: Predicate = Predicate(Set(IdName("r"), IdName("r2")), Not(Equals(Variable("r")_, Variable("r2")_)_)_)
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -277,8 +277,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_)
     )))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -289,8 +289,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -301,8 +301,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -314,9 +314,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "b" -> Identifier("b")_,
-      "c" -> Identifier("c")_
+      "a" -> Variable("a")_,
+      "b" -> Variable("b")_,
+      "c" -> Variable("c")_
     )))
   }
 
@@ -327,8 +327,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -339,8 +339,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.queryGraph.selections should equal(Selections())
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -351,16 +351,16 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), BOTH, Seq.empty, VarPatternLength(1, None))))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
 
-    val identR = Identifier("r")(null)
-    val identR2 = Identifier("r2")(null)
+    val identR = Variable("r")(null)
+    val identR2 = Variable("r2")(null)
     val inner = AnyIterablePredicate(FilterScope(identR2, Some(Equals(identR, identR2)(null)))(null), identR2)(null)
     val outer = NoneIterablePredicate(FilterScope(identR, Some(inner))(null), identR)(null)
     val predicate = Predicate(Set(IdName("r2"), IdName("r")), outer)
 
     query.queryGraph.selections should equal(Selections(Set(predicate)))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "r" -> Variable("r")_
     )))
   }
 
@@ -370,7 +370,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set())
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_
+      "a" -> Variable("a")_
     )))
 
     query.queryGraph.optionalMatches.size should equal(1)
@@ -390,9 +390,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set())
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "b" -> Identifier("b")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "b" -> Variable("b")_,
+      "r" -> Variable("r")_
     )))
 
     query.queryGraph.optionalMatches.size should equal(1)
@@ -415,9 +415,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternRelationships should equal(Set())
     query.queryGraph.selections should equal(Selections(Set.empty))
     query.horizon should equal(RegularQueryProjection(Map(
-      "a" -> Identifier("a")_,
-      "b" -> Identifier("b")_,
-      "r" -> Identifier("r")_
+      "a" -> Variable("a")_,
+      "b" -> Variable("b")_,
+      "r" -> Variable("r")_
     )))
     query.queryGraph.optionalMatches.size should equal(1)
     query.queryGraph.argumentIds should equal(Set())
@@ -440,9 +440,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED20"
     val nodeName = "  UNNAMED23"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val predicate= Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
@@ -465,14 +465,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b")
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
-    query.tail should equal(Some(PlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("b"))), UpdateGraph.empty, RegularQueryProjection(Map("b" -> Identifier("b") _)))))
+    query.tail should equal(Some(PlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("b"))), UpdateGraph.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
   }
 
   test("WITH 1 as b RETURN b") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("WITH 1 as b RETURN b")
 
     query.horizon should equal(RegularQueryProjection(Map("b" -> SignedDecimalIntegerLiteral("1")_)))
-    query.tail should equal(Some(PlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("b"))), UpdateGraph.empty, RegularQueryProjection(Map("b" -> Identifier("b") _)))))
+    query.tail should equal(Some(PlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("b"))), UpdateGraph.empty, RegularQueryProjection(Map("b" -> Variable("b") _)))))
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
@@ -492,12 +492,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED35"
     val nodeName = "  UNNAMED38"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
-      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
+      Property(Variable("a")_, PropertyKeyName("prop")_)_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
@@ -515,12 +515,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED20"
     val nodeName = "  UNNAMED23"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
-      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
+      Property(Variable("a")_, PropertyKeyName("prop")_)_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
@@ -538,16 +538,16 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val relName = "  UNNAMED36"
     val nodeName = "  UNNAMED39"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(Identifier("a")(pos)), Seq(), None) _,
-      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
-      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None) _
+      NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
+      RelationshipPattern(Some(Variable(relName)(pos)), optional = false, Seq.empty, None, None, OUTGOING) _,
+      NodePattern(Some(Variable(nodeName)(pos)), Seq(), None) _
     ) _) _)
     val exp2: Expression = In(
-      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
+      Property(Variable("a")_, PropertyKeyName("prop")_)_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val exp3: Expression = In(
-      Property(Identifier("a")_, PropertyKeyName("prop2")_)_,
+      Property(Variable("a")_, PropertyKeyName("prop2")_)_,
       Collection(Seq(SignedDecimalIntegerLiteral("21")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp3, exp2))_)
@@ -593,7 +593,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (a) with * return a") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("match (a) with * return a")
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
-    query.horizon should equal(RegularQueryProjection(Map[String, Expression]("a" -> Identifier("a")_)))
+    query.horizon should equal(RegularQueryProjection(Map[String, Expression]("a" -> Variable("a")_)))
     query.tail should equal(None)
   }
 
@@ -607,7 +607,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(
       RegularQueryProjection(
-        projections = Map("a" -> Identifier("a")_),
+        projections = Map("a" -> Variable("a")_),
         QueryShuffle(
           sortItems = Seq.empty,
           skip = None,
@@ -635,7 +635,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             .addPatternNodes(IdName("a"))
             .addSelections(Selections(Set(Predicate(Set("a"), HasLabels(ident("a"), Seq(LabelName("Foo")_))_))))
         ))
-    query.horizon should equal(RegularQueryProjection(Map("a" -> Identifier("a")_)))
+    query.horizon should equal(RegularQueryProjection(Map("a" -> Variable("a")_)))
     query.tail should not be empty
     query.tail.get.queryGraph should equal(
       QueryGraph
@@ -650,12 +650,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b")
     query.tail should not be empty
     query.queryGraph.selections.predicates should equal(Set(
-      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
+      Predicate(Set(IdName("a")), HasLabels(Variable("a")_, Seq(LabelName("Start")(null)))_)
     ))
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
     query.horizon should equal(
       RegularQueryProjection(
-        Map("property" -> Property(Identifier("a")(pos), PropertyKeyName("prop")(pos))(pos)),
+        Map("property" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)),
         QueryShuffle(Seq.empty, None, Some(SignedDecimalIntegerLiteral("1")(pos)))
       )
     )
@@ -666,7 +666,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQg.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Identifier("property")(pos))) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property")(pos))) _) _
       )
     ))
 
@@ -680,34 +680,34 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b")
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
     query.queryGraph.selections.predicates should equal(Set(
-      Predicate(Set(IdName("a")), HasLabels(Identifier("a") _, Seq(LabelName("Start")(null))) _)
+      Predicate(Set(IdName("a")), HasLabels(Variable("a") _, Seq(LabelName("Start")(null))) _)
     ))
 
     query.horizon should equal(
       RegularQueryProjection(
-        Map("property" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_)))
+        Map("property" -> Property(Variable("a")_, PropertyKeyName("prop")_)_)))
 
     val secondQuery = query.tail.get
     secondQuery.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Identifier("property")(pos))) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property")(pos))) _) _
       )))
 
     secondQuery.horizon should equal(
       RegularQueryProjection(
-        Map("b" -> Identifier("b")_)))
+        Map("b" -> Variable("b")_)))
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b")
     query.tail should not be empty
     query.queryGraph.selections.predicates should equal(Set(
-      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
+      Predicate(Set(IdName("a")), HasLabels(Variable("a")_, Seq(LabelName("Start")(null)))_)
     ))
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
     query.horizon should equal(AggregatingQueryProjection(
-      Map("property" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_),
+      Map("property" -> Property(Variable("a")_, PropertyKeyName("prop")_)_),
       Map("count" -> CountStar()_)
     ))
 
@@ -717,7 +717,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQg.queryGraph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Identifier("property") _)) _) _
+        In(FunctionInvocation(FunctionName("id") _, Variable("b") _) _, Collection(Seq(Variable("property") _)) _) _
       )
     ))
 
@@ -752,7 +752,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregationExpression, QueryShuffle(sorting, limit, skip)) =>
-        groupingKeys should equal(Map("n.prop" -> Property(Identifier("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+        groupingKeys should equal(Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
         sorting should be (empty)
         limit should be (empty)
         skip should be (empty)

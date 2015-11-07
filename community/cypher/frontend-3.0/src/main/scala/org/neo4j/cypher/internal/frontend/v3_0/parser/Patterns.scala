@@ -78,7 +78,7 @@ trait Patterns extends Parser
   }
 
   private def RelationshipDetail: Rule5[
-      Option[ast.Identifier],
+      Option[ast.Variable],
       Boolean,
       Seq[ast.RelTypeName],
       Option[Option[ast.Range]],
@@ -112,7 +112,7 @@ trait Patterns extends Parser
     | group(Identifier ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
-  private def MaybeIdentifier: Rule1[Option[ast.Identifier]] = rule("an identifier") {
+  private def MaybeIdentifier: Rule1[Option[ast.Variable]] = rule("an identifier") {
     optional(Identifier)
   }
 

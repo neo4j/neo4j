@@ -31,7 +31,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Identifier("n") _) _
+  val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -131,7 +131,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
       shuffle = QueryShuffle(sortItems, skip, limit)

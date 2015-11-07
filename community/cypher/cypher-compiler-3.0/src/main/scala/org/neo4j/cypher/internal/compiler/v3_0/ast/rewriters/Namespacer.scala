@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Ref, Rewriter, SemanticTable, bo
 
 object Namespacer {
 
-  type IdentifierRenamings = Map[Ref[Identifier], Identifier]
+  type IdentifierRenamings = Map[Ref[Variable], Variable]
 
   def apply(statement: Statement, scopeTree: Scope): Namespacer = {
     val ambiguousNames = shadowedNames(scopeTree)
@@ -44,19 +44,19 @@ object Namespacer {
     }.toSet
   }
 
-  private def returnAliases(statement: Statement): Set[Ref[Identifier]] =
-    statement.treeFold(Set.empty[Ref[Identifier]]) {
+  private def returnAliases(statement: Statement): Set[Ref[Variable]] =
+    statement.treeFold(Set.empty[Ref[Variable]]) {
 
       // ignore identifier in StartItem that represents index names and key names
       case Return(_, ReturnItems(_, items), _, _, _) =>
-        val identifiers = items.map(_.alias.map(Ref[Identifier]).get)
+        val identifiers = items.map(_.alias.map(Ref[Variable]).get)
         (acc, children) => children(acc ++ identifiers)
     }
 
   private def identifierRenamings(statement: Statement, identifierDefinitions: Map[SymbolUse, SymbolUse],
-                                  ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Identifier]]): IdentifierRenamings =
-    statement.treeFold(Map.empty[Ref[Identifier], Identifier]) {
-      case i: Identifier if ambiguousNames(i.name) && !protectedIdentifiers(Ref(i)) =>
+                                  ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Variable]]): IdentifierRenamings =
+    statement.treeFold(Map.empty[Ref[Variable], Variable]) {
+      case i: Variable if ambiguousNames(i.name) && !protectedIdentifiers(Ref(i)) =>
         val symbolDefinition = identifierDefinitions(i.toSymbolUse)
         val newIdentifier = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newIdentifier
@@ -66,7 +66,7 @@ object Namespacer {
 
 case class Namespacer(renamings: IdentifierRenamings) {
   val statementRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case i: Identifier =>
+    case i: Variable =>
       renamings.get(Ref(i)) match {
         case Some(newIdentifier) => newIdentifier
         case None                => i

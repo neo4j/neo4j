@@ -30,20 +30,20 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   test("testIdentifierCanContainASCII") {
     implicit val parserToTest = Identifier
 
-    parsing("abc") shouldGive ast.Identifier("abc")(t)
-    parsing("a123") shouldGive ast.Identifier("a123")(t)
-    parsing("ABC") shouldGive ast.Identifier("ABC")(t)
-    parsing("_abc") shouldGive ast.Identifier("_abc")(t)
-    parsing("abc_de") shouldGive ast.Identifier("abc_de")(t)
+    parsing("abc") shouldGive ast.Variable("abc")(t)
+    parsing("a123") shouldGive ast.Variable("a123")(t)
+    parsing("ABC") shouldGive ast.Variable("ABC")(t)
+    parsing("_abc") shouldGive ast.Variable("_abc")(t)
+    parsing("abc_de") shouldGive ast.Variable("abc_de")(t)
   }
 
   test("testIdentifierCanContainUTF8") {
     implicit val parserToTest = Identifier
 
-    parsing("aé") shouldGive ast.Identifier("aé")(t)
-    parsing("⁔") shouldGive ast.Identifier("⁔")(t)
-    parsing("＿test") shouldGive ast.Identifier("＿test")(t)
-    parsing("a＿test") shouldGive ast.Identifier("a＿test")(t)
+    parsing("aé") shouldGive ast.Variable("aé")(t)
+    parsing("⁔") shouldGive ast.Variable("⁔")(t)
+    parsing("＿test") shouldGive ast.Variable("＿test")(t)
+    parsing("a＿test") shouldGive ast.Variable("a＿test")(t)
   }
 
   test("testIdentifierCannotStartWithNumber") {

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport{
 
-    private val collector: (Any => Seq[Identifier]) = collectNodesOfType[Identifier]()
+    private val collector: (Any => Seq[Variable]) = collectNodesOfType[Variable]()
 
     test("collect all identifiers") {
       val idA = ident("a")

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
@@ -32,7 +32,7 @@ import scala.language.postfixOps
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def asIdentifier = Identifier(name)(position)
+  def asIdentifier = Variable(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -203,7 +203,7 @@ case class SemanticState(currentScope: ScopeLocation,
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
 
-  def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
+  def declareIdentifier(identifier: ast.Variable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(identifier.name) match {
       case None =>
         Right(updateIdentifier(identifier, possibleTypes, positions + identifier.position))
@@ -213,7 +213,7 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def addNotification(notification: InternalNotification) = copy(notifications = notifications + notification)
 
-  def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
+  def implicitIdentifier(identifier: ast.Variable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
         Right(updateIdentifier(identifier, possibleTypes, Set(identifier.position)))
@@ -230,7 +230,7 @@ case class SemanticState(currentScope: ScopeLocation,
         }
     }
 
-  def ensureIdentifierDefined(identifier: ast.Identifier): Either[SemanticError, SemanticState] =
+  def ensureIdentifierDefined(identifier: ast.Variable): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
         Left(SemanticError(s"${identifier.name} not defined", identifier.position))
@@ -240,7 +240,7 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def specifyType(expression: ast.Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     expression match {
-      case identifier: ast.Identifier =>
+      case identifier: ast.Variable =>
         implicitIdentifier(identifier, possibleTypes)
       case _                          =>
         Right(copy(typeTable = typeTable.updated(expression, ExpressionTypeInfo(possibleTypes))))
@@ -254,7 +254,7 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Set[InputPosition]) =
+  private def updateIdentifier(identifier: ast.Variable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(
       currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
       typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))

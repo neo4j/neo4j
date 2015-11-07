@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 trait FilteringExpression extends Expression {
   def name: String
-  def identifier: Identifier
+  def identifier: Variable
   def expression: Expression
   def innerPredicate: Option[Expression]
 
@@ -81,7 +81,7 @@ case class FilterExpression(scope: FilterScope, expression: Expression)(val posi
 }
 
 object FilterExpression {
-  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): FilterExpression =
+  def apply(identifier: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): FilterExpression =
     FilterExpression(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
@@ -117,7 +117,7 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
 }
 
 object ExtractExpression {
-  def apply(identifier: Identifier,
+  def apply(identifier: Variable,
             expression: Expression,
             innerPredicate: Option[Expression],
             extractExpression: Option[Expression])(position: InputPosition): ExtractExpression =
@@ -150,7 +150,7 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
 }
 
 object ListComprehension {
-  def apply(identifier: Identifier,
+  def apply(identifier: Variable,
             expression: Expression,
             innerPredicate: Option[Expression],
             extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
@@ -175,7 +175,7 @@ case class AllIterablePredicate(scope: FilterScope, expression: Expression)(val 
 }
 
 object AllIterablePredicate {
-  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
+  def apply(identifier: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AllIterablePredicate =
     AllIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
@@ -184,7 +184,7 @@ case class AnyIterablePredicate(scope: FilterScope, expression: Expression)(val 
 }
 
 object AnyIterablePredicate {
-  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
+  def apply(identifier: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): AnyIterablePredicate =
     AnyIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
@@ -193,7 +193,7 @@ case class NoneIterablePredicate(scope: FilterScope, expression: Expression)(val
 }
 
 object NoneIterablePredicate {
-  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
+  def apply(identifier: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): NoneIterablePredicate =
     NoneIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
@@ -202,7 +202,7 @@ case class SingleIterablePredicate(scope: FilterScope, expression: Expression)(v
 }
 
 object SingleIterablePredicate {
-  def apply(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
+  def apply(identifier: Variable, expression: Expression, innerPredicate: Option[Expression])(position: InputPosition): SingleIterablePredicate =
     SingleIterablePredicate(FilterScope(identifier, innerPredicate)(position), expression)(position)
 }
 
@@ -240,7 +240,7 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
 object ReduceExpression {
   val AccumulatorExpressionTypeMismatchMessageGenerator = (expected: String, existing: String) => s"accumulator is $expected but expression has type $existing"
 
-  def apply(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
+  def apply(accumulator: Variable, init: Expression, identifier: Variable, collection: Expression, expression: Expression)(position: InputPosition): ReduceExpression =
     ReduceExpression(ReduceScope(accumulator, identifier, expression)(position), init, collection)(position)
 }
 
