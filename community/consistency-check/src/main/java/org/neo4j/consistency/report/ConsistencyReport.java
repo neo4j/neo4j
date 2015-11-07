@@ -97,32 +97,25 @@ public interface ConsistencyReport
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
     {
-        /** The referenced property record is not in use. */
-        @Documented
+        @Documented( "The referenced property record is not in use." )
         void propertyNotInUse( PropertyRecord property );
 
-        /** The referenced property record is not the first in its property chain. */
-        @Documented
+        @Documented( "The referenced property record is not the first in its property chain." )
         void propertyNotFirstInChain( PropertyRecord property );
 
-        /** The referenced property is owned by another Node. */
-        @Documented
+        @Documented( "The referenced property is owned by another Node." )
         void multipleOwners( NodeRecord node );
 
-        /** The referenced property is owned by another Relationship. */
-        @Documented
+        @Documented( "The referenced property is owned by another Relationship." )
         void multipleOwners( RelationshipRecord relationship );
 
-        /** The referenced property is owned by the neo store (graph global property). */
-        @Documented
+        @Documented( "The referenced property is owned by the neo store (graph global property)." )
         void multipleOwners( NeoStoreRecord neoStore );
 
-        /** The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property. */
-        @Documented
+        @Documented( "The property chain contains multiple properties that have the same property key id, which means that the entity has at least one duplicate property." )
         void propertyKeyNotUniqueInChain();
 
-        /** The property chain does not contain a property that is mandatory for this entity. */
-        @Documented
+        @Documented( "The property chain does not contain a property that is mandatory for this entity." )
         void missingMandatoryProperty( int key );
     }
 
@@ -132,447 +125,333 @@ public interface ConsistencyReport
 
     interface SchemaConsistencyReport extends ConsistencyReport
     {
-        /** The label token record referenced from the schema is not in use. */
-        @Documented
+        @Documented( "The label token record referenced from the schema is not in use." )
         void labelNotInUse( LabelTokenRecord label );
 
-        /** The relationship type token record referenced from the schema is not in use. */
-        @Documented
+        @Documented( "The relationship type token record referenced from the schema is not in use." )
         void relationshipTypeNotInUse( RelationshipTypeTokenRecord relationshipType );
 
-        /** The property key token record is not in use. */
-        @Documented
+        @Documented( "The property key token record is not in use." )
         void propertyKeyNotInUse( PropertyKeyTokenRecord propertyKey );
 
-        /** The uniqueness constraint does not reference back to the given record */
-        @Documented
+        @Documented( "The uniqueness constraint does not reference back to the given record" )
         void uniquenessConstraintNotReferencingBack( DynamicRecord ruleRecord );
 
-        /** The constraint index does not reference back to the given record */
-        @Documented
+        @Documented( "The constraint index does not reference back to the given record" )
         void constraintIndexRuleNotReferencingBack( DynamicRecord ruleRecord );
 
-        /** This record is required to reference some other record of the given kind but no such obligation was found */
-        @Documented
+        @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
         void missingObligation( SchemaRule.Kind kind );
 
-        /**
-         * This record requires some other record to reference back to it but there already was such a
-         * conflicting obligation created by the record given as a parameter
-         */
-        @Documented
+        @Documented( "This record requires some other record to reference back to it but there already was such a conflicting obligation created by the record given as a parameter" )
         void duplicateObligation( DynamicRecord record );
 
-        /**
-         * This record contains a schema rule which has the same content as the schema rule contained in the
-         * record given as parameter
-         */
-        @Documented
+        @Documented( "This record contains a schema rule which has the same content as the schema rule contained in the record given as parameter" )
         void duplicateRuleContent( DynamicRecord record );
 
-        /** The schema rule contained in the DynamicRecord chain is malformed (not deserializable) */
-        @Documented
+        @Documented( "The schema rule contained in the DynamicRecord chain is malformed (not deserializable)" )
         void malformedSchemaRule();
 
-        /** The schema rule contained in the DynamicRecord chain is of an unrecognized Kind */
-        @Documented
+        @Documented( "The schema rule contained in the DynamicRecord chain is of an unrecognized Kind" )
         void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
     }
 
     interface NodeConsistencyReport extends PrimitiveConsistencyReport
     {
-        /** The referenced relationship record is not in use. */
-        @Documented
+        @Documented( "The referenced relationship record is not in use." )
         void relationshipNotInUse( RelationshipRecord referenced );
 
-        /** The referenced relationship record is a relationship between two other nodes. */
-        @Documented
+        @Documented( "The referenced relationship record is a relationship between two other nodes." )
         void relationshipForOtherNode( RelationshipRecord relationship );
 
-        /** The referenced relationship record is not the first in the relationship chain where this node is source. */
-        @Documented
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is source." )
         void relationshipNotFirstInSourceChain( RelationshipRecord relationship );
 
-        /** The referenced relationship record is not the first in the relationship chain where this node is target. */
-        @Documented
+        @Documented( "The referenced relationship record is not the first in the relationship chain where this node is target." )
         void relationshipNotFirstInTargetChain( RelationshipRecord relationship );
 
-        /** The label token record referenced from a node record is not in use. */
-        @Documented
+        @Documented( "The label token record referenced from a node record is not in use." )
         void labelNotInUse( LabelTokenRecord label );
 
-        /** The label token record is referenced twice from the same node. */
-        @Documented
+        @Documented( "The label token record is referenced twice from the same node." )
         void labelDuplicate( long labelId );
 
-        /** The label id array is not ordered */
-        @Documented
+        @Documented( "The label id array is not ordered" )
         void labelsOutOfOrder( long largest, long smallest );
 
-        /** The dynamic label record is not in use. */
-        @Documented
+        @Documented( "The dynamic label record is not in use." )
         void dynamicLabelRecordNotInUse( DynamicRecord record );
 
-        /** This record points to a next record that was already part of this dynamic record chain. */
-        @Documented
+        @Documented( "This record points to a next record that was already part of this dynamic record chain." )
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
-        /** This node was not found in the expected index. */
-        @Documented
+        @Documented( "This node was not found in the expected index." )
         void notIndexed( IndexRule index, Object propertyValue );
 
-        /** This node was found in the expected index, although multiple times */
-        @Documented
+        @Documented( "This node was found in the expected index, although multiple times" )
         void indexedMultipleTimes( IndexRule index, Object propertyValue, int count );
 
-        /** There is another node in the unique index with the same property value. */
-        @Documented
+        @Documented( "There is another node in the unique index with the same property value." )
         void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );
 
-        /** The referenced relationship group record is not in use. */
-        @Documented
+        @Documented( "The referenced relationship group record is not in use." )
         void relationshipGroupNotInUse( RelationshipGroupRecord group );
 
-        /** The first relationship group record has another node set as owner. */
-        @Documented
+        @Documented( "The first relationship group record has another node set as owner." )
         void relationshipGroupHasOtherOwner( RelationshipGroupRecord group );
     }
 
     interface RelationshipConsistencyReport
             extends PrimitiveConsistencyReport
     {
-        /** The relationship type field has an illegal value. */
-        @Documented
+        @Documented( "The relationship type field has an illegal value." )
         void illegalRelationshipType();
 
-        /** The relationship type record is not in use. */
-        @Documented
+        @Documented( "The relationship type record is not in use." )
         void relationshipTypeNotInUse( RelationshipTypeTokenRecord relationshipType );
 
-        /** The source node field has an illegal value. */
-        @Documented
+        @Documented( "The source node field has an illegal value." )
         void illegalSourceNode();
 
-        /** The target node field has an illegal value. */
-        @Documented
+        @Documented( "The target node field has an illegal value." )
         void illegalTargetNode();
 
-        /** The source node is not in use. */
-        @Documented
+        @Documented( "The source node is not in use." )
         void sourceNodeNotInUse( NodeRecord node );
 
-        /** The target node is not in use. */
-        @Documented
+        @Documented( "The target node is not in use." )
         void targetNodeNotInUse( NodeRecord node );
 
-        /** This record should be the first in the source chain, but the source node does not reference this record. */
-        @Documented
+        @Documented( "This record should be the first in the source chain, but the source node does not reference this record." )
         void sourceNodeDoesNotReferenceBack( NodeRecord node );
 
-        /** This record should be the first in the target chain, but the target node does not reference this record. */
-        @Documented
+        @Documented( "This record should be the first in the target chain, but the target node does not reference this record." )
         void targetNodeDoesNotReferenceBack( NodeRecord node );
 
-        /** The source node does not have a relationship chain. */
-        @Documented
+        @Documented( "The source node does not have a relationship chain." )
         void sourceNodeHasNoRelationships( NodeRecord source );
 
-        /** The target node does not have a relationship chain. */
-        @Documented
+        @Documented( "The target node does not have a relationship chain." )
         void targetNodeHasNoRelationships( NodeRecord source );
 
-        /** The previous record in the source chain is a relationship between two other nodes. */
-        @Documented
+        @Documented( "The previous record in the source chain is a relationship between two other nodes." )
         void sourcePrevReferencesOtherNodes( RelationshipRecord relationship );
 
-        /** The next record in the source chain is a relationship between two other nodes. */
-        @Documented
+        @Documented( "The next record in the source chain is a relationship between two other nodes." )
         void sourceNextReferencesOtherNodes( RelationshipRecord relationship );
 
-        /** The previous record in the target chain is a relationship between two other nodes. */
-        @Documented
+        @Documented( "The previous record in the target chain is a relationship between two other nodes." )
         void targetPrevReferencesOtherNodes( RelationshipRecord relationship );
 
-        /** The next record in the target chain is a relationship between two other nodes. */
-        @Documented
+        @Documented( "The next record in the target chain is a relationship between two other nodes." )
         void targetNextReferencesOtherNodes( RelationshipRecord relationship );
 
-        /** The previous record in the source chain does not have this record as its next record. */
-        @Documented
+        @Documented( "The previous record in the source chain does not have this record as its next record." )
         void sourcePrevDoesNotReferenceBack( RelationshipRecord relationship );
 
-        /** The next record in the source chain does not have this record as its previous record. */
-        @Documented
+        @Documented( "The next record in the source chain does not have this record as its previous record." )
         void sourceNextDoesNotReferenceBack( RelationshipRecord relationship );
 
-        /** The previous record in the target chain does not have this record as its next record. */
-        @Documented
+        @Documented( "The previous record in the target chain does not have this record as its next record." )
         void targetPrevDoesNotReferenceBack( RelationshipRecord relationship );
 
-        /** The next record in the target chain does not have this record as its previous record. */
-        @Documented
+        @Documented( "The next record in the target chain does not have this record as its previous record." )
         void targetNextDoesNotReferenceBack( RelationshipRecord relationship );
     }
 
     interface PropertyConsistencyReport extends ConsistencyReport
     {
-        /** The property key as an invalid value. */
-        @Documented
+        @Documented( "The property key as an invalid value." )
         void invalidPropertyKey( PropertyBlock block );
 
-        /** The key for this property is not in use. */
-        @Documented
+        @Documented( "The key for this property is not in use." )
         void keyNotInUse( PropertyBlock block, PropertyKeyTokenRecord key );
 
-        /** The previous property record is not in use. */
-        @Documented
+        @Documented( "The previous property record is not in use." )
         void prevNotInUse( PropertyRecord property );
 
-        /** The next property record is not in use. */
-        @Documented
+        @Documented( "The next property record is not in use." )
         void nextNotInUse( PropertyRecord property );
 
-        /** The previous property record does not have this record as its next record. */
-        @Documented
+        @Documented( "The previous property record does not have this record as its next record." )
         void previousDoesNotReferenceBack( PropertyRecord property );
 
-        /** The next property record does not have this record as its previous record. */
-        @Documented
+        @Documented( "The next property record does not have this record as its previous record." )
         void nextDoesNotReferenceBack( PropertyRecord property );
 
-        /** The type of this property is invalid. */
-        @Documented
+        @Documented( "The type of this property is invalid." )
         void invalidPropertyType( PropertyBlock block );
 
-        /** The string block is not in use. */
-        @Documented
+        @Documented( "The string block is not in use." )
         void stringNotInUse( PropertyBlock block, DynamicRecord value );
 
-        /** The array block is not in use. */
-        @Documented
+        @Documented( "The array block is not in use." )
         void arrayNotInUse( PropertyBlock block, DynamicRecord value );
 
-        /** The string block is empty. */
-        @Documented
+        @Documented( "The string block is empty." )
         void stringEmpty( PropertyBlock block, DynamicRecord value );
 
-        /** The array block is empty. */
-        @Documented
+        @Documented( "The array block is empty." )
         void arrayEmpty( PropertyBlock block, DynamicRecord value );
 
-        /** The property value is invalid. */
-        @Documented
+        @Documented( "The property value is invalid." )
         void invalidPropertyValue( PropertyBlock block );
 
-        /** This record is first in a property chain, but no Node or Relationship records reference this record. */
-        @Documented
+        @Documented( "This record is first in a property chain, but no Node or Relationship records reference this record." )
         void orphanPropertyChain();
 
-        /** The string property is not referenced anymore, but the corresponding block has not been deleted. */
-        @Documented
+        @Documented( "The string property is not referenced anymore, but the corresponding block has not been deleted." )
         void stringUnreferencedButNotDeleted( PropertyBlock block );
 
-        /** The array property is not referenced anymore, but the corresponding block as not been deleted. */
-        @Documented
+        @Documented( "The array property is not referenced anymore, but the corresponding block as not been deleted." )
         void arrayUnreferencedButNotDeleted( PropertyBlock block );
 
-        /**
-         * This property was declared to be changed for a node or relationship, but that node or relationship does not
-         * contain this property in its property chain.
-         */
-        @Documented
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship does not contain this property in its property chain." )
         void ownerDoesNotReferenceBack();
 
-        /**
-         * This property was declared to be changed for a node or relationship, but that node or relationship did not
-         * contain this property in its property chain prior to the change. The property is referenced by another owner.
-         */
-        @Documented
+        @Documented( "This property was declared to be changed for a node or relationship, but that node or relationship did not contain this property in its property chain prior to the change. The property is referenced by another owner." )
         void changedForWrongOwner();
 
-        /** The string record referred from this property is also referred from a another property. */
-        @Documented
+        @Documented( "The string record referred from this property is also referred from a another property." )
         void stringMultipleOwners( PropertyRecord otherOwner );
 
-        /** The array record referred from this property is also referred from a another property. */
-        @Documented
+        @Documented( "The array record referred from this property is also referred from a another property." )
         void arrayMultipleOwners( PropertyRecord otherOwner );
 
-        /** The string record referred from this property is also referred from a another string record. */
-        @Documented
+        @Documented( "The string record referred from this property is also referred from a another string record." )
         void stringMultipleOwners( DynamicRecord dynamic );
 
-        /** The array record referred from this property is also referred from a another array record. */
-        @Documented
+        @Documented( "The array record referred from this property is also referred from a another array record." )
         void arrayMultipleOwners( DynamicRecord dynamic );
     }
 
     interface NameConsistencyReport extends ConsistencyReport
     {
-        /** The name block is not in use. */
-        @Documented
+        @Documented( "The name block is not in use." )
         void nameBlockNotInUse( DynamicRecord record );
 
-        /**
-         * The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and above,
-         * but they can be accessed just like any other tokens. It's possible that this token have been created
-         * in an earlier version where there were no checks for name being empty.
-         */
-        @Documented
         @Warning
+        @Documented( "The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and above, but they can be accessed just like any other tokens. It's possible that this token have been created in an earlier version where there were no checks for name being empty." )
         void emptyName( DynamicRecord name );
 
-        /** The string record referred from this name record is also referred from a another string record. */
-        @Documented
+        @Documented( "The string record referred from this name record is also referred from a another string record." )
         void nameMultipleOwners( DynamicRecord otherOwner );
     }
 
     interface RelationshipTypeConsistencyReport extends NameConsistencyReport
     {
-        /** The string record referred from this relationship type is also referred from a another relationship type. */
-        @Documented
+        @Documented( "The string record referred from this relationship type is also referred from a another relationship type." )
         void nameMultipleOwners( RelationshipTypeTokenRecord otherOwner );
     }
 
     interface LabelTokenConsistencyReport extends NameConsistencyReport
     {
-        /** The string record referred from this label name is also referred from a another label name. */
-        @Documented
+        @Documented( "The string record referred from this label name is also referred from a another label name." )
         void nameMultipleOwners( LabelTokenRecord otherOwner );
     }
 
     interface PropertyKeyTokenConsistencyReport extends NameConsistencyReport
     {
-        /** The string record referred from this key is also referred from a another key. */
-        @Documented
+        @Documented( "The string record referred from this key is also referred from a another key." )
         void nameMultipleOwners( PropertyKeyTokenRecord otherOwner );
     }
 
     interface RelationshipGroupConsistencyReport extends ConsistencyReport
     {
-        /** The relationship type field has an illegal value. */
-        @Documented
+        @Documented( "The relationship type field has an illegal value." )
         void illegalRelationshipType();
 
-        /** The relationship type record is not in use. */
-        @Documented
+        @Documented( "The relationship type record is not in use." )
         void relationshipTypeNotInUse( RelationshipTypeTokenRecord referred );
 
-        /** The next relationship group is not in use. */
-        @Documented
+        @Documented( "The next relationship group is not in use." )
         void nextGroupNotInUse();
 
-        /** The location of group in the chain is invalid, should be sorted by type ascending. */
-        @Documented
+        @Documented( "The location of group in the chain is invalid, should be sorted by type ascending." )
         void invalidTypeSortOrder();
 
-        /** The first outgoing relationship is not in use. */
-        @Documented
+        @Documented( "The first outgoing relationship is not in use." )
         void firstOutgoingRelationshipNotInUse();
 
-        /** The first incoming relationship is not in use. */
-        @Documented
+        @Documented( "The first incoming relationship is not in use." )
         void firstIncomingRelationshipNotInUse();
 
-        /** The first loop relationship is not in use. */
-        @Documented
+        @Documented( "The first loop relationship is not in use." )
         void firstLoopRelationshipNotInUse();
 
-        /** The first outgoing relationship is not the first in its chain. */
-        @Documented
+        @Documented( "The first outgoing relationship is not the first in its chain." )
         void firstOutgoingRelationshipNotFirstInChain();
 
-        /** The first incoming relationship is not the first in its chain. */
-        @Documented
+        @Documented( "The first incoming relationship is not the first in its chain." )
         void firstIncomingRelationshipNotFirstInChain();
 
-        /** The first loop relationship is not the first in its chain. */
-        @Documented
+        @Documented( "The first loop relationship is not the first in its chain." )
         void firstLoopRelationshipNotFirstInChain();
 
-        /** The first outgoing relationship is of a different type than its group. */
-        @Documented
+        @Documented( "The first outgoing relationship is of a different type than its group." )
         void firstOutgoingRelationshipOfOfOtherType();
 
-        /** The first incoming relationship is of a different type than its group. */
-        @Documented
+        @Documented( "The first incoming relationship is of a different type than its group." )
         void firstIncomingRelationshipOfOfOtherType();
 
-        /** The first loop relationship is of a different type than its group. */
-        @Documented
+        @Documented( "The first loop relationship is of a different type than its group." )
         void firstLoopRelationshipOfOfOtherType();
 
-        /** The owner of the relationship group is not in use. */
-        @Documented
+        @Documented( "The owner of the relationship group is not in use." )
         void ownerNotInUse();
 
-        /** Illegal owner value. */
-        @Documented
+        @Documented( "Illegal owner value." )
         void illegalOwner();
 
-        /** Next chained relationship group has another owner. */
-        @Documented
+        @Documented( "Next chained relationship group has another owner." )
         void nextHasOtherOwner( RelationshipGroupRecord referred );
     }
 
     interface DynamicConsistencyReport extends ConsistencyReport
     {
-        /** The next block is not in use. */
-        @Documented
+        @Documented( "The next block is not in use." )
         void nextNotInUse( DynamicRecord next );
 
-        /** The record is not full, but references a next block. */
-        @Documented
         @Warning
+        @Documented( "The record is not full, but references a next block." )
         void recordNotFullReferencesNext();
 
-        /** The length of the block is invalid. */
-        @Documented
+        @Documented( "The length of the block is invalid." )
         void invalidLength();
 
-        /** The block is empty. */
-        @Documented
         @Warning
+        @Documented( "The block is empty." )
         void emptyBlock();
 
-        /** The next block is empty. */
-        @Documented
         @Warning
+        @Documented( "The next block is empty." )
         void emptyNextBlock( DynamicRecord next );
 
-        /** The next block references this (the same) record. */
-        @Documented
+        @Documented( "The next block references this (the same) record." )
         void selfReferentialNext();
 
-        /** The next block of this record is also referenced by another dynamic record. */
-        @Documented
+        @Documented( "The next block of this record is also referenced by another dynamic record." )
         void nextMultipleOwners( DynamicRecord otherOwner );
 
-        /** The next block of this record is also referenced by a property record. */
-        @Documented
+        @Documented( "The next block of this record is also referenced by a property record." )
         void nextMultipleOwners( PropertyRecord otherOwner );
 
-        /** The next block of this record is also referenced by a relationship type. */
-        @Documented
+        @Documented( "The next block of this record is also referenced by a relationship type." )
         void nextMultipleOwners( RelationshipTypeTokenRecord otherOwner );
 
-        /** The next block of this record is also referenced by a property key. */
-        @Documented
+        @Documented( "The next block of this record is also referenced by a property key." )
         void nextMultipleOwners( PropertyKeyTokenRecord otherOwner );
 
-        /** This record not referenced from any other dynamic block, or from any property or name record. */
-        @Documented
+        @Documented( "This record not referenced from any other dynamic block, or from any property or name record." )
         void orphanDynamicRecord();
     }
 
     interface DynamicLabelConsistencyReport extends ConsistencyReport
     {
-        /** This label record is not referenced by its owning node record or that record is not in use. */
-        @Documented
+        @Documented( "This label record is not referenced by its owning node record or that record is not in use." )
         void orphanDynamicLabelRecordDueToInvalidOwner( NodeRecord owningNodeRecord );
 
-        /** This label record does not have an owning node record. */
-        @Documented
+        @Documented( "This label record does not have an owning node record." )
         void orphanDynamicLabelRecord();
     }
 
@@ -585,53 +464,44 @@ public interface ConsistencyReport
 
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
-        /** This label scan document refers to a node record that is not in use. */
         @Override
-        @Documented
+        @Documented( "This label scan document refers to a node record that is not in use." )
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
-        /** This label scan document refers to a node that does not have the expected label. */
         @Override
-        @Documented
+        @Documented( "This label scan document refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
 
     interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
-        /** This index entry refers to a node record that is not in use. */
         @Override
-        @Documented
+        @Documented( "This index entry refers to a node record that is not in use." )
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
-        /** This index entry refers to a node that does not have the expected label. */
         @Override
-        @Documented
+        @Documented( "This index entry refers to a node that does not have the expected label." )
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
 
     interface LabelsMatchReport extends ConsistencyReport
     {
-        /** This node record has a label that is not found in the label scan store entry for this node */
-        @Documented
+        @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
     }
 
     public interface CountsConsistencyReport extends ConsistencyReport
     {
-        /** The node count does not correspond with the expected count. */
-        @Documented
+        @Documented( "The node count does not correspond with the expected count." )
         void inconsistentNodeCount( long expectedCount );
 
-        /** The relationship count does not correspond with the expected count. */
-        @Documented
+        @Documented( "The relationship count does not correspond with the expected count." )
         void inconsistentRelationshipCount( long expectedCount );
 
-        /** The node key entries in the store does not correspond with the expected number. */
-        @Documented
+        @Documented( "The node key entries in the store does not correspond with the expected number." )
         void inconsistentNumberOfNodeKeys( long expectedCount );
 
-        /** The relationship key entries in the store does not correspond with the expected number. */
-        @Documented
+        @Documented( "The relationship key entries in the store does not correspond with the expected number." )
         void inconsistentNumberOfRelationshipKeys( long expectedCount );
     }
 }

@@ -30,42 +30,39 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippe
 
 public class DocumentationDocTest extends ImpermanentGraphJavaDocTestBase
 {
-    /**
-     * This is a sample documentation test, demonstrating different ways of
-     * bringing code and other artifacts into Asciidoc form. The title of the 
-     * generated document is determined from the method name, replacing "+_+" with
-     * " ".
-     * 
-     * Below you see a number of different ways to generate text from source,
-     * inserting it into the JavaDoc documentation (really being Asciidoc markup)
-     * via the snippet markers (see below) and programmatic adding with runtime data
-     * in the Java code.
-     * 
-     * - The annotated graph as http://www.graphviz.org/[GraphViz]-generated visualization:
-     * 
-     * @@graph
-     * 
-     * - A sample Cypher query:
-     * 
-     * @@cypher
-     * 
-     * - A sample text output snippet:
-     * 
-     * @@output
-     * 
-     * - a generated source link to the original GIThub source for this test:
-     * 
-     * @@github
-     * 
-     * - The full source for this example as a source snippet, highlighted as Java code:
-     * 
-     * @@sampleDocumentation
-     * 
-     * This is the end of this chapter.
-     */
     @Test
     // signaling this to be a documentation test
-    @Documented
+    @Documented( "This is a sample documentation test, demonstrating different ways of\n" +
+                 "bringing code and other artifacts into Asciidoc form. The title of the\n" +
+                 "generated document is determined from the method name, replacing \"+_+\" with\n" +
+                 "\" \".\n" +
+                 " \n" +
+                 "Below you see a number of different ways to generate text from source,\n" +
+                 "inserting it into the JavaDoc documentation (really being Asciidoc markup)\n" +
+                 "via the snippet markers (see below) and programmatic adding with runtime data\n" +
+                 "in the Java code.\n" +
+                 " \n" +
+                 "- The annotated graph as http://www.graphviz.org/[GraphViz]-generated visualization:\n" +
+                 " \n" +
+                 "@@graph\n" +
+                 " \n" +
+                 "- A sample Cypher query:\n" +
+                 " \n" +
+                 "@@cypher\n" +
+                 " \n" +
+                 "- A sample text output snippet:\n" +
+                 " \n" +
+                 "@@output\n" +
+                 " \n" +
+                 "- a generated source link to the original GIThub source for this test:\n" +
+                 " \n" +
+                 "@@github\n" +
+                 " \n" +
+                 "- The full source for this example as a source snippet, highlighted as Java code:\n" +
+                 " \n" +
+                 "@@sampleDocumentation\n" +
+                 " \n" +
+                 "This is the end of this chapter." )
     // the graph data setup as simple statements
     @Graph( "I know you" )
     // title is determined from the method name

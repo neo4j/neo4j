@@ -18,14 +18,8 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
@@ -35,6 +29,13 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class Roles extends ImpermanentGraphJavaDocTestBase
 {
@@ -47,118 +48,117 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         MEMBER_OF
     }
 
-    /**
-     * This is an example showing a hierarchy of
-     * roles.
-     * What's interesting is that a tree is not sufficient for storing this structure,
-     * as elaborated below.
-     * 
-     * image::roles.png[]
-     * 
-     * This is an implementation of an example found in the article
-     * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases]
-     * by http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=274518[Kemal Erdogan].
-     * The article discusses how to store http://en.wikipedia.org/wiki/Directed_acyclic_graph[
-     * directed acyclic graphs] (DAGs)
-     * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach
-     * the same node through different paths. Trees are restricted from this possibility, which
-     * makes them much easier to handle. In our case it is "Ali" and "Engin",
-     * as they are both admins and users and thus reachable through these group nodes.
-     * Reality often looks this way and can't be captured by tree structures.
-     * 
-     * In the article an SQL Stored Procedure solution is provided. The main idea,
-     * that also have some support from scientists, is to pre-calculate all possible (transitive) paths.
-     * Pros and cons of this approach:
-     * 
-     * * decent performance on read
-     * * low performance on insert
-     * * wastes _lots_ of space
-     * * relies on stored procedures
-     * 
-     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships
-     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups.
-     * We also connect the top level groups to a reference node by +ROOT+ relationships.
-     * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship
-     * types, you are free to create any relationship types and give them any semantics you want.
-     * 
-     * Lets now have a look at how to retrieve information from the graph. The Java code is using
-     * the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher-query-lang, Cypher>>.
-     *
-     * == Get the admins ==
-     * 
-     * @@get-admins
-     * 
-     * resulting in the output
-     * 
-     * @@o-get-admins
-     * 
-     * The result is collected from the traverser using this code:
-     * 
-     * @@read-traverser
-     * 
-     * In Cypher, a similar query would be:
-     * 
-     * @@query-get-admins
-     * 
-     * resulting in:
-     * 
-     * @@o-query-get-admins
-     *
-     * == Get the group memberships of a user ==
-     * 
-     * Using the Neo4j Java Traversal API, this query looks like:
-     * 
-     * @@get-user-memberships
-     * 
-     * resuling in:
-     * 
-     * @@o-get-user-memberships
-     *
-     * In Cypher:
-     * 
-     * @@query-get-user-memberships
-     * 
-     * @@o-query-get-user-memberships
-     * 
-     * == Get all groups ==
-     * 
-     * In Java:
-     * 
-     * @@get-groups
-     * 
-     * resulting in:
-     * 
-     * @@o-get-groups
-     * 
-     * In Cypher:
-     * 
-     * @@query-get-groups
-     * 
-     * @@o-query-get-groups
-     * 
-     * == Get all members of all groups ==
-     * 
-     * Now, let's try to find all users in the system being part of any group.
-     * 
-     * in Java:
-     * 
-     * @@get-members
-     * 
-     * @@o-get-members
-     * 
-     * In Cypher, this looks like:
-     * 
-     * @@query-get-members
-     * 
-     * and results in the following output:
-     * 
-     * @@o-query-get-members
-     * 
-     * As seen above, querying even more complex scenarios can be done using comparatively short
-     * constructs in Java and other query mechanisms.
-     */
+    private static final String ROLES_DOC =
+            "This is an example showing a hierarchy of\n" +
+            "roles.\n" +
+            "What's interesting is that a tree is not sufficient for storing this structure,\n" +
+            "as elaborated below.\n" +
+            " \n" +
+            "image::roles.png[]\n" +
+            " \n" +
+            "This is an implementation of an example found in the article\n" +
+            "http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases]\n" +
+            "by http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=274518[Kemal Erdogan].\n" +
+            "The article discusses how to store http://en.wikipedia.org/wiki/Directed_acyclic_graph[\n" +
+            "directed acyclic graphs] (DAGs)\n" +
+            "in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach\n" +
+            "the same node through different paths. Trees are restricted from this possibility, which\n" +
+            "makes them much easier to handle. In our case it is \"Ali\" and \"Engin\",\n" +
+            "as they are both admins and users and thus reachable through these group nodes.\n" +
+            "Reality often looks this way and can't be captured by tree structures.\n" +
+            " \n" +
+            "In the article an SQL Stored Procedure solution is provided. The main idea,\n" +
+            "that also have some support from scientists, is to pre-calculate all possible (transitive) paths.\n" +
+            "Pros and cons of this approach:\n" +
+            " \n" +
+            "* decent performance on read\n" +
+            "* low performance on insert\n" +
+            "* wastes _lots_ of space\n" +
+            "* relies on stored procedures\n" +
+            " \n" +
+            "In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships\n" +
+            "to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups.\n" +
+            "We also connect the top level groups to a reference node by +ROOT+ relationships.\n" +
+            "This gives us a useful partitioning of the graph. Neo4j has no predefined relationship\n" +
+            "types, you are free to create any relationship types and give them any semantics you want.\n" +
+            " \n" +
+            "Lets now have a look at how to retrieve information from the graph. The Java code is using\n" +
+            "the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher-query-lang, Cypher>>.\n" +
+            "\n" +
+            "== Get the admins ==\n" +
+            " \n" +
+            "@@get-admins\n" +
+            " \n" +
+            "resulting in the output\n" +
+            " \n" +
+            "@@o-get-admins\n" +
+            " \n" +
+            "The result is collected from the traverser using this code:\n" +
+            " \n" +
+            "@@read-traverser\n" +
+            " \n" +
+            "In Cypher, a similar query would be:\n" +
+            " \n" +
+            "@@query-get-admins\n" +
+            " \n" +
+            "resulting in:\n" +
+            " \n" +
+            "@@o-query-get-admins\n" +
+            "\n" +
+            "== Get the group memberships of a user ==\n" +
+            " \n" +
+            "Using the Neo4j Java Traversal API, this query looks like:\n" +
+            " \n" +
+            "@@get-user-memberships\n" +
+            " \n" +
+            "resuling in:\n" +
+            " \n" +
+            "@@o-get-user-memberships\n" +
+            "\n" +
+            "In Cypher:\n" +
+            " \n" +
+            "@@query-get-user-memberships\n" +
+            " \n" +
+            "@@o-query-get-user-memberships\n" +
+            " \n" +
+            "== Get all groups ==\n" +
+            " \n" +
+            "In Java:\n" +
+            " \n" +
+            "@@get-groups\n" +
+            " \n" +
+            "resulting in:\n" +
+            " \n" +
+            "@@o-get-groups\n" +
+            " \n" +
+            "In Cypher:\n" +
+            " \n" +
+            "@@query-get-groups\n" +
+            " \n" +
+            "@@o-query-get-groups\n" +
+            " \n" +
+            "== Get all members of all groups ==\n" +
+            " \n" +
+            "Now, let's try to find all users in the system being part of any group.\n" +
+            " \n" +
+            "in Java:\n" +
+            " \n" +
+            "@@get-members\n" +
+            " \n" +
+            "@@o-get-members\n" +
+            " \n" +
+            "In Cypher, this looks like:\n" +
+            " \n" +
+            "@@query-get-members\n" +
+            " \n" +
+            "and results in the following output:\n" +
+            " \n" +
+            "@@o-query-get-members\n" +
+            " \n" +
+            "As seen above, querying even more complex scenarios can be done using comparatively short\n" +
+            "constructs in Java and other query mechanisms.";
     @Test
-    @Documented
+    @Documented( ROLES_DOC )
     @Graph( { "Admins ROOT Reference_Node", "Users ROOT Reference_Node",
             "HelpDesk PART_OF Admins", "Managers PART_OF Users",
             "Technicians PART_OF Users", "ABCTechnicians PART_OF Technicians",

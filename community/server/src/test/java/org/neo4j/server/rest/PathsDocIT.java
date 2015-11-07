@@ -19,16 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -40,13 +37,11 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class PathsDocIT extends AbstractRestFunctionalTestBase
 {
-
-    /**
-     * The +shortestPath+ algorithm can find multiple paths between the same
-     * nodes, like in this example.
-     */
 //     Layout
 //
 //     (e)----------------
@@ -61,8 +56,8 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
-    @Documented
     @Title( "Find all shortest paths" )
+    @Documented( "The +shortestPath+ algorithm can find multiple paths between the same nodes, like in this example." )
     public void shouldBeAbleToFindAllShortestPaths() throws JsonParseException
     {
 
@@ -86,11 +81,6 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    /**
-     * If no path algorithm is specified, a +shortestPath+ algorithm with a max
-     * depth of 1 will be chosen. In this example, the +max_depth+ is set to +3+
-     * in order to find the shortest path between a maximum of 3 linked nodes.
-     */
 //      Layout
 //
 //      (e)----------------
@@ -105,7 +95,9 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
-    @Documented
+    @Documented( "If no path algorithm is specified, a +shortestPath+ algorithm with a max\n" +
+                 "depth of 1 will be chosen. In this example, the +max_depth+ is set to +3+\n" +
+                 "in order to find the shortest path between a maximum of 3 linked nodes." )
     public void shouldBeAbleToFetchSingleShortestPath() throws JsonParseException
     {
         long a = nodeId( data.get(), "a" );
@@ -145,11 +137,6 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( "Expected path to have a length of " + length + "\nBut it was " + actual, length, actual );
     }
 
-    /**
-     * This example is running a Dijkstra algorithm over a graph with different
-     * cost properties on different relationships. Note that the request URI
-     * ends with +/path+ which means a single path is what we want here.
-     */
 //      Layout
 //
 //         1.5------(b)--------0.5
@@ -170,7 +157,9 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
             @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.2", type = GraphDescription.PropType.DOUBLE ) } ) } )
     @Title( "Execute a Dijkstra algorithm and get a single path" )
-    @Documented
+    @Documented( "This example is running a Dijkstra algorithm over a graph with different\n" +
+                 "cost properties on different relationships. Note that the request URI\n" +
+                 "ends with +/path+ which means a single path is what we want here." )
     public void shouldGetCorrectDijkstraPathWithWeights() throws Exception
     {
         // Get cheapest paths using Dijkstra
@@ -188,12 +177,6 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1.5, path.get( "weight" ) );
     }
 
-    /**
-     * This example is running a Dijkstra algorithm over a graph with different
-     * cost properties on different relationships. Note that the request URI
-     * ends with +/paths+ which means we want multiple paths returned, in case
-     * they exist.
-     */
 //      Layout
 //
 //         1.5------(b)--------0.5
@@ -214,7 +197,10 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
             @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "0.5", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1.0", type = GraphDescription.PropType.DOUBLE ) } ) } )
     @Title( "Execute a Dijkstra algorithm and get multiple paths" )
-    @Documented
+    @Documented( "This example is running a Dijkstra algorithm over a graph with different\n" +
+                 "cost properties on different relationships. Note that the request URI\n" +
+                 "ends with +/paths+ which means we want multiple paths returned, in case\n" +
+                 "they exist." )
     public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
     {
         // Get cheapest paths using Dijkstra
@@ -242,12 +228,6 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, Math.abs( (Integer) firstPath.get( "length" ) - (Integer) secondPath.get( "length" ) ) );
     }
 
-    /**
-     * The following is executing a Dijkstra search on a graph with equal
-     * weights on all relationships. This example is included to show the
-     * difference when the same graph structure is used, but the path weight is
-     * equal to the number of hops.
-     */
 //      Layout
 //
 //         1------(b)-----1
@@ -269,7 +249,10 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
             @REL( start = "b", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
             @REL( start = "f", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
     @Title( "Execute a Dijkstra algorithm with equal weights on relationships" )
-    @Documented
+    @Documented( "The following is executing a Dijkstra search on a graph with equal\n" +
+                 "weights on all relationships. This example is included to show the\n" +
+                 "difference when the same graph structure is used, but the path weight is\n" +
+                 "equal to the number of hops." )
     public void shouldGetCorrectDijkstraPathsWithEqualWeightsWithDefaultCost() throws Exception
     {
         // Get cheapest path using Dijkstra

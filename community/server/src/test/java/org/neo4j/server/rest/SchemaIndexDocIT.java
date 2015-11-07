@@ -49,13 +49,10 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {
-    /**
-     * Create index.
-     * <p/>
-     * This will start a background job in the database that will create and populate the index.
-     * You can check the status of your index by listing all the indexes for the relevant label.
-     */
-    @Documented
+    @Documented( "Create index.\n" +
+                 "\n" +
+                 "This will start a background job in the database that will create and populate the index.\n" +
+                 "You can check the status of your index by listing all the indexes for the relevant label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void create_index() throws JsonParseException
@@ -82,10 +79,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertThat( serialized, equalTo( index ) );
     }
 
-    /**
-     * List indexes for a label.
-     */
-    @Documented
+    @Documented( "List indexes for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void get_indexes_for_label() throws JsonParseException
@@ -112,11 +106,8 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItem( index ) );
     }
 
-    /**
-     * Get all indexes.
-     */
     @SuppressWarnings( "unchecked" )
-    @Documented
+    @Documented( "Get all indexes." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void get_indexes() throws JsonParseException
@@ -143,10 +134,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItems( index1, index2 ) );
     }
 
-    /**
-     * Drop index
-     */
-    @Documented
+    @Documented( "Drop index" )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void drop_index() throws Exception
