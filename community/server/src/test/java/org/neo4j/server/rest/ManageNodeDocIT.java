@@ -19,12 +19,8 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +28,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -41,8 +36,12 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
@@ -134,13 +133,9 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
         assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
     }
 
-    /**
-     * Property values can not be null.
-     *
-     * This example shows the response you get when trying to set a property to
-     * +null+.
-     */
-    @Documented
+    @Documented( "Property values can not be null.\n" +
+                 "\n" +
+                 "This example shows the response you get when trying to set a property to +null+." )
     @Test
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
@@ -215,10 +210,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
 
     }
 
-    /**
-     * Delete node.
-     */
-    @Documented
+    @Documented( "Delete node." )
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
@@ -239,15 +231,12 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
         assertNotNull( jsonMap.get( "message" ) );
     }
 
-    /**
-     * Nodes with relationships cannot be deleted.
-     *
-     * The relationships on a node has to be deleted before the node can be
-     * deleted.
-     * 
-     * TIP: You can use `DETACH DELETE` in Cypher to delete nodes and their relationships in one go.
-     */
-    @Documented
+    @Documented( "Nodes with relationships cannot be deleted.\n" +
+                 "\n" +
+                 "The relationships on a node has to be deleted before the node can be\n" +
+                 "deleted.\n" +
+                 " \n" +
+                 "TIP: You can use `DETACH DELETE` in Cypher to delete nodes and their relationships in one go." )
     @Test
     public void shouldRespondWith409AndSensibleEntityBodyWhenNodeCannotBeDeleted() throws Exception
     {

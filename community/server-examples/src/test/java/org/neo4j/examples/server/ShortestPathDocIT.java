@@ -18,16 +18,11 @@
  */
 package org.neo4j.examples.server;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.examples.server.plugins.ShortestPath;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Node;
@@ -35,6 +30,12 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class ShortestPathDocIT extends AbstractPluginTestBase
 {
@@ -53,10 +54,7 @@ public class ShortestPathDocIT extends AbstractPluginTestBase
         assertTrue( map.keySet().size() > 0 );
     }
 
-    /**
-     * Get shortest path.
-     */
-    @Documented
+    @Documented( "Get shortest path." )
     @Test
     @Graph( { "A knows B", "B knew C", "A knows D", "D knows E", "E knows C" } )
     public void shouldReturnAllShortestPathsOnPost() throws JsonParseException
@@ -79,10 +77,7 @@ public class ShortestPathDocIT extends AbstractPluginTestBase
         assertThat( (Integer) map.get( "length" ), equalTo( 2 ) );
     }
 
-    /**
-     * Get shortest path restricted by relationship type.
-     */
-    @Documented
+    @Documented( "Get shortest path restricted by relationship type." )
     @Test
     @Graph( { "A knows B", "B likes C", "A knows D", "D knows E", "E knows C" } )
     public void shouldReturnAllShortestPathsRestrictedByReltypesOnPost() throws JsonParseException

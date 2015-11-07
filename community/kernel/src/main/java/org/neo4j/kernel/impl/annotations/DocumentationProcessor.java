@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.annotations;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.util.Map;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -34,47 +36,19 @@ import javax.lang.model.element.TypeElement;
 @SupportedAnnotationTypes( "org.neo4j.kernel.impl.annotations.Documented" )
 public class DocumentationProcessor extends AnnotationProcessor
 {
-    private static final String DEFAULT_VALUE;
-    static
-    {
-        String defaultValue = Documented.DEFAULT_VALUE;
-        try
-        {
-            defaultValue = (String) Documented.class.getMethod( "value" ).getDefaultValue();
-        }
-        catch ( Exception e )
-        {
-            // OK
-        }
-        DEFAULT_VALUE = defaultValue;
-    }
-
     @Override
     protected void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
-            Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException
+            Map<? extends ExecutableElement,? extends AnnotationValue> values ) throws IOException
     {
         if ( values.size() != 1 )
         {
-            error( annotated, annotation,
-                    "Annotation values don't match the expectation" );
+            error( annotated, annotation, "Annotation values don't match the expectation" );
             return;
         }
         String value = (String) values.values().iterator().next().getValue();
-        if ( DEFAULT_VALUE.equals( value ) || value == null )
+        if ( StringUtils.isBlank( value ) )
         {
-            String javadoc = processingEnv.getElementUtils().getDocComment( annotated );
-            if ( javadoc == null )
-            {
-                error( annotated, annotation,
-                        "Cannot extract JavaDoc documentation comment for "
-                                + annotated );
-                // return no period, since that could mess up Title generation;
-                javadoc = "Documentation not available";
-            }
-            if ( !updateAnnotationValue( annotated, annotation, "value", javadoc ) )
-            {
-                warn( annotated, annotation, "Failed to update annotation value" );
-            }
+            error( annotated, annotation, "Documentation not available for " + annotated );
         }
     }
 }

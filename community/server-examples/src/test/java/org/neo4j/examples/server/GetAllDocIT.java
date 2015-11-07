@@ -51,10 +51,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
         assertFalse( map.isEmpty() );
     }
 
-    /**
-     * Get all nodes.
-     */
-    @Documented
+    @Documented( "Get all nodes." )
     @Test
     public void shouldReturnAllNodesOnPost() throws JsonParseException
     {
@@ -77,10 +74,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
         checkDatabaseLevelExtensionMetadata( GetAll.class, GET_ALL_NODES, "/ext/%s/graphdb/%s" );
     }
 
-    /**
-     * Get all relationships.
-     */
-    @Documented
+    @Documented( "Get all relationships." )
     @Test
     public void shouldReturnAllRelationshipsOnPost() throws JsonParseException
     {

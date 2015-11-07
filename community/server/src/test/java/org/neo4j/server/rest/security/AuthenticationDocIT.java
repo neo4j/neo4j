@@ -60,13 +60,10 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         gen.get().setSection( "dev/rest-api" );
     }
 
-    /**
-     * Missing authorization
-     *
-     * If an +Authorization+ header is not supplied, the server will reply with an error.
-     */
     @Test
-    @Documented
+    @Documented( "Missing authorization\n" +
+                 "\n" +
+                 "If an +Authorization+ header is not supplied, the server will reply with an error." )
     public void missing_authorization() throws JsonParseException, IOException
     {
         // Given
@@ -86,15 +83,12 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat( firstError.get( "message" ).asText(), equalTo( "No authorization header supplied." ) );
     }
 
-    /**
-     * Authenticate to access the server
-     *
-     * Authenticate by sending a username and a password to Neo4j using HTTP Basic Auth.
-     * Requests should include an +Authorization+ header, with a value of +Basic <payload>+,
-     * where "payload" is a base64 encoded string of "username:password".
-     */
     @Test
-    @Documented
+    @Documented( "Authenticate to access the server\n" +
+                 "\n" +
+                 "Authenticate by sending a username and a password to Neo4j using HTTP Basic Auth.\n" +
+                 "Requests should include an +Authorization+ header, with a value of +Basic <payload>+,\n" +
+                 "where \"payload\" is a base64 encoded string of \"username:password\"." )
     public void successful_authentication() throws JsonParseException, IOException
     {
         // Given
@@ -114,13 +108,10 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat( data.get( "password_change" ).asText(), equalTo( passwordURL( "neo4j" ) ) );
     }
 
-    /**
-     * Incorrect authentication
-     *
-     * If an incorrect username or password is provided, the server replies with an error.
-     */
     @Test
-    @Documented
+    @Documented( "Incorrect authentication\n" +
+                 "\n" +
+                 "If an incorrect username or password is provided, the server replies with an error." )
     public void incorrect_authentication() throws JsonParseException, IOException
     {
         // Given
@@ -141,16 +132,13 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat( firstError.get( "message" ).asText(), equalTo( "Invalid username or password." ) );
     }
 
-    /**
-     * Required password changes
-     *
-     * In some cases, like the very first time Neo4j is accessed, the user will be required to choose
-     * a new password. The database will signal that a new password is required and deny access.
-     *
-     * See <<rest-api-security-user-status-and-password-changing>> for how to set a new password.
-     */
     @Test
-    @Documented
+    @Documented( "Required password changes\n" +
+                 "\n" +
+                 "In some cases, like the very first time Neo4j is accessed, the user will be required to choose\n" +
+                 "a new password. The database will signal that a new password is required and deny access.\n" +
+                 "\n" +
+                 "See <<rest-api-security-user-status-and-password-changing>> for how to set a new password." )
     public void password_change_required() throws JsonParseException, IOException
     {
         // Given
@@ -171,13 +159,10 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat( data.get( "password_change" ).asText(), equalTo( passwordURL( "neo4j" ) ) );
     }
 
-    /**
-     * When auth is disabled
-     *
-     * When auth has been disabled in the configuration, requests can be sent without an +Authorization+ header.
-     */
     @Test
-    @Documented
+    @Documented( "When auth is disabled\n" +
+                 "\n" +
+                 "When auth has been disabled in the configuration, requests can be sent without an +Authorization+ header." )
     public void auth_disabled() throws IOException
     {
         // Given

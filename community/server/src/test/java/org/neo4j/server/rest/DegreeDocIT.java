@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -32,12 +33,9 @@ import static junit.framework.TestCase.assertEquals;
 
 public class DegreeDocIT extends AbstractRestFunctionalTestBase
 {
-    /**
-     * Get the degree of a node
-     *
-     * Return the total number of relationships associated with a node.
-     */
-    @Documented
+    @Documented( "Get the degree of a node\n" +
+                 "\n" +
+                 "Return the total number of relationships associated with a node." )
     @Test
     @GraphDescription.Graph( {"Root knows Mattias", "Root knows Johan"} )
     public void get_degree() throws JsonParseException
@@ -54,13 +52,10 @@ public class DegreeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 2, JsonHelper.jsonNode( response.response().getEntity() ).asInt() );
     }
 
-    /**
-     * Get the degree of a node by direction
-     *
-     * Return the number of relationships of a particular direction for a node.
-     * Specify `all`, `in` or `out`.
-     */
-    @Documented
+    @Documented( "Get the degree of a node by direction\n" +
+                 "\n" +
+                 "Return the number of relationships of a particular direction for a node.\n" +
+                 "Specify `all`, `in` or `out`." )
     @Test
     @GraphDescription.Graph( {"Root knows Mattias", "Root knows Johan"} )
     public void get_degree_by_direction() throws JsonParseException
@@ -77,13 +72,10 @@ public class DegreeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 2, JsonHelper.jsonNode( response.response().getEntity() ).asInt() );
     }
 
-    /**
-     * Get the degree of a node by direction and types
-     *
-     * If you are only interested in the degree of a particular relationship type, or a set of relationship types, you specify relationship types after the direction.
-     * You can combine multiple relationship types by using the `&` character.
-     */
-    @Documented
+    @Documented( "Get the degree of a node by direction and types\n" +
+                 "\n" +
+                 "If you are only interested in the degree of a particular relationship type, or a set of relationship types, you specify relationship types after the direction.\n" +
+                 "You can combine multiple relationship types by using the `&` character." )
     @Test
     @GraphDescription.Graph( {"Root KNOWS Mattias", "Root KNOWS Johan", "Root LIKES Cookie"} )
     public void get_degree_by_direction_and_type() throws JsonParseException

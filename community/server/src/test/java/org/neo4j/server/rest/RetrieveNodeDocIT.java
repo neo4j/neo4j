@@ -19,25 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -47,6 +28,24 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
+
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
@@ -110,13 +109,10 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
         }
     }
 
-    /**
-     * Get node.
-     *
-     * Note that the response contains URI/templates for the available
-     * operations for getting properties and relationships.
-     */
-    @Documented
+    @Documented( "Get node.\n" +
+                 "\n" +
+                 "Note that the response contains URI/templates for the available\n" +
+                 "operations for getting properties and relationships." )
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception
     {
@@ -126,13 +122,10 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
                 .get( uri );
     }
 
-    /**
-     * Get node -- compact.
-     *
-     * Specifying the subformat in the requests media type yields a more compact
-     * JSON response without metadata and templates.
-     */
-    @Documented
+    @Documented( "Get node -- compact.\n" +
+                 "\n" +
+                 "Specifying the subformat in the requests media type yields a more compact\n" +
+                 "JSON response without metadata and templates." )
     @Test
     public void shouldGet200WhenRetrievingNodeCompact()
     {
@@ -172,10 +165,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
         response.close();
     }
 
-    /**
-     * Get non-existent node.
-     */
-    @Documented
+    @Documented( "Get non-existent node." )
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
     {
