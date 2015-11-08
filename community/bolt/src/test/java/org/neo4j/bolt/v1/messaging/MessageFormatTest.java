@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,7 +37,7 @@ import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.messaging.message.CreateMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -46,6 +47,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -65,11 +67,11 @@ public class MessageFormatTest
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new PullAllMessage() );
         assertSerializes( new RecordMessage( record( 1l, "b", 2l ) ) );
-        assertSerializes( new SuccessMessage( new HashMap<String,Object>() ) );
+        assertSerializes( new SuccessMessage( new HashMap<>() ) );
         assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
-        assertSerializes( new InitMessage( "MyClient/1.0" ) );
+        assertSerializes( new CreateMessage( "MyClient/1.0" ) );
     }
 
     @Test
@@ -104,7 +106,7 @@ public class MessageFormatTest
         assertSerializesNeoValue( "A basic piece of text" );
         assertSerializesNeoValue( new String( new byte[16000], StandardCharsets.UTF_8 ) );
 
-        assertSerializesNeoValue( asList() );
+        assertSerializesNeoValue( emptyList() );
         assertSerializesNeoValue( asList( null, null ) );
         assertSerializesNeoValue( asList( true, false ) );
         assertSerializesNeoValue( asList( "one", "", "three" ) );

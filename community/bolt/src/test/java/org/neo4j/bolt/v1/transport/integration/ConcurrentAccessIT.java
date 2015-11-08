@@ -19,11 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,20 +28,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
+import org.neo4j.function.Factory;
+import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.map;
+
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
@@ -109,7 +112,7 @@ public class ConcurrentAccessIT
     {
         return new Callable<Void>()
         {
-            private final byte[] init = chunk( Messages.init( "TestClient" ) );
+            private final byte[] init = chunk( Messages.create( "TestClient" ) );
             private final byte[] createAndRollback = chunk(
                     run( "BEGIN" ), pullAll(),
                     run( "CREATE (n)" ), pullAll(),
@@ -148,11 +151,11 @@ public class ConcurrentAccessIT
             {
                 client.send( createAndRollback );
                 assertThat( client, eventuallyRecieves(
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( map( "fields", emptyList() ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( map( "fields", emptyList() ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( map( "fields", emptyList() ) ),
                         msgSuccess()) );
 
                 // Verify no visible data

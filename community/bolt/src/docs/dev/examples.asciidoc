@@ -15,7 +15,7 @@ Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
-Client: INIT "MyClient/1.0"
+Client: CREATE "MyClient/1.0"
 
   00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
 
@@ -45,6 +45,13 @@ Server: SUCCESS { "type": "r" }
 
   00 0A B1 70  A1 84 74 79  70 65 81 72  00 00
 
+Client: DESTROY
+
+  00 02 B0 02  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----
 
 === Pipelining
@@ -62,7 +69,7 @@ Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
-Client: INIT "MyClient/1.0"
+Client: CREATE "MyClient/1.0"
 
   00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
 
@@ -116,6 +123,13 @@ Server: SUCCESS { "type": "r" }
 
   00 0A B1 70  A1 84 74 79  70 65 81 72  00 00
 
+Client: DESTROY
+
+  00 02 B0 02  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----
 
 === Error handling
@@ -131,7 +145,7 @@ Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
-Client: INIT "MyClient/1.0"
+Client: CREATE "MyClient/1.0"
 
   00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
 
@@ -196,6 +210,14 @@ Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
+
+Client: DESTROY
+
+  00 02 B0 02  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----
 
 === Accessing basic result metadata
@@ -211,7 +233,7 @@ Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
-Client: INIT "MyClient/1.0"
+Client: CREATE "MyClient/1.0"
 
   00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
 
@@ -267,6 +289,13 @@ Server: SUCCESS {
   74 73 A1 8D  6E 6F 64 65  73 2D 63 72  65 61 74 65
   64 01 00 00
 
+Client: DESTROY
+
+  00 02 B0 02  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----
 
 === Explaining and profiling a query
@@ -283,7 +312,7 @@ Client: <connect>
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
-Client: INIT "MyClient/1.0"
+Client: CREATE "MyClient/1.0"
 
   00 0F B1 01 8C 4D 79 43    6C 69 65 6E 74 2F 31 2E    30 00 00
 
@@ -435,4 +464,11 @@ Server: SUCCESS {
   6E 75 6D 86  64 62 48 69  74 73 00 8B  69 64 65 6E
   74 69 66 69  65 72 73 91  83 6E 75 6D  00 00
 
+Client: DESTROY
+
+  00 02 B0 02  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
 ----

@@ -74,11 +74,12 @@ public class DocSerialization
     }
 
     /**
-     * @param value
-     * @param packer
+     * @param value value to be packed
+     * @param packer packer used for packing it
      * @param writer a message writer that delegates to the packer, for packing protocol messages
      * @throws IOException
      */
+    @SuppressWarnings("unchecked")
     public static void pack( String value, Neo4jPack.Packer packer, PackStreamMessageFormatV1.Writer writer )
             throws IOException
     {
@@ -137,46 +138,42 @@ public class DocSerialization
                     }
                 }
 
-                if ( type.equals( "DISCARD_ALL" ) )
+                switch ( type )
                 {
-                    writer.handleIgnoredMessage();
-                }
-                else if ( type.equals( "PULL_ALL" ) )
-                {
-                    writer.handlePullAllMessage();
-                }
-                else if ( type.equals( "ACK_FAILURE" ) )
-                {
-                    writer.handleAckFailureMessage();
-                }
-                else if ( type.equals( "IGNORED" ) )
-                {
-                    writer.handleIgnoredMessage();
-                }
-                else if( type.equals( "RUN" ))
-                {
-                    writer.handleRunMessage( (String)args.get( 0 ), (Map<String, Object>)args.get( 1 ) );
-                }
-                else if( type.equals( "RECORD" ))
-                {
-                    writer.handleRecordMessage( new ImmutableRecord( Iterables.toArray(Object.class, (List<Object>)args.get( 0 )) ) );
-                }
-                else if( type.equals( "SUCCESS" ))
-                {
-                    writer.handleSuccessMessage( (Map<String,Object>)args.get( 0 ) );
-                }
-                else if( type.equals( "FAILURE" ))
-                {
-                    Map<String, Object> meta = (Map<String,Object>) args.get( 0 );
-                    writer.handleFailureMessage( Neo4jError.codeFromString( (String) meta.get( "code" ) ), (String) meta.get( "message" ) );
-                }
-                else if( type.equals( "INIT" ))
-                {
-                    writer.handleInitMessage( (String) args.get( 0 ) );
-                }
-                else
-                {
-                    throw new RuntimeException( "Unknown value: " + type );
+                    case "DISCARD_ALL":
+                        writer.handleIgnoredMessage();
+                        break;
+                    case "PULL_ALL":
+                        writer.handlePullAllMessage();
+                        break;
+                    case "ACK_FAILURE":
+                        writer.handleAckFailureMessage();
+                        break;
+                    case "IGNORED":
+                        writer.handleIgnoredMessage();
+                        break;
+                    case "RUN":
+                        writer.handleRunMessage( (String) args.get( 0 ), (Map<String, Object>) args.get( 1 ) );
+                        break;
+                    case "RECORD":
+                        writer.handleRecordMessage( new ImmutableRecord( Iterables.toArray( Object.class, (List<Object>) args.get( 0 ) ) ) );
+                        break;
+                    case "SUCCESS":
+                        writer.handleSuccessMessage( (Map<String, Object>) args.get( 0 ) );
+                        break;
+                    case "FAILURE":
+                        Map<String, Object> meta = (Map<String, Object>) args.get( 0 );
+                        writer.handleFailureMessage( Neo4jError.codeFromString( (String) meta.get( "code" ) ),
+                                (String) meta.get( "message" ) );
+                        break;
+                    case "CREATE":
+                        writer.handleCreateMessage( (String) args.get( 0 ) );
+                        break;
+                    case "DESTROY":
+                        writer.handleDestroyMessage();
+                        break;
+                    default:
+                        throw new RuntimeException( "Unknown value: " + type );
                 }
             }
         }

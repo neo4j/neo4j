@@ -37,7 +37,7 @@ import org.neo4j.helpers.HostnamePort;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.Messages.init;
+import static org.neo4j.bolt.v1.messaging.message.Messages.create;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
@@ -117,7 +117,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1" ),
+                        create( "TestClient/1.1" ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
@@ -139,7 +139,7 @@ public class TransportSessionIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1" ),
+                        create( "TestClient/1.1" ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );

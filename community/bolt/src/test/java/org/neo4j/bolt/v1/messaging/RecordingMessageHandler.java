@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.MessageHandler;
+import org.neo4j.bolt.v1.messaging.message.DestroyMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
-import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.messaging.message.CreateMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.messaging.message.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -90,9 +90,15 @@ public class RecordingMessageHandler implements MessageHandler<RuntimeException>
     }
 
     @Override
-    public void handleInitMessage( String clientName ) throws RuntimeException
+    public void handleCreateMessage( String clientName ) throws RuntimeException
     {
-        messages.add( new InitMessage( clientName ) );
+        messages.add( new CreateMessage( clientName ) );
+    }
+
+    @Override
+    public void handleDestroyMessage() throws RuntimeException
+    {
+        messages.add( new DestroyMessage() );
     }
 
     public List<Message> asList()

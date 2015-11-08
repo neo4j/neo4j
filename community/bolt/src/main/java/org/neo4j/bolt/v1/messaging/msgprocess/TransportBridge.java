@@ -61,9 +61,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     }
 
     @Override
-    public void handleInitMessage( String clientName ) throws RuntimeException
+    public void handleCreateMessage( String clientName ) throws RuntimeException
     {
-        session.init( clientName, null, simpleCallback );
+        session.create( clientName, null, simpleCallback );
     }
 
     @Override
@@ -88,5 +88,11 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     public void handleAckFailureMessage() throws RuntimeException
     {
         session.acknowledgeFailure( null, simpleCallback );
+    }
+
+    @Override
+    public void handleDestroyMessage() throws RuntimeException
+    {
+        session.destroy( null, simpleCallback );
     }
 }

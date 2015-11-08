@@ -58,7 +58,7 @@ public class SessionStateMachineTest
     public void initialStateShouldBeUninitalized()
     {
         // When & Then
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.UNITIALIZED ) );
+        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.VOID ) );
     }
 
     @Test
@@ -70,14 +70,14 @@ public class SessionStateMachineTest
         when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.create( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
         machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // Then
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.FAILURE ) );
         verify( tx ).failure();
         verify( tx ).close();
 
@@ -85,7 +85,7 @@ public class SessionStateMachineTest
         machine.acknowledgeFailure( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.READY ) );
     }
 
     @Test
@@ -97,14 +97,14 @@ public class SessionStateMachineTest
         when( runner.run( Matchers.any( SessionState.class ), Matchers.anyString(), Matchers.anyMap() ) )
                 .thenThrow( new NoTransactionEffectException() );
 
-        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.create( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
         machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.FAILURE ) );
         verify(tx).failure();
         verify(tx).close();
 
@@ -112,14 +112,14 @@ public class SessionStateMachineTest
         machine.acknowledgeFailure( null, Session.Callback.NO_OP );
 
         // Then the machine goes back to an idle (no open transaction) state
-        assertThat(machine.state(), equalTo( SessionStateMachine.State.IDLE ));
+        assertThat(machine.state(), equalTo( SessionStateMachine.State.READY ));
     }
 
     @Test
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.create( "FunClient/1.2", null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -133,7 +133,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2", null, Session.Callback.NO_OP );
+        machine.create( "FunClient/1.2", null, Session.Callback.NO_OP );
 
         // Then
         assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains( "FunClient/1.2" ) );

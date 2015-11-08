@@ -42,7 +42,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public interface MessageTypes
     {
-        byte MSG_INIT = 0x01;
+        byte MSG_CREATE = 0x01;
+        byte MSG_DESTROY = 0x02;
         byte MSG_ACK_FAILURE = 0x0F;
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
@@ -58,6 +59,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     {
         switch( type )
         {
+        case MessageTypes.MSG_CREATE:      return "MSG_CREATE";
+        case MessageTypes.MSG_DESTROY:     return "MSG_DESTROY";
         case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
         case MessageTypes.MSG_RUN:         return "MSG_RUN";
         case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
@@ -72,14 +75,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Writer implements MessageFormat.Writer
     {
-        public static final MessageBoundaryHook NO_OP = new MessageBoundaryHook()
-        {
-            @Override
-            public void onMessageComplete() throws IOException
-            {
-
-            }
-        };
+        public static final MessageBoundaryHook NO_OP = () -> { };
 
         private final Neo4jPack.Packer packer;
         private final MessageBoundaryHook onMessageComplete;
@@ -169,7 +165,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packer.pack( message );
-            
+
             onMessageComplete.onMessageComplete();
         }
 
@@ -181,10 +177,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public void handleInitMessage( String clientName ) throws IOException
+        public void handleCreateMessage( String clientName ) throws IOException
         {
-            packer.packStructHeader( 1, MessageTypes.MSG_INIT );
+            packer.packStructHeader( 1, MessageTypes.MSG_CREATE );
             packer.pack( clientName );
+            onMessageComplete.onMessageComplete();
+        }
+
+        @Override
+        public void handleDestroyMessage() throws IOException
+        {
+            packer.packStructHeader( 0, MessageTypes.MSG_DESTROY );
             onMessageComplete.onMessageComplete();
         }
 
@@ -250,8 +253,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     case MessageTypes.MSG_IGNORED:
                         unpackIgnoredMessage( output );
                         break;
-                    case MessageTypes.MSG_INIT:
-                        unpackInitMessage( output );
+                    case MessageTypes.MSG_CREATE:
+                        unpackCreateMessage( output );
+                        break;
+                    case MessageTypes.MSG_DESTROY:
+                        unpackDestroyMessage( output );
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -339,11 +345,15 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             output.handlePullAllMessage();
         }
 
-        private <E extends Exception> void unpackInitMessage( MessageHandler<E> output ) throws IOException, E
+        private <E extends Exception> void unpackCreateMessage( MessageHandler<E> output ) throws IOException, E
         {
             String clientName = unpacker.unpackText();
-            output.handleInitMessage( clientName );
+            output.handleCreateMessage( clientName );
         }
 
+        private <E extends Exception> void unpackDestroyMessage( MessageHandler<E> output ) throws IOException, E
+        {
+            output.handleDestroyMessage();
+        }
     }
 }
