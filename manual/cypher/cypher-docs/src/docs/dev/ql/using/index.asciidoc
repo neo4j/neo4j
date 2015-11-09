@@ -22,14 +22,8 @@ It will force Cypher to not use an index that could have been used, and instead 
 
 NOTE: You cannot use index hints if your query has a `START` clause.
 
-You can also force Neo4j to produce plans which perform joins between query sub-graphs.
-
 include::query-using-an-index-hint.asciidoc[]
 
 include::query-using-multiple-index-hints.asciidoc[]
 
 include::hinting-a-label-scan.asciidoc[]
-
-include::hinting-a-join-on-a-single-node.asciidoc[]
-
-include::hinting-a-join-on-multiple-nodes.asciidoc[]
