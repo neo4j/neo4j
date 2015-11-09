@@ -167,10 +167,18 @@ article.guide
             a(play-topic='concepts') Concepts
             |  - GraphDB 101
           li
-            a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc}}/cypher-query-lang.html') Neo4j Manual
-            |  - section about Cypher
+            a(play-topic='movie-graph') The Movie Graph
+            |  - create the movie graph
+          li
+            a(play-topic='northwind-graph') Northwind Graph
+            |  - from RDBMS to graph
       .col-sm-4
-        h3 Jump into code
+        h3 Reference
         ul.undecorated
           li
-            a(play-topic='movie-graph') The Movie Graph
+            a(href='http://neo4j.com/developer/guide-importing-data-and-etl/') Full Northwind import example
+          li
+            a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/cypher-refcard') Cypher
+          li
+            a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/') Neo4j Manual
+
