@@ -1180,7 +1180,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) ) );
     }
 
-    private void assertThrows( Class<? extends Exception> exceptionType, ThrowingAction action )
+    private void assertThrows( Class<? extends Exception> exceptionType, ThrowingAction<? extends Exception> action )
     {
         try
         {
