@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
 angular.module('neo4jApp.directives')
-  .directive('scrollTopWhen', ['Settings', (Settings) ->
+  .directive('scrollToTop', ['Settings', (Settings) ->
     (scope, element, attrs) ->
       return unless Settings.scrollToTop
-      scope.$watch attrs.scrollTopWhen, (val) ->
-        element.scrollTop(0)
+      scope.$watch attrs.scrollToTop, () ->
+        $('#' + attrs.scrollToTop).animate(scrollTop: 0)
   ])
