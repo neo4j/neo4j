@@ -52,6 +52,11 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
  */
 public class LuceneLabelScanStoreChaosIT
 {
+
+    @Rule
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    private final Random random = new Random();
+
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
     {
@@ -97,55 +102,44 @@ public class LuceneLabelScanStoreChaosIT
 
     private RestartAction corruptTheLabelScanStoreIndex()
     {
-        return new RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+        return ( fs, storeDirectory ) -> {
+            try
             {
-                try
+                int filesCorrupted = 0;
+                for ( File file : labelScanStoreIndexDirectory( storeDirectory ).listFiles() )
                 {
-                    int filesCorrupted = 0;
-                    for ( File file : labelScanStoreIndexDirectory( storeDirectory ).listFiles() )
-                    {
-                        scrambleFile( file );
-                        filesCorrupted++;
-                    }
-                    assertTrue( "No files found to corrupt", filesCorrupted > 0 );
+                    scrambleFile( file );
+                    filesCorrupted++;
                 }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                assertTrue( "No files found to corrupt", filesCorrupted > 0 );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
 
     private RestartAction deleteTheLabelScanStoreIndex()
     {
-        return new RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
+        return ( fs, storeDirectory ) -> {
+            try
             {
-                try
-                {
-                    File directory = labelScanStoreIndexDirectory( storeDirectory );
-                    assertTrue( "We seem to want to delete the wrong directory here", directory.exists() );
-                    assertTrue( "No index files to delete", directory.listFiles().length > 0 );
-                    deleteRecursively( directory );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                File directory = labelScanStoreIndexDirectory( storeDirectory );
+                assertTrue( "We seem to want to delete the wrong directory here", directory.exists() );
+                assertTrue( "No index files to delete", directory.listFiles().length > 0 );
+                deleteRecursively( directory );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         };
     }
 
     private File labelScanStoreIndexDirectory( File storeDirectory )
     {
-        File directory = new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
-        return directory;
+        return new File( new File( new File( storeDirectory, "schema" ), "label" ), "lucene" );
     }
 
     private Node createLabeledNode( Label... labels )
@@ -197,13 +191,10 @@ public class LuceneLabelScanStoreChaosIT
         }
     }
 
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
         First,
         Second,
         Third;
     }
-
-    public final @Rule DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
-    private final Random random = new Random();
 }

@@ -20,15 +20,14 @@
 package org.neo4j.index.impl.lucene;
 
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -71,7 +71,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -79,7 +78,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.QueryContext.numericRange;
 import static org.neo4j.index.lucene.ValueContext.numeric;
@@ -93,9 +91,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String value = "Mattias";
         assertThat( index.get( key, value ).getSingle(), is( nullValue() ) );
-        assertThat( index.get( key, value ), isEmpty() );
+        assertThat( index.get( key, value ), emptyIterable() );
 
-        assertThat( index.query( key, "*" ), isEmpty() );
+        assertThat( index.query( key, "*" ), emptyIterable() );
 
         T entity1 = entityCreator.create();
         T entity2 = entityCreator.create();
@@ -340,7 +338,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value1 = "Lucene";
         String value2 = "Index";
         String value3 = "Rules";
-        assertThat( index.query( key, "*" ), isEmpty() );
+        assertThat( index.query( key, "*" ), emptyIterable() );
         Node node = graphDb.createNode();
         index.add( node, key, value1 );
         index.add( node, key, value2 );
@@ -354,7 +352,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.get( key, value1 ), contains( node ) );
             assertThat( index.get( key, value2 ), contains( node ) );
             assertThat( index.get( key, value3 ), contains( node ) );
-            assertThat( index.get( key, "whatever" ), isEmpty() );
+            assertThat( index.get( key, "whatever" ), emptyIterable() );
             restartTx();
         }
         index.delete();
@@ -377,7 +375,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node = graphDb.createNode();
         index.add( node, "key", "value" );
         QueryContext queryContext = new QueryContext( "value" ).tradeCorrectnessForSpeed();
-        assertThat( index.query( "key", queryContext ), isEmpty() );
+        assertThat( index.query( "key", queryContext ), emptyIterable() );
         assertThat( index.query( "key", "value" ), contains( node ) );
     }
 
@@ -389,7 +387,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value1 = "Lucene";
         String value2 = "Index";
         String value3 = "Rules";
-        assertThat( index.query( key, "*" ), isEmpty() );
+        assertThat( index.query( key, "*" ), emptyIterable() );
         Node node = graphDb.createNode();
         index.add( node, key, new String[]{value1, value2, value3} );
         for ( int i = 0; i < 2; i++ )
@@ -397,7 +395,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.get( key, value1 ), contains( node ) );
             assertThat( index.get( key, value2 ), contains( node ) );
             assertThat( index.get( key, value3 ), contains( node ) );
-            assertThat( index.get( key, "whatever" ), isEmpty() );
+            assertThat( index.get( key, "whatever" ), emptyIterable() );
             restartTx();
         }
 
@@ -406,8 +404,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.get( key, value1 ), contains( node ) );
-            assertThat( index.get( key, value2 ), isEmpty() );
-            assertThat( index.get( key, value3 ), isEmpty() );
+            assertThat( index.get( key, value2 ), emptyIterable() );
+            assertThat( index.get( key, value3 ), emptyIterable() );
             restartTx();
         }
         index.delete();
@@ -472,7 +470,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String title = "title";
         String hacker = "Hacker";
 
-        assertThat( index.get( name, mattias ), isEmpty() );
+        assertThat( index.get( name, mattias ), emptyIterable() );
 
         T entity1 = creator.create();
         T entity2 = creator.create();
@@ -763,7 +761,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertThat( indexResult3.size(), is( 1 ) );
 
         IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
-        assertThat( indexResult4, isEmpty() );
+        assertThat( indexResult4, emptyIterable() );
 
         IndexHits<Node> indexResult5 = index.query( "number", numericRange( "number", null, 98, true, true ) );
         assertContains( indexResult5, node1, node2 );
@@ -787,10 +785,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         index.remove( node2, key, new ValueContext( 5 ).indexNumeric() );
 
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), isEmpty() );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), emptyIterable() );
 
         restartTx();
-        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), isEmpty() );
+        assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), emptyIterable() );
 
         index.add( node1, key, new ValueContext( 15 ).indexNumeric() );
         index.add( node2, key, new ValueContext( 5 ).indexNumeric() );
@@ -885,11 +883,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.query( "name", "[A TO Z]" ), contains( node ) );
-            assertThat( index.query( "name", "[a TO z]" ), isEmpty() );
+            assertThat( index.query( "name", "[a TO z]" ), emptyIterable() );
             assertThat( index.query( "name", "Matt*" ), contains( node ) );
-            assertThat( index.query( "name", "matt*" ), isEmpty() );
+            assertThat( index.query( "name", "matt*" ), emptyIterable() );
             assertThat( index.query( "name", "Persson" ), contains( node ) );
-            assertThat( index.query( "name", "persson" ), isEmpty() );
+            assertThat( index.query( "name", "persson" ), emptyIterable() );
             restartTx();
         }
     }
@@ -1022,7 +1020,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( r, key, "otherValue" );
         for ( int i = 0; i < 2; i++ )
         {
-            assertThat( index.get( key, "value" ), isEmpty() );
+            assertThat( index.get( key, "value" ), emptyIterable() );
             assertThat( index.get( key, "otherValue" ), contains( r ) );
             restartTx();
         }

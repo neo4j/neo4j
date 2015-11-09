@@ -54,6 +54,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 
 public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Ignore
     @Test
     public void testNodeInsertionSpeed()
@@ -288,7 +291,4 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 
         System.out.println( t1 + ", " + (double)t1/(double)count );
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

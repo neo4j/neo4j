@@ -51,6 +51,23 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class SchemaIndexAcceptanceTest
 {
+    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private GraphDatabaseService db;
+    private final Label label = label( "PERSON" );
+    private final String propertyKey = "key";
+
+    @Before
+    public void before() throws Exception
+    {
+        db = newDb();
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        db.shutdown();
+    }
+
     @Test
     public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup() throws Exception
     {
@@ -153,17 +170,6 @@ public class SchemaIndexAcceptanceTest
         assertThat( getIndexes( db, label ), isEmpty() );
     }
 
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private GraphDatabaseService db;
-    private final Label label = label( "PERSON" );
-    private final String propertyKey = "key";
-
-    @Before
-    public void before() throws Exception
-    {
-        db = newDb();
-    }
-
     private GraphDatabaseService newDb()
     {
         return new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
@@ -182,12 +188,6 @@ public class SchemaIndexAcceptanceTest
     {
         db.shutdown();
         db = newDb();
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        db.shutdown();
     }
 
     private Node createNode( Label label, Object... properties )

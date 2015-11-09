@@ -42,7 +42,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class AutoIndexerTest
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )

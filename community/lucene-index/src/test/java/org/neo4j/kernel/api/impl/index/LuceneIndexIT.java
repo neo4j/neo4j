@@ -48,6 +48,32 @@ import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class LuceneIndexIT
 {
+
+    private final long nodeId = 1, nodeId2 = 2;
+    private final Object value = "value";
+    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+    private LuceneIndexAccessor accessor;
+    private DirectoryFactory dirFactory;
+
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+    @Before
+    public void before() throws Exception
+    {
+        dirFactory = DirectoryFactory.PERSISTENT;
+        accessor = new NonUniqueLuceneIndexAccessor(
+                documentLogic, reserving(), dirFactory, testDir.directory(), 100_000
+        );
+    }
+
+    @After
+    public void after() throws IOException
+    {
+        accessor.close();
+        dirFactory.close();
+    }
+
     @Test
     public void shouldProvideStoreSnapshot() throws Exception
     {
@@ -83,31 +109,6 @@ public class LuceneIndexIT
         while(files.hasNext())
             out.add( files.next().getName() );
         return asUniqueSet( out );
-    }
-
-    private final long nodeId = 1, nodeId2 = 2;
-    private final Object value = "value";
-    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-    private LuceneIndexAccessor accessor;
-    private DirectoryFactory dirFactory;
-
-    @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
-
-    @Before
-    public void before() throws Exception
-    {
-        dirFactory = DirectoryFactory.PERSISTENT;
-        accessor = new NonUniqueLuceneIndexAccessor(
-                documentLogic, reserving(), dirFactory, testDir.directory(), 100_000
-        );
-    }
-
-    @After
-    public void after() throws IOException
-    {
-        accessor.close();
-        dirFactory.close();
     }
 
     private NodePropertyUpdate add( long nodeId, Object value )

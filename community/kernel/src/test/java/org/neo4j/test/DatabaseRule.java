@@ -333,14 +333,9 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         }
     }
 
-    public void stopAndKeepFiles()
+    public void shutdownAndKeepStore()
     {
-        if ( database != null )
-        {
-            database.shutdown();
-            database = null;
-            statementSupplier = null;
-        }
+        shutdown( false );
     }
 
     public <T> T resolveDependency( Class<T> type )

@@ -48,6 +48,12 @@ public abstract class Neo4jTestCase
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
+
+    @AfterClass
+    public static void tearDownDb() throws Exception
+    {
+        graphDb.shutdown();
+    }
     
     @Before
     public void setUpTest()
@@ -91,12 +97,6 @@ public abstract class Neo4jTestCase
             tx = graphDb.beginTx();
         }
         return tx;
-    }
-    
-    @AfterClass
-    public static void tearDownDb() throws Exception
-    {
-        graphDb.shutdown();
     }
     
     public static void deleteFileOrDirectory( File file )
