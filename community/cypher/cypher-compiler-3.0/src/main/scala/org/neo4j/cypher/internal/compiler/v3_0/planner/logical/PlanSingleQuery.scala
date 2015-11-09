@@ -65,14 +65,14 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
       (hasUnsafeRelationships(plannerQuery) &&
-        (plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
+        (plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
           plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph) ||
-          plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph))
+          plannerQuery.updateGraph.setNodePropertyOverlap(plannerQuery.queryGraph))
       ) ||
         //otherwise only do checks if we have more that one leaf
         leaves.size > 1 && leaves.drop(1).exists(
           nodeOverlap(_, plannerQuery, leaves.head) ||
-            plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
+            plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))
@@ -87,9 +87,9 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
   private def nodeOverlap(start: IdName, plannerQuery: PlannerQuery, stableId: IdName): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
     val writeLabels = plannerQuery.updateGraph.createLabels
-    val createProperties = plannerQuery.updateGraph.createProperties
+    val createProperties = plannerQuery.updateGraph.createNodeProperties
     val removeLabels = plannerQuery.updateGraph.labelsToRemoveForNode(start)
-    val startProperties = plannerQuery.queryGraph.allKnownPropertiesOnNode(start).map(_.propertyKey)
+    val startProperties = plannerQuery.queryGraph.allKnownPropertiesOnIdentifier(start).map(_.propertyKey)
 
     plannerQuery.updatesNodes && (
       ( ((startLabels.isEmpty && startProperties.isEmpty) && plannerQuery.createsNodes) || //MATCH () CREATE (...)?

@@ -60,11 +60,11 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   def writes: Boolean = exists(_.updateGraph.nonEmpty)
 
-  def createsNodes: Boolean = exists(_.updateGraph.nodePatterns.nonEmpty)
+  def createsNodes: Boolean = exists(_.updateGraph.createNodePatterns.nonEmpty)
 
   def updatesNodes: Boolean = exists(_.updateGraph.updatesNodes)
 
-  def writesRelationships: Boolean = exists(_.updateGraph.relPatterns.nonEmpty)
+  def writesRelationships: Boolean = exists(_.updateGraph.createRelationshipPatterns.nonEmpty)
 
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 

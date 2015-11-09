@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyToken, Identifier, PathExpression}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, PathExpression}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -46,6 +46,12 @@ case object PlanUpdates
     //SET r.prop = 42
     case pattern: SetRelationshipPropertyPattern =>
       context.logicalPlanProducer.planSetRelationshipProperty(inner, pattern)
+    //SET n.prop += {}
+    case pattern: SetIncludingNodePropertiesFromMapPattern =>
+      context.logicalPlanProducer.planSetIncludingNodePropertiesFromMap(inner, pattern)
+    //SET r.prop = 42
+    case pattern: SetIncludingRelationshipPropertiesFromMapPattern =>
+      context.logicalPlanProducer.planSetIncludingRelationshipPropertiesFromMap(inner, pattern)
     //REMOVE n:Foo:Bar
     case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(inner, pattern)
     //DELETE a
