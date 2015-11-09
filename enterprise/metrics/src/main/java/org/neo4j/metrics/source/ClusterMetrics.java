@@ -72,11 +72,7 @@ public class ClusterMetrics extends LifecycleAdapter
     {
         if ( config.get( MetricsSettings.neoClusterEnabled ) )
         {
-            if(canResolveClusterMembersDependency())
-            {
-                registerClusterMemberMetrics();
-            }
-
+            registerClusterMemberMetrics();
             monitors.addMonitorListener( monitor );
 
             registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
@@ -100,27 +96,24 @@ public class ClusterMetrics extends LifecycleAdapter
         }
     }
 
-    private boolean canResolveClusterMembersDependency()
+    private void resolveClusterMembersDependencyOrLogWarning()
     {
         try
         {
             clusterMembers = dependencyResolver.resolveDependency( ClusterMembers.class );
         }
-        catch(IllegalArgumentException e)
+        catch( IllegalArgumentException e )
         {
             logService.getUserLog( getClass() ).warn("Cluster metrics was enabled but the appropriate " +
                     "cluster dependencies were not available. Disabling cluster member metrics.");
         }
-        return clusterMembers != null;
     }
 
     private void registerClusterMemberMetrics()
     {
-        if(clusterMembers != null)
-        {
-            registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
-            registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
-        }
+        resolveClusterMembersDependencyOrLogWarning();
+        registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
+        registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
     }
 
     @Override
@@ -130,8 +123,12 @@ public class ClusterMetrics extends LifecycleAdapter
         {
             registry.remove( SLAVE_PULL_UPDATES );
             registry.remove( SLAVE_PULL_UPDATE_UP_TO_TX );
-            registry.remove( IS_MASTER );
-            registry.remove( IS_AVAILABLE );
+
+            if( clusterMembers != null )
+            {
+                registry.remove( IS_MASTER );
+                registry.remove( IS_AVAILABLE );
+            }
 
             monitors.removeMonitorListener( monitor );
         }
@@ -149,6 +146,7 @@ public class ClusterMetrics extends LifecycleAdapter
             this.lastAppliedTxId = lastAppliedTxId;
         }
     }
+
     private class RoleGauge implements Gauge<Integer>
     {
         private Predicate<String> rolePredicate;
@@ -160,7 +158,12 @@ public class ClusterMetrics extends LifecycleAdapter
 
         public Integer getValue()
         {
-            return rolePredicate.test( clusterMembers.getCurrentMemberRole() ) ? 1 : 0;
+            int value = 0;
+            if( clusterMembers != null )
+            {
+                value = rolePredicate.test( clusterMembers.getCurrentMemberRole() ) ? 1 : 0;
+            }
+            return value;
         }
     }
 }
