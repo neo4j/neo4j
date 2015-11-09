@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst}
@@ -314,9 +314,15 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
         toCommandExpression(expression))()
 
+    case SetIncludingNodePropertiesFromMap(_, idName, expression) =>
+      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps = false)()
+
     case SetRelationshipPropery(_, idName, propertyKey, expression) =>
       SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
         toCommandExpression(expression))()
+
+    case SetIncludingRelationshipPropertiesFromMap(_, idName, expression) =>
+      SetRelationshipsPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps = false)()
 
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()

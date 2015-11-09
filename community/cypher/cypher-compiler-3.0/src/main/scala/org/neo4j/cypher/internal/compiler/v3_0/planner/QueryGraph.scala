@@ -107,8 +107,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def allKnownLabelsOnNode(node: IdName): Seq[LabelName] =
     knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
 
-  def allKnownPropertiesOnNode(node: IdName): Set[Property] =
-    knownProperties(node) ++ optionalMatches.flatMap(_.allKnownPropertiesOnNode(node))
+  def allKnownPropertiesOnIdentifier(idName: IdName): Set[Property] =
+    knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
 
   def allKnownNodeProperties: Set[Property] =
     (patternNodes ++ patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2)))
