@@ -19,15 +19,117 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, DummyPosition}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{SignedDecimalIntegerLiteral, StringLiteral, MapExpression, RelTypeName, PropertyKeyName, Property, In, LabelName, Identifier, HasLabels}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite {
 
+  private val pos = DummyPosition(0)
   test("should not be empty after adding label to set") {
     val original = UpdateGraph()
     val setLabel = SetLabelPattern(IdName("name"), Seq.empty)
 
     original.addMutatingPatterns(setLabel).nonEmpty should be(right = true)
+  }
+
+  test("overlap when reading all labels and creating a specific label") {
+    //MATCH (a) CREATE (:L)
+    val qg = QueryGraph(patternNodes = Set(IdName("a")))
+    val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
+
+    ug.overlaps(qg) shouldBe true
+  }
+
+  test("overlap when reading and creating the same label") {
+    //MATCH (a:L) CREATE (b:L)
+    val selections = Selections.from(HasLabels(Identifier("a")(pos), Seq(LabelName("L")(pos)))(pos))
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
+    val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
+
+    ug.overlaps(qg) shouldBe true
+  }
+
+  test("no overlap when reading and creating different labels") {
+    //MATCH (a:L1:L2) CREATE (b:L3)
+    val selections = Selections.from(HasLabels(Identifier("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
+    val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None)))
+
+    ug.overlaps(qg) shouldBe false
+  }
+
+  test("no overlap when properties don't overlap even though labels do") {
+    //MATCH (a {foo: 42}) CREATE (a:L)
+    val selections = Selections.from(In(Identifier("a")(pos),
+      Property(Identifier("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
+    val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
+
+    ug.overlaps(qg) shouldBe false
+  }
+
+  test("overlap when reading all rel types and creating a specific type") {
+    //MATCH (a)-[r]->(b)  CREATE (a)-[r2:T]->(b)
+    val qg = QueryGraph(patternRelationships =
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
+        SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
+    val ug = UpdateGraph(Seq(CreateRelationshipPattern(IdName("r2"),
+      IdName("a"), RelTypeName("T")(pos), IdName("b"), None, SemanticDirection.OUTGOING)))
+
+    ug.overlaps(qg) shouldBe true
+  }
+
+  test("no overlap when reading and writing different rel types") {
+    //MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T]->(b)
+    val qg = QueryGraph(patternRelationships =
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
+        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
+    val ug = UpdateGraph(Seq(CreateRelationshipPattern(IdName("r2"),
+      IdName("a"), RelTypeName("T2")(pos), IdName("b"), None, SemanticDirection.OUTGOING)))
+
+    ug.overlaps(qg) shouldBe false
+  }
+
+  test("overlap when reading and writing same rel types") {
+    //MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T1]->(b)
+    val qg = QueryGraph(patternRelationships =
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
+        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
+    val ug = UpdateGraph(Seq(CreateRelationshipPattern(IdName("r2"),
+      IdName("a"), RelTypeName("T1")(pos), IdName("b"), None, SemanticDirection.OUTGOING)))
+
+    ug.overlaps(qg) shouldBe true
+  }
+
+  test("no overlap when reading and writing same rel types but matching on rel property") {
+    //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
+    val selections = Selections.from(In(Identifier("a")(pos),
+      Property(Identifier("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val qg = QueryGraph(patternRelationships =
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
+        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
+      selections = selections)
+    val ug = UpdateGraph(Seq(CreateRelationshipPattern(IdName("r2"),
+      IdName("a"), RelTypeName("T1")(pos), IdName("b"), None, SemanticDirection.OUTGOING)))
+
+    ug.overlaps(qg) shouldBe false
+  }
+
+  test("overlap when reading and writing same property and rel type") {
+    //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
+    val selections = Selections.from(In(Identifier("a")(pos),
+      Property(Identifier("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val qg = QueryGraph(patternRelationships =
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
+        SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
+      selections = selections)
+    val ug = UpdateGraph(Seq(CreateRelationshipPattern(IdName("r2"),
+      IdName("a"), RelTypeName("T1")(pos), IdName("b"),
+      Some(MapExpression(Seq((PropertyKeyName("foo")(pos),
+        SignedDecimalIntegerLiteral("42")(pos))))(pos)), SemanticDirection.OUTGOING)))
+
+    ug.overlaps(qg) shouldBe true
   }
 }

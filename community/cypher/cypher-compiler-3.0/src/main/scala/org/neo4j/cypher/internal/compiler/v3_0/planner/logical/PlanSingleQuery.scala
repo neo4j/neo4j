@@ -67,7 +67,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       (hasUnsafeRelationships(plannerQuery) &&
         (plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
           plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph) ||
-          plannerQuery.updateGraph.setNodePropertyOverlap(plannerQuery.queryGraph))
+          plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph))
       ) ||
         //otherwise only do checks if we have more that one leaf
         leaves.size > 1 && leaves.drop(1).exists(

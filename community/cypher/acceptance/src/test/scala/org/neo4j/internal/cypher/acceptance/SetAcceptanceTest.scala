@@ -208,8 +208,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    executeWithRulePlanner("MATCH (n {foo:'A'}) SET n = {foo:'B', baz:'C'}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n = {foo:'B', baz:'C'} RETURN count(*)")
 
+    assertStats(result, propertiesSet = 3)
     // then
     a should not(haveProperty("bar"))
     a should haveProperty("foo").withValue("B")

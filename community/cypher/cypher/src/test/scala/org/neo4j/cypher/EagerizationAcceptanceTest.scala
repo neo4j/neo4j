@@ -341,7 +341,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MATCH (a), (b) CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }"
 
-    assertStats(executeWithRulePlanner(query), relationshipsCreated = 4, propertiesSet = 4)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 4, propertiesSet = 4)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1193,7 +1193,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("matching relationship property, writing same relationship property should not be eager") {
+  test("matching relationship property, writing same relationship property should be eager") {
     relate(createNode(), createNode(), "prop" -> 3)
     val query = "MATCH ()-[r {prop : 3}]-() SET r.prop = 6 RETURN count(*) AS c"
 
@@ -1245,7 +1245,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     createNode("prop" -> 42)
     createNode("prop" -> 42)
-    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop=42 RETURN count(*)"
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop = 42 RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
     assertStats(result, propertiesSet = 8, nodesCreated = 4)
@@ -1257,7 +1257,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     createNode("prop" -> 42)
     createNode("prop" -> 42)
-    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2=42 RETURN count(*)"
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2 = 42 RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
     assertStats(result, propertiesSet = 8, nodesCreated = 4)
@@ -1292,21 +1292,6 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 1)
-  }
-
-  test("matching rel property, writing with += does not need to be eager") {
-    for (i <- 1 to 10) {
-      val n = createNode()
-      val m = createNode()
-      relate(n, m, "prop" -> 42)
-      relate(m, createNode())
-    }
-    val query = "MATCH ()-[r1 {prop: 42}]-()-[r2]-() SET r2 += {prop: 5} RETURN count(*)"
-    val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 10)
-    result.toList should equal(List(Map("count(*)" -> 10)))
-
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching rel property, writing with += should not be eager when we can avoid it") {

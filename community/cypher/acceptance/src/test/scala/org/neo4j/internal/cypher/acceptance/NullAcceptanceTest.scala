@@ -59,7 +59,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     // Given empty database
 
     // When
-    val result = executeWithRulePlanner("optional match (a:DoesNotExist) set a = {prop: 42} return a")
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a = {prop: 42} return a")
 
     // Then doesn't throw
     result.toList

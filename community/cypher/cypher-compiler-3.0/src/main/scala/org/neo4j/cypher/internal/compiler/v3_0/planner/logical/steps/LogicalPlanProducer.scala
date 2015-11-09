@@ -498,13 +498,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     SetNodePropery(inner, pattern.idName, pattern.propertyKey,  pattern.expression)(solved)
   }
 
-  def planSetIncludingNodePropertiesFromMap(inner: LogicalPlan,
-                                          pattern: SetIncludingNodePropertiesFromMapPattern)
+  def planSetNodePropertiesFromMap(inner: LogicalPlan,
+                                          pattern: SetNodePropertiesFromMapPattern)
                          (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    SetIncludingNodePropertiesFromMap(inner, pattern.idName, pattern.expression)(solved)
+    SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
   }
 
   def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern)
@@ -515,13 +515,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
   }
 
-  def planSetIncludingRelationshipPropertiesFromMap(inner: LogicalPlan,
-                                                  pattern: SetIncludingRelationshipPropertiesFromMapPattern)
+  def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,
+                                                  pattern: SetRelationshipPropertiesFromMapPattern)
                                  (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    SetIncludingRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression)(solved)
+    SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProp)(solved)
   }
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern)

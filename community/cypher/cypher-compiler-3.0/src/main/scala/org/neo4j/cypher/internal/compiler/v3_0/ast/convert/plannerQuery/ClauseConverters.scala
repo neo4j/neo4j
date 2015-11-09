@@ -96,33 +96,46 @@ object ClauseConverters {
       // SET n:Foo
       case (builder, SetLabelItem(identifier, labelNames)) =>
         builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+          ug.addMutatingPatterns(
+            SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
 
       // SET n.prop = ...
       case (builder, SetPropertyItem(Property(node: Identifier, propertyKey), expr))
         if acc.semanticTable.isNode(node) =>
        builder.amendUpdateGraph(ug =>
-         ug.addMutatingPatterns(SetNodePropertyPattern(IdName.fromIdentifier(node), propertyKey, expr)))
+         ug.addMutatingPatterns(
+           SetNodePropertyPattern(IdName.fromIdentifier(node), propertyKey, expr)))
 
       // SET r.prop = ...
       case (builder, SetPropertyItem(Property(rel: Identifier, propertyKey), expr))
         if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(SetRelationshipPropertyPattern(IdName.fromIdentifier(rel), propertyKey, expr)))
+          ug.addMutatingPatterns(
+            SetRelationshipPropertyPattern(IdName.fromIdentifier(rel), propertyKey, expr)))
 
       // SET n = { id: 0, name: 'Mats', ... }
-      case (builder, SetExactPropertiesFromMapItem(_, _)) =>
-        throw new CantHandleQueryException("Setting properties using '=' not supported yet")
+      case (builder, SetExactPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = true)))
+
+      // SET r = { id: 0, name: 'Mats', ... }
+      case (builder, SetExactPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProp = true)))
 
       // SET n += { id: 10, ... }
       case (builder, SetIncludingPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
         builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(SetIncludingNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression)))
+          ug.addMutatingPatterns(
+            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = false)))
 
       // SET r += { id: 10, ... }
       case (builder, SetIncludingPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(SetIncludingRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression)))
+          ug.addMutatingPatterns(
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProp = false)))
     }
   }
 

@@ -43,11 +43,11 @@ case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends Mutat
 
 case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
 
-case class SetIncludingNodePropertiesFromMapPattern(idName: IdName, expression: Expression) extends MutatingPattern
+case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends MutatingPattern
 
 case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
 
-case class SetIncludingRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression) extends MutatingPattern
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProp: Boolean) extends MutatingPattern
 
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 

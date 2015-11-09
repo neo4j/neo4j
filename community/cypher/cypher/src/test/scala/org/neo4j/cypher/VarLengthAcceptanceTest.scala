@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.Direction._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable

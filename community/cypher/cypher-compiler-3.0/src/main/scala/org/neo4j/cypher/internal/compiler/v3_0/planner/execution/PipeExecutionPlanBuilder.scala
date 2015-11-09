@@ -314,15 +314,15 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
         toCommandExpression(expression))()
 
-    case SetIncludingNodePropertiesFromMap(_, idName, expression) =>
-      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps = false)()
+    case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
 
     case SetRelationshipPropery(_, idName, propertyKey, expression) =>
       SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
         toCommandExpression(expression))()
 
-    case SetIncludingRelationshipPropertiesFromMap(_, idName, expression) =>
-      SetRelationshipsPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps = false)()
+    case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetRelationshipsPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
 
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()

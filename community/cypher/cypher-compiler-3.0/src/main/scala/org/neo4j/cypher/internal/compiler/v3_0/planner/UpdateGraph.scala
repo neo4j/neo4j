@@ -89,7 +89,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * and what is being written here
    */
   def overlaps(qg: QueryGraph) =
-    qg.patternNodes.nonEmpty &&
       nonEmpty &&
       (createNodeOverlap(qg) || createRelationshipOverlap(qg) ||
         deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg))
@@ -158,44 +157,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def setPropertyOverlap(qg: QueryGraph) = setNodePropertyOverlap(qg) || setRelPropertyOverlap(qg)
 
   /*
-   * Checks for overlap between what node props are read in query graph
-   * and what is updated with SET her
-   */
-  def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
-    val propertiesToSet = mutatingPatterns.collect {
-      case SetNodePropertyPattern(_, key, _) => key
-    }.toSet
-    val fromMapExpressions = mutatingPatterns.collect {
-      case SetIncludingNodePropertiesFromMapPattern(_, expression) => expression
-    }
-
-    val propertiesToSetFromMap = CreatesPropertyKeys(fromMapExpressions)
-    val propertiesToRead = qg.allKnownNodeProperties.map(_.propertyKey)
-
-    propertiesToRead.exists(propertiesToSetFromMap.overlaps) ||
-      (propertiesToRead intersect propertiesToSet).nonEmpty
-  }
-
-  /*
-   * Checks for overlap between what relationship props are read in query graph
-   * and what is updated with SET her
-   */
-  def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
-    val propertiesToSet = mutatingPatterns.collect {
-      case SetRelationshipPropertyPattern(_, key, _) => key
-    }.toSet
-
-    val fromMapExpressions = mutatingPatterns.collect {
-      case SetIncludingRelationshipPropertiesFromMapPattern(_, expression) => expression
-    }
-    val propertiesToSetFromMap = CreatesPropertyKeys(fromMapExpressions)
-    val propertiesToRead = qg.allKnownNodeProperties.map(_.propertyKey)
-
-    propertiesToRead.exists(propertiesToSetFromMap.overlaps) ||
-      (propertiesToRead intersect propertiesToSet).nonEmpty
-  }
-
-  /*
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
@@ -217,6 +178,44 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
           otherLabelsRead(l)
         })
     }
+  }
+
+  /*
+  * Checks for overlap between what node props are read in query graph
+  * and what is updated with SET her
+  */
+  private def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
+    val propertiesToSet = mutatingPatterns.collect {
+      case SetNodePropertyPattern(_, key, _) => key
+    }.toSet
+    val fromMapExpressions = mutatingPatterns.collect {
+      case SetNodePropertiesFromMapPattern(_, expression, _) => expression
+    }
+
+    val propertiesToSetFromMap = CreatesPropertyKeys(fromMapExpressions)
+    val propertiesToRead = qg.allKnownNodeProperties.map(_.propertyKey)
+
+    propertiesToRead.exists(propertiesToSetFromMap.overlaps) ||
+      (propertiesToRead intersect propertiesToSet).nonEmpty
+  }
+
+  /*
+   * Checks for overlap between what relationship props are read in query graph
+   * and what is updated with SET her
+   */
+  private def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
+    val propertiesToSet = mutatingPatterns.collect {
+      case SetRelationshipPropertyPattern(_, key, _) => key
+    }.toSet
+
+    val fromMapExpressions = mutatingPatterns.collect {
+      case SetRelationshipPropertiesFromMapPattern(_, expression, _) => expression
+    }
+    val propertiesToSetFromMap = CreatesPropertyKeys(fromMapExpressions)
+    val propertiesToRead = qg.allKnownRelProperties.map(_.propertyKey)
+
+    propertiesToRead.exists(propertiesToSetFromMap.overlaps) ||
+      (propertiesToRead intersect propertiesToSet).nonEmpty
   }
 
   private def deleteExpressions = mutatingPatterns.collect {

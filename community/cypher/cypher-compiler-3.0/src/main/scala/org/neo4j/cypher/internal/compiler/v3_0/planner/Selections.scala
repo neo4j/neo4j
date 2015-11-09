@@ -99,6 +99,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
 
       case (acc, Predicate(_, In(prop@Property(key: Identifier, _), _))) =>
         updateMap(acc, IdName.fromIdentifier(key), prop)
+      case (acc, Predicate(_, In(_, prop@Property(key: Identifier, _)))) =>
+        updateMap(acc, IdName.fromIdentifier(key), prop)
       case (acc, Predicate(_, Equals(prop@Property(key:Identifier, _), _))) =>
         updateMap(acc, IdName.fromIdentifier(key), prop)
       case (acc, Predicate(_, Equals(_, prop@Property(key: Identifier, _)))) =>

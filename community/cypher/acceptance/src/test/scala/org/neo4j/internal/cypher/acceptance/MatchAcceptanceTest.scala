@@ -1078,8 +1078,8 @@ return b
     val node = createLabeledNode("FOO")
 
     graph.inTx {
-      executeWithRulePlanner("MATCH (n:FOO) SET n = { first: 'value' }")
-      executeWithRulePlanner("MATCH (n:FOO) SET n = { second: 'value' }")
+      executeWithCostPlannerOnly("MATCH (n:FOO) SET n = { first: 'value' }")
+      executeWithCostPlannerOnly("MATCH (n:FOO) SET n = { second: 'value' }")
     }
 
     graph.inTx {
