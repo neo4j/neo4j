@@ -17,17 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner
+package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.spi.TokenContext
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_0.{PropertyKeyId, SemanticTable}
 
-class UpdateGraphTest extends CypherFunSuite {
+case class LazyPropertyKey(name:String) {
+  private var id : Option[PropertyKeyId] = None
 
-  test("should not be empty after adding label to set") {
-    val original = UpdateGraph()
-    val setLabel = SetLabelPattern(IdName("name"), Seq.empty)
-
-    original.addMutatingPatterns(setLabel).nonEmpty should be(right = true)
+  def id(context: TokenContext): Option[PropertyKeyId] = id match {
+    case None => {
+      id = context.getOptPropertyKeyId(name).map(PropertyKeyId)
+      id
+    }
+    case x    => x
   }
 }
+
+object LazyPropertyKey {
+  def apply(name: PropertyKeyName)(implicit table:SemanticTable): LazyPropertyKey = {
+    val property = new LazyPropertyKey(name.name)
+    property.id = name.id
+    property
+  }
+}
+
+
+

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
@@ -29,7 +29,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val node = createNode("property" -> 12)
 
     // when
-    val result = executeWithRulePlanner("MATCH (n) SET n.property = null")
+    val result = updateWithBothPlanners("MATCH (n) SET n.property = null RETURN count(*)")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -41,7 +41,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val relationship = relate(createNode(), createNode(), "property" -> 12)
 
     // when
-    val result = executeWithRulePlanner("MATCH ()-[r]->() SET r.property = null")
+    val result = updateWithBothPlanners("MATCH ()-[r]->() SET r.property = null RETURN count(*)")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -53,7 +53,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = executeWithRulePlanner("match (n) where n.name = 'Andres' set n.name = 'Michael'")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = 'Michael'")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -65,7 +65,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("name" -> "Andres")
 
     // when
-    val result = executeWithRulePlanner("match (n) where n.name = 'Andres' set n.name = n.name + ' was here'")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = n.name + ' was here' return count(*)")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -74,10 +74,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
   test("set property for null removes the property") {
     // given
-    val n = createNode("name" -> "Michael")
+    val n = createNode("name" -> "Michael", "age" -> 35)
 
     // when
-    val result = executeWithRulePlanner("match (n) where n.name = 'Michael' set n.name = null return n")
+    val result = updateWithBothPlanners("match (n) where n.name = 'Michael' set n.name = null return n.age")
 
     // then
     assertStats(result, propertiesSet = 1)
@@ -121,7 +121,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode()
 
     // when
-    val result = executeWithRulePlanner( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
+    val result = updateWithBothPlanners( "match (n) where id(n) = 0 set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x")
 
     // then
     result.toList should equal(List(Map("x" -> List(0.5, 1.0, 1.5))))
@@ -131,7 +131,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // given
 
     // when
-    val result = executeScalar[Array[Long]]("create (a {foo:[1,2,3]}) set a.foo = a.foo + [4,5] return a.foo")
+    val result = executeScalarWithAllPlanners[Array[Long]]("create (a {foo:[1,2,3]}) set a.foo = a.foo + [4,5] return a.foo")
 
     // then
     result.toList should equal(List(1, 2, 3, 4, 5))
@@ -141,7 +141,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // given
 
     // when
-    val result = executeScalar[Array[Long]]("create (a {foo:[3,4,5]}) set a.foo = [1,2] + a.foo return a.foo")
+    val result = executeScalarWithAllPlanners[Array[Long]]("create (a {foo:[3,4,5]}) set a.foo = [1,2] + a.foo return a.foo")
 
     // then
     result.toList should equal(List(1, 2, 3, 4, 5))
@@ -152,7 +152,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = executeWithRulePlanner("MATCH (n {foo:'A'}) SET n += {bar:'C'}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'C'} RETURN count(*)")
 
     // then
     a should haveProperty("foo").withValue("A")
@@ -164,9 +164,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A")
 
     // when
-    val result = executeWithRulePlanner("MATCH (n {foo:'A'}) SET n += {bar:'B'}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'B'} RETURN count(*)")
 
     // then
+    assertStats(result, propertiesSet = 1)
     a should haveProperty("foo").withValue("A")
     a should haveProperty("bar").withValue("B")
   }
@@ -176,9 +177,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode("foo"->"A", "bar"->"B")
 
     // when
-    val result = executeWithRulePlanner("MATCH (n {foo:'A'}) SET n += {foo:null}")
+    val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {foo:null} RETURN count(*)")
 
     // then
+    assertStats(result, propertiesSet = 1)
     a should not(haveProperty("foo"))
     a should haveProperty("bar").withValue("B")
   }

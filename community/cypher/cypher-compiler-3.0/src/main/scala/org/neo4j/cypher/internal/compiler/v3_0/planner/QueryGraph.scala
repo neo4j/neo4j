@@ -96,6 +96,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
+  def knownProperties(idName: IdName): Set[Property] =
+    selections.propertyPredicates.getOrElse(idName, Set.empty)
+
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
@@ -103,6 +106,17 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def allKnownLabelsOnNode(node: IdName): Seq[LabelName] =
     knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
+
+  def allKnownPropertiesOnIdentifier(idName: IdName): Set[Property] =
+    knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
+
+  def allKnownNodeProperties: Set[Property] =
+    (patternNodes ++ patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2)))
+      .flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownNodeProperties)
+
+  def allKnownRelProperties: Set[Property] =
+    patternRelationships.map(_.name).flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownRelProperties)
+
 
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }

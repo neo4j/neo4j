@@ -25,11 +25,21 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite {
 
   val anyNull: AnyRef = null.asInstanceOf[AnyRef]
 
-  test("null nodes should be silently ignored") {
+  test("null nodes should be silently ignored when setting property") {
     // Given empty database
 
     // When
     val result = execute("optional match (a:DoesNotExist) set a.prop = 42 return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when setting label") {
+    // Given empty database
+
+    // When
+    val result = execute("optional match (a:DoesNotExist) set a:L return a")
 
     // Then doesn't throw
     result.toList

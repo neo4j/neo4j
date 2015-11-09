@@ -28,13 +28,16 @@ import org.neo4j.graphdb.Node
 case class SetLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+  extends PipeWithSource(src, pipeMonitor) with RonjaPipe {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val nodeId = CastSupport.castOrFail[Node](row.get(identifier).get).getId
-      setLabels(row, state, nodeId)
+      val value = row.get(identifier).get
+      if (value != null) {
+        val nodeId = CastSupport.castOrFail[Node](value).getId
+        setLabels(row, state, nodeId)
+      }
       row
     }
   }

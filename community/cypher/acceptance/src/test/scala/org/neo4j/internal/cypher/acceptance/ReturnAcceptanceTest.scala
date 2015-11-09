@@ -89,7 +89,7 @@ order by a.age""").toList)
 
     val q = "match (n) set n.x=[1,2,3] return length(n.x)"
 
-    executeWithRulePlanner(q).toList should equal(List(Map("length(n.x)" -> 3)))
+    updateWithBothPlanners(q).toList should equal(List(Map("length(n.x)" -> 3)))
   }
 
   test("long or double") {
@@ -218,7 +218,7 @@ order by a.age""").toList)
 
   test("array property should be accessible as collection") {
     createNode()
-    val result = executeWithRulePlanner("match (n) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
+    val result = updateWithBothPlanners("match (n) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
       toList.
       head("tail(tail(n.array))").
       asInstanceOf[Iterable[_]]
