@@ -261,24 +261,27 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   test("should not introduce eagerness for leaf create match") {
     val query = "CREATE () WITH * MATCH () RETURN 1"
-    assertNumberOfEagerness(query, 0)
     val result = updateWithBothPlanners(query)
-
+    assertStats(result, nodesCreated = 1)
     result should not(use("ReadOnly"))
+    assertNumberOfEagerness(query, 0)
   }
 
   test("should not need eagerness for match create with labels") {
     createLabeledNode("L")
     val query = "MATCH (:L) CREATE (:L)"
 
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("should not need eagerness for match create with labels and property with index") {
     createLabeledNode(Map("id" -> 0), "L")
     graph.createIndex("L", "id")
+
     val query = "MATCH (:L {id: 0}) CREATE (:L {id:0})"
 
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1,  propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -287,6 +290,25 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MATCH (), () CREATE ()"
 
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should not need eagerness for double match and then create when non-overlapping properties") {
+    createNode("prop1" -> 42, "prop2" -> 42)
+    createNode("prop1" -> 42, "prop2" -> 42)
+    val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop3: 42})"
+
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesSet = 4)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should need eagerness for double match and then create when overlapping properties") {
+    createNode("prop1" -> 42, "prop2" -> 42)
+    createNode("prop1" -> 42, "prop2" -> 42)
+    val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop1: 42, prop2: 42})"
+
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesSet = 8)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1191,6 +1213,30 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH ()-[r]-() WHERE exists(r.prop1) SET r.prop2 = 'foo'"
 
     assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("setting property in tail should be eager if overlap") {
+    createNode()
+    createNode()
+    createNode("prop" -> 42)
+    createNode("prop" -> 42)
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop=42 RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, propertiesSet = 8, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("setting property in tail should not be eager if no overlap") {
+    createNode()
+    createNode()
+    createNode("prop" -> 42)
+    createNode("prop" -> 42)
+    val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2=42 RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, propertiesSet = 8, nodesCreated = 4)
     assertNumberOfEagerness(query, 0)
   }
 
