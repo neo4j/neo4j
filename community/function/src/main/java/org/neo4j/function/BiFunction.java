@@ -25,6 +25,7 @@ package org.neo4j.function;
  * @param <T> the type of the first argument to the function
  * @param <U> the type of the second argument to the function
  * @param <R> the type of the result of the function
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface BiFunction<T, U, R> extends ThrowingBiFunction<T,U,R,RuntimeException>
 {

@@ -22,6 +22,7 @@ package org.neo4j.function;
 /**
  * Represents a supplier of boolean-valued results. This is the boolean-producing primitive specialization of {@link Supplier}.
  * There is no requirement that a new or distinct result be returned each time the supplier is invoked.
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface BooleanSupplier
 {

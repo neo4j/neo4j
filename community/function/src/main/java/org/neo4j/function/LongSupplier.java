@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 /**
  * Represents a supplier of long-valued results. This is the long-producing primitive specialization of {@link Supplier}.
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface LongSupplier extends ThrowingLongSupplier<RuntimeException>, org.neo4j.function.primitive.LongSupplier
 {

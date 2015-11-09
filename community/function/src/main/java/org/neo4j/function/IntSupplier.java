@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 /**
  * Represents a supplier of int-valued results. This is the int-producing primitive specialization of {@link Supplier}.
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface IntSupplier extends ThrowingIntSupplier<RuntimeException>
 {

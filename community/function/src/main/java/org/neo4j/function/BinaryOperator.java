@@ -24,6 +24,7 @@ package org.neo4j.function;
  * case where the operand and result are of the same type.
  *
  * @param <T> the type of the operand and result of the operator
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface BinaryOperator<T> extends BiFunction<T,T,T>, ThrowingBinaryOperator<T,RuntimeException>
 {

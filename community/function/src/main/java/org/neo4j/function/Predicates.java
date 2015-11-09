@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Constructors for basic {@link Predicate} types
+ * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public class Predicates
 {
