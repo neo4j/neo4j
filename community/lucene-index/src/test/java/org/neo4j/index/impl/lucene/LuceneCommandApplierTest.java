@@ -45,8 +45,10 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 
 public class LuceneCommandApplierTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    public final @Rule LifeRule life = new LifeRule( true );
+    @Rule
+    public final  EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final LifeRule life = new LifeRule( true );
     private final File dir = new File( "dir" );
 
     @Test

@@ -41,6 +41,9 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class UniqueLuceneIndexPopulatorTest
 {
+    private final FailureStorage failureStorage = mock( FailureStorage.class );
+    private final long indexId = 1;
+
     @Test
     public void shouldAddUniqueUniqueLuceneIndexPopulatorTestEntries() throws Exception
     {
@@ -193,7 +196,4 @@ public class UniqueLuceneIndexPopulatorTest
             assertEquals( 2, conflict.getAddedNodeId() );
         }
     }
-    
-    private final FailureStorage failureStorage = mock( FailureStorage.class );
-    private final long indexId = 1;
 }

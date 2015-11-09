@@ -325,14 +325,7 @@ public class BackupServiceIT
         long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
                                        .getLastCommittedTransactionId();
 
-        db = dbRule.restartDatabase( new DatabaseRule.RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
-            {
-                FileUtils.deleteFile( oldLog );
-            }
-        } );
+        db = dbRule.restartDatabase( ( fs, storeDirectory ) -> FileUtils.deleteFile( oldLog ) );
 
         long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
                                       .getLastCommittedTransactionId();
@@ -558,23 +551,11 @@ public class BackupServiceIT
     private GraphDatabaseAPI deleteLogFilesAndRestart()
             throws IOException
     {
-        final FileFilter logFileFilter = new FileFilter()
-        {
-            @Override
-            public boolean accept( File pathname )
+        final FileFilter logFileFilter = pathname -> pathname.getName().contains( "logical" );
+        return dbRule.restartDatabase( ( fs, storeDirectory ) -> {
+            for ( File logFile : storeDir.listFiles( logFileFilter ) )
             {
-                return pathname.getName().contains( "logical" );
-            }
-        };
-        return dbRule.restartDatabase( new DatabaseRule.RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
-            {
-                for ( File logFile : storeDir.listFiles( logFileFilter ) )
-                {
-                    logFile.delete();
-                }
+                logFile.delete();
             }
         } );
     }
@@ -677,16 +658,11 @@ public class BackupServiceIT
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
-        GraphDatabaseAPI db2 = dbRule.restartDatabase( new DatabaseRule.RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
-            {
-                deleteAllBackedUpTransactionLogs();
+        GraphDatabaseAPI db2 = dbRule.restartDatabase( ( fs, storeDirectory ) -> {
+            deleteAllBackedUpTransactionLogs();
 
-                fileSystem.deleteRecursively( storeDir );
-                fileSystem.mkdir( storeDir );
-            }
+            fileSystem.deleteRecursively( storeDir );
+            fileSystem.mkdir( storeDir );
         } );
         createAndIndexNode( db2, 2 );
 

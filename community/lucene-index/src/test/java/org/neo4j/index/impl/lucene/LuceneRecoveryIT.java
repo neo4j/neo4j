@@ -37,15 +37,19 @@ import static org.junit.Assert.fail;
 
 public class LuceneRecoveryIT
 {
+
     @Test
     public void testHardCoreRecovery() throws Exception
     {
         String path = "target/hcdb";
         FileUtils.deleteRecursively( new File( path ) );
+
+
         Process process = Runtime.getRuntime().exec( new String[]{
                 ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
                 Inserter.class.getName(), path
         } );
+
 
         // Let it run for a while and then kill it, and wait for it to die
         awaitFile( new File( path, "started" ) );

@@ -56,16 +56,26 @@ import static org.neo4j.test.DatabaseFunctions.uniquenessConstraint;
 @RunWith(Parameterized.class)
 public class UniqueIndexApplicationIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+
+    private final Function<GraphDatabaseService, ?> createIndex;
 
     @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> indexTypes()
     {
         return asList( createIndex( index( label( "Label1" ), "key1" ) ),
-                       createIndex( uniquenessConstraint( label( "Label1" ), "key1" ) ) );
+                createIndex( uniquenessConstraint( label( "Label1" ), "key1" ) ) );
     }
 
-    private final Function<GraphDatabaseService, ?> createIndex;
+    @After
+    public void then() throws Exception
+    {
+        assertThat( "Matching nodes from index lookup",
+                db.when( db.tx( listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ),
+                hasSize( 1 ) );
+    }
+
 
     @Before
     public void given() throws Exception
@@ -134,14 +144,6 @@ public class UniqueIndexApplicationIT
         ).then( db.tx(
                 addLabel( label( "Label1" ) )
         ) ) ) );
-    }
-
-    @After
-    public void then() throws Exception
-    {
-        assertThat( "Matching nodes from index lookup",
-                    db.when( db.tx( listNodeIdsFromIndexLookup( label( "Label1" ), "key1", "value1" ) ) ),
-                    hasSize( 1 ) );
     }
 
     private static Matcher<List<?>> hasSize( final int size )

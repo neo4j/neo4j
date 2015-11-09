@@ -41,9 +41,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public abstract class AbstractLuceneIndexTest
 {
+    @Rule
+    public final TestName testname = new TestName();
     protected static GraphDatabaseService graphDb;
     protected Transaction tx;
-    public final @Rule TestName testname = new TestName();
 
     @BeforeClass
     public static void setUpStuff()

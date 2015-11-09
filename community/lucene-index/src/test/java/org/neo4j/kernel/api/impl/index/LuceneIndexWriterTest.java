@@ -38,6 +38,22 @@ import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class LuceneIndexWriterTest
 {
+    private Directory directory;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
+
+    @Before
+    public void before() throws Exception
+    {
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        directory = dirFactory.open( new File( "dir" ) );
+    }
+
+    @After
+    public void after()
+    {
+        dirFactory.close();
+    }
+
     @Test
     public void forceShouldSetOnlineStatus() throws Exception
     {
@@ -84,22 +100,6 @@ public class LuceneIndexWriterTest
 
         // THEN
         assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
-    }
-
-    private Directory directory;
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-
-    @Before
-    public void before() throws Exception
-    {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        directory = dirFactory.open( new File( "dir" ) );
-    }
-
-    @After
-    public void after()
-    {
-        dirFactory.close();
     }
 
     private LuceneIndexWriter newWriter() throws IOException

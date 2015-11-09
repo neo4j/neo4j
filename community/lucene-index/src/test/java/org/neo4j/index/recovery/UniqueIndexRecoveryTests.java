@@ -63,6 +63,44 @@ import static org.neo4j.graphdb.Label.label;
 @RunWith(Parameterized.class)
 public class UniqueIndexRecoveryTests
 {
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir =
+            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
+
+    private static final String PROPERTY_KEY = "key";
+    private static final String PROPERTY_VALUE = "value";
+    private static final Label LABEL = label( "label" );
+
+    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+    private GraphDatabaseAPI db;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static Collection<Object[]> parameters()
+    {
+        return asList(
+                new Object[]{new LuceneSchemaIndexProviderFactory()},
+                new Object[]{new InMemoryIndexProviderFactory()} );
+    }
+
+    @Parameterized.Parameter(0)
+    public KernelExtensionFactory<?> kernelExtensionFactory;
+
+    @Before
+    public void before()
+    {
+        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
+        extensionFactories.add( kernelExtensionFactory );
+        extensionFactories.add(new LuceneLabelScanStoreExtension());
+        factory.setKernelExtensions( extensionFactories );
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
+    }
+
+    @After
+    public void after()
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint() throws Exception
     {
@@ -204,44 +242,6 @@ public class UniqueIndexRecoveryTests
             }
             tx.success();
         }
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> parameters()
-    {
-        return asList(
-                new Object[]{new LuceneSchemaIndexProviderFactory()},
-                new Object[]{new InMemoryIndexProviderFactory()} );
-    }
-
-    @Parameterized.Parameter(0)
-    public KernelExtensionFactory<?> kernelExtensionFactory;
-
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir =
-            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
-
-    private static final String PROPERTY_KEY = "key";
-    private static final String PROPERTY_VALUE = "value";
-    private static final Label LABEL = label( "label" );
-
-    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-    private GraphDatabaseAPI db;
-
-    @Before
-    public void before()
-    {
-        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
-        extensionFactories.add( kernelExtensionFactory );
-        extensionFactories.add(new LuceneLabelScanStoreExtension());
-        factory.setKernelExtensions( extensionFactories );
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir.absolutePath() );
-    }
-
-    @After
-    public void after()
-    {
-        db.shutdown();
     }
 
     private void rotateLogAndCheckPoint() throws IOException

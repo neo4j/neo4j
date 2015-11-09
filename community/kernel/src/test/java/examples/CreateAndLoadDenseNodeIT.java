@@ -104,7 +104,7 @@ public class CreateAndLoadDenseNodeIT
             }
             finally
             {
-                dbRule.stopAndKeepFiles();
+                dbRule.shutdownAndKeepStore();
             }
         }
     }

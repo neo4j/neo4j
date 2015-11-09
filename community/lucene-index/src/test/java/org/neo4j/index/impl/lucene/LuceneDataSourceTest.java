@@ -46,8 +46,10 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneDataSourceTest
 {
-    public final @Rule LifeRule life = new LifeRule( true );
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final LifeRule life = new LifeRule( true );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
 

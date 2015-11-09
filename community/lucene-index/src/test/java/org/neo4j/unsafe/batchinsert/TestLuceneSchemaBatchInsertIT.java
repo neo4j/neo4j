@@ -45,6 +45,11 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TestLuceneSchemaBatchInsertIT
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private static final Label LABEL = label( "Person" );
+
     @Test
     public void shouldLoadAndUseLuceneProvider() throws Exception
     {
@@ -76,9 +81,4 @@ public class TestLuceneSchemaBatchInsertIT
         // CLEANUP
         db.shutdown();
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    private static final Label LABEL = label( "Person" );
 }
