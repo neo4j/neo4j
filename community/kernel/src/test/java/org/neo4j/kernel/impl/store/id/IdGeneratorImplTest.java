@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import static org.neo4j.test.ProcessUtil.executeSubProcess;
+import static org.neo4j.test.ProcessTestUtil.executeSubProcess;
 
 public class IdGeneratorImplTest
 {
