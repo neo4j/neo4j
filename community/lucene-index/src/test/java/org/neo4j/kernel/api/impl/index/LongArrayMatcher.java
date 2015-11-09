@@ -17,37 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.kernel.api.impl.index;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
+import java.util.Arrays;
+
 // TODO: move to common test module
-public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
+class LongArrayMatcher extends TypeSafeDiagnosingMatcher<long[]>
 {
-    public static ByteArrayMatcher byteArray( byte[] expected )
+
+    public static LongArrayMatcher emptyArrayMatcher()
     {
-        return new ByteArrayMatcher( expected );
+        return new LongArrayMatcher( new long[]{} );
     }
 
-    private final byte[] expected;
-
-    public ByteArrayMatcher( byte[] expected )
+    public static LongArrayMatcher of( long... values )
     {
-        this.expected = expected;
+        return new LongArrayMatcher( values );
+    }
+
+    private long[] expectedArray;
+
+    public LongArrayMatcher( long[] expectedArray )
+    {
+        this.expectedArray = expectedArray;
     }
 
     @Override
-    protected boolean matchesSafely( byte[] actual, Description description )
+    protected boolean matchesSafely( long[] items, Description mismatchDescription )
     {
-        describe( actual, description );
-        if ( actual.length != expected.length )
+        describeArray( items, mismatchDescription );
+        if ( items.length != expectedArray.length )
         {
             return false;
         }
-        for ( int i = 0; i < expected.length; i++ )
+        for ( int i = 0; i < items.length; i++ )
         {
-            if ( actual[i] != expected[i] )
+            if ( items[i] != expectedArray[i] )
             {
                 return false;
             }
@@ -58,17 +66,11 @@ public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
     @Override
     public void describeTo( Description description )
     {
-        describe( expected, description );
+        describeArray( expectedArray, description );
     }
 
-    private void describe( byte[] bytes, Description description )
+    private void describeArray( long[] value, Description description )
     {
-        description.appendText( "byte[] { " );
-        for ( int i = 0; i < bytes.length; i++ )
-        {
-            int b = bytes[i] & 0xFF;
-            description.appendText( String.format( "%02X ", b ) );
-        }
-        description.appendText( "}" );
+        description.appendText( "long[]" ).appendText( Arrays.toString( value ) );
     }
 }

@@ -37,7 +37,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -51,6 +50,7 @@ import org.neo4j.test.ThreadingRule;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -147,32 +147,64 @@ public class LuceneIndexAccessorTest
         reader.close();
     }
 
-//TODO: make a proper test from experiment
-//    @Test
-//    public void testRangeQuery() throws IndexCapacityExceededException, IOException, IndexEntryConflictException
-//    {
-//        updateAndCommit( asList( add( 1, "A" ), add( 2, "B" ), add( 3, "C" ) ) );
-////
-//        IndexReader reader = accessor.newReader();
-//
-//        PrimitiveLongIterator rangeIterator = reader.rangeSeekByString( "B", true, null, false );
-//        System.out.println( "Experiment1:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator ) ) );
-//
-//        PrimitiveLongIterator rangeIterator2 = reader.rangeSeekByString( "A", false, null, false );
-//        System.out.println( "Experiment2:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator2 ) ) );
-//
-//        PrimitiveLongIterator rangeIterator3 = reader.rangeSeekByString( "", true, null, false );
-//        System.out.println( "Experiment3:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator3 ) ) );
-//
-//        PrimitiveLongIterator rangeIterator4 = reader.rangeSeekByString( "", false, null, false );
-//        System.out.println( "Experiment4:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator4 ) ) );
-//
-//        PrimitiveLongIterator rangeIterator5 = reader.rangeSeekByString( null, false, null, false );
-//        System.out.println( "Experiment5:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator5 ) ) );
-//
-//        PrimitiveLongIterator rangeIterator6 = reader.rangeSeekByString( null, true, null, false );
-//        System.out.println( "Experiment6:" + Arrays.toString( PrimitiveLongCollections.asArray( rangeIterator6 ) ) );
-//    }
+    @Test
+    public void indexStringRangeQuery() throws IndexCapacityExceededException, IOException,
+            IndexEntryConflictException
+    {
+        updateAndCommit( asList( add( 1, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
+
+        IndexReader reader = accessor.newReader();
+
+        PrimitiveLongIterator rangeFromBInclusive = reader.rangeSeekByString( "B", true, null, false );
+        assertThat( PrimitiveLongCollections.asArray( rangeFromBInclusive ), LongArrayMatcher.of( 2, 3 ) );
+
+        PrimitiveLongIterator rangeFromANonInclusive = reader.rangeSeekByString( "A", false, null, false );
+        assertThat( PrimitiveLongCollections.asArray( rangeFromANonInclusive ), LongArrayMatcher.of( 2, 3 ) );
+
+        PrimitiveLongIterator emptyLowInclusive = reader.rangeSeekByString( "", true, null, false );
+        assertThat( PrimitiveLongCollections.asArray( emptyLowInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+
+        PrimitiveLongIterator emptyUpperNonInclusive = reader.rangeSeekByString( "B", true, "", false );
+        assertThat( PrimitiveLongCollections.asArray( emptyUpperNonInclusive ), LongArrayMatcher.emptyArrayMatcher() );
+
+        PrimitiveLongIterator emptyInterval = reader.rangeSeekByString( "", true, "", true );
+        assertThat( PrimitiveLongCollections.asArray( emptyInterval ), LongArrayMatcher.of( 4 ) );
+
+        PrimitiveLongIterator emptyAllNonInclusive = reader.rangeSeekByString( "", false, null, false );
+        assertThat( PrimitiveLongCollections.asArray( emptyAllNonInclusive ), LongArrayMatcher.of( 1, 2, 3 ) );
+
+        PrimitiveLongIterator nullNonInclusive = reader.rangeSeekByString( null, false, null, false );
+        assertThat( PrimitiveLongCollections.asArray( nullNonInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+
+        PrimitiveLongIterator nullInclusive = reader.rangeSeekByString( null, false, null, false );
+        assertThat( PrimitiveLongCollections.asArray( nullInclusive ), LongArrayMatcher.of( 1, 2, 3, 4 ) );
+    }
+
+    @Test
+    public void indexNumberRangeQuery() throws IndexCapacityExceededException, IOException, IndexEntryConflictException
+    {
+        updateAndCommit( asList( add( 1, 1 ), add( 2, 2 ), add( 3, 3 ), add( 4, 4 ), add( 5, Double.NaN ) ) );
+
+        IndexReader reader = accessor.newReader();
+
+        PrimitiveLongIterator rangeTwoThree = reader.rangeSeekByNumberInclusive( 2, 3 );
+        assertThat( PrimitiveLongCollections.asArray( rangeTwoThree ), LongArrayMatcher.of( 2, 3 ) );
+
+        PrimitiveLongIterator infiniteMaxRange = reader.rangeSeekByNumberInclusive( 2, Long.MAX_VALUE );
+        assertThat( PrimitiveLongCollections.asArray( infiniteMaxRange ), LongArrayMatcher.of( 2, 3, 4 ) );
+
+        PrimitiveLongIterator infiniteMinRange = reader.rangeSeekByNumberInclusive( Long.MIN_VALUE, 3 );
+        assertThat( PrimitiveLongCollections.asArray( infiniteMinRange ), LongArrayMatcher.of( 1, 2, 3 ) );
+
+        PrimitiveLongIterator maxNanInterval = reader.rangeSeekByNumberInclusive( 3, Double.NaN );
+        assertThat( PrimitiveLongCollections.asArray( maxNanInterval ), LongArrayMatcher.of( 3, 4, 5 ) );
+
+        PrimitiveLongIterator minNanInterval = reader.rangeSeekByNumberInclusive( Double.NaN, 5 );
+        assertThat( PrimitiveLongCollections.asArray( minNanInterval ), LongArrayMatcher.emptyArrayMatcher() );
+
+        PrimitiveLongIterator nanInterval = reader.rangeSeekByNumberInclusive( Double.NaN, Double.NaN );
+        assertThat( PrimitiveLongCollections.asArray( nanInterval ), LongArrayMatcher.of( 5 ) );
+    }
 
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
@@ -317,4 +349,5 @@ public class LuceneIndexAccessorTest
             }
         }
     }
+
 }
