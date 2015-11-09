@@ -140,7 +140,7 @@ class MatchTest extends DocumentingTest {
     }
     section("Relationships in depth") {
       note {
-        p("Inside a single pattern, relationships will only be matched once. You can read more about this in <<cypherdoc-uniqueness>>")
+        p("Inside a single pattern, relationships will only be matched once. You can read more about this in <<cypherdoc-uniqueness>>.")
       }
       section("Relationship types with uncommon characters") {
         val initQuery =
@@ -178,7 +178,7 @@ class MatchTest extends DocumentingTest {
         }
       }
       section("Relationship identifier in variable length relationships") {
-        p("When the connection between two nodes is of variable length, a relationship identifier becomes an collection of relationships.")
+        p("When the connection between two nodes is of variable length, a relationship identifier becomes a collection of relationships.")
         query("MATCH (actor { name:'Charlie Sheen' })-[r:ACTED_IN*2]-(co_actor) RETURN r", assertActedInRelationshipsAreReturned) {
           p("Returns a collection of relationships.")
           resultTable()
@@ -191,16 +191,17 @@ class MatchTest extends DocumentingTest {
             |CREATE (charlie)-[:X {blocked:true}]->(:Blocked)<-[:X {blocked:false}]-(martin)"""
         p("""A variable length relationship with properties defined on in it means that all
             |relationships in the path must have the property set to the given value. In this query,
-            |there are two paths between Charlie Sheen and his dad Martin Sheen. One of the includes a
+            |there are two paths between Charlie Sheen and his father Martin Sheen. One of them includes a
             |``blocked'' relationship and the other doesn't. In this case we first alter the original
             |graph by using the following query to add ``blocked'' and ``unblocked'' relationships:""")
         query(initQuery, assertBlockingRelationshipsAdded) {
           p("This means that we are starting out with the following graph: ")
           graphViz()
         }
-        query("MATCH p = (charlie:Person)-[* {blocked:false}]-(martin:Person) " +
-          "WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen' " +
-          "RETURN p", assertBlockingRelationshipsAdded) {
+        query(
+          """MATCH p = (charlie:Person)-[* {blocked:false}]-(martin:Person)
+            | WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen'
+            | RETURN p""".stripMargin, assertBlockingRelationshipsAdded) {
           initQueries(initQuery)
           p("Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.")
           resultTable()
@@ -262,11 +263,11 @@ class MatchTest extends DocumentingTest {
     }
     section("Get node or relationship by id") {
       section("Node by id", "match-node-by-id") {
-        p("Search for nodes by id can be done with the 'id' function in a predicate.")
+        p("Searching for nodes by id can be done with the `id()` function in a predicate.")
         note {
           p("""Neo4j reuses its internal ids when nodes and relationships are deleted.
               |This means that applications using, and relying on internal Neo4j ids, are brittle or at risk of making mistakes.
-              |Rather use application generated ids.""")
+              |It is therefor recommended to rather use application generated ids.""")
         }
         query("match (n) where id(n) = 0 return n", assertHasNodes(0)) {
           p("The corresponding node is returned.")
@@ -275,7 +276,7 @@ class MatchTest extends DocumentingTest {
       }
       section("Relationship by id") {
         p("""
-            |Search for relationships by id can be done with the 'id' function in a predicate.
+            |Search for relationships by id can be done with the `id()` function in a predicate.
             |
             |This is not recommended practice. See <<match-node-by-id>> for more information on the use of Neo4j ids.
             |""")
