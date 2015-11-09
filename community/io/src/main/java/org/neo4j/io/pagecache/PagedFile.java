@@ -149,7 +149,9 @@ public interface PagedFile extends AutoCloseable
     /**
      * Get the file-page-id of the last page in the file.
      *
-     * This will return -1 if the file is completely empty.
+     * This will return <em>a negative number</em> (not necessarily -1) if the file is completely empty.
+     *
+     * @throws IllegalStateException if this file has been unmapped
      */
     long getLastPageId() throws IOException;
 

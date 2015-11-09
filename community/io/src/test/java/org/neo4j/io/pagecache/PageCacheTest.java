@@ -45,7 +45,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -62,6 +61,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.function.ThrowingAction;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -81,11 +82,14 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.LinearHistoryPageCacheTracer;
 import org.neo4j.test.RepeatRule;
 
+import static java.lang.Long.toHexString;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -93,10 +97,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Long.toHexString;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -331,19 +331,14 @@ public abstract class PageCacheTest<T extends PageCache>
 
     protected Runnable $close( final PagedFile file )
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
+        return () -> {
+            try
             {
-                try
-                {
-                    file.close();
-                }
-                catch ( IOException e )
-                {
-                    throw new AssertionError( e );
-                }
+                file.close();
+            }
+            catch ( IOException e )
+            {
+                throw new AssertionError( e );
             }
         };
     }
@@ -929,23 +924,18 @@ public abstract class PageCacheTest<T extends PageCache>
         final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
         final PagedFile pagedFile = cache.map( file( "a" ), filePageSize );
 
-        Runnable runnable = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable runnable = () -> {
+            try ( PageCursor cursorA = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
             {
-                try ( PageCursor cursorA = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
-                {
-                    assertTrue( cursorA.next() );
-                    assertFalse( cursorA.next() );
-                    startLatch.countDown();
-                    unpinLatch.await();
-                    cursorA.close();
-                }
-                catch ( Exception e )
-                {
-                    exceptionRef.set( e );
-                }
+                assertTrue( cursorA.next() );
+                assertFalse( cursorA.next() );
+                startLatch.countDown();
+                unpinLatch.await();
+                cursorA.close();
+            }
+            catch ( Exception e )
+            {
+                exceptionRef.set( e );
             }
         };
         executor.submit( runnable );
@@ -1094,27 +1084,212 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test( expected = NullPointerException.class )
-    public void readingFromUnboundCursorMustThrow() throws IOException
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readingFromUnboundReadCursorMustThrow() throws IOException
     {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        verifyExceptionOnCursorRead( this::applyToUnboundReadCursor, RuntimeException.class );
+    }
 
-        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readingFromUnboundWriteCursorMustThrow() throws IOException
+    {
+        verifyExceptionOnCursorRead( this::applyToUnboundWriteCursor, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readingFromPreviouslyBoundCursorMustThrow() throws IOException
+    {
+        verifyExceptionOnCursorRead( this::applyToPreviouslyBoundWriteCursor, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writingToUnboundCursorMustThrow() throws IOException
+    {
+        verifyExceptionOnCursorWrite( this::applyToUnboundWriteCursor, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writingToPreviouslyBoundCursorMustThrow() throws IOException
+    {
+        verifyExceptionOnCursorWrite( this::applyToPreviouslyBoundWriteCursor, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readFromReadCursorAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorRead( this::applyToReadCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readFromPreviouslyBoundReadCursorAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorRead( this::applyToPreviouslyBoundReadCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readFromWriteCursorAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorRead( this::applyToWriteCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void readFromPreviouslyBoundWriteCursorAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorRead( this::applyToPreviouslyBoundWriteCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorWrite( this::applyToWriteCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow() throws Exception
+    {
+        verifyExceptionOnCursorWrite( this::applyToPreviouslyBoundWriteCursorAfterFailedNext, RuntimeException.class );
+    }
+
+    private void verifyExceptionOnCursorRead(
+            ThrowingConsumer<PageCursorAction,IOException> testTemplate,
+            Class<RuntimeException> exceptionType ) throws IOException
+    {
+        assertThrows( exceptionType, () -> testTemplate.accept( PageCursor::getByte ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( PageCursor::getInt ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( PageCursor::getLong ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( PageCursor::getShort ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( PageCursor::getUnsignedInt ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.getByte( 0 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.getInt( 0 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.getLong( 0 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.getShort( 0 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.getUnsignedInt( 0 ) ) );
+    }
+
+    private void verifyExceptionOnCursorWrite(
+            ThrowingConsumer<PageCursorAction,IOException> testTemplate,
+            Class<RuntimeException> exceptionType ) throws IOException
+    {
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putByte( (byte) 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putInt( 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putLong( 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putShort( (short) 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putByte( 0, (byte) 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putInt( 0, 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putLong( 0, 1 ) ) );
+        assertThrows( exceptionType, () -> testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) ) );
+    }
+
+    private void assertThrows( Class<? extends Exception> exceptionType, ThrowingAction<? extends Exception> action )
+    {
+        try
         {
-            cursor.getByte();
+            action.apply();
+            fail( action + " should have thrown a " + exceptionType.getName() );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( exceptionType ) );
         }
     }
 
-    @Test( expected = NullPointerException.class )
-    public void writingFromUnboundCursorMustThrow() throws IOException
+    private void applyToUnboundReadCursor( PageCursorAction action ) throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToUnboundWriteCursor( PageCursorAction action ) throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
-            cursor.putInt( 1 );
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToPreviouslyBoundWriteCursor( PageCursorAction action ) throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
+            assertTrue( cursor.next() );
+            action.apply( cursor );
+            cursor.close();
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToReadCursorAfterFailedNext( PageCursorAction action ) throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertFalse( cursor.next() );
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToPreviouslyBoundReadCursorAfterFailedNext( PageCursorAction action )
+            throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+        }
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToWriteCursorAfterFailedNext( PageCursorAction action ) throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+            action.apply( cursor );
+        }
+    }
+
+    private void applyToPreviouslyBoundWriteCursorAfterFailedNext( PageCursorAction action )
+            throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+        }
+
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+            action.apply( cursor );
         }
     }
 
@@ -1421,30 +1596,25 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        Runnable writer = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable writer = () -> {
+            while ( !Thread.currentThread().isInterrupted() )
             {
-                while ( !Thread.currentThread().isInterrupted() )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
                 {
-                    try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+                    if ( cursor.next() )
                     {
-                        if ( cursor.next() )
+                        do
                         {
-                            do
-                            {
-                                cursor.setOffset( recordSize );
-                                cursor.putByte( (byte) 14 );
-                            } while ( cursor.shouldRetry() );
-                        }
-                        startLatch.countDown();
+                            cursor.setOffset( recordSize );
+                            cursor.putByte( (byte) 14 );
+                        } while ( cursor.shouldRetry() );
                     }
-                    catch ( IOException e )
-                    {
-                        caughtWriterException.set( e );
-                        throw new RuntimeException( e );
-                    }
+                    startLatch.countDown();
+                }
+                catch ( IOException e )
+                {
+                    caughtWriterException.set( e );
+                    throw new RuntimeException( e );
                 }
             }
         };
@@ -1585,61 +1755,56 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        Runnable writer = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable writer = () -> {
+            try
             {
-                try
+                int pageRangeMin = pageCount / 2;
+                int pageRangeMax = pageRangeMin + 5;
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                int[] offsets = new int[filePageSize];
+                for ( int i = 0; i < offsets.length; i++ )
                 {
-                    int pageRangeMin = pageCount / 2;
-                    int pageRangeMax = pageRangeMin + 5;
-                    ThreadLocalRandom rng = ThreadLocalRandom.current();
-                    int[] offsets = new int[filePageSize];
+                    offsets[i] = i;
+                }
+
+                startLatch.countDown();
+
+                while ( !Thread.interrupted() )
+                {
+                    byte value = (byte) rng.nextInt();
+                    int pageId = rng.nextInt( pageRangeMin, pageRangeMax );
+                    // shuffle offsets
                     for ( int i = 0; i < offsets.length; i++ )
                     {
-                        offsets[i] = i;
+                        int j = rng.nextInt( i, offsets.length );
+                        int s = offsets[i];
+                        offsets[i] = offsets[j];
+                        offsets[j] = s;
                     }
-
-                    startLatch.countDown();
-
-                    while ( !Thread.interrupted() )
+                    // fill page
+                    try ( PageCursor cursor = pagedFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
                     {
-                        byte value = (byte) rng.nextInt();
-                        int pageId = rng.nextInt( pageRangeMin, pageRangeMax );
-                        // shuffle offsets
-                        for ( int i = 0; i < offsets.length; i++ )
+                        if ( cursor.next() )
                         {
-                            int j = rng.nextInt( i, offsets.length );
-                            int s = offsets[i];
-                            offsets[i] = offsets[j];
-                            offsets[j] = s;
-                        }
-                        // fill page
-                        try ( PageCursor cursor = pagedFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
-                        {
-                            if ( cursor.next() )
+                            do
                             {
-                                do
+                                for ( int offset : offsets )
                                 {
-                                    for ( int offset : offsets )
-                                    {
-                                        cursor.setOffset( offset );
-                                        cursor.putByte( value );
-                                    }
-                                } while ( cursor.shouldRetry() );
-                            }
+                                    cursor.setOffset( offset );
+                                    cursor.putByte( value );
+                                }
+                            } while ( cursor.shouldRetry() );
                         }
                     }
                 }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                finally
-                {
-                    writersDoneLatch.countDown();
-                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                writersDoneLatch.countDown();
             }
         };
 
@@ -2315,13 +2480,13 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     @Test
-    public void lastPageIdOfEmptyFileIsMinusOne() throws IOException
+    public void lastPageIdOfEmptyFileIsLessThanZero() throws IOException
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
         {
-            assertThat( pagedFile.getLastPageId(), is( -1L ) );
+            assertThat( pagedFile.getLastPageId(), lessThan( 0L ) );
         }
     }
 
@@ -2334,9 +2499,10 @@ public abstract class PageCacheTest<T extends PageCache>
 
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
 
-        PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
-        assertThat( pagedFile.getLastPageId(), is( 0L ) );
-        pagedFile.close();
+        try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            assertThat( pagedFile.getLastPageId(), is( 0L ) );
+        }
     }
 
     @Test
@@ -2469,6 +2635,20 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
+    @Test( expected = IllegalStateException.class )
+    public void lastPageIdFromUnmappedFileMustThrow() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        PagedFile file;
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.CREATE ) )
+        {
+            file = pf;
+        }
+
+        file.getLastPageId();
+    }
+
     @Test
     public void cursorOffsetMustBeUpdatedReadAndWrite() throws IOException
     {
@@ -2576,7 +2756,11 @@ public abstract class PageCacheTest<T extends PageCache>
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
         pagedFile.close();
 
-        pagedFile.io( 0, PF_EXCLUSIVE_LOCK );
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.next(); // This should throw
+            fail( "cursor.next() on unmapped file did not throw" );
+        }
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalStateException.class )
@@ -2761,45 +2945,30 @@ public abstract class PageCacheTest<T extends PageCache>
         final CountDownLatch unlockLatch = new CountDownLatch( 1 );
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
 
-        executor.submit( new Callable<Object>()
-        {
-            @Override
-            public Object call() throws Exception
+        executor.submit( () -> {
+            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
             {
-                try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
-                {
-                    cursor.next();
-                    hasLockLatch.countDown();
-                    unlockLatch.await();
-                }
-                return null;
+                cursor.next();
+                hasLockLatch.countDown();
+                unlockLatch.await();
             }
+            return null;
         } );
 
         hasLockLatch.await(); // An exclusive lock is now held on page 0.
 
-        Future<Object> takeLockFuture = executor.submit( new Callable<Object>()
-        {
-            @Override
-            public Object call() throws Exception
+        Future<Object> takeLockFuture = executor.submit( () -> {
+            try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
             {
-                try ( PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
-                {
-                    cursor.next();
-                    secondThreadGotLockLatch.await();
-                }
-                return null;
+                cursor.next();
+                secondThreadGotLockLatch.await();
             }
+            return null;
         } );
 
-        Future<Object> closeFuture = executor.submit( new Callable<Object>()
-        {
-            @Override
-            public Object call() throws Exception
-            {
-                pf.close();
-                return null;
-            }
+        Future<Object> closeFuture = executor.submit( () -> {
+            pf.close();
+            return null;
         } );
 
         try
@@ -2856,174 +3025,83 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getByteBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getByte();
-            }
-        } );
+        verifyPageBounds( PageCursor::getByte );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putByteBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putByte( (byte) 42 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putByte( (byte) 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getShortBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getShort();
-            }
-        } );
+        verifyPageBounds( PageCursor::getShort );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putShortBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putShort( (short) 42 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putShort( (short) 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getIntBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getInt();
-            }
-        } );
+        verifyPageBounds( PageCursor::getInt );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putIntBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putInt( 42 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putInt( 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getUnsignedIntBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getUnsignedInt();
-            }
-        } );
+        verifyPageBounds( PageCursor::getUnsignedInt );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putLongBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putLong( 42 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putLong( 42 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getLongBeyondPageEndMustThrow() throws IOException
     {
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getLong();
-            }
-        } );
+        verifyPageBounds( PageCursor::getLong );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putBytesBeyondPageEndMustThrow() throws IOException
     {
         final byte[] bytes = new byte[] { 1, 2, 3 };
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putBytes( bytes );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putBytes( bytes ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getBytesBeyondPageEndMustThrow() throws IOException
     {
         final byte[] bytes = new byte[3];
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getBytes( bytes );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.getBytes( bytes ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void putBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
     {
         final byte[] bytes = new byte[] { 1, 2, 3 };
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.putBytes( bytes, 1, 1 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.putBytes( bytes, 1, 1 ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IndexOutOfBoundsException.class )
     public void getBytesWithOffsetAndLengthBeyondPageEndMustThrow() throws IOException
     {
         final byte[] bytes = new byte[3];
-        verifyPageBounds( new PageCursorAction()
-        {
-            @Override
-            public void apply( PageCursor cursor )
-            {
-                cursor.getBytes( bytes, 1, 1 );
-            }
-        } );
+        verifyPageBounds( cursor -> cursor.getBytes( bytes, 1, 1 ) );
     }
 
     private void verifyPageBounds( PageCursorAction action ) throws IOException
@@ -3339,26 +3417,21 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        Runnable fillPagedFileB = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable fillPagedFileB = () -> {
+            try ( PageCursor cursor = pagedFileB.io( 0, PF_EXCLUSIVE_LOCK ) )
             {
-                try ( PageCursor cursor = pagedFileB.io( 0, PF_EXCLUSIVE_LOCK ) )
+                for ( int i = 0; i < maxPages * 30; i++ )
                 {
-                    for ( int i = 0; i < maxPages * 30; i++ )
+                    assertTrue( cursor.next() );
+                    for ( int j = 0; j < filePageSize; j++ )
                     {
-                        assertTrue( cursor.next() );
-                        for ( int j = 0; j < filePageSize; j++ )
-                        {
-                            cursor.putByte( b );
-                        }
+                        cursor.putByte( b );
                     }
                 }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
             }
         };
 
@@ -3423,21 +3496,15 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.setFileSystem( fs );
         harness.disableCommands(
                 Command.FlushCache, Command.FlushFile, Command.MapFile, Command.UnmapFile, Command.WriteRecord );
-        harness.setPreparation( new Phase()
-        {
-            @Override
-            public void run(
-                    PageCache pageCache, FileSystemAbstraction fs, Set<File> filesTouched ) throws Exception
+        harness.setPreparation( ( pageCache1, fs1, filesTouched ) -> {
+            File file = filesTouched.iterator().next();
+            try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
+                  PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
             {
-                File file = filesTouched.iterator().next();
-                try ( PagedFile pf = pageCache.map( file, pageCachePageSize );
-                      PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
+                for ( int pageId = 0; pageId < filePageCount; pageId++ )
                 {
-                    for ( int pageId = 0; pageId < filePageCount; pageId++ )
-                    {
-                        cursor.next();
-                        recordFormat.fillWithRecords( cursor );
-                    }
+                    cursor.next();
+                    recordFormat.fillWithRecords( cursor );
                 }
             }
         } );
@@ -3516,34 +3583,28 @@ public abstract class PageCacheTest<T extends PageCache>
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
     {
-        return new Phase()
-        {
-            @Override
-            public void run(
-                    PageCache pageCache, FileSystemAbstraction fs, Set<File> filesTouched ) throws Exception
+        return ( pageCache1, fs1, filesTouched ) -> {
+            for ( File file : filesTouched )
             {
-                for ( File file : filesTouched )
+                try ( PagedFile pf = pageCache1.map( file, pageCachePageSize );
+                      PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
                 {
-                    try ( PagedFile pf = pageCache.map( file, pageCachePageSize );
-                          PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
+                    for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
                     {
-                        for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
+                        try
                         {
-                            try
-                            {
-                                recordFormat.assertRecordsWrittenCorrectly( cursor );
-                            }
-                            catch ( Throwable th )
-                            {
-                                th.addSuppressed( new Exception( "pageId = " + pageId ) );
-                                throw th;
-                            }
+                            recordFormat.assertRecordsWrittenCorrectly( cursor );
+                        }
+                        catch ( Throwable th )
+                        {
+                            th.addSuppressed( new Exception( "pageId = " + pageId ) );
+                            throw th;
                         }
                     }
-                    try ( StoreChannel channel = fs.open( file, "r" ) )
-                    {
-                        recordFormat.assertRecordsWrittenCorrectly( file, channel );
-                    }
+                }
+                try ( StoreChannel channel = fs1.open( file, "r" ) )
+                {
+                    recordFormat.assertRecordsWrittenCorrectly( file, channel );
                 }
             }
         };
@@ -3557,14 +3618,9 @@ public abstract class PageCacheTest<T extends PageCache>
         int iterations = 1000;
         List<WeakReference<PageCache>> refs = new LinkedList<>();
         final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
-        final Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {
-                e.printStackTrace();
-                caughtExceptions.offer( e );
-            }
+        final Thread.UncaughtExceptionHandler exceptionHandler = ( t, e ) -> {
+            e.printStackTrace();
+            caughtExceptions.offer( e );
         };
         Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler( exceptionHandler );
@@ -3717,7 +3773,7 @@ public abstract class PageCacheTest<T extends PageCache>
             PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
             long maxPageId = pagedFile.getLastPageId();
             boolean performingRead = rng.nextBoolean() && maxPageId != -1;
-            long startingPage = maxPageId == -1? 0 : rng.nextLong( maxPageId + 1 );
+            long startingPage = maxPageId < 0? 0 : rng.nextLong( maxPageId + 1 );
             int pf_flags = performingRead ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
             int pageSize = pagedFile.pageSize();
 
@@ -4167,14 +4223,14 @@ public abstract class PageCacheTest<T extends PageCache>
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pf.io( 10, PF_EXCLUSIVE_LOCK ) )
         {
-            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertThat( pf.getLastPageId(), lessThan( 0L ) );
             assertTrue( cursor.next() );
             cursor.putInt( 0xcafebabe );
         }
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize, StandardOpenOption.TRUNCATE_EXISTING );
               PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
         {
-            assertThat( pf.getLastPageId(), is( -1L ) );
+            assertThat( pf.getLastPageId(), lessThan( 0L ) );
             assertFalse( cursor.next() );
         }
     }
@@ -4189,5 +4245,14 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             fail( "the second map call should have thrown" );
         }
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void mustThrowIfFileIsClosedMoreThanItIsMapped() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+        pf.close();
+        pf.close();
     }
 }

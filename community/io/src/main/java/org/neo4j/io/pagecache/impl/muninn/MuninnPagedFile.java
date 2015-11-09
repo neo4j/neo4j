@@ -39,14 +39,16 @@ final class MuninnPagedFile implements PagedFile
     private static final int translationTableChunkSizePower = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
-    private static final int translationTableChunkSizeMask = translationTableChunkSize - 1;
+    private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
     private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( MuninnPage[].class );
     private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( MuninnPage[].class );
 
-    private static final long referenceCounterOffset =
-            UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "referenceCounter" );
-    private static final long lastPageIdOffset =
-            UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
+    private static final long headerStateOffset =
+            UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "headerState" );
+    private static final int headerStateRefCountShift = 48;
+    private static final int headerStateRefCountMax = 0x7FFF;
+    private static final long headerStateRefCountMask = 0x7FFF_0000_0000_0000L;
+    private static final long headerStateLastPageIdMask = 0x8000_FFFF_FFFF_FFFFL;
 
     final MuninnPageCache pageCache;
     final int filePageSize;
@@ -59,10 +61,22 @@ final class MuninnPagedFile implements PagedFile
     final PageSwapper swapper;
     private final CursorPool cursorPool;
 
+    /**
+     * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
+     * the file – 48 bits, plus an empty file marker bit. Because our pages are usually 2^13 bytes, this means that we
+     * only loose 3 bits to the reference count, in terms of keeping large files byte addressable.
+     *
+     * The layout looks like this:
+     *
+     * ┏━ Empty file marker bit. When 1, the file is empty.
+     * ┃    ┏━ Reference count, 15 bites.
+     * ┃    ┃                ┏━ 48 bits for the last page id.
+     * ┃┏━━━┻━━━━━━━━━━┓ ┏━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+     * MRRRRRRR RRRRRRRR IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII
+     * 1        2        3        4        5        6        7        8        byte
+     */
     @SuppressWarnings( "unused" ) // Accessed via Unsafe
-    private volatile int referenceCounter;
-    @SuppressWarnings( "unused" ) // Accessed via Unsafe
-    private volatile long lastPageId;
+    private volatile long headerState;
 
     MuninnPagedFile(
             File file,
@@ -119,8 +133,6 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        assertStillMapped();
-
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
         {
@@ -145,14 +157,6 @@ final class MuninnPagedFile implements PagedFile
         cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
-    }
-
-    void assertStillMapped()
-    {
-        if ( getRefCount() == 0 )
-        {
-            throw new IllegalStateException( "File has been unmapped: " + file().getPath() );
-        }
     }
 
     @Override
@@ -293,27 +297,51 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public long getLastPageId()
     {
-        return lastPageId;
+        long state = getHeaderState();
+        if ( refCountOf( state ) == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped: " + file().getPath() );
+        }
+        return state & headerStateLastPageIdMask;
+    }
+
+    private long getHeaderState()
+    {
+        return UnsafeUtil.getLongVolatile( this, headerStateOffset );
+    }
+
+    private long refCountOf( long state )
+    {
+        return (state & headerStateRefCountMask) >>> headerStateRefCountShift;
     }
 
     private void initialiseLastPageId( long lastPageIdFromFile )
     {
-        UnsafeUtil.putLong( this, lastPageIdOffset, lastPageIdFromFile );
+        if ( lastPageIdFromFile < 0 )
+        {
+            // MIN_VALUE only has the sign bit raised, and the rest of the bits are zeros.
+            UnsafeUtil.putLongVolatile( this, headerStateOffset, Long.MIN_VALUE );
+        }
+        else
+        {
+            UnsafeUtil.putLongVolatile( this, headerStateOffset, lastPageIdFromFile );
+        }
     }
 
     /**
      * Make sure that the lastPageId is at least the given pageId
      */
-    long increaseLastPageIdTo( long newLastPageId )
+    void increaseLastPageIdTo( long newLastPageId )
     {
-        long current;
+        long current, update, lastPageId;
         do
         {
-            current = lastPageId;
+            current = getHeaderState();
+            update = newLastPageId + (current & headerStateRefCountMask);
+            lastPageId = current & headerStateLastPageIdMask;
         }
-        while ( current < newLastPageId
-                && !UnsafeUtil.compareAndSwapLong( this, lastPageIdOffset, current, newLastPageId ) );
-        return lastPageId;
+        while ( lastPageId < newLastPageId
+                && !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
     }
 
     /**
@@ -321,7 +349,20 @@ final class MuninnPagedFile implements PagedFile
      */
     void incrementRefCount()
     {
-        UnsafeUtil.getAndAddInt( this, referenceCounterOffset, 1 );
+        long current, update;
+        do
+        {
+            current = getHeaderState();
+            long count = refCountOf( current ) + 1;
+            if ( count > headerStateRefCountMax )
+            {
+                throw new IllegalStateException( "Cannot map file because reference counter would overflow. " +
+                                                 "Maximum reference count is " + headerStateRefCountMax + ". " +
+                                                 "File is " + swapper.file().getAbsolutePath() );
+            }
+            update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
     }
 
     /**
@@ -330,9 +371,20 @@ final class MuninnPagedFile implements PagedFile
      */
     boolean decrementRefCount()
     {
-        // compares with 1 because getAndAdd returns the old value, and a 1
-        // means the value is now 0.
-        return UnsafeUtil.getAndAddInt( this, referenceCounterOffset, -1 ) <= 1;
+        long current, update, count;
+        do
+        {
+            current = getHeaderState();
+            count = refCountOf( current ) - 1;
+            if ( count < 0 )
+            {
+                throw new IllegalStateException( "File has already been closed and unmapped. " +
+                                                 "It cannot be closed any further." );
+            }
+            update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
+        }
+        while ( !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
+        return count == 0;
     }
 
     /**
@@ -341,7 +393,7 @@ final class MuninnPagedFile implements PagedFile
      */
     int getRefCount()
     {
-        return UnsafeUtil.getIntVolatile( this, referenceCounterOffset );
+        return (int) refCountOf( getHeaderState() );
     }
 
     /**
@@ -398,12 +450,12 @@ final class MuninnPagedFile implements PagedFile
         return 1 + (int) (maxChunkId * 1.1);
     }
 
-    int computeChunkId( long filePageId )
+    static int computeChunkId( long filePageId )
     {
         return (int) (filePageId >>> translationTableChunkSizePower);
     }
 
-    long computeChunkOffset( long filePageId )
+    static long computeChunkOffset( long filePageId )
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );

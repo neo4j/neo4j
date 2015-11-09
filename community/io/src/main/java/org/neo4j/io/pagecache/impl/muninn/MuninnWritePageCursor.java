@@ -34,15 +34,15 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             pinEvent.done();
             assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             unlockPage( page );
-            page = null;
         }
-        lockStamp = 0;
+        clearPageState();
     }
 
     @Override
     public boolean next() throws IOException
     {
-        assertPagedFileStillMapped();
+        unpinCurrentPage();
+        long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )
@@ -54,7 +54,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
                 pagedFile.increaseLastPageIdTo( nextPageId );
             }
         }
-        unpinCurrentPage();
         pin( nextPageId, true );
         currentPageId = nextPageId;
         nextPageId++;
@@ -82,7 +81,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // files have been unmapped, the page cache can be closed. And when
         // that happens, dirty contents in memory will no longer have a chance
         // to get flushed.
-        assertPagedFileStillMapped();
+        assertPagedFileStillMappedAndGetIdOfLastPage();
         page.incrementUsage();
         page.markAsDirty();
     }
