@@ -39,7 +39,6 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     maxFrames: 50
     maxHistory: 100
     maxNeighbours: 100
-    maxNodes: 1000
     maxRows: 1000
     filemode: false
     maxRawSize: 5000 # bytes

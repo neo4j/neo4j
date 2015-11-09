@@ -5,7 +5,7 @@
     div(ng-show="neo4j.config.allow_outgoing_browser_connections")
       h5 Messaging
       .form-group
-        label(for="userName") Name
+        label(for="userName", tooltip="For in-browser chat with Neo4j staff", tooltip-placement="top") Name
           input.form-control.input#userName(type='text', ng-model="settings.userName", ng-change="save()")
       .checkbox
         label(for="shouldReportUdc")
@@ -20,17 +20,17 @@
       .radio
         label
           input(type="radio", name="themeRadio", id="theme1", value="normal", ng-model="settings.theme", ng-change="save()", checked)
-          span Normal
+          span(tooltip="Colorful default theme.", tooltip-placement="right") Normal
       .radio
         label
           input(type="radio", name="themeRadio", id="theme2", value="dark", ng-model="settings.theme", ng-change="save()")
-          span Dark
+          span(tooltip="Low contrast, great in dark surroundings.", tooltip-placement="right") Dark
       .radio
         label
           input(type="radio", name="themeRadio", id="theme3", value="outline", ng-model="settings.theme", ng-change="save()")
-          span Outline
+          span(tooltip="Higher contrast, great when presenting.", tooltip-placement="right") Outline
     .form-group
-      label(for="initCmd") Initial Command
+      label(for="initCmd", tooltip="This command gets executed when connected.", tooltip-placement="top") Initial Command
         input.form-control.input#initCmd(type='string', ng-model="settings.initCmd", ng-change="save()")
     
     h5 Preferences
@@ -42,45 +42,51 @@
     .checkbox(ng-show="neo4j.enterpriseEdition")
       label(for="storeCredentials")
         input#storeCredentials(type='checkbox', ng-model="settings.storeCredentials", ng-change="save()")
-        span &nbsp; Save login credentials
+        span(tooltip="Remember connection credentials in browser.", tooltip-placement="right") 
+          | &nbsp; Save login credentials
     .checkbox
       label(for="enableMotd")
         input#enableMotd(type='checkbox', ng-model="settings.enableMotd", ng-change="save()")
-        span &nbsp; Enable MOTD feed
+        span(tooltip="Show 'Message of the Day' link on start frame.", tooltip-placement="right")
+          |  &nbsp; Enable MOTD feed
 
     h5 Network Connection
     .form-group
-      label(for="maxExecutionTime") Max Execution Time
+      label(for="maxExecutionTime", tooltip="Query timeout in seconds.", tooltip-placement="top")
+        | Max Execution Time
         input.form-control.input#maxExecutionTime(type='number', ng-model="settings.maxExecutionTime", ng-change="save()")
     .form-group
-      label(for="heartbeat") Heartbeat
+      label(for="heartbeat", tooltip="Check connection and update meta data with this interval (in seconds)", tooltip-placement="top")
+        | Heartbeat interval
         input.form-control.input#maxExecutionTime(type='number', ng-model="settings.heartbeat", ng-change="save()")
 
     h5 Result Frames
     .form-group
-      label(for="maxFrames") Max Frames
+      label(for="maxFrames", tooltip="Max number of frames in stream. When reached, old frames gets retired.", tooltip-placement="top") 
+        | Max Frames
         input.form-control.input#maxFrames(type='number', ng-model="settings.maxFrames", ng-change="save()")
     .form-group
-      label(for="maxHistory") Max History
+      label(for="maxHistory", tooltip="Max number of history entries. When reached, old entries gets retired.", tooltip-placement="top") Max History
         input.form-control.input#maxHistory(type='number', ng-model="settings.maxHistory", ng-change="save()")
     .checkbox
       label(for="scrollToTop")
         input#scrollToTop(type='checkbox', ng-model="settings.scrollToTop", ng-change="save()")
-        span &nbsp; Scroll To Top
+        span(tooltip="Automatically scroll stream to top on new frames.", tooltip-placement="right")
+          | &nbsp; Scroll To Top
 
     h5 Graph Visualization
     .form-group
-      label(for="maxNeighbours") Max Neighbors
+      label(for="maxNeighbours", tooltip="Limit exploratary queries to this limit.", tooltip-placement="top")
+        | Max Neighbors
         input.form-control.input#maxNeighbours(type='number', ng-model="settings.maxNeighbours", ng-change="save()")
     .form-group
-      label(for="maxNodes") Max Nodes
-        input.form-control.input#maxNodes(type='number', ng-model="settings.maxNodes", ng-change="save()")
-    .form-group
-      label(for="maxRows") Max Rows
+      label(for="maxRows", tooltip="Max number of rows to render in 'Rows' result view.", tooltip-placement="top") Max Rows
         input.form-control.input#maxRows(type='number', ng-model="settings.maxRows", ng-change="save()")
     .form-group
-      label(for="maxRawSize") Max Raw Size
+      label(for="maxRawSize", tooltip="Limit rendering of raw output to this number of characters.", tooltip-placement="top") 
+        | Max Raw Size
         input.form-control.input#maxRawSize(type='number', ng-model="settings.maxRawSize", ng-change="save()")
     .form-group
-      label(for="refreshInterval") Refresh Interval
+      label(for="refreshInterval", tooltip="Refresh auto-refreshing frames on this interval (in seconds)", tooltip-placement="top")
+        | Refresh Interval
         input.form-control.input#refreshInterval(type='number', ng-model="settings.refreshInterval", ng-change="save()")
