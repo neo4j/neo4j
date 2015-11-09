@@ -3171,7 +3171,7 @@ class CypherParserTest extends CypherFunSuite {
       "USING PERIODIC COMMIT 10 LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), variable = "line", fieldTerminator = None)).
           tail(Query.
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()
@@ -3187,7 +3187,7 @@ class CypherParserTest extends CypherFunSuite {
       "USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), variable = "line", fieldTerminator = None)).
           tail(Query.
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()

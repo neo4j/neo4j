@@ -27,7 +27,7 @@ object PredicateSplitter {
 
   def apply(semanticTable: SemanticTable, statement: Statement): PredicateSplitter = {
     val recordedScopes = semanticTable.recordedScopes
-    val lookup = (clause: Clause) => recordedScopes(clause).identifierDefinitions.values.map(_.asIdentifier).toSet
+    val lookup = (clause: Clause) => recordedScopes(clause).variableDefinitions.values.map(_.asIdentifier).toSet
     apply(lookup, statement)
   }
 

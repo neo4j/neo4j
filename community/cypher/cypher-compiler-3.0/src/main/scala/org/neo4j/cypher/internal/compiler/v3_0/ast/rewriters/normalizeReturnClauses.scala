@@ -66,12 +66,12 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
             case None        => Variable(i.name)(i.expression.position.bumped())
           }
 
-          val newIdentifier = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
+          val newVariable = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
-          rewrites = rewrites + (returnColumn -> newIdentifier)
-          rewrites = rewrites + (i.expression -> newIdentifier)
+          rewrites = rewrites + (returnColumn -> newVariable)
+          rewrites = rewrites + (i.expression -> newVariable)
 
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier.copyId, returnColumn)(i.position))
+          (AliasedReturnItem(i.expression, newVariable)(i.position), AliasedReturnItem(newVariable.copyId, returnColumn)(i.position))
       }.unzip
 
       val newOrderBy = orderBy.endoRewrite(topDown(Rewriter.lift {

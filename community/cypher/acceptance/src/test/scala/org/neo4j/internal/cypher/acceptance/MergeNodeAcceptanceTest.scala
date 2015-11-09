@@ -476,7 +476,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         "RETURN x, y;").toList
   }
 
-  test("merge_should_see_identifiers_introduced_by_other_update_actions") {
+  test("merge_should_see_variables_introduced_by_other_update_actions") {
     // when
     val result = execute("CREATE (a) MERGE (a)-[:X]->() RETURN a")
 
@@ -484,7 +484,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
-  test("merge_inside_foreach_should_see_identifiers_introduced_by_update_actions_outside_foreach") {
+  test("merge_inside_foreach_should_see_variables_introduced_by_update_actions_outside_foreach") {
     // when
     val result = execute("CREATE (a) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a")
 
@@ -492,7 +492,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesSet = 3)
   }
 
-  test("merge_should_see_identifiers_introduced_by_update_actions") {
+  test("merge_should_see_variables_introduced_by_update_actions") {
     // when
     val result = execute("CREATE (a) MERGE (a)-[:X]->() RETURN a")
 

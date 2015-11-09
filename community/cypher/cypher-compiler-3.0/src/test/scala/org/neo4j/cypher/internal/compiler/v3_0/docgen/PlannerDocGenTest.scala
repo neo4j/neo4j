@@ -128,8 +128,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
+    val nodeA = NodePattern(variable = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(variable = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
@@ -143,8 +143,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("shortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
+    val nodeA = NodePattern(variable = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(variable = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
@@ -158,8 +158,8 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
 
   test("sp = allShortestPath((a)-[rel*1..]->(b))") {
     val patRel = PatternRelationship(IdName("rel"), (IdName("a"), IdName("b")), OUTGOING, Seq.empty, VarPatternLength(1, None))
-    val nodeA = NodePattern(identifier = Some(variable("a")), Seq.empty, None)_
-    val nodeB = NodePattern(identifier = Some(variable("b")), Seq.empty, None)_
+    val nodeA = NodePattern(variable = Some(variable("a")), Seq.empty, None)_
+    val nodeB = NodePattern(variable = Some(variable("b")), Seq.empty, None)_
     val length: Some[Some[Range]] = Some(Some(Range(Some(UnsignedDecimalIntegerLiteral("1")_), None)_))
 
     val relPat = RelationshipPattern(Some(variable("rel")), optional = false, Seq.empty, length, None, OUTGOING)_
@@ -324,7 +324,7 @@ class PlannerDocGenTest extends DocHandlerTestSuite[Any] with AstConstructionTes
     }
 
     test("renders unwind") {
-      pprintToString(UnwindProjection(identifier = IdName("name"), variable("n"))) should equal("UNWIND n AS `name`")
+      pprintToString(UnwindProjection(variable = IdName("name"), variable("n"))) should equal("UNWIND n AS `name`")
     }
 
     test("renders tail free empty planner query") {

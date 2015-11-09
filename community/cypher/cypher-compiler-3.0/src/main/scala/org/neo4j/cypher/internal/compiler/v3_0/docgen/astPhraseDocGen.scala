@@ -89,7 +89,7 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
   }
 
   implicit class AliasedReturnItemConverter(item: AliasedReturnItem) extends Converter{
-    def unquote = group(pretty(item.expression) :/: "AS" :/: pretty(item.identifier))
+    def unquote = group(pretty(item.expression) :/: "AS" :/: pretty(item.variable))
   }
 
   implicit class UnaliasedReturnItemConverter(item: UnaliasedReturnItem) extends Converter {
@@ -138,7 +138,7 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
   implicit class UnwindConverter(unwind: Unwind) extends Converter {
     def unquote = {
       val input = pretty(unwind.expression)
-      val output = pretty(unwind.identifier)
+      val output = pretty(unwind.variable)
       section("UNWIND")(input :/: "AS" :/: output)
     }
   }

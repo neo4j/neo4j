@@ -116,7 +116,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should inline pattern identifiers when possible") {
+  test("should inline pattern variables when possible") {
     val result = projectionInlinedAst(
       """MATCH (n)
         |WITH n
@@ -169,7 +169,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should not inline identifiers into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
+  test("should not inline variables into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
     val result = projectionInlinedAst(
       """WITH {node} as a
         |MATCH (a)
@@ -183,7 +183,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should inline multiple identifiers across multiple WITH clauses: WITH 1 as n WITH n+1 AS m RETURN m => RETURN 1+1 as m") {
+  test("should inline multiple variables across multiple WITH clauses: WITH 1 as n WITH n+1 AS m RETURN m => RETURN 1+1 as m") {
     val result = projectionInlinedAst(
       """WITH 1 as n
         |WITH n + 1 AS m
@@ -255,7 +255,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
+  test("should not inline variables which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
     intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH 2 AS n
@@ -263,7 +263,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
+  test("should inline same variable across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
     intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH n+1 AS n
@@ -271,7 +271,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should inline same identifier across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
+  test("should inline same variable across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
     intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |WITH n+2 AS m
@@ -280,7 +280,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should not inline identifiers which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
+  test("should not inline variables which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
     intercept[AssertionError](projectionInlinedAst(
       """WITH 1 as n
         |MATCH (n)
@@ -395,7 +395,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
         |RETURN a, x""".stripMargin))
   }
 
-  test("should not inline relationship identifiers if not inlinging expressions") {
+  test("should not inline relationship variables if not inlinging expressions") {
    val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
 
     result should equal(ast("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel"))

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.scalacheck.{Shrink, Gen}
 
 /*
- * Creates a random pattern, matches on it and deletes all identifiers
+ * Creates a random pattern, matches on it and deletes all variables
  *  - uses updateWithBothPlanners to verify that the statistics match the rule planner
  *  - when done the database should be empty.
  */
@@ -44,8 +44,8 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlanners(s"CREATE $patternString")
           //delete
-          val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
-          updateWithBothPlanners(s"MATCH $patternString DELETE ${identifiers.mkString(",")} RETURN count(*)")
+          val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
+          updateWithBothPlanners(s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
           executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
@@ -66,8 +66,8 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlanners(s"CREATE $patternString")
           //delete
-          val identifiers = findAllNodeNames(pattern)
-          updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${identifiers.mkString(",")} RETURN count(*)")
+          val variables = findAllNodeNames(pattern)
+          updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
           executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
@@ -88,9 +88,9 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlanners(s"CREATE $patternString")
           //delete
-          val identifiers = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
+          val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
-          updateWithBothPlanners(s"MATCH $undirected DELETE ${identifiers.mkString(",")}")
+          updateWithBothPlanners(s"MATCH $undirected DELETE ${variables.mkString(",")}")
 
           //now db should be empty
           executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
@@ -111,9 +111,9 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlanners(s"CREATE $patternString")
           //delete
-          val identifiers = findAllNodeNames(pattern)
+          val variables = findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
-          updateWithBothPlanners(s"MATCH $undirected DETACH DELETE ${identifiers.mkString(",")}")
+          updateWithBothPlanners(s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
 
           //now db should be empty
           executeWithAllPlanners("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))

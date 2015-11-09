@@ -47,37 +47,37 @@ object StatementConverters {
         commands.DropIndex(s.label.name, Seq(s.property.name))
       case s: ast.CreateUniquePropertyConstraint =>
         commands.CreateUniqueConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropUniquePropertyConstraint =>
         commands.DropUniqueConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.CreateNodePropertyExistenceConstraint =>
         commands.CreateNodePropertyExistenceConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropNodePropertyExistenceConstraint =>
         commands.DropNodePropertyExistenceConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           label = s.label.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.CreateRelationshipPropertyExistenceConstraint =>
         commands.CreateRelationshipPropertyExistenceConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           relType = s.relType.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case s: ast.DropRelationshipPropertyExistenceConstraint =>
         commands.DropRelationshipPropertyExistenceConstraint(
-          id = s.identifier.name,
+          id = s.variable.name,
           relType = s.relType.name,
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
@@ -158,7 +158,7 @@ object StatementConverters {
       val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(
         inner.withHeaders,
         toCommandExpression(inner.urlString),
-        inner.identifier.name,
+        inner.variable.name,
         inner.fieldTerminator.map(_.value)
       )
       builder.startItems(items: _*)
@@ -167,7 +167,7 @@ object StatementConverters {
 
   implicit class UnwindConverter(inner: ast.Unwind) {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
-      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(toCommandExpression(inner.expression),inner.identifier.name)
+      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(toCommandExpression(inner.expression),inner.variable.name)
       builder.startItems(items: _*)
     }
   }
@@ -187,26 +187,26 @@ object StatementConverters {
 
   implicit class StartItemConverter(val item: ast.StartItem) extends AnyVal {
     def asCommandStartItem = item match {
-      case ast.NodeByIds(identifier, ids) =>
-        commands.NodeById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
-      case ast.NodeByParameter(identifier, parameter) =>
-        commands.NodeById(identifier.name, toCommandParameter(parameter))
-      case ast.AllNodes(identifier) =>
-        commands.AllNodes(identifier.name)
-      case ast.NodeByIdentifiedIndex(identifier, index, key, value) =>
-        commands.NodeByIndex(identifier.name, index, commandexpressions.Literal(key), toCommandExpression(value))
-      case ast.NodeByIndexQuery(identifier, index, query) =>
-        commands.NodeByIndexQuery(identifier.name, index, toCommandExpression(query))
-      case ast.RelationshipByIds(identifier, ids) =>
-        commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
-      case ast.RelationshipByParameter(identifier, parameter) =>
-        commands.RelationshipById(identifier.name, toCommandParameter(parameter))
-      case ast.AllRelationships(identifier) =>
-        commands.AllRelationships(identifier.name)
-      case ast.RelationshipByIdentifiedIndex(identifier, index, key, value) =>
-        commands.RelationshipByIndex(identifier.name, index, commandexpressions.Literal(key), toCommandExpression(value))
-      case ast.RelationshipByIndexQuery(identifier, index, query) =>
-        commands.RelationshipByIndexQuery(identifier.name, index, toCommandExpression(query))
+      case ast.NodeByIds(variable, ids) =>
+        commands.NodeById(variable.name, commandexpressions.Literal(ids.map(_.value)))
+      case ast.NodeByParameter(variable, parameter) =>
+        commands.NodeById(variable.name, toCommandParameter(parameter))
+      case ast.AllNodes(variable) =>
+        commands.AllNodes(variable.name)
+      case ast.NodeByIdentifiedIndex(variable, index, key, value) =>
+        commands.NodeByIndex(variable.name, index, commandexpressions.Literal(key), toCommandExpression(value))
+      case ast.NodeByIndexQuery(variable, index, query) =>
+        commands.NodeByIndexQuery(variable.name, index, toCommandExpression(query))
+      case ast.RelationshipByIds(variable, ids) =>
+        commands.RelationshipById(variable.name, commandexpressions.Literal(ids.map(_.value)))
+      case ast.RelationshipByParameter(variable, parameter) =>
+        commands.RelationshipById(variable.name, toCommandParameter(parameter))
+      case ast.AllRelationships(variable) =>
+        commands.AllRelationships(variable.name)
+      case ast.RelationshipByIdentifiedIndex(variable, index, key, value) =>
+        commands.RelationshipByIndex(variable.name, index, commandexpressions.Literal(key), toCommandExpression(value))
+      case ast.RelationshipByIndexQuery(variable, index, query) =>
+        commands.RelationshipByIndexQuery(variable.name, index, toCommandExpression(query))
     }
   }
 
@@ -232,12 +232,12 @@ object StatementConverters {
 
   implicit class RonjaHintConverter(val item: ast.UsingHint) extends AnyVal {
     def asCommandStartHint(notifications: InternalNotificationLogger) = item match {
-      case ast.UsingIndexHint(identifier, label, property) =>
-        Some(commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None))
-      case ast.UsingScanHint(identifier, label) =>
-        Some(commands.NodeByLabel(identifier.name, label.name))
-      case ast.UsingJoinHint(identifiers) =>
-        notifications.log(JoinHintUnsupportedNotification(identifiers.map(_.name).toSeq))
+      case ast.UsingIndexHint(variable, label, property) =>
+        Some(commands.SchemaIndex(variable.name, label.name, property.name, commands.AnyIndex, None))
+      case ast.UsingScanHint(variable, label) =>
+        Some(commands.NodeByLabel(variable.name, label.name))
+      case ast.UsingJoinHint(variables) =>
+        notifications.log(JoinHintUnsupportedNotification(variables.map(_.name).toSeq))
         None
     }
   }
@@ -254,13 +254,13 @@ object StatementConverters {
         mutation
           .PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
       case setItem: ast.SetExactPropertiesFromMapItem =>
-        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name),
+        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.variable.name),
           toCommandExpression(setItem.expression), removeOtherProps = true)
       case setItem: ast.SetIncludingPropertiesFromMapItem =>
-        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name),
+        mutation.MapPropertySetAction(commandexpressions.Variable(setItem.variable.name),
           toCommandExpression(setItem.expression), removeOtherProps = false)
       case setItem: ast.SetLabelItem =>
-        commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+        commands.LabelAction(toCommandExpression(setItem.variable), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
 
       case e => throw new InternalException(s"MERGE cannot contain ${e.getClass.getSimpleName}")
     }
@@ -319,23 +319,23 @@ object StatementConverters {
           case setItem: ast.SetPropertyItem =>
             mutation.PropertySetAction(toCommandProperty(setItem.property), toCommandExpression(setItem.expression))
           case setItem: ast.SetLabelItem =>
-            commands.LabelAction(toCommandExpression(setItem.identifier), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(setItem.variable), commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case setItem: ast.SetExactPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = true)
+            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.variable.name), toCommandExpression(setItem.expression), removeOtherProps = true)
           case setItem: ast.SetIncludingPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.identifier.name), toCommandExpression(setItem.expression), removeOtherProps = false)
+            mutation.MapPropertySetAction(commandexpressions.Variable(setItem.variable.name), toCommandExpression(setItem.expression), removeOtherProps = false)
         }
       case c: ast.Delete =>
         c.expressions.map(e => mutation.DeleteEntityAction(toCommandExpression(e), c.forced))
       case c: ast.Remove =>
         c.items.map {
           case remItem: ast.RemoveLabelItem =>
-            commands.LabelAction(toCommandExpression(remItem.identifier), commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
+            commands.LabelAction(toCommandExpression(remItem.variable), commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case remItem: ast.RemovePropertyItem =>
             mutation.DeletePropertyAction(toCommandExpression(remItem.property.map), commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
         }
       case c: ast.Foreach =>
-        Seq(mutation.ForeachAction(toCommandExpression(c.expression), c.identifier.name, c.updates.flatMap {
+        Seq(mutation.ForeachAction(toCommandExpression(c.expression), c.variable.name, c.updates.flatMap {
           case update: ast.UpdateClause => update.updateActions()
           case _                        => throw new ThisShouldNotHappenError("cleishm", "a non-update clause in FOREACH didn't fail semantic check")
         }))
@@ -372,16 +372,16 @@ object StatementConverters {
     }
 
     private def returnColumns = {
-      val maybeAllIdentifiers = if (clause.returnItems.includeExisting)
+      val maybeAllVariables = if (clause.returnItems.includeExisting)
         Some(commands.AllVariables(): ReturnColumn)
       else
         None
 
-      maybeAllIdentifiers.toSeq ++ clause.returnItems.items.map {
-        case ast.AliasedReturnItem(expr, identifier) =>
-          commands.ReturnItem(toCommandExpression(expr), identifier.name)
-        case ast.UnaliasedReturnItem(expr, identifier) =>
-          commands.ReturnItem(toCommandExpression(expr), identifier)
+      maybeAllVariables.toSeq ++ clause.returnItems.items.map {
+        case ast.AliasedReturnItem(expr, variable) =>
+          commands.ReturnItem(toCommandExpression(expr), variable.name)
+        case ast.UnaliasedReturnItem(expr, variable) =>
+          commands.ReturnItem(toCommandExpression(expr), variable)
       }
     }
 

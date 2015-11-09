@@ -287,7 +287,7 @@ return distinct center""")
     }
   }
 
-  test("string literals should not be mistaken for identifiers") {
+  test("string literals should not be mistaken for variables") {
     //https://github.com/neo4j/community/issues/523
     updateWithBothPlanners("EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
@@ -329,7 +329,8 @@ return distinct center""")
 
     r1 should equal(r2)
   }
-  test("create unique relationship and use created identifier in set") {
+
+  test("create unique relationship and use created variable in set") {
     createNode()
     createNode()
 
@@ -383,7 +384,7 @@ return distinct center""")
     result.endNode() should equal(b)
   }
 
-  test("create with parameters is not ok when identifier already exists") {
+  test("create with parameters is not ok when variable already exists") {
     intercept[SyntaxException](updateWithBothPlanners("create a with a create (a {name:\"Foo\"})-[:BAR]->()").toList)
   }
 
@@ -418,7 +419,7 @@ return distinct center""")
     result.toList shouldBe empty
   }
 
-  test("should be able to use external identifiers inside foreach") {
+  test("should be able to use external variables inside foreach") {
     createNode()
     val result = executeWithRulePlanner("match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
 

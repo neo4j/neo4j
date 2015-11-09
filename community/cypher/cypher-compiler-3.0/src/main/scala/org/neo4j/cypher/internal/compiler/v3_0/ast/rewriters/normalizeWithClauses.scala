@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
  * This rewriter normalizes the scoping structure of a query, ensuring it is able to
  * be correctly processed for semantic checking. It makes sure that all return items
  * in a WITH clauses are aliased, and ensures all ORDER BY and WHERE expressions are
- * shifted into the clause, leaving only an identifier. That identifier must also
+ * shifted into the clause, leaving only an variable. That variable must also
  * appear as an alias in the associated WITH.
  *
  * This rewriter depends on normalizeReturnClauses having first been run.
@@ -64,7 +64,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)
-      val requiredIdentifiersForOrderBy = updatedOrderBy.map(_.dependencies).getOrElse(Set.empty) diff (introducedReturnItems.map(_.identifier).toSet ++ initialReturnItems.flatMap(_.alias))
+      val requiredVariablesForOrderBy = updatedOrderBy.map(_.dependencies).getOrElse(Set.empty) diff (introducedReturnItems.map(_.variable).toSet ++ initialReturnItems.flatMap(_.alias))
 
       if (orderBy == updatedOrderBy && where == updatedWhere) {
         Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
@@ -78,7 +78,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
           initialReturnItems.map(item =>
             item.alias.fold(item)(alias => AliasedReturnItem(alias.copyId, alias.copyId)(item.position))
           ) ++
-            requiredIdentifiersForOrderBy.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++
+            requiredVariablesForOrderBy.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++
             introducedReturnItems
         }
 
@@ -87,17 +87,17 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
         } else {
           val requiredReturnItems = introducedReturnItems.flatMap(_.expression.dependencies).toSet diff initialReturnItems
             .flatMap(_.alias).toSet
-          val requiredIdentifiers = requiredReturnItems ++ requiredIdentifiersForOrderBy
+          val requiredVariables = requiredReturnItems ++ requiredVariablesForOrderBy
 
-          requiredIdentifiers.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++ initialReturnItems
+          requiredVariables.toVector.map(i => AliasedReturnItem(i.copyId, i.copyId)(i.position)) ++ initialReturnItems
         }
 
-        val introducedIdentifiers = introducedReturnItems.map(_.identifier.copyId)
+        val introducedVariables = introducedReturnItems.map(_.variable.copyId)
 
         Seq(
           With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
           With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
-          PragmaWithout(introducedIdentifiers)(clause.position)
+          PragmaWithout(introducedVariables)(clause.position)
         )
       }
 

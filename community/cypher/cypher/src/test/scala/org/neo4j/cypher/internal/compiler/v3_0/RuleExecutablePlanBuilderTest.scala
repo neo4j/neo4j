@@ -101,10 +101,10 @@ class RuleExecutablePlanBuilderTest
       val node = graph.createNode()
       node.setProperty("foo", 12l)
 
-      val identifier = Variable("x")
+      val variable = Variable("x")
       val q = Query
         .start(NodeById("x", node.getId))
-        .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
+        .updates(DeletePropertyAction(variable, PropertyKey("foo")))
         .returns(ReturnItem(Variable("x"), "x"))
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
@@ -116,7 +116,7 @@ class RuleExecutablePlanBuilderTest
 
       val commands = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
-      assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
+      assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(variable, PropertyKey("foo", pkId))))
     } finally {
       tx.close()
     }

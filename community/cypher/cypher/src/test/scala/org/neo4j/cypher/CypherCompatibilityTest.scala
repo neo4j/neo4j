@@ -235,7 +235,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same identifier, even if index exists") {
+  test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
     runWithConfig() {
       engine =>
         engine.execute("CREATE INDEX ON :Person(name)")

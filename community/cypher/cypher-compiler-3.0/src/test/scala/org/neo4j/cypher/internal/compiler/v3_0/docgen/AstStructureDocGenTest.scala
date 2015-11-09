@@ -29,6 +29,6 @@ class AstStructureDocGenTest extends DocHandlerTestSuite[Any] with AstConstructi
   test("Renders ast node together with its structure but only on the outer level") {
     val expr: Expression = And(variable("a"), variable("b"))_
 
-    pprintToString(expr) should equal("/* ast */ a AND b /* val */ And(Identifier(\"a\"), Identifier(\"b\"))")
+    pprintToString(expr) should equal("/* ast */ a AND b /* val */ And(Variable(\"a\"), Variable(\"b\"))")
   }
 }

@@ -134,7 +134,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     assert(true)
   }
 
-  test("identifiers of deleted nodes should not be able to cause errors in later merge actions that do not refer to them") {
+  test("variables of deleted nodes should not be able to cause errors in later merge actions that do not refer to them") {
     // GIVEN
     val a = createLabeledNode("A")
     val b = createLabeledNode("B")
@@ -1950,7 +1950,7 @@ return b
     executeWithAllPlanners("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
-  test("should use NodeByIdSeek for id array in identifier") {
+  test("should use NodeByIdSeek for id array in variables") {
     // given
     val a = createNode().getId
     val b = createNode().getId
@@ -2052,7 +2052,7 @@ return b
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
-  test("should type var length identifiers correctly as collection of relationships") {
+  test("should type var length variables correctly as collection of relationships") {
     createNode()
     val r = relate(createNode(), createNode())
 
@@ -2207,7 +2207,7 @@ return b
   }
 
   /**
-   * Append identifier to keys and transform value arrays to lists
+   * Append variable to keys and transform value arrays to lists
    */
   private def asResult(data: Map[String, Any], id: String) =
     data.map {

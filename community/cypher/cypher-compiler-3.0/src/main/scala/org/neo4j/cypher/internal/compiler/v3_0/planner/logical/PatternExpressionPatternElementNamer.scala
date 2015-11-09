@@ -33,7 +33,7 @@ object PatternExpressionPatternElementNamer {
   }
 
   private def nameUnnamedPatternElements(expr: PatternExpression): Map[PatternElement, Variable] = {
-    val unnamedElements = findPatternElements(expr.pattern).filter(_.identifier.isEmpty)
+    val unnamedElements = findPatternElements(expr.pattern).filter(_.variable.isEmpty)
     IdentityMap(unnamedElements.map {
       case elem: NodePattern =>
         elem -> Variable(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)
@@ -57,10 +57,10 @@ object PatternExpressionPatternElementNamer {
 
     private val instance: Rewriter = Rewriter.lift {
       case pattern: NodePattern if map.contains(pattern) =>
-        pattern.copy(identifier = Some(map(pattern)))(pattern.position)
+        pattern.copy(variable = Some(map(pattern)))(pattern.position)
       case pattern: RelationshipChain if map.contains(pattern) =>
         val rel = pattern.relationship
-        pattern.copy(relationship = rel.copy(identifier = Some(map(pattern)))(rel.position))(pattern.position)
+        pattern.copy(relationship = rel.copy(variable = Some(map(pattern)))(rel.position))(pattern.position)
     }
   }
 }

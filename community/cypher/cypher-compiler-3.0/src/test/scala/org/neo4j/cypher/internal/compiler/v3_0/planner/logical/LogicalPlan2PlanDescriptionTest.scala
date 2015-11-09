@@ -84,7 +84,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {
           withClue("name")(producedPlanDescription.name should equal(expectedPlanDescription.name))
           withClue("arguments")(producedPlanDescription.arguments should equal(expectedPlanDescription.arguments))
-          withClue("identifiers")(producedPlanDescription.identifiers should equal(expectedPlanDescription.identifiers))
+          withClue("identifiers")(producedPlanDescription.variables should equal(expectedPlanDescription.variables))
         }
         withClue("id")(producedPlanDescription.id should equal(idMap(logicalPlan)))
 

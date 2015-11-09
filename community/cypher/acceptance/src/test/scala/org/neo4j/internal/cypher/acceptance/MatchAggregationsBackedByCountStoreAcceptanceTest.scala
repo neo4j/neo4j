@@ -65,7 +65,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
-  test("counts nodes using count store and projection expression with identifier") {
+  test("counts nodes using count store and projection expression with variable") {
     // Given
     withModel(
 
@@ -326,7 +326,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
-  test("counts nodes using count store and projection expression with identifier considering transaction state") {
+  test("counts nodes using count store and projection expression with variable considering transaction state") {
     // Given
     withModelAndTransaction(
 
@@ -391,7 +391,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       })
   }
 
-  test("counts relationships using count store and projection with expression and identifier considering transaction state") {
+  test("counts relationships using count store and projection with expression and variable considering transaction state") {
     // Given
     withRelationshipsModelAndTransaction(
 

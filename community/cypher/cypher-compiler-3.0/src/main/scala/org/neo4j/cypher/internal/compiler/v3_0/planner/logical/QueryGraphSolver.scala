@@ -36,7 +36,7 @@ trait PatternExpressionSolving {
   import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 
   def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)(implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
-    val dependencies = expr.dependencies.map(IdName.fromIdentifier)
+    val dependencies = expr.dependencies.map(IdName.fromVariable)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)

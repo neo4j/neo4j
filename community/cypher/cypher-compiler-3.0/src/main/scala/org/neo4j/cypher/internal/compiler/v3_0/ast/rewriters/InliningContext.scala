@@ -49,7 +49,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
     copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keys)
   }
 
-  def spoilIdentifier(identifier: Variable): InliningContext =
+  def spoilVariable(identifier: Variable): InliningContext =
     copy(projections = projections - identifier)
 
   def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
@@ -64,12 +64,12 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
   def patternRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
     case node @ NodePattern(Some(ident), _, _) if okToRewrite(ident) =>
       alias(ident) match {
-        case alias @ Some(_) => node.copy(identifier = alias)(node.position)
+        case alias @ Some(_) => node.copy(variable = alias)(node.position)
         case _               => node
       }
     case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
-        case alias @ Some(_) => rel.copy(identifier = alias)(rel.position)
+        case alias @ Some(_) => rel.copy(variable = alias)(rel.position)
         case _               => rel
       }
   })

@@ -48,12 +48,12 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
     ctx.projections should equal(mapN ++ mapA)
   }
 
-  test("throw assertiona error when new projections use an already seen identifier") {
+  test("throw assertiona error when new projections use an already seen variable") {
     intercept[AssertionError](InliningContext().enterQueryPart(mapN).enterQueryPart(mapN))
   }
 
   test("ignore new projections when spoilIdentifier is called") {
-    val ctx = InliningContext(mapN).spoilIdentifier(identN)
+    val ctx = InliningContext(mapN).spoilVariable(identN)
 
     ctx.projections should equal(Map.empty)
   }
@@ -63,7 +63,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
 
     val expr: NodePattern = NodePattern(Some(identA), Seq(), None)_
 
-    expr.endoRewrite(ctx.patternRewriter).identifier should equal(Some(identN))
+    expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }
 
   test("should inline aliases into relationship patterns") {
@@ -71,6 +71,6 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
 
     val expr: RelationshipPattern = RelationshipPattern(Some(identA), optional = false, Seq(), None, None, SemanticDirection.OUTGOING)_
 
-    expr.endoRewrite(ctx.patternRewriter).identifier should equal(Some(identN))
+    expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }
 }

@@ -31,7 +31,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
   val identX1 = variable("x1")
   val identX2 = variable("x2")
 
-  test("should not spoil aliased node identifiers") {
+  test("should not spoil aliased node variables") {
     val ast = parser.parse("match (a) with a as b match (b) return b")
 
     val context = inliningContextCreator(ast)
@@ -48,7 +48,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
     context.projections should equal(Map.empty)
   }
 
-  test("should not spoil aliased relationship identifiers") {
+  test("should not spoil aliased relationship variables") {
     val ast = parser.parse("match ()-[a]->() with a as b match ()-[b]->() return b")
 
     val context = inliningContextCreator(ast)
@@ -57,7 +57,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
     context.alias(identB) should equal(Some(identA))
   }
 
-  test("should spoil all the identifiers when WITH has aggregations") {
+  test("should spoil all the variables when WITH has aggregations") {
     val ast = parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2")
 
     val context = inliningContextCreator(ast)

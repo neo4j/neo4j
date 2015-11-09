@@ -36,7 +36,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   with PatternGraphBuilder {
   val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
   val symbols2 = SymbolTable(identifiers.toMap)
-  val identifiersInClause = Pattern.identifiers(pathPattern)
+  val identifiersInClause = Pattern.variables(pathPattern)
 
   val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), identifiersInClause)
   val interestingPoints: Seq[String] = pathPattern.

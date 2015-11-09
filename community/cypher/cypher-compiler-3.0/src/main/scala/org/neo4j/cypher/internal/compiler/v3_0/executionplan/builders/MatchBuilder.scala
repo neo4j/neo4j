@@ -38,7 +38,7 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     val newPipe = if (graph.isEmpty)
       p
     else {
-      val identifiersInClause = Pattern.identifiers(q.patterns.map(_.token))
+      val identifiersInClause = Pattern.variables(q.patterns.map(_.token))
       new MatchPipe(p, predicates, graph, identifiersInClause)
     }
 

@@ -30,17 +30,17 @@ import scala.annotation.tailrec
 case object projectNamedPaths extends Rewriter {
 
   case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
-                          protectedIdentifiers: Set[Ref[Variable]] = Set.empty,
-                          identifierRewrites: Map[Ref[Variable], PathExpression] = Map.empty) {
+                          protectedVariables: Set[Ref[Variable]] = Set.empty,
+                          variableRewrites: Map[Ref[Variable], PathExpression] = Map.empty) {
 
     self =>
 
     def withoutNamedPaths = copy(paths = Map.empty)
-    def withProtectedIdentifier(ident: Ref[Variable]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
+    def withProtectedIdentifier(ident: Ref[Variable]) = copy(protectedVariables = protectedVariables + ident)
     def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
-    def withRewrittenIdentifier(entry: (Ref[Variable], PathExpression)) = {
+    def withRewrittenVariable(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry
-      copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
+      copy(variableRewrites = variableRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
     }
 
     def returnItems = paths.map {
@@ -52,7 +52,7 @@ case object projectNamedPaths extends Rewriter {
         case ident: Variable =>
           (acc, children) =>
             acc.paths.get(ident) match {
-              case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+              case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
               case None => children(acc)
             }
       }
@@ -85,12 +85,12 @@ case object projectNamedPaths extends Rewriter {
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
       (acc, children) =>
-        children(acc.withProtectedIdentifier(Ref(aliased.identifier)))
+        children(acc.withProtectedIdentifier(Ref(aliased.variable)))
 
     case ident: Variable =>
       (acc, children) =>
         acc.paths.get(ident) match {
-          case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+          case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
           case None => children(acc)
         }
 

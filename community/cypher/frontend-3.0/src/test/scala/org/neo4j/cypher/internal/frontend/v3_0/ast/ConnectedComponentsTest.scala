@@ -26,53 +26,53 @@ class ConnectedComponentsTest extends CypherFunSuite {
 
   test("(a)->(b), (c)->(d) has two connected components") {
     val disconnected = connectedComponents(Vector(
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("c"), identifier("d"))))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("c"), varFor("d"))))
 
     disconnected should equal(Vector(
-      ConnectedComponent(ComponentPart(identifier("a"), identifier("b"))),
-        ConnectedComponent(ComponentPart(identifier("c"), identifier("d")))
+      ConnectedComponent(ComponentPart(varFor("a"), varFor("b"))),
+        ConnectedComponent(ComponentPart(varFor("c"), varFor("d")))
       ))
   }
 
   test("(a)->(b)->(c) does contain one connected component") {
     val disconnected = connectedComponents(Vector(
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("b"), identifier("c"))))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("b"), varFor("c"))))
 
     disconnected should equal(Vector(
-      ConnectedComponent(ComponentPart(identifier("a"), identifier("b")),
-        ComponentPart(identifier("b"), identifier("c")))))
+      ConnectedComponent(ComponentPart(varFor("a"), varFor("b")),
+        ComponentPart(varFor("b"), varFor("c")))))
   }
 
   test("(a)->(b)->(c)->(d) does only contain one component") {
     val disconnected = connectedComponents(Vector(
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("b"), identifier("c")),
-      ComponentPart(identifier("c"), identifier("d"))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("b"), varFor("c")),
+      ComponentPart(varFor("c"), varFor("d"))
     ))
 
     disconnected shouldBe Vector(ConnectedComponent(
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("b"), identifier("c")),
-      ComponentPart(identifier("c"), identifier("d")))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("b"), varFor("c")),
+      ComponentPart(varFor("c"), varFor("d")))
     )
   }
 
   test("(a)->(b)->(c)-(a) contains one component ") {
     val disconnected = connectedComponents(Vector
     (
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("b"), identifier("c")),
-      ComponentPart(identifier("c"), identifier("a"))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("b"), varFor("c")),
+      ComponentPart(varFor("c"), varFor("a"))
     ))
 
     disconnected shouldBe Vector(ConnectedComponent(
-      ComponentPart(identifier("a"), identifier("b")),
-      ComponentPart(identifier("b"), identifier("c")),
-      ComponentPart(identifier("c"), identifier("a"))
+      ComponentPart(varFor("a"), varFor("b")),
+      ComponentPart(varFor("b"), varFor("c")),
+      ComponentPart(varFor("c"), varFor("a"))
     ))
   }
 
-  private def identifier(name: String): Identifier = Identifier(name)(null)
+  private def varFor(name: String): Variable = Variable(name)(null)
 }

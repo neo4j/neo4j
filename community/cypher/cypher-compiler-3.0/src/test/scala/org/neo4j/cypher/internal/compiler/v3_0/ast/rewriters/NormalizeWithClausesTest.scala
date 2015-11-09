@@ -28,7 +28,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
   val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
   val rewriterUnderTest: Rewriter = normalizeWithClauses(mkException)
 
-  test("ensure identifiers are aliased") {
+  test("ensure variables are aliased") {
     assertRewrite(
       """MATCH (n)
         |WITH n
@@ -80,7 +80,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces aliases for ORDER BY expressions the depend on existing identifiers") {
+  test("introduces aliases for ORDER BY expressions the depend on existing variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n ORDER BY length(n.prop)
@@ -94,7 +94,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces aliases for WHERE expression the depends on existing identifiers") {
+  test("introduces aliases for WHERE expression the depends on existing variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n WHERE length(n.prop) > 10
@@ -136,7 +136,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces identifiers for ORDER BY expressions that depend on non-aliased identifiers") {
+  test("introduces variables for ORDER BY expressions that depend on non-aliased variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY n.foo DESC
@@ -150,7 +150,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces identifiers for WHERE expression that depend on non-aliased identifiers") {
+  test("introduces variables for WHERE expression that depend on non-aliased variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n.prop AS prop WHERE n.foo > 10
@@ -164,7 +164,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("does not introduce identifiers for ORDER BY expressions in WITH *") {
+  test("does not introduce variables for ORDER BY expressions in WITH *") {
     assertRewrite(
       """MATCH (n)
         |WITH *, n.prop AS prop ORDER BY n.foo DESC
@@ -178,7 +178,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("does not introduce identifiers for WHERE expression in WITH *") {
+  test("does not introduce variables for WHERE expression in WITH *") {
     assertRewrite(
       """MATCH (n)
         |WITH *, n.prop AS prop WHERE n.foo > 10

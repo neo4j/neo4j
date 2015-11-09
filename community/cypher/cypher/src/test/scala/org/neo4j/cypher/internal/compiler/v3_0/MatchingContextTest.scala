@@ -453,13 +453,13 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   private def createMatchingContextWith(patterns: Seq[Pattern], nodes: Seq[String], rels: Seq[String], predicates: Seq[Predicate] = Seq[Predicate]()) {
-    val nodeIdentifiers2 = nodes.map(_ -> CTNode)
-    val relIdentifiers2 = rels.map(_ -> CTRelationship)
+    val nodeVariables2 = nodes.map(_ -> CTNode)
+    val relVariables2 = rels.map(_ -> CTRelationship)
 
-    val identifiers2 = (nodeIdentifiers2 ++ relIdentifiers2).toMap
-    val symbols2 = SymbolTable(identifiers2)
-    val identifiers = Pattern.identifiers(patterns)
-    matchingContext = new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns), identifiers)
+    val variables2 = (nodeVariables2 ++ relVariables2).toMap
+    val symbols2 = SymbolTable(variables2)
+    val variables = Pattern.variables(patterns)
+    matchingContext = new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns), variables)
   }
 
   private def createMatchingContextWithRels(patterns: Seq[Pattern], rels: Seq[String], predicates: Seq[Predicate] = Seq[Predicate]()) {

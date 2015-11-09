@@ -48,8 +48,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * Finds all identifiers being deleted.
    */
   def identifiersToDelete = (deleteExpressions flatMap {
-    case DeleteExpression(identifier:Variable, _) => Seq(IdName.fromIdentifier(identifier))
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromIdentifier)
+    case DeleteExpression(identifier:Variable, _) => Seq(IdName.fromVariable(identifier))
+    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
   }).toSet
 
   /*

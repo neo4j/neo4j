@@ -45,7 +45,7 @@ trait Pattern extends TypeSafe with AstNode[Pattern] {
 }
 
 object Pattern {
-  def identifiers(patterns: Seq[Pattern]): Set[String] = patterns.flatMap(_.identifiers).toSet
+  def variables(patterns: Seq[Pattern]): Set[String] = patterns.flatMap(_.identifiers).toSet
 }
 
 object RelationshipPattern {

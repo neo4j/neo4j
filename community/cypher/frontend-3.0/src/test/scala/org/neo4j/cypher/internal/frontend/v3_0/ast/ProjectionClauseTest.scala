@@ -47,7 +47,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val listedReturnItems = ReturnItems(includeExisting = false, Seq(returnItem))_
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None)_
 
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
@@ -71,7 +71,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
@@ -92,7 +92,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
@@ -112,7 +112,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
@@ -159,7 +159,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
@@ -180,7 +180,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, Some(orderBy), None, None, None)_
 
     // WHEN
-    val beforeState = SemanticState.clean.newChildScope.declareIdentifier(variable("n"), CTNode).right.get
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(variable("n"), CTNode).right.get
     val middleState = withObj.semanticCheck(beforeState).state
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 

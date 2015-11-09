@@ -35,16 +35,16 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
 
   // double-dispatch helpers
   def declare(possibleTypes: TypeSpec) =
-    (_: SemanticState).declareIdentifier(this, possibleTypes)
+    (_: SemanticState).declareVariable(this, possibleTypes)
 
   def declare(typeGen: SemanticState => TypeSpec, positions: Set[InputPosition] = Set.empty) =
-    (s: SemanticState) => s.declareIdentifier(this, typeGen(s), positions)
+    (s: SemanticState) => s.declareVariable(this, typeGen(s), positions)
 
   def implicitDeclaration(possibleType: CypherType) =
-    (_: SemanticState).implicitIdentifier(this, possibleType)
+    (_: SemanticState).implicitVariable(this, possibleType)
 
   def ensureDefined() =
-    (_: SemanticState).ensureIdentifierDefined(this)
+    (_: SemanticState).ensureVariableDefined(this)
 
   def copyId = copy()(position)
 

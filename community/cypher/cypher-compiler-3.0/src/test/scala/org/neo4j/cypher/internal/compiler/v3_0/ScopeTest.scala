@@ -57,10 +57,10 @@ class ScopeTest extends CypherFunSuite {
     ))
   }
 
-  test("Should build identifier map for simple scope tree") {
+  test("Should build variable map for simple scope tree") {
     val given = scope(nodeSymbol("a", 1, 2), nodeSymbol("b", 2))()
 
-    val actual = given.identifierDefinitions
+    val actual = given.variableDefinitions
 
     actual should equal(Map(
       symUse("a", 1) -> symUse("a", 1),
@@ -69,7 +69,7 @@ class ScopeTest extends CypherFunSuite {
     ))
   }
 
-  test("Should build identifier map for complex scope tree with shadowing") {
+  test("Should build variable map for complex scope tree with shadowing") {
     val given = scope()(
       scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 111))(
         scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 124))()
@@ -77,7 +77,7 @@ class ScopeTest extends CypherFunSuite {
       scope(nodeSymbol("book", 200, 300))()
     )
 
-    val actual = given.allIdentifierDefinitions
+    val actual = given.allVariableDefinitions
 
     actual should equal(Map(
       symUse("root", 6) -> symUse("root", 6),

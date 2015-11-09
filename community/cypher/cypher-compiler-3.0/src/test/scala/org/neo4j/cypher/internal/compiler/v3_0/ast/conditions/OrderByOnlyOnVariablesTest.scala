@@ -32,7 +32,7 @@ class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTest
     val orderByPos = DummyPosition(42)
     val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(variable("n"), variable("n"))_))_, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
 
-    condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of an variable"))
+    condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of a variable"))
   }
 
   test("happy when order by sort on variable") {

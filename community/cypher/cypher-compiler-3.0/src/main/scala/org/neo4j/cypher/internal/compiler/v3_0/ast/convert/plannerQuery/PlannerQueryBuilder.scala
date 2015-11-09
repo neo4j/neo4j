@@ -42,7 +42,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withTail(newTail)))
   }
 
-  def currentlyAvailableIdentifiers: Set[IdName] =
+  def currentlyAvailableVariables: Set[IdName] =
     currentQueryGraph.coveredIds
 
   def currentQueryGraph: QueryGraph = {

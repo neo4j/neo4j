@@ -82,7 +82,7 @@ object ClauseConverters {
       val projection = asQueryProjection(distinct, ri.items).
         withShuffle(shuffle)
       val returns = ri.items.collect {
-        case AliasedReturnItem(_, identifier) => IdName.fromIdentifier(identifier)
+        case AliasedReturnItem(_, variable) => IdName.fromVariable(variable)
       }
       acc.
         withHorizon(projection).
@@ -97,45 +97,45 @@ object ClauseConverters {
       case (builder, SetLabelItem(identifier, labelNames)) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+            SetLabelPattern(IdName.fromVariable(identifier), labelNames)))
 
       // SET n.prop = ...
-      case (builder, SetPropertyItem(Property(node: Identifier, propertyKey), expr))
+      case (builder, SetPropertyItem(Property(node: Variable, propertyKey), expr))
         if acc.semanticTable.isNode(node) =>
        builder.amendUpdateGraph(ug =>
          ug.addMutatingPatterns(
-           SetNodePropertyPattern(IdName.fromIdentifier(node), propertyKey, expr)))
+           SetNodePropertyPattern(IdName.fromVariable(node), propertyKey, expr)))
 
       // SET r.prop = ...
-      case (builder, SetPropertyItem(Property(rel: Identifier, propertyKey), expr))
+      case (builder, SetPropertyItem(Property(rel: Variable, propertyKey), expr))
         if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetRelationshipPropertyPattern(IdName.fromIdentifier(rel), propertyKey, expr)))
+            SetRelationshipPropertyPattern(IdName.fromVariable(rel), propertyKey, expr)))
 
       // SET n = { id: 0, name: 'Mats', ... }
       case (builder, SetExactPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = true)))
+            SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = true)))
 
       // SET r = { id: 0, name: 'Mats', ... }
       case (builder, SetExactPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = true)))
+            SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = true)))
 
       // SET n += { id: 10, ... }
       case (builder, SetIncludingPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = false)))
+            SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = false)))
 
       // SET r += { id: 10, ... }
       case (builder, SetIncludingPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = false)))
+            SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = false)))
     }
   }
 
@@ -144,7 +144,7 @@ object ClauseConverters {
       //CREATE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
         builder
-          .amendUpdateGraph(ug => ug.addMutatingPatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
+          .amendUpdateGraph(ug => ug.addMutatingPatterns(CreateNodePattern(IdName.fromVariable(id), labels, props)))
 
       //CREATE (n)-[r: R]->(m)
       case (builder, EveryPath(pattern: RelationshipChain)) =>
@@ -161,7 +161,7 @@ object ClauseConverters {
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node ${c.nodeName.name} with labels or properties here. It already exists in this context")
+              s"Can't create node ${c.nodeName.name} with labels or properties here. The variable is already declared in this context")
         }
 
         builder
@@ -178,10 +178,10 @@ object ClauseConverters {
     nodePatterns.foreach { pattern =>
       if (!seen(pattern.nodeName)) result.append(pattern)
       else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
-        //reused patterns must be pure identifier
+        //reused patterns must be pure variable
         throw new SyntaxException(s"Can't create node ${
           pattern.nodeName.name
-        } with labels or properties here. It already exists in this context")
+        } with labels or properties here. The variable is already declared in this context")
       }
       seen.add(pattern.nodeName)
     }
@@ -191,29 +191,29 @@ object ClauseConverters {
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
     case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
-    case NodePattern(Some(identifier), labels, props) =>
-      (Vector(CreateNodePattern(IdName.fromIdentifier(identifier), labels, props)), Vector.empty)
+    case NodePattern(Some(variable), labels, props) =>
+      (Vector(CreateNodePattern(IdName.fromVariable(variable), labels, props)), Vector.empty)
 
     //CREATE ()-[:R]->()
     case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
-      val leftIdName = IdName.fromIdentifier(leftNode.identifier.get)
-      val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+      val leftIdName = IdName.fromVariable(leftNode.variable.get)
+      val rightIdName = IdName.fromVariable(rightNode.variable.get)
 
       (Vector(
         CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
         CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
-      ), Vector(CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get),
+      ), Vector(CreateRelationshipPattern(IdName.fromVariable(rel.variable.get),
         leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
 
     //CREATE ()->[:R]->()-[:R]->...->()
     case RelationshipChain(left, rel, rightNode) =>
       val (nodes, rels) = allCreatePatterns(left)
-      val rightIdName = IdName.fromIdentifier(rightNode.identifier.get)
+      val rightIdName = IdName.fromVariable(rightNode.variable.get)
 
       (nodes :+
         CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
         , rels :+
-        CreateRelationshipPattern(IdName.fromIdentifier(rel.identifier.get), nodes.last.nodeName, rel.types.head,
+        CreateRelationshipPattern(IdName.fromVariable(rel.variable.get), nodes.last.nodeName, rel.types.head,
           rightIdName, rel.properties, rel.direction))
   }
 
@@ -274,7 +274,7 @@ object ClauseConverters {
       if !builder.currentQueryGraph.hasOptionalPatterns
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
-        case item: AliasedReturnItem => item.expression == item.identifier
+        case item: AliasedReturnItem => item.expression == item.variable
         case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")
       } && builder.readOnly =>
       val selections = asSelections(where)
@@ -311,7 +311,7 @@ object ClauseConverters {
     builder.
       withHorizon(
         UnwindProjection(
-          identifier = IdName(clause.identifier.name),
+          variable = IdName(clause.variable.name),
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
@@ -331,7 +331,7 @@ object ClauseConverters {
         throw new CantHandleQueryException()
       }
 
-      val nodeIds = hints.collect { case n: NodeHint => IdName(n.identifier.name) }
+      val nodeIds = hints.collect { case n: NodeHint => IdName(n.variable.name) }
 
       val selections = asSelections(clause.where)
 
@@ -345,7 +345,7 @@ object ClauseConverters {
       clause.items.foldLeft(acc) {
         // REMOVE n:Foo
         case (builder, RemoveLabelItem(identifier, labelNames)) =>
-          builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+          builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(identifier), labelNames)))
 
         case (builder, other) =>
           throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")

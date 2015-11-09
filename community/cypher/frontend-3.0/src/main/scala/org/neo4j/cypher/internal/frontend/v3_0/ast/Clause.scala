@@ -34,7 +34,7 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
 
 sealed trait UpdateClause extends Clause
 
-case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   val name = "LOAD CSV"
 
   def semanticCheck: SemanticCheck =
@@ -57,7 +57,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Vari
     else
       CTCollection(CTString)
 
-    identifier.declare(typ)
+    variable.declare(typ)
   }
 }
 
@@ -80,9 +80,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     noteCurrentScope
 
   private def uniqueHints: SemanticCheck = {
-    val errors = hints.groupBy(_.identifiers.toSeq).collect {
+    val errors = hints.groupBy(_.variables.toSeq).collect {
       case pair@(identifiers, identHints) if identHints.size > 1 =>
-        SemanticError("Multiple hints for same identifier are not supported", identifiers.head.position, identHints.map(_.position): _*)
+        SemanticError("Multiple hints for same variable are not supported", identifiers.head.position, identHints.map(_.position): _*)
     }.toVector
 
     (state: SemanticState) => SemanticCheckResult(state, errors)
@@ -145,7 +145,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           (acc, _) => acc :+ name
         case In(Property(Variable(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
-        case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
+        case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
           if id == identifier && predicate.function.contains(functions.Exists) =>
           (acc, _) => acc :+ name
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == identifier =>
@@ -259,7 +259,7 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   def semanticCheck = items.semanticCheck
 }
 
-case class Foreach(identifier: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
+case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
   def name = "FOREACH"
 
   def semanticCheck =
@@ -268,18 +268,18 @@ case class Foreach(identifier: Variable, expression: Expression, updates: Seq[Cl
     updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
     withScopedState {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
-      identifier.declare(possibleInnerTypes) chain updates.semanticCheck
+      variable.declare(possibleInnerTypes) chain updates.semanticCheck
     }
 }
 
-case class Unwind(expression: Expression, identifier: Variable)(val position: InputPosition) extends Clause {
+case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
   def name = "UNWIND"
 
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Results) chain
       expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
-      identifier.declare(possibleInnerTypes)
+      variable.declare(possibleInnerTypes)
     }
 }
 

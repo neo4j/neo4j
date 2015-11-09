@@ -151,8 +151,8 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   override def exposedSymbols(qg: QueryGraph) = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
-case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + identifier
+case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
 
   override def dependingExpressions = Seq(exp)
 

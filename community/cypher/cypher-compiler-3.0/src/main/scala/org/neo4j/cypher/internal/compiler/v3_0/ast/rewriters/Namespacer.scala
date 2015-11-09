@@ -30,7 +30,7 @@ object Namespacer {
 
   def apply(statement: Statement, scopeTree: Scope): Namespacer = {
     val ambiguousNames = shadowedNames(scopeTree)
-    val identifierDefinitions: Map[SymbolUse, SymbolUse] = scopeTree.allIdentifierDefinitions
+    val identifierDefinitions: Map[SymbolUse, SymbolUse] = scopeTree.allVariableDefinitions
     val protectedIdentifiers = returnAliases(statement)
     val renamings = identifierRenamings(statement, identifierDefinitions, ambiguousNames, protectedIdentifiers)
     Namespacer(renamings)

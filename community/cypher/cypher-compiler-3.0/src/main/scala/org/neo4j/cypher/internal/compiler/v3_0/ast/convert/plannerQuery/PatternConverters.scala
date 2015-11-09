@@ -43,7 +43,7 @@ object PatternConverters {
 
   implicit class NodePatternConverter(val node: NodePattern) extends AnyVal {
     def destructedNodePattern =
-      DestructResult(nodeIds = Seq(IdName(node.identifier.get.name)), Seq.empty, Seq.empty)
+      DestructResult(nodeIds = Seq(IdName(node.variable.get.name)), Seq.empty, Seq.empty)
   }
 
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {

@@ -70,7 +70,7 @@ extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
     name = "TriadicSelection",
     children = TwoChildren(left.planDescription, right.planDescription),
     arguments = Seq(KeyNames(Seq(source, seen, target))),
-    identifiers = identifiers)
+    variables = identifiers)
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

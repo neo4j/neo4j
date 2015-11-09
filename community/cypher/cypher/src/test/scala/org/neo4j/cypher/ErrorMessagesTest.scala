@@ -42,7 +42,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("badNodeIdentifier") {
+  test("bad node variable") {
     expectError(
       "match (a) where id(a) = 0 match (a)-[WORKED_ON]-, return a",
       "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 49 (offset: 48))"
@@ -225,7 +225,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("create with identifier already existing") {
+  test("create with variable already existing") {
     expectError(
       "match (a) where id(a) = 0 CREATE (a {name:'foo'}) RETURN a",
       "a already declared (line 1, column 35 (offset: 34))"
@@ -235,14 +235,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("create with identifier already existing2") {
     expectError(
       "match (a) where id(a) = 0 CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
-      "Can't create `a` with properties or labels here. It already exists in this context"
+      "Can't create `a` with properties or labels here. The variable is already declared in this context"
     )
   }
 
   test("merge 2 nodes with same identifier but different labels") {
     expectError(
       "MERGE (a: Foo)-[r:KNOWS]->(a: Bar)",
-      "Can't create `a` with properties or labels here. It already exists in this context"
+      "Can't create `a` with properties or labels here. The variable is already declared in this context"
     )
   }
 

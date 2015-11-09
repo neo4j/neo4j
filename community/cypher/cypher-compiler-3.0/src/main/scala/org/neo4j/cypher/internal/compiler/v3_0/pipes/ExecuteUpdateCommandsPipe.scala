@@ -131,6 +131,6 @@ trait NoLushEntityCreation {
   }
 
   private def failOn(name:String)=
-    throw new SyntaxException("Can't create `%s` with properties or labels here. It already exists in this context".format(name))
+    throw new SyntaxException("Can't create `%s` with properties or labels here. The variable is already declared in this context".format(name))
 }
 

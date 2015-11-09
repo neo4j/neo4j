@@ -119,7 +119,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
     case (n: NodePattern, SemanticContext.Match) =>
       element.declareIdentifiers(ctx) // single node identifier is allowed to be already bound in MATCH
     case (n: NodePattern, _)                     =>
-      n.identifier.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareIdentifiers(ctx)
+      n.variable.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareIdentifiers(ctx)
     case _                                       =>
       element.declareIdentifiers(ctx)
   }
@@ -165,9 +165,9 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 
   private def checkKnownEnds: SemanticCheck = element match {
     case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
-      if (l.identifier.isEmpty)
+      if (l.variable.isEmpty)
         SemanticError(s"$name(...) requires named nodes", position, l.position)
-      else if (r.identifier.isEmpty)
+      else if (r.variable.isEmpty)
         SemanticError(s"$name(...) requires named nodes", position, r.position)
       else
         None
@@ -192,7 +192,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   private def checkRelIdentifiersUnknown: SemanticCheck = state => {
     element match {
       case RelationshipChain(_, rel, _) =>
-        rel.identifier.flatMap(id => state.symbol(id.name)) match {
+        rel.variable.flatMap(id => state.symbol(id.name)) match {
           case Some(symbol) if symbol.positions.size > 1 => {
             SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions.head))
           }
@@ -206,7 +206,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode with ASTParticle {
-  def identifier: Option[Variable]
+  def variable: Option[Variable]
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
@@ -216,7 +216,7 @@ sealed abstract class PatternElement extends ASTNode with ASTParticle {
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
   extends PatternElement {
 
-  def identifier: Option[Variable] = relationship.identifier
+  def variable: Option[Variable] = relationship.variable
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) chain
@@ -251,12 +251,12 @@ class InvalidNodePattern(val id: Variable)(position: InputPosition) extends Node
 }
 
 case class NodePattern(
-  identifier: Option[Variable],
+  variable: Option[Variable],
   labels: Seq[LabelName],
   properties: Option[Expression])(val position: InputPosition) extends PatternElement with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    identifier.fold(SemanticCheckResult.success) {
+    variable.fold(SemanticCheckResult.success) {
       identifier =>
         ctx match {
           case SemanticContext.Expression =>
@@ -284,7 +284,7 @@ case class NodePattern(
 
 
 case class RelationshipPattern(
-    identifier: Option[Variable],
+    variable: Option[Variable],
     optional: Boolean,
     types: Seq[RelTypeName],
     length: Option[Option[Range]],
@@ -292,7 +292,7 @@ case class RelationshipPattern(
     direction: SemanticDirection)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    identifier.fold(SemanticCheckResult.success) {
+    variable.fold(SemanticCheckResult.success) {
       identifier =>
         val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
 

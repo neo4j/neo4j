@@ -45,7 +45,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
       // When an identifier is used in ORDER BY, it should never be inlined
       case sortItem: SortItem =>
         (context, children) =>
-          children(context.spoilIdentifier(sortItem.expression.asInstanceOf[Variable]))
+          children(context.spoilVariable(sortItem.expression.asInstanceOf[Variable]))
 
       // Do not inline pattern identifiers, unless they are clean aliases of previous identifiers
       case NodePattern(Some(identifier), _, _) =>
@@ -53,14 +53,14 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
           if (context.isAliasedIdentifier(identifier))
             children(context)
           else
-            children(context.spoilIdentifier(identifier))
+            children(context.spoilVariable(identifier))
 
       case RelationshipPattern(Some(identifier), _, _, _, _, _) =>
         (context, children) =>
           if (context.isAliasedIdentifier(identifier))
             children(context)
           else
-            children(context.spoilIdentifier(identifier))
+            children(context.spoilVariable(identifier))
     }
   }
 

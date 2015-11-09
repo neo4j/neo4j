@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, replace}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
- * refer to any newly introduced identifier.
+ * refer to any newly introduced variable.
  *
  * This is required due to constraints in the planner. Note that this structure is invalid for semantic checking, which requires
- * that ORDER BY and WHERE _only refer to identifiers introduced in the associated WITH_.
+ * that ORDER BY and WHERE _only refer to variables introduced in the associated WITH_.
  *
  * Additionally, it splits RETURN clauses containing ORDER BY. This would typically be done earlier during normalizeReturnClauses, however
- * "RETURN * ORDER BY" is not handled at that stage, due to lacking identifier information. If expandStar has already been run, then this
+ * "RETURN * ORDER BY" is not handled at that stage, due to lacking variable information. If expandStar has already been run, then this
  * will now work as expected.
  */
 case object projectFreshSortExpressions extends Rewriter {

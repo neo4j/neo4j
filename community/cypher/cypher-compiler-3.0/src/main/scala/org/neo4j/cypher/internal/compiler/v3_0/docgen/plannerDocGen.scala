@@ -184,7 +184,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
         generateDoc(queryProjection.projections, queryProjection.shuffle)
 
       case queryProjection: UnwindProjection =>
-        section("UNWIND")(generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty))
+        section("UNWIND")(generateDoc(Map(queryProjection.variable.name -> queryProjection.exp), QueryShuffle.empty))
     }
 
     def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle): RecipeAppender[Any] = {

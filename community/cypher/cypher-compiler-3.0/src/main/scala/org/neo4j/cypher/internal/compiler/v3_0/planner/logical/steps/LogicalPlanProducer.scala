@@ -190,7 +190,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
                         (implicit context: LogicalPlanningContext) = {
     val patternNode = hint match {
-      case n: NodeHint => Seq(IdName(n.identifier.name))
+      case n: NodeHint => Seq(IdName(n.variable.name))
       case _ => Seq.empty
     }
     val solved = PlannerQuery(queryGraph = QueryGraph.empty

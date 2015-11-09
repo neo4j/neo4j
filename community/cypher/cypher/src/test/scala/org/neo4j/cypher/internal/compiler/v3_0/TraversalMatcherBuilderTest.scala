@@ -106,7 +106,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
     newPlan.query.start.exists(_.unsolved) should be(false)
   }
 
-  test("does_not_take_on_paths_overlapping_with_identifiers_already_in_scope") {
+  test("does_not_take_on_paths_overlapping_with_variables_already_in_scope") {
     val q = query("START a = node(*) MATCH a-->b RETURN b")
 
     val sourcePipe = ArgumentPipe(new SymbolTable(Map("b" -> CTNode)))()
