@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, Property, Expression, Identifier, LabelName, PathExpression, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier, LabelName, MapExpression, PathExpression, PropertyKeyName, RelTypeName}
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
@@ -57,7 +57,23 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     nodePatterns.map(p => p.nodeName -> p.labels.toSet).toMap
 
-  def writeLabels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
+  def createLabels: Set[LabelName] = nodePatterns.flatMap(_.labels).toSet
+
+  def createProperties = {
+    //all created properties
+    val properties = nodePatterns.flatMap(_.properties)
+    //CREATE ()
+    if (properties.isEmpty) CreatesNoPropertyKeys
+    else {
+      val knownProp: Seq[Seq[(PropertyKeyName, Expression)]] = properties.collect {
+        case MapExpression(props) => props
+      }
+      //all prop keys are known, CREATE ({prop1:1, prop2:2})
+      if (knownProp.size == properties.size) CreatesKnownPropertyKeys(knownProp.flatMap(_.map(s => s._1)).toSet)
+      //props created are not known, e.g. CREATE ({props})
+      else CreatesUnknownPropertyKeys
+    }
+  }
 
   def labelsToRemove: Set[LabelName] = removeLabelPatterns.flatMap(_.labels).toSet
 
@@ -73,11 +89,18 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     qg.patternNodes.nonEmpty &&
       nonEmpty &&
       (nodeOverlap(qg) || relationshipOverlap(qg) ||
-        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg))
+        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg))
 
   private def nodeOverlap(qg: QueryGraph) = {
-    qg.patternNodes.exists(p => qg.allKnownLabelsOnNode(p).isEmpty) || //MATCH ()?
-      (qg.patternNodeLabels.values.flatten.toSet intersect writeLabels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
+    val propsToCreate = createProperties
+    qg.patternNodes.exists(p => {
+      val readProps = qg.allKnownPropertiesOnNode(p).map(_.propertyKey)
+
+      qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty || //MATCH ()?
+        readProps.exists(propsToCreate.overlaps) //MATCH ({prop:..}) CREATE ({prop:..})
+    }
+    ) ||
+      (qg.patternNodeLabels.values.flatten.toSet intersect createLabels).nonEmpty // CREATE(:A:B) MATCH(:B:C)?
   }
 
   private def removeLabelOverlap(qg: QueryGraph) = {
@@ -114,7 +137,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   def setPropertyOverlap(qg: QueryGraph) = setNodePropertyOverlap(qg) || setRelPropertyOverlap(qg)
 
-  def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
+  private def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
     val propertiesToSet = mutatingPatterns.collect {
       case SetNodePropertyPattern(_, key, _) => key
     }.toSet
@@ -124,7 +147,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     (propertiesToRead intersect propertiesToSet).nonEmpty
   }
 
-  def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
+  private def setRelPropertyOverlap(qg: QueryGraph): Boolean = {
     val propertiesToSet = mutatingPatterns.collect {
       case SetRelationshipPropertyPattern(_, key, _) => key
     }.toSet
@@ -189,3 +212,31 @@ case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyK
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
+
+/*
+ * Used to simplify finding overlap between writing and reading properties
+ */
+trait CreatesPropertyKeys {
+  def overlaps(propertyKeyName: PropertyKeyName): Boolean
+}
+
+/*
+ * CREATE (a:L)
+ */
+case object CreatesNoPropertyKeys extends CreatesPropertyKeys {
+  override def overlaps(propertyKeyName: PropertyKeyName) = false
+}
+
+/*
+ * CREATE ({prop1: 42, prop2: 42})
+ */
+case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesPropertyKeys {
+  override def overlaps(propertyKeyName: PropertyKeyName): Boolean = keys(propertyKeyName)
+}
+
+/*
+ * CREATE ({props})
+ */
+case object CreatesUnknownPropertyKeys extends CreatesPropertyKeys {
+  override def overlaps(propertyKeyName: PropertyKeyName) = true
+}
