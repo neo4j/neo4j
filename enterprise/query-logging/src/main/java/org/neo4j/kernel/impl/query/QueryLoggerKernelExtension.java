@@ -70,6 +70,9 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         final Config config = dependencies.config();
         boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
         final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
+        final FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        final JobScheduler jobScheduler = dependencies.jobScheduler();
+        final Monitors monitoring = dependencies.monitoring();
 
         if (!queryLogEnabled)
         {
@@ -92,8 +95,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             @Override
             public void init() throws Throwable
             {
-                final FileSystemAbstraction fileSystem = dependencies.fileSystem();
-
                 Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
@@ -108,7 +109,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 }
                 else
                 {
-                    JobScheduler jobScheduler = dependencies.jobScheduler();
                     RotatingFileOutputStreamSupplier
                             rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, queryLogFile,
                             rotationThreshold, 0, maxArchives,
@@ -118,7 +118,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 }
 
                 QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, log, thresholdMillis );
-                dependencies.monitoring().addMonitorListener( logger );
+                monitoring.addMonitorListener( logger );
             }
 
             @Override
