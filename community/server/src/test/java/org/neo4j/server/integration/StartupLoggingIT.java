@@ -31,9 +31,10 @@ import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.Arrays.asList;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
@@ -61,15 +62,14 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
         //       This should be changed in 3.0.0.
         assertThat( captured, matchesLines(
-                warn( "Config file \\[config/neo4j-server.properties\\] does not exist." ),
-                warn( "Config file \\[config/neo4j.properties\\] does not exist." ),
+                warn( "Config file \\[config.neo4j-server\\.properties\\] does not exist." ),
+                warn( "Config file \\[config.neo4j\\.properties\\] does not exist." ),
                 info( "Successfully started database" ),
                 info( "Starting HTTP on port 7474 \\(.+ threads available\\)" ),
                 info( "Mounting static content at /webadmin" ),
                 info( "Mounting static content at /browser" ),
                 info( "Remote interface ready and available at http://.+:7474/" ),
 
-                info( "Successfully shutdown Neo4j Server" ),
                 info( "Successfully stopped database" ),
                 info( "Successfully shutdown database" ),
                 info( "Successfully shutdown Neo Server on port \\[.+\\], database \\[.+\\]")
