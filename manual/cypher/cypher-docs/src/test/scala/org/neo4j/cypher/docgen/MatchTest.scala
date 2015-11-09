@@ -146,7 +146,7 @@ class MatchTest extends DocumentingTest {
         val initQuery =
           """MATCH (charlie:Person {name:'Charlie Sheen'}), (rob:Person {name:'Rob Reiner'})
             | CREATE (rob)-[:`TYPE WITH SPACE`]->(charlie)"""
-        p("""Sometime your database will have types with non-letter characters, or with spaces in them.
+        p("""Sometimes your database will have types with non-letter characters, or with spaces in them.
             | Use +`+ (backtick) to quote these.
             | To demonstrate this we can add an additional relationship between Charlie Sheen and Rob Reiner:""")
         query(initQuery, NoAssertions) {
@@ -216,22 +216,21 @@ class MatchTest extends DocumentingTest {
           p("Returns the movie itself as well as actors and directors one relationship away")
           resultTable()
         }
-        section("Named path") {
-          p("If you want to return or filter on a path in your pattern graph, you can a introduce a named path.")
-          query("MATCH p =(michael { name:'Michael Douglas' })-->() RETURN p", assertRowCount(2)) {
-            p("Returns the two paths starting from Michael")
-            resultTable()
-          }
+      }
+      section("Named path") {
+        p("If you want to return or filter on a path in your pattern graph, you can a introduce a named path.")
+        query("MATCH p =(michael { name:'Michael Douglas' })-->() RETURN p", assertRowCount(2)) {
+          p("Returns the two paths starting from Michael")
+          resultTable()
         }
-        section("Matching on a bound relationship") {
-          p("""When your pattern contains a bound relationship, and that relationship pattern doesn’t
-              | specify direction, Cypher will try to match the relationship in both directions.""")
-          query("MATCH (a)-[r]-(b) WHERE id(r)= 0 RETURN a,b", assertRowCount(2)) {
-            p("This returns the two connected nodes, once as the start node, and once as the end node")
-            resultTable()
-          }
+      }
+      section("Matching on a bound relationship") {
+        p("""When your pattern contains a bound relationship, and that relationship pattern doesn’t
+            | specify direction, Cypher will try to match the relationship in both directions.""")
+        query("MATCH (a)-[r]-(b) WHERE id(r)= 0 RETURN a,b", assertRowCount(2)) {
+          p("This returns the two connected nodes, once as the start node, and once as the end node")
+          resultTable()
         }
-
       }
     }
     section("Shortest path", "query-shortest-path") {
