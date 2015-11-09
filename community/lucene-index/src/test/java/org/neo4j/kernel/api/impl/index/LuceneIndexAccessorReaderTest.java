@@ -81,10 +81,10 @@ public class LuceneIndexAccessorReaderTest
     public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws Exception
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, true, false );
+        when( terms.next() ).thenReturn( true, true, false );
+        when( terms.docFreq() ).thenReturn( 1, 2 );
         when( terms.term() ).thenReturn(
                 new Term( "string", "aaa" ),
-                new Term( "string", "ccc" ),
                 new Term( "string", "ccc" )
         );
 
@@ -98,12 +98,12 @@ public class LuceneIndexAccessorReaderTest
         assertEquals( 3, output.readSecond() );
     }
 
-
     @Test
     public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
     {
         // Given
         when( terms.next() ).thenReturn( true, true, false );
+        when( terms.docFreq() ).thenReturn( 1 );
         when( terms.term() ).thenReturn(
                 new Term( NODE_ID_KEY, "aaa" ), // <- this should be ignored
                 new Term( "string", "bbb" )
@@ -165,7 +165,7 @@ public class LuceneIndexAccessorReaderTest
 
         // Then
 
-        assertEquals( new HashSet<Class>( Arrays.asList( Array.class, String.class ) ), types );
+        assertEquals( new HashSet<>( Arrays.asList( Array.class, String.class ) ), types );
     }
 
     @Test
@@ -180,7 +180,7 @@ public class LuceneIndexAccessorReaderTest
         final Set<Class> types = accessor.valueTypesInIndex();
 
         // Then
-        assertEquals( new HashSet<Class>( Arrays.asList( Array.class, Number.class, String.class, Boolean.class ) ), types );
+        assertEquals( new HashSet<>( Arrays.asList( Array.class, Number.class, String.class, Boolean.class ) ), types );
     }
 
     @Test
@@ -194,7 +194,7 @@ public class LuceneIndexAccessorReaderTest
         try
         {
             accessor.valueTypesInIndex();
-            fail("Should have thrown");
+            fail( "Should have thrown" );
         }
         catch ( RuntimeException ex )
         {

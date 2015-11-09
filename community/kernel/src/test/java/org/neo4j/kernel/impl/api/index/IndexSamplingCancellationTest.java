@@ -48,7 +48,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_s
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 
-public class IndexSamplingIntegrationTest
+public class IndexSamplingCancellationTest
 {
     private final Barrier.Control samplingStarted = new Barrier.Control(), samplingDone = new Barrier.Control();
     private volatile Throwable samplingException;
