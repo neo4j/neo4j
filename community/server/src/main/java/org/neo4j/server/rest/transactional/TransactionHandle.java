@@ -23,12 +23,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -280,8 +278,15 @@ public class TransactionHandle implements TransactionTerminationHandle
             }
             catch ( Exception e )
             {
-                log.error( "Failed to commit transaction.", e );
-                errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
+                if ( e.getCause() instanceof Status.HasStatus )
+                {
+                    errors.add( new Neo4jError( ((Status.HasStatus) e.getCause()).status(), e ) );
+                }
+                else
+                {
+                    log.error( "Failed to commit transaction.", e );
+                    errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
+                }
             }
         }
         else
@@ -335,7 +340,16 @@ public class TransactionHandle implements TransactionTerminationHandle
                     errors.add( new Neo4jError( e.status(), e ) );
                     break;
                 }
-                catch ( QueryExecutionException e )
+                catch ( DeadlockDetectedException e )
+                {
+                    errors.add( new Neo4jError( Status.Transaction.DeadlockDetected, e ) );
+                }
+                catch ( IOException e )
+                {
+                    errors.add( new Neo4jError( Status.Network.UnknownFailure, e ) );
+                    break;
+                }
+                catch ( Exception e )
                 {
                     if ( e.getCause() instanceof Status.HasStatus )
                     {
@@ -345,20 +359,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     {
                         errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
                     }
-                    break;
-                }
-                catch( DeadlockDetectedException e )
-                {
-                    errors.add( new Neo4jError( Status.Transaction.DeadlockDetected, e ));
-                }
-                catch ( IOException e )
-                {
-                    errors.add( new Neo4jError( Status.Network.UnknownFailure, e ) );
-                    break;
-                }
-                catch ( Exception e )
-                {
-                    errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
+
                     break;
                 }
             }

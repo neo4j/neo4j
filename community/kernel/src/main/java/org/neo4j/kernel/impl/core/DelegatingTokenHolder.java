@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -32,7 +33,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter implements TokenHolder<TOKEN>
 {
-    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>(this.getClass());
+    protected InMemoryTokenCache<TOKEN> tokenCache = new InMemoryTokenCache<>( this.getClass() );
     private final TokenCreator tokenCreator;
     private final TokenFactory<TOKEN> tokenFactory;
 
@@ -69,6 +70,10 @@ public class DelegatingTokenHolder<TOKEN extends Token> extends LifecycleAdapter
         {
             id = createToken( name );
             return id;
+        }
+        catch ( ReadOnlyDbException e )
+        {
+            throw new TransactionFailureException( e.getMessage(), e );
         }
         catch ( Throwable e )
         {
