@@ -21,18 +21,18 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -53,7 +53,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
@@ -211,10 +210,10 @@ public class SchemaRuleCommandTest
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
+    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
             ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
@@ -235,7 +234,7 @@ public class SchemaRuleCommandTest
         {
             record.setInUse( true );
         }
-        return Arrays.asList( record );
+        return Collections.singletonList( record );
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )

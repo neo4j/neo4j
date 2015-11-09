@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -52,16 +52,16 @@ public class TransactionRepresentationStoreApplier
     protected final IndexingService indexingService;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
-    private final Provider<LabelScanWriter> labelScanWriters;
+    private final Supplier<LabelScanWriter> labelScanWriters;
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexApplierLookup legacyIndexProviderLookup;
     private final KernelHealth health;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
 
     public TransactionRepresentationStoreApplier(
-            IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStores neoStores,
+            IndexingService indexingService, Supplier<LabelScanWriter> labelScanWriters, NeoStores neoStores,
             CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup
             legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore, KernelHealth health, IdOrderingQueue legacyIndexTransactionOrdering )

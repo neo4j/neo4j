@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,19 +39,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -253,7 +253,7 @@ public class TransactionRepresentationCommitProcessIT
             KernelHealth kernelHealth )
     {
         return new TransactionRepresentationStoreApplier( mock( IndexingService.class ),
-                mock( Provider.class ), neoStores, mock( CacheAccessBackDoor.class ), mock( LockService.class ),
+                mock( Supplier.class ), neoStores, mock( CacheAccessBackDoor.class ), mock( LockService.class ),
                 legacyIndexApplierLookup, indexStore, kernelHealth, legacyIndexTransactionOrdering );
     }
 

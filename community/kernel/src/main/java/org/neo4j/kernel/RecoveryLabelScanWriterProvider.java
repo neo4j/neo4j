@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
  * Provides {@link LabelScanWriter} that takes advantage of the single-threaded context of recovery
  * to cache writes and apply in bigger batches, where each batch holds data from many transactions.
  */
-public class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter>, Closeable
+public class RecoveryLabelScanWriterProvider implements Supplier<LabelScanWriter>, Closeable
 {
     private int callCount;
     private final LabelScanStore labelScanStore;
@@ -54,7 +54,7 @@ public class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter
      * Called once for every transactions that have any label updates.
      */
     @Override
-    public LabelScanWriter instance()
+    public LabelScanWriter get()
     {
         return recoveryWriter;
     }
@@ -80,7 +80,7 @@ public class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter
 
         /**
          * Called from the transaction applier code. We won't close the actual writer every time
-         * we get this call, only every {@link RecoveryLabelScanWriterProvider#BATCH_SIZE} time,
+         * we get this call, only every {@link RecoveryLabelScanWriterProvider#batchSize} time,
          * at which point {@link #writePendingUpdates()} is called.
          */
         @Override

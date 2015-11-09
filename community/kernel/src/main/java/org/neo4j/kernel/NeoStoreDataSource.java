@@ -31,9 +31,9 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Factory;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
@@ -42,7 +42,6 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -511,14 +510,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         // Monitor listeners
         LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
         monitors.addMonitorListener( loggingLogMonitor );
-        monitors.addMonitorListener( new RecoveryVisitor.Monitor()
-        {
-            @Override
-            public void transactionRecovered( long txId )
-            {
-                recoveredCount.incrementAndGet();
-            }
-        } );
+        monitors.addMonitorListener( (RecoveryVisitor.Monitor) txId -> recoveredCount.incrementAndGet() );
 
         life.add( new Lifecycle.Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
@@ -815,14 +807,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         final LockService lockService =
                 config.get( use_read_locks_on_property_reads ) ? this.lockService : NO_LOCK_SERVICE;
-        return new Factory<StoreStatement>()
-        {
-            @Override
-            public StoreStatement newInstance()
-            {
-                return new StoreStatement( neoStores, lockService );
-            }
-        };
+        return () -> new StoreStatement( neoStores, lockService );
     }
 
     private TransactionLogModule buildTransactionLogs( File storeDir, Config config, LogProvider logProvider,
@@ -980,16 +965,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         };
     }
 
-    private Provider<LabelScanWriter> alwaysCreateNewWriter( final LabelScanStore labelScanStore )
+    private Supplier<LabelScanWriter> alwaysCreateNewWriter( final LabelScanStore labelScanStore )
     {
-        return new Provider<LabelScanWriter>()
-        {
-            @Override
-            public LabelScanWriter instance()
-            {
-                return labelScanStore.newWriter();
-            }
-        };
+        return labelScanStore::newWriter;
     }
 
     private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction, CacheAccessBackDoor cacheAccess,

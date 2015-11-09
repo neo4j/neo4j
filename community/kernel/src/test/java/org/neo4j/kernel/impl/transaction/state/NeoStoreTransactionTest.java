@@ -39,12 +39,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -109,6 +109,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -127,9 +128,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1491,8 +1489,8 @@ public class NeoStoreTransactionTest
                 Matchers.<TransactionRepresentation>any(),
                 any( LogAppendEvent.class ) ) ).thenReturn( new FakeCommitment( nextTxId++, neoStores.getMetaDataStore() ) );
         @SuppressWarnings( "unchecked" )
-        Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
-        when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
+        Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
+        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
                 indexing, labelScanStore, neoStores, cacheAccessBackDoor, locks, null, null, null, null );
 

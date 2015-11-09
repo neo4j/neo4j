@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -49,7 +48,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -74,7 +72,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
@@ -109,7 +107,7 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         try
@@ -144,7 +142,7 @@ public class ConstraintIndexCreatorTest
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );

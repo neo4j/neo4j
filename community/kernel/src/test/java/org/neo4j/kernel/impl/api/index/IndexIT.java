@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -132,7 +131,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
     {
         // given
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.singleton( kernel ), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
         creator.createConstraintIndex( labelId, propertyKeyId );
 
         // when

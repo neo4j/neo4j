@@ -25,8 +25,8 @@ import org.mockito.Matchers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
@@ -58,7 +58,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.util.function.Optionals.some;
 
@@ -66,7 +65,7 @@ public class TransactionRepresentationStoreApplierTest
 {
     private final IndexingService indexService = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStores neoStores = mock( NeoStores.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = new ReentrantLockService();

@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -56,10 +56,10 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
     private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
-    private final WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-                                    WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
+                                    WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
@@ -107,7 +107,7 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
                 new LabelUpdateWork( labelUpdates ) );
     }
 
-    public static class LabelUpdateWork implements Work<Provider<LabelScanWriter>,LabelUpdateWork>
+    public static class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpdateWork>
     {
         private final List<NodeLabelUpdate> labelUpdates;
 
@@ -124,10 +124,10 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
         }
 
         @Override
-        public void apply( Provider<LabelScanWriter> labelScanStore )
+        public void apply( Supplier<LabelScanWriter> labelScanStore )
         {
             Collections.sort( labelUpdates, SORT_BY_NODE_ID );
-            try ( LabelScanWriter writer = labelScanStore.instance() )
+            try ( LabelScanWriter writer = labelScanStore.get() )
             {
                 for ( NodeLabelUpdate update : labelUpdates )
                 {

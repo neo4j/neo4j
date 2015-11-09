@@ -22,30 +22,25 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Collections.singleton;
-
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
@@ -55,10 +50,9 @@ public class NeoTransactionIndexApplierTest
 
     private final IndexingService indexingService = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
-    private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Test
@@ -76,7 +70,7 @@ public class NeoTransactionIndexApplierTest
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
-        when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
+        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
 
         // when
         final boolean result = applier.visitNodeCommand( command );
@@ -84,10 +78,6 @@ public class NeoTransactionIndexApplierTest
 
         // then
         assertFalse( result );
-
-        final NodeLabelUpdate update = NodeLabelUpdate.labelChanges( command.getKey(), new long[]{}, new long[]{} );
-        final Collection<NodeLabelUpdate> labelUpdates = Arrays.asList( update );
-
         verify( indexUpdates, times( 1 ) ).flush();
     }
 

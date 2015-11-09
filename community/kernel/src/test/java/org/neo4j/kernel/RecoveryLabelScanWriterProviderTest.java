@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -73,10 +73,10 @@ public class RecoveryLabelScanWriterProviderTest
         }
     }
 
-    private void simulateTransaction( Provider<LabelScanWriter> provider, int i, List<NodeLabelUpdate> expectedUpdates )
+    private void simulateTransaction( Supplier<LabelScanWriter> provider, int i, List<NodeLabelUpdate> expectedUpdates )
             throws Exception
     {
-        try ( LabelScanWriter writer = provider.instance() )
+        try ( LabelScanWriter writer = provider.get() )
         {
             NodeLabelUpdate update = NodeLabelUpdate.labelChanges( i, longs(), longs( 1 ) );
             expectedUpdates.add( update );
