@@ -88,7 +88,7 @@ public class ValueNode
             labels = new ArrayList<>( numLabels );
             for ( int i = 0; i < numLabels; i++ )
             {
-                labels.add( DynamicLabel.label( unpacker.unpackText() ) );
+                labels.add( DynamicLabel.label( unpacker.unpackString() ) );
             }
         }
         else

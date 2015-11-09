@@ -322,7 +322,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private <E extends Exception> void unpackRunMessage( MessageHandler<E> output )
                 throws E, IOException
         {
-            String statement = unpacker.unpackText();
+            String statement = unpacker.unpackString();
             Map<String,Object> params = unpacker.unpackMap();
             output.handleRunMessage( statement, params );
         }
@@ -341,7 +341,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private <E extends Exception> void unpackInitMessage( MessageHandler<E> output ) throws IOException, E
         {
-            String clientName = unpacker.unpackText();
+            String clientName = unpacker.unpackString();
             output.handleInitMessage( clientName );
         }
 

@@ -92,7 +92,7 @@ public class BoltMessageStructsDocTest
 
     private void packValueOf( String type, PackStream.Packer packer ) throws IOException
     {
-        if ( type.equalsIgnoreCase( "Text" ) )
+        if ( type.equalsIgnoreCase( "String" ) )
         {
             packer.pack( "Hello, world!" );
         }

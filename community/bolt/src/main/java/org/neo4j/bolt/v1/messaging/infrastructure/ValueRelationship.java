@@ -67,7 +67,7 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         long relId = unpacker.unpackLong();
         long startNodeId = unpacker.unpackLong();
         long endNodeId = unpacker.unpackLong();
-        String relTypeName = unpacker.unpackText();
+        String relTypeName = unpacker.unpackString();
 
         Map<String, Object> props = unpacker.unpackMap();
 
