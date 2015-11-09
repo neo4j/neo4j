@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Test;
 
 import org.neo4j.function.Suppliers;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;

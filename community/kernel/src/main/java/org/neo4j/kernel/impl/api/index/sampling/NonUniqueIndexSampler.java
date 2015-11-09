@@ -46,12 +46,18 @@ public class NonUniqueIndexSampler
 
     public void include( String value )
     {
+        include( value, 1 );
+    }
+
+    public void include( String value, long increment )
+    {
+        assert increment > 0;
         if ( bufferSize >= bufferSizeLimit )
         {
             nextStep();
         }
 
-        if ( values.add( value ) == 1 )
+        if ( values.increment( value, increment ) == increment )
         {
             bufferSize += value.length();
         }
@@ -59,7 +65,13 @@ public class NonUniqueIndexSampler
 
     public void exclude( String value )
     {
-        if ( values.remove( value ) == 0 )
+        exclude( value, 1 );
+    }
+
+    public void exclude( String value, long decrement )
+    {
+        assert decrement > 0;
+        if ( values.increment( value, -decrement ) == 0 )
         {
             bufferSize -= value.length();
         }
