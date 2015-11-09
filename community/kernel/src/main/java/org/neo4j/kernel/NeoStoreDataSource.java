@@ -360,7 +360,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final Locks locks;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
-    private final StoreFactory storeFactory;
+    private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
     private final Config config;
     private final LockService lockService;
@@ -460,7 +460,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
-        this.storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+        this.idGeneratorFactory = idGeneratorFactory;
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
         {
@@ -531,6 +531,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
+            StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
             final NeoStoreModule neoStoreModule =
                     buildNeoStore( storeFactory, labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
             // TODO The only reason this is here is because of the provider-stuff for DiskLayer. Remove when possible:
@@ -543,6 +544,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     tokenNameLookup, logProvider, indexingServiceMonitor,
                     neoStoreModule.neoStores(), cacheModule.updateableSchemaState() );
 
+            // TODO Introduce a StorageEngine abstraction at the StoreLayerModule boundary
             StoreLayerModule storeLayerModule = buildStoreLayer( neoStoreModule.neoStores(),
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     indexingModule.indexingService(), cacheModule.schemaCache(), cacheModule.procedureCache() );
