@@ -94,6 +94,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         this.directories.addAll( directories );
     }
 
+    /**
+     * Simulate a filesystem crash, in which any changes that have not been {@link StoreChannel#force}d
+     * will be lost. Practically, all files revert to the state when they are last {@link StoreChannel#force}d.
+     */
+    public void crash()
+    {
+        files.values().forEach( EphemeralFileSystemAbstraction.EphemeralFileData::crash );
+    }
+
     public synchronized void shutdown()
     {
         for ( EphemeralFileData file : files.values() )
@@ -697,6 +706,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             checkIfClosedOrInterrupted();
             // Otherwise no forcing of an in-memory file
+            data.force();
         }
 
         @Override
@@ -812,9 +822,11 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 return new byte[1024];
             }
         };
-        private final DynamicByteBuffer fileAsBuffer;
+        private DynamicByteBuffer fileAsBuffer;
+        private DynamicByteBuffer forcedBuffer;
         private final Collection<WeakReference<EphemeralFileChannel>> channels = new LinkedList<>();
         private int size;
+        private int forcedSize;
         private int locked;
 
         public EphemeralFileData()
@@ -825,6 +837,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         private EphemeralFileData( DynamicByteBuffer data )
         {
             this.fileAsBuffer = data;
+            this.forcedBuffer = data.copy();
         }
 
         int read( Positionable fc, ByteBuffer dst )
@@ -851,45 +864,39 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return available; // return how much data was read
         }
 
-        int write( Positionable fc, ByteBuffer src )
+        synchronized int write( Positionable fc, ByteBuffer src )
         {
             int wanted = src.limit();
             int pending = wanted;
             byte[] scratchPad = SCRATCH_PAD.get();
 
-            synchronized ( fileAsBuffer )
+            while ( pending > 0 )
             {
-                while ( pending > 0 )
-                {
-                    int howMuchToWriteThisTime = min( pending, scratchPad.length );
-                    src.get( scratchPad, 0, howMuchToWriteThisTime );
-                    long pos = fc.pos();
-                    fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
-                    fc.pos( pos + howMuchToWriteThisTime );
-                    pending -= howMuchToWriteThisTime;
-                }
-
-                // If we just made a jump in the file fill the rest of the gap with zeros
-                int newSize = max( size, (int) fc.pos() );
-                int intermediaryBytes = newSize - wanted - size;
-                if ( intermediaryBytes > 0 )
-                {
-                    fileAsBuffer.fillWithZeros( size, intermediaryBytes );
-                }
-
-                size = newSize;
+                int howMuchToWriteThisTime = min( pending, scratchPad.length );
+                src.get( scratchPad, 0, howMuchToWriteThisTime );
+                long pos = fc.pos();
+                fileAsBuffer.put( (int) pos, scratchPad, 0, howMuchToWriteThisTime );
+                fc.pos( pos + howMuchToWriteThisTime );
+                pending -= howMuchToWriteThisTime;
             }
+
+            // If we just made a jump in the file fill the rest of the gap with zeros
+            int newSize = max( size, (int) fc.pos() );
+            int intermediaryBytes = newSize - wanted - size;
+            if ( intermediaryBytes > 0 )
+            {
+                fileAsBuffer.fillWithZeros( size, intermediaryBytes );
+            }
+
+            size = newSize;
             return wanted;
         }
 
-        EphemeralFileData copy()
+        synchronized EphemeralFileData copy()
         {
-            synchronized ( fileAsBuffer )
-            {
-                EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy() );
-                copy.size = size;
-                return copy;
-            }
+            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy() );
+            copy.size = size;
+            return copy;
         }
 
         void open( EphemeralFileChannel channel )
@@ -898,6 +905,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             {
                 channels.add( new WeakReference<>( channel ) );
             }
+        }
+
+        synchronized void force()
+        {
+            forcedBuffer = fileAsBuffer.copy();
+            forcedSize = size;
+        }
+
+        synchronized void crash()
+        {
+            fileAsBuffer = forcedBuffer.copy();
+            size = forcedSize;
         }
 
         void close( EphemeralFileChannel channel )
@@ -920,41 +939,35 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             final Iterator<WeakReference<EphemeralFileChannel>> refs = channels.iterator();
 
             return new PrefetchingIterator<EphemeralFileChannel>()
-                        {
-                            @Override
-                            protected EphemeralFileChannel fetchNextOrNull()
-                            {
-                                while ( refs.hasNext() )
-                                {
-                                    EphemeralFileChannel channel = refs.next().get();
-                                    if ( channel != null ) return channel;
-                                    refs.remove();
-                                }
-                                return null;
-                            }
+            {
+                @Override
+                protected EphemeralFileChannel fetchNextOrNull()
+                {
+                    while ( refs.hasNext() )
+                    {
+                        EphemeralFileChannel channel = refs.next().get();
+                        if ( channel != null ) return channel;
+                        refs.remove();
+                    }
+                    return null;
+                }
 
-                            @Override
-                            public void remove()
-                            {
-                                refs.remove();
-                            }
-                        };
+                @Override
+                public void remove()
+                {
+                    refs.remove();
+                }
+            };
         }
 
-        long size()
+        synchronized long size()
         {
-            synchronized ( fileAsBuffer )
-            {
-                return size;
-            }
+            return size;
         }
 
-        void truncate( long newSize )
+        synchronized void truncate( long newSize )
         {
-            synchronized ( fileAsBuffer )
-            {
-                this.size = (int) newSize;
-            }
+            this.size = (int) newSize;
         }
 
         boolean lock()
@@ -962,13 +975,10 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return locked == 0;
         }
 
-        void dumpTo( OutputStream target ) throws IOException
+        synchronized void dumpTo( OutputStream target ) throws IOException
         {
             byte[] scratchPad = SCRATCH_PAD.get();
-            synchronized ( fileAsBuffer )
-            {
-                fileAsBuffer.dump( target, scratchPad, size );
-            }
+            fileAsBuffer.dump( target, scratchPad, size );
         }
 
         @Override
