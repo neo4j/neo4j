@@ -37,6 +37,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -53,6 +54,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -775,6 +779,33 @@ public class CsvInputTest
             assertNode( node, 1L, properties( "three", "value" ), labels() );
             assertFalse( nodes.hasNext() );
         }
+    }
+
+    @Test
+    public void shouldIgnoreEmptyExtraColumns() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+                ":ID,one\n" +
+                "1,test,\n" +
+                "2,test,,additional" ) );
+
+        // WHEN
+        Collector collector = mock( Collector.class );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
+                null, null, IdType.INTEGER, COMMAS, collector );
+
+        // THEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNode( nodes.next(), 1L, properties( "one", "test" ), labels() );
+            assertNode( nodes.next(), 2L, properties( "one", "test" ), labels() );
+            assertFalse( nodes.hasNext() );
+        }
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1l ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( "additional" ) );
     }
 
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )

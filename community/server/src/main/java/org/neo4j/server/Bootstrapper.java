@@ -19,8 +19,6 @@
  */
 package org.neo4j.server;
 
-import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -40,8 +38,6 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.logging.Netty4LogBridge;
-import org.neo4j.server.logging.Netty4LoggerFactory;
-
 import static java.lang.String.format;
 import static org.neo4j.server.configuration.ServerConfigFactory.loadConfig;
 import static org.neo4j.server.web.ServerInternalSettings.SERVER_CONFIG_FILE;
