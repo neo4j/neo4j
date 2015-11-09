@@ -47,6 +47,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
 
     /*Find the property container we'll be working on*/
     element(context)(state) match {
+      case null            => () //ignore nulls
       case n: Node         => setProperties(qtx, qtx.nodeOps, n, map)
       case r: Relationship => setProperties(qtx, qtx.relationshipOps, r, map)
       case x               =>

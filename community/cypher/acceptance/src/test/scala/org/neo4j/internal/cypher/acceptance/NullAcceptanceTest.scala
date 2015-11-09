@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class NullAcceptanceTest extends ExecutionEngineFunSuite {
+class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   val anyNull: AnyRef = null.asInstanceOf[AnyRef]
 
@@ -29,7 +29,37 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite {
     // Given empty database
 
     // When
-    val result = execute("optional match (a:DoesNotExist) set a.prop = 42 return a")
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a.prop = 42 return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when remove property") {
+    // Given empty database
+
+    // When
+    val result = executeWithRulePlanner("optional match (a:DoesNotExist) remove a.prop return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when setting property with +=") {
+    // Given empty database
+
+    // When
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a += {prop: 42} return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when setting property with =") {
+    // Given empty database
+
+    // When
+    val result = executeWithRulePlanner("optional match (a:DoesNotExist) set a = {prop: 42} return a")
 
     // Then doesn't throw
     result.toList
@@ -39,27 +69,57 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite {
     // Given empty database
 
     // When
-    val result = execute("optional match (a:DoesNotExist) set a:L return a")
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a:L return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when removing label") {
+    // Given empty database
+
+    // When
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) remove a:L return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when deleting nodes") {
+    // Given empty database
+
+    // When
+    val result = updateWithBothPlanners("optional match (a:DoesNotExist) delete a return a")
+
+    // Then doesn't throw
+    result.toList
+  }
+
+  test("null nodes should be silently ignored when deleting relationships") {
+    // Given empty database
+
+    // When
+    val result = updateWithBothPlanners("optional match ()-[r: DoesNotExist]-() delete r return r")
 
     // Then doesn't throw
     result.toList
   }
 
   test("round(null) returns null") {
-    executeScalar[Any]("RETURN round(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN round(null)") should equal(anyNull)
   }
 
 
   test("floor(null) returns null") {
-    executeScalar[Any]("RETURN floor(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN floor(null)") should equal(anyNull)
   }
 
   test("ceil(null) returns null") {
-    executeScalar[Any]("RETURN ceil(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN ceil(null)") should equal(anyNull)
   }
 
   test("abs(null) returns null") {
-    executeScalar[Any]("RETURN abs(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN abs(null)") should equal(anyNull)
   }
 
   test("acos(null) returns null") {
@@ -67,19 +127,19 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("asin(null) returns null") {
-    executeScalar[Any]("RETURN asin(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN asin(null)") should equal(anyNull)
   }
 
   test("atan(null) returns null") {
-    executeScalar[Any]("RETURN atan(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN atan(null)") should equal(anyNull)
   }
 
   test("cos(null) returns null") {
-    executeScalar[Any]("RETURN cos(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN cos(null)") should equal(anyNull)
   }
 
   test("cot(null) returns null") {
-    executeScalar[Any]("RETURN cot(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN cot(null)") should equal(anyNull)
   }
 
   test("degrees(null) returns null") {
@@ -87,50 +147,50 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("exp(null) returns null") {
-    executeScalar[Any]("RETURN exp(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN exp(null)") should equal(anyNull)
   }
 
   test("log(null) returns null") {
-    executeScalar[Any]("RETURN log(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN log(null)") should equal(anyNull)
   }
 
   test("log10(null) returns null") {
-    executeScalar[Any]("RETURN log10(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN log10(null)") should equal(anyNull)
   }
 
   test("sin(null) returns null") {
-    executeScalar[Any]("RETURN sin(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN sin(null)") should equal(anyNull)
   }
 
   test("tan(null) returns null") {
-    executeScalar[Any]("RETURN tan(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN tan(null)") should equal(anyNull)
   }
 
   test("haversin(null) returns null") {
-    executeScalar[Any]("RETURN haversin(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN haversin(null)") should equal(anyNull)
   }
 
   test("sqrt(null) returns null") {
-    executeScalar[Any]("RETURN sqrt(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN sqrt(null)") should equal(anyNull)
   }
 
   test("sign(null) returns null") {
-    executeScalar[Any]("RETURN sign(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN sign(null)") should equal(anyNull)
   }
 
   test("radians(null) returns null") {
-    executeScalar[Any]("RETURN radians(null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN radians(null)") should equal(anyNull)
   }
 
   test("atan2(null, 0.3) returns null") {
-    executeScalar[Any]("RETURN atan2(null, 0.3)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN atan2(null, 0.3)") should equal(anyNull)
   }
 
   test("atan2(0.3, null) returns null") {
-    executeScalar[Any]("RETURN atan2(0.3, null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN atan2(0.3, null)") should equal(anyNull)
   }
 
   test("atan2(null, null) returns null") {
-    executeScalar[Any]("RETURN atan2(null, null)") should equal(anyNull)
+    executeScalarWithAllPlanners[Any]("RETURN atan2(null, null)") should equal(anyNull)
   }
 }
