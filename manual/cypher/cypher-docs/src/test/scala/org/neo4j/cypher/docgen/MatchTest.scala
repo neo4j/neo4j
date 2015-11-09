@@ -53,7 +53,7 @@ class MatchTest extends DocumentingTest {
            |This is the primary way of getting data into the current set of bindings.
            |It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>.""")
       p( """`MATCH` is often coupled to a `WHERE` part which adds restrictions, or predicates, to the `MATCH` patterns, making them more specific.
-           |The predicates are part of the pattern description, not a filter applied after the matching is done.
+           |The predicates are part of the pattern description, and should not be considered a filter applied only after the matching is done.
            |_This means that `WHERE` should always be put together with the `MATCH` clause it belongs to._""")
       p( """`MATCH` can occur at the beginning of the query or later, possibly after a `WITH`.
            |If it is the first clause, nothing will have been bound yet, and Neo4j will design a search to find the results matching the clause and any associated predicates specified in any `WHERE` part.
@@ -64,7 +64,7 @@ class MatchTest extends DocumentingTest {
            |Neo4j will automatically work out the best approach to finding start nodes and matching patterns.
            |Predicates in `WHERE` parts can be evaluated before pattern matching, during pattern matching, or after finding matches.
            |However, there are cases where you can influence the decisions taken by the query compiler.
-           |Read more about indexes in <<query-schema-index>>, and more about the specifying index hints to force Neo4j to use a specific index in <<query-using>>.""")
+           |Read more about indexes in <<query-schema-index>>, and more about specifying hints to force Neo4j to solve a query in a specific way in <<query-using>>.""")
       tip {
         p("To understand more about the patterns used in the +MATCH+ clause, read <<introduction-pattern>>")
       }
