@@ -51,11 +51,10 @@ public class NonUniqueIndexSamplerTest
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
-        sampler.include( value );
+        sampler.include( value, 2 );
 
         // then
-        assertSampledValues( sampler, 1, 1, 1 );
-
+        assertSampledValues( sampler, 2, 1, 2 );
     }
 
     @Test
@@ -65,12 +64,12 @@ public class NonUniqueIndexSamplerTest
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
-        sampler.include( value );
-        sampler.include( value );
-        sampler.include( "bbb" );
+        sampler.include( value, 5 );
+        sampler.include( value, 4 );
+        sampler.include( "bbb", 3 );
 
         // then
-        assertSampledValues( sampler, 3, 2, 3 );
+        assertSampledValues( sampler, 12, 2, 12 );
     }
 
     @Test
@@ -80,25 +79,42 @@ public class NonUniqueIndexSamplerTest
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 1 );
 
         // when
-        sampler.include( value );
-        sampler.include( value );
-        sampler.include( "bbb" );
+        sampler.include( value, 5 );
+        sampler.include( value, 4 );
+        sampler.include( "bbb", 3 );
 
         // then
-        assertSampledValues( sampler, 3, 1, 1 );
+        int expectedSampledSize = (/*  index size */ 12)  / (/* steps */ 3);
+        assertSampledValues( sampler, 12, 1, expectedSampledSize );
     }
 
     @Test
-    public void shouldExcludeValuesFromTheCurrentSampling()
+    public void shouldExcludeValuesFromTheCurrentSampling1()
     {
         // given
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
-        sampler.include( value );
-        sampler.include( value );
-        sampler.include( "bbb" );
+        sampler.include( value, 5  );
+        sampler.include( value, 4  );
+        sampler.include( "bbb", 3  );
 
         // when
-        sampler.exclude( value );
+        sampler.exclude( value, 3 );
+
+        // then
+        assertSampledValues( sampler, 9, 2, 9 );
+    }
+
+    @Test
+    public void shouldExcludeValuesFromTheCurrentSampling2()
+    {
+        // given
+        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
+        sampler.include( value, 1  );
+        sampler.include( value, 4  );
+        sampler.include( "bbb", 1  );
+
+        // when
+        sampler.exclude( value, 4 );
 
         // then
         assertSampledValues( sampler, 2, 2, 2 );
@@ -111,8 +127,8 @@ public class NonUniqueIndexSamplerTest
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( 10 );
 
         // when
-        sampler.exclude( value );
-        sampler.include( value );
+        sampler.exclude( value, 1 );
+        sampler.include( value, 1 );
 
         // then
         assertSampledValues( sampler, 1, 1, 1 );

@@ -71,10 +71,12 @@ class LuceneIndexAccessorReader implements IndexReader
             while ( terms.next() )
             {
                 Term term = terms.term();
+
                 if ( !NODE_ID_KEY.equals( term.field() ))
                 {
                     String value = term.text();
-                    sampler.include( value );
+                    int frequency = terms.docFreq();
+                    sampler.include( value, frequency );
                 }
                 checkCancellation();
             }
@@ -86,7 +88,6 @@ class LuceneIndexAccessorReader implements IndexReader
 
         return sampler.result( result );
     }
-
 
     @Override
     public PrimitiveLongIterator lookup( Object value )
