@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -163,8 +162,6 @@ public class DataSourceModule
 
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, editionModule.idGeneratorFactory,
-                pageCache, fileSystem, logging.getInternalLogProvider() );
 
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
 
@@ -191,7 +188,7 @@ public class DataSourceModule
                 logging.getInternalLog( KernelHealth.class ) ) );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
-                storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
+                editionModule.idGeneratorFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,

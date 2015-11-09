@@ -414,7 +414,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreDataSource( File storeDir, Config config, StoreFactory sf, LogProvider logProvider,
+    public NeoStoreDataSource( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, LogProvider logProvider,
             JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
             PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
@@ -460,7 +460,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
-        this.storeFactory = sf;
+        this.storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
         {
