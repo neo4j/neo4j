@@ -37,9 +37,9 @@ import static org.neo4j.bolt.v1.docs.DocPartParser.Decoration.withDetailedExcept
 
 /**
  * Node (signature=0x4E) {
- * Identity          identity
- * List<Text>        labels
- * Map<Text, Value>  properties
+ * Identity            identity
+ * List<String>        labels
+ * Map<String, Value>  properties
  * }
  */
 public class DocStruct implements Iterable<DocStruct.Field>

@@ -157,7 +157,7 @@ public class TransportErrorIT
         MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         MatcherAssert.assertThat( client, TransportTestUtil.eventuallyRecieves(
                 msgFailure( Status.Request.InvalidFormat,
-                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected TEXT, received: " +
+                        "Unable to read MSG_RUN message. Error was: Wrong type received. Expected STRING, received: " +
                         "RESERVED (0xff)." ) ) );
     }
 

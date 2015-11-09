@@ -118,7 +118,7 @@ public class BoltValueStructsDocTest
         {
             packer.pack( 1337 );
         }
-        else if ( type.equalsIgnoreCase( "Text" ) )
+        else if ( type.equalsIgnoreCase( "String" ) )
         {
             packer.pack( field.exampleValueOr( "12345" ) );
         }
@@ -128,7 +128,7 @@ public class BoltValueStructsDocTest
             packer.pack( "k" );
             packer.pack( 12345 );
         }
-        else if ( type.startsWith( "List<Text>" ) )
+        else if ( type.startsWith( "List<String>" ) )
         {
             packer.packListHeader( 2 );
             packer.pack( "Banana" );

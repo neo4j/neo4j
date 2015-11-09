@@ -35,8 +35,8 @@ public enum PackType
     FLOAT,
     /** Binary data */
     BYTES,
-    /** Unicode text */
-    TEXT,
+    /** Unicode string */
+    STRING,
     /** Sequence of zero or more values */
     LIST,
     /** Sequence of zero or more key/value pairs, keys are unique */

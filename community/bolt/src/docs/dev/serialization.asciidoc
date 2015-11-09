@@ -15,7 +15,7 @@ For details on the layout and meaning of specific messages, see <<bolt-messaging
 |<<bolt-packstream-booleans,Boolean>>            |Boolean true or false
 |<<bolt-packstream-ints,Integer>>                |64-bit signed integer
 |<<bolt-packstream-floats,Float>>                |64-bit floating point number
-|<<bolt-packstream-text,Text>>                   |Unicode text string
+|<<bolt-packstream-string,String>>               |Unicode string
 |<<bolt-packstream-lists,List>>                  |Ordered collection of values
 |<<bolt-packstream-maps,Map>>                    |Unordered, keyed collection of values
 |<<bolt-value-nodestruct,Node>>                  |A node in the graph with optional properties and labels
@@ -158,13 +158,13 @@ Value: -1.1
 C1 BF F1 99 99 99 99 99 9A
 ----
 
-[[bolt-packstream-text]]
-=== Text
-Text data is represented as UTF-8 encoded binary data.
-Note that sizes used for text are the byte counts of the UTF-8 encoded data, not the character count of the original text.
+[[bolt-packstream-string]]
+=== String
+String data is represented as UTF-8 encoded binary data.
+Note that sizes used for string are the byte counts of the UTF-8 encoded data, not the character count of the original string.
 
-.Text markers
-[cols="^20,<50,<30",options="header",name="packstream-text-marker-table"]
+.String markers
+[cols="^20,<50,<30",options="header",name="packstream-string-marker-table"]
 |=======================
 |Marker         |Size                                        |Maximum data size
 |`0x80`..`0x8F` |contained within low-order nibble of marker |15 bytes
@@ -173,24 +173,24 @@ Note that sizes used for text are the byte counts of the UTF-8 encoded data, not
 |`0xD2`         |32-bit big-endian unsigned integer          |4 294 967 295 bytes
 |=======================
 
-==== Tiny Text Strings & Empty Text Strings
-For encoded text containing fewer than 16 bytes, including empty strings, the marker byte should contain the high-order nibble `1000` followed by a low-order nibble containing the size.
+==== Tiny Strings & Empty Strings
+For encoded string containing fewer than 16 bytes, including empty strings, the marker byte should contain the high-order nibble `1000` followed by a low-order nibble containing the size.
 The encoded data then immediately follows the marker.
 The example below shows how the string "Hello" would be represented:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-tinytext.png[]
+image:packstream-tinystring.png[]
 
-==== Regular Text Strings
-For encoded text containing 16 bytes or more, the marker `0xD0`, `0xD1` or `0xD2` should be used, depending on scale.
+==== Regular Strings
+For encoded string containing 16 bytes or more, the marker `0xD0`, `0xD1` or `0xD2` should be used, depending on scale.
 This marker is followed by the size and the UTF-8 encoded data as in the example below:
 
 // TODO: Convert this to a code-segment that can be tested
-image:packstream-text.png[]
+image:packstream-string.png[]
 
 ==== Examples
 
-.Tiny text
+.Tiny string
 [source,bolt_packstream_type]
 ----
 Value: "a"
@@ -198,7 +198,7 @@ Value: "a"
 81 61
 ----
 
-.Regular text
+.Regular string
 [source,bolt_packstream_type]
 ----
 Value: "abcdefghijklmonpqrstuvwxyz"
@@ -207,7 +207,7 @@ D0 1A 61 62  63 64 65 66  67 68 69 6A  6B 6C 6D 6F
 6E 70 71 72  73 74 75 76  77 78 79 7A
 ----
 
-.Text with special characters
+.String with special characters
 [source,bolt_packstream_type]
 ----
 Value: "En å flöt över ängen"
@@ -386,8 +386,8 @@ A Node represents a node from a Neo4j graph and consists of a unique identifier 
 ----
 Node (signature=0x4E) {
     Integer           nodeIdentity
-    List<Text>        labels
-    Map<Text, Value>  properties
+    List<String>        labels
+    Map<String, Value>  properties
 }
 ----
 
@@ -398,11 +398,11 @@ A Relationship represents a relationship from a Neo4j graph and consists of a un
 [source,bolt_value_struct]
 ----
 Relationship (signature=0x52) {
-    Integer           relIdentity
-    Integer           startNodeIdentity
-    Integer           endNodeIdentity
-    Text              type
-    Map<Text, Value>  properties
+    Integer             relIdentity
+    Integer             startNodeIdentity
+    Integer             endNodeIdentity
+    String              type
+    Map<String, Value>  properties
 }
 ----
 
@@ -485,9 +485,9 @@ The general serialised structure is as follows:
 [source,bolt_value_struct]
 ----
 UnboundRelationship (signature=0x72) {
-    Integer           relIdentity
-    Text              type          // e.g. "KNOWS"
-    Map<Text, Value>  properties    // e.g. {since:1999}
+    Integer             relIdentity
+    String              type          // e.g. "KNOWS"
+    Map<String, Value>  properties    // e.g. {since:1999}
 }
 ----
 
@@ -501,7 +501,7 @@ These are all the marker bytes:
 |=======================
 |Marker         |Binary     |Type          |Description
 |`0x00`..`0x7F` |`0xxxxxxx` |`+TINY_INT`   |Integer 0 to 127
-|`0x80`..`0x8F` |`1000xxxx` |`TINY_TEXT`   |UTF-8 encoded text string (fewer than 2^4^ bytes)
+|`0x80`..`0x8F` |`1000xxxx` |`TINY_STRING` |UTF-8 encoded string (fewer than 2^4^ bytes)
 |`0x90`..`0x9F` |`1001xxxx` |`TINY_LIST`   |List (fewer than 2^4^ items)
 |`0xA0`..`0xAF` |`1010xxxx` |`TINY_MAP`    |Map (fewer than 2^4^ key-value pairs)
 |`0xB0`..`0xBF` |`1011xxxx` |`TINY_STRUCT` |Structure (fewer than 2^4^ fields)
@@ -515,9 +515,9 @@ These are all the marker bytes:
 |`0xCA`         |`11001010` |`INT_32`      |32-bit signed integer
 |`0xCB`         |`11001011` |`INT_64`      |64-bit signed integer
 |`0xCC`..`0xCF` |`11001100` |              |Reserved
-|`0xD0`         |`11010000` |`TEXT_8`      |UTF-8 encoded text string (fewer than 2^8^ bytes)
-|`0xD1`         |`11010001` |`TEXT_16`     |UTF-8 encoded text string (fewer than 2^16^ bytes)
-|`0xD2`         |`11010010` |`TEXT_32`     |UTF-8 encoded text string (fewer than 2^32^ bytes)
+|`0xD0`         |`11010000` |`STRING_8`    |UTF-8 encoded string (fewer than 2^8^ bytes)
+|`0xD1`         |`11010001` |`STRING_16`   |UTF-8 encoded string (fewer than 2^16^ bytes)
+|`0xD2`         |`11010010` |`STRING_32`   |UTF-8 encoded string (fewer than 2^32^ bytes)
 |`0xD3`         |`11010011` |              |Reserved
 |`0xD4`         |`11010100` |`LIST_8`      |List (fewer than 2^8^ items)
 |`0xD5`         |`11010101` |`LIST_16`     |List (fewer than 2^16^ items)

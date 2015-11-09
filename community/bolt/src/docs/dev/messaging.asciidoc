@@ -83,7 +83,7 @@ All parameters in the `INIT` message are required.
 [source,bolt_message_struct]
 ----
 InitMessage (signature=0x01) {
-    Text clientName
+    String clientName
 }
 ----
 
@@ -110,8 +110,8 @@ The `RUN` message is a client message used to start a new job on the server. It 
 [source,bolt_message_struct]
 ----
 RunMessage (signature=0x10) {
-    Text             statement
-    Map<Text,Value>  parameters
+    String             statement
+    Map<String,Value>  parameters
 }
 ----
 
@@ -240,7 +240,7 @@ It has the following structure:
 [source,bolt_message_struct]
 ----
 SuccessMessage (signature=0x70) {
-    Map<Text,Value> metadata
+    Map<String,Value> metadata
 }
 ----
 
@@ -261,7 +261,7 @@ It has the following structure:
 [source,bolt_message_struct]
 ----
 FailureMessage (signature=0x7F) {
-    Map<Text,Value> metadata
+    Map<String,Value> metadata
 }
 ----
 
@@ -294,7 +294,7 @@ It has the following structure:
 [source,bolt_message_struct]
 ----
 IgnoredMessage (signature=0x7E) {
-    Map<Text,Value>  metadata
+    Map<String,Value>  metadata
 }
 ----
 

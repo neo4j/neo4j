@@ -52,6 +52,7 @@ public class Chunker
                 ByteBuf buf = (ByteBuf) inv.getArguments()[0];
                 outputBuffer.limit( outputBuffer.position() + buf.readableBytes() );
                 buf.readBytes( outputBuffer );
+                buf.release();
                 return null;
             }
         } );

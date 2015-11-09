@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v1.docs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -30,10 +26,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.neo4j.bolt.v1.messaging.MessageFormat;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
@@ -43,18 +42,17 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
+import org.neo4j.graphdb.DynamicRelationshipType;
 
 import static java.util.Arrays.asList;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
 @RunWith( Parameterized.class )
@@ -159,7 +157,7 @@ public class BoltValueDocTest
         {
             return true;
         }
-        else if ( type.equalsIgnoreCase( "text" ) )
+        else if ( type.equalsIgnoreCase( "string" ) )
         {
             return "Steven Brookreson";
         }
