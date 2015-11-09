@@ -23,7 +23,6 @@ package org.neo4j.browser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -64,7 +63,6 @@ import static org.junit.Assert.assertTrue;
  * of accidental syntax errors in the browser code. It may also provide early warning that examples need to be updated
  * when cypher syntax moves on.
  */
-@Ignore
 public class CannedCypherExecutionTest
 {
     @Test
@@ -97,7 +95,6 @@ public class CannedCypherExecutionTest
                         {
                             if ( shouldExplain( statement ) )
                             {
-                                System.out.println(statement);
                                 try ( Transaction transaction = database.beginTx() )
                                 {
                                     Iterable<Notification> notifications = database.execute(
@@ -120,7 +117,7 @@ public class CannedCypherExecutionTest
                                     }
 
                                     assertThat( format( "Query [%s] should only produce %s notifications. [%s]",
-                                                    ignorableStatusCodes, statement, fileName ),
+                                            ignorableStatusCodes, statement, fileName ),
                                             filteredNotifications, empty() );
 
                                     explainCount.incrementAndGet();
@@ -152,10 +149,6 @@ public class CannedCypherExecutionTest
 
         assertTrue( "Static files should contain at least one valid cypher statement",
                 executionCount.intValue() >= 1 );
-        System.out.printf( "Explained %s cypher statements extracted from HTML files, with no notifications.%n",
-                explainCount );
-        System.out.printf( "Executed %s cypher statements extracted from HTML files, with no errors.%n",
-                executionCount );
     }
 
     private boolean hasWarningInHtml( Element cypherElement )

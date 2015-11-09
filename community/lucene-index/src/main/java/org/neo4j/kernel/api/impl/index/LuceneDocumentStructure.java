@@ -303,7 +303,7 @@ public class LuceneDocumentStructure
         boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
         TermRangeQuery termRangeQuery = TermRangeQuery.newStringRange( ValueEncoding.String.key(), lower, upper,
                 includeLowerBoundary, includeUpperBoundary );
-        //TODO check upper case
+
         if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
         {
             BooleanQuery.Builder builder = new BooleanQuery.Builder();

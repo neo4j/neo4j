@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.junit.Test;
+
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
@@ -26,15 +34,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncod
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Number;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.String;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.junit.Test;
 
 public class LuceneDocumentStructureTest
 {
@@ -140,19 +139,19 @@ public class LuceneDocumentStructureTest
         assertEquals( true, query.includesMax() );
     }
 
-//    @Test
-//    public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
-//    {
-//        // given
-//        TermRangeQuery query = documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
-//
-//        // then
-//        assertEquals( "string", query.getField() );
-//        assertEquals( "foo" , query.getLowerTerm().utf8ToString() );
-//        assertEquals( false, query.includesLower() );
-//        assertEquals( null, query.getUpperTerm() );
-//        assertEquals( true, query.includesUpper() );
-//    }
+    @Test
+    public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
+    {
+        // given
+        TermRangeQuery query = (TermRangeQuery) documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+
+        // then
+        assertEquals( "string", query.getField() );
+        assertEquals( "foo" , query.getLowerTerm().utf8ToString() );
+        assertEquals( false, query.includesLower() );
+        assertEquals( null, query.getUpperTerm() );
+        assertEquals( true, query.includesUpper() );
+    }
 
     @Test
     public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
