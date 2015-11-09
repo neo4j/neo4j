@@ -40,7 +40,7 @@ public class Chunker
 {
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
-        final ByteBuffer outputBuffer = ByteBuffer.allocate( 512 );
+        final ByteBuffer outputBuffer = ByteBuffer.allocate( 1024 * 8 );
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );

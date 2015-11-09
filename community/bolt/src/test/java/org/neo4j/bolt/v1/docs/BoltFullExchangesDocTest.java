@@ -143,7 +143,7 @@ public class BoltFullExchangesDocTest
                         assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
                                     "binary data.",
                                 hex( event.payload() ),
-                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 512 ) ) ) );
+                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
 
                         // Ensure that the server replies as documented
                         Message serverMessage = recvOneMessage( client );
