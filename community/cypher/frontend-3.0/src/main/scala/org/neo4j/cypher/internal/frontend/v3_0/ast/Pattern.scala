@@ -353,7 +353,7 @@ case class RelationshipPattern(
   private def checkProperties(ctx: SemanticContext): SemanticCheck =
     properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
 
-  def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
+  def isSingleLength = length.isEmpty
 
   def isDirected = direction != SemanticDirection.BOTH
 }

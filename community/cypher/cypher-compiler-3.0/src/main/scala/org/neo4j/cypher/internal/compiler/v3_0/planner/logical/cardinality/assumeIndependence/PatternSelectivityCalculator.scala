@@ -88,7 +88,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
               }
           val selectivityPerLength = selectivityPerLengthAndStep.flatMap(combiner.andTogetherSelectivities)
           combiner.orTogetherSelectivities(selectivityPerLength).
-            getOrElse(throw new InternalException("Unexpectedly tried to calculate cardinality of a [*0..0] relationship"))
+            getOrElse(Selectivity.ZERO)
       }
     }
   }
