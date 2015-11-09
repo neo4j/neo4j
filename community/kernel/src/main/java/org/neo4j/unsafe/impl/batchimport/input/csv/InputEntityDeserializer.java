@@ -20,14 +20,12 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -91,9 +89,11 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
             // less columns than the data. Prints in close() so it only happens once per file.
             while ( !mark.isEndOfLine() )
             {
+                long lineNumber = data.lineNumber();
                 data.seek( mark, delimiter );
-                data.extract( mark, stringExtractor );
-                badCollector.collectExtraColumns( data.sourceDescription(), data.lineNumber(), stringExtractor.value() );
+                data.tryExtract( mark, stringExtractor );
+                badCollector.collectExtraColumns(
+                        data.sourceDescription(), lineNumber, stringExtractor.value() );
             }
 
             entity = decorator.apply( entity );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 

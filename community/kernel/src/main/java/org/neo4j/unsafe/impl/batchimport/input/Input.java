@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.OutputStream;
-
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;

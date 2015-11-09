@@ -19,8 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import java.io.OutputStream;
-
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -29,7 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
