@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Property, Expression}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{SetGivenRelationshipProperty, SetGivenNodeProperty, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
@@ -36,9 +36,15 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
+
+    val needsExclusiveLock = expression.subExpressions.exists {
+      case Property(_, key) if key.name == propertyKey.name => true
+      case _ => false
+    }
+
     input.map { row =>
       val value = row.get(name).get
-      if (value != null) setProperty(row, state, getId(value))
+      if (value != null) setProperty(row, state, getId(value), needsExclusiveLock)
       row
     }
   }
@@ -47,15 +53,21 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
   def operations(query: QueryContext): Operations[T]
   def operatorName: String
 
-  private def setProperty(context: ExecutionContext, state: QueryState, id: Long) = {
+  private def setProperty(context: ExecutionContext, state: QueryState, entityId: Long, needsExclusiveLock: Boolean) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
         .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
     val ops = operations(queryContext)
+
+    if (needsExclusiveLock) ops.acquireExclusiveLock(entityId)
+
     val value = makeValueNeoSafe(expression(context)(state))
-    if (value == null) ops.removeProperty(id, propertyId)
-    else ops.setProperty(id, propertyId, value)
+    if (value == null) ops.removeProperty(entityId, propertyId)
+    else ops.setProperty(entityId, propertyId, value)
+
+    // TODO: Is release not needed? (Currently a write lock will be held until the transaction is committed, but will this always be true)
+    if (needsExclusiveLock) ops.acquireExclusiveLock(entityId)
   }
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, identifiers)

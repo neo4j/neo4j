@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
 import org.neo4j.tooling.GlobalGraphOperations
@@ -339,6 +340,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def isDeleted(n: Node): Boolean =
       kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
+
+    override def acquireExclusiveLock(obj: Long) =
+      statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
+
+    override def releaseExclusiveLock(obj: Long) =
+      statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -380,6 +387,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def isDeleted(r: Relationship): Boolean =
       kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
+
+    override def acquireExclusiveLock(obj: Long) =
+      statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+
+    override def releaseExclusiveLock(obj: Long) =
+      statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =

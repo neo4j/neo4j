@@ -310,7 +310,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case SetLabels(_, IdName(name), labels) =>
       SetLabelsPipe(source, name, labels)()
 
-    case SetNodePropery(_, idName, propertyKey, expression) =>
+    case SetNodeProperty(_, idName, propertyKey, expression) =>
       SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
         toCommandExpression(expression))()
 

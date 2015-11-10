@@ -139,3 +139,17 @@ trait ExpressionWInnerExpression extends Expression {
     myType
   }
 }
+
+object Expression {
+  def doesMapExpressionReadSameProperty(mapEntityName: String, mapExpression: Expression): Boolean =
+    mapExpression match {
+      case LiteralMap(map) => map.exists {
+        case (k, v) => v.subExpressions.exists {
+          case Property(Identifier(entityName), propertyKey) =>
+            entityName == mapEntityName && propertyKey.name == k
+          case _ => false
+        }
+      }
+      case _ => false
+    }
+}
