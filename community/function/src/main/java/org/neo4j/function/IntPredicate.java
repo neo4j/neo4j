@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 /**
  * Represents a predicate (boolean-valued function) of one int-valued argument. This is the int-consuming primitive type specialization of {@link Predicate}.
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface IntPredicate extends ThrowingIntPredicate<RuntimeException>
 {

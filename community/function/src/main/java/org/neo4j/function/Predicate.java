@@ -23,6 +23,7 @@ package org.neo4j.function;
  * Represents a predicate (boolean-valued function) of one argument.
  *
  * @param <T> the type of the input to the predicate
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface Predicate<T> extends ThrowingPredicate<T,RuntimeException>
 {

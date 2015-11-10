@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 /**
  * Represents a predicate (boolean-valued function) of one long-valued argument. This is the long-consuming primitive type specialization of {@link Predicate}.
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface LongPredicate extends ThrowingLongPredicate<RuntimeException>
 {
