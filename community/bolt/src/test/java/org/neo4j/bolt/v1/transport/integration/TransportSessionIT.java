@@ -31,6 +31,8 @@ import java.util.Collection;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
@@ -65,26 +67,20 @@ public class TransportSessionIT
     {
         return asList(
                 new Object[]{
-                        new Factory<Connection>()
-                        {
-                            @Override
-                            public Connection newInstance()
-                            {
-                                return new SecureSocketConnection();
-                            }
-                        },
+                        (Factory<Connection>) SocketConnection::new,
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
-                        new Factory<Connection>()
-                        {
-                            @Override
-                            public Connection newInstance()
-                            {
-                                return new SecureWebSocketConnection();
-                            }
-                        },
-                        new HostnamePort( "localhost:7688" )
+                        (Factory<Connection>) WebSocketConnection::new,
+                        new HostnamePort( "localhost:7687" )
+                },
+                new Object[]{
+                        (Factory<Connection>) SecureSocketConnection::new,
+                        new HostnamePort( "localhost:7687" )
+                },
+                new Object[]{
+                        (Factory<Connection>) SecureWebSocketConnection::new,
+                        new HostnamePort( "localhost:7687" )
                 } );
     }
 
@@ -170,7 +166,9 @@ public class TransportSessionIT
     @After
     public void teardown() throws Exception
     {
-        if(client != null) client.disconnect();
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
-
 }

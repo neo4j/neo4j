@@ -31,6 +31,8 @@ import java.util.Collection;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
@@ -58,20 +60,27 @@ public class ConnectionIT
                         new HostnamePort( "localhost:7687" )
                 },
                 new Object[]{
+                        new SocketConnection(),
+                        new HostnamePort( "localhost:7687" )
+                },
+                new Object[]{
                         new SecureWebSocketConnection(),
-                        new HostnamePort( "localhost:7688" )
-                } );
+                        new HostnamePort( "localhost:7687" )
+                },
+                new Object[]{
+                        new WebSocketConnection(),
+                        new HostnamePort( "localhost:7687" )
+                });
     }
 
     @Test
     public void shouldCloseConnectionOnInvalidHandshake() throws Exception
     {
         // GIVEN
-        connection.connect( address);
-
+        connection.connect( address );
 
         // WHEN
-        connection.send( new byte[]{(byte)0xDE, (byte) 0xAD, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
+        connection.send( new byte[]{(byte) 0xDE, (byte) 0xAD, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
 
         // THEN
         exception.expect( IOException.class );

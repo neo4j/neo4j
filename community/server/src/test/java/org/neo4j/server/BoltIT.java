@@ -31,6 +31,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class BoltIT extends ExclusiveServerTestBase
@@ -51,8 +52,8 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled
         server = server()
-                .withProperty( ServerSettings.bolt_enabled.name(), "true" )
-                .withProperty( ServerSettings.bolt_tls_enabled.name(), "true" )
+                .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
+                .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
                 .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();
@@ -66,9 +67,9 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled, and a non-standard port configured
         server = server()
-                .withProperty( ServerSettings.bolt_enabled.name(), "true" )
-                .withProperty( ServerSettings.bolt_tls_enabled.name(), "true" )
-                .withProperty( ServerSettings.bolt_socket_address.name(), "localhost:8776" )
+                .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
+                .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
+                .withProperty( connector( 0, ServerSettings.bolt_socket_address ).name(), "localhost:8776" )
                 .usingDatabaseDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();

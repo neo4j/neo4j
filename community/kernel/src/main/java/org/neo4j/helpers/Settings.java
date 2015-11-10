@@ -922,7 +922,7 @@ public final class Settings
         public String toString()
         {
             StringBuilder builder = new StringBuilder(  );
-            builder.append( name ).append( " is " ).append( parser.toString() );
+            builder.append( name() ).append( " is " ).append( parser.toString() );
 
             if (valueConverters.length > 0)
             {

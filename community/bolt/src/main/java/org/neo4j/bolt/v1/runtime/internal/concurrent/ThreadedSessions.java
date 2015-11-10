@@ -53,9 +53,9 @@ public class ThreadedSessions implements Sessions
     }
 
     @Override
-    public Session newSession()
+    public Session newSession( boolean isEncrypted )
     {
-        Session realSession = delegate.newSession();
+        Session realSession = delegate.newSession( isEncrypted );
         SessionWorker worker = new SessionWorker( realSession, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, realSession.key() ) );

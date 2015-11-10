@@ -26,7 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.logging.Log;
@@ -159,17 +159,20 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
      */
     public static class ProtocolChooser
     {
-        private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions;
+        private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions;
+        private final boolean isEncrypted;
         private final ByteBuffer handShake = ByteBuffer.allocateDirect( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
-        private static final int MAGIC_PREAMBLE = 0x6060B017;
+        public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
+
         private BoltProtocol protocol;
 
         /**
          * @param availableVersions version -> protocol mapping
          */
-        public ProtocolChooser( PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions )
+        public ProtocolChooser( PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions, boolean isEncrypted )
         {
             this.availableVersions = availableVersions;
+            this.isEncrypted = isEncrypted;
         }
 
         public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
@@ -189,7 +192,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             {
                 handShake.flip();
                 //Check so that handshake starts with 0x606 0B017
-                if ( handShake.getInt() != MAGIC_PREAMBLE )
+                if ( handShake.getInt() != BOLT_MAGIC_PREAMBLE )
                 {
                     return HandshakeOutcome.INVALID_HANDSHAKE;
                 }
@@ -199,7 +202,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
                         long suggestion = handShake.getInt() & 0xFFFFFFFFL;
                         if ( availableVersions.containsKey( suggestion ) )
                         {
-                            protocol = availableVersions.get( suggestion ).apply( ch );
+                            protocol = availableVersions.get( suggestion ).apply( ch, isEncrypted );
                             return HandshakeOutcome.PROTOCOL_CHOSEN;
                         }
                     }

@@ -25,14 +25,30 @@ import org.junit.runners.model.Statement;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+
 public class Neo4jWithSocket implements TestRule
 {
+    private final Consumer<Map<Setting<?>,String>> configure;
+
+    public Neo4jWithSocket()
+    {
+        this( settings -> {} );
+    }
+
+    public Neo4jWithSocket( Consumer<Map<Setting<?>, String>> configure )
+    {
+        this.configure = configure;
+    }
+
     @Override
     public Statement apply( final Statement statement, Description description )
     {
@@ -41,9 +57,10 @@ public class Neo4jWithSocket implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Map<Setting<?>, String> settings = new HashMap<>(  );
-                settings.put( BoltKernelExtension.Settings.enabled, "true");
-                settings.put( BoltKernelExtension.Settings.tls_enabled, "true");
+                Map<Setting<?>, String> settings = new HashMap<>();
+                settings.put( connector( 0, BoltKernelExtension.Settings.enabled ), "true" );
+                settings.put( connector( 0, BoltKernelExtension.Settings.tls_level ), OPTIONAL.name() );
+                configure.accept( settings );
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase(settings);
                 try
                 {
