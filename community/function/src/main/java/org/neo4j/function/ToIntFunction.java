@@ -23,6 +23,7 @@ package org.neo4j.function;
  * Represents a function that accepts one argument and produces an int.
  *
  * @param <T> the type of the argument of the function
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface ToIntFunction<T>
 {

@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 /**
  * Constructors for basic {@link BiConsumer} types
+ * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public final class BiConsumers
 {

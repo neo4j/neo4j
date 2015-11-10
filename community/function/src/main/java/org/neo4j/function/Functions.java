@@ -23,6 +23,7 @@ import java.util.Map;
 
 /**
  * Constructors for basic {@link Function} and {@link BiFunction} types
+ * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public final class Functions
 {

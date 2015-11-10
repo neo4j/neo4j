@@ -24,6 +24,7 @@ package org.neo4j.function;
  * Unlike most other functional interfaces, BiConsumer is expected to operate via side-effects.
  *
  * @param <T> the type of the input to the operation
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface BiConsumer<T, U> extends ThrowingBiConsumer<T,U,RuntimeException>
 {

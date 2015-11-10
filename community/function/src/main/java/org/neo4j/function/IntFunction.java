@@ -23,6 +23,7 @@ package org.neo4j.function;
  * Represents a function that accepts an int-valued argument and produces a result. This is the int-consuming primitive specialization for {@link Function}.
  *
  * @param <R> the type of the result of the function
+ * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
 public interface IntFunction<R> extends ThrowingIntFunction<R,RuntimeException>, org.neo4j.function.primitive.FunctionFromPrimitiveInt<R>
 {
