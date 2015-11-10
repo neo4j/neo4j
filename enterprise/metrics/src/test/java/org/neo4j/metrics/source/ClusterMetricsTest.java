@@ -58,6 +58,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ClusterMetricsTest
 {
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     @Test
     public void clusterMetricsReportMasterAvailable()
     {
@@ -112,19 +115,6 @@ public class ClusterMetricsTest
         assertEquals( 1, reporter.isAvailableValue );
     }
 
-    ClusterMembers getClusterMembers( String memberRole, HighAvailabilityMemberState memberState )
-    {
-        HighAvailabilityMemberStateMachine stateMachine = mock( HighAvailabilityMemberStateMachine.class );
-        when( stateMachine.getCurrentState() ).thenReturn( memberState );
-        ClusterMember clusterMember = spy( new ClusterMember( new InstanceId( 1 ) ) );
-        when( clusterMember.getHARole() ).thenReturn( memberRole );
-        ObservedClusterMembers observedClusterMembers = mock( ObservedClusterMembers.class );
-        when( observedClusterMembers.getCurrentMember() ).thenReturn( clusterMember );
-        return new ClusterMembers( observedClusterMembers, stateMachine );
-    }
-
-    @Rule
-    public ExpectedException thrown= ExpectedException.none();
     @Test
     public void testClusterMemberNotEnabled()
     {
@@ -175,10 +165,18 @@ public class ClusterMetricsTest
         reporter.report();
         assertEquals( 0, reporter.isMasterValue );
         assertEquals( 0, reporter.isAvailableValue );
-
-
     }
 
+    ClusterMembers getClusterMembers( String memberRole, HighAvailabilityMemberState memberState )
+    {
+        HighAvailabilityMemberStateMachine stateMachine = mock( HighAvailabilityMemberStateMachine.class );
+        when( stateMachine.getCurrentState() ).thenReturn( memberState );
+        ClusterMember clusterMember = spy( new ClusterMember( new InstanceId( 1 ) ) );
+        when( clusterMember.getHARole() ).thenReturn( memberRole );
+        ObservedClusterMembers observedClusterMembers = mock( ObservedClusterMembers.class );
+        when( observedClusterMembers.getCurrentMember() ).thenReturn( clusterMember );
+        return new ClusterMembers( observedClusterMembers, stateMachine );
+    }
 
     class TestReporter extends ScheduledReporter
     {
@@ -197,6 +195,5 @@ public class ClusterMetricsTest
             isAvailableValue = (Integer) gauges.get( ClusterMetrics.IS_AVAILABLE ).getValue();
         }
     }
-
 
 }

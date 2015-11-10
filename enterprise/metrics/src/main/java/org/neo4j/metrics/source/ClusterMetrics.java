@@ -57,8 +57,8 @@ public class ClusterMetrics extends LifecycleAdapter
     private final SlaveUpdatePullerMonitor monitor = new SlaveUpdatePullerMonitor();
     private ClusterMembers clusterMembers = null;
 
-    public ClusterMetrics( Config config, Monitors monitors, MetricRegistry registry, DependencyResolver
-            dependencyResolver, LogService logService )
+    public ClusterMetrics( Config config, Monitors monitors, MetricRegistry registry,
+            DependencyResolver dependencyResolver, LogService logService )
     {
         this.config = config;
         this.monitors = monitors;
@@ -70,10 +70,12 @@ public class ClusterMetrics extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        if ( config.get( MetricsSettings.neoClusterEnabled ) )
+        if ( config.get( MetricsSettings.neoClusterEnabled ) && resolveClusterMembersDependencyOrLogWarning() )
         {
-            registerClusterMemberMetrics();
             monitors.addMonitorListener( monitor );
+
+            registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
+            registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
 
             registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
             {
@@ -96,39 +98,31 @@ public class ClusterMetrics extends LifecycleAdapter
         }
     }
 
-    private void resolveClusterMembersDependencyOrLogWarning()
+    private boolean resolveClusterMembersDependencyOrLogWarning()
     {
         try
         {
             clusterMembers = dependencyResolver.resolveDependency( ClusterMembers.class );
+            return true;
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
-            logService.getUserLog( getClass() ).warn("Cluster metrics was enabled but the appropriate " +
-                    "cluster dependencies were not available. Disabling cluster member metrics.");
+            logService.getUserLog( getClass() ).warn( "Cluster metrics was enabled but the graph database" +
+                    "is not in HA mode." );
+            return false;
         }
-    }
-
-    private void registerClusterMemberMetrics()
-    {
-        resolveClusterMembersDependencyOrLogWarning();
-        registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
-        registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
     }
 
     @Override
     public void stop() throws IOException
     {
-        if ( config.get( MetricsSettings.neoClusterEnabled ) )
+        if ( config.get( MetricsSettings.neoClusterEnabled ) && (clusterMembers != null) )
         {
             registry.remove( SLAVE_PULL_UPDATES );
             registry.remove( SLAVE_PULL_UPDATE_UP_TO_TX );
 
-            if( clusterMembers != null )
-            {
-                registry.remove( IS_MASTER );
-                registry.remove( IS_AVAILABLE );
-            }
+            registry.remove( IS_MASTER );
+            registry.remove( IS_AVAILABLE );
 
             monitors.removeMonitorListener( monitor );
         }
@@ -159,7 +153,7 @@ public class ClusterMetrics extends LifecycleAdapter
         public Integer getValue()
         {
             int value = 0;
-            if( clusterMembers != null )
+            if ( clusterMembers != null )
             {
                 value = rolePredicate.test( clusterMembers.getCurrentMemberRole() ) ? 1 : 0;
             }
