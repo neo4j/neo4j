@@ -30,16 +30,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.net.URL;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.neo4j.io.proc.ProcessUtil;
 
 public class BootClassPathRunner extends Runner
 {
@@ -88,12 +87,10 @@ public class BootClassPathRunner extends Runner
         {
             int port = server.getPort();
             server.export( RMI_RUN_NOTIFIER_NAME, new DelegatingRemoteRunNotifier( notifier ) );
-            RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-            List<String> arguments = runtimeMxBean.getInputArguments();
 
             List<String> command = new ArrayList<>();
-            command.add( "java" );
-            for ( String argument : arguments )
+            command.add( ProcessUtil.getJavaExecutable().toString() );
+            for ( String argument : ProcessUtil.getJavaExecutableArguments() )
             {
                 if ( !argument.startsWith( "-agentlib" ) )
                 {
@@ -123,7 +120,7 @@ public class BootClassPathRunner extends Runner
     private StringBuilder buildClassPath()
     {
         Set<String> classpathEntries = new HashSet<>();
-        classpathEntries.addAll( Arrays.asList( System.getProperty( "java.class.path" ).split( File.pathSeparator ) ) );
+        classpathEntries.addAll( ProcessUtil.getClassPathList() );
         classpathEntries.remove( classpathEntryToBootWith );
         StringBuilder classpath = new StringBuilder();
         for ( String classpathEntry : classpathEntries )

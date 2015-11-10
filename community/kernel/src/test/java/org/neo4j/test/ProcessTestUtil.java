@@ -31,8 +31,10 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.helpers.FutureAdapter;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.io.proc.ProcessUtil.getClassPath;
+import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
 
-public class ProcessUtil
+public class ProcessTestUtil
 {
     public static void executeSubProcess( Class<?> mainClass, long timeout, TimeUnit unit,
             String... arguments ) throws Exception
@@ -50,7 +52,7 @@ public class ProcessUtil
     public static Future<Integer> startSubProcess( Class<?> mainClass, String... arguments ) throws IOException
     {
         List<String> args = new ArrayList<>();
-        args.addAll( asList( "java", "-cp", System.getProperty( "java.class.path" ), mainClass.getName() ) );
+        args.addAll( asList( getJavaExecutable().toString(), "-cp", getClassPath(), mainClass.getName() ) );
         args.addAll( asList( arguments ) );
         Process process = Runtime.getRuntime().exec( args.toArray( new String[args.size()] ) );
         final ProcessStreamHandler processOutput = new ProcessStreamHandler( process, false );

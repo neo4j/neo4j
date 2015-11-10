@@ -50,9 +50,15 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static org.neo4j.io.proc.ProcessUtil.getClassPath;
+import static org.neo4j.io.proc.ProcessUtil.getClassPathList;
+import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
 
 @SuppressWarnings( "serial" )
 public abstract class SubProcess<T, P> implements Serializable
@@ -146,8 +152,8 @@ public abstract class SubProcess<T, P> implements Serializable
         Dispatcher dispatcher;
         try
         {
-            process = start( inheritOutput, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
-                    classPath( System.getProperty( "java.class.path" ) ),
+            String java = getJavaExecutable().toString();
+            process = start( inheritOutput, java, "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp", classPath(),
                     SubProcess.class.getName(), serialize( callback ) );
             pid = getPid( process );
             // if IO was not inherited by current process we need to pipe error and input stream to corresponding
@@ -188,21 +194,14 @@ public abstract class SubProcess<T, P> implements Serializable
         return System.out;
     }
 
-    private String classPath( String parentClasspath )
+    private String classPath()
     {
         if ( classPathFilter == null )
         {
-            return parentClasspath;
+            return getClassPath();
         }
-        StringBuilder result = new StringBuilder();
-        for ( String part : parentClasspath.split( File.pathSeparator ) )
-        {
-            if ( classPathFilter.test( part ) )
-            {
-                result.append( result.length() > 0 ? File.pathSeparator : "" ).append( part );
-            }
-        }
-        return result.toString();
+        Stream<String> stream = getClassPathList().stream();
+        return stream.filter( classPathFilter ).collect( Collectors.joining( File.pathSeparator ) );
     }
 
     private static Process start(boolean inheritOutput, String... args )
@@ -545,17 +544,10 @@ public abstract class SubProcess<T, P> implements Serializable
     }
 
     @SuppressWarnings( "restriction" )
-    private static DispatcherTrap deserialize( String data )
+    private static DispatcherTrap deserialize( String data ) throws Exception
     {
-        try
-        {
-            return (DispatcherTrap) new ObjectInputStream( new ByteArrayInputStream(
-                    new sun.misc.BASE64Decoder().decodeBuffer( data ) ) ).readObject();
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
+        return (DispatcherTrap) new ObjectInputStream( new ByteArrayInputStream(
+                new sun.misc.BASE64Decoder().decodeBuffer( data ) ) ).readObject();
     }
 
     private interface Dispatcher extends Remote

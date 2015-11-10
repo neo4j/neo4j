@@ -25,7 +25,7 @@ package org.neo4j.function;
  * @param <T> the type of the input to the predicate
  * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
-public interface Predicate<T> extends ThrowingPredicate<T,RuntimeException>
+public interface Predicate<T> extends ThrowingPredicate<T,RuntimeException>, java.util.function.Predicate<T>
 {
     /**
      * Evaluates this predicate on the given argument.
