@@ -28,6 +28,7 @@ case object ToString extends Function with SimpleTypedFunction {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTFloat), outputType = CTString),
     Signature(argumentTypes = Vector(CTInteger), outputType = CTString),
+    Signature(argumentTypes = Vector(CTBoolean), outputType = CTString),
     Signature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 }

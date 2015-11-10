@@ -50,6 +50,14 @@ class ToStringFunctionTest extends CypherFunSuite {
     toStringFunction(-12) should be("-12")
   }
 
+  test("should handle boolean false") {
+    toStringFunction(false) should be("false")
+  }
+
+  test("should handle boolean true") {
+    toStringFunction(true) should be("true")
+  }
+
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
     evaluating { toStringFunction(new Object) } should produce[ParameterWrongTypeException]
   }
