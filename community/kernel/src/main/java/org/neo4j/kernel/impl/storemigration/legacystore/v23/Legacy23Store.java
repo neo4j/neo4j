@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore.v22;
+package org.neo4j.kernel.impl.storemigration.legacystore.v23;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,9 +32,9 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
  * <p/>
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class Legacy22Store implements LegacyStore
+public class Legacy23Store implements LegacyStore
 {
-    public static final String LEGACY_VERSION = "v0.A.5";
+    public static final String LEGACY_VERSION = "v0.A.6";
 
     @Override
     public File getStorageFileName()

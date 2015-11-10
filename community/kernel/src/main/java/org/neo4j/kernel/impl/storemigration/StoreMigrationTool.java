@@ -103,7 +103,7 @@ public class StoreMigrationTool
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             UpgradableDatabase upgradableDatabase =
-                    new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+                    new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
             migrationProcess.addParticipant( new StoreMigrator(
                     new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
                     fs, pageCache, config, logService ) );
