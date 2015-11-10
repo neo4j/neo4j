@@ -182,12 +182,8 @@ public interface ServerSettings
     Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
 
     @Description("Enable TLS for Bolt")
-    Setting<Boolean> bolt_tls_enabled = BoltKernelExtension.Settings.tls_enabled;
+    Setting<String> bolt_tls_enabled = BoltKernelExtension.Settings.tls_enabled;
 
-    @Description("Host and port for Bolt TCP transport")
+    @Description("Host and port for Bolt protocol")
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
-
-    @Description("Host and port for the Bolt Websocket transport")
-    Setting<HostnamePort> bolt_ws_address = BoltKernelExtension.Settings.websocket_address;
-
 }

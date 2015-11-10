@@ -19,14 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
+import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.udc.UsageData;
 
 /**
@@ -35,6 +36,7 @@ import org.neo4j.udc.UsageData;
  */
 public class StandardSessions extends LifecycleAdapter implements Sessions
 {
+    private final boolean requireEncryption;
     private final GraphDatabaseAPI gds;
     private final LifeSupport life = new LifeSupport();
     private final UsageData usageData;
@@ -43,8 +45,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
 
-    public StandardSessions( GraphDatabaseAPI gds, UsageData usageData, LogService logging )
+    public StandardSessions( boolean requireEncryption, GraphDatabaseAPI gds, UsageData usageData, LogService logging )
     {
+        this.requireEncryption = requireEncryption;
         this.gds = gds;
         this.usageData = usageData;
         this.logging = logging;
@@ -79,8 +82,13 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     }
 
     @Override
-    public Session newSession()
+    public Session newSession( boolean isEncrypted )
     {
+        if ( !isEncrypted && requireEncryption )
+        {
+            return new ErrorReportingSession(
+                    new Neo4jError( Status.Security.EncryptionRequired, "This server requires a TLS encrypted connection." ) );
+        }
         return new SessionStateMachine( usageData, gds, txBridge, statementRunner, logging );
     }
 }

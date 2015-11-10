@@ -59,7 +59,7 @@ public class TestSessions implements TestRule, Sessions
                 gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 StandardSessions sessions = life.add(
-                        new StandardSessions( (GraphDatabaseAPI) gdb, new UsageData(), NullLogService.getInstance() ) );
+                        new StandardSessions( false, (GraphDatabaseAPI) gdb, new UsageData(), NullLogService.getInstance() ) );
                 actual = new ThreadedSessions(
                         sessions,
                         scheduler, NullLogService.getInstance() );
@@ -87,13 +87,13 @@ public class TestSessions implements TestRule, Sessions
     }
 
     @Override
-    public Session newSession()
+    public Session newSession( boolean isEncrypted )
     {
         if ( actual == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        Session session = actual.newSession();
+        Session session = actual.newSession( isEncrypted );
         startedSessions.add( session );
         return session;
     }

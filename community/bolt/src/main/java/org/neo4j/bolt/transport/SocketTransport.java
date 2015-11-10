@@ -22,11 +22,12 @@ package org.neo4j.bolt.transport;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
 
@@ -38,10 +39,10 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final HostnamePort address;
     private final SslContext sslCtx;
     private LogProvider logging;
-    private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions;
+    private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions;
 
     public SocketTransport( HostnamePort address, SslContext sslCtx, LogProvider logging,
-            PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions)
+            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions )
     {
         this.address = address;
         this.sslCtx = sslCtx;
@@ -58,16 +59,9 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             public void initChannel( SocketChannel ch ) throws Exception
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
-
-                if( sslCtx != null )
-                {
-                    ch.pipeline().addLast( sslCtx.newHandler( ch.alloc() ) );
-                }
-
-                ch.pipeline().addLast( new SocketTransportHandler(
-                        new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
+                ch.pipeline().addLast( new TransportSelectionHandler( sslCtx, logging, protocolVersions ) );
             }
-        } ;
+        };
     }
 
     @Override
