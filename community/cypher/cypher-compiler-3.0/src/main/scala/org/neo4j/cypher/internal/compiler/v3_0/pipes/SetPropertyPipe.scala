@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{WritesGivenRelationshipProperty, SetGivenNodeProperty, Effects}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{SetGivenRelationshipProperty, SetGivenNodeProperty, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
@@ -48,12 +48,14 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
   def operatorName: String
 
   private def setProperty(context: ExecutionContext, state: QueryState, id: Long) = {
-      val propertyId = propertyKey.id(state.query).map(_.id)
-        .getOrElse(state.query.getOrCreatePropertyKeyId(propertyKey.name))
-      val ops = operations(state.query)
-      val value = makeValueNeoSafe(expression(context)(state))
-      if (value == null) ops.removeProperty(id, propertyId)
-      else ops.setProperty(id, propertyId, value)
+    val queryContext = state.query
+    val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
+    val propertyId = maybePropertyKey
+        .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
+    val ops = operations(queryContext)
+    val value = makeValueNeoSafe(expression(context)(state))
+    if (value == null) ops.removeProperty(id, propertyId)
+    else ops.setProperty(id, propertyId, value)
   }
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, identifiers)
@@ -94,7 +96,7 @@ case class SetRelationshipPropertyPipe(src: Pipe, name: String, propertyKey: Laz
     SetRelationshipPropertyPipe(onlySource, name, propertyKey,  expression)(estimatedCardinality)
   }
 
-  override def localEffects = Effects(WritesGivenRelationshipProperty(propertyKey.name))
+  override def localEffects = Effects(SetGivenRelationshipProperty(propertyKey.name))
 
   override def getId(value: Any) = CastSupport.castOrFail[Relationship](value).getId
 

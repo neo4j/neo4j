@@ -67,7 +67,7 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   })
 }
 
-object AllWriteEffects extends Effects(Set(CreatesAnyNode, SetAnyNodeProperty, WritesAnyRelationshipProperty))
+object AllWriteEffects extends Effects(Set(CreatesAnyNode, WriteAnyNodeProperty, WriteAnyRelationshipProperty))
 
 object AllReadEffects extends Effects(Set(ReadsAllNodes, ReadsAllRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty))
 
@@ -92,7 +92,7 @@ object Effects {
     (expression match {
       case i: Identifier => symbols.identifiers.get(i.entityName).map {
         case _: NodeType => Effects(SetGivenNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(WritesGivenRelationshipProperty(propertyKey))
+        case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
         case _ => Effects()
       }
       case _ => None
@@ -198,11 +198,11 @@ object CreatesNodesWithLabels {
   def apply(labels: String*): CreatesNodesWithLabels = CreatesNodesWithLabels(labels.toSet)
 }
 
-sealed trait SetNodeProperty extends WriteEffect
+sealed trait WriteNodeProperty extends WriteEffect
 
-case class SetGivenNodeProperty(propertyName: String) extends SetNodeProperty
+case class SetGivenNodeProperty(propertyName: String) extends WriteNodeProperty
 
-case object SetAnyNodeProperty extends SetNodeProperty
+case object WriteAnyNodeProperty extends WriteNodeProperty // Set, Remove
 
 case object DeletesRelationship extends WriteEffect
 
@@ -210,8 +210,8 @@ sealed trait CreatesRelationships extends WriteEffect
 
 case class CreatesRelationship(typ: String) extends CreatesRelationships
 
-sealed trait WritesRelationshipProperty extends WriteEffect
+sealed trait WriteRelationshipProperty extends WriteEffect
 
-case class WritesGivenRelationshipProperty(propertyName: String) extends WritesRelationshipProperty
+case class SetGivenRelationshipProperty(propertyName: String) extends WriteRelationshipProperty
 
-case object WritesAnyRelationshipProperty extends WritesRelationshipProperty
+case object WriteAnyRelationshipProperty extends WriteRelationshipProperty // Set, Remove

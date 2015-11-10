@@ -322,7 +322,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
         toCommandExpression(expression))()
 
     case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
-      SetRelationshipsPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
+      SetRelationshipPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
 
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()

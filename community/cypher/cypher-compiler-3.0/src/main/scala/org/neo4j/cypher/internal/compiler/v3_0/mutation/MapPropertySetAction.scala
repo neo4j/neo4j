@@ -110,11 +110,11 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
 
   def localEffects(symbols: SymbolTable) = element match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType => Effects(SetAnyNodeProperty)
-      case _: RelationshipType => Effects(WritesAnyRelationshipProperty)
+      case _: NodeType => Effects(WriteAnyNodeProperty)
+      case _: RelationshipType => Effects(WriteAnyRelationshipProperty)
       case _ => Effects()
     }
-    case _ => Effects(SetAnyNodeProperty, WritesAnyRelationshipProperty)
+    case _ => Effects(WriteAnyNodeProperty, WriteAnyRelationshipProperty)
   }
 
 }

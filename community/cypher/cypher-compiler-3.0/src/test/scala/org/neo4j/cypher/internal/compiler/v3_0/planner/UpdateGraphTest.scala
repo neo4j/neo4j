@@ -70,6 +70,17 @@ class UpdateGraphTest extends CypherFunSuite {
     ug.overlaps(qg) shouldBe false
   }
 
+  test("no overlap when properties don't overlap even though labels explicitly do") {
+    //MATCH (a:L {foo: 42}) CREATE (a:L)
+    val selections = Selections.from(
+      In(Identifier("a")(pos),Property(Identifier("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      HasLabels(Identifier("a")(pos), Seq(LabelName("L")(pos)))(pos))
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
+    val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
+
+    ug.overlaps(qg) shouldBe false
+  }
+
   test("overlap when reading all rel types and creating a specific type") {
     //MATCH (a)-[r]->(b)  CREATE (a)-[r2:T]->(b)
     val qg = QueryGraph(patternRelationships =

@@ -123,7 +123,7 @@ object ClauseConverters {
       case (builder, SetExactPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProp = true)))
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = true)))
 
       // SET n += { id: 10, ... }
       case (builder, SetIncludingPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
@@ -135,7 +135,7 @@ object ClauseConverters {
       case (builder, SetIncludingPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
         builder.amendUpdateGraph(ug =>
           ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProp = false)))
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = false)))
     }
   }
 

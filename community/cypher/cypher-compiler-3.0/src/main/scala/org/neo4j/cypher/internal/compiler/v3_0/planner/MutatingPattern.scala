@@ -47,7 +47,7 @@ case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expressio
 
 case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
 
-case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProp: Boolean) extends MutatingPattern
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends MutatingPattern
 
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 

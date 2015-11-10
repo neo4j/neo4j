@@ -97,7 +97,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
   def knownProperties(idName: IdName): Set[Property] =
-    selections.propertyPredicates.getOrElse(idName, Set.empty)
+    selections.propertyPredicatesForSet.getOrElse(idName, Set.empty)
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -110,9 +110,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def allKnownPropertiesOnIdentifier(idName: IdName): Set[Property] =
     knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
 
-  def allKnownNodeProperties: Set[Property] =
-    (patternNodes ++ patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2)))
-      .flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownNodeProperties)
+  def allKnownNodeProperties: Set[Property] = {
+    val matchedNodes = patternNodes ++ patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2))
+    matchedNodes.flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownNodeProperties)
+  }
 
   def allKnownRelProperties: Set[Property] =
     patternRelationships.map(_.name).flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownRelProperties)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetAnyNodeProperty}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, WriteAnyNodeProperty, WriteAnyRelationshipProperty}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
@@ -53,10 +53,10 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
   private def propertyKeyMap(qtx: QueryContext, map: Map[String, Any]): Map[Int, Any] = {
     var builder = Map.newBuilder[Int, Any]
 
-    for ( (k,v) <- map ) {
-      if ( null == v ) {
+    for ((k, v) <- map) {
+      if (v == null) {
         val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
-        if ( optPropertyKeyId.isDefined ) {
+        if (optPropertyKeyId.isDefined) {
           builder += optPropertyKeyId.get -> v
         }
       }
@@ -74,8 +74,8 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
 
   private def setProperties(qtx: QueryContext, ops: Operations[T], itemId: Long, map: Map[Int, Any]) {
     /*Set all map values on the property container*/
-    for ( (k, v) <- map) {
-      if (null == v)
+    for ((k, v) <- map) {
+      if (v == null)
         ops.removeProperty(itemId, k)
       else
         ops.setProperty(itemId, k, makeValueNeoSafe(v))
@@ -96,10 +96,10 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
   override def symbols = src.symbols
 }
 
-case class SetNodePropertiesFromMapPipe(src: Pipe, name: String,  expression: Expression, removeOtherProps: Boolean)
-                                   (val estimatedCardinality: Option[Double] = None)
-                                   (implicit pipeMonitor: PipeMonitor)
-extends SetPropertiesFromMapPipe[Node](src, name, expression, removeOtherProps, pipeMonitor) {
+case class SetNodePropertiesFromMapPipe(src: Pipe, name: String, expression: Expression, removeOtherProps: Boolean)
+                                       (val estimatedCardinality: Option[Double] = None)
+                                       (implicit pipeMonitor: PipeMonitor)
+  extends SetPropertiesFromMapPipe[Node](src, name, expression, removeOtherProps, pipeMonitor) {
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
@@ -108,7 +108,7 @@ extends SetPropertiesFromMapPipe[Node](src, name, expression, removeOtherProps, 
     SetNodePropertiesFromMapPipe(onlySource, name, expression, removeOtherProps)(estimatedCardinality)
   }
 
-  override def localEffects = Effects(SetAnyNodeProperty)
+  override def localEffects = Effects(WriteAnyNodeProperty)
 
   override def getId(value: Any) = CastSupport.castOrFail[Node](value).getId
 
@@ -117,25 +117,25 @@ extends SetPropertiesFromMapPipe[Node](src, name, expression, removeOtherProps, 
   override def operatorName: String = "SetNodePropertiesFromMap"
 }
 
-case class SetRelationshipsPropertiesFromMapPipe(src: Pipe, name: String,  expression: Expression, removeOtherProps: Boolean)
-                                   (val estimatedCardinality: Option[Double] = None)
-                                   (implicit pipeMonitor: PipeMonitor)
+case class SetRelationshipPropertiesFromMapPipe(src: Pipe, name: String, expression: Expression, removeOtherProps: Boolean)
+                                               (val estimatedCardinality: Option[Double] = None)
+                                               (implicit pipeMonitor: PipeMonitor)
   extends SetPropertiesFromMapPipe[Relationship](src, name, expression, removeOtherProps, pipeMonitor) {
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    SetRelationshipsPropertiesFromMapPipe(onlySource, name, expression, removeOtherProps)(estimatedCardinality)
+    SetRelationshipPropertiesFromMapPipe(onlySource, name, expression, removeOtherProps)(estimatedCardinality)
   }
 
-  override def localEffects = Effects(SetAnyNodeProperty)
+  override def localEffects = Effects(WriteAnyRelationshipProperty)
 
   override def getId(value: Any) = CastSupport.castOrFail[Relationship](value).getId
 
   override def operations(query: QueryContext) = query.relationshipOps
 
-  override def operatorName: String = "SetRelationshipsPropertiesFromMap"
+  override def operatorName: String = "SetRelationshipPropertiesFromMap"
 }
 
 

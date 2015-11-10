@@ -80,9 +80,9 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def createRelTypes: Set[RelTypeName] = createRelationshipPatterns.map(_.relType).toSet
 
   /*
-   * Does this update graph update nodes
+   * Does this UpdateGraph update nodes?
    */
-  def updatesNodes = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
+  def updatesNodes: Boolean = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
 
   /*
    * Checks if there is overlap between what's being read in the query graph
@@ -113,8 +113,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
         //MATCH (:B {prop:..}) CREATE (:B {prop:..})
         labelsOverlap(qg.allKnownLabelsOnNode(p).toSet, createLabels) &&
           propsOverlap(readProps, createNodeProperties)
-    }
-    )
+    })
   }
 
   /*
@@ -182,7 +181,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   /*
   * Checks for overlap between what node props are read in query graph
-  * and what is updated with SET her
+  * and what is updated with SET here
   */
   private def setNodePropertyOverlap(qg: QueryGraph): Boolean = {
     val propertiesToSet = mutatingPatterns.collect {
