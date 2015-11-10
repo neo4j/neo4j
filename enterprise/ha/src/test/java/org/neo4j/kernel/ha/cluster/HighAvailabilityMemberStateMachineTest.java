@@ -75,7 +75,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -449,7 +449,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         Config config = new Config( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
 
-        TransactionCounters transactionCounters = mock( TransactionCounters.class );
+        TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
 
         PageCache pageCacheMock = mock( PageCache.class );
