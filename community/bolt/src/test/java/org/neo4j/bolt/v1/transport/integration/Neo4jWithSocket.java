@@ -43,7 +43,7 @@ public class Neo4jWithSocket implements TestRule
             {
                 Map<Setting<?>, String> settings = new HashMap<>(  );
                 settings.put( BoltKernelExtension.Settings.enabled, "true");
-                settings.put( BoltKernelExtension.Settings.tls_enabled, "true");
+                settings.put( BoltKernelExtension.Settings.tls_enabled, "optional");
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase(settings);
                 try
                 {

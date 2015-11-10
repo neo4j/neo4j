@@ -27,7 +27,6 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
-import org.neo4j.bolt.transport.WebSocketTransport;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
@@ -53,6 +52,7 @@ import static java.util.Arrays.asList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
+import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
@@ -68,17 +68,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         public static final Setting<Boolean> enabled =
                 setting( "dbms.bolt.enabled", BOOLEAN, "false" );
 
-        @Description( "Enable Neo4j encryption for Bolt protocol ports" )
-        public static final Setting<Boolean> tls_enabled =
-                setting( "dbms.bolt.tls.enabled", BOOLEAN, "false" );
+        @Description( "Enable encryption for Neo4j Bolt protocol ports" )
+        public static final Setting<String> tls_enabled =
+                setting( "dbms.bolt.tls.enabled", options( "true", "false", "optional" ), "false" );
 
         @Description( "Host and port for the Neo4j Bolt Protocol" )
         public static final Setting<HostnamePort> socket_address =
-                setting( "dbms.bolt.socket.address", HOSTNAME_PORT, "localhost:7687" );
-
-        @Description( "Host and port for the Neo4j Bolt Protocol Websocket" )
-        public static final Setting<HostnamePort> websocket_address =
-                setting( "dbms.bolt.websocket.address", HOSTNAME_PORT, "localhost:7688" );
+                setting( "dbms.bolt.address", HOSTNAME_PORT, "localhost:7687" );
     }
 
     public interface Dependencies
@@ -109,7 +105,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         final Log log = logging.getInternalLog( Sessions.class );
 
         final HostnamePort socketAddress = config.get( Settings.socket_address );
-        final HostnamePort webSocketAddress = config.get( Settings.websocket_address );
 
         final LifeSupport life = new LifeSupport();
 
@@ -117,17 +112,24 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             final JobScheduler scheduler = dependencies.scheduler();
 
+            SslContext sslCtx;
+            boolean requireEncryption = false;
+            switch ( config.get( Settings.tls_enabled ) )
+            {
+            case "true":
+                requireEncryption = true;
+            case "optional":
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();
+                break;
+            default:
+                sslCtx = null;
+                break;
+            }
+
             final Sessions sessions = new ThreadedSessions(
                     life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
                     scheduler, logging );
-
-
-            SslContext sslCtx = null;
-            if ( config.get( Settings.tls_enabled ) )
-            {
-                SelfSignedCertificate ssc = new SelfSignedCertificate();
-                sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();
-            }
 
             PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
             availableVersions.put( BoltProtocolV1.VERSION, new Function<Channel,BoltProtocol>()
@@ -141,8 +143,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
             // Start services
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), asList(
-                    new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ),
-                    new WebSocketTransport( webSocketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
+                    new SocketTransport( socketAddress, sslCtx, requireEncryption, logging.getInternalLogProvider(), availableVersions ) ) ) );
             log.info( "Bolt Server extension loaded." );
         }
 
