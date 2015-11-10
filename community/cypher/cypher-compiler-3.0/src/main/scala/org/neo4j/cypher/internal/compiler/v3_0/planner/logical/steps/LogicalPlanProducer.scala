@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyLabel, LazyTypes, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyType, LazyTypes, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
@@ -441,7 +441,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addNodePatterns(pattern))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
     CreateNode(inner, pattern.nodeName,
       pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
@@ -450,7 +450,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addRelPatterns(pattern))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
     CreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
       pattern.endNode, pattern.properties)(solved)
@@ -459,7 +459,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+
     if (delete.forced) DetachDeleteNode(inner, delete.expression)(solved)
     else DeleteNode(inner, delete.expression)(solved)
   }
@@ -467,14 +468,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planDeleteRelationship(inner: LogicalPlan, delete: DeleteExpression)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+
     DeleteRelationship(inner, delete.expression)(solved)
   }
 
   def planDeletePath(inner: LogicalPlan, delete: DeleteExpression)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addDeleteExpression(delete))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(delete))
+
     if (delete.forced) DetachDeletePath(inner, delete.expression)(solved)
     else DeletePath(inner, delete.expression)(solved)
   }
@@ -482,23 +485,55 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addSetLabel(pattern))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
     SetLabels(inner, pattern.idName, pattern.labels.map(LazyLabel(_)(context.semanticTable)))(solved)
+  }
+
+  def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern)
+                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    SetNodePropery(inner, pattern.idName, pattern.propertyKey,  pattern.expression)(solved)
+  }
+
+  def planSetNodePropertiesFromMap(inner: LogicalPlan,
+                                          pattern: SetNodePropertiesFromMapPattern)
+                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    SetNodePropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
+  }
+
+  def planSetRelationshipProperty(inner: LogicalPlan, pattern: SetRelationshipPropertyPattern)
+                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    SetRelationshipPropery(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
+  }
+
+  def planSetRelationshipPropertiesFromMap(inner: LogicalPlan,
+                                                  pattern: SetRelationshipPropertiesFromMapPattern)
+                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
   }
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern)
                   (implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val solved = inner.solved.amendUpdateGraph(_.addRemoveLabelPatterns(pattern))
+    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
     RemoveLabels(inner, pattern.idName, pattern.labels.map(LazyLabel(_)(context.semanticTable)))(solved)
   }
 
-
   def planRepeatableRead(inner: LogicalPlan)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
-
 
     RepeatableRead(inner)(inner.solved)
   }

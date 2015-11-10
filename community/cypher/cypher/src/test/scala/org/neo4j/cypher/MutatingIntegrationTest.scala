@@ -198,7 +198,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = executeWithRulePlanner("unwind {params} as m create (x) set x = m ", "params" -> maps)
+    val result = updateWithBothPlanners("unwind {params} as m create (x) set x = m ", "params" -> maps)
 
     assertStats(result,
       nodesCreated = 3,

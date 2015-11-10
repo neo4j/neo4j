@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeLogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticDirection}
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
@@ -65,13 +65,16 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
       (hasUnsafeRelationships(plannerQuery) &&
-        (plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
-          plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))) ||
+        (plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
+          plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph) ||
+          plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph))
+      ) ||
         //otherwise only do checks if we have more that one leaf
         leaves.size > 1 && leaves.drop(1).exists(
           nodeOverlap(_, plannerQuery, leaves.head) ||
-            plannerQuery.updateGraph.relationshipOverlap(plannerQuery.queryGraph) ||
+            plannerQuery.updateGraph.createRelationshipOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.setLabelOverlap(plannerQuery.queryGraph) ||
+            plannerQuery.updateGraph.setPropertyOverlap(plannerQuery.queryGraph) ||
             plannerQuery.updateGraph.deleteOverlap(plannerQuery.queryGraph))
     }
   }
@@ -83,12 +86,16 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
    */
   private def nodeOverlap(start: IdName, plannerQuery: PlannerQuery, stableId: IdName): Boolean = {
     val startLabels = plannerQuery.queryGraph.allKnownLabelsOnNode(start).toSet
-    val writeLabels = plannerQuery.updateGraph.writeLabels
+    val writeLabels = plannerQuery.updateGraph.createLabels
+    val createProperties = plannerQuery.updateGraph.createNodeProperties
     val removeLabels = plannerQuery.updateGraph.labelsToRemoveForNode(start)
+    val startProperties = plannerQuery.queryGraph.allKnownPropertiesOnIdentifier(start).map(_.propertyKey)
 
     plannerQuery.updatesNodes && (
-      ( (startLabels.isEmpty && plannerQuery.createsNodes) || //MATCH () CREATE (...)?
+      ( ((startLabels.isEmpty && startProperties.isEmpty) && plannerQuery.createsNodes) || //MATCH () CREATE (...)?
         (startLabels intersect writeLabels).nonEmpty) || //MATCH (:A) CREATE (:A)?
+        startProperties.exists(createProperties.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
+
         //MATCH (n:A), (m:B) REMOVE (n:B)
         removeLabels.exists(l => {
           //it is ok to have overlap on the stable id

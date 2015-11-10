@@ -91,6 +91,21 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
       case (acc, _) => acc
     }
 
+  def propertyPredicatesForSet: Map[IdName, Set[Property]] = {
+    def updateMap(map: Map[IdName, Set[Property]], key: IdName, prop: Property) =
+      map.updated(key, map.getOrElse(key, Set.empty) + prop)
+
+    predicates.foldLeft(Map.empty[IdName, Set[Property]]) {
+
+      // We rewrite set property expressions to use In (and not Equals)
+      case (acc, Predicate(_, In(prop@Property(key: Identifier, _), _))) =>
+        updateMap(acc, IdName.fromIdentifier(key), prop)
+      case (acc, Predicate(_, In(_, prop@Property(key: Identifier, _)))) =>
+        updateMap(acc, IdName.fromIdentifier(key), prop)
+      case (acc, _) => acc
+    }
+  }
+
   def labelsOnNode(id: IdName): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
   lazy val labelInfo: Map[IdName, Set[LabelName]] =

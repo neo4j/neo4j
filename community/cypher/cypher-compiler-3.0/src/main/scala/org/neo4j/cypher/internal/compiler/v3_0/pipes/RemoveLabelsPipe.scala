@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{SetLabel, Effects}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.graphdb.Node
@@ -33,8 +33,8 @@ case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val nodeId = CastSupport.castOrFail[Node](row.get(identifier).get).getId
-      removeLabels(row, state, nodeId)
+      val item = row.get(identifier).get
+      if (item != null) removeLabels(row, state, CastSupport.castOrFail[Node](item).getId)
       row
     }
   }

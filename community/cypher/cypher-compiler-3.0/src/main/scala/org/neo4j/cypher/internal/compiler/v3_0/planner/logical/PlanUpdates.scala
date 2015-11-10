@@ -40,6 +40,18 @@ case object PlanUpdates
     case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(inner, p)
     //SET n:Foo:Bar
     case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(inner, pattern)
+    //SET n.prop = 42
+    case pattern: SetNodePropertyPattern =>
+      context.logicalPlanProducer.planSetNodeProperty(inner, pattern)
+    //SET r.prop = 42
+    case pattern: SetRelationshipPropertyPattern =>
+      context.logicalPlanProducer.planSetRelationshipProperty(inner, pattern)
+    //SET n.prop += {}
+    case pattern: SetNodePropertiesFromMapPattern =>
+      context.logicalPlanProducer.planSetNodePropertiesFromMap(inner, pattern)
+    //SET r.prop = 42
+    case pattern: SetRelationshipPropertiesFromMapPattern =>
+      context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(inner, pattern)
     //REMOVE n:Foo:Bar
     case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(inner, pattern)
     //DELETE a

@@ -186,7 +186,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     }
 
     val propertyWrites = to.effectsSet.collect {
-      case property: SetNodeProperty => property
+      case property: WriteNodeProperty => property
     }
 
     propertyReads.exists {
@@ -194,7 +194,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       case ReadsGivenNodeProperty(prop) => propertyWrites(SetGivenNodeProperty(prop))
     } ||
       propertyWrites.exists {
-        case SetAnyNodeProperty => propertyReads.nonEmpty
+        case WriteAnyNodeProperty => propertyReads.nonEmpty
         case SetGivenNodeProperty(prop) => propertyReads(ReadsGivenNodeProperty(prop))
       }
   }
@@ -205,16 +205,16 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     }
 
     val propertyWrites = to.effectsSet.collect {
-      case property: WritesRelationshipProperty => property
+      case property: WriteRelationshipProperty => property
     }
 
     propertyReads.exists {
       case ReadsAnyRelationshipProperty => propertyWrites.nonEmpty
-      case ReadsGivenRelationshipProperty(prop) => propertyWrites(WritesGivenRelationshipProperty(prop))
+      case ReadsGivenRelationshipProperty(prop) => propertyWrites(SetGivenRelationshipProperty(prop))
     } ||
       propertyWrites.exists {
-        case WritesAnyRelationshipProperty => propertyReads.nonEmpty
-        case WritesGivenRelationshipProperty(prop) => propertyReads(ReadsGivenRelationshipProperty(prop))
+        case WriteAnyRelationshipProperty => propertyReads.nonEmpty
+        case SetGivenRelationshipProperty(prop) => propertyReads(ReadsGivenRelationshipProperty(prop))
       }
   }
 }

@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst}
@@ -310,6 +310,20 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case SetLabels(_, IdName(name), labels) =>
       SetLabelsPipe(source, name, labels)()
 
+    case SetNodePropery(_, idName, propertyKey, expression) =>
+      SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
+
+    case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
+
+    case SetRelationshipPropery(_, idName, propertyKey, expression) =>
+      SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
+
+    case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetRelationshipPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
+
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()
 
@@ -336,7 +350,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
 
     case x =>
       throw new CantHandleQueryException(x.toString)
-
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): RonjaPipe = plan match {

@@ -65,7 +65,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     //
 
     val namedAst = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
-    val unionQuery = namedAst.asInstanceOf[Query].asUnionQuery
+    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], semanticTable)
     unionQuery
   }
 

@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.{SyntaxException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import collection.mutable
-import scala.collection.mutable.ListBuffer
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SyntaxException}
+
+import scala.collection.mutable
 
 object ClauseConverters {
 
@@ -95,19 +95,47 @@ object ClauseConverters {
     clause.items.foldLeft(acc) {
       // SET n:Foo
       case (builder, SetLabelItem(identifier, labelNames)) =>
-        builder.amendUpdateGraph(ug => ug.addSetLabel(SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
 
       // SET n.prop = ...
-      case (builder, SetPropertyItem(_, _)) =>
-        throw new CantHandleQueryException("Setting properties not supported yet")
+      case (builder, SetPropertyItem(Property(node: Identifier, propertyKey), expr))
+        if acc.semanticTable.isNode(node) =>
+       builder.amendUpdateGraph(ug =>
+         ug.addMutatingPatterns(
+           SetNodePropertyPattern(IdName.fromIdentifier(node), propertyKey, expr)))
+
+      // SET r.prop = ...
+      case (builder, SetPropertyItem(Property(rel: Identifier, propertyKey), expr))
+        if acc.semanticTable.isRelationship(rel) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetRelationshipPropertyPattern(IdName.fromIdentifier(rel), propertyKey, expr)))
 
       // SET n = { id: 0, name: 'Mats', ... }
-      case (builder, SetExactPropertiesFromMapItem(_, _)) =>
-        throw new CantHandleQueryException("Setting properties using '=' not supported yet")
+      case (builder, SetExactPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = true)))
+
+      // SET r = { id: 0, name: 'Mats', ... }
+      case (builder, SetExactPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = true)))
 
       // SET n += { id: 10, ... }
-      case (builder, SetIncludingPropertiesFromMapItem(_, _)) =>
-        throw new CantHandleQueryException("Setting properties using '+=' not supported yet")
+      case (builder, SetIncludingPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetNodePropertiesFromMapPattern(IdName.fromIdentifier(node), expression, removeOtherProps = false)))
+
+      // SET r += { id: 10, ... }
+      case (builder, SetIncludingPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
+        builder.amendUpdateGraph(ug =>
+          ug.addMutatingPatterns(
+            SetRelationshipPropertiesFromMapPattern(IdName.fromIdentifier(rel), expression, removeOtherProps = false)))
     }
   }
 
@@ -116,7 +144,7 @@ object ClauseConverters {
       //CREATE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
         builder
-          .amendUpdateGraph(ug => ug.addNodePatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
+          .amendUpdateGraph(ug => ug.addMutatingPatterns(CreateNodePattern(IdName.fromIdentifier(id), labels, props)))
 
       //CREATE (n)-[r: R]->(m)
       case (builder, EveryPath(pattern: RelationshipChain)) =>
@@ -138,8 +166,7 @@ object ClauseConverters {
 
         builder
           .amendUpdateGraph(ug => ug
-            .addNodePatterns(nodesToCreate: _*)
-            .addRelPatterns(rels: _*))
+            .addMutatingPatterns(nodesToCreate ++ rels: _*))
 
       case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
     }
@@ -191,7 +218,7 @@ object ClauseConverters {
   }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
-    acc.amendUpdateGraph(ug => ug.addDeleteExpression(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
+    acc.amendUpdateGraph(ug => ug.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
   }
 
   private def asReturnItems(current: QueryGraph, clause: ReturnItems): Seq[ReturnItem] =
@@ -318,7 +345,7 @@ object ClauseConverters {
       clause.items.foldLeft(acc) {
         // REMOVE n:Foo
         case (builder, RemoveLabelItem(identifier, labelNames)) =>
-          builder.amendUpdateGraph(ug => ug.addRemoveLabelPatterns(RemoveLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
+          builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromIdentifier(identifier), labelNames)))
 
         case (builder, other) =>
           throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")
