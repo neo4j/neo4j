@@ -183,7 +183,7 @@ class SemanticStateTest extends CypherFunSuite {
     s3.expressionType(exp2).expected should equal(Some(CTAny: TypeSpec))
   }
 
-  test("should gracefully update an variable") {
+  test("should gracefully update a variable") {
     val s1 = SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
     val s2: SemanticState = s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTRelationship).right.get
     s1.symbolTypes("foo") should equal(CTNode.invariant)

@@ -37,7 +37,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       executeWithAllPlanners("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
   }
 
-  test("fail if using an variable with label not used in match") {
+  test("fail if using a variable with label not used in match") {
     // GIVEN
     graph.createIndex("Person", "name")
 
@@ -215,7 +215,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     e.getMessage should startWith("Multiple hints for same variable are not supported")
   }
 
-  test("scan hint must fail if using an variable not used in the query") {
+  test("scan hint must fail if using a variable not used in the query") {
     // GIVEN
 
     // WHEN

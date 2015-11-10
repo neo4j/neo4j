@@ -101,7 +101,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
   @Test def create_node_property_existence_constraint() {
     testQuery(
       title = "Create node property existence constraint",
-      text = "To create a constraint that makes sure that all nodes with a certain label have a certain property, use the `ASSERT exists(identifier.propertyName)` syntax.",
+      text = "To create a constraint that makes sure that all nodes with a certain label have a certain property, use the `ASSERT exists(variable.propertyName)` syntax.",
       queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "",
       assertions = (p) => assertNodeConstraintExist("Book", "isbn")
@@ -174,7 +174,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
   @Test def create_relationship_property_existence_constraint() {
     testQuery(
       title = "Create relationship property existence constraint",
-      text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the `ASSERT exists(identifier.propertyName)` syntax.",
+      text = "To create a constraint that makes sure that all relationships with a certain type have a certain property, use the `ASSERT exists(variable.propertyName)` syntax.",
       queryText = "CREATE CONSTRAINT ON ()-[like:LIKED]-() ASSERT exists(like.day)",
       optionalResultExplanation = "",
       assertions = (p) => assertRelationshipConstraintExist("LIKED", "day")

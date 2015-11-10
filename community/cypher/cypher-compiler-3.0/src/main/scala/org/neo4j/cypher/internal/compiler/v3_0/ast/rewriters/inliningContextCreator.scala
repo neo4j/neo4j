@@ -32,7 +32,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         (context, children) =>
           children(context.enterQueryPart(aliasedReturnItems(withClause.returnItems.items)))
 
-      // When just passing an variable through a WITH, do not count the variable as used. This case shortcuts the
+      // When just passing a variable through a WITH, do not count the variable as used. This case shortcuts the
       // tree folding so the variables are not tracked.
       case AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
         (context, children) =>
@@ -42,7 +42,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         (context, children) =>
           children(context.trackUsageOfVariable(variable))
 
-      // When an variable is used in ORDER BY, it should never be inlined
+      // When a variable is used in ORDER BY, it should never be inlined
       case sortItem: SortItem =>
         (context, children) =>
           children(context.spoilVariable(sortItem.expression.asInstanceOf[Variable]))

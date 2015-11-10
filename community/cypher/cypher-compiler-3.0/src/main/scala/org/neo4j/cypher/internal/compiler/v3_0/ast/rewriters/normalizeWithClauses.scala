@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
  * This rewriter normalizes the scoping structure of a query, ensuring it is able to
  * be correctly processed for semantic checking. It makes sure that all return items
  * in a WITH clauses are aliased, and ensures all ORDER BY and WHERE expressions are
- * shifted into the clause, leaving only an variable. That variable must also
+ * shifted into the clause, leaving only a variable. That variable must also
  * appear as an alias in the associated WITH.
  *
  * This rewriter depends on normalizeReturnClauses having first been run.

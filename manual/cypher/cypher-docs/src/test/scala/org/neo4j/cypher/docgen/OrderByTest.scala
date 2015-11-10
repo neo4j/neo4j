@@ -49,7 +49,7 @@ class OrderByTest extends DocumentingTestBase with SoftReset {
   @Test def sortByNameReverse() {
     testQuery(
       title = "Order nodes in descending order",
-      text = "By adding +DESC[ENDING]+ after the identifier to sort on, the sort will be done in reverse order.",
+      text = "By adding +DESC[ENDING]+ after the variable to sort on, the sort will be done in reverse order.",
       queryText = """match (n) return n order by n.name DESC""",
       optionalResultExplanation = """The example returns the nodes, sorted by their name reversely.""",
       assertions = (p) => assertEquals(List(node("C"), node("B"), node("A")), p.columnAs[Node]("n").toList))
@@ -58,8 +58,8 @@ class OrderByTest extends DocumentingTestBase with SoftReset {
   @Test def sortByMultipleColumns() {
     testQuery(
       title = "Order nodes by multiple properties",
-      text = "You can order by multiple properties by stating each identifier in the +ORDER BY+" +
-        " clause. Cypher will sort the result by the first identifier listed, and for equals values, " +
+      text = "You can order by multiple properties by stating each variable in the +ORDER BY+" +
+        " clause. Cypher will sort the result by the first variable listed, and for equals values, " +
         "go to the next property in the `ORDER BY` clause, and so on.",
       queryText = """match (n) return n order by n.age, n.name""",
       optionalResultExplanation = """This returns the nodes, sorted first by their age, and then by their name.""",
