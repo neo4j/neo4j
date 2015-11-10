@@ -33,7 +33,7 @@ import io.netty.handler.ssl.SslHandler;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.logging.LogProvider;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder
@@ -42,13 +42,21 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
 
     private final SslContext sslCtx;
+    private final boolean isEncrypted;
     private final LogProvider logging;
-    private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions;
+    private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions;
 
     public TransportSelectionHandler( SslContext sslCtx, LogProvider logging,
-            PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions )
+            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions )
+    {
+        this( sslCtx, false, logging, protocolVersions );
+    }
+
+    private TransportSelectionHandler( SslContext sslCtx, boolean isEncrypted, LogProvider logging,
+            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions )
     {
         this.sslCtx = sslCtx;
+        this.isEncrypted = isEncrypted;
         this.logging = logging;
         this.protocolVersions = protocolVersions;
     }
@@ -97,7 +105,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( null, logging, protocolVersions ) );
+        p.addLast( new TransportSelectionHandler( null, true, logging, protocolVersions ) );
         p.remove( this );
     }
 
@@ -105,7 +113,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( new SocketTransportHandler(
-                new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
+                new SocketTransportHandler.ProtocolChooser( protocolVersions, isEncrypted ), logging ) );
         p.remove( this );
     }
 
@@ -118,7 +126,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                 new WebSocketServerProtocolHandler( "" ),
                 new WebSocketFrameTranslator(),
                 new SocketTransportHandler(
-                        new SocketTransportHandler.ProtocolChooser( protocolVersions ), logging ) );
+                        new SocketTransportHandler.ProtocolChooser( protocolVersions, isEncrypted ), logging ) );
         p.remove( this );
     }
 }

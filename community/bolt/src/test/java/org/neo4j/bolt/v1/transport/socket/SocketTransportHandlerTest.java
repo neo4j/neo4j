@@ -29,7 +29,7 @@ import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -101,17 +101,12 @@ public class SocketTransportHandlerTest
 
     private SocketTransportHandler.ProtocolChooser protocolChooser( final Session session )
     {
-        PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( BoltProtocolV1.VERSION, new Function<Channel,BoltProtocol>()
-        {
-            @Override
-            public BoltProtocol apply( Channel channel )
-            {
-                return new BoltProtocolV1( NullLogService.getInstance(), session, channel, new UsageData() );
-            }
-        } );
+        PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
+        availableVersions.put( BoltProtocolV1.VERSION,
+                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel, new UsageData() )
+        );
 
-        return new SocketTransportHandler.ProtocolChooser( availableVersions );
+        return new SocketTransportHandler.ProtocolChooser( availableVersions, true );
     }
 
     private ByteBuf handshake()

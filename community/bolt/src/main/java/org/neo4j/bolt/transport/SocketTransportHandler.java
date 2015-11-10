@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -151,7 +151,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
      */
     public static class ProtocolChooser
     {
-        private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions;
+        private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions;
+        private final boolean isEncrypted;
         private final ByteBuffer suggestedVersions = ByteBuffer.allocateDirect( 4 * 4 ).order( ByteOrder.BIG_ENDIAN );
 
         private BoltProtocol protocol;
@@ -159,9 +160,10 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         /**
          * @param availableVersions version -> protocol mapping
          */
-        public ProtocolChooser( PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions )
+        public ProtocolChooser( PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions, boolean isEncrypted )
         {
             this.availableVersions = availableVersions;
+            this.isEncrypted = isEncrypted;
         }
 
         public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
@@ -185,7 +187,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
                     long suggestion = suggestedVersions.getInt() & 0xFFFFFFFFL;
                     if ( availableVersions.containsKey( suggestion ) )
                     {
-                        protocol = availableVersions.get( suggestion ).apply( ch );
+                        protocol = availableVersions.get( suggestion ).apply( ch, isEncrypted );
                         return HandshakeOutcome.PROTOCOL_CHOSEN;
                     }
                 }

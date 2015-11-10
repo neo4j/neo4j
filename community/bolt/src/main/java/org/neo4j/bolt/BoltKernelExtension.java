@@ -32,7 +32,7 @@ import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -128,22 +128,19 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             }
 
             final Sessions sessions = new ThreadedSessions(
-                    life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
+                    life.add( new StandardSessions( requireEncryption, api, dependencies.usageData(), logging ) ),
                     scheduler, logging );
 
-            PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
-            availableVersions.put( BoltProtocolV1.VERSION, new Function<Channel,BoltProtocol>()
-            {
-                @Override
-                public BoltProtocol apply( Channel channel )
-                {
-                    return new BoltProtocolV1( logging, sessions.newSession(), channel, dependencies.usageData() );
-                }
-            } );
+            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
+            availableVersions.put(
+                    BoltProtocolV1.VERSION,
+                    ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ),
+                            channel, dependencies.usageData() )
+            );
 
             // Start services
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), asList(
-                    new SocketTransport( socketAddress, sslCtx, requireEncryption, logging.getInternalLogProvider(), availableVersions ) ) ) );
+                    new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(), availableVersions ) ) ) );
             log.info( "Bolt Server extension loaded." );
         }
 

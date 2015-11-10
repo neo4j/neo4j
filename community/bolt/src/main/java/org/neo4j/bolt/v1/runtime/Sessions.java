@@ -24,5 +24,10 @@ package org.neo4j.bolt.v1.runtime;
  */
 public interface Sessions
 {
-    Session newSession();
+    default Session newSession()
+    {
+        return newSession( false );
+    }
+
+    Session newSession( boolean isEncrypted );
 }

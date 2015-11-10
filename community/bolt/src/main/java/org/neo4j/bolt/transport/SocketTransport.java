@@ -27,7 +27,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
+import org.neo4j.function.BiFunction;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
 
@@ -38,20 +38,14 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
 {
     private final HostnamePort address;
     private final SslContext sslCtx;
-    private final boolean requireEncryption;
     private LogProvider logging;
-    private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions;
+    private final PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions;
 
-    public SocketTransport( HostnamePort address, SslContext sslCtx, boolean requireEncryption, LogProvider logging,
-            PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> protocolVersions )
+    public SocketTransport( HostnamePort address, SslContext sslCtx, LogProvider logging,
+            PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> protocolVersions )
     {
-        if ( requireEncryption && sslCtx == null )
-        {
-            throw new IllegalArgumentException();
-        }
         this.address = address;
         this.sslCtx = sslCtx;
-        this.requireEncryption = requireEncryption;
         this.logging = logging;
         this.protocolVersions = protocolVersions;
     }
@@ -65,15 +59,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             public void initChannel( SocketChannel ch ) throws Exception
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
-
-                final ChannelPipeline pipeline = ch.pipeline();
-
-                if ( requireEncryption )
-                {
-                    pipeline.addLast( sslCtx.newHandler( ch.alloc() ) );
-                }
-
-                pipeline.addLast( new TransportSelectionHandler( requireEncryption ? null : sslCtx, logging, protocolVersions ) );
+                ch.pipeline().addLast( new TransportSelectionHandler( sslCtx, logging, protocolVersions ) );
             }
         };
     }

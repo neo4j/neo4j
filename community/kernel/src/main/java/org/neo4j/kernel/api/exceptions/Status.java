@@ -268,7 +268,8 @@ public interface Status
         AuthenticationFailed( ClientError, "The client provided an incorrect username and/or password." ),
         AuthorizationFailed( ClientError, "The client does not have privileges to perform the operation requested." ),
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
-        ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." );
+        ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),
+        EncryptionRequired( ClientError, "A TLS encrypted connection is required." );
 
         private final Code code;
 
