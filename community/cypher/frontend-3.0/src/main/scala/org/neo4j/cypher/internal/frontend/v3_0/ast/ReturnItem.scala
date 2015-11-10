@@ -34,7 +34,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
 
   def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
 
-  def declareIdentifiers(previousScope: Scope) =
+  def declareVariables(previousScope: Scope) =
     when (includeExisting) {
       s => SemanticCheckResult.success(s.importScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {

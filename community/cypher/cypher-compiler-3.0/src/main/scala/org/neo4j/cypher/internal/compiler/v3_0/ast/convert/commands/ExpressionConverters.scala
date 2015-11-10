@@ -235,7 +235,7 @@ object ExpressionConverters {
     case e: ast.True => predicates.True()
     case e: ast.False => predicates.Not(predicates.True())
     case e: ast.Literal => commandexpressions.Literal(e.value)
-    case e: ast.Variable => identifier(e)
+    case e: ast.Variable => variable(e)
     case e: ast.Or => predicates.Or(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
     case e: ast.Xor => predicates.Xor(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
     case e: ast.And => predicates.And(toCommandPredicate(e.lhs), toCommandPredicate(e.rhs))
@@ -272,20 +272,20 @@ object ExpressionConverters {
     case e: ast.MapExpression => mapExpression(e)
     case e: ast.CollectionSlice => commandexpressions.CollectionSliceExpression(toCommandExpression(e.collection), toCommandExpression(e.from), toCommandExpression(e.to))
     case e: ast.ContainerIndex => commandexpressions.ContainerIndex(toCommandExpression(e.expr), toCommandExpression(e.idx))
-    case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.ExtractExpression => commandexpressions.ExtractFunction(toCommandExpression(e.expression), e.identifier.name, toCommandExpression(e.scope.extractExpression.get))
+    case e: ast.FilterExpression => commandexpressions.FilterFunction(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.ExtractExpression => commandexpressions.ExtractFunction(toCommandExpression(e.expression), e.variable.name, toCommandExpression(e.scope.extractExpression.get))
     case e: ast.ListComprehension => listComprehension(e)
-    case e: ast.AllIterablePredicate => commands.AllInCollection(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.AnyIterablePredicate => commands.AnyInCollection(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.NoneIterablePredicate => commands.NoneInCollection(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.SingleIterablePredicate => commands.SingleInCollection(toCommandExpression(e.expression), e.identifier.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
-    case e: ast.ReduceExpression => commandexpressions.ReduceFunction(toCommandExpression(e.collection), e.identifier.name, toCommandExpression(e.expression), e.accumulator.name, toCommandExpression(e.init))
+    case e: ast.AllIterablePredicate => commands.AllInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.AnyIterablePredicate => commands.AnyInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.NoneIterablePredicate => commands.NoneInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.SingleIterablePredicate => commands.SingleInCollection(toCommandExpression(e.expression), e.variable.name, e.innerPredicate.map(toCommandPredicate).getOrElse(predicates.True()))
+    case e: ast.ReduceExpression => commandexpressions.ReduceFunction(toCommandExpression(e.collection), e.variable.name, toCommandExpression(e.expression), e.accumulator.name, toCommandExpression(e.init))
     case e: ast.PathExpression => toCommandProjectedPath(e)
     case e: NestedPipeExpression => commandexpressions.NestedPipeExpression(e.pipe, toCommandProjectedPath(e.path))
     case e: ast.GetDegree => getDegree(e)
     case e: PrefixSeekRangeWrapper => commandexpressions.PrefixSeekRangeExpression(e.range.map(toCommandExpression))
     case e: InequalitySeekRangeWrapper => InequalitySeekRangeExpression(e.range.mapBounds(toCommandExpression))
-    case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(identifier(e.identifier), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
+    case e: ast.AndedPropertyInequalities => predicates.AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(e.property), e.inequalities.map(inequalityExpression))
     case _ =>
       throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
@@ -312,7 +312,7 @@ object ExpressionConverters {
   def toCommandExpression(expressions: Seq[ast.Expression]): Seq[CommandExpression] =
     expressions.map(toCommandExpression)
 
-  private def identifier(e: ast.Variable) = commands.expressions.Variable(e.name)
+  private def variable(e: ast.Variable) = commands.expressions.Variable(e.name)
 
   private def inequalityExpression(original: ast.InequalityExpression): predicates.ComparablePredicate = original match {
     case e: ast.LessThan => predicates.LessThan(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
@@ -366,11 +366,11 @@ object ExpressionConverters {
       case Some(_: ast.True) | None =>
         toCommandExpression(e.expression)
       case Some(inner) =>
-        commandexpressions.FilterFunction(toCommandExpression(e.expression), e.identifier.name, toCommandPredicate(inner))
+        commandexpressions.FilterFunction(toCommandExpression(e.expression), e.variable.name, toCommandPredicate(inner))
     }
     e.extractExpression match {
       case Some(extractExpression) =>
-        commandexpressions.ExtractFunction(filter, e.identifier.name, toCommandExpression(extractExpression))
+        commandexpressions.ExtractFunction(filter, e.variable.name, toCommandExpression(extractExpression))
       case None =>
         filter
     }

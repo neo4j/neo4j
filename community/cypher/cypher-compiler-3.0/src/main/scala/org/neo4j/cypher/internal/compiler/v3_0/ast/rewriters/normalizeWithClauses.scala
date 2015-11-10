@@ -165,11 +165,11 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
 
   private def aliasSortItem(existingAliases: Map[Expression, Variable], sortItem: SortItem): (Option[AliasedReturnItem], SortItem) = {
     val expression = sortItem.expression
-    val (maybeReturnItem, replacementIdentifier) = aliasExpression(existingAliases, expression)
+    val (maybeReturnItem, replacementVariable) = aliasExpression(existingAliases, expression)
 
     val newSortItem = sortItem.endoRewrite(topDown(Rewriter.lift {
       case e: Expression if e == expression =>
-        replacementIdentifier.copyId
+        replacementVariable.copyId
     }))
     (maybeReturnItem, newSortItem)
   }
@@ -180,8 +180,8 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
         (None, originalWhere)
 
       case e: Expression if !e.containsAggregate =>
-        val (maybeReturnItem, replacementIdentifier) = aliasExpression(existingAliases, e)
-        (maybeReturnItem, Where(replacementIdentifier)(originalWhere.position))
+        val (maybeReturnItem, replacementVariable) = aliasExpression(existingAliases, e)
+        (maybeReturnItem, Where(replacementVariable)(originalWhere.position))
 
       case e =>
         (None, originalWhere)
@@ -194,13 +194,13 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
         (None, alias.copyId)
 
       case None =>
-        val newIdentifier = Variable(FreshIdNameGenerator.name(expression.position))(expression.position)
+        val newVariable = Variable(FreshIdNameGenerator.name(expression.position))(expression.position)
         val newExpression = expression.endoRewrite(topDown(Rewriter.lift {
           case e: Expression =>
             existingAliases.get(e).map(_.copyId).getOrElse(e)
         }))
-        val newReturnItem = AliasedReturnItem(newExpression, newIdentifier)(expression.position)
-        (Some(newReturnItem), newIdentifier.copyId)
+        val newReturnItem = AliasedReturnItem(newExpression, newVariable)(expression.position)
+        (Some(newReturnItem), newVariable.copyId)
     }
   }
 

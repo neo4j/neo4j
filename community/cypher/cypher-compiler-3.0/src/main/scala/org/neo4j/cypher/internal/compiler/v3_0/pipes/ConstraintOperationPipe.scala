@@ -47,7 +47,7 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
 
   def symbols = new SymbolTable()
 
-  def planDescription = new PlanDescriptionImpl(this.id, "ConstraintOperation", NoChildren, Seq.empty, identifiers)
+  def planDescription = new PlanDescriptionImpl(this.id, "ConstraintOperation", NoChildren, Seq.empty, variables)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 

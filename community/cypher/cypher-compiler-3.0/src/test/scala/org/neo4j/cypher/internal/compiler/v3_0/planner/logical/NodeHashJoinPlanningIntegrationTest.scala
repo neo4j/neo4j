@@ -77,7 +77,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       NodeHashJoin(
         Set(IdName("b")),
         Selection(
-          Seq(In(Property(variable("b"), PropertyKeyName("name") _) _, Collection(Seq(StringLiteral("Andres") _)) _) _, HasLabels(variable("b"), Seq(LabelName("Person") _)) _),
+          Seq(In(Property(varFor("b"), PropertyKeyName("name") _) _, Collection(Seq(StringLiteral("Andres") _)) _) _, HasLabels(varFor("b"), Seq(LabelName("Person") _)) _),
           Expand(
             NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Jakub") _), Set.empty)(solved),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"

@@ -31,9 +31,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("expand should only be counted once") {
     val plan =
-      Selection(List(HasLabels(variable("a"), Seq(LabelName("Awesome") _)) _),
+      Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
         Expand(
-          Selection(List(HasLabels(variable("a"), Seq(LabelName("Awesome") _)) _),
+          Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
             Expand(
               Argument(Set("a"))(solvedWithEstimation(10.0))(),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
@@ -62,7 +62,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val lazyPlan = Projection(
       Selection(
-        Seq(HasLabels(variable("a2"), Seq(LabelName("A")(pos)))(pos)),
+        Seq(HasLabels(varFor("a2"), Seq(LabelName("A")(pos)))(pos)),
         Expand(
           Expand(
             NodeByLabelScan("a1", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
@@ -70,7 +70,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           )(solvedWithEstimation(50.0)),
           "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
         )(solvedWithEstimation(250.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> variable("b"))
+      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
     )(solvedWithEstimation(250.0))
 
     val eagerPlan = Projection(
@@ -83,7 +83,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           NodeByLabelScan("a2", LazyLabel("A"), Set.empty)(solvedWithEstimation(10.0)),
           "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
         )(solvedWithEstimation(50.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> variable("b"))
+      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
     )(solvedWithEstimation(250.0))
 
     val whatever = QueryGraphSolverInput.empty

@@ -40,9 +40,9 @@ class NodeCardinalityEstimatorTest extends CypherFunSuite with LogicalPlanningTe
   when( selectivityEstimator.combiner ).thenReturn( combiner )
   val estimator = NodeCardinalityEstimator(DelegatingSelectivityEstimator(selectivityEstimator), allNodes, inputCardinality)
 
-  val hasPersonOnA: Expression = HasLabels(variable("a"), Seq(LabelName("Person")_))_
-  val hasAnimalOnA: Expression = HasLabels(variable("a"), Seq(LabelName("Animal")_))_
-  val hasPersonOnB: Expression = HasLabels(variable("b"), Seq(LabelName("Person")_))_
+  val hasPersonOnA: Expression = HasLabels(varFor("a"), Seq(LabelName("Person")_))_
+  val hasAnimalOnA: Expression = HasLabels(varFor("a"), Seq(LabelName("Animal")_))_
+  val hasPersonOnB: Expression = HasLabels(varFor("b"), Seq(LabelName("Person")_))_
 
   val personSelectivity = Selectivity.of(0.5).get
   val animalSelectivity = Selectivity.of(0.1).get

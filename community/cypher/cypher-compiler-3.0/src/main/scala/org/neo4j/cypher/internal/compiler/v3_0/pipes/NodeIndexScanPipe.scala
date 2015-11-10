@@ -48,7 +48,7 @@ case class NodeIndexScanPipe(ident: String,
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   def planDescriptionWithoutCardinality =
-    new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
+    new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), variables)
 
   def symbols = new SymbolTable(Map(ident -> CTNode))
 

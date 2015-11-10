@@ -45,7 +45,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                Seq(HasLabels(variable("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
+                Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
                   Argument(Set("f"))(solved)(),
                   "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
@@ -156,7 +156,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
         )(solved),
-        variable("  FRESHID30")
+        varFor("  FRESHID30")
       )(solved)
     )
   }
@@ -176,7 +176,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
         )(solved),
-        variable("  FRESHID16")
+        varFor("  FRESHID16")
       )(solved)
     )
   }
@@ -196,7 +196,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
         )(solved),
-        variable("  FRESHID20")
+        varFor("  FRESHID20")
       )(solved)
     )
   }

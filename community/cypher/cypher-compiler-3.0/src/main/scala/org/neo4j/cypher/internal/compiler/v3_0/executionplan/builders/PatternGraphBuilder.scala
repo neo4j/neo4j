@@ -61,7 +61,7 @@ trait PatternGraphBuilder {
     }
 
     // Start from a pattern that is connected to something already bound
-    val s = patterns.find(pattern => pattern.possibleStartPoints.exists(tuple => symbols.hasIdentifierNamed(tuple._1)))
+    val s = patterns.find(pattern => pattern.possibleStartPoints.exists(tuple => symbols.hasVariableNamed(tuple._1)))
 
 
     val startPoint = s.getOrElse(throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + patterns.flatMap(_.possibleStartPoints.map(_._1)).distinct.sorted.mkString(", ")))

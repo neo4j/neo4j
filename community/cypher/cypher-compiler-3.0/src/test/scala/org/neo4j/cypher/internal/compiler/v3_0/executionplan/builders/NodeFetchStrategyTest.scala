@@ -99,7 +99,7 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val nodeName = "n"
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
         val labelPredicate = HasLabel(Variable(nodeName), UnresolvedLabel(labelName))
-        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(variable(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(varFor(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
         val startsWithPredicate = toCommandPredicate(startsWith)
 
         val planCtx = mock[PlanContext]
@@ -127,8 +127,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         val nodeName = "n"
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
         val labelPredicate = HasLabel(Variable(nodeName), UnresolvedLabel(labelName))
-        val prop: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(variable("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val prop: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(varFor("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
 
         val inequalityPredicate = toCommandPredicate(inequality)
 

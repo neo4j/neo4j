@@ -44,7 +44,7 @@ case class DeleteRelationshipPipe(src: Pipe, expression: Expression)(val estimat
     }
   }
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "DeleteRelationship", identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "DeleteRelationship", variables)
 
   def symbols = src.symbols
 

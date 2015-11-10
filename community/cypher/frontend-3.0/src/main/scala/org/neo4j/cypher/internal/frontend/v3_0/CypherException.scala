@@ -87,16 +87,16 @@ class HintException(message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.hintException(message, this)
 }
 
-class IndexHintException(identifier: String, label: String, property: String, message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(identifier, label, property, message, this)
+class IndexHintException(variable: String, label: String, property: String, message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(variable, label, property, message, this)
 }
 
-class JoinHintException(identifier: String, message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(identifier, message, this)
+class JoinHintException(variable: String, message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(variable, message, this)
 }
 
-class LabelScanHintException(identifier: String, label: String, message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.labelScanHintException(identifier, label, message, this)
+class LabelScanHintException(variable: String, label: String, message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.labelScanHintException(variable, label, message, this)
 }
 
 class InvalidSemanticsException(message: String) extends CypherException {

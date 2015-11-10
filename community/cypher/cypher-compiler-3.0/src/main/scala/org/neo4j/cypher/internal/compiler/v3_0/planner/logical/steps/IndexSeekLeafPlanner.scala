@@ -70,13 +70,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonSeekableVariables(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
   }
 
-  private def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
+  private def findNonSeekableVariables(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
       // n['some' + n.prop] IN [ ... ]
       case predicate@AsDynamicPropertyNonSeekable(nonSeekableId)

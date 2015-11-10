@@ -25,16 +25,16 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp, TypedRewrite
 import org.neo4j.cypher.internal.frontend.v3_0.bottomUp.BottomUpRewriter
 
 case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
-                           seenIdentifiers: Set[Variable] = Set.empty,
+                           seenVariables: Set[Variable] = Set.empty,
                            usageCount: Map[Variable, Int] = Map.empty) {
 
-  def trackUsageOfIdentifier(id: Variable) =
+  def trackUsageOfVariable(id: Variable) =
     copy(usageCount = usageCount + (id -> (usageCount.withDefaultValue(0)(id) + 1)))
 
   def enterQueryPart(newProjections: Map[Variable, Expression]): InliningContext = {
-    val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
+    val inlineExpressions = TypedRewriter[Expression](variableRewriter)
     val containsAggregation = newProjections.values.exists(containsAggregate)
-    val shadowing = newProjections.filterKeys(seenIdentifiers.contains).filter {
+    val shadowing = newProjections.filterKeys(seenVariables.contains).filter {
       case (_, _: PathExpression) => false
       case (key, value) => key != value
     }
@@ -46,15 +46,15 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
     } else {
       projections ++ newProjections.mapValues(inlineExpressions)
     }
-    copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keys)
+    copy(projections = resultProjections, seenVariables = seenVariables ++ newProjections.keys)
   }
 
-  def spoilVariable(identifier: Variable): InliningContext =
-    copy(projections = projections - identifier)
+  def spoilVariable(variable: Variable): InliningContext =
+    copy(projections = projections - variable)
 
-  def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
-    case identifier: Variable if okToRewrite(identifier) =>
-      projections.get(identifier).map(_.endoRewrite(copyVariables)).getOrElse(identifier.copyId)
+  def variableRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+    case variable: Variable if okToRewrite(variable) =>
+      projections.get(variable).map(_.endoRewrite(copyVariables)).getOrElse(variable.copyId)
   })
 
   def okToRewrite(i: Variable) =
@@ -74,9 +74,9 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
       }
   })
 
-  def isAliasedIdentifier(identifier: Variable) = alias(identifier).nonEmpty
+  def isAliasedVarible(variable: Variable) = alias(variable).nonEmpty
 
-  def alias(identifier: Variable): Option[Variable] = projections.get(identifier) match {
+  def alias(variable: Variable): Option[Variable] = projections.get(variable) match {
     case Some(other: Variable) => Some(other.copyId)
     case _                       => None
   }

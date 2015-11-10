@@ -23,16 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])
+case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
                                 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
+  val nullColumns: Map[String, Any] = nullableVariables.map(_ -> null).toMap
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -67,10 +66,10 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
       "NodeOuterHashJoin",
       TwoChildren(source.planDescription, inner.planDescription),
       Seq.empty,
-      identifiers
+      variables
     )
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   override val sources = Seq(source, inner)
 
@@ -98,13 +97,13 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
     probeTable
   }
 
-  private val myIdentifiers = nodeIdentifiers.toIndexedSeq
+  private val myVariables = nodeVariables.toIndexedSeq
 
   private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
-    val key = new Array[Long](myIdentifiers.length)
+    val key = new Array[Long](myVariables.length)
 
-    for (idx <- 0 until myIdentifiers.length) {
-      key(idx) = context(myIdentifiers(idx)) match {
+    for (idx <- 0 until myVariables.length) {
+      key(idx) = context(myVariables(idx)) match {
         case n: Node => n.getId
         case _ => return None
       }

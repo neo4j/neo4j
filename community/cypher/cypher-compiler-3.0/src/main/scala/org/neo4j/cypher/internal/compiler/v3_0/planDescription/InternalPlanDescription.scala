@@ -53,7 +53,7 @@ sealed trait InternalPlanDescription {
   def andThen(id: Id, name: String, identifiers: Set[String], arguments: Argument*) =
     PlanDescriptionImpl(id, name, SingleChild(this), arguments, identifiers)
 
-  def orderedIdentifiers: Seq[String] = variables.toSeq.sorted
+  def orderedVariables: Seq[String] = variables.toSeq.sorted
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {

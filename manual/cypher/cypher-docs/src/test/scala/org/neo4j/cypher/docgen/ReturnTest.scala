@@ -117,7 +117,7 @@ return `This isn't a common identifier`.happy""",
       })
   }
 
-  @Test def return_all_identifiers() {
+  @Test def return_all_variables() {
     testQuery(
       title = "Return all elements",
       text = """When you want to return all nodes, relationships and paths found in a query, you can use the `*` symbol.""",

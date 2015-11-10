@@ -66,7 +66,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
     val args = predicates.map { p =>
       LegacyExpression(p)
     }
-    source.planDescription.andThen(this.id, "ShortestPath", identifiers, args:_*)
+    source.planDescription.andThen(this.id, "ShortestPath", variables, args:_*)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

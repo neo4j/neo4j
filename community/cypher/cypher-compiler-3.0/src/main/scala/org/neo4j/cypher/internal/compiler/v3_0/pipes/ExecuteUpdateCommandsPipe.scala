@@ -60,7 +60,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
     }
   }
 
-  def planDescription = source.planDescription.andThen(this.id, "UpdateGraph", identifiers, commands.flatMap(_.arguments):_*)
+  def planDescription = source.planDescription.andThen(this.id, "UpdateGraph", variables, commands.flatMap(_.arguments):_*)
 
   def symbols = source.symbols.add(commands.flatMap(_.variables).toMap)
 
@@ -119,7 +119,7 @@ trait NoLushEntityCreation {
         namedExpectations.filter(expectation => !expectation.bare).foreach {
           lushExpectation =>
             lushNodes.get(lushExpectation.name) match {
-              case None if symbols.hasIdentifierNamed(lushExpectation.name) => failOn(lushExpectation.name)
+              case None if symbols.hasVariableNamed(lushExpectation.name) => failOn(lushExpectation.name)
               case None                                                     => lushNodes += lushExpectation.name -> lushExpectation
               case Some(x) if x != lushExpectation                          => failOn(lushExpectation.name)
               case Some(x)                                                  => // same thing we've already seen. move along

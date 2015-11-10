@@ -32,7 +32,7 @@ import scala.language.postfixOps
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def asIdentifier = Variable(name)(position)
+  def asVariable = Variable(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -86,11 +86,11 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
-  def updateVariable(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
-    copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+  def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]) =
+    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
 
-  def mergePositions(identifier: String, positions: Set[InputPosition]) = symbolTable.get(identifier) match {
-    case Some(symbol) => copy(symbolTable = symbolTable.updated(identifier, symbol.copy(positions = positions ++ symbol.positions)))
+  def mergePositions(variable: String, positions: Set[InputPosition]) = symbolTable.get(variable) match {
+    case Some(symbol) => copy(symbolTable = symbolTable.updated(variable, symbol.copy(positions = positions ++ symbol.positions)))
     case None => self
   }
 
@@ -208,7 +208,7 @@ case class SemanticState(currentScope: ScopeLocation,
       case None =>
         Right(updateVariable(variable, possibleTypes, positions + variable.position))
       case Some(symbol) =>
-        Left(SemanticError(s"${variable.name} already declared", variable.position, symbol.positions.toSeq: _*))
+        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
     }
 
   def addNotification(notification: InternalNotification) = copy(notifications = notifications + notification)
@@ -233,7 +233,7 @@ case class SemanticState(currentScope: ScopeLocation,
   def ensureVariableDefined(variable: ast.Variable): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None         =>
-        Left(SemanticError(s"${variable.name} not defined", variable.position))
+        Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
       case Some(symbol) =>
         Right(updateVariable(variable, symbol.types, symbol.positions + variable.position))
     }

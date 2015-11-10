@@ -79,7 +79,7 @@ case class CreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ
    }
  }
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", variables)
 
   def symbols = src.symbols.add(key, CTRelationship)
 

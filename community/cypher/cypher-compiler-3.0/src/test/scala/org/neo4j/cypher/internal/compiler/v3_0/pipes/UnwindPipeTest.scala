@@ -37,7 +37,7 @@ class UnwindPipeTest extends CypherFunSuite {
   test("symbols are correct") {
     val source = new FakePipe(List.empty, "x" -> CTCollection(CTInteger), "something else" -> CTCollection(CTAny))
     val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
-    unwindPipe.symbols.identifiers should equal(Map(
+    unwindPipe.symbols.variables should equal(Map(
       "y" -> CTInteger,
       "something else" -> CTCollection(CTAny),
       "x" -> CTCollection(CTInteger)))

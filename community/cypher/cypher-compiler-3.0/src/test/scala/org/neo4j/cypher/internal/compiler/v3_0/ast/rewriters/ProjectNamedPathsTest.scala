@@ -282,10 +282,10 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("Aggregating WITH downstreams" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH length(p) as l, count(*) as x WITH l, x RETURN l + x")
-    val a = variable("a")
-    val p = variable("p")
-    val l = variable("l")
-    val x = variable("x")
+    val a = varFor("a")
+    val p = varFor("p")
+    val l = varFor("l")
+    val x = varFor("x")
     val MATCH =
       Match(optional = false,
         Pattern(List(
@@ -311,7 +311,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val RETURN =
       Return(distinct = false,
         ReturnItems(includeExisting = false, Seq(
-          AliasedReturnItem(Add(l, x)(pos), variable("l + x"))(pos)
+          AliasedReturnItem(Add(l, x)(pos), varFor("l + x"))(pos)
         ))(pos), None, None, None)(pos)
 
     val expected: Query = Query(None, SingleQuery(List(MATCH, WITH1, WITH2, RETURN))(pos))(pos)

@@ -31,7 +31,7 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
 
   def planDescription: InternalPlanDescription =
     sources.map(_.planDescription).reduce[InternalPlanDescription] {
-      case (l, r) => new PlanDescriptionImpl(this.id, "Union", TwoChildren(l, r), Seq.empty, identifiers)
+      case (l, r) => new PlanDescriptionImpl(this.id, "Union", TwoChildren(l, r), Seq.empty, variables)
     }
 
   def symbols = new SymbolTable(columns.map(k => k -> CTAny).toMap)
@@ -52,7 +52,7 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
                        (val estimatedCardinality: Option[Double] = None)(implicit val monitor: PipeMonitor)
   extends Pipe with RonjaPipe {
   def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(this.id, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty, identifiers)
+    new PlanDescriptionImpl(this.id, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty, variables)
 
   def symbols: SymbolTable = l.symbols intersect r.symbols
 

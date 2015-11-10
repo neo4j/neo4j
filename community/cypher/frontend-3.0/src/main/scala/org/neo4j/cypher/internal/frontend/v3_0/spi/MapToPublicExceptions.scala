@@ -40,13 +40,13 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def invalidSemanticException(message: String, cause: Throwable): T
 
-  def indexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable): T
+  def indexHintException(variable: String, label: String, property: String, message: String, cause: Throwable): T
 
-  def joinHintException(identifier: String, message: String, cause: Throwable): T
+  def joinHintException(variable: String, message: String, cause: Throwable): T
 
   def hintException(s: String, cause: Throwable): T
 
-  def labelScanHintException(identifier: String, label: String, message: String, cause: Throwable): T
+  def labelScanHintException(variable: String, label: String, message: String, cause: Throwable): T
 
   def unknownLabelException(s: String, cause: Throwable): T
 

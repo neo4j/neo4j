@@ -27,7 +27,7 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
 
   def toSymbolUse = SymbolUse(name, position)
 
-  // check the identifier is defined and, if not, define it so that later errors are suppressed
+  // check the variable is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
     case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
@@ -57,7 +57,7 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
 
 object Variable {
   implicit val byName =
-    Ordering.by { (identifier: Variable) =>
-      (identifier.name, identifier.position)
+    Ordering.by { (variable: Variable) =>
+      (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
 }

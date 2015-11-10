@@ -79,7 +79,7 @@ object Effects {
 
   def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
     (expression match {
-      case i: Variable => symbols.identifiers.get(i.entityName).map {
+      case i: Variable => symbols.variables.get(i.entityName).map {
         case _: NodeType => Effects(ReadsGivenNodeProperty(propertyKey))
         case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
         case _ => Effects()
@@ -90,7 +90,7 @@ object Effects {
 
   def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
     (expression match {
-      case i: Variable => symbols.identifiers.get(i.entityName).map {
+      case i: Variable => symbols.variables.get(i.entityName).map {
         case _: NodeType => Effects(SetGivenNodeProperty(propertyKey))
         case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
         case _ => Effects()

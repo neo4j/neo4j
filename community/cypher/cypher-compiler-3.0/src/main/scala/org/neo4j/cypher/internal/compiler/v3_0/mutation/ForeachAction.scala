@@ -47,7 +47,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     Iterator(context)
   }
 
-  override def updateSymbols(symbol: SymbolTable) = addInnerIdentifier(symbol)
+  override def updateSymbols(symbol: SymbolTable) = addInnerVariable(symbol)
 
   def localEffects(symbols: SymbolTable) = Effects()
 
@@ -57,7 +57,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def variables = Nil
 
-  def addInnerIdentifier(symbols: SymbolTable): SymbolTable = {
+  def addInnerVariable(symbols: SymbolTable): SymbolTable = {
     val t = collection.evaluateType(CTCollection(CTAny), symbols).legacyIteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
@@ -66,9 +66,9 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def symbolTableDependencies = {
     val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
-    val updateActionIdentifiers: Set[String] = actions.flatMap(_.variables.map(_._1)).toSet
+    val updateActionVariables: Set[String] = actions.flatMap(_.variables.map(_._1)).toSet
     val collectionDeps = collection.symbolTableDependencies
 
-    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps -- Some(id)
+    (updateActionsDeps -- updateActionVariables) ++ collectionDeps -- Some(id)
   }
 }

@@ -26,43 +26,43 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("a.prop IS NOT NULL rewritten to: exists(a.prop)") {
-    val input: Expression = IsNotNull(Property(variable("a"), PropertyKeyName("prop")_)_)_
-    val output: Expression = Exists.asInvocation(Property(variable("a"), PropertyKeyName("prop")_)_)(pos)
+    val input: Expression = IsNotNull(Property(varFor("a"), PropertyKeyName("prop")_)_)_
+    val output: Expression = Exists.asInvocation(Property(varFor("a"), PropertyKeyName("prop")_)_)(pos)
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("exists(a.prop) is not rewritten") {
-    val input: Expression = Exists.asInvocation(Property(variable("a"), PropertyKeyName("prop")_)_)(pos)
-    val output: Expression = Exists.asInvocation(Property(variable("a"), PropertyKeyName("prop")_)_)(pos)
+    val input: Expression = Exists.asInvocation(Property(varFor("a"), PropertyKeyName("prop")_)_)(pos)
+    val output: Expression = Exists.asInvocation(Property(varFor("a"), PropertyKeyName("prop")_)_)(pos)
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x < y rewritten to: x >= y") {
-    val input: Expression = Not(LessThan(variable("x"), variable("y"))_)_
-    val output: Expression = GreaterThanOrEqual(variable("x"), variable("y"))_
+    val input: Expression = Not(LessThan(varFor("x"), varFor("y"))_)_
+    val output: Expression = GreaterThanOrEqual(varFor("x"), varFor("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x <= y rewritten to: x > y") {
-    val input: Expression = Not(LessThanOrEqual(variable("x"), variable("y"))_)_
-    val output: Expression = GreaterThan(variable("x"), variable("y"))_
+    val input: Expression = Not(LessThanOrEqual(varFor("x"), varFor("y"))_)_
+    val output: Expression = GreaterThan(varFor("x"), varFor("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x > y rewritten to: x <= y") {
-    val input: Expression = Not(GreaterThan(variable("x"), variable("y"))_)_
-    val output: Expression = LessThanOrEqual(variable("x"), variable("y"))_
+    val input: Expression = Not(GreaterThan(varFor("x"), varFor("y"))_)_
+    val output: Expression = LessThanOrEqual(varFor("x"), varFor("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }
 
   test("NOT x >= y rewritten to: x < y") {
-    val input: Expression = Not(GreaterThanOrEqual(variable("x"), variable("y"))_)_
-    val output: Expression = LessThan(variable("x"), variable("y"))_
+    val input: Expression = Not(GreaterThanOrEqual(varFor("x"), varFor("y"))_)_
+    val output: Expression = LessThan(varFor("x"), varFor("y"))_
 
     normalizeSargablePredicates(input) should equal(output)
   }

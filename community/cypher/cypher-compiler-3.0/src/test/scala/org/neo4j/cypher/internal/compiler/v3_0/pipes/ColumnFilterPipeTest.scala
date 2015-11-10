@@ -35,7 +35,7 @@ class ColumnFilterPipeTest extends CypherFunSuite {
 
     val columnPipe = new ColumnFilterPipe(source, returnItems)(mock[PipeMonitor])
 
-    columnPipe.symbols.identifiers should equal(Map(col -> CTNode))
+    columnPipe.symbols.variables should equal(Map(col -> CTNode))
     columnPipe.createResults(QueryStateHelper.empty).toList should equal(List(Map(col -> "bar")))
   }
 }

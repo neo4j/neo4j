@@ -91,7 +91,7 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
     }
   }
 
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, identifiers)
+  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, variables)
 
   override def symbols = src.symbols
 }

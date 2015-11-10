@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identN = variable("n")
-  val identM = variable("m")
-  val identA = variable("a")
+  val identN = varFor("n")
+  val identM = varFor("m")
+  val identA = varFor("a")
   val astNull: Null = Null()_
 
   val mapN = Map(identN -> astNull)
@@ -52,7 +52,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
     intercept[AssertionError](InliningContext().enterQueryPart(mapN).enterQueryPart(mapN))
   }
 
-  test("ignore new projections when spoilIdentifier is called") {
+  test("ignore new projections when spoilVariable is called") {
     val ctx = InliningContext(mapN).spoilVariable(identN)
 
     ctx.projections should equal(Map.empty)

@@ -34,19 +34,19 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionTypeInfo, Rewriter, Se
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("adds ProduceResult with a single node") {
-    val result = createProduceResultOperator(Seq("a"), SemanticTable().addNode(variable("a")))
+    val result = createProduceResultOperator(Seq("a"), SemanticTable().addNode(varFor("a")))
 
     result.columns should equal(Seq("a"))
   }
 
   test("adds ProduceResult with a single relationship") {
-    val result = createProduceResultOperator(Seq("r"), SemanticTable().addRelationship(variable("r")))
+    val result = createProduceResultOperator(Seq("r"), SemanticTable().addRelationship(varFor("r")))
 
     result.columns should equal(Seq("r"))
   }
 
   test("adds ProduceResult with a single value") {
-    val expr = variable("x")
+    val expr = varFor("x")
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(expr, ExpressionTypeInfo(CTFloat, None))
 
     val result = createProduceResultOperator(Seq("x"), semanticTable = SemanticTable(types = types))
@@ -62,7 +62,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val queryPlanner = DefaultQueryPlanner(identity, planSingleQuery = new FakePlanner(inputPlan))
 
-    val pq = PlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> variable(c)).toMap))
+    val pq = PlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
     val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply))
 

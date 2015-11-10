@@ -74,25 +74,25 @@ case object addUniquenessPredicates extends Rewriter {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
     } yield {
-      val equals = Equals(x.identifier.copyId, y.identifier.copyId)(pos)
+      val equals = Equals(x.variable.copyId, y.variable.copyId)(pos)
 
       (x.singleLength, y.singleLength) match {
         case (true, true) =>
           Not(equals)(pos)
 
         case (true, false) =>
-          NoneIterablePredicate(y.identifier.copyId, y.identifier.copyId, Some(equals))(pos)
+          NoneIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)
 
         case (false, true) =>
-          NoneIterablePredicate(x.identifier.copyId, x.identifier.copyId, Some(equals))(pos)
+          NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(equals))(pos)
 
         case (false, false) =>
-          NoneIterablePredicate(x.identifier.copyId, x.identifier.copyId, Some(AnyIterablePredicate(y.identifier.copyId, y.identifier.copyId, Some(equals))(pos)))(pos)
+          NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(AnyIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)))(pos)
       }
     }
 
-  case class UniqueRel(identifier: Variable, types: Set[RelTypeName], singleLength: Boolean) {
-    def name = identifier.name
+  case class UniqueRel(variable: Variable, types: Set[RelTypeName], singleLength: Boolean) {
+    def name = variable.name
 
     def isAlwaysDifferentFrom(other: UniqueRel) =
       types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty

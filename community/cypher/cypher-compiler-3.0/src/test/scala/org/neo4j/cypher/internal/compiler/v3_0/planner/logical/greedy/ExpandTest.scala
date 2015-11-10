@@ -151,10 +151,10 @@ class ExpandTest
     )_
     val predicate: Predicate = Predicate(Set(rName), allPredicate)
     val qg = createQuery(rVarRel).addSelections(Selections(Set(predicate)))
-    val fooIdentifier: Variable = Variable("foo")_
+    val fooVariable: Variable = Variable("foo")_
     val result = expand(plan, qg)
     result should equal(
-      Seq(VarExpand(planA, aNode, SemanticDirection.OUTGOING, rVarRel.dir, Seq.empty, bNode, rVarRel.name, VarPatternLength.unlimited, ExpandAll, Seq(fooIdentifier -> innerPredicate))(solved))
+      Seq(VarExpand(planA, aNode, SemanticDirection.OUTGOING, rVarRel.dir, Seq.empty, bNode, rVarRel.name, VarPatternLength.unlimited, ExpandAll, Seq(fooVariable -> innerPredicate))(solved))
     )
   }
 }

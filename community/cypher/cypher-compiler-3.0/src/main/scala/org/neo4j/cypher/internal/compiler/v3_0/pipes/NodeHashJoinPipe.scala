@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Node
 
 import scala.collection.mutable
 
-case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pipe)
+case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
@@ -61,11 +61,11 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
       id = id,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      arguments = Seq(KeyNames(nodeIdentifiers.toSeq)),
-      identifiers
+      arguments = Seq(KeyNames(nodeVariables.toSeq)),
+      variables
     )
 
-  def symbols = left.symbols.add(right.symbols.identifiers)
+  def symbols = left.symbols.add(right.symbols.variables)
 
   override val sources = Seq(left, right)
 
@@ -90,13 +90,13 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     table
   }
 
-  private val cachedIdentifiers = nodeIdentifiers.toIndexedSeq
+  private val cachedVariables = nodeVariables.toIndexedSeq
 
   private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
-    val key = new Array[Long](cachedIdentifiers.length)
+    val key = new Array[Long](cachedVariables.length)
 
-    for (idx <- 0 until cachedIdentifiers.length) {
-      key(idx) = context(cachedIdentifiers(idx)) match {
+    for (idx <- 0 until cachedVariables.length) {
+      key(idx) = context(cachedVariables(idx)) match {
         case n: Node => n.getId
         case null => return None
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val n_prop1: Property = Property(variable("n"), PropertyKeyName("prop1")_)_
-  val m_prop1: Property = Property(variable("m"), PropertyKeyName("prop1")_)_
-  val m_prop2: Property = Property(variable("m"), PropertyKeyName("prop2")_)_
+  val n_prop1: Property = Property(varFor("n"), PropertyKeyName("prop1")_)_
+  val m_prop1: Property = Property(varFor("m"), PropertyKeyName("prop1")_)_
+  val m_prop2: Property = Property(varFor("m"), PropertyKeyName("prop2")_)_
 
   test("Should handle single predicate") {
     groupInequalityPredicates(NonEmptyList(pred(lessThan(n_prop1, 1)))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
@@ -74,11 +74,11 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
 
   test("Should not group inequalities on non-property lookups") {
     groupInequalityPredicates(NonEmptyList(
-      pred(lessThan(variable("x"), 1)),
-      pred(greaterThanOrEqual(variable("x"), 1))
+      pred(lessThan(varFor("x"), 1)),
+      pred(greaterThanOrEqual(varFor("x"), 1))
     )).toSet should equal(NonEmptyList(
-      pred(lessThan(variable("x"), 1)),
-      pred(greaterThanOrEqual(variable("x"), 1))
+      pred(lessThan(varFor("x"), 1)),
+      pred(greaterThanOrEqual(varFor("x"), 1))
     ).toSet)
   }
 

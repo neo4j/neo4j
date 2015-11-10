@@ -85,5 +85,5 @@ case class BuildCountingProbeTable(id: String, name: String, nodes: Set[Variable
     JoinData(Map.empty, name, tableType, id)
   }
 }
-case class VariableData(identifier: String, incoming: Variable, outgoing: Variable)
+case class VariableData(variable: String, incoming: Variable, outgoing: Variable)
 case class JoinData(vars: Map[String, VariableData], tableVar: String, tableType: JoinTableType, id: String)

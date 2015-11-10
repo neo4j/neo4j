@@ -56,13 +56,13 @@ object indexScanLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonScannableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonScannableVariables(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
   }
 
-  private def findNonScannableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
+  private def findNonScannableVariables(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
       case predicate@AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
         Some(nonScannableId)

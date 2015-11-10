@@ -59,7 +59,7 @@ trait UpdateCommandExpander {
 
     commands.foreach {
       case foreach: ForeachAction =>
-        val expandedCommands = expandCommands(foreach.actions, foreach.addInnerIdentifier(symbols)).toList
+        val expandedCommands = expandCommands(foreach.actions, foreach.addInnerVariable(symbols)).toList
         add(foreach.copy(actions = expandedCommands))
 
       case createRel: CreateRelationship =>

@@ -36,7 +36,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     val grouping = Map("count(*)" -> CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
 
-    aggregationPipe.symbols.identifiers should equal(Map("name" -> CTNode, "count(*)" -> CTInteger))
+    aggregationPipe.symbols.variables should equal(Map("name" -> CTNode, "count(*)" -> CTInteger))
   }
 
   private def createReturnItemsFor(names: String*): Set[String] = names.toSet

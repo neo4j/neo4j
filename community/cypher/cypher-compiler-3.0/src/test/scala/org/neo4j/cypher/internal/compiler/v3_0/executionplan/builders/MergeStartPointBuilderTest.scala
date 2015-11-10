@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken.Unresolved
@@ -35,8 +34,8 @@ class MergeStartPointBuilderTest extends BuilderTest {
   def builder = new MergeStartPointBuilder
 
   context = mock[PlanContext]
-  val identifier = "n"
-  val otherIdentifier = "p"
+  val variable = "n"
+  val otherVariable = "p"
   val label = "Person"
   val property = "prop"
   val propertyKey = PropertyKey(property)
@@ -47,7 +46,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
 
   test("should_solved_merge_node_start_points") {
     // Given MERGE (x:Label)
-    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
+    val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
     val query = newQuery(
       updates = Seq(mergeNodeAction)
     )
@@ -66,7 +65,7 @@ class MergeStartPointBuilderTest extends BuilderTest {
 
   test("should_solved_merge_node_start_points_inside_foreach") {
     // Given FOREACH(x in [1,2,3] | MERGE (x:Label {prop:x}))
-    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
+    val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
     val query = newQuery(

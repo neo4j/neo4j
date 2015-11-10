@@ -94,7 +94,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
+                        andThen(this.id, "EagerAggregation", variables, Arguments.KeyNames(keyExpressions.toSeq))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

@@ -44,7 +44,7 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
 
   override def children = Seq(collection, expression, init)
 
-  def identifierDependencies(expectedType: CypherType) = AnyType
+  def variableDependencies(expectedType: CypherType) = AnyType
 
   def calculateType(symbols: SymbolTable) = {
     val iteratorType = collection.evaluateType(CTCollection(CTAny), symbols).legacyIteratedType

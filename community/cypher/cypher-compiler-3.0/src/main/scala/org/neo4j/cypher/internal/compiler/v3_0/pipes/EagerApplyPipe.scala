@@ -37,9 +37,9 @@ case class EagerApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: O
     }.toIterator
 
   def planDescriptionWithoutCardinality =
-    PlanDescriptionImpl(this.id, "EagerApply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+    PlanDescriptionImpl(this.id, "EagerApply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

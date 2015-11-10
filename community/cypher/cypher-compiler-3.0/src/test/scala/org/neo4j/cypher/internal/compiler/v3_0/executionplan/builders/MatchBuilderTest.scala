@@ -128,6 +128,6 @@ class MatchBuilderTest extends BuilderTest {
     val result = assertAccepts(inP, inQ)
 
     val matchPipe = result.pipe.asInstanceOf[MatchPipe]
-    matchPipe.identifiersInClause should equal(Set("a", "r1", "b", "r2", "c"))
+    matchPipe.variablesInClause should equal(Set("a", "r1", "b", "r2", "c"))
   }
 }

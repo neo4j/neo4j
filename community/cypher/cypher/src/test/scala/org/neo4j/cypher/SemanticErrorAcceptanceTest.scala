@@ -176,7 +176,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should be semantically incorrect to refer to unknown variable in drop constraint") {
     executeAndEnsureError(
       "drop constraint on (foo:Foo) assert bar.name is unique",
-      "Variable `barVariable` not defined (line 1, column 37 (offset: 36))"
+      "Variable `bar` not defined (line 1, column 37 (offset: 36))"
     )
   }
 
@@ -205,21 +205,21 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should not allow variable to be overwritten by merge") {
     executeAndEnsureError(
       "match (a) where id(a) = 0 merge (a)",
-      "a already declared (line 1, column 34 (offset: 33))"
+      "Variable `a` already declared (line 1, column 34 (offset: 33))"
     )
   }
 
   test("should not allow variable to be overwritten by create relationship") {
     executeAndEnsureError(
       "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 create (a)-[r:TYP]->()",
-      "r already declared (line 1, column 64 (offset: 63))"
+      "Variable `r` already declared (line 1, column 64 (offset: 63))"
     )
   }
 
   test("should not allow variable to be overwritten by merge relationship") {
     executeAndEnsureError(
       "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 merge (a)-[r:TYP]->()",
-      "r already declared (line 1, column 63 (offset: 62))"
+      "Variable `r` already declared (line 1, column 63 (offset: 62))"
     )
   }
 

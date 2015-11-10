@@ -41,24 +41,24 @@ class IndexLookupBuilderTest extends BuilderTest {
 
   test("should_accept_a_query_with_equality_index_hints") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val valueExpression = Literal(42)
-    val predicate = Equals(Property(Variable(identifier), PropertyKey(property)), valueExpression)
+    val predicate = Equals(Property(Variable(variable), PropertyKey(property)), valueExpression)
 
-    check(identifier, label, property, predicate, valueExpression)
+    check(variable, label, property, predicate, valueExpression)
   }
 
   test("should_accept_a_query_with_equality_index_hints2") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val valueExpression = Literal(42)
-    val predicate = Equals(valueExpression, Property(Variable(identifier), PropertyKey(property)))
+    val predicate = Equals(valueExpression, Property(Variable(variable), PropertyKey(property)))
 
-    check(identifier, label, property, predicate, valueExpression)
+    check(variable, label, property, predicate, valueExpression)
   }
 
   test("should_accept_a_prefix_seek_query") {
@@ -66,7 +66,7 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(varFor("n"), ast.PropertyKeyName("prop")_)_, ast.StringLiteral("prefix")_)_
         val predicate = toCommandPredicate(startsWith)
 
         // WHAM
@@ -82,8 +82,8 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_
-        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.LessThanOrEqual(property, ast.StringLiteral("xxx")_)_))
+        val property: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop")_)_
+        val inequality = ast.AndedPropertyInequalities(varFor("n"), property, NonEmptyList(ast.LessThanOrEqual(property, ast.StringLiteral("xxx")_)_))
         val predicate = toCommandPredicate(inequality)
 
         // WHAM
@@ -99,7 +99,7 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop")_)_
+        val property: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop")_)_
         val inequality: ast.StartsWith = ast.StartsWith(property, ast.Parameter("paramName")_)_
         val predicate = toCommandPredicate(inequality)
 
@@ -116,8 +116,8 @@ class IndexLookupBuilderTest extends BuilderTest {
 
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val property: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(varFor("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("42") _) _))
         val predicate = toCommandPredicate(inequality)
 
         // WHAM
@@ -133,8 +133,8 @@ class IndexLookupBuilderTest extends BuilderTest {
     object inner extends AstConstructionTestSupport {
       def run() = {
         //GIVEN
-        val property: ast.Property = ast.Property(variable("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(variable("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("10") _) _,
+        val property: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(varFor("n"), property, NonEmptyList(ast.GreaterThan(property, ast.SignedDecimalIntegerLiteral("10") _) _,
                                                                                           ast.LessThan(property, ast.SignedDecimalIntegerLiteral("100") _) _,
                                                                                           ast.GreaterThanOrEqual(property, ast.DecimalDoubleLiteral("15.5") _) _))
         val predicate = toCommandPredicate(inequality)
@@ -151,12 +151,12 @@ class IndexLookupBuilderTest extends BuilderTest {
 
   test("should_throw_if_no_matching_index_is_found") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None)))
+      start = Seq(Unsolved(SchemaIndex(variable, label, property, AnyIndex, None)))
     )
 
     //WHEN
@@ -165,15 +165,15 @@ class IndexLookupBuilderTest extends BuilderTest {
 
   test("should_pick_out_correct_label_predicate") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label1 = "label1"
     val label2 = "label2"
     val property = "prop"
     val valueExpression = Literal(42)
 
-    val label1Predicate = HasLabel(Variable(identifier), KeyToken.Unresolved(label1, TokenType.Label))
-    val label2Predicate = HasLabel(Variable(identifier), KeyToken.Unresolved(label2, TokenType.Label))
-    val propertyPredicate = Equals(valueExpression, Property(Variable(identifier), PropertyKey(property)))
+    val label1Predicate = HasLabel(Variable(variable), KeyToken.Unresolved(label1, TokenType.Label))
+    val label2Predicate = HasLabel(Variable(variable), KeyToken.Unresolved(label2, TokenType.Label))
+    val propertyPredicate = Equals(valueExpression, Property(Variable(variable), PropertyKey(property)))
 
     val predicates: Seq[Unsolved[Predicate]] = Seq(
       Unsolved(label1Predicate),
@@ -181,7 +181,7 @@ class IndexLookupBuilderTest extends BuilderTest {
       Unsolved(propertyPredicate))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, None))),
+      start = Seq(Unsolved(SchemaIndex(variable, label1, property, AnyIndex, None))),
       where = predicates
     )
 
@@ -189,63 +189,63 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    plan.query.start should equal(Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, Some(SingleQueryExpression(valueExpression))))))
+    plan.query.start should equal(Seq(Unsolved(SchemaIndex(variable, label1, property, AnyIndex, Some(SingleQueryExpression(valueExpression))))))
     plan.query.where.toSet should equal(Set(Solved(label1Predicate), Unsolved(label2Predicate), Solved(propertyPredicate)))
   }
 
   test("should_accept_a_query_with_index_hints_on_in") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val collectionExpression: Expression = Collection(Literal(42),Literal(43))
-    val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Variable(identifier), PropertyKey(property)),Variable("_identifier_")))
+    val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_identifier_")))
 
-    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
   test("should_accept_a_query_with_index_hints_on_in_with_collection_containing_duplicates") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val collectionExpression: Expression = Collection(Literal(42),Literal(42))
-    val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Variable(identifier), PropertyKey(property)),Variable("_identifier_")))
+    val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
-    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
   test("should_accept_a_query_with_index_hints_on_in_with_null") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val collectionExpression: Expression = Null()
-    val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Variable(identifier), PropertyKey(property)),Variable("_identifier_")))
+    val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
-    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
   test("should_accept_a_query_with_index_hints_on_in_with_empty_collection") {
     //GIVEN
-    val identifier = "id"
+    val variable = "id"
     val label = "label"
     val property = "prop"
     val collectionExpression: Expression = Collection()
-    val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Variable(identifier), PropertyKey(property)),Variable("_identifier_")))
+    val predicate = AnyInCollection(collectionExpression,"_variable_",Equals(Property(Variable(variable), PropertyKey(property)),Variable("_variable_")))
 
-    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(variable, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
-  private def check(identifier: String, label: String, property: String, predicate: Equals, expression: Expression) {
-    check(identifier, label, property, predicate, SingleQueryExpression(expression))
+  private def check(variable: String, label: String, property: String, predicate: Equals, expression: Expression) {
+    check(variable, label, property, predicate, SingleQueryExpression(expression))
   }
 
-  private def check(identifier: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression[Expression]) {
-    val labelPredicate = HasLabel(Variable(identifier), KeyToken.Unresolved(label, TokenType.Label))
+  private def check(variable: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression[Expression]) {
+    val labelPredicate = HasLabel(Variable(variable), KeyToken.Unresolved(label, TokenType.Label))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, None))),
+      start = Seq(Unsolved(SchemaIndex(variable, label, property, AnyIndex, None))),
       where = Seq(Unsolved(predicate), Unsolved(labelPredicate))
     )
 
@@ -253,7 +253,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     plan.query.start should equal(
-      Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(queryExpression)))))
+      Seq(Unsolved(SchemaIndex(variable, label, property, AnyIndex, Some(queryExpression)))))
     plan.query.where.toSet should equal(Set(Solved(predicate), Solved(labelPredicate)))
   }
 }

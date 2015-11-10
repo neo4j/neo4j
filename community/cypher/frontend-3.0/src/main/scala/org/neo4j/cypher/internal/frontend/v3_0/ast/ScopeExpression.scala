@@ -27,19 +27,19 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 // these identifiers are bound
 //
 trait ScopeExpression extends Expression {
-  def identifiers: Set[Variable]
+  def variables: Set[Variable]
 
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
 }
 
-case class FilterScope(identifier: Variable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
-  val identifiers = Set(identifier)
+case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+  val variables = Set(variable)
 }
 
-case class ExtractScope(identifier: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
-  val identifiers = Set(identifier)
+case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+  val variables = Set(variable)
 }
 
-case class ReduceScope(accumulator: Variable, identifier: Variable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
-  val identifiers = Set(accumulator, identifier)
+case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
+  val variables = Set(accumulator, variable)
 }

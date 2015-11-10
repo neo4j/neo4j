@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  val identA  = variable("a")
-  val identB  = variable("b")
-  val identR  = variable("r")
-  val identP  = variable("p")
-  val identX1 = variable("x1")
-  val identX2 = variable("x2")
+  val identA  = varFor("a")
+  val identB  = varFor("b")
+  val identR  = varFor("r")
+  val identP  = varFor("p")
+  val identX1 = varFor("x1")
+  val identX2 = varFor("x2")
 
   test("should not spoil aliased node variables") {
     val ast = parser.parse("match (a) with a as b match (b) return b")

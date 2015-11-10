@@ -79,7 +79,7 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
 
   def symbols = src.symbols.add(key, CTNode)
 

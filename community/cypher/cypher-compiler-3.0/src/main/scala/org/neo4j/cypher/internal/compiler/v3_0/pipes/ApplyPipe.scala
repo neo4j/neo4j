@@ -37,9 +37,9 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
     }
 
   def planDescriptionWithoutCardinality =
-    PlanDescriptionImpl(this.id, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+    PlanDescriptionImpl(this.id, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

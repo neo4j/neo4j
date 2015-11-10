@@ -55,7 +55,7 @@ class DisconnectedShortestPathEndPointsBuilder extends PlanBuilder {
 
     shortestPathEndPoints.filter {
       case p =>
-        !plan.pipe.symbols.hasIdentifierNamed(p) &&
+        !plan.pipe.symbols.hasVariableNamed(p) &&
         !plan.query.start.exists(startItem => p == startItem.token.variableName)
     }
   }

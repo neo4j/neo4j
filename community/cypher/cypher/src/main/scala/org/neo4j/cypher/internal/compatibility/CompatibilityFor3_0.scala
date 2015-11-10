@@ -94,7 +94,7 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
 
-  def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) = 
+  def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) =
     throw new LabelScanHintException(variable, label, message, cause)
 
   def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
@@ -364,7 +364,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
     inner.arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
   }
 
-  def identifiers = exceptionHandlerFor3_0.runSafely { inner.orderedIdentifiers.toSet }
+  def identifiers = exceptionHandlerFor3_0.runSafely { inner.orderedVariables.toSet }
 
   override def hasProfilerStatistics = exceptionHandlerFor3_0.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
 

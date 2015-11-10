@@ -38,7 +38,7 @@ object ExtractPipe {
   }
 
   private def canMerge(source:ExtractPipe, expressions: Map[String, Expression]) = {
-    val symbols = source.source.symbols.identifiers.keySet
+    val symbols = source.source.symbols.variables.keySet
     val expressionsDependenciesMet = expressions.values.forall(_.symbolDependenciesMet(source.source.symbols))
     val expressionsDependOnIntroducedSymbols = expressions.values.exists {
       case e => e.exists {
@@ -72,7 +72,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     val overwritesAlreadyExistingIdentifiers = expressions.exists {
       case (name, Variable(originalName)) => name != originalName
       case (name, CachedExpression(originalName, _)) => name != originalName
-      case (name, _) => source.symbols.hasIdentifierNamed(name)
+      case (name, _) => source.symbols.hasVariableNamed(name)
     }
 
     val applyExpressionsOverwritingOriginal = (ctx: ExecutionContext, state: QueryState) => {
@@ -107,7 +107,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   override def planDescription = {
     val arguments = expressions.map(_._1).toSeq
 
-    new PlanDescriptionImpl(this.id, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), identifiers)
+    new PlanDescriptionImpl(this.id, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), variables)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

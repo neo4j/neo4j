@@ -31,7 +31,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
+  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -82,7 +82,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("should add sort if query graph contains sort items") {
     // given
     implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = Seq(identifierSortItem)
+      sortItems = Seq(variableSortItem)
     )
 
     // when
@@ -91,11 +91,11 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // then
     result should equal(Sort(startPlan, Seq(sortDescription))(solved))
 
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(identifierSortItem))))
+    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT") {
-    val sortItems: Seq[AscSortItem] = Seq(identifierSortItem)
+    val sortItems: Seq[AscSortItem] = Seq(variableSortItem)
     // given
     implicit val (query, context, startPlan) = queryGraphWith(
       sortItems = sortItems,
@@ -114,7 +114,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
     // given
     implicit val (query, context, startPlan) = queryGraphWith(
-      sortItems = Seq(identifierSortItem),
+      sortItems = Seq(variableSortItem),
       limit = Some(x),
       skip = Some(y)
     )
@@ -124,7 +124,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(
-      Skip(SortedLimit(startPlan, ast.Add(x, y)(pos), Seq(identifierSortItem))(solved), y)(solved)
+      Skip(SortedLimit(startPlan, ast.Add(x, y)(pos), Seq(variableSortItem))(solved), y)(solved)
     )
   }
 

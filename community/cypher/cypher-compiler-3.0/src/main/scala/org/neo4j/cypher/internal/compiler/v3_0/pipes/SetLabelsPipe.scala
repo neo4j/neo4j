@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.CastSupport
 import org.neo4j.graphdb.Node
 
-case class SetLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
+case class SetLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe {
@@ -33,7 +32,7 @@ case class SetLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val value = row.get(identifier).get
+      val value = row.get(variable).get
       if (value != null) {
         val nodeId = CastSupport.castOrFail[Node](value).getId
         setLabels(row, state, nodeId)
@@ -50,7 +49,7 @@ case class SetLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
 
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "SetLabels", identifiers)
+  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "SetLabels", variables)
 
   override def symbols = src.symbols
 
@@ -58,7 +57,7 @@ case class SetLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    SetLabelsPipe(onlySource, identifier, labels)(estimatedCardinality)
+    SetLabelsPipe(onlySource, variable, labels)(estimatedCardinality)
   }
 
   override def localEffects = Effects(labels.map(label => SetLabel(label.name)): _*)

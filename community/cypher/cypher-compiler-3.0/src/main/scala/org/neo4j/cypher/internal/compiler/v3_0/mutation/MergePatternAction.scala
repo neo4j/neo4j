@@ -113,15 +113,15 @@ case class MergePatternAction(patterns: Seq[Pattern],
         onCreate.flatMap(_.symbolTableDependencies) ++
         onMatch.flatMap(_.symbolTableDependencies)).toSet
 
-    val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
+    val introducedIdentifiers = patterns.flatMap(_.variables).toSet
 
     dependencies -- introducedIdentifiers
   }
 
   private def readEffects(symbols: SymbolTable): Effects = {
     val collect: Seq[Effect] = variables.collect {
-      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsAllNodes
-      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsAllRelationships
+      case (k, CTNode) if !symbols.hasVariableNamed(k) => ReadsAllNodes
+      case (k, CTRelationship) if !symbols.hasVariableNamed(k) => ReadsAllRelationships
     }
 
     Effects(collect.toSet)

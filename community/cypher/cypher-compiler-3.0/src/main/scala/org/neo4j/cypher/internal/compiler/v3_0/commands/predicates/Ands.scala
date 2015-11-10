@@ -74,14 +74,14 @@ case class AndedPropertyComparablePredicates(ident: Variable, prop: Property,
   extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
-  private def rewriteIdentifierIfNotTypeChanged(f: (Expression) => Expression) =
+  private def rewriteVariableIfNotTypeChanged(f: (Expression) => Expression) =
     ident.rewrite(f) match {
       case i: Variable => i
       case _ => ident
     }
 
   def rewrite(f: (Expression) => Expression): Expression =
-    f(AndedPropertyComparablePredicates(rewriteIdentifierIfNotTypeChanged(f),
+    f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 

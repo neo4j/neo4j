@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
 /**
  * This pipe does optional matches by making sure that the match pipe either finds a match for a start context,
- * or an execution context where all the introduced identifiers are now bound to null.
+ * or an execution context where all the introduced variables are now bound to null.
  */
 case class OptionalMatchPipe(source: Pipe,
                              matchPipe: Pipe,
@@ -42,12 +42,12 @@ case class OptionalMatchPipe(source: Pipe,
   }
 
   def planDescription: InternalPlanDescription =
-    PlanDescriptionImpl(this.id, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty, identifiers)
+    PlanDescriptionImpl(this.id, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty, variables)
 
-  val identifiersBeforeMatch = matchPipe.symbols.identifiers.keySet
-  val identifiersAfterMatch = source.symbols.identifiers.keySet
-  val introducedIdentifiers = identifiersBeforeMatch -- identifiersAfterMatch
-  val nulls: Map[String, Any] = introducedIdentifiers.map(_ -> null).toMap
+  val variablesBeforeMatch = matchPipe.symbols.variables.keySet
+  val variablesAfterMatch = source.symbols.variables.keySet
+  val introducedVariables = variablesBeforeMatch -- variablesAfterMatch
+  val nulls: Map[String, Any] = introducedVariables.map(_ -> null).toMap
 
   private def createNulls(in: ExecutionContext): Iterator[ExecutionContext] = {
     Iterator(in.newWith(nulls))

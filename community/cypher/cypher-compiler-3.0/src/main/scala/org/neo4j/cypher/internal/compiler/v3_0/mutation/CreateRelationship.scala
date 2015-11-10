@@ -48,7 +48,7 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     nodeDeps ++ props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
   }
 
-  def introducedIdentifier: Option[String] = node match {
+  def introducedVariable: Option[String] = node match {
     case Variable(name) => Some(name)
     case e => None
   }
@@ -96,6 +96,6 @@ extends UpdateAction
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
       val b = from.symbolTableDependencies
       val c = to.symbolTableDependencies
-      a ++ b ++ c -- from.introducedIdentifier -- to.introducedIdentifier
+      a ++ b ++ c -- from.introducedVariable -- to.introducedVariable
     }
 }

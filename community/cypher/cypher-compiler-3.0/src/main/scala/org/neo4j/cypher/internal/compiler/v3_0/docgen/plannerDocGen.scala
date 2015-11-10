@@ -133,7 +133,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
       val selections = qg.selections
       val where = if (selections.isEmpty) nothing else section("WHERE")(pretty(selections))
 
-      val hints = breakList(qg.hints.toSeq.sorted(Hint.byIdentifier
+      val hints = breakList(qg.hints.toSeq.sorted(Hint.byVariable
 
       ).map(pretty[Hint]))
 

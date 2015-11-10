@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.Namespacer.IdentifierRenamings
+import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.Namespacer.VariableRenamings
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{Ref, Rewriter, SemanticTable, bottomUp, _}
 
 object Namespacer {
 
-  type IdentifierRenamings = Map[Ref[Variable], Variable]
+  type VariableRenamings = Map[Ref[Variable], Variable]
 
   def apply(statement: Statement, scopeTree: Scope): Namespacer = {
     val ambiguousNames = shadowedNames(scopeTree)
-    val identifierDefinitions: Map[SymbolUse, SymbolUse] = scopeTree.allVariableDefinitions
-    val protectedIdentifiers = returnAliases(statement)
-    val renamings = identifierRenamings(statement, identifierDefinitions, ambiguousNames, protectedIdentifiers)
+    val variableDefinitions: Map[SymbolUse, SymbolUse] = scopeTree.allVariableDefinitions
+    val protectedVariables = returnAliases(statement)
+    val renamings = variableRenamings(statement, variableDefinitions, ambiguousNames, protectedVariables)
     Namespacer(renamings)
   }
 
@@ -47,34 +47,34 @@ object Namespacer {
   private def returnAliases(statement: Statement): Set[Ref[Variable]] =
     statement.treeFold(Set.empty[Ref[Variable]]) {
 
-      // ignore identifier in StartItem that represents index names and key names
+      // ignore variable in StartItem that represents index names and key names
       case Return(_, ReturnItems(_, items), _, _, _) =>
-        val identifiers = items.map(_.alias.map(Ref[Variable]).get)
-        (acc, children) => children(acc ++ identifiers)
+        val variables = items.map(_.alias.map(Ref[Variable]).get)
+        (acc, children) => children(acc ++ variables)
     }
 
-  private def identifierRenamings(statement: Statement, identifierDefinitions: Map[SymbolUse, SymbolUse],
-                                  ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Variable]]): IdentifierRenamings =
+  private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
+                                  ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
-      case i: Variable if ambiguousNames(i.name) && !protectedIdentifiers(Ref(i)) =>
-        val symbolDefinition = identifierDefinitions(i.toSymbolUse)
-        val newIdentifier = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
-        val renaming = Ref(i) -> newIdentifier
+      case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
+        val symbolDefinition = variableDefinitions(i.toSymbolUse)
+        val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
+        val renaming = Ref(i) -> newVariable
         (acc, children) => children(acc + renaming)
     }
 }
 
-case class Namespacer(renamings: IdentifierRenamings) {
+case class Namespacer(renamings: VariableRenamings) {
   val statementRewriter: Rewriter = bottomUp(Rewriter.lift {
     case i: Variable =>
       renamings.get(Ref(i)) match {
-        case Some(newIdentifier) => newIdentifier
+        case Some(newVariable) => newVariable
         case None                => i
       }
   })
 
   val tableRewriter = (semanticTable: SemanticTable) => {
-    val replacements = renamings.toSeq.collect { case (old, newIdentifier) => old.value -> newIdentifier }
+    val replacements = renamings.toSeq.collect { case (old, newVariable) => old.value -> newVariable }
     val newSemanticTable = semanticTable.replaceKeys(replacements: _*)
     newSemanticTable
   }

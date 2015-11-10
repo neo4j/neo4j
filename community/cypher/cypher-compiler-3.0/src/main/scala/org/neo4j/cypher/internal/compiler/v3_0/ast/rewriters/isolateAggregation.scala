@@ -86,7 +86,7 @@ case object isolateAggregation extends Rewriter {
           val resultClause = clause.endoRewrite(topDown(Rewriter.lift {
             case e: Expression =>
               withReturnItems.collectFirst {
-                case AliasedReturnItem(expression, identifier) if e == expression => identifier.copyId
+                case AliasedReturnItem(expression, variable) if e == expression => variable.copyId
               }.getOrElse(e)
           }))
 

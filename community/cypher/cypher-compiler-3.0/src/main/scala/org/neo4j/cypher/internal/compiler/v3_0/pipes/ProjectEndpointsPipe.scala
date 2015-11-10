@@ -48,7 +48,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   def planDescriptionWithoutCardinality =
     source.planDescription
-          .andThen(this.id, "ProjectEndpoints", identifiers, KeyNames(Seq(relName, start, end)))
+          .andThen(this.id, "ProjectEndpoints", variables, KeyNames(Seq(relName, start, end)))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

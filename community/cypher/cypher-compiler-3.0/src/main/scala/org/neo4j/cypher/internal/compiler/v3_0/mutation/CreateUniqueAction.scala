@@ -93,10 +93,10 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
     }
   }
 
-  case class TraverseResult(identifier: String, element: PropertyContainer, link: UniqueLink)
+  case class TraverseResult(variable: String, element: PropertyContainer, link: UniqueLink)
 
   private def traverseNextStep(nextSteps: Seq[TraverseResult], oldContext: ExecutionContext): ExecutionContext = {
-    val uniqueKVPs = nextSteps.map(x => x.identifier -> x.element).distinct
+    val uniqueKVPs = nextSteps.map(x => x.variable -> x.element).distinct
     val uniqueKeys = uniqueKVPs.toMap
 
     if (uniqueKeys.size != uniqueKVPs.size) {
@@ -108,7 +108,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   private def fail(nextSteps: Seq[TraverseResult]): Nothing = {
     //We can only go forward following a unique path. Fail.
-    val problemResultsByIdentifier: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.identifier).
+    val problemResultsByIdentifier: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.variable).
       filter(_._2.size > 1)
 
     val message = problemResultsByIdentifier.map {
@@ -170,7 +170,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   override def children = links.flatMap(_.children)
 
-  def variables: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
+  def variables: Seq[(String,CypherType)] = links.flatMap(_.variable2).distinct
 
   override def rewrite(f: (Expression) => Expression) = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 

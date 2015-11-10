@@ -36,7 +36,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     semanticTable.resolvedLabelIds.put("Page", LabelId(0))
     semanticTable.resolvedPropertyKeyNames.put("title", PropertyKeyId(0))
 
-    implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(variable("n"), Seq(LabelName("Page")_))_)))
+    implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Page")_))_)))
 
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(None)).thenReturn(1000.0)
@@ -44,7 +44,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val result = calculator(In(Property(variable("n"), PropertyKeyName("title")_)_, Parameter("titles")_)_)
+    val result = calculator(In(Property(varFor("n"), PropertyKeyName("title")_)_, Parameter("titles")_)_)
 
     result.factor should equal (0.92 +- 0.01)
   }
@@ -53,14 +53,14 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("Page", LabelId(0))
 
-    implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(variable("n"), Seq(LabelName("Page")_))_)))
+    implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Page")_))_)))
 
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(None)).thenReturn(2000.0)
     when(stats.nodesWithLabelCardinality(Some(LabelId(0)))).thenReturn(1000.0)
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val result = calculator(PartialPredicate[HasLabels](HasLabels(variable("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
+    val result = calculator(PartialPredicate[HasLabels](HasLabels(varFor("n"), Seq(LabelName("Page")_))_, mock[HasLabels]))
 
     result.factor should equal(0.5)
   }
@@ -69,9 +69,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("Person", LabelId(0))
 
-    val n_is_Person = Predicate(Set(IdName("n")), HasLabels(variable("n"), Seq(LabelName("Person") _)) _)
-    val n_prop: Property = Property(variable("n"), PropertyKeyName("prop")_)_
-    val n_gt_3_and_lt_4 = Predicate(Set(IdName("n")), AndedPropertyInequalities(variable("n"), n_prop, NonEmptyList(
+    val n_is_Person = Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
+    val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val n_gt_3_and_lt_4 = Predicate(Set(IdName("n")), AndedPropertyInequalities(varFor("n"), n_prop, NonEmptyList(
       GreaterThan(n_prop, SignedDecimalIntegerLiteral("3")_)_,
       LessThan(n_prop, SignedDecimalIntegerLiteral("4")_)_
     )))

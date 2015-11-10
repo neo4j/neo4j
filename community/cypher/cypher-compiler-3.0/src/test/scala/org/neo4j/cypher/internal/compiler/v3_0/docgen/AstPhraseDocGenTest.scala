@@ -32,7 +32,7 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   }
 
   test("RETURN *, n AS m") {
-    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = true, Seq(AliasedReturnItem(variable("n"), variable("m"))_))_, None, None, None)_
+    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = true, Seq(AliasedReturnItem(varFor("n"), varFor("m"))_))_, None, None, None)_
     pprintToString(astNode) should equal("RETURN *, n AS m")
   }
 
@@ -42,7 +42,7 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   }
 
   test("RETURN * ORDER BY n") {
-    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, Some(OrderBy(Seq(AscSortItem(variable("n"))_))_), None, None)_
+    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = true, Seq())_, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))_), None, None)_
     pprintToString(astNode) should equal("RETURN * ORDER BY n")
   }
 
@@ -57,17 +57,17 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   }
 
   test("RETURN n") {
-    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(variable("n"), "n")_))_, None, None, None) _
+    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(varFor("n"), "n")_))_, None, None, None) _
     pprintToString(astNode) should equal("RETURN n")
   }
 
   test("RETURN n AS m") {
-    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(variable("n"), variable("m"))_))_, None, None, None) _
+    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("m"))_))_, None, None, None) _
     pprintToString(astNode) should equal("RETURN n AS m")
   }
 
   test("RETURN `x`, n AS m") {
-    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(variable("x"), "`x`")_, AliasedReturnItem(variable("n"), variable("m"))_))_, None, None, None) _
+    val astNode: ASTNode = Return(distinct = false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(varFor("x"), "`x`")_, AliasedReturnItem(varFor("n"), varFor("m"))_))_, None, None, None) _
     pprintToString(astNode) should equal("RETURN `x`, n AS m")
   }
 
@@ -77,32 +77,32 @@ class AstPhraseDocGenTest extends DocHandlerTestSuite[ASTNode] with AstConstruct
   }
 
   test("WITH *, n AS m WHERE true") {
-    val astNode: ASTNode = With(distinct = false, ReturnItems(includeExisting = true, Seq(AliasedReturnItem(variable("n"), variable("m"))_))_, None, None, None, Some(Where(True()_)_))_
+    val astNode: ASTNode = With(distinct = false, ReturnItems(includeExisting = true, Seq(AliasedReturnItem(varFor("n"), varFor("m"))_))_, None, None, None, Some(Where(True()_)_))_
     pprintToString(astNode) should equal("WITH *, n AS m WHERE true")
   }
 
   test("ORDER BY n") {
-    val astNode: ASTNode = OrderBy(Seq(AscSortItem(variable("n"))_))_
+    val astNode: ASTNode = OrderBy(Seq(AscSortItem(varFor("n"))_))_
     pprintToString(astNode) should equal("ORDER BY n")
   }
 
   test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(variable("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
+    val astNode: ASTNode = UsingIndexHint(varFor("n"), LabelName("Person")_, PropertyKeyName("name")(pos))_
     pprintToString(astNode) should equal("USING INDEX n:Person(name)")
   }
 
   test("USING SCAN n:Person") {
-    val astNode: ASTNode = UsingScanHint(variable("n"), LabelName("Person")_)_
+    val astNode: ASTNode = UsingScanHint(varFor("n"), LabelName("Person")_)_
     pprintToString(astNode) should equal("USING SCAN n:Person")
   }
 
   ignore("USING JOIN ON n") {
-    val astNode: ASTNode = UsingJoinHint(Seq(variable("n")))_
+    val astNode: ASTNode = UsingJoinHint(Seq(varFor("n")))_
     pprintToString(astNode) should equal("USING JOIN ON n")
   }
 
   test("UNWIND x AS y") {
-    val astNode: ASTNode = Unwind(variable("x"), variable("y"))_
+    val astNode: ASTNode = Unwind(varFor("x"), varFor("y"))_
     pprintToString(astNode) should equal("UNWIND x AS y")
   }
 }

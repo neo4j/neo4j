@@ -36,7 +36,7 @@ trait RelationshipHint {
 }
 
 object Hint {
-  implicit val byIdentifier: Ordering[Hint] =
+  implicit val byVariable: Ordering[Hint] =
     Ordering.by { (hint: Hint) => hint.variables.head }(Variable.byName)
 }
 // allowed on match
@@ -52,14 +52,14 @@ sealed trait LegacyIndexHint extends Hint {
   def variables = NonEmptyList(variable)
 }
 
-case class UsingIndexHint(identifier: Variable, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
-  def variables = NonEmptyList(identifier)
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+case class UsingIndexHint(variable: Variable, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
+  def variables = NonEmptyList(variable)
+  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 }
 
-case class UsingScanHint(identifier: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
-  def variables = NonEmptyList(identifier)
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
+  def variables = NonEmptyList(variable)
+  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 }
 
 object UsingJoinHint {
@@ -71,7 +71,7 @@ object UsingJoinHint {
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
-    variables.map { identifier => identifier.ensureDefined chain identifier.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
+    variables.map { variable => variable.ensureDefined chain variable.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
 }
 
 // start items

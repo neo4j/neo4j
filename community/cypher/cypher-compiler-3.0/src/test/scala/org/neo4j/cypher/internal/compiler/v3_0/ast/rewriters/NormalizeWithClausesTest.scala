@@ -398,7 +398,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID50`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 39 (offset: 48))")
+      "Variable `n` not defined (line 2, column 39 (offset: 48))")
 
     assertRewriteAndSemanticErrors(
       """MATCH (n)
@@ -411,7 +411,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID65`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 54 (offset: 63))")
+      "Variable `n` not defined (line 2, column 54 (offset: 63))")
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE with non-grouping expression") {
@@ -427,7 +427,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID47`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 36 (offset: 45))")
+      "Variable `n` not defined (line 2, column 36 (offset: 45))")
 
 
     assertRewriteAndSemanticErrors(
@@ -441,7 +441,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID62`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 51 (offset: 60))")
+      "Variable `n` not defined (line 2, column 51 (offset: 60))")
   }
 
 

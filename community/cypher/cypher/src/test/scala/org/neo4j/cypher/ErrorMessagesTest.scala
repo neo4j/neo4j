@@ -28,11 +28,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("fails when merging relationship with null property") {
-    expectError("create (a) create (b) merge (a)-[r:X {p: null}]->(b) return r", "Cannot merge relationship using null property value for p")
+    expectError("create (a) create (b) merge (a)-[r:X {p: null}]->(b) return r",
+      "Cannot merge relationship using null property value for p")
   }
 
   test("fails when merging node with null property") {
-    expectError("merge (n {x: null}) return n", "Cannot merge node using null property value for x")
+    expectError("merge (n {x: null}) return n",
+      "Cannot merge node using null property value for x")
   }
 
   test("noReturnColumns") {
@@ -148,7 +150,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("badMatch4") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[!]->dude return dude.name",
-      "Invalid input '!': expected whitespace, an identifier, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
+      "Invalid input '!': expected whitespace, a variable, '?', relationship types, a length specification, a property map or ']' (line 1, column 36 (offset: 35))",
       35
     )
   }
@@ -214,21 +216,21 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("missing dependency correctly reported") {
     expectError(
       "match (a) where id(a) = 0 CREATE (a)-[:KNOWS]->(b {name:missing}) RETURN b",
-      "missing not defined (line 1, column 57 (offset: 56))"
+      "Variable `missing` not defined (line 1, column 57 (offset: 56))"
     )
   }
 
   test("missing set dependency correctly reported") {
     expectError(
       "match (a) where id(a) = 0 SET a.name = missing RETURN a",
-      "missing not defined (line 1, column 40 (offset: 39))"
+      "Variable `missing` not defined (line 1, column 40 (offset: 39))"
     )
   }
 
   test("create with variable already existing") {
     expectError(
       "match (a) where id(a) = 0 CREATE (a {name:'foo'}) RETURN a",
-      "a already declared (line 1, column 35 (offset: 34))"
+      "Variable `a` already declared (line 1, column 35 (offset: 34))"
     )
   }
 
@@ -270,7 +272,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("missing something to delete") {
     expectError(
       "match (p) where id(p) = 0 DELETE x",
-      "x not defined (line 1, column 34 (offset: 33))"
+      "Variable `x` not defined (line 1, column 34 (offset: 33))"
     )
   }
 
@@ -391,13 +393,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   }
 
   test("should forbid using same introduced relationship twice in one MATCH pattern") {
-    expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21 (offset: 20))")
+    expectError("match (a)-[r]->(b)-[r]-(c) return r",
+      "Cannot use the same relationship variable 'r' for multiple patterns (line 1, column 21 (offset: 20))")
   }
 
   test("should not allow binding a path name that is already bound") {
     expectError(
       "match p = (a) with p,a match p = (a)-->(b) return a",
-      "p already declared (line 1, column 30 (offset: 29))"
+      "Variable `p` already declared (line 1, column 30 (offset: 29))"
     )
   }
 
@@ -411,7 +414,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("should forbid 'RETURN *' when there are no identifiers in scope") {
     expectError(
       "match () return *",
-      "RETURN * is not allowed when there are no identifiers in scope"
+      "RETURN * is not allowed when there are no variables in scope"
     )
   }
 

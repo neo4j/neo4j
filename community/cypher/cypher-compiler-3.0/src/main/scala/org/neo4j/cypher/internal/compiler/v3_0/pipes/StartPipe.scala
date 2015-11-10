@@ -28,9 +28,9 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
                                                         name: String,
                                                         createSource: EntityProducer[T],
                                                         pipeMonitor:PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  def identifierType: CypherType
+  def variableType: CypherType
 
-  val symbols = source.symbols.add(name, identifierType)
+  val symbols = source.symbols.add(name, variableType)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap(ctx => {
@@ -43,12 +43,12 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 
   def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this.id, s"${createSource.producerType}", identifiers, createSource.arguments: _*)
+      .andThen(this.id, s"${createSource.producerType}", variables, createSource.arguments: _*)
 }
 
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node], itemEffects: Effects = Effects(ReadsAllNodes))(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
-  def identifierType = CTNode
+  def variableType = CTNode
 
   override def localEffects = if (isLeaf) itemEffects.asLeafEffects else itemEffects
 
@@ -64,7 +64,7 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
-  def identifierType = CTRelationship
+  def variableType = CTRelationship
   override def localEffects = Effects(ReadsAllRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))

@@ -40,7 +40,7 @@ class ReduceExpressionTest extends CypherFunSuite {
     val filter = ReduceExpression(
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(CTString),
-      identifier = Variable("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(CTCollection(CTInteger)),
       expression = reduceExpression
     )(DummyPosition(0))
@@ -66,7 +66,7 @@ class ReduceExpressionTest extends CypherFunSuite {
     val filter = ReduceExpression(
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(initType),
-      identifier = Variable("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyPosition(0))
@@ -91,7 +91,7 @@ class ReduceExpressionTest extends CypherFunSuite {
     val filter = ReduceExpression(
       accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(accumulatorType),
-      identifier = Variable("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyPosition(0))

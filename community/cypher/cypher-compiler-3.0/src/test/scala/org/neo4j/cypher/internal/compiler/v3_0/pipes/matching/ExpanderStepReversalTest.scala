@@ -138,7 +138,7 @@ class ExpanderStepReversalTest extends CypherFunSuite {
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = True())
 }
 
-case class Pred(identifier: String) extends Predicate {
+case class Pred(variable: String) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = Some(false)
 
   def rewrite(f: (Expression) => Expression) = null
@@ -147,7 +147,7 @@ case class Pred(identifier: String) extends Predicate {
 
   def arguments = Nil
 
-  def symbolTableDependencies = Set(identifier)
+  def symbolTableDependencies = Set(variable)
 
-  override def toString() = "Pred[%s]".format(identifier)
+  override def toString() = "Pred[%s]".format(variable)
 }

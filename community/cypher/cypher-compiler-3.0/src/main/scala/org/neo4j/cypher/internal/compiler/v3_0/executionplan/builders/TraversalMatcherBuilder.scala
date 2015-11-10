@@ -39,7 +39,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
         val LongestTrail(start, end, longestTrail) = longestPath
 
         val unsolvedItems = plan.query.start.filter(_.unsolved)
-        val (startToken, startNodeFn) = identifier2nodeFn(ctx, start, unsolvedItems)
+        val (startToken, startNodeFn) = variable2nodeFn(ctx, start, unsolvedItems)
 
         val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems, ctx)
 
@@ -106,7 +106,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
       val matcher = ctx.monoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
       (matcher, Seq(startToken))
     } else {
-      val (endToken, endNodeFn) = identifier2nodeFn(ctx, end.get, unsolvedItems)
+      val (endToken, endNodeFn) = variable2nodeFn(ctx, end.get, unsolvedItems)
       val step = longestPath.step
       val matcher = ctx.bidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
       (matcher, Seq(startToken, endToken))
@@ -114,9 +114,9 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     (matcher, tokens)
   }
 
-  def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
+  def variable2nodeFn(ctx:PlanContext, variable: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
-    val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.variableName }.head
+    val startItemQueryToken = unsolvedItems.filter { (item) => variable == item.token.variableName }.head
     (startItemQueryToken, mapNodeStartCreator()((ctx, startItemQueryToken.token)))
   }
 

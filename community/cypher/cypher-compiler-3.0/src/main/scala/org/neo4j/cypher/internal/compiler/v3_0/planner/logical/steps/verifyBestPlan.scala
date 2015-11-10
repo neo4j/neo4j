@@ -55,7 +55,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.identifier.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
+        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))

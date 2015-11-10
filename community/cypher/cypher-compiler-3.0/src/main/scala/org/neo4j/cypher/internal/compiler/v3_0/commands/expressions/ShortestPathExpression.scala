@@ -39,7 +39,7 @@ import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(shortestPathPattern)
-  val pathIdentifiers = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
+  val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
@@ -154,7 +154,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     }
 
   private def doesNotDependOnFullPath(predicate: Predicate): Boolean = {
-    (predicate.symbolTableDependencies intersect pathIdentifiers).isEmpty
+    (predicate.symbolTableDependencies intersect pathVariables).isEmpty
   }
 
   override def localEffects(symbols: SymbolTable) = Effects(ReadsAllNodes, ReadsAllRelationships)

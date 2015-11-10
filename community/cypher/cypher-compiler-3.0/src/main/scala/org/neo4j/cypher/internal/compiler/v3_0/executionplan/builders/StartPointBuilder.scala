@@ -77,7 +77,7 @@ class StartPointBuilder extends PlanBuilder {
           new NodeStartPipe(p, item.variableName, nodeStart.apply((planContext, item)), item.effects)()
 
       case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) => {
-        case (p: Pipe) if p.symbols.hasIdentifierNamed(item.variableName) =>
+        case (p: Pipe) if p.symbols.hasVariableNamed(item.variableName) =>
           val compKey: String = s"  --rel-${item.variableName}--"
           val relationshipByIndex = new RelationshipStartPipe(p, compKey, relationshipStart.apply((planContext, item)))()
           val relEqualPred = Equals(Variable(item.variableName), Variable(compKey))

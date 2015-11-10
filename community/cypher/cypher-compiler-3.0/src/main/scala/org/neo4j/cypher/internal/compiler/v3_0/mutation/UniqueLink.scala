@@ -141,7 +141,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   // so any other links that use these nodes have to have them locked.
   def nodesWProps:Seq[NamedExpectation] = Seq(start,end).filter(_.properties.nonEmpty)
 
-  lazy val identifier2 = Seq(start.name -> CTNode, end.name -> CTNode, rel.name -> CTRelationship)
+  lazy val variable2 = Seq(start.name -> CTNode, end.name -> CTNode, rel.name -> CTRelationship)
 
   def symbolTableDependencies:Set[String] = start.properties.symboltableDependencies ++
     end.properties.symboltableDependencies ++
@@ -217,7 +217,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   }
 
   def effects(symbols: SymbolTable): Effects = {
-    val hasBothEndNodesInScope = symbols.hasIdentifierNamed(start.name) && symbols.hasIdentifierNamed(end.name)
+    val hasBothEndNodesInScope = symbols.hasVariableNamed(start.name) && symbols.hasVariableNamed(end.name)
 
     if (hasBothEndNodesInScope)
       Effects(ReadsRelationshipsWithTypes(relType), CreatesRelationship(relType))

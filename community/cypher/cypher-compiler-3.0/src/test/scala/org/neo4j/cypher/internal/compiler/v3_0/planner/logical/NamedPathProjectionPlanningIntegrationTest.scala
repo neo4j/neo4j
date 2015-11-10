@@ -47,12 +47,12 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     result should equal(
       Selection(
         Seq(Equals(
-          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, variable("p")) _) _,
-          variable("a")
+          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
+          varFor("a")
         ) _),
         Projection(
           Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> variable("a"), "b" -> variable("b"), "p" -> pathExpr, "r" -> variable("r")))(solved)
+          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r")))(solved)
       )(solved)
     )
   }
@@ -66,17 +66,17 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Selection(
         Seq(
           Equals(
-            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, variable("p")) _) _,
+            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
             Variable("a") _
           ) _,
           GreaterThan(
-            FunctionInvocation(FunctionName("length") _, variable("p")) _,
+            FunctionInvocation(FunctionName("length") _, varFor("p")) _,
             SignedDecimalIntegerLiteral("10") _
           ) _
         ),
         Projection(
           Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> variable("a"), "b" -> variable("b"), "p" -> pathExpr, "r" -> variable("r"))
+          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r"))
         )(solved)
       )(solved)
     )

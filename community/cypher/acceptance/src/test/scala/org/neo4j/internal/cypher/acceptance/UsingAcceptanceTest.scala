@@ -266,7 +266,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
               |RETURN a.prop
           """.stripMargin))
 
-      error.getMessage should include("d not defined")
+      error.getMessage should include("Variable `d` not defined")
     }
 
     test(s"$plannerName should fail when join hint is applied to a single node") {

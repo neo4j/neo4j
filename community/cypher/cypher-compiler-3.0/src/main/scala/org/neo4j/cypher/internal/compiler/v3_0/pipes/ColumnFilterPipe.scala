@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val returnItemNames: Seq[String] = returnItems.map(_.name)
-  val symbols = SymbolTable(identifiers2.toMap)
+  val symbols = SymbolTable(variables2.toMap)
 
-  private lazy val identifiers2: Seq[(String, CypherType)] = returnItems.
+  private lazy val variables2: Seq[(String, CypherType)] = returnItems.
     map( ri => ri.name->ri.expression.getType(source.symbols))
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
@@ -54,7 +54,7 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
 
   def planDescription =
     new PlanDescriptionImpl(this.id, "ColumnFilter", SingleChild(source.planDescription),
-      Seq(Arguments.ColumnsLeft(returnItemNames.toList)), identifiers)
+      Seq(Arguments.ColumnsLeft(returnItemNames.toList)), variables)
 
   def dependencies = Seq()
 

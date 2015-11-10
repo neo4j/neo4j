@@ -29,7 +29,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   val expr1 = mock[Expression]
   val expr2 = mock[Expression]
 
-  val nodeA = variable("a")
+  val nodeA = varFor("a")
 
   test("StringRangeSeekable finds n.prop STARTS WITH 'prefix'") {
     val propKey: PropertyKeyName = PropertyKeyName("prop") _

@@ -188,7 +188,7 @@ object QueryTagger extends QueryTagger[String] {
         )
     } ++
 
-    // <expr> unless identifier or literal
+    // <expr> unless variable or literal
     lift[ASTNode] {
       case x: Variable => Set.empty
       case x: Literal => Set.empty

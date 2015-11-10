@@ -73,7 +73,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
         prepareMergeAction(symbols, mergeAction)
 
       case foreachAction: ForeachAction =>
-        val innerSymbols = foreachAction.addInnerIdentifier(symbols)
+        val innerSymbols = foreachAction.addInnerVariable(symbols)
         val (_, newActions) = foreachAction.actions.foldMap(innerSymbols)(rewrite)
         (symbols, foreachAction.copy(actions = newActions))
 
@@ -109,7 +109,7 @@ object MergePatternBuilder {
     }
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
-    case RelationshipEndpoint(Variable(name), props, labels) if !symbols.hasIdentifierNamed(name) =>
+    case RelationshipEndpoint(Variable(name), props, labels) if !symbols.hasVariableNamed(name) =>
       (symbols.add(name, CTNode), Some(CreateNode(name, props, labels)))
     case _ =>
       (symbols, None)

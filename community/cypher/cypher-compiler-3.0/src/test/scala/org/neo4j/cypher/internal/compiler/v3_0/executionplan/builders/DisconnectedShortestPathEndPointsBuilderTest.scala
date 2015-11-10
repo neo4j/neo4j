@@ -28,10 +28,10 @@ import org.scalatest.mock.MockitoSugar
 class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new DisconnectedShortestPathEndPointsBuilder
 
-  val identifier = "n"
-  val otherIdentifier = "p"
+  val variable = "n"
+  val otherVariable = "p"
   val shortestPath = ShortestPath("p",
-    SingleNode(identifier), SingleNode(otherIdentifier), Seq.empty, SemanticDirection.OUTGOING, false, None, single = true, None)
+    SingleNode(variable), SingleNode(otherVariable), Seq.empty, SemanticDirection.OUTGOING, false, None, single = true, None)
 
   test("should_add_nodes_for_shortest_path") {
     // Given
@@ -47,16 +47,16 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
     // Then
     assert(plan.query.start.toList ===
            Seq(
-             Unsolved(AllNodes(identifier)),
-             Unsolved(AllNodes(otherIdentifier))))
+             Unsolved(AllNodes(variable)),
+             Unsolved(AllNodes(otherVariable))))
   }
 
   test("should_not_add_nodes_when_they_already_exist") {
     // Given
     val query = newQuery(
       start = Seq(
-        AllNodes(identifier),
-        AllNodes(otherIdentifier)),
+        AllNodes(variable),
+        AllNodes(otherVariable)),
       patterns = Seq(shortestPath)
     )
 
@@ -68,7 +68,7 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
     // Given
     val query = newQuery(
       start = Seq(
-        AllNodes(identifier)
+        AllNodes(variable)
       ),
       patterns = Seq(shortestPath)
     )
@@ -79,8 +79,8 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
     // Then
     assert(plan.query.start.toList ===
            Seq(
-             Unsolved(AllNodes(identifier)),
-             Unsolved(AllNodes(otherIdentifier))))
+             Unsolved(AllNodes(variable)),
+             Unsolved(AllNodes(otherVariable))))
   }
 
   test("should_add_one_node_when_the_incoming_pipe_is_missing_a_node") {
@@ -89,13 +89,13 @@ class DisconnectedShortestPathEndPointsBuilderTest extends BuilderTest with Mock
       patterns = Seq(shortestPath)
     )
 
-    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
+    val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
 
 
     // When
     val plan = assertAccepts(pipe, query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherVariable))))
   }
 }

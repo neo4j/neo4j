@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.{CypherException, CypherTypeExcep
 
 import scala.collection.Map
 
-case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
-  def hasIdentifierNamed(name: String): Boolean = identifiers.contains(name)
-  def size: Int = identifiers.size
-  def isEmpty: Boolean = identifiers.isEmpty
+case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
+  def hasVariableNamed(name: String): Boolean = variables.contains(name)
+  def size: Int = variables.size
+  def isEmpty: Boolean = variables.isEmpty
 
-  def add(key: String, typ: CypherType): SymbolTable = SymbolTable(identifiers + (key -> typ))
+  def add(key: String, typ: CypherType): SymbolTable = SymbolTable(variables + (key -> typ))
 
   def add(value: Map[String, CypherType]): SymbolTable = {
     value.foldLeft(this) {
@@ -37,15 +37,15 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
     }
   }
 
-  def filter(f: String => Boolean): SymbolTable = SymbolTable(identifiers.filterKeys(f))
-  def keys: Seq[String] = identifiers.keys.toSeq
-  def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
+  def filter(f: String => Boolean): SymbolTable = SymbolTable(variables.filterKeys(f))
+  def keys: Seq[String] = variables.keys.toSeq
+  def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => variables.exists(_._1 == dep))
 
-  def evaluateType(name: String, expectedType: CypherType): CypherType = identifiers.get(name) match {
+  def evaluateType(name: String, expectedType: CypherType): CypherType = variables.get(name) match {
     case Some(typ) if expectedType.isAssignableFrom(typ) => typ
     case Some(typ) if typ.isAssignableFrom(expectedType) => typ
     case Some(typ)                                       => throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))
-    case None                                            => throw new SyntaxException("Unknown identifier `%s`.".format(name))
+    case None                                            => throw new SyntaxException("Unknown variable `%s`.".format(name))
   }
 
   def checkType(name: String, expectedType: CypherType): Boolean = try {
@@ -56,13 +56,13 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   }
 
   def intersect(other: SymbolTable): SymbolTable = {
-    val overlap = identifiers.keySet intersect other.identifiers.keySet
+    val overlap = variables.keySet intersect other.variables.keySet
 
-    val mergedIdentifiers = (overlap map {
-      key => key -> identifiers(key).leastUpperBound(other.identifiers(key))
+    val mergedVariables = (overlap map {
+      key => key -> variables(key).leastUpperBound(other.variables(key))
     }).toMap
 
-    new SymbolTable(mergedIdentifiers)
+    new SymbolTable(mergedVariables)
   }
 }
 
@@ -71,7 +71,7 @@ TypeSafe is everything that needs to check it's types
  */
 trait TypeSafe {
   def symbolDependenciesMet(symbols: SymbolTable): Boolean =
-    symbolTableDependencies.forall(symbols.identifiers.contains)
+    symbolTableDependencies.forall(symbols.variables.contains)
 
   def symbolTableDependencies: Set[String]
 }

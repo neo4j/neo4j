@@ -85,10 +85,10 @@ object ExpressionConverter {
     }
   }
 
-  def createExpressionForVariable(variableQueryIdentifier: String)
+  def createExpressionForVariable(variableQueryVariable: String)
                                  (implicit context: CodeGenContext): CodeGenExpression = {
 
-    val variable = context.getVariable(variableQueryIdentifier)
+    val variable = context.getVariable(variableQueryVariable)
 
     variable.cypherType match {
       case CTNode => NodeProjection(variable)

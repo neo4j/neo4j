@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticCheckResu
 
 class FilteringExpressionTest extends CypherFunSuite {
 
-  case class TestableFilteringExpression(identifier: Variable, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
+  case class TestableFilteringExpression(variable: Variable, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
     def name = "Testable Filter Expression"
     def position = DummyPosition(0)
 

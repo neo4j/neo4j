@@ -31,7 +31,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
+  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   test("should add projection for expressions not already covered") {

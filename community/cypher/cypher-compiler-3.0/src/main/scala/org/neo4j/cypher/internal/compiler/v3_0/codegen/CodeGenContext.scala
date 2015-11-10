@@ -42,7 +42,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
 
   def getVariable(queryIdentifier: String): Variable = variables(queryIdentifier)
 
-  def variableQueryIdentifiers(): Set[String] = variables.keySet.toSet
+  def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)

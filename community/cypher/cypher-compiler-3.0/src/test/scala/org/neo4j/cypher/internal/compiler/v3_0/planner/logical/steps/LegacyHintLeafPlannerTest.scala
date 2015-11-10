@@ -34,8 +34,8 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("Does produce legacy hint leaf plan") {
-    val identifier: Variable = Variable("n")_
-    val hint: NodeByIndexQuery = NodeByIndexQuery(identifier, null, null)(pos)
+    val variable: Variable = Variable("n")_
+    val hint: NodeByIndexQuery = NodeByIndexQuery(variable, null, null)(pos)
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
       hints = Set(hint)
@@ -50,7 +50,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = legacyHintLeafPlanner(qg)
@@ -59,12 +59,12 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     resultPlans should equal(Seq(LegacyIndexSeek(IdName("n"), hint, Set.empty)(null)))
   }
 
-  test("Does not produce legacy hint leaf plan if hinted identifier has already been solved") {
-    val identifier: Variable = Variable("n")_
+  test("Does not produce legacy hint leaf plan if hinted variable has already been solved") {
+    val variable: Variable = Variable("n")_
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
       argumentIds = Set(IdName("n")),
-      hints = Set(NodeByIndexQuery(identifier, null, null)(pos))
+      hints = Set(NodeByIndexQuery(variable, null, null)(pos))
     )
 
     val factory = newMockedMetricsFactory
@@ -76,7 +76,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = legacyHintLeafPlanner(qg)
