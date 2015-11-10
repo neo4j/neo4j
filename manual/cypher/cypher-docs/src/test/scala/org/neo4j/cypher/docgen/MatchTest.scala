@@ -19,347 +19,378 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
-import org.junit.Test
-import org.neo4j.graphdb._
+import org.neo4j.cypher.docgen.tooling._
+import org.neo4j.graphdb.{Relationship, Path, Node}
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 import scala.collection.JavaConverters._
 
-class MatchTest extends DocumentingTestBase {
+class MatchTest extends DocumentingTest {
+  override def outputPath = "target/docs/dev/ql/"
+  override def doc = new DocBuilder {
+    doc("Match", "query-match")
+    initQueries(
+      """CREATE (charlie:Person {name:'Charlie Sheen'}),
+        |       (martin:Person {name: 'Martin Sheen'}),
+        |       (michael:Person {name: 'Michael Douglas'}),
+        |       (oliver:Person {name: 'Oliver Stone'}),
+        |       (rob:Person {name: 'Rob Reiner'}),
+        |
+        |       (wallStreet:Movie {title: 'Wall Street'}),
+        |       (charlie)-[:ACTED_IN {role: "Bud Fox"}]->(wallStreet),
+        |       (martin)-[:ACTED_IN {role: "Carl Fox"}]->(wallStreet),
+        |       (michael)-[:ACTED_IN {role: "Gordon Gekko"}]->(wallStreet),
+        |       (oliver)-[:DIRECTED]->(wallStreet),
+        |
+        |       (thePresident:Movie {title: 'The American President'}),
+        |       (martin)-[:ACTED_IN {role: "A.J. MacInerney"}]->(thePresident),
+        |       (michael)-[:ACTED_IN {role: "President Andrew Shepherd"}]->(thePresident),
+        |       (rob)-[:DIRECTED]->(thePresident)"""
+    )
+    synopsis("The `MATCH` clause is used to search for the pattern described in it.")
+    section("Introduction") {
+      p( """The `MATCH` clause allows you to specify the patterns Neo4j will search for in the database.
+           |This is the primary way of getting data into the current set of bindings.
+           |It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>.""")
+      p( """`MATCH` is often coupled to a `WHERE` part which adds restrictions, or predicates, to the `MATCH` patterns, making them more specific.
+           |The predicates are part of the pattern description, and should not be considered a filter applied only after the matching is done.
+           |_This means that `WHERE` should always be put together with the `MATCH` clause it belongs to._""")
+      p( """`MATCH` can occur at the beginning of the query or later, possibly after a `WITH`.
+           |If it is the first clause, nothing will have been bound yet, and Neo4j will design a search to find the results matching the clause and any associated predicates specified in any `WHERE` part.
+           |This could involve a scan of the database, a search for nodes of a certain label, or a search of an index to find starting points for the pattern matching.
+           |Nodes and relationships found by this search are available as _bound pattern elements,_ and can be used for pattern matching of sub-graphs.
+           |They can also be used in any further `MATCH` clauses, where Neo4j will use the known elements, and from there find further unknown elements.""")
+      p( """Cypher is declarative, and so usually the query itself does not specify the algorithm to use to perform the search.
+           |Neo4j will automatically work out the best approach to finding start nodes and matching patterns.
+           |Predicates in `WHERE` parts can be evaluated before pattern matching, during pattern matching, or after finding matches.
+           |However, there are cases where you can influence the decisions taken by the query compiler.
+           |Read more about indexes in <<query-schema-index>>, and more about specifying hints to force Neo4j to solve a query in a specific way in <<query-using>>.""")
+      tip {
+        p("To understand more about the patterns used in the +MATCH+ clause, read <<introduction-pattern>>")
+      }
+      p("The following graph is used for the examples below:")
+      graphViz()
+    }
+    section("Basic node finding") {
+      section("Get all nodes") {
+        p("By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.")
+        query("MATCH (n) RETURN n", assertAllNodesReturned) {
+          p("Returns all the nodes in the database.")
+          resultTable()
+        }
+      }
+      section("Get all nodes with a label") {
+        p("Getting all nodes with a label on them is done with a single node pattern where the node has a label on it.")
+        query("MATCH (movie:Movie) RETURN movie.title", assertAllMoviesAreReturned) {
+          p("Returns all the movies in the database.")
+          resultTable()
+        }
+      }
+      section("Related nodes") {
+        p("The symbol `--` means _related to,_ without regard to type or direction of the relationship.")
+        query("MATCH (director { name:'Oliver Stone' })--(movie) RETURN movie.title", assertWallStreetIsReturned) {
+          p("Returns all the movies directed by Oliver Stone.")
+          resultTable()
+        }
+      }
+      section("Match with labels") {
+        p("To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.")
+        query("MATCH (:Person { name:'Oliver Stone' })--(movie:Movie) RETURN movie.title", assertWallStreetIsReturned) {
+          p("Returns any nodes connected with the +Person+ Oliver that are labeled +Movie+.")
+          resultTable()
+        }
+      }
+    }
+    section("Relationship basics") {
+      section("Outgoing relationships") {
+        p("When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this:")
+        query("MATCH (:Person { name:'Oliver Stone' })-->(movie) RETURN movie.title", assertWallStreetIsReturned) {
+          p("Returns any nodes connected with the +Person+ Oliver by an outgoing relationship.")
+          resultTable()
+        }
+      }
+      section("Directed relationships and identifier") {
+        p("If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, this is how you introduce the identifier.")
+        query("MATCH (:Person { name:'Oliver Stone' })-[r]->(movie) RETURN type(r)", assertRelationshipIsDirected) {
+          p("Returns the type of each outgoing relationship from Oliver.")
+          resultTable()
+        }
+      }
+      section("Match by relationship type") {
+        p("When you know the relationship type you want to match on, you can specify it by using a colon together with the relationship type.")
+        query("MATCH (wallstreet:Movie { title:'Wall Street' })<-[:ACTED_IN]-(actor) RETURN actor.name", assertAllActorsOfWallStreetAreFound) {
+          p("Returns all actors that +ACTED_IN+ Wall Street.")
+          resultTable()
+        }
+      }
+      section("Match by multiple relationship types") {
+        p("To match on one of multiple types, you can specify this by chaining them together with the pipe symbol `|`.")
+        query("MATCH (wallstreet { title:'Wall Street' })<-[:ACTED_IN|:DIRECTED]-(person) RETURN person.name", assertEveryoneConnectedToWallStreetIsFound) {
+          p("Returns nodes with an +ACTED_IN+ or +DIRECTED+ relationship to Wall Street.")
+          resultTable()
+        }
+      }
+      section("Match by relationship type and use an identifier") {
+        p("If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, just add them both, like this:")
+        query("MATCH (wallstreet { title:'Wall Street' })<-[r:ACTED_IN]-(actor) RETURN r.role", assertRelationshipsToWallStreetAreReturned) {
+          p("Returns +ACTED_IN+ roles for Wall Street.")
+          resultTable()
+        }
+      }
+    }
+    section("Relationships in depth") {
+      note {
+        p("Inside a single pattern, relationships will only be matched once. You can read more about this in <<cypherdoc-uniqueness>>.")
+      }
+      section("Relationship types with uncommon characters") {
+        val initQuery =
+          """MATCH (charlie:Person {name:'Charlie Sheen'}), (rob:Person {name:'Rob Reiner'})
+            | CREATE (rob)-[:`TYPE WITH SPACE`]->(charlie)"""
+        p("""Sometimes your database will have types with non-letter characters, or with spaces in them.
+            | Use +`+ (backtick) to quote these.
+            | To demonstrate this we can add an additional relationship between Charlie Sheen and Rob Reiner:""")
+        query(initQuery, NoAssertions) {
+          p("Which leads to the following graph: ")
+          graphViz()
+        }
+        query("MATCH (n { name:'Rob Reiner' })-[r:`TYPE WITH SPACE`]->() RETURN type(r)", assertRelType("TYPE WITH SPACE")) {
+          initQueries(initQuery)
+          p("Returns a relationship type with a space in it")
+          resultTable()
+        }
+      }
+      section("Multiple relationships") {
+        p("Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, like this:")
+        query("match (charlie {name:'Charlie Sheen'})-[:ACTED_IN]->(movie)<-[:DIRECTED]-(director) return movie.title, director.name", assertFindAllDirectors) {
+          p("Returns the movie Charlie acted in and its director.")
+          resultTable()
+        }
+      }
+      section("Variable length relationships") {
+        p("""Nodes that are a variable number of relationship->node hops away can be found using the following syntax:
+            | `-[:TYPE*minHops..maxHops]->`.
+            | minHops and maxHops are optional and default to 1 and infinity respectively.
+            | When no bounds are given the dots may be omitted.
+            | The dots may also be omitted when setting only one bound and this implies a fixed length pattern.""")
+        query("match (martin {name:'Charlie Sheen'})-[:ACTED_IN*1..3]-(movie:Movie) return movie.title", assertAllMoviesAreReturned) {
+          p("Returns all movies related to Charlie by 1 to 3 hops.")
+          resultTable()
+        }
+      }
+      section("Relationship identifier in variable length relationships") {
+        p("When the connection between two nodes is of variable length, a relationship identifier becomes a collection of relationships.")
+        query("MATCH (actor { name:'Charlie Sheen' })-[r:ACTED_IN*2]-(co_actor) RETURN r", assertActedInRelationshipsAreReturned) {
+          p("Returns a collection of relationships.")
+          resultTable()
+        }
+      }
+      section("Match with properties on a variable length path") {
+        val initQuery =
+          """MATCH (charlie:Person {name:'Charlie Sheen'}), (martin:Person {name:'Martin Sheen'})
+            |CREATE (charlie)-[:X {blocked:false}]->(:Unblocked)<-[:X {blocked:false}]-(martin)
+            |CREATE (charlie)-[:X {blocked:true}]->(:Blocked)<-[:X {blocked:false}]-(martin)"""
+        p("""A variable length relationship with properties defined on in it means that all
+            |relationships in the path must have the property set to the given value. In this query,
+            |there are two paths between Charlie Sheen and his father Martin Sheen. One of them includes a
+            |``blocked'' relationship and the other doesn't. In this case we first alter the original
+            |graph by using the following query to add ``blocked'' and ``unblocked'' relationships:""")
+        query(initQuery, assertBlockingRelationshipsAdded) {
+          p("This means that we are starting out with the following graph: ")
+          graphViz()
+        }
+        query(
+          """MATCH p = (charlie:Person)-[* {blocked:false}]-(martin:Person)
+            | WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen'
+            | RETURN p""".stripMargin, assertBlockingRelationshipsAdded) {
+          initQueries(initQuery)
+          p("Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.")
+          resultTable()
+        }
+      }
+      section("Zero length paths") {
+        p(
+          """Using variable length paths that have the lower bound zero means that two identifiers can point to the same node.
+            | If the path length between two nodes is zero, they are by definition the same node.
+            | Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.""")
+        query("MATCH (wallstreet:Movie { title:'Wall Street' })-[*0..1]-(x) RETURN x", assertLabelStats("x", Map("Movie" -> 1, "Person" -> 4))) {
+          p("Returns the movie itself as well as actors and directors one relationship away")
+          resultTable()
+        }
+      }
+      section("Named path") {
+        p("If you want to return or filter on a path in your pattern graph, you can a introduce a named path.")
+        query("MATCH p =(michael { name:'Michael Douglas' })-->() RETURN p", assertRowCount(2)) {
+          p("Returns the two paths starting from Michael")
+          resultTable()
+        }
+      }
+      section("Matching on a bound relationship") {
+        p("""When your pattern contains a bound relationship, and that relationship pattern doesn’t
+            | specify direction, Cypher will try to match the relationship in both directions.""")
+        query("MATCH (a)-[r]-(b) WHERE id(r)= 0 RETURN a,b", assertRowCount(2)) {
+          p("This returns the two connected nodes, once as the start node, and once as the end node")
+          resultTable()
+        }
+      }
+    }
+    section("Shortest path", "query-shortest-path") {
+      section("Single shortest path") {
+        p("Finding a single shortest path between two nodes is as easy as using the `shortestPath` function. It's done like this:")
+        query(
+          """MATCH (martin:Person {name:"Martin Sheen"} ),
+            |      (oliver:Person {name:"Oliver Stone"}),
+            |      p = shortestPath( (martin)-[*..15]-(oliver) )
+            |RETURN p""", assertShortestPathLength) {
+          p(
+            """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parentheses
+              | you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
+              | like relationship type, max hops and direction are all used when finding the shortest path.
+              | If there is a WHERE clause following the match of a shortestPath, relevant predicates will be included in the shortestPath.
+              | If the predicate is a NONE() or ALL() on the relationship elements of the path, it will be used during the search to improve performance.""")
+          resultTable()
+        }
+      }
+      section("All shortest paths") {
+        p("Finds all the shortest paths between two nodes.")
+        query("""match (martin:Person {name:"Martin Sheen"} ),
+                |      (michael:Person {name:"Michael Douglas"}),
+                |      p = allShortestPaths( (martin)-[*]-(michael) ) return p""", assertAllShortestPaths) {
+          p("Finds the two shortest paths between Martin and Michael.")
+          resultTable()
+        }
+      }
+    }
+    section("Get node or relationship by id") {
+      section("Node by id", "match-node-by-id") {
+        p("Searching for nodes by id can be done with the `id()` function in a predicate.")
+        note {
+          p("""Neo4j reuses its internal ids when nodes and relationships are deleted.
+              |This means that applications using, and relying on internal Neo4j ids, are brittle or at risk of making mistakes.
+              |It is therefor recommended to rather use application generated ids.""")
+        }
+        query("match (n) where id(n) = 0 return n", assertHasNodes(0)) {
+          p("The corresponding node is returned.")
+          resultTable()
+        }
+      }
+      section("Relationship by id") {
+        p("""
+            |Search for relationships by id can be done with the `id()` function in a predicate.
+            |
+            |This is not recommended practice. See <<match-node-by-id>> for more information on the use of Neo4j ids.
+            |""")
+        query("match ()-[r]->() where id(r) = 0 return r", assertHasRelationships(0)) {
+          p("The relationship with id +0+ is returned.")
+          resultTable()
+        }
+      }
+      section("Multiple nodes by id") {
+        p("Multiple nodes are selected by specifying them in an IN clause.")
+        query("match (n) where id(n) in [0,3,5] return n", assertHasNodes(0, 3, 5)) {
+          p("This returns the nodes listed in the `IN` expression.")
+          resultTable()
+        }
+      }
+    }
+  }.build()
 
-  override def graphDescription = List(
-    "Charlie:Person ACTED_IN WallStreet:Movie",
-    "Martin:Person ACTED_IN WallStreet:Movie",
-    "Michael:Person ACTED_IN WallStreet:Movie",
-    "Martin:Person ACTED_IN TheAmericanPresident:Movie",
-    "Michael:Person ACTED_IN TheAmericanPresident:Movie",
-    "Oliver:Person DIRECTED WallStreet:Movie",
-    "Rob:Person DIRECTED TheAmericanPresident:Movie")
+  private def assertAllNodesReturned = ResultAndDbAssertions((p, db) => {
+    val tx = db.beginTx()
+    try {
+      val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+      allNodes should equal(p.columnAs[Node]("n").toList)
+    } finally tx.close()
+  })
 
-  override val properties = Map(
-    "Charlie" -> Map("name" -> "Charlie Sheen"),
-    "Oliver" -> Map("name" -> "Oliver Stone"),
-    "Michael" -> Map("name" -> "Michael Douglas"),
-    "Rob" -> Map("name" -> "Rob Reiner"),
-    "Martin" -> Map("name" -> "Martin Sheen"),
-    "WallStreet" -> Map("title" -> "Wall Street"),
-    "TheAmericanPresident" -> Map("title" -> "The American President")
+  private def assertLabelStats(identifier: String, stats: Map[String, Int]) = ResultAndDbAssertions((result, db) => {
+    val tx = db.beginTx()
+    try {
+      val nodes = result.columnAs[Node](identifier).toList
+      val labelStats = nodes.foldLeft(Map[String,Int]()) { (acc, node) =>
+        val label = node.getLabels.iterator().next().name()
+        val count = if (acc.isDefinedAt(label)) acc(label) else 0
+        acc + (label -> (count + 1))
+      }
+      labelStats should equal(stats)
+    } finally tx.close()
+  })
+
+  private def assertRowCount(count: Int) = ResultAssertions(result =>
+    result.toList.length should equal(count)
   )
 
-  override val setupQueries = List("CREATE (r {name : 'Rob Reiner'})-[:`TYPE THAT HAS SPACE IN IT`]->(c {name : 'Charlie Sheen'})")
+  private def assertAllMoviesAreReturned = ResultAssertions(result =>
+    result.toSet should equal(Set(
+      Map("movie.title" -> "The American President"),
+      Map("movie.title" -> "Wall Street")))
+  )
 
-  override protected def getGraphvizStyle: GraphStyle =
-    AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
+  private def assertBlockingRelationshipsAdded = NoAssertions
+  private def assertWallStreetIsReturned = ResultAssertions(result =>
+    result.toList should equal(
+      List(Map("movie.title" -> "Wall Street")))
+  )
 
-  def section: String = "MATCH"
+  private def assertActedInRelationshipsAreReturned = ResultAssertions(result =>
+    result.toSet.size shouldBe 2
+  )
 
-  @Test def nodes_by_id() {
-    testQuery(
-      title = "Node by id",
-      text = """
-Search for nodes by id can be done with the 'id' function in a predicate.
+  private def assertRelationshipIsDirected = ResultAssertions(result =>
+    result.toList should equal(
+      List(Map("type(r)" -> "DIRECTED")))
+  )
 
-[NOTE]
-Neo4j reuses its internal ids when nodes and relationships are deleted.
-This means that applications using, and relying on internal Neo4j ids, are brittle or at risk of making mistakes.
-Rather use application generated ids.
-             """,
-      queryText = "match (n) where id(n) = %Charlie% return n",
-      optionalResultExplanation = "The corresponding node is returned.",
-      assertions = (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("Charlie"))))
-  }
+  private def assertAllActorsOfWallStreetAreFound = ResultAssertions(result =>
+    result.toSet should equal(Set(
+      Map("actor.name" -> "Michael Douglas"),
+      Map("actor.name" -> "Martin Sheen"),
+      Map("actor.name" -> "Charlie Sheen")))
+  )
 
-  @Test def relationships_by_id() {
-    testQuery(
-      title = "Relationship by id",
-      text = """
-Search for nodes by id can be done with the 'id' function in a predicate.
+  private def assertResultSet(data: Set[Map[String, Any]]): ResultAssertions = ResultAssertions(result =>
+    result.toSet should equal(data)
+  )
 
-This is not recommended practice. See <<match-node-by-id>> for more information on the use of Neo4j ids.
-             """,
-      queryText = "match ()-[r]->() where id(r) = 0 return r",
-      optionalResultExplanation = "The relationship with id +0+ is returned.",
-      assertions = (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
-  }
+  private def assertWallstreetAndContributorsAreFound: ResultAssertions = ResultAssertions(result =>
+    result.toSet should equal(Set(
+      Map("x.name" -> "Oliver Stone"),
+      Map("x.name" -> "Michael Douglas"),
+      Map("x.name" -> "Martin Sheen"),
+      Map("x.name" -> "Charlie Sheen")))
+  )
 
-  @Test def multiple_nodes_by_id() {
-    testQuery(
-      title = "Multiple nodes by id",
-      text = "Multiple nodes are selected by specifying them in an IN clause.",
-      queryText = "match (n) where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
-      optionalResultExplanation = "This returns the nodes listed in the `IN` expression.",
-      assertions = (p) => assertEquals(Set(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toSet))
-  }
+  private def assertRelType(name: String) = ResultAssertions(result =>
+    result.toList should equal(List(Map("type(r)" -> name))))
 
-  @Test def start_with_multiple_nodes() {
-    testQuery(
-      title = "Multiple identifiers by id",
-      text = "Sometimes you want to return multiple nodes by id and separate identifiers. Just list them separated by commas.",
-      queryText = "match (a), (b) where id(a) = %Charlie% and id(b) = %Martin% return a, b",
-      optionalResultExplanation = """Both the nodes +Charlie+ and the +Martin+  are returned.""",
-      assertions = p => assertEquals(List(Map("a" -> node("Charlie"), "b" -> node("Martin"))), p.toList))
-  }
+  private def assertEveryoneConnectedToWallStreetIsFound = ResultAssertions(result =>
+    result.toSet should equal(Set(
+      Map("person.name" -> "Michael Douglas"),
+      Map("person.name" -> "Oliver Stone"),
+      Map("person.name" -> "Martin Sheen"),
+      Map("person.name" -> "Charlie Sheen")))
+  )
 
-  @Test def get_all_nodes() {
-    testQuery(
-      title = "Get all nodes",
-      text = "By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.",
-      queryText = """match (n) return n""",
-      optionalResultExplanation = "Returns all the nodes in the database.",
-      assertions = (p) => {
-        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+  private def assertRelationshipsToWallStreetAreReturned = ResultAssertions(result =>
+    result.size should equal(3)
+  )
 
-        assertEquals(allNodes, p.columnAs[Node]("n").toList)
-      }
-    )
-  }
+  private def assertFindAllDirectors = ResultAssertions(result =>
+    result.toList should equal(
+      List(Map("movie.title" -> "Wall Street", "director.name" -> "Oliver Stone"))))
 
-  @Test def get_multiple_nodes() {
-    testQuery(
-      title = "Multiple starting points",
-      text = "By specifying two node patterns all combinations of the two nodes will be returned, so it is advised to add a constraint.",
-      queryText = """match (a), (b) where id(a) = id(b) return a, b""",
-      optionalResultExplanation = "Returns the combinations of the two nodes from the database.",
-      assertions = (p) => {
-        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+  private def assertShortestPathLength = ResultAssertions(result =>
+    result.toList.head("p").asInstanceOf[Path].length() shouldBe 2)
 
-        assertEquals(allNodes, p.columnAs[Node]("a").toList)
-      }
-    )
-  }
+  private def assertAllShortestPaths = ResultAssertions(result =>
+    result.toList.size shouldBe 2)
 
-  @Test def get_all_labeled_nodes() {
-    testQuery(
-      title = "Get all nodes with a label",
-      text = "Getting all nodes with a label on them is done with a single node pattern where the node has a label on it.",
-      queryText = """match (movie:Movie) return movie""",
-      optionalResultExplanation = "Returns all the movies in the database.",
-      assertions = (p) => assertEquals(nodes("WallStreet", "TheAmericanPresident").toSet, p.columnAs[Node]("movie").toSet)
-    )
-  }
 
-  @Test def allRelationships() {
-    testQuery(
-      title = "Related nodes",
-      text = "The symbol `--` means _related to,_ without regard to type or direction of the relationship.",
-      queryText = """match (director {name:'Oliver Stone'})--(movie) return movie.title""",
-      optionalResultExplanation = """Returns all the movies directed by Oliver Stone.""",
-      assertions = (p) => assertEquals(List("Wall Street"), p.columnAs[Node]("movie.title").toList)
-    )
-  }
+  private def assertHasRelationships(relIds: Long*) = ResultAssertions(result =>
+    result.toList.map(_.head._2.asInstanceOf[Relationship].getId) should equal(relIds.toList)
+  )
 
-  @Test def allOutgoingRelationships() {
-    testQuery(
-      title = "Outgoing relationships",
-      text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
-      queryText = """match (martin {name:'Martin Sheen'})-->(movie) return movie.title""",
-      optionalResultExplanation = """Returns nodes connected to Martin by outgoing relationships.""",
-      assertions = (p) => assertEquals(Set("Wall Street", "The American President"), p.columnAs[Node]("movie.title").toSet)
-    )
-  }
+  private def assertHasNodes(nodeIds: Long*) = ResultAssertions(result =>
+    result.toList.map(_.head._2.asInstanceOf[Node].getId) should equal(nodeIds.toList)
+  )
 
-  @Test def allOutgoingRelationships2() {
-    testQuery(
-      title = "Directed relationships and identifier",
-      text = "If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, " +
-        "this is how you introduce the identifier.",
-      queryText = """match (martin {name:'Martin Sheen'})-[r]->(movie) return r""",
-      optionalResultExplanation = """Returns all outgoing relationships from Martin.""",
-      assertions = (p) => assertEquals(2, p.size)
-    )
-  }
-
-  @Test def relatedNodesByRelationshipType() {
-    testQuery(
-      title = "Match by relationship type",
-      text = "When you know the relationship type you want to match on, you can specify it by using a colon together with the relationship type.",
-      queryText = """match (wallstreet {title:'Wall Street'})<-[:ACTED_IN]-(actor) return actor""",
-      optionalResultExplanation = """Returns nodes that +ACTED_IN+ Wall Street.""",
-      assertions = (p) => assertEquals(nodes("Michael","Martin","Charlie").toSet, p.columnAs[Node]("actor").toSet)
-    )
-  }
-
-  @Test def relatedNodesByMultipleRelationshipTypes() {
-    testQuery(
-      title = "Match by multiple relationship types",
-      text = "To match on one of multiple types, you can specify this by chaining them together with the pipe symbol `|`.",
-      queryText = """match (wallstreet {title:'Wall Street'})<-[:ACTED_IN|:DIRECTED]-(person) return person""",
-      optionalResultExplanation = """Returns nodes with a +ACTED_IN+ or +DIRECTED+ relationship to Wall Street.""",
-      assertions = (p) => assertEquals(nodes("Michael","Martin","Charlie","Oliver").toSet, p.columnAs[Node]("person").toSet)
-    )
-  }
-
-  @Test def relationshipsByType() {
-    testQuery(
-      title = "Match by relationship type and use an identifier",
-      text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
-        "just add them both, like this.",
-      queryText = """match (wallstreet {title:'Wall Street'})<-[r:ACTED_IN]-(actor) return r""",
-      optionalResultExplanation = """Returns nodes that +ACTED_IN+ Wall Street.""",
-      assertions = (p) => assertEquals(3, p.size)
-    )
-  }
-
-  @Test def relationshipsByTypeWithSpace() {
-    testQuery(
-      title = "Relationship types with uncommon characters",
-      text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use +`+ (backtick) to quote these.",
-      queryText = """match (n {name:'Rob Reiner'})-[r:`TYPE THAT HAS SPACE IN IT`]->() return r""",
-      optionalResultExplanation = """Returns a relationship of a type with spaces in it.""",
-      assertions = (p) => assertEquals(1, p.size)
-    )
-  }
-
-  @Test def multiStepRelationships() {
-    testQuery(
-      title = "Multiple relationships",
-      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, " +
-        "like this:",
-      queryText = """match (charlie {name:'Charlie Sheen'})-[:ACTED_IN]->(movie)<-[:DIRECTED]-(director) return charlie,movie,director""",
-      optionalResultExplanation = """Returns the three nodes in the path.""",
-      assertions = (p) => assertEquals(List(Map("charlie" -> node("Charlie"), "movie" -> node("WallStreet"), "director" -> node("Oliver"))), p.toList)
-    )
-  }
-
-  @Test def variableLengthPath() {
-    testQuery(
-      title = "Variable length relationships",
-      text = "Nodes that are a variable number of relationship->node hops away can be found using the following syntax: `-[:TYPE*minHops..maxHops]->`. " +
-        "minHops and maxHops are optional and default to 1 and infinity respectively. When no bounds are given the dots may be omitted.",
-      queryText = """match (martin {name:"Martin Sheen"})-[:ACTED_IN*1..2]-(x) return x""",
-      optionalResultExplanation = "Returns nodes that are 1 or 2 relationships away from Martin.",
-      assertions = (p) => assertEquals(Set(node("Charlie"), node("WallStreet"), node("Michael"), node("TheAmericanPresident")), p.columnAs[Node]("x").toSet)
-    )
-  }
-
-  @Test def variableLengthPathWithIterableRels() {
-    testQuery(
-      title = "Relationship identifier in variable length relationships",
-      text = "When the connection between two nodes is of variable length, " +
-        "a relationship identifier becomes an collection of relationships.",
-      queryText = """match (actor {name:'Charlie Sheen'})-[r:ACTED_IN*2]-(co_actor) return r""",
-      optionalResultExplanation = "The query returns a collection of relationships.",
-      assertions = (p) => assertEquals(2, p.size)
-    )
-  }
-
-  @Test def zeroLengthPath() {
-    testQuery(
-      title = "Zero length paths",
-      text = "Using variable length paths that have the lower bound zero means that two identifiers can point" +
-        " to the same node. If the distance between two nodes is zero, they are by definition the same node. " +
-        "Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.",
-      queryText = """match (wallstreet:Movie {title:'Wall Street'})-[*0..1]-(x) return x""",
-      optionalResultExplanation = "Returns all nodes that are zero or one relationships away from Wall Street.",
-      assertions = (p) => assertEquals(Set(node("WallStreet"), node("Charlie"), node("Michael"), node("Martin"), node("Oliver")), p.columnAs[Node]("x").toSet)
-    )
-  }
-
-  @Test def fixedLengthPath() {
-    testQuery(
-      title = "Fixed length relationships",
-      text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
-      queryText = """match (michael {name:'Michael Douglas'})-[:ACTED_IN*2]-(co_actor) return co_actor.name""",
-      optionalResultExplanation = "Returns the 2 nodes connected to Michael by a length-2 chain of ACTED_IN relationships.",
-      assertions = (p) => assertEquals(Set("Martin Sheen", "Charlie Sheen"), p.columnAs[String]("co_actor.name").toSet)
-    )
-  }
-
-  @Test def shortestPathBetweenTwoNodes() {
-    testQuery(
-      title = "Single shortest path",
-      text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath` function. It's done like this:",
-      queryText ="""
-match (martin:Person {name:"Martin Sheen"} ),
-      (oliver:Person {name:"Oliver Stone"}),
-      p = shortestPath( (martin)-[*..15]-(oliver) )
-return p""",
-      optionalResultExplanation = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parentheses
- you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
- like relationship type, max hops and direction are all used when finding the shortest path. You can also mark the path as optional.""",
-      assertions = (p) => assertEquals(2, p.toList.head("p").asInstanceOf[Path].length())
-    )
-  }
-
-  @Test def allShortestPathsBetweenTwoNodes() {
-    testQuery(
-      title = "All shortest paths",
-      text = "Finds all the shortest paths between two nodes.",
-      queryText = """
-match (martin:Person {name:"Martin Sheen"} ),
-      (michael:Person {name:"Michael Douglas"}),
-      p = allShortestPaths( (martin)-[*]-(michael) ) return p""",
-      optionalResultExplanation = """Finds the two shortest paths between Martin and Michael.""",
-      assertions = (p) => assertEquals(2, p.toList.size)
-    )
-  }
-
-  @Test def introduceNamedPath() {
-    testQuery(
-      title = "Named path",
-      text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
-      queryText = """match p = (michael {name:'Michael Douglas'})-->() return p""",
-      optionalResultExplanation = """Returns the two paths starting from Michael.""",
-      assertions = (p) => assertEquals(2, p.toSeq.length)
-    )
-  }
-
-  @Test def match_on_bound_relationship() {
-    testQuery(
-      title = "Matching on a bound relationship",
-      text = """When your pattern contains a bound relationship, and that relationship pattern doesn't specify direction,
-Cypher will try to match the relationship in both directions.""",
-      queryText = """match (a)-[r]-(b) where id(r) = 0 return a,b""",
-      optionalResultExplanation = "This returns the two connected nodes, once as the start node, and once as the end node.",
-      assertions = p => assertEquals(2, p.toSeq.length)
-    )
-  }
-
-  @Test def match_with_labels() {
-    testQuery(
-      title = "Match with labels",
-      text = "To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.",
-      queryText = "match (charlie:Person {name:'Charlie Sheen'})--(movie:Movie) return movie",
-      optionalResultExplanation = "Return any nodes connected with the +Person+ Charlie that are labeled +Movie+.",
-      assertions = p => assertEquals(List(node("WallStreet")), p.columnAs[Node]("movie").toList)
-    )
-  }
-
-  @Test def match_with_properties_on_a_variable_length_path() {
-    val preparationQuery = """MATCH (charlie:Person {name:'Charlie Sheen'}), (martin:Person {name:'Martin Sheen'})
-      CREATE (charlie)-[:X {blocked:false}]->(:Unblocked)<-[:X {blocked:false}]-(martin)
-      CREATE (charlie)-[:X {blocked:true}]->(:Blocked)<-[:X {blocked:false}]-(martin)"""
-
-    prepareAndTestQuery(
-      prepare = _ => executePreparationQueries(List(preparationQuery)),
-      title = "Match with properties on a variable length path",
-      text = """A variable length relationship with properties defined on in it means that all relationships in the path
-must have the property set to the given value. In this query, there are two paths between Charile Sheen and his
-dad Martin Sheen. One of the includes a ``blocked'' relationship and the other doesn't.
-In this case we first alter the original graph by using the following query to add ``blocked'' and ``unblocked'' relationships:
-
-include::includes/match-match-with-properties-on-a-variable-length-path.preparation.asciidoc[]
-
-This means that we are starting out with the following graph:
-
-include::includes/match-match-with-properties-on-a-variable-length-path.preparation-graph.asciidoc[]
-
-""",
-      queryText = "MATCH p = (charlie:Person)-[* {blocked:false}]-(martin:Person) " +
-        "WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen' " +
-        "RETURN p",
-      optionalResultExplanation = "Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.",
-      assertions = p => {
-        val path = p.next()("p").asInstanceOf[Path].asScala
-
-        assert(!path.exists {
-          case n: Node => n.hasLabel(DynamicLabel.label("Blocked"))
-          case _       => false
-        })
-      }
-    )
-  }
 }

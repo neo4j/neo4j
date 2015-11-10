@@ -164,12 +164,11 @@ case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: 
     val cols = if (columns.isEmpty) 1 else columns.size
     val rowsOutput: String = if (rows.isEmpty) s"$cols+|(empty result)"
     else {
-      val columnHeader = columns.map(_.replace("|", "\\|")).mkString("|", "|", "")
+      val columnHeader = columns.map(escape).mkString("|", "|", "")
       val tableRows =
         rows.
-        map(row => row.values.map(_.toString.replace("|", "\\|")).
-        mkString("||", "|", "")).
-        mkString("\n")
+          map(row => row.values.map(escape).mkString("||", "|", "")).
+          mkString("\n")
 
       s"$columnHeader\n$tableRows"
     }
@@ -186,6 +185,11 @@ case class QueryResultTable(columns: Seq[String], rows: Seq[ResultRow], footer: 
        |
        |""".stripMargin
   }
+
+  private def escape(in: String): String =
+    in.replace("|", "\\|").
+       replace("{", "\\{").
+       replace("}", "\\}")
 }
 
 case class Query(queryText: String, assertions: QueryAssertions, myInitQueries: Seq[String], content: Content) extends Content {
@@ -235,11 +239,12 @@ case class GraphViz(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
-case class Section(heading: String, initQueries: Seq[String], content: Content) extends Content {
+case class Section(heading: String, id: Option[String], initQueries: Seq[String], content: Content) extends Content {
 
   override def asciiDoc(level: Int) = {
+    val idRef = id.map("[[" + _ + "]]\n").getOrElse("")
     val levelIndent = (0 to (level + 1)).map(_ => "=").mkString
-    levelIndent + " " + heading + NewLine + NewLine + content.asciiDoc(level + 1)
+    idRef + levelIndent + " " + heading + NewLine + NewLine + content.asciiDoc(level + 1)
   }
 
   override def runnableContent(initQueries: Seq[String]): Seq[ContentWithInit] = content.runnableContent(initQueries ++ this.initQueries)

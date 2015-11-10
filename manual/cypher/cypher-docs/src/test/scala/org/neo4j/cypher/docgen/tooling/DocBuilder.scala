@@ -79,7 +79,8 @@ trait DocBuilder {
     current.addContent(pop.toContent)
   }
 
-  def section(title: String)(f: => Unit) = inScope(SectionScope(title), f)
+  def section(title: String, id: String)(f: => Unit) = inScope(SectionScope(title, Some(id)), f)
+  def section(title: String)(f: => Unit) = inScope(SectionScope(title, None), f)
 
   def tip(f: => Unit) = inScope(AdmonitionScope(Tip.apply), f)
   def note(f: => Unit) = inScope(AdmonitionScope(Note.apply), f)
@@ -117,8 +118,8 @@ object DocBuilder {
     override def toContent = throw new LiskovSubstitutionPrincipleException
   }
 
-  case class SectionScope(name: String) extends Scope {
-    override def toContent = Section(name, initQueries, content)
+  case class SectionScope(name: String, id: Option[String]) extends Scope {
+    override def toContent = Section(name, id, initQueries, content)
   }
 
   case class AdmonitionScope(f: Content => Content) extends Scope {

@@ -6,7 +6,7 @@ This set is refined and augmented by subsequent parts of the query.
 
 :leveloffset: 2
 
-include::ql/match/index.asciidoc[]
+include::ql/query-match.adoc[]
 
 :leveloffset: 2
 
