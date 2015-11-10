@@ -125,7 +125,7 @@ public class StoreFactory
      */
     public NeoStores openAllNeoStores()
     {
-        return openNeoStores( false, NeoStores.StoreType.values() );
+        return openNeoStores( false, StoreType.values() );
     }
 
     /**
@@ -135,7 +135,7 @@ public class StoreFactory
      */
     public NeoStores openAllNeoStores( boolean createStoreIfNotExists )
     {
-        return openNeoStores( createStoreIfNotExists, NeoStores.StoreType.values() );
+        return openNeoStores( createStoreIfNotExists, StoreType.values() );
     }
 
     /**
@@ -145,7 +145,7 @@ public class StoreFactory
      * @param storeTypes - types of stores to be opened.
      * @return container with opened stores
      */
-    public NeoStores openNeoStores( NeoStores.StoreType... storeTypes )
+    public NeoStores openNeoStores( StoreType... storeTypes )
     {
         return openNeoStores( false, storeTypes );
     }
@@ -157,7 +157,7 @@ public class StoreFactory
      * @param storeTypes - types of stores to be opened.
      * @return container with opened stores
      */
-    public NeoStores openNeoStores( boolean createStoreIfNotExists, NeoStores.StoreType... storeTypes )
+    public NeoStores openNeoStores( boolean createStoreIfNotExists, StoreType... storeTypes )
     {
         if ( createStoreIfNotExists )
         {

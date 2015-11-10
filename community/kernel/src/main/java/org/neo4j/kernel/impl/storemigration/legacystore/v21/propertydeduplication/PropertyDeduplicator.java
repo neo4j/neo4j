@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -67,8 +68,8 @@ public class PropertyDeduplicator
     {
         final StoreFactory storeFactory =
                 new StoreFactory( fileSystem, workingDir, pageCache, NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( NeoStores.StoreType.PROPERTY, NeoStores.StoreType
-                .NODE, NeoStores.StoreType.SCHEMA) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.PROPERTY, StoreType
+                .NODE, StoreType.SCHEMA) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();

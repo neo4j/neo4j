@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
@@ -74,7 +75,7 @@ public class SchemaIndexMigratorTest
     {
         when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        when( storeFactory.openNeoStores( NeoStores.StoreType.SCHEMA) ).thenReturn( neoStores );
+        when( storeFactory.openNeoStores( StoreType.SCHEMA) ).thenReturn( neoStores );
         when( storeFactory.openAllNeoStores( anyBoolean() ) ).thenReturn( neoStores );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();

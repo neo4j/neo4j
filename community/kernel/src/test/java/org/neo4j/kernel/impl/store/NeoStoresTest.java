@@ -116,7 +116,7 @@ public class NeoStoresTest
     public void setUpNeoStores() throws Exception
     {
         storeDir = dir.graphDbDir();
-        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
@@ -126,7 +126,7 @@ public class NeoStoresTest
     @Test
     public void impossibleToGetStoreFromClosedNeoStoresContainer()
     {
-        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -143,15 +143,15 @@ public class NeoStoresTest
     @Test
     public void impossibleToGetNotRequestedStore()
     {
-        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
                 fs.get(), NullLogProvider.getInstance() );
-        NeoStores neoStores = sf.openNeoStores( true, NeoStores.StoreType.NODE_LABEL );
+        NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL );
 
 
         exception.expect( IllegalStateException.class );
         exception.expectMessage(
-                "Specified store was not initialized. Please specify " + NeoStores.StoreType.META_DATA.name() +
+                "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +
                 " as one of the stores types that should be open to be able to use it." );
         neoStores.getMetaDataStore();
     }

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.function.Predicate;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.FilteringIterator;
@@ -73,250 +74,6 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public enum StoreType
-    {
-        NODE_LABEL
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.NODE_LABELS_STORE_NAME );
-                int blockSizeFromConfiguration = me.config.get( GraphDatabaseSettings.label_block_size );
-                return me.initialize( new DynamicArrayStore(
-                        fileName, me.config, IdType.NODE_LABELS, me.idGeneratorFactory, me.pageCache, me.logProvider,
-                        blockSizeFromConfiguration ) );
-            }
-        },
-        NODE
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.NODE_STORE_NAME );
-                return me.initialize( new NodeStore( fileName, me.config, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider, (DynamicArrayStore) me.getOrCreateStore( NODE_LABEL ) ) );
-            }
-        },
-        PROPERTY_KEY_TOKEN_NAME
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME );
-                return me.initialize( new DynamicStringStore( fileName, me.config, IdType.PROPERTY_KEY_TOKEN_NAME,
-                        me.idGeneratorFactory, me.pageCache, me.logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
-            }
-        },
-        PROPERTY_KEY_TOKEN
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
-                return me.initialize( new PropertyKeyTokenStore( fileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider,
-                        (DynamicStringStore) me.getOrCreateStore( PROPERTY_KEY_TOKEN_NAME ) ) );
-            }
-        },
-        PROPERTY_STRING
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.PROPERTY_STRINGS_STORE_NAME );
-                int blockSizeFromConfiguration = me.config.get( GraphDatabaseSettings.string_block_size );
-                return me.initialize( new DynamicStringStore( fileName, me.config, IdType.STRING_BLOCK,
-                        me.idGeneratorFactory, me.pageCache, me.logProvider, blockSizeFromConfiguration ) );
-            }
-        },
-        PROPERTY_ARRAY
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.PROPERTY_ARRAYS_STORE_NAME );
-                int blockSizeFromConfiguration = me.config.get( GraphDatabaseSettings.array_block_size );
-                return me.initialize( new DynamicArrayStore( fileName, me.config, IdType.ARRAY_BLOCK,
-                        me.idGeneratorFactory, me.pageCache, me.logProvider, blockSizeFromConfiguration ) );
-            }
-        },
-        PROPERTY
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.PROPERTY_STORE_NAME );
-                return me.initialize( new PropertyStore(
-                        fileName, me.config, me.idGeneratorFactory, me.pageCache, me.logProvider,
-                        (DynamicStringStore) me.getOrCreateStore( PROPERTY_STRING ),
-                        (PropertyKeyTokenStore) me.getOrCreateStore( PROPERTY_KEY_TOKEN ),
-                        (DynamicArrayStore) me.getOrCreateStore( PROPERTY_ARRAY )
-                ) );
-            }
-        },
-        RELATIONSHIP
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.RELATIONSHIP_STORE_NAME );
-                return me.initialize( new RelationshipStore( fileName, me.config, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider ) );
-
-            }
-        },
-        RELATIONSHIP_TYPE_TOKEN_NAME
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
-                return me.initialize( new DynamicStringStore(
-                        fileName, me.config, IdType.RELATIONSHIP_TYPE_TOKEN_NAME, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
-
-            }
-        },
-        RELATIONSHIP_TYPE_TOKEN
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
-                return me.initialize( new RelationshipTypeTokenStore( fileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider, (DynamicStringStore) me.getOrCreateStore(
-                        RELATIONSHIP_TYPE_TOKEN_NAME ) ) );
-            }
-        },
-        LABEL_TOKEN_NAME
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME );
-                return me.initialize( new DynamicStringStore( fileName, me.config, IdType.LABEL_TOKEN_NAME,
-                        me.idGeneratorFactory, me.pageCache, me.logProvider, TokenStore.NAME_STORE_BLOCK_SIZE ) );
-            }
-        },
-        LABEL_TOKEN
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.LABEL_TOKEN_STORE_NAME );
-                return me.initialize( new LabelTokenStore( fileName, me.config, me.idGeneratorFactory, me.pageCache,
-                        me.logProvider, (DynamicStringStore) me.getOrCreateStore( LABEL_TOKEN_NAME ) ) );
-            }
-        },
-        SCHEMA
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.SCHEMA_STORE_NAME );
-                return me.initialize( new SchemaStore( fileName, me.config, IdType.SCHEMA, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider ) );
-            }
-        },
-        RELATIONSHIP_GROUP
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.RELATIONSHIP_GROUP_STORE_NAME );
-                return me.initialize( new RelationshipGroupStore( fileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider ) );
-            }
-        },
-        COUNTS( false )
-        {
-            @Override
-            public CountsTracker open( final NeoStores me )
-            {
-                File fileName = me.getStoreFileName( StoreFactory.COUNTS_STORE );
-                boolean readOnly = me.config.get( GraphDatabaseSettings.read_only );
-                CountsTracker counts = readOnly
-                        ? me.createReadOnlyCountsTracker( fileName )
-                        : me.createWritableCountsTracker( fileName );
-
-                counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
-                {
-                    private final Log log = me.logProvider.getLog( MetaDataStore.class );
-
-                    @Override
-                    public void initialize( CountsAccessor.Updater updater )
-                    {
-                        log.warn( "Missing counts store, rebuilding it." );
-                        new CountsComputer( me ).initialize( updater );
-                    }
-
-                    @Override
-                    public long initialVersion()
-                    {
-                        return ((MetaDataStore) me.getOrCreateStore( META_DATA )).getLastCommittedTransactionId();
-                    }
-                } );
-
-                try
-                {
-                    counts.init(); // TODO: move this to LifeCycle
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( "Failed to initialize counts store", e );
-                }
-                return counts;
-            }
-
-            @Override
-            void close( NeoStores me, Object object )
-            {
-                CountsTracker counts = (CountsTracker) object;
-                try
-                {
-                    counts.rotate( me.getMetaDataStore().getLastCommittedTransactionId() );
-                    counts.shutdown();
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-                finally
-                {
-                    counts = null;
-                }
-            }
-        },
-        META_DATA // Make sure this META store is last
-        {
-            @Override
-            public CommonAbstractStore open( NeoStores me )
-            {
-                return me.initialize( new MetaDataStore( me.neoStoreFileName, me.config, me.idGeneratorFactory,
-                        me.pageCache, me.logProvider ) );
-            }
-        };
-
-        private final boolean recordStore;
-
-        StoreType()
-        {
-            this( true );
-        }
-
-        StoreType( boolean recordStore )
-        {
-            this.recordStore = recordStore;
-        }
-
-        abstract Object open( NeoStores me );
-
-        void close( NeoStores me, Object object )
-        {
-            ((CommonAbstractStore)object).close();
-        }
-    }
-
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
     private final Predicate<StoreType> INSTANTIATED_RECORD_STORES = new Predicate<StoreType>()
@@ -324,7 +81,7 @@ public class NeoStores implements AutoCloseable
         @Override
         public boolean test( StoreType type )
         {
-            return type.recordStore && stores[type.ordinal()] != null;
+            return type.isRecordStore() && stores[type.ordinal()] != null;
         }
     };
 
@@ -372,7 +129,7 @@ public class NeoStores implements AutoCloseable
         return storeDir;
     }
 
-    private File getStoreFileName( String substoreName )
+    private File getStoreFile( String substoreName )
     {
         return new File( neoStoreFileName.getPath() + substoreName );
     }
@@ -620,14 +377,9 @@ public class NeoStores implements AutoCloseable
      */
     public void verifyStoreOk()
     {
-        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
-        {
-            @Override
-            public boolean visit( CommonAbstractStore element )
-            {
-                element.checkStoreOk();
-                return false;
-            }
+        visitStore( element -> {
+            element.checkStoreOk();
+            return false;
         } );
     }
 
@@ -673,17 +425,11 @@ public class NeoStores implements AutoCloseable
         getCounts().start();
     }
 
-
     public void deleteIdGenerators()
     {
-        visitStore( new Visitor<CommonAbstractStore, RuntimeException>()
-        {
-            @Override
-            public boolean visit( CommonAbstractStore store ) throws RuntimeException
-            {
-                store.deleteIdGenerator();
-                return false;
-            }
+        visitStore( store -> {
+            store.deleteIdGenerator();
+            return false;
         } );
     }
 
@@ -693,5 +439,132 @@ public class NeoStores implements AutoCloseable
         {
             throw new IllegalStateException( "Database has been shutdown" );
         }
+    }
+
+    CommonAbstractStore createDynamicArrayStore( String storeName, IdType idType, Setting<Integer> blockSizeProperty )
+    {
+        return createDynamicArrayStore( storeName, idType, config.get( blockSizeProperty ) );
+    }
+
+    CommonAbstractStore createDynamicArrayStore( String storeName, IdType idType, int blockSize )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new DynamicArrayStore( storeFile, config, idType, idGeneratorFactory, pageCache,
+                logProvider, blockSize ) );
+    }
+
+    CommonAbstractStore createNodeStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new NodeStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
+                (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ) ) );
+    }
+
+    CommonAbstractStore createPropertyKeyTokenStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new PropertyKeyTokenStore( storeFile, config, idGeneratorFactory,
+                pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN_NAME )
+        ) );
+    }
+
+    CommonAbstractStore createPropertyStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new PropertyStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
+                (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_STRING ),
+                (PropertyKeyTokenStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN ),
+                (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ) ) );
+    }
+
+    CommonAbstractStore createRelationshipStore( String storeName )
+    {
+        File file = getStoreFile( storeName );
+        return initialize( new RelationshipStore( file, config, idGeneratorFactory, pageCache, logProvider ) );
+    }
+
+    CommonAbstractStore createDynamicStringStore( String storeName, IdType idType,
+            Setting<Integer> blockSizeProperty )
+    {
+        return createDynamicStringStore( storeName, idType, config.get( blockSizeProperty ) );
+    }
+
+    CommonAbstractStore createDynamicStringStore( String storeName, IdType idType, int blockSize )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new DynamicStringStore( storeFile, config, idType, idGeneratorFactory,
+                pageCache, logProvider, blockSize ) );
+    }
+
+    CommonAbstractStore createRelationshipTypeTokenStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize( new RelationshipTypeTokenStore( storeFile, config, idGeneratorFactory,
+                pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME
+        ) ) );
+    }
+
+    CommonAbstractStore createLabelTokenStore( String storeName )
+    {
+        File fileName = getStoreFile( storeName );
+        return initialize( new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache,
+                logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ) ) );
+    }
+
+    CommonAbstractStore createSchemaStore( String storeName )
+    {
+        File fileName = getStoreFile( storeName );
+        return initialize( new SchemaStore( fileName, config, IdType.SCHEMA, idGeneratorFactory, pageCache,
+                logProvider ) );
+    }
+
+    CommonAbstractStore createRelationshipGroupStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        return initialize(
+                new RelationshipGroupStore( storeFile, config, idGeneratorFactory, pageCache, logProvider ) );
+    }
+
+    CountsTracker createCountStore( String storeName )
+    {
+        File storeFile = getStoreFile( storeName );
+        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
+        CountsTracker counts = readOnly
+                               ? createReadOnlyCountsTracker( storeFile )
+                               : createWritableCountsTracker( storeFile );
+        NeoStores neoStores = this;
+        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
+        {
+            private final Log log = logProvider.getLog( MetaDataStore.class );
+
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                log.warn( "Missing counts store, rebuilding it." );
+                new CountsComputer( neoStores ).initialize( updater );
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return ((MetaDataStore) getOrCreateStore( StoreType.META_DATA ))
+                        .getLastCommittedTransactionId();
+            }
+        } );
+
+        try
+        {
+            counts.init(); // TODO: move this to LifeCycle
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to initialize counts store", e );
+        }
+        return counts;
+    }
+
+    CommonAbstractStore createMetadataStore()
+    {
+        return initialize( new MetaDataStore( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider ) );
     }
 }
