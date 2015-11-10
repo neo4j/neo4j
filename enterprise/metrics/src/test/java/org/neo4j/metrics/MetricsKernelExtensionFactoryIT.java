@@ -38,8 +38,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.metrics.source.CypherMetrics;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.metrics.source.TransactionMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -49,10 +48,9 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.metrics.MetricsSettings.CsvFile.single;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
-import static org.neo4j.metrics.MetricsSettings.csvFile;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
+import static org.neo4j.metrics.MetricsSettings.metricsEnabled;
 
 public class MetricsKernelExtensionFactoryIT
 {
@@ -61,20 +59,20 @@ public class MetricsKernelExtensionFactoryIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    private File outputFile;
+    private File outputPath;
     private ClusterManager.ManagedCluster cluster;
     private HighlyAvailableGraphDatabase db;
 
     @Before
     public void setup() throws Exception
     {
-        outputFile = folder.file( "metrics.csv" );
+        outputPath = folder.file( "metrics.csv" );
         Map<String,String> config = new HashMap<>();
         config.put( MetricsSettings.neoEnabled.name(), Settings.TRUE );
+        config.put( metricsEnabled.name(), Settings.TRUE );
         config.put( csvEnabled.name(), Settings.TRUE );
         config.put( cypher_min_replan_interval.name(), "0" );
-        config.put( csvFile.name(), single.name() );
-        config.put( csvPath.name(), outputFile.getAbsolutePath() );
+        config.put( csvPath.name(), outputPath.getAbsolutePath() );
         cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
         db = cluster.getMaster();
     }
@@ -88,12 +86,12 @@ public class MetricsKernelExtensionFactoryIT
 
         // Awesome. Let's get some metric numbers.
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
-        try ( BufferedReader reader = new BufferedReader( new FileReader( outputFile ) ) )
+        File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
+        try ( BufferedReader reader = new BufferedReader( new FileReader( metricsFile ) ) )
         {
             String[] headers = reader.readLine().split( "," );
-            assertThat( headers[0], is( "timestamp" ) );
-            int committedColumn = Arrays.binarySearch( headers, "neo4j.transaction.committed" );
-            assertThat( committedColumn, is( not( -1 ) ) );
+            assertThat( headers[0], is( "t" ) );
+            assertThat( headers[1], is( "value" ) );
 
             // Now we can verify that the number of committed transactions should never decrease.
             int committedTransactions = 0;
@@ -101,7 +99,7 @@ public class MetricsKernelExtensionFactoryIT
             while ( (line = reader.readLine()) != null )
             {
                 String[] fields = line.split( "," );
-                int newCommittedTransactions = Integer.parseInt( fields[committedColumn] );
+                int newCommittedTransactions = Integer.parseInt( fields[1] );
                 assertThat( newCommittedTransactions, greaterThanOrEqualTo( committedTransactions ) );
                 committedTransactions = newCommittedTransactions;
             }
@@ -130,10 +128,11 @@ public class MetricsKernelExtensionFactoryIT
         cluster.stop();
 
         //now we should have one replan event
-        try ( BufferedReader reader = new BufferedReader( new FileReader( outputFile ) ) )
+        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
+        try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
             String[] headers = reader.readLine().split( "," );
-            int replanColumn = Arrays.binarySearch( headers, CypherMetrics.REPLAN_EVENTS );
+            int replanColumn = Arrays.binarySearch( headers, "value" );
             assertThat( replanColumn, is( not( -1 ) ) );
 
             // Now we can verify that the number of committed transactions should never decrease.

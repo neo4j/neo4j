@@ -37,12 +37,13 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class CheckPointingMetrics extends LifecycleAdapter
 {
     private static final String CHECK_POINT_PREFIX = "neo4j.check_point";
-    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
 
     @Documented( "The total number of check point events executed so far" )
     public static final String CHECK_POINT_EVENTS = name( CHECK_POINT_PREFIX, "events" );
     @Documented( "The total time spent in check pointing so far" )
     public static final String CHECK_POINT_TOTAL_TIME = name( CHECK_POINT_PREFIX, "total_time" );
+
+    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
 
     @Documented( "The total number of transaction log rotations executed so far" )
     public static final String LOG_ROTATION_EVENTS = name( LOG_ROTATION_PREFIX, "events" );

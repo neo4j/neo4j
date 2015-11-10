@@ -32,7 +32,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
-import org.neo4j.metrics.MetricsSettings;
 
 import static org.neo4j.kernel.configuration.Config.absoluteFileOrRelativeTo;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
@@ -46,7 +45,7 @@ public class CsvOutput extends LifecycleAdapter
     private final Log logger;
     private final KernelContext kernelContext;
     private ScheduledReporter csvReporter;
-    private File outputFile;
+    private File outputPath;
 
     public CsvOutput( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext )
     {
@@ -66,29 +65,14 @@ public class CsvOutput extends LifecycleAdapter
             if ( configuredPath == null )
             {
                 throw new IllegalArgumentException( csvPath.name() + " configuration is required since " +
-                        csvEnabled.name() + " is enabled" );
+                                                    csvEnabled.name() + " is enabled" );
             }
-            outputFile = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
-            MetricsSettings.CsvFile csvFile = config.get( MetricsSettings.csvFile );
-            switch ( csvFile )
-            {
-            case single:
-                csvReporter = CsvReporterSingle.forRegistry( registry )
-                        .convertRatesTo( TimeUnit.SECONDS )
-                        .convertDurationsTo( TimeUnit.MILLISECONDS )
-                        .filter( MetricFilter.ALL )
-                        .build( outputFile );
-                break;
-            case split:
-                csvReporter = CsvReporter.forRegistry( registry )
-                        .convertRatesTo( TimeUnit.SECONDS )
-                        .convertDurationsTo( TimeUnit.MILLISECONDS )
-                        .filter( MetricFilter.ALL )
-                        .build( ensureDirectoryExists( outputFile ) );
-                break;
-            default: throw new IllegalArgumentException(
-                    "Unsupported " + MetricsSettings.csvFile.name() + " setting: " + csvFile );
-            }
+            outputPath = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
+            csvReporter = CsvReporter.forRegistry( registry )
+                    .convertRatesTo( TimeUnit.SECONDS )
+                    .convertDurationsTo( TimeUnit.MILLISECONDS )
+                    .filter( MetricFilter.ALL )
+                    .build( ensureDirectoryExists( outputPath ) );
         }
     }
 
@@ -117,7 +101,7 @@ public class CsvOutput extends LifecycleAdapter
         if ( csvReporter != null )
         {
             csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
-            logger.info( "Sending metrics to CSV file at " + outputFile );
+            logger.info( "Sending metrics to CSV file at " + outputPath );
         }
     }
 

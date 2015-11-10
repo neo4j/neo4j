@@ -45,12 +45,13 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class JvmMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "vm";
-    private static final String GC_PREFIX = name( NAME_PREFIX, "gc" );
-    private static final String GC_TIME = name( GC_PREFIX, "time" );
-    private static final String GC_COUNT = name( GC_PREFIX, "count" );
-    private static final String MEMORY_POOL = name( NAME_PREFIX, "memory.pool" );
-    private static final String MEMORY_BUFFER = name( NAME_PREFIX, "memory.buffer" );
-    private static final String THREAD = name( NAME_PREFIX, "thread" );
+    public static final String GC_PREFIX = name( NAME_PREFIX, "gc" );
+    public static final String GC_TIME = name( GC_PREFIX, "time" );
+    public static final String GC_COUNT = name( GC_PREFIX, "count" );
+    public static final String MEMORY_POOL = name( NAME_PREFIX, "memory.pool" );
+    public static final String MEMORY_BUFFER = name( NAME_PREFIX, "memory.buffer" );
+    public static final String THREAD = name( NAME_PREFIX, "thread" );
+
     private final Config config;
     private final MetricRegistry registry;
 

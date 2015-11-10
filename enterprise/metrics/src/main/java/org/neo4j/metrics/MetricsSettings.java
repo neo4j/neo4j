@@ -35,12 +35,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "Metrics settings" )
 public class MetricsSettings
 {
-    public enum CsvFile
-    {
-        single, // Use a single file for all metrics, with one metric per column
-        split // Use one file per metric
-    }
-
     // Common settings
     @Description( "A common prefix for the reported metrics field names. By default, this is either be 'neo4j', " +
                   "or a computed value based on the cluster and instance names, when running in an HA configuration." )
@@ -97,20 +91,11 @@ public class MetricsSettings
     // CSV settings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
-    @Description( "The target location of the CSV files. Depending on the metrics.csv.file setting, this is either " +
-                  "the path to an individual CSV file, that have each of the reported metrics fields as columns, or " +
-                  "it is a path to a directory wherein a CSV file per reported field will be written. Relative paths " +
-                  "will be intepreted relative to the configured Neo4j store directory." )
+    @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
+                  "field  will be written. Relative paths will be interpreted relative to the configured Neo4j " +
+                  "store directory." )
     public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, Settings.NO_DEFAULT );
 
-    @Deprecated
-    @Obsoleted( "This setting will be removed in the next major release." )
-    @Description( "Write to a single CSV file or to multiple files. " +
-                  "Set to `single` (the default) for reporting the metrics in a single CSV file (given by " +
-                  "metrics.csv.path), with a column per metrics field. Or set to `split` to produce a CSV file for " +
-                  "each metrics field, in a directory given by metrics.csv.path." )
-    public static Setting<CsvFile> csvFile = setting(
-            "metrics.csv.file", Settings.options( CsvFile.class ), CsvFile.single.name() );
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )
     public static Setting<Long> csvInterval = setting( "metrics.csv.interval", Settings.DURATION, "3s" );
