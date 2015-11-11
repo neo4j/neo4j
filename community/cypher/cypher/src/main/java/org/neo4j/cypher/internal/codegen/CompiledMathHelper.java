@@ -110,7 +110,16 @@ public final class CompiledMathHelper
                  lhs instanceof Short || rhs instanceof Short ||
                  lhs instanceof Byte || rhs instanceof Byte )
             {
-                return ((Number) lhs).longValue() + ((Number) rhs).longValue();
+                try
+                {
+                    return Math.addExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
+                }
+                catch ( java.lang.ArithmeticException e )
+                {
+                    throw new ArithmeticException(
+                            String.format( "result of %d + %d cannot be represented as an integer",
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                }
             }
             // other numbers we cannot add
         }
@@ -138,7 +147,16 @@ public final class CompiledMathHelper
                  lhs instanceof Short || rhs instanceof Short ||
                  lhs instanceof Byte || rhs instanceof Byte )
             {
-                return ((Number) lhs).longValue() - ((Number) rhs).longValue();
+                try
+                {
+                    return Math.subtractExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
+                }
+                catch ( java.lang.ArithmeticException e )
+                {
+                    throw new ArithmeticException(
+                            String.format( "result of %d - %d cannot be represented as an integer",
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                }
             }
             // other numbers we cannot subtract
         }

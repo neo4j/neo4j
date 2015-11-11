@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast
-import org.neo4j.cypher.internal.frontend.v3_0.{TypeGenerator, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticError, SemanticCheck, SemanticCheckResult, ast, TypeGenerator, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
+
+import scala.util.Try
 
 case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
   extends Expression with BinaryOperatorExpression {
@@ -31,7 +32,14 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
     lhs.expectType(TypeSpec.all) chain
     rhs.semanticCheck(ctx) chain
     rhs.expectType(infixRhsTypes(lhs)) chain
-    specifyType(infixOutputTypes(lhs, rhs))
+    specifyType(infixOutputTypes(lhs, rhs)) chain
+    checkBoundary(lhs, rhs)
+
+  private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
+    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.addExact(l.value, r.value)).isFailure =>
+      SemanticError(s"result of ${l.value} + ${r.value} cannot be represented as an integer", position)
+    case _ => SemanticCheckResult.success
+  }
 
   private def infixRhsTypes(lhs: ast.Expression): TypeGenerator = s => {
     val lhsTypes = lhs.types(s)
@@ -129,6 +137,15 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    super.semanticCheck(ctx) chain checkBoundary(lhs, rhs)
+
+  private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
+    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
+      SemanticError(s"result of ${l.value} - ${r.value} cannot be represented as an integer", position)
+    case _ => SemanticCheckResult.success
+  }
+
   override def canonicalOperatorSymbol = "-"
 }
 
@@ -153,6 +170,15 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
     Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
     Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    super.semanticCheck(ctx) chain checkBoundary(lhs, rhs)
+
+  private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
+    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.multiplyExact(l.value, r.value)).isFailure =>
+      SemanticError(s"result of ${l.value} * ${r.value} cannot be represented as an integer", position)
+    case _ => SemanticCheckResult.success
+  }
 
   override def canonicalOperatorSymbol = "*"
 }

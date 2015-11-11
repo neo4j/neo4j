@@ -30,7 +30,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Integer]
+    //all integer operations should result in longs
+    result shouldBe a [java.lang.Long]
   }
 
   test("plus double int") {
@@ -46,7 +47,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Integer]
+    //all integer operations should result in longs
+    result shouldBe a [java.lang.Long]
   }
 
   test("minus double int") {
@@ -62,7 +64,8 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Integer]
+    //all integer operations should result in longs
+    result shouldBe a [java.lang.Long]
   }
 
   test("multiply double int") {
