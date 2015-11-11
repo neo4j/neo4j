@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="6.0.4" transformSequenceNumber="5">
-  <directoryPresets config="./src/main/install.properties" />
+  <directoryPresets config="./target/shell-scripts/Neo4j-Management.psd1" />
   <application name="Neo4j Community Edition" distributionSourceDir="" applicationId="8478-6373-2628-9929" mediaDir="." mediaFilePattern="neo4j-community_${compiler:sys.platform}_${compiler:sys.version}" compression="9" lzmaCompression="true" pack200Compression="false" excludeSignedFromPacking="true" commonExternalFiles="false" createMd5Sums="false" shrinkRuntime="true" shortName="neo4j-ce" publisher="Neo Technology" publisherWeb="http://neotechnology.com" version="@NEO4J_VERSION@" allPathsRelative="true" backupOnSave="false" autoSave="false" convertDotsToUnderscores="true" macSignature="????" macVolumeId="e07442ebbe7e691b" javaMinVersion="1.7" javaMaxVersion="1.7" allowBetaVM="false" jdkMode="runtimeJre" jdkName="JDK 1.6">
     <languages skipLanguageSelection="false" languageSelectionInPrincipalLanguage="false">
       <principalLanguage id="en" customLocalizationFile="./src/main/install4j/messages_en.utf8" />
@@ -20,6 +20,7 @@
     <roots />
     <mountPoints>
       <mountPoint id="262" root="" location="bin" mode="755" />
+      <mountPoint id="505" root="" location="bin/Neo4j-Management" mode="755" />
       <mountPoint id="386" root="" location="plugins" mode="755" />
       <mountPoint id="210" root="" location="" mode="755" />
     </mountPoints>
@@ -31,6 +32,10 @@
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jImport.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jShell.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4j-Management.psd1" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <dirEntry mountPoint="505" file="./target/shell-scripts/Neo4j-Management" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" entryMode="direct" subDirectory="" excludeSuffixes="" dirMode="755" overrideDirMode="false">
+        <exclude />
+      </dirEntry>
       <fileEntry mountPoint="386" file="./target/plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
