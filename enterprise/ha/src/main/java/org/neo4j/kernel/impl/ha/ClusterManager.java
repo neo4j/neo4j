@@ -900,6 +900,7 @@ public class ClusterManager
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
+        private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -1025,7 +1026,7 @@ public class ClusterManager
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
-            return new StartDatabaseAgainKit( this, serverId );
+            return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
         private void assertMember( HighlyAvailableGraphDatabase db )
@@ -1073,7 +1074,27 @@ public class ClusterManager
                 networkSender.setPaused( true );
             }
 
-            return new StartNetworkAgainKit( db, networkReceiver, networkSender, flags );
+            return wrap( new StartNetworkAgainKit( db, networkReceiver, networkSender, flags ) );
+        }
+
+        private RepairKit wrap( final RepairKit actual )
+        {
+            pendingRepairs.add( actual );
+            return new RepairKit()
+            {
+                @Override
+                public HighlyAvailableGraphDatabase repair() throws Throwable
+                {
+                    try
+                    {
+                        return actual.repair();
+                    }
+                    finally
+                    {
+                        pendingRepairs.remove( actual );
+                    }
+                }
+            };
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1275,6 +1296,20 @@ public class ClusterManager
             {
                 function.apply( db );
             }
+        }
+
+        /**
+         * Repairs all {@link RepairKit} that haven't already been repaired.
+         *
+         * @throws Throwable if any repair throws.
+         */
+        public void repairAll() throws Throwable
+        {
+            for ( RepairKit repair : pendingRepairs )
+            {
+                repair.repair();
+            }
+            pendingRepairs.clear();
         }
     }
 
