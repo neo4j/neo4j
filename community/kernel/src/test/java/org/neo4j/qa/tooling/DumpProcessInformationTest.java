@@ -32,11 +32,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
-import static java.lang.System.getProperty;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
@@ -54,7 +54,8 @@ public class DumpProcessInformationTest
         // GIVEN
         File directory = testDirectory.directory( "dump" );
         // a process spawned from this test which pauses at a specific point of execution
-        Process process = getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
+        String java = ProcessUtil.getJavaExecutable().toString();
+        Process process = getRuntime().exec( new String[] {java, "-cp", ProcessUtil.getClassPath(),
                 DumpableProcess.class.getName(), SIGNAL } );
         awaitSignal( process );
 
