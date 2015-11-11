@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
@@ -42,26 +41,26 @@ public class IndexProxySetup
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
     private final SchemaIndexProviderMap providerMap;
-    private final UpdateableSchemaState updateableSchemaState;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler scheduler;
     private final LogProvider logProvider;
+    private final Runnable schemaStateChangeCallback;
 
     public IndexProxySetup( IndexSamplingConfig samplingConfig,
                             IndexStoreView storeView,
                             SchemaIndexProviderMap providerMap,
-                            UpdateableSchemaState updateableSchemaState,
                             TokenNameLookup tokenNameLookup,
                             JobScheduler scheduler,
-                            LogProvider logProvider )
+                            LogProvider logProvider,
+                            Runnable schemaStateChangeCallback )
     {
         this.samplingConfig = samplingConfig;
         this.storeView = storeView;
         this.providerMap = providerMap;
-        this.updateableSchemaState = updateableSchemaState;
         this.tokenNameLookup = tokenNameLookup;
         this.scheduler = scheduler;
         this.logProvider = logProvider;
+        this.schemaStateChangeCallback = schemaStateChangeCallback;
     }
 
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
@@ -90,7 +89,8 @@ public class IndexProxySetup
 
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
-                        storeView, updateableSchemaState, logProvider, indexUserDescription, providerDescriptor, monitor );
+                        storeView, logProvider, indexUserDescription, providerDescriptor, monitor,
+                        schemaStateChangeCallback );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode

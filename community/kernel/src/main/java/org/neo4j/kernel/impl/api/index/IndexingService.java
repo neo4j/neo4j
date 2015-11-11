@@ -51,7 +51,6 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
@@ -182,9 +181,10 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
                                           SchemaIndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
-                                          UpdateableSchemaState updateableSchemaState,
                                           Iterable<IndexRule> indexRules,
-                                          LogProvider logProvider, Monitor monitor )
+                                          LogProvider logProvider,
+                                          Monitor monitor,
+                                          Runnable schemaStateChangeCallback )
     {
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -199,8 +199,8 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
                 new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxySetup proxySetup = new IndexProxySetup(
-                samplingConfig, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logProvider
-        );
+                samplingConfig, storeView, providerMap, tokenNameLookup, scheduler, logProvider,
+                schemaStateChangeCallback );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, logProvider, monitor );

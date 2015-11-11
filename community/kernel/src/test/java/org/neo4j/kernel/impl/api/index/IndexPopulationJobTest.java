@@ -657,7 +657,7 @@ public class IndexPopulationJobTest
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView,
-                stateHolder, logProvider, IndexingService.NO_MONITOR );
+                logProvider, IndexingService.NO_MONITOR, stateHolder::clear );
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

@@ -186,11 +186,6 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
 {
-    private interface NeoStoreModule
-    {
-        NeoStores neoStores();
-    }
-
     private interface CacheModule
     {
         UpdateableSchemaState updateableSchemaState();
@@ -511,7 +506,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         upgradeStore( storeDir, storeMigrationProcess, indexProvider );
 
         // Build all modules and their services
-        NeoStoreModule neoStoreModule = null;
+        StoreLayerModule storeLayerModule = null;
         try
         {
             LegacyIndexApplierLookup legacyIndexApplierLookup =
@@ -520,11 +515,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             CacheModule cacheModule = buildCaches(
                     labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
 
-            neoStoreModule = buildNeoStore( labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
-
             // TODO Introduce a StorageEngine abstraction at the StoreLayerModule boundary
-            StoreLayerModule storeLayerModule = buildStoreLayer(
-                    neoStoreModule, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, cacheModule );
+            storeLayerModule = buildStoreLayer(
+                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, cacheModule,
+                    cacheModule.updateableSchemaState()::clear );
 
             TransactionLogModule transactionLogModule =
                     buildTransactionLogs( storeDir, config, logProvider, scheduler, storeLayerModule.labelScanStore(),
@@ -564,9 +558,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             try
             {
                 // Close the neostore, so that locks are released properly
-                if ( neoStoreModule != null )
+                if ( storeLayerModule != null )
                 {
-                    neoStoreModule.neoStores().close();
+                    storeLayerModule.neoStores().close();
                 }
             }
             catch ( Exception closeException )
@@ -588,7 +582,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             try
             {
                 // Close the neostore, so that locks are released properly
-                neoStoreModule.neoStores().close();
+                storeLayerModule.neoStores().close();
             }
             catch ( Exception closeException )
             {
@@ -616,40 +610,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         storeMigrationProcess
                 .addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache ) );
         storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider );
-    }
-
-    private NeoStoreModule buildNeoStore( final LabelTokenHolder
-            labelTokens, final RelationshipTypeTokenHolder relationshipTypeTokens,
-            final PropertyKeyTokenHolder propertyKeyTokenHolder )
-    {
-        life.add( new LifecycleAdapter()
-        {
-            @Override
-            public void start() throws IOException
-            {
-                storeLayerModule.neoStores().makeStoreOk();
-
-                propertyKeyTokenHolder.setInitialTokens(
-                        storeLayerModule.neoStores().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
-                relationshipTypeTokens.setInitialTokens(
-                        storeLayerModule.neoStores().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.setInitialTokens(
-                        storeLayerModule.neoStores().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
-
-                storeLayerModule.neoStores().rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
-            }
-        } );
-
-        final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
-        final NeoStores neoStores = storeFactory.openAllNeoStores( true );
-        return new NeoStoreModule()
-        {
-            @Override
-            public NeoStores neoStores()
-            {
-                return neoStores;
-            }
-        };
     }
 
     private CacheModule buildCaches( LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
@@ -706,40 +666,74 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         };
     }
 
-    private StoreLayerModule buildStoreLayer( NeoStoreModule neoStoresModule,
+    private StoreLayerModule buildStoreLayer(
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
-            CacheModule cacheModule )
+            CacheModule cacheModule, Runnable schemaStateChangeCallback )
     {
-        final NeoStores neoStores = neoStoresModule.neoStores();
-        final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+        life.add( new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws IOException
+            {
+                storeLayerModule.neoStores().makeStoreOk();
 
-        final IndexingService indexingService = IndexingService.create(
-                new IndexSamplingConfig( config ), scheduler, providerMap,
-                new NeoStoreIndexStoreView( lockService, neoStores ), tokenNameLookup,
-                cacheModule.updateableSchemaState(),
-                toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
-                indexingServiceMonitor );
-        final IntegrityValidator integrityValidator = new IntegrityValidator( neoStores, indexingService );
+                propertyKeyTokenHolder.setInitialTokens(
+                        storeLayerModule.neoStores().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
+                relationshipTypeTokens.setInitialTokens(
+                        storeLayerModule.neoStores().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
+                labelTokens.setInitialTokens(
+                        storeLayerModule.neoStores().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-        final IndexUpdatesValidator indexUpdatesValidator = dependencies.satisfyDependency(
-                new OnlineIndexUpdatesValidator( neoStores, kernelHealth, new PropertyLoader( neoStores ),
-                        indexingService, IndexUpdateMode.ONLINE ) );
+                storeLayerModule.neoStores().rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
+            }
+        } );
 
-        // TODO Move to constructor
-        final LabelScanStore labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
+        final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+        final NeoStores neoStores = storeFactory.openAllNeoStores( true );
 
-        life.add( indexingService );
-        life.add( labelScanStore );
+        final DefaultSchemaIndexProviderMap providerMap;
+        final IndexingService indexingService;
+        final IntegrityValidator integrityValidator;
+        final IndexUpdatesValidator indexUpdatesValidator;
+        final LabelScanStore labelScanStore;
+        final StoreReadLayer storeLayer;
+
+        try
+        {
+            providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+            indexingService = IndexingService.create(
+                    new IndexSamplingConfig( config ), scheduler, providerMap,
+                    new NeoStoreIndexStoreView( lockService, neoStores ), tokenNameLookup,
+                    toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
+                    indexingServiceMonitor, schemaStateChangeCallback );
+            integrityValidator = new IntegrityValidator( neoStores, indexingService );
+
+            indexUpdatesValidator = dependencies.satisfyDependency(
+                    new OnlineIndexUpdatesValidator( neoStores, kernelHealth, new PropertyLoader( neoStores ),
+                            indexingService, IndexUpdateMode.ONLINE ) );
+
+            // TODO Move to constructor
+            labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                    LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
+
+            life.add( indexingService );
+            life.add( labelScanStore );
 
 
-        SchemaCache schemaCache = cacheModule.schemaCache();
-        ProcedureCache procedureCache = cacheModule.procedureCache();
-        SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
-        DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
-                neoStores, indexingService, storeStatementFactory( neoStores ) );
-        final StoreReadLayer storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
+            SchemaCache schemaCache = cacheModule.schemaCache();
+            ProcedureCache procedureCache = cacheModule.procedureCache();
+            SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+            DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
+                    neoStores, indexingService, storeStatementFactory( neoStores ) );
+            storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
+        }
+        catch ( Throwable failure )
+        {
+            neoStores.close();
+            throw failure;
+        }
 
         return new StoreLayerModule()
         {

@@ -56,11 +56,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexMapReference;
 import org.neo4j.kernel.impl.api.index.IndexProxySetup;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -1593,7 +1591,6 @@ public class NeoStoreTransactionTest
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( locks, neoStores );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState schemaState = new KernelSchemaStateStore( NULL_LOG_PROVIDER );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         IndexMapReference indexMapRef = new IndexMapReference();
@@ -1602,7 +1599,8 @@ public class NeoStoreTransactionTest
                 samplingConfig, storeView, null, tokenNameLookup, NULL_LOG_PROVIDER
         );
         IndexProxySetup proxySetup =
-                new IndexProxySetup( samplingConfig, storeView, providerMap, schemaState, null, null, NULL_LOG_PROVIDER );
+                new IndexProxySetup( samplingConfig, storeView, providerMap, null, null, NULL_LOG_PROVIDER,
+                        () -> {} );
         IndexSamplingController samplingController = samplingFactory.create( indexMapRef );
         return new CapturingIndexingService(
                 proxySetup,
