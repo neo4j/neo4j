@@ -44,9 +44,9 @@ object expand extends CandidateGenerator[GreedyPlanTable] {
         case length: VarPatternLength =>
           val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
           val (predicates, allPredicates) = availablePredicates.collect {
-            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Variable(patternRel.name.name))
-              if identifier == relId || !innerPredicate.dependencies(relId) =>
-              (identifier, innerPredicate) -> all
+            case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name.name))
+              if variable == relId || !innerPredicate.dependencies(relId) =>
+              (variable, innerPredicate) -> all
           }.unzip
           context.logicalPlanProducer.planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode)
       }

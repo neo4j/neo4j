@@ -49,8 +49,8 @@ case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConf
         else
           projection(sortedAndLimited, queryProjection.projections)
 
-      case UnwindProjection(identifier, expression) =>
-        context.logicalPlanProducer.planUnwind(plan, identifier, expression)
+      case UnwindProjection(variable, expression) =>
+        context.logicalPlanProducer.planUnwind(plan, variable, expression)
 
       case _ =>
         throw new CantHandleQueryException

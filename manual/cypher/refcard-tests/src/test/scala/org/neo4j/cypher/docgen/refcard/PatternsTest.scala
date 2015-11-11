@@ -151,7 +151,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN r###
 
-Bind an identifier to the relationship.
+Bind a variable to the relationship.
 
 ###assertion=related
 MATCH

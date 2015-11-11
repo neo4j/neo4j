@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckResult}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 
-// Scope expressions bundle together identifiers of a new scope
+// Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
-// these identifiers are bound
+// these variables are bound
 //
 trait ScopeExpression extends Expression {
   def variables: Set[Variable]

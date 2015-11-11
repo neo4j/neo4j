@@ -28,13 +28,13 @@ class LoadCSVTest extends CypherFunSuite {
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
   val variable = Variable("a")(DummyPosition(4))
 
-  test("cannot overwrite existing identifier") {
+  test("cannot overwrite existing variable") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Seq())
   }
 
-  test("when expecting headers, the identifier has a map type") {
+  test("when expecting headers, the variable has a map type") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
@@ -42,7 +42,7 @@ class LoadCSVTest extends CypherFunSuite {
     assert(expressionType === CTMap.invariant)
   }
 
-  test("when not expecting headers, the identifier has a collection type") {
+  test("when not expecting headers, the variable has a collection type") {
     val loadCSV = LoadCSV(withHeaders = false, literalURL, variable, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual

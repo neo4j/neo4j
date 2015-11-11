@@ -142,11 +142,11 @@ class ExpandTest
     val planA = newMockedLogicalPlan("a")
     val plan = greedyPlanTableWith(planA)
 
-    val relIdentifier: Variable = Variable(rName.name)_
+    val relVariable: Variable = Variable(rName.name)_
     val innerPredicate: Expression = Equals(Property(Variable("foo")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("20")_)_
     val allPredicate = AllIterablePredicate(
       Variable("foo")_,
-      relIdentifier,
+      relVariable,
       Some(innerPredicate) // foo.prop = 20
     )_
     val predicate: Predicate = Predicate(Set(rName), allPredicate)

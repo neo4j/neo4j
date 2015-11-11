@@ -50,8 +50,8 @@ sealed trait InternalPlanDescription {
     flattenAcc(Seq.empty, this)
   }
 
-  def andThen(id: Id, name: String, identifiers: Set[String], arguments: Argument*) =
-    PlanDescriptionImpl(id, name, SingleChild(this), arguments, identifiers)
+  def andThen(id: Id, name: String, variables: Set[String], arguments: Argument*) =
+    PlanDescriptionImpl(id, name, SingleChild(this), arguments, variables)
 
   def orderedVariables: Seq[String] = variables.toSeq.sorted
 
@@ -182,8 +182,8 @@ final case class PlanDescriptionImpl(id: Id,
 }
 
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String]) extends InternalPlanDescription {
-  override def andThen(id: Id, name: String, identifiers: Set[String], newArguments: Argument*) =
-    new PlanDescriptionImpl(id, name, NoChildren, newArguments, identifiers)
+  override def andThen(id: Id, name: String, variables: Set[String], newArguments: Argument*) =
+    new PlanDescriptionImpl(id, name, NoChildren, newArguments, variables)
 
   def children = NoChildren
 

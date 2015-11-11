@@ -100,7 +100,7 @@ RETURN r AS rels
 
 ###
 
-Relationship identifiers of a variable length path contain a collection of relationships.
+Relationship variables of a variable length path contain a collection of relationships.
 
 ###assertion=returns-two
 MATCH (matchedNode)

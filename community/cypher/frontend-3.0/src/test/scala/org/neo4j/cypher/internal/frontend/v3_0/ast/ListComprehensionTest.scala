@@ -45,7 +45,7 @@ class ListComprehensionTest extends CypherFunSuite {
     filter.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTNumber))
   }
 
-  test("shouldSemanticCheckPredicateInStateContainingTypedIdentifier") {
+  test("shouldSemanticCheckPredicateInStateContainingTypedVariable") {
     val error = SemanticError("dummy error", DummyPosition(8))
     val predicate = new DummyExpression(CTAny, DummyPosition(7)) {
       override def semanticCheck(ctx: SemanticContext) = s => {

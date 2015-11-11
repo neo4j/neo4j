@@ -968,7 +968,7 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("variableLengthPathWithRelationshipIdentifier") {
+  test("variableLengthPathWithRelationshipVariable") {
     expectQuery(
       "start a=node(0) match (a) -[r:knows*2..]-> (x) return x",
       Query.
@@ -1784,7 +1784,7 @@ class CypherParserTest extends CypherFunSuite {
     })
   }
 
-  test("create relationship without identifier") {
+  test("create relationship without variable") {
     expectQuery(
       "create (a {a})-[:REL]->(b {b})",
       Query.
@@ -1808,7 +1808,7 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("create relationship without identifier2") {
+  test("create relationship without variable2") {
     expectQuery(
       "create (a {a})-[:REL]->(b {b})",
       Query.
@@ -2191,7 +2191,7 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("string literals should not be mistaken for identifiers") {
+  test("string literals should not be mistaken for variables") {
     expectQuery(
       "create (tag1 {name:'tag2'}), (tag2 {name:'tag1'})",
       Query.
@@ -2299,7 +2299,7 @@ class CypherParserTest extends CypherFunSuite {
     })
   }
 
-  test("create and assign to path identifier") {
+  test("create and assign to path variables") {
     expectQuery(
       "create p = a-[r:KNOWS]->() return p",
       Query.
@@ -2310,7 +2310,7 @@ class CypherParserTest extends CypherFunSuite {
         returns(ReturnItem(Variable("p"), "p")))
   }
 
-  test("relate and assign to path identifier") {
+  test("relate and assign to path variable") {
     expectQuery(
       "start a=node(0) create unique p = a-[r:KNOWS]->() return p", {
       val q2 = Query.
@@ -2799,13 +2799,13 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("escaped identifier") {
+  test("escaped variable") {
     expectQuery(
-      "match `Unusual identifier` return `Unusual identifier`.propertyName",
+      "match `Unusual variable` return `Unusual variable`.propertyName",
       Query.
-        matches(SingleNode("Unusual identifier")).
+        matches(SingleNode("Unusual variable")).
         returns(
-        ReturnItem(Property(Variable("Unusual identifier"), PropertyKey("propertyName")), "`Unusual identifier`.propertyName"))
+        ReturnItem(Property(Variable("Unusual variable"), PropertyKey("propertyName")), "`Unusual variable`.propertyName"))
     )
   }
 

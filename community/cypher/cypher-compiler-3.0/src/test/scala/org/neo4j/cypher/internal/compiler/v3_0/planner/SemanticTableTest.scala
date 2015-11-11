@@ -51,7 +51,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     (table1.resolvedRelTypeNames eq table2.resolvedRelTypeNames) should be(false)
   }
 
-  test("should be able to tell the type of an identifier") {
+  test("should be able to tell the type of an variable") {
     val table = SemanticTable().
       addNode(Variable("a")(InputPosition(1,2,3))).
       addRelationship(Variable("b")(InputPosition(1,2,3)))
@@ -60,7 +60,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     table.getTypeFor("b") should be (CTRelationship.invariant)
   }
 
-  test("should be able to tell the type of an identifier if there is an unknown type involved") {
+  test("should be able to tell the type of an variable if there is an unknown type involved") {
     val table = SemanticTable(ASTAnnotationMap.empty.
       updated(Variable("a")(InputPosition(0,0,0)), ExpressionTypeInfo(TypeSpec.all, None))).
       addNode(Variable("a")(InputPosition(1, 2, 3)))
@@ -68,7 +68,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     table.getTypeFor("a") should be (CTNode.invariant)
   }
 
-  test("should be able to tell the type of an identifier if there is an unknown type involved other order") {
+  test("should be able to tell the type of an variable if there is an unknown type involved other order") {
     val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].
       updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None)).
       updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(TypeSpec.all, None)))
@@ -76,7 +76,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     table.getTypeFor("a") should be (CTNode.invariant)
   }
 
-  test("should fail when asking for an unknown identifier") {
+  test("should fail when asking for an unknown variable") {
     val table = SemanticTable()
 
     intercept[InternalException](table.getTypeFor("a"))

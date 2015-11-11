@@ -72,8 +72,8 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   private def lockAndThenMatch(state: QueryState, ctx: ExecutionContext): Iterator[ExecutionContext] = {
     val lockingQueryContext = state.query.upgradeToLockingQueryContext
-    val patternIdentifiers = variables.map(p => p._1)
-    ctx.collect { case (identifier, node: Node) if patternIdentifiers.contains(identifier) => node.getId }.toSeq.sorted.
+    val patternVariables = variables.map(p => p._1)
+    ctx.collect { case (variable, node: Node) if patternVariables.contains(variable) => node.getId }.toSeq.sorted.
       foreach( id => lockingQueryContext.getLabelsForNode(id) ) // TODO: This locks the nodes. Hack!
     matchPipe.createResults(state)
   }
@@ -113,9 +113,9 @@ case class MergePatternAction(patterns: Seq[Pattern],
         onCreate.flatMap(_.symbolTableDependencies) ++
         onMatch.flatMap(_.symbolTableDependencies)).toSet
 
-    val introducedIdentifiers = patterns.flatMap(_.variables).toSet
+    val introducedVariables = patterns.flatMap(_.variables).toSet
 
-    dependencies -- introducedIdentifiers
+    dependencies -- introducedVariables
   }
 
   private def readEffects(symbols: SymbolTable): Effects = {

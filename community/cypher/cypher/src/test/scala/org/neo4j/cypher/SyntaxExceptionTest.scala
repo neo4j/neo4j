@@ -71,14 +71,14 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("matchWithoutIdentifierHasToHaveParenthesis") {
+  test("matchWithoutVariableHasToHaveParenthesis") {
     test(
       "match (a) where id(a) = 0 match a--b, --> a return a",
       "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 39)"
     )
   }
 
-  test("matchWithoutIdentifierHasToHaveParenthesis2") {
+  test("matchWithoutVariableHasToHaveParenthesis2") {
     test(
       "match (a) where id(a) = 0 match (a) -->, a-->b return a",
       "Invalid input ',': expected whitespace or a node pattern (line 1, column 40)"

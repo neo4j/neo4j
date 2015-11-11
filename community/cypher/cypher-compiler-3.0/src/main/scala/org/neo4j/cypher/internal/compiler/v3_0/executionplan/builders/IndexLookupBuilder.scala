@@ -62,8 +62,8 @@ class IndexLookupBuilder extends PlanBuilder {
 
   private def findLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =
     plan.query.where.collect {
-      case predicate@QueryToken(HasLabel(Variable(identifier), label))
-        if identifier == hint.variable && label.name == hint.label => predicate
+      case predicate@QueryToken(HasLabel(Variable(variable), label))
+        if variable == hint.variable && label.name == hint.label => predicate
     }
 
   private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex) =

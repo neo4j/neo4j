@@ -73,6 +73,6 @@ class UpdateActionBuilder extends PlanBuilder with UpdateCommandExpander {
 
     (updateDeps ++ startDeps).
       distinct.
-      map("Unknown identifier `%s`".format(_))
+      map("Unknown variable `%s`".format(_))
   }
 }

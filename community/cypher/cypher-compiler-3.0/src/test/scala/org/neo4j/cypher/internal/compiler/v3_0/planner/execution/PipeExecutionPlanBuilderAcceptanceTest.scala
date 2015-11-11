@@ -151,7 +151,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
     pipeInfo.pipe should equal(ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
   }
 
-  test("simple expand into existing identifier MATCH a-[r]->a ") {
+  test("simple expand into existing variable MATCH a-[r]->a ") {
     val logicalPlan = Expand(
       AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)
@@ -161,7 +161,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
     pipeInfo.pipe should equal(inner)
   }
 
-  test("optional expand into existing identifier MATCH a OPTIONAL MATCH a-[r]->a ") {
+  test("optional expand into existing variable MATCH a OPTIONAL MATCH a-[r]->a ") {
     val logicalPlan = OptionalExpand(
       AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo = build(logicalPlan)

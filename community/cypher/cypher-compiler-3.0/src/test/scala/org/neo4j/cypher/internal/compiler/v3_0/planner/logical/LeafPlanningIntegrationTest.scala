@@ -498,7 +498,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan node by ID seek based on a predicate with an id collection identifier as the rhs") {
+  test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
     implicit val plan = new given {
       cost =  {
         case (_: AllNodesScan, _) => 1000.0

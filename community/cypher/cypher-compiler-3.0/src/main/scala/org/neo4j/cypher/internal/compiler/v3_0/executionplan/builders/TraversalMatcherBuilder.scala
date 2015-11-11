@@ -61,8 +61,8 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     }
 
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
-    val newIdentifiers = tokens.map(_.token).map(x => x.variableName -> CTNode).toMap
-    val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
+    val newVariables = tokens.map(_.token).map(x => x.variableName -> CTNode).toMap
+    val newSymbolTable = plan.pipe.symbols.add(newVariables)
     validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
   }
 

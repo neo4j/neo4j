@@ -44,14 +44,14 @@ class ExpressionTest extends CypherFunSuite {
     b should equal(Collect(Literal("r.age")))
   }
 
-  test("merge_two_different_identifiers") {
+  test("merge_two_different_variables") {
     testMerge(
       Map("a" -> CTAny),
       Map("b" -> CTAny),
       Map("a" -> CTAny, "b" -> CTAny))
   }
 
-  test("merge_two_deps_on_the_same_identifier") {
+  test("merge_two_deps_on_the_same_variable") {
     testMerge(
       Map("a" -> CTAny),
       Map("a" -> CTAny),

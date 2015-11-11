@@ -31,7 +31,7 @@ object connectedComponents {
   type ConnectedComponent = Set[ComponentPart]
 
   //enable using the companion objects of the type aliases,
-  //e.g. `ComponentPart(Identifier("a"), Identifier("b"),...)`
+  //e.g. `ComponentPart(Variable("a"), Variable("b"),...)`
   val ComponentPart = Set
   val ConnectedComponent = Set
 
@@ -65,6 +65,6 @@ object connectedComponents {
 
     def connectedTo(part: ComponentPart) = connectedComponent.exists(c => (c intersect part).nonEmpty)
 
-    def identifiers: Set[Variable] = connectedComponent.flatten
+    def variables: Set[Variable] = connectedComponent.flatten
   }
 }

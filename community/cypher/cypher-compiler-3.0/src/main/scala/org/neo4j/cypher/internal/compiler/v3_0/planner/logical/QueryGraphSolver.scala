@@ -42,8 +42,8 @@ trait PatternExpressionSolving {
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
 
     val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
-    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier}
-    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier}
+    val namedNodes = namedMap.collect { case (elem: NodePattern, variable) => variable}
+    val namedRels = namedMap.collect { case (elem: RelationshipChain, variable) => variable}
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
     val plan = self.plan(qg)(patternPlanningContext, argLeafPlan)
     (plan, namedExpr)

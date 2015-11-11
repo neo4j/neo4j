@@ -70,7 +70,7 @@ class ExtractBuilder extends PlanBuilder {
           e => e.symbolTableDependencies
         }
       }.distinct.
-        map("Unknown identifier `%s`.".format(_))
+        map("Unknown variable `%s`.".format(_))
     }
 }
 

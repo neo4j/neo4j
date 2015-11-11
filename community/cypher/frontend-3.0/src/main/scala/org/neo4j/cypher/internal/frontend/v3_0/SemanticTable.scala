@@ -44,12 +44,12 @@ class SemanticTable(
     }.reduce(_ & _)
 
     if (reducedType.isEmpty)
-      throw new InternalException(s"This semantic table contains conflicting type information for identifier $s")
+      throw new InternalException(s"This semantic table contains conflicting type information for variable $s")
 
     reducedType
   } catch {
     case e: UnsupportedOperationException =>
-      throw new InternalException(s"Did not find any type information for identifier $s", e)
+      throw new InternalException(s"Did not find any type information for variable $s", e)
   }
 
   def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
@@ -69,8 +69,8 @@ class SemanticTable(
   def replaceKeys(replacements: (Variable, Variable)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
 
-  def symbolDefinition(identifier: Variable) =
-    recordedScopes(identifier).symbolTable(identifier.name).definition
+  def symbolDefinition(variable: Variable) =
+    recordedScopes(variable).symbolTable(variable.name).definition
 
   override def clone() = copy()
 

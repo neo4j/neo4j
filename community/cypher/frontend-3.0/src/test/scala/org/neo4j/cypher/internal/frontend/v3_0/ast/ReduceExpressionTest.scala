@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticCheckResu
 
 class ReduceExpressionTest extends CypherFunSuite {
 
-  test("shouldEvaluateReduceExpressionWithTypedIdentifiers") {
+  test("shouldEvaluateReduceExpressionWithTypedVariables") {
     val error = SemanticError("dummy error", DummyPosition(10))
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {

@@ -79,7 +79,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   }
 
-  test("plans index seeks when identifier exists as an argument") {
+  test("plans index seeks when variable exists as an argument") {
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x = varFor("x")

@@ -128,5 +128,5 @@ final case class IdName(name: String) extends PageDocFormatting // with ToPretty
 object IdName {
   implicit val byName = Ordering[String].on[IdName](_.name)
 
-  def fromVariable(identifier: Variable) = IdName(identifier.name)
+  def fromVariable(variable: Variable) = IdName(variable.name)
 }

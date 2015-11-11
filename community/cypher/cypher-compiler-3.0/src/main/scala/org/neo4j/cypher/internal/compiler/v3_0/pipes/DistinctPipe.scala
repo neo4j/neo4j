@@ -69,8 +69,8 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
                         andThen(this.id, "Distinct", variables, KeyNames(expressions.keys.toSeq))
 
   def symbols: SymbolTable = {
-    val identifiers = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
-    SymbolTable(identifiers)
+    val variables = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
+    SymbolTable(variables)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

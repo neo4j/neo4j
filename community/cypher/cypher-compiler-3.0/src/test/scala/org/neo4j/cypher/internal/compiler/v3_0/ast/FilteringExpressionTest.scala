@@ -38,7 +38,7 @@ class FilteringExpressionTest extends CypherFunSuite {
     def toPredicate(command: expressions.Expression, name: String, inner: Predicate) = ???
   }
 
-  test("shouldSemanticCheckPredicateInStateContainingTypedIdentifier") {
+  test("shouldSemanticCheckPredicateInStateContainingTypedVariable") {
     val expression = DummyExpression(CTCollection(CTNode) | CTBoolean | CTCollection(CTString), DummyPosition(5))
 
     val error = SemanticError("dummy error", DummyPosition(8))

@@ -242,10 +242,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       val (keys, exprs) = predicates.unzip
       val commands = exprs.map(buildPredicate)
       val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
-        keys.zip(commands).forall { case (identifier: Variable, expr: Predicate) =>
-          context(identifier.name) = rel
+        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
+          context(variable.name) = rel
           val result = expr.isTrue(context)(state)
-          context.remove(identifier.name)
+          context.remove(variable.name)
           result
         }
       }
@@ -295,8 +295,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name)).head
       new ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate))()
 
-    case UnwindCollection(_, identifier, collection) =>
-      UnwindPipe(source, toCommandExpression(collection), identifier.name)()
+    case UnwindCollection(_, variable, collection) =>
+      UnwindPipe(source, toCommandExpression(collection), variable.name)()
 
     case ProduceResult(columns, _) =>
       ProduceResultsPipe(source, columns)()

@@ -65,10 +65,10 @@ object Expression {
   final case class TreeAcc[A](data: A, stack: Stack[Set[Variable]] = Stack.empty) {
     def toSet: Set[Variable] = stack.toSet.flatten
     def map(f: A => A): TreeAcc[A] = copy(data = f(data))
-    def push(newIdentifier: Variable): TreeAcc[A] = push(Set(newIdentifier))
-    def push(newIdentifiers: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newIdentifiers))
+    def push(newVariable: Variable): TreeAcc[A] = push(Set(newVariable))
+    def push(newVariables: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
     def pop: TreeAcc[A] = copy(stack = stack.pop)
-    def contains(identifier: Variable) = stack.exists(_.contains(identifier))
+    def contains(variable: Variable) = stack.exists(_.contains(variable))
   }
 }
 
@@ -85,7 +85,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
       (acc, _) => acc :+ e
   }
 
-  // All identifiers referenced from this expression or any of its childs
+  // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
   def dependencies: Set[Variable] =
     this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {

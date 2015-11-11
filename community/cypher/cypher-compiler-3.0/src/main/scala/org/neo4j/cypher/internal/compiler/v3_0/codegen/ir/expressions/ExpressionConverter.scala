@@ -93,7 +93,7 @@ object ExpressionConverter {
     variable.cypherType match {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
-      case _ => throw new InternalException("The compiled runtime only handles identifiers pointing to rels and nodes at this time")
+      case _ => throw new InternalException("The compiled runtime only handles variables pointing to rels and nodes at this time")
     }
   }
 

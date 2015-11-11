@@ -38,12 +38,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   val symbols: SymbolTable = createSymbols()
 
   private def createSymbols() = {
-    val keyIdentifiers = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
-    val aggrIdentifiers = aggregations.map {
+    val keyVariables = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
+    val aggrVariables = aggregations.map {
       case (innerId, exp) => innerId -> exp.getType(source.symbols)
     }
 
-    SymbolTable(keyIdentifiers ++ aggrIdentifiers)
+    SymbolTable(keyVariables ++ aggrVariables)
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {

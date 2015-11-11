@@ -66,7 +66,7 @@ class MergeStartPointBuilder extends PlanBuilder {
   private def findNodeProducer(mergeNodeAction: MergeNodeAction,
                                ctx: PlanContext,
                                symbols: SymbolTable): MergeNodeAction = {
-    val identifier = mergeNodeAction.variable
+    val variable = mergeNodeAction.variable
     val props = mergeNodeAction.props
     val propsByName = mergeNodeAction.props.map { case (k,v) => k.name->v }
     val labels = mergeNodeAction.labels
@@ -74,7 +74,7 @@ class MergeStartPointBuilder extends PlanBuilder {
 
     val newMergeNodeAction: MergeNodeAction = NodeFetchStrategy.findUniqueIndexes(props, labels, ctx) match {
       case indexes if indexes.isEmpty =>
-        val startItem: RatedStartItem = NodeFetchStrategy.findStartStrategy(identifier, where, ctx, symbols) match {
+        val startItem: RatedStartItem = NodeFetchStrategy.findStartStrategy(variable, where, ctx, symbols) match {
           case rated@RatedStartItem(index: SchemaIndex, _, _, _) => rated.copy(s = index.copy(query = Some(SingleQueryExpression(propsByName(index.property)))))
           case other                                             => other
         }
@@ -89,11 +89,11 @@ class MergeStartPointBuilder extends PlanBuilder {
         val startItems: Seq[(KeyToken, KeyToken, RatedStartItem)] = indexes.map {
           case ((label, key)) =>
             val equalsPredicates = Seq(
-              Equals(Property(Variable(identifier), key), props(key)),
-              Equals(props(key), Property(Variable(identifier), key))
+              Equals(Property(Variable(variable), key), props(key)),
+              Equals(props(key), Property(Variable(variable), key))
             )
-            val predicates = equalsPredicates :+ HasLabel(Variable(identifier), label)
-            (label, key, RatedStartItem(SchemaIndex(identifier, label.name, key.name, UniqueIndex, Some(SingleQueryExpression(props(key)))), NodeFetchStrategy.IndexEquality, predicates))
+            val predicates = equalsPredicates :+ HasLabel(Variable(variable), label)
+            (label, key, RatedStartItem(SchemaIndex(variable, label.name, key.name, UniqueIndex, Some(SingleQueryExpression(props(key)))), NodeFetchStrategy.IndexEquality, predicates))
         }
 
         val nodeProducer = UniqueMergeNodeProducers(startItems.map {

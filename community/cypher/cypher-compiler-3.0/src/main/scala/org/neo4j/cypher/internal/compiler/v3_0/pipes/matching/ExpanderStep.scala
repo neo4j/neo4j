@@ -111,7 +111,7 @@ abstract class MiniMapProperty(originalName: String, propertyKeyName: String) ex
           }
         } catch {
           case x: NotFoundException =>
-            throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the identifier: %s".format(propertyKeyName, pc, originalName), x)
+            throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the variable: %s".format(propertyKeyName, pc, originalName), x)
         }
       }
       case _          => fail()

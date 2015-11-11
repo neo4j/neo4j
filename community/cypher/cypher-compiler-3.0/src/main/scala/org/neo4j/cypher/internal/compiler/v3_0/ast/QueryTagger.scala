@@ -134,7 +134,7 @@ case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
 case object LiteralExpressionTag extends QueryTag("literal-expr")
 case object ParameterExpressionTag extends QueryTag("parameter-expr")
-case object VariableExpressionTag extends QueryTag("identifier-expr")
+case object VariableExpressionTag extends QueryTag("variable-expr")
 
 object QueryTagger extends QueryTagger[String] {
 

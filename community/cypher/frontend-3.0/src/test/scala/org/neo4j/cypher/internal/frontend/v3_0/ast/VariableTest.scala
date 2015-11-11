@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticState}
 
 class VariableTest extends CypherFunSuite {
 
-  test("shouldDefineIdentifierDuringSemanticCheckWhenUndefined") {
+  test("shouldDefineVariableDuringSemanticCheckWhenUndefined") {
     val position = DummyPosition(0)
-    val identifier = Variable("x")(position)
+    val variable = Variable("x")(position)
 
-    val result = identifier.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+    val result = variable.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.position should equal(position)
     result.state.symbol("x").isDefined should equal(true)

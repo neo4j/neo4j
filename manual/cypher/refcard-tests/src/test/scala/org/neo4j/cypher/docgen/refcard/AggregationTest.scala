@@ -67,21 +67,21 @@ count(*)
 The number of matching rows.
 
 ###assertion=returns-one
-MATCH path=(identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
+MATCH path=(variable)-->(m)
+WHERE id(variable) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
-count(identifier)
+count(variable)
 ###
 
 The number of non-++NULL++ values.
 
 ###assertion=returns-one
-MATCH path=(identifier)-->(m)
-WHERE id(identifier) = %A% AND id(m) = %B%
+MATCH path=(variable)-->(m)
+WHERE id(variable) = %A% AND id(m) = %B%
 RETURN NODES(path),
 
-count(DISTINCT identifier)
+count(DISTINCT variable)
 ###
 
 All aggregation functions also take the `DISTINCT` modifier,

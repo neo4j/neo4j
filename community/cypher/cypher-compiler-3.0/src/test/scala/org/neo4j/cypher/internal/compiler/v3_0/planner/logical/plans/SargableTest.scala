@@ -79,7 +79,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("IdSeekable does not match if rhs depends on lhs identifier") {
+  test("IdSeekable does not match if rhs depends on lhs variable") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
@@ -131,7 +131,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("PropertySeekable does not match if rhs depends on lhs identifier") {
+  test("PropertySeekable does not match if rhs depends on lhs variable") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Expression = In(leftExpr, expr2)_

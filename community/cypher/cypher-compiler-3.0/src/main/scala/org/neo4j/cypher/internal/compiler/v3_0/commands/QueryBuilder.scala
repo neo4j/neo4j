@@ -86,13 +86,13 @@ case class QueryBuilder(
 
     TODO: Kill the commands.Query class
      */
-    val allIdentifierss = Seq[ReturnColumn](AllVariables())
+    val allVariables = Seq[ReturnColumn](AllVariables())
 
     val secondPart = Query(Return(columns(returnItems), returnItems: _*), Seq.empty, updates, matching, optional,
       using, where, aggregation, orderBy, slice, namedPaths, tail)
 
     Query.empty.copy(
-      returns = Return(columns(allIdentifierss), allIdentifierss:_*),
+      returns = Return(columns(allVariables), allVariables:_*),
       start = startItems,
       tail = Some(secondPart))
   } else

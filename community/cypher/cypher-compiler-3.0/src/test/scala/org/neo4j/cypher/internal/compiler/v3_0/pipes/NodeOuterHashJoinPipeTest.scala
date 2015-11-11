@@ -189,7 +189,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     ))
   }
 
-  test("should support joining on two different identifiers") {
+  test("should support joining on two different variables") {
     // given
     val queryState = QueryStateHelper.empty
 

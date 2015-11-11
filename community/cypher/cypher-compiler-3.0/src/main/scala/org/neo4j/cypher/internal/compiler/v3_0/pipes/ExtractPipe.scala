@@ -55,21 +55,21 @@ object ExtractPipe {
 case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean)
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols: SymbolTable = {
-    val newIdentifiers = expressions.map {
+    val newVariables = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
     }
 
-    source.symbols.add(newIdentifiers)
+    source.symbols.add(newVariables)
   }
 
   /*
   Most of the time, we can execute expressions and put the results straight back into the original execution context.
-  Some times, an expression we want to run can overwrite an identifier that already exists in the context. In these
+  Some times, an expression we want to run can overwrite an variable that already exists in the context. In these
   cases, we need to run the expressions on the original execution context. Here we decide which one it is we're dealing
   with and hard code the version to use
    */
   val applyExpressions: (ExecutionContext, QueryState) => ExecutionContext = {
-    val overwritesAlreadyExistingIdentifiers = expressions.exists {
+    val overwritesAlreadyExistingVariables = expressions.exists {
       case (name, Variable(originalName)) => name != originalName
       case (name, CachedExpression(originalName, _)) => name != originalName
       case (name, _) => source.symbols.hasVariableNamed(name)
@@ -91,7 +91,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
       ctx
     }
 
-    if (overwritesAlreadyExistingIdentifiers)
+    if (overwritesAlreadyExistingVariables)
       applyExpressionsWhileKeepingOriginal
     else
       applyExpressionsOverwritingOriginal

@@ -55,7 +55,7 @@ class FilterBuilder extends PlanBuilder {
 
     unsolvedPredicates.
     flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred)).
-    map("Unknown identifier `%s`".format(_))
+    map("Unknown variable `%s`".format(_))
   }
 
   private def allPatternsSolved(plan: ExecutionPlanInProgress) =

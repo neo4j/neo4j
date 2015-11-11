@@ -45,7 +45,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val groupings = createReturnItemsFor("name")
-    val aggregations = Map("count(*)" -> Count(Variable("none-existing-identifier")))
+    val aggregations = Map("count(*)" -> Count(Variable("none-existing-variable")))
     intercept[SyntaxException](new EagerAggregationPipe(source, groupings, aggregations)())
   }
 

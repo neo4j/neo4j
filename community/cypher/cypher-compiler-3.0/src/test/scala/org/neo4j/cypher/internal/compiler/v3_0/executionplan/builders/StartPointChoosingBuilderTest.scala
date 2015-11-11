@@ -395,7 +395,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(_var, Literal(nodeId)))))
   }
 
-  test("should_identify_start_points_with_id_from_expression_over_bound_identifier") {
+  test("should_identify_start_points_with_id_from_expression_over_bound_variable") {
     // Given ... WITH n MATCH p WHERE id(p) = n.otherId
 
     val propertyLookup: Property = Property(Variable(_var), PropertyKey("otherId"))
@@ -412,7 +412,7 @@ class StartPointChoosingBuilderTest extends BuilderTest {
     plan.query.where should equal(Seq(Solved(equalityPredicate)))
   }
 
-  test("should_identify_start_points_with_id_from_collection_expression_over_bound_identifier") {
+  test("should_identify_start_points_with_id_from_collection_expression_over_bound_variable") {
     // Given ... WITH n MATCH p WHERE id(p) IN n.collection
 
     val propertyLookup: Property = Property(Variable(_var), PropertyKey("collection"))

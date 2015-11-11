@@ -27,11 +27,11 @@ class AstExpressionDocGenTest extends DocHandlerTestSuite[Any] with AstConstruct
 
   val docGen = astExpressionDocGen.lift[Any] orElse astParticleDocGen.lift[Any] orElse SimpleDocHandler.docGen
 
-  test("Identifier(\"a\") => a") {
+  test("Variable(\"a\") => a") {
     pprintToString(varFor("a")) should equal("a")
   }
 
-  test("Identifier(\"a.foo\") => `a.foo`") {
+  test("Variable(\"a.foo\") => `a.foo`") {
     pprintToString(varFor("a.foo")) should equal("`a.foo`")
   }
 

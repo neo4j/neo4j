@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-import scala.annotation.tailrec
-
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
@@ -39,9 +37,9 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
 
   def semanticCheck: SemanticCheck =
     urlString.semanticCheck(Expression.SemanticContext.Simple) chain
-    urlString.expectType(CTString.covariant) chain
-    checkFieldTerminator chain
-    typeCheck
+      urlString.expectType(CTString.covariant) chain
+      checkFieldTerminator chain
+      typeCheck
 
   private def checkFieldTerminator: SemanticCheck = {
     fieldTerminator match {
@@ -72,12 +70,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   def semanticCheck =
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
-    hints.semanticCheck chain
-    uniqueHints chain
-    where.semanticCheck chain
-    checkHints chain
-    checkForCartesianProducts chain
-    noteCurrentScope
+      hints.semanticCheck chain
+      uniqueHints chain
+      where.semanticCheck chain
+      checkHints chain
+      checkForCartesianProducts chain
+      noteCurrentScope
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.variables.toSeq).collect {
@@ -89,24 +87,15 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
-    val nodes = pattern.patternParts.map(_.fold(Set.empty[Variable]) {
-      case NodePattern(Some(id), _, _) => list => list + id
-    })
-
-    @tailrec
-    def loop(compare: Set[Variable], rest: Seq[Set[Variable]], intermediateState: SemanticState): SemanticState = {
-      val updatedState = rest.filter { o =>
-        (compare intersect o).isEmpty
-      }.foldLeft(intermediateState) { (innerState, variables) =>
-        innerState.addNotification(CartesianProductNotification(position, variables.map(_.name)))
-      }
-
-      if (rest.nonEmpty) loop(rest.head, rest.tail, updatedState) else updatedState
+    import connectedComponents._
+    val cc = connectedComponents(pattern.patternParts)
+    //if we have multiple connected components we will have
+    //a cartesian product
+    val newState = cc.drop(1).foldLeft(state) { (innerState, component) =>
+      innerState.addNotification(CartesianProductNotification(position, component.variables.map(_.name)))
     }
 
-    val finalState = if (nodes.nonEmpty) loop(nodes.head, nodes.tail, state) else state
-
-    SemanticCheckResult(finalState, Seq.empty)
+    SemanticCheckResult(newState, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {
@@ -127,8 +116,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         if !containsLabelPredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use label scan hint in this context.
-             | Label scan hints require using a simple label test in WHERE (either directly or as part of a
-             | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
+            | Label scan hints require using a simple label test in WHERE (either directly or as part of a
+            | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
@@ -218,7 +207,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
 
   def semanticCheck =
     pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
-    actions.semanticCheck
+      actions.semanticCheck
 }
 
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
@@ -244,8 +233,8 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
 
   def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) chain
-    warnAboutDeletingLabels chain
-    expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
+      warnAboutDeletingLabels chain
+      expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
 
   def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
@@ -264,12 +253,12 @@ case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clau
 
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTCollection(CTAny).covariant) chain
-    updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
-    withScopedState {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
-      variable.declare(possibleInnerTypes) chain updates.semanticCheck
-    }
+      expression.expectType(CTCollection(CTAny).covariant) chain
+      updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
+      withScopedState {
+        val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+        variable.declare(possibleInnerTypes) chain updates.semanticCheck
+      }
 }
 
 case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
@@ -297,7 +286,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
   override def semanticCheck =
     super.semanticCheck chain
-    returnItems.semanticCheck
+      returnItems.semanticCheck
 
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
     val specialReturnItems = createSpecialReturnItems(previousScope, s)
@@ -350,22 +339,22 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 }
 
 case class With(
-    distinct: Boolean,
-    returnItems: ReturnItems,
-    orderBy: Option[OrderBy],
-    skip: Option[Skip],
-    limit: Option[Limit],
-    where: Option[Where])(val position: InputPosition) extends ProjectionClause {
+                 distinct: Boolean,
+                 returnItems: ReturnItems,
+                 orderBy: Option[OrderBy],
+                 skip: Option[Skip],
+                 limit: Option[Limit],
+                 where: Option[Where])(val position: InputPosition) extends ProjectionClause {
 
   def name = "WITH"
 
   override def semanticCheck =
     super.semanticCheck chain
-    checkAliasedReturnItems
+      checkAliasedReturnItems
 
   override def semanticCheckContinuation(previousScope: Scope) =
     super.semanticCheckContinuation(previousScope) chain
-    where.semanticCheck
+      where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
@@ -374,17 +363,17 @@ case class With(
 }
 
 case class Return(
-    distinct: Boolean,
-    returnItems: ReturnItems,
-    orderBy: Option[OrderBy],
-    skip: Option[Skip],
-    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
+                   distinct: Boolean,
+                   returnItems: ReturnItems,
+                   orderBy: Option[OrderBy],
+                   skip: Option[Skip],
+                   limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
 
   def name = "RETURN"
 
-  override def semanticCheck = super.semanticCheck chain checkVariablesInScope
+  override def semanticCheck = super.semanticCheck chain checkVariableScope
 
-  protected def checkVariablesInScope: SemanticState => Seq[SemanticError] = s =>
+  protected def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
     if (returnItems.includeExisting && s.currentScope.isEmpty)
       Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
     else

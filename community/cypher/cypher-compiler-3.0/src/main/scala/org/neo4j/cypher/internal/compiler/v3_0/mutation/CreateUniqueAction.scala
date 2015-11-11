@@ -108,14 +108,14 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   private def fail(nextSteps: Seq[TraverseResult]): Nothing = {
     //We can only go forward following a unique path. Fail.
-    val problemResultsByIdentifier: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.variable).
+    val problemResultsByVariable: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.variable).
       filter(_._2.size > 1)
 
-    val message = problemResultsByIdentifier.map {
-      case (identifier, links: Seq[TraverseResult]) =>
+    val message = problemResultsByVariable.map {
+      case (variable, links: Seq[TraverseResult]) =>
         val hits = links.map(result => "%s found by : %s".format(result.element, result.link))
 
-        "Nodes for identifier: `%s` were found with differing values by these pattern relationships: %s".format(identifier, hits.mkString("\n  ", "\n  ", "\n"))
+        "Nodes for variable: `%s` were found with differing values by these pattern relationships: %s".format(variable, hits.mkString("\n  ", "\n  ", "\n"))
     }
 
     throw new UniquePathNotUniqueException(message.mkString("CREATE UNIQUE error\n", "\n", "\n"))

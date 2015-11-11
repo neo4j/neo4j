@@ -76,7 +76,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       }
   }
 
-  test("Renames identifiers in semantic table") {
+  test("Renames variables in semantic table") {
     val idA1 = Variable("a")(InputPosition(1, 0, 1))
     val idA2 = Variable("a")(InputPosition(2, 0, 2))
     val idA3 = Variable("a")(InputPosition(3, 0, 3))

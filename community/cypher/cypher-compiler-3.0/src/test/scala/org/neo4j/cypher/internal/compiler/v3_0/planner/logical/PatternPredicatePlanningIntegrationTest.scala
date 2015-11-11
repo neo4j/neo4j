@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should consider identifiers introduced by outer list comprehensions when planning pattern predicates") {
+  test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
       cardinality = mapCardinality {
         // expand

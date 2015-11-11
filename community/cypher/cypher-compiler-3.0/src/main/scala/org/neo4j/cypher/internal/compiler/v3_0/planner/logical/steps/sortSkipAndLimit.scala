@@ -56,7 +56,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Variable(key)) => Ascending(key)
     case ast.DescSortItem(ast.Variable(key)) => Descending(key)
-    case _ => throw new InternalException("Sort items expected to only use single identifier expression")
+    case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =

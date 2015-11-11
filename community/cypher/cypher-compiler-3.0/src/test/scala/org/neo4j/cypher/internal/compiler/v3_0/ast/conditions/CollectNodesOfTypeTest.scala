@@ -26,7 +26,7 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
 
     private val collector: (Any => Seq[Variable]) = collectNodesOfType[Variable]()
 
-    test("collect all identifiers") {
+    test("collect all variables") {
       val idA = varFor("a")
       val idB = varFor("b")
       val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB))_)))_, Seq(), None)_
@@ -34,7 +34,7 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
       collector(ast) should equal(Seq(idA, idB))
     }
 
-    test("collect no identifiers") {
+    test("collect no variable") {
       val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None)_)))_, Seq(), None)_
 
       collector(ast) shouldBe empty

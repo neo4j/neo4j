@@ -198,7 +198,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("startExpressionWithoutIdentifier") {
+  test("start expression without variable") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
       "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 51 (offset: 50))",
@@ -234,21 +234,21 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("create with identifier already existing2") {
+  test("create with variable already existing2") {
     expectError(
       "match (a) where id(a) = 0 CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
       "Can't create `a` with properties or labels here. The variable is already declared in this context"
     )
   }
 
-  test("merge 2 nodes with same identifier but different labels") {
+  test("merge 2 nodes with same variable but different labels") {
     expectError(
       "MERGE (a: Foo)-[r:KNOWS]->(a: Bar)",
       "Can't create `a` with properties or labels here. The variable is already declared in this context"
     )
   }
 
-  test("type of identifier is wrong") {
+  test("type of variable is wrong") {
     expectError(
       "match (n) where id(n) = 0 with [n] as users MATCH users-->messages RETURN messages",
       "Type mismatch: users already defined with conflicting type Collection<Node> (expected Node) (line 1, column 51 (offset: 50))"
@@ -411,7 +411,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
-  test("should forbid 'RETURN *' when there are no identifiers in scope") {
+  test("should forbid 'RETURN *' when there are no variables in scope") {
     expectError(
       "match () return *",
       "RETURN * is not allowed when there are no variables in scope"

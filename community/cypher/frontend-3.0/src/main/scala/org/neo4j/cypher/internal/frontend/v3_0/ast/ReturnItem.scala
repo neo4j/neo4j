@@ -38,11 +38,11 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     when (includeExisting) {
       s => SemanticCheckResult.success(s.importScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
-      case Some(identifier) if item.expression == identifier =>
-        val positions = previousScope.symbol(identifier.name).fold(Set.empty[InputPosition])(_.positions)
-        identifier.declare(item.expression.types, positions)
-      case Some(identifier) => identifier.declare(item.expression.types)
-      case None             => (state) => SemanticCheckResult(state, Seq.empty)
+      case Some(variable) if item.expression == variable =>
+        val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
+        variable.declare(item.expression.types, positions)
+      case Some(variable) => variable.declare(item.expression.types)
+      case None           => (state) => SemanticCheckResult(state, Seq.empty)
     })
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
@@ -77,7 +77,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
     throw new InternalException("Should have been aliased before this step")
 }
 
-//TODO identifier should not be a Variable
+//TODO variableshould not be a Variable
 case class AliasedReturnItem(expression: Expression, variable: Variable)(val position: InputPosition) extends ReturnItem {
   val alias = Some(variable)
   val name = variable.name

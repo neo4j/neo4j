@@ -114,14 +114,14 @@ case object astPhraseDocGen extends CustomDocGen[ASTNode] {
 
   implicit class HintConverter(hint: Hint) extends PartialConverter {
     def unquote = hint match {
-      case UsingIndexHint(identifier, label, property) =>
-        Some(group("USING" :/: "INDEX" :/: group(pretty(identifier) :: block(pretty(label))(pretty(property)))))
+      case UsingIndexHint(variable, label, property) =>
+        Some(group("USING" :/: "INDEX" :/: group(pretty(variable) :: block(pretty(label))(pretty(property)))))
 
-      case UsingScanHint(identifier, label) =>
-        Some(group("USING" :/: "SCAN" :/: group(pretty(identifier) :: pretty(label))))
+      case UsingScanHint(variable, label) =>
+        Some(group("USING" :/: "SCAN" :/: group(pretty(variable) :: pretty(label))))
 
-      case UsingJoinHint(identifier) =>
-        Some(group("USING" :/: "JOIN" :/: "ON" :/: pretty(identifier)))
+      case UsingJoinHint(variable) =>
+        Some(group("USING" :/: "JOIN" :/: "ON" :/: pretty(variable)))
 
       case _ =>
         None

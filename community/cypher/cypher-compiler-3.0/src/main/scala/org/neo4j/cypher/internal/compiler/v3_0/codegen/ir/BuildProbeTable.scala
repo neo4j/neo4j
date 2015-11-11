@@ -57,7 +57,7 @@ case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable
   override protected def operatorId = Set(id)
 
   private val fieldToVarName = valueSymbols.map {
-    case (identifier, variable) => (context.namer.newVarName(), VariableData(identifier, variable,  variable.copy(name = context.namer.newVarName())))
+    case (variable, incoming) => (context.namer.newVarName(), VariableData(variable, incoming,  incoming.copy(name = context.namer.newVarName())))
   }
 
   private val varNameToField = fieldToVarName.map {

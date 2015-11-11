@@ -27,7 +27,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def Expression: Rule1[ast.Expression] = ???
   val t = DummyPosition(0)
 
-  test("testIdentifierCanContainASCII") {
+  test("test variable can contain ascii") {
     implicit val parserToTest = Variable
 
     parsing("abc") shouldGive ast.Variable("abc")(t)
@@ -37,7 +37,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("abc_de") shouldGive ast.Variable("abc_de")(t)
   }
 
-  test("testIdentifierCanContainUTF8") {
+  test("test variable can contain utf8") {
     implicit val parserToTest = Variable
 
     parsing("aé") shouldGive ast.Variable("aé")(t)
@@ -46,13 +46,13 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("a＿test") shouldGive ast.Variable("a＿test")(t)
   }
 
-  test("testIdentifierCannotStartWithNumber") {
+  test("test variable name can not start with number") {
     implicit val parserToTest = Variable
 
     assertFails("1bcd")
   }
 
-  test("testCanParseNumbers") {
+  test("can parse numbersz") {
     implicit val parserToTest = NumberLiteral
 
     parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)
