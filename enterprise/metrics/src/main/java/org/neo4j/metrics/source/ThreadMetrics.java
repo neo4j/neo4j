@@ -19,23 +19,43 @@
  */
 package org.neo4j.metrics.source;
 
-import org.neo4j.kernel.impl.annotations.Documented;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 
-@Documented( "=== Java Virtual Machine Metrics\n\n" +
-             "These metrics are environment dependent and they may vary on different hardware and with JVM configurations.\n" +
-             "Typically these metrics will show information about garbage collections " +
-             "(for example the number of events and time spent collecting), memory pools and buffers, and " +
-             "finally the number of active threads running." )
-public abstract class JvmMetrics
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static com.codahale.metrics.MetricRegistry.name;
+
+public class ThreadMetrics extends LifecycleAdapter implements Lifecycle
 {
-    public static final String NAME_PREFIX = "vm";
+    public static final String THREAD_COUNT = name( JvmMetrics.NAME_PREFIX, "thread.count" );
 
-    public static String prettifyName( String name )
+    private final MetricRegistry registry;
+
+    public ThreadMetrics( MetricRegistry registry )
     {
-        return name.toLowerCase().replace( ' ', '_' );
+        this.registry = registry;
     }
 
-    private JvmMetrics()
+    @Override
+    public void start()
     {
+        registry.register( THREAD_COUNT, new Gauge<Integer>()
+        {
+            @Override
+            public Integer getValue()
+            {
+                return Thread.activeCount();
+            }
+        } );
+    }
+
+    @Override
+    public void stop()
+    {
+        registry.remove( THREAD_COUNT );
     }
 }
+
+

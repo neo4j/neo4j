@@ -36,7 +36,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.metrics.output.OutputBuilder;
-import org.neo4j.metrics.source.Neo4jMetricsFactory;
+import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 
 public class MetricsExtension implements Lifecycle
 {
@@ -80,14 +80,12 @@ public class MetricsExtension implements Lifecycle
         // Setup output
         boolean outputBuilt = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
 
-        // if there is any output available then start the metrics
         if ( outputBuilt )
         {
             // Setup metric gathering
-            Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors, dataSourceManager,
-                    transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
-                    dependencyResolver, logService );
-            life.add( factory.newInstance() );
+            boolean metricsBuilt = new Neo4jMetricsBuilder( registry, configuration, monitors,
+                    dataSourceManager, transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor,
+                    idGeneratorFactory, dependencyResolver, logService, life ).build();
         }
 
         life.init();

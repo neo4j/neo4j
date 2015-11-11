@@ -22,58 +22,61 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.api.LogRotationMonitor;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-
-@Documented( ".Database CheckPointing Metrics" )
-public class CheckPointingMetrics extends LifecycleAdapter
+@Documented( ".Database LogRotation Metrics" )
+public class LogRotationMetrics extends LifecycleAdapter implements Lifecycle
 {
-    private static final String CHECK_POINT_PREFIX = "neo4j.check_point";
+    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
 
-    @Documented( "The total number of check point events executed so far" )
-    public static final String CHECK_POINT_EVENTS = name( CHECK_POINT_PREFIX, "events" );
-    @Documented( "The total time spent in check pointing so far" )
-    public static final String CHECK_POINT_TOTAL_TIME = name( CHECK_POINT_PREFIX, "total_time" );
+    @Documented( "The total number of transaction log rotations executed so far" )
+    public static final String LOG_ROTATION_EVENTS = name( LOG_ROTATION_PREFIX, "events" );
+    @Documented( "The total time spent in rotating transaction logs so far" )
+    public static final String LOG_ROTATION_TOTAL_TIME = name( LOG_ROTATION_PREFIX, "total_time" );
+
 
     private final MetricRegistry registry;
-    private final CheckPointerMonitor checkPointerMonitor;
+    private final LogRotationMonitor logRotationMonitor;
 
-    public CheckPointingMetrics( MetricRegistry registry, CheckPointerMonitor checkPointerMonitor )
+    public LogRotationMetrics( MetricRegistry registry, LogRotationMonitor logRotationMonitor )
     {
         this.registry = registry;
-        this.checkPointerMonitor = checkPointerMonitor;
+        this.logRotationMonitor = logRotationMonitor;
     }
 
     @Override
-    public void start()
+    public void start() throws Throwable
     {
-        registry.register( CHECK_POINT_EVENTS, new Gauge<Long>()
+        registry.register( LOG_ROTATION_EVENTS, new Gauge<Long>()
         {
             @Override
             public Long getValue()
             {
-                return checkPointerMonitor.numberOfCheckPointEvents();
+                return logRotationMonitor.numberOfLogRotationEvents();
             }
         } );
 
-        registry.register( CHECK_POINT_TOTAL_TIME, new Gauge<Long>()
+        registry.register( LOG_ROTATION_TOTAL_TIME, new Gauge<Long>()
         {
             @Override
             public Long getValue()
             {
-                return checkPointerMonitor.checkPointAccumulatedTotalTimeMillis();
+                return logRotationMonitor.logRotationAccumulatedTotalTimeMillis();
             }
         } );
     }
 
     @Override
-    public void stop()
+    public void stop() throws IOException
     {
-        registry.remove( CHECK_POINT_EVENTS );
-        registry.remove( CHECK_POINT_TOTAL_TIME );
+        registry.remove( LOG_ROTATION_EVENTS );
+        registry.remove( LOG_ROTATION_TOTAL_TIME );
     }
 }

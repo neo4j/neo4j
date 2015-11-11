@@ -22,16 +22,15 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
-
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.impl.annotations.Documented;
+
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -49,74 +48,66 @@ public class NetworkMetrics extends LifecycleAdapter
                  "to the slaves in order to propagate committed transactions" )
     public static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
 
-    private Config config;
-    private Monitors monitors;
-    private MetricRegistry registry;
+    private final Monitors monitors;
+    private final MetricRegistry registry;
     private final ByteCountsMetric masterNetworkTransactionWrites = new ByteCountsMetric();
     private final ByteCountsMetric masterNetworkStoreWrites = new ByteCountsMetric();
     private final ByteCountsMetric slaveNetworkTransactionWrites = new ByteCountsMetric();
 
-    public NetworkMetrics( Config config, Monitors monitors, MetricRegistry registry )
+    public NetworkMetrics( Monitors monitors, MetricRegistry registry )
     {
-        this.config = config;
         this.monitors = monitors;
         this.registry = registry;
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        if ( config.get( MetricsSettings.neoNetworkEnabled ) )
+       /*
+         * COM: MasterServer.class -> Writes transaction streams (writes)
+         *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
+         *
+         * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
+         */
+        monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
+        monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
+                ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
+        monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
+
+        registry.register( MASTER_NETWORK_TX_WRITES, new Gauge<Long>()
         {
-            /*
-             * COM: MasterServer.class -> Writes transaction streams (writes)
-             *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
-             *
-             * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
-             */
-            monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
-            monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
-                    ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
-            monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
-
-            registry.register( MASTER_NETWORK_TX_WRITES, new Gauge<Long>()
+            public Long getValue()
             {
-                public Long getValue()
-                {
-                    return masterNetworkTransactionWrites.getBytesWritten();
-                }
-            } );
+                return masterNetworkTransactionWrites.getBytesWritten();
+            }
+        } );
 
-            registry.register( MASTER_NETWORK_STORE_WRITES, new Gauge<Long>()
+        registry.register( MASTER_NETWORK_STORE_WRITES, new Gauge<Long>()
+        {
+            public Long getValue()
             {
-                public Long getValue()
-                {
-                    return masterNetworkStoreWrites.getBytesWritten();
-                }
-            } );
+                return masterNetworkStoreWrites.getBytesWritten();
+            }
+        } );
 
-            registry.register( SLAVE_NETWORK_TX_WRITES, new Gauge<Long>()
+        registry.register( SLAVE_NETWORK_TX_WRITES, new Gauge<Long>()
+        {
+            public Long getValue()
             {
-                public Long getValue()
-                {
-                    return slaveNetworkTransactionWrites.getBytesWritten();
-                }
-            } );
-        }
+                return slaveNetworkTransactionWrites.getBytesWritten();
+            }
+        } );
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
-        if ( config.get( MetricsSettings.neoNetworkEnabled ) )
-        {
-            registry.remove( MASTER_NETWORK_TX_WRITES );
-            registry.remove( MASTER_NETWORK_STORE_WRITES );
-            registry.remove( SLAVE_NETWORK_TX_WRITES );
+        registry.remove( MASTER_NETWORK_TX_WRITES );
+        registry.remove( MASTER_NETWORK_STORE_WRITES );
+        registry.remove( SLAVE_NETWORK_TX_WRITES );
 
-            monitors.removeMonitorListener( masterNetworkTransactionWrites );
-            monitors.removeMonitorListener( masterNetworkStoreWrites );
-            monitors.removeMonitorListener( slaveNetworkTransactionWrites );
-        }
+        monitors.removeMonitorListener( masterNetworkTransactionWrites );
+        monitors.removeMonitorListener( masterNetworkStoreWrites );
+        monitors.removeMonitorListener( slaveNetworkTransactionWrites );
     }
 }

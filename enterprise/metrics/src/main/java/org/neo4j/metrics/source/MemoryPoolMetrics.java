@@ -20,54 +20,55 @@
 package org.neo4j.metrics.source;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.cypher.PlanCacheMetricsMonitor;
-import org.neo4j.kernel.impl.annotations.Documented;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static org.neo4j.metrics.source.JvmMetrics.prettifyName;
 
-@Documented( ".Cypher Metrics" )
-public class CypherMetrics extends LifecycleAdapter
+public class MemoryPoolMetrics extends LifecycleAdapter implements Lifecycle
 {
-    private static final String NAME_PREFIX = "neo4j.cypher";
-
-    @Documented( "The total number of times Cypher has decided to re-plan a query" )
-    public static final String REPLAN_EVENTS = name( NAME_PREFIX, "replan_events" );
-
-    private final Monitors monitors;
+    public static final String MEMORY_POOL = name( JvmMetrics.NAME_PREFIX, "memory.pool" );
     private final MetricRegistry registry;
-    private final PlanCacheMetricsMonitor cacheMonitor = new PlanCacheMetricsMonitor();
 
-    public CypherMetrics( Monitors monitors, MetricRegistry registry )
+    public MemoryPoolMetrics( MetricRegistry registry )
     {
-        this.monitors = monitors;
         this.registry = registry;
     }
 
     @Override
     public void start()
     {
-        monitors.addMonitorListener( cacheMonitor );
-
-        registry.register( REPLAN_EVENTS, new Gauge<Long>()
+        for ( final MemoryPoolMXBean memPool : ManagementFactory.getMemoryPoolMXBeans() )
         {
-            @Override
-            public Long getValue()
+            registry.register( name( MEMORY_POOL, prettifyName( memPool.getName() ) ), new Gauge<Long>()
             {
-                return cacheMonitor.numberOfReplans();
-            }
-        } );
+                @Override
+                public Long getValue()
+                {
+                    return memPool.getUsage().getUsed();
+                }
+            } );
+        }
     }
 
     @Override
     public void stop()
     {
-        registry.remove( REPLAN_EVENTS );
-
-        monitors.removeMonitorListener( cacheMonitor );
+        registry.removeMatching( new MetricFilter()
+        {
+            @Override
+            public boolean matches( String name, Metric metric )
+            {
+                return name.startsWith( MEMORY_POOL );
+            }
+        } );
     }
 }
-

@@ -22,20 +22,16 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
@@ -55,83 +51,55 @@ public class ClusterMetrics extends LifecycleAdapter
     @Documented( "Whether or not this instance is available in the cluster" )
     public static final String IS_AVAILABLE = name( NAME_PREFIX, "is_available" );
 
-    private final Config config;
     private final Monitors monitors;
     private final MetricRegistry registry;
-    private final DependencyResolver dependencyResolver;
-    private final LogService logService;
     private final SlaveUpdatePullerMonitor monitor = new SlaveUpdatePullerMonitor();
-    private ClusterMembers clusterMembers = null;
+    private final ClusterMembers clusterMembers;
 
-    public ClusterMetrics( Config config, Monitors monitors, MetricRegistry registry,
-            DependencyResolver dependencyResolver, LogService logService )
+    public ClusterMetrics( Monitors monitors, MetricRegistry registry, ClusterMembers clusterMembers )
     {
-        this.config = config;
         this.monitors = monitors;
         this.registry = registry;
-        this.dependencyResolver = dependencyResolver;
-        this.logService = logService;
+        this.clusterMembers = clusterMembers;
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        if ( config.get( MetricsSettings.neoClusterEnabled ) && resolveClusterMembersDependencyOrLogWarning() )
+        monitors.addMonitorListener( monitor );
+
+        registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
+        registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
+
+        registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
         {
-            monitors.addMonitorListener( monitor );
-
-            registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
-            registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
-
-            registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
+            @Override
+            public Long getValue()
             {
-                @Override
-                public Long getValue()
-                {
-                    return monitor.events.get();
-                }
-            } );
+                return monitor.events.get();
+            }
+        } );
 
-            registry.register( SLAVE_PULL_UPDATE_UP_TO_TX, new Gauge<Long>()
+        registry.register( SLAVE_PULL_UPDATE_UP_TO_TX, new Gauge<Long>()
+        {
+            @Override
+            public Long getValue()
             {
-                @Override
-                public Long getValue()
-                {
-                    return monitor.lastAppliedTxId;
-                }
-            } );
-
-        }
-    }
-
-    private boolean resolveClusterMembersDependencyOrLogWarning()
-    {
-        try
-        {
-            clusterMembers = dependencyResolver.resolveDependency( ClusterMembers.class );
-            return true;
-        }
-        catch ( IllegalArgumentException e )
-        {
-            logService.getUserLog( getClass() ).warn( "Cluster metrics was enabled but the graph database" +
-                                                      "is not in HA mode." );
-            return false;
-        }
+                return monitor.lastAppliedTxId;
+            }
+        } );
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
-        if ( config.get( MetricsSettings.neoClusterEnabled ) && (clusterMembers != null) )
-        {
-            registry.remove( SLAVE_PULL_UPDATES );
-            registry.remove( SLAVE_PULL_UPDATE_UP_TO_TX );
+        registry.remove( SLAVE_PULL_UPDATES );
+        registry.remove( SLAVE_PULL_UPDATE_UP_TO_TX );
 
-            registry.remove( IS_MASTER );
-            registry.remove( IS_AVAILABLE );
+        registry.remove( IS_MASTER );
+        registry.remove( IS_AVAILABLE );
 
-            monitors.removeMonitorListener( monitor );
-        }
+        monitors.removeMonitorListener( monitor );
     }
 
     private static class SlaveUpdatePullerMonitor implements SlaveUpdatePuller.Monitor
