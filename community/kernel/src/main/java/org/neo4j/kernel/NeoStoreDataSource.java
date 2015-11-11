@@ -190,10 +190,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         UpdateableSchemaState updateableSchemaState();
 
-        CacheAccessBackDoor cacheAccess();
-
-        SchemaCache schemaCache();
-
         ProcedureCache procedureCache();
     }
 
@@ -210,6 +206,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         LabelScanStore labelScanStore();
         IntegrityValidator integrityValidator();
         SchemaIndexProviderMap schemaIndexProviderMap();
+        CacheAccessBackDoor cacheAccess();
+
+        void loadSchemaCache();
     }
 
     private interface TransactionLogModule
@@ -522,10 +521,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
             TransactionLogModule transactionLogModule =
                     buildTransactionLogs( storeDir, config, logProvider, scheduler, storeLayerModule.labelScanStore(),
-                            fs, storeLayerModule.neoStores(), cacheModule.cacheAccess(), storeLayerModule.indexingService(),
+                            fs, storeLayerModule.neoStores(), storeLayerModule.cacheAccess(), storeLayerModule.indexingService(),
                             indexProviders.values(), legacyIndexApplierLookup );
 
-            buildRecovery( fs, cacheModule.cacheAccess(), storeLayerModule.indexingService(),
+            buildRecovery( fs, storeLayerModule.cacheAccess(), storeLayerModule.indexingService(),
                     storeLayerModule.labelScanStore(), storeLayerModule.neoStores(),
                     monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
@@ -617,11 +616,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
-        final SchemaCache schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
-
-        final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
-                propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
-
         final ProcedureCache procedureCache = new ProcedureCache();
 
         life.add( new LifecycleAdapter()
@@ -629,7 +623,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             @Override
             public void start() throws Throwable
             {
-                loadSchemaCache();
+                storeLayerModule.loadSchemaCache();
             }
 
             @Override
@@ -641,12 +635,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return new CacheModule()
         {
             @Override
-            public SchemaCache schemaCache()
-            {
-                return schemaCache;
-            }
-
-            @Override
             public ProcedureCache procedureCache()
             {
                 return procedureCache;
@@ -656,12 +644,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public UpdateableSchemaState updateableSchemaState()
             {
                 return updateableSchemaState;
-            }
-
-            @Override
-            public CacheAccessBackDoor cacheAccess()
-            {
-                return cacheAccess;
             }
         };
     }
@@ -697,6 +679,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final IntegrityValidator integrityValidator;
         final IndexUpdatesValidator indexUpdatesValidator;
         final LabelScanStore labelScanStore;
+        final SchemaCache schemaCache;
+        final CacheAccessBackDoor cacheAccess;
         final StoreReadLayer storeLayer;
 
         try
@@ -722,7 +706,9 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             life.add( labelScanStore );
 
 
-            SchemaCache schemaCache = cacheModule.schemaCache();
+            schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
+            cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
+                    propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
             ProcedureCache procedureCache = cacheModule.procedureCache();
             SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
             DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
@@ -783,6 +769,19 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public SchemaIndexProviderMap schemaIndexProviderMap()
             {
                 return providerMap;
+            }
+
+            @Override
+            public CacheAccessBackDoor cacheAccess()
+            {
+                return cacheAccess;
+            }
+
+            @Override
+            public void loadSchemaCache()
+            {
+                List<SchemaRule> schemaRules = toList( neoStores.getSchemaStore().loadAllSchemaRules() );
+                schemaCache.load( schemaRules );
             }
         };
     }
@@ -1086,7 +1085,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         {
             for ( Method method : module.getClass().getMethods() )
             {
-                if ( !method.getDeclaringClass().equals( Object.class ) )
+                if ( !method.getDeclaringClass().equals( Object.class ) && method.getReturnType() != void.class )
                 {
                     try
                     {
@@ -1099,13 +1098,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 }
             }
         }
-    }
-
-    // Startup sequence done
-    private void loadSchemaCache()
-    {
-        List<SchemaRule> schemaRules = toList( storeLayerModule.neoStores().getSchemaStore().loadAllSchemaRules() );
-        cacheModule.schemaCache().load( schemaRules );
     }
 
     // Only public for testing purpose
@@ -1347,7 +1339,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
      */
     public void afterModeSwitch()
     {
-        loadSchemaCache();
+        storeLayerModule.loadSchemaCache();
         // Get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelModule.kernelTransactions().disposeAll();
