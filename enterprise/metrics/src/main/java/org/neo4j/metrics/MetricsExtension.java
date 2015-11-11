@@ -87,6 +87,22 @@ public class MetricsExtension implements Lifecycle
                     dataSourceManager, transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor,
                     idGeneratorFactory, dependencyResolver, logService, life ).build();
         }
+        else
+        {
+            if ( metrics.available() )
+            {
+                logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. "
+                             +
+                             "Disabling kernel metrics extension." );
+            }
+
+            if ( output.available() )
+            {
+                logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. "
+                             +
+                             "Disabling kernel metrics extension." );
+            }
+        }
 
         life.init();
     }
