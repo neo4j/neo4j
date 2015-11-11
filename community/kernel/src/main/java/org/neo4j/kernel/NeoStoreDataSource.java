@@ -189,8 +189,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private interface CacheModule
     {
         UpdateableSchemaState updateableSchemaState();
-
-        ProcedureCache procedureCache();
     }
 
     private interface StoreLayerModule
@@ -207,6 +205,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         IntegrityValidator integrityValidator();
         SchemaIndexProviderMap schemaIndexProviderMap();
         CacheAccessBackDoor cacheAccess();
+        ProcedureCache procedureCache();
 
         void loadSchemaCache();
     }
@@ -511,12 +510,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            CacheModule cacheModule = buildCaches(
-                    labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
+            CacheModule cacheModule = buildCaches();
 
             // TODO Introduce a StorageEngine abstraction at the StoreLayerModule boundary
             storeLayerModule = buildStoreLayer(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, cacheModule,
+                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     cacheModule.updateableSchemaState()::clear );
 
             TransactionLogModule transactionLogModule =
@@ -536,7 +534,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     storeLayerModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), storeLayerModule.labelScanStore(),
-                    storeLayerModule.schemaIndexProviderMap(), cacheModule.procedureCache() );
+                    storeLayerModule.schemaIndexProviderMap(), storeLayerModule.procedureCache() );
 
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -611,35 +609,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider );
     }
 
-    private CacheModule buildCaches( LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
-            PropertyKeyTokenHolder propertyKeyTokenHolder )
+    private CacheModule buildCaches()
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
-        final ProcedureCache procedureCache = new ProcedureCache();
-
-        life.add( new LifecycleAdapter()
-        {
-            @Override
-            public void start() throws Throwable
-            {
-                storeLayerModule.loadSchemaCache();
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-            }
-        } );
-
         return new CacheModule()
         {
-            @Override
-            public ProcedureCache procedureCache()
-            {
-                return procedureCache;
-            }
-
             @Override
             public UpdateableSchemaState updateableSchemaState()
             {
@@ -651,7 +626,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private StoreLayerModule buildStoreLayer(
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
-            CacheModule cacheModule, Runnable schemaStateChangeCallback )
+            Runnable schemaStateChangeCallback )
     {
         life.add( new LifecycleAdapter()
         {
@@ -668,6 +643,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         storeLayerModule.neoStores().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
                 storeLayerModule.neoStores().rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
+                storeLayerModule.loadSchemaCache();
             }
         } );
 
@@ -682,6 +658,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final SchemaCache schemaCache;
         final CacheAccessBackDoor cacheAccess;
         final StoreReadLayer storeLayer;
+        final ProcedureCache procedureCache;
 
         try
         {
@@ -709,7 +686,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
-            ProcedureCache procedureCache = cacheModule.procedureCache();
+            procedureCache = new ProcedureCache();
             SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
             DiskLayer diskLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStorage,
                     neoStores, indexingService, storeStatementFactory( neoStores ) );
@@ -775,6 +752,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public CacheAccessBackDoor cacheAccess()
             {
                 return cacheAccess;
+            }
+
+            @Override
+            public ProcedureCache procedureCache()
+            {
+                return procedureCache;
             }
 
             @Override
