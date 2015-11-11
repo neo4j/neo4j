@@ -1,3 +1,1 @@
-2.2.6
------
-o Neo4j console does not fork a subprocess on Linux, enabling easier process management
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog

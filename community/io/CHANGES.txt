@@ -1,16 +1,1 @@
-2.2.6
------
-o File lock deletion is retried on failure, fixing an issue with file lock
-  release on Windows
-
-2.2.1
------
-o Page cache read performance improvements
-o Page cache flush performance improvements by ordering individual pages so that
-  the mapped files are written sequentially on disk
-
-2.2.0
------
-o Added automatic, continuous background flushing to the PageCache.
-o Made the PageCache manage its own background threads
-o Made PageSwappers gracefully handle interrupts in force()
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog

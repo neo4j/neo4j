@@ -1,16 +1,1 @@
-1.9.4 (2013-09-19)
-------------------
-o Properly return UNKNOWN from the HA REST API when the instance is neither
-  master or slave.
-
-1.9 (2013-05-13)
-----------------
-o Arbiter instances now log into data/log/arbiter/messages.log
-
-1.9.M05 (2013-03-05)
---------------------
-o HA info REST endpoints now are called /db/manage/server/ha/{ismaster,isslave}, with getMaster no longer existing.
-
-1.9.M04 (2013-01-17)
---------------------
-o Includes new service endpoint, typically found under /db/manage/server/ha/{isMaster,getMaster}, with HA related info.
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog
