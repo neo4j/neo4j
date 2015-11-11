@@ -55,8 +55,6 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: Candidat
   /*
     MATCH a->b WHERE b.foo = expr(p)
     OM p = a
-
-
    */
 
   private def findQGsToSolve(plan: LogicalPlan, table: GreedyPlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {

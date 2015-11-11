@@ -456,6 +456,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       pattern.endNode, pattern.properties)(solved)
   }
 
+  def planMergeNode(inner: LogicalPlan, pattern: MergeNodePattern, solved: PlannerQuery with CardinalityEstimation)
+                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val updated = solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
+
+    MergeNode(inner, pattern.nodeName,
+      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(updated)
+  }
+
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
 

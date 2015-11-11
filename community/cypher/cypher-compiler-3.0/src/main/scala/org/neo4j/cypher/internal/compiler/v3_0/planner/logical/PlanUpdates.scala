@@ -21,48 +21,56 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PathExpression}
 
 /*
  * This coordinates PlannerQuery planning of updates.
  */
-case object PlanUpdates
+case class PlanUpdates(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart)
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
-    query.updateGraph.mutatingPatterns.foldLeft(plan)((plan, pattern) => planUpdate(plan, pattern))
+    query.updateGraph.mutatingPatterns.foldLeft(plan)((plan, pattern) => planUpdate(query, plan, pattern))
 
-  private def planUpdate(inner: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext) = pattern match {
+  private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext) = pattern match {
     //CREATE ()
-    case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(inner, p)
+    case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
     //CREATE (a)-[:R]->(b)
-    case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(inner, p)
+    case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
+    //MERGE ()
+    case p: MergeNodePattern =>
+      val innerContext: LogicalPlanningContext = context.recurse(source)
+      val matchPart = context.strategy.plan(p.matchGraph)(innerContext)
+      val rhs = context.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
+      val apply = context.logicalPlanProducer.planApply(source, rhs)
+      context.logicalPlanProducer.planMergeNode(apply, p, source.solved)
     //SET n:Foo:Bar
-    case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(inner, pattern)
+    case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
     //SET n.prop = 42
     case pattern: SetNodePropertyPattern =>
-      context.logicalPlanProducer.planSetNodeProperty(inner, pattern)
+      context.logicalPlanProducer.planSetNodeProperty(source, pattern)
     //SET r.prop = 42
     case pattern: SetRelationshipPropertyPattern =>
-      context.logicalPlanProducer.planSetRelationshipProperty(inner, pattern)
+      context.logicalPlanProducer.planSetRelationshipProperty(source, pattern)
     //SET n.prop += {}
     case pattern: SetNodePropertiesFromMapPattern =>
-      context.logicalPlanProducer.planSetNodePropertiesFromMap(inner, pattern)
+      context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern)
     //SET r.prop = 42
     case pattern: SetRelationshipPropertiesFromMapPattern =>
-      context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(inner, pattern)
+      context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern)
     //REMOVE n:Foo:Bar
-    case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(inner, pattern)
+    case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern)
     //DELETE a
     case p: DeleteExpression =>
       p.expression match {
         case Variable(n) if context.semanticTable.isNode(n) =>
-          context.logicalPlanProducer.planDeleteNode(inner, p)
+          context.logicalPlanProducer.planDeleteNode(source, p)
         case Variable(r) if context.semanticTable.isRelationship(r) =>
-          context.logicalPlanProducer.planDeleteRelationship(inner, p)
+          context.logicalPlanProducer.planDeleteRelationship(source, p)
         case PathExpression(e)  =>
-          context.logicalPlanProducer.planDeletePath(inner, p)
+          context.logicalPlanProducer.planDeletePath(source, p)
 
         case e => throw new CypherTypeException(s"Don't know how to delete a $e")
       }

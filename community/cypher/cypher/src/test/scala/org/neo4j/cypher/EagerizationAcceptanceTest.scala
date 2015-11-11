@@ -103,17 +103,17 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   // TESTS FOR DELETE AND MERGE
 
   test("should introduce eagerness between DELETE and MERGE for node") {
-    createLabeledNode(Map("value" -> 0), "B")
-    createLabeledNode(Map("value" -> 1), "B")
+    createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
+    createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
     val query =
       """
         |MATCH (b:B)
         |DELETE b
         |MERGE (b2:B { value: 1 })
-        |RETURN b2.value
+        |RETURN b2.deleted
       """.stripMargin
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 1, nodesDeleted = 2, propertiesSet = 1, labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, nodesDeleted = 2, propertiesSet = 1, labelsAdded = 1)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -125,9 +125,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
         |MATCH (b:B)
         |DELETE b
         |MERGE ()
+        |RETURN count(*)
       """.stripMargin
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 1, nodesDeleted = 2)
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("count(*)" -> 2)))
+    assertStats(result, nodesCreated = 1, nodesDeleted = 2)
     assertNumberOfEagerness(query, 0)
   }
 

@@ -165,7 +165,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   }
 
   def addMutatingPatterns(patterns: MutatingPattern *) =
-  copy(mutatingPatterns = this.mutatingPatterns ++ patterns)
+    copy(mutatingPatterns = this.mutatingPatterns ++ patterns)
 
   private def removeLabelOverlap(qg: QueryGraph) = {
     removeLabelPatterns.exists {

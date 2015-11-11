@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternC
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SyntaxException}
 
+import scala.collection.immutable.Iterable
 import scala.collection.mutable
 
 object ClauseConverters {
@@ -40,6 +42,7 @@ object ClauseConverters {
     case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
     case c: Delete => addDeleteToLogicalPlanInput(acc, c)
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
+    case c: Merge => addMergeToLogicalPlanInput(acc, c)
 
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
@@ -254,6 +257,36 @@ object ClauseConverters {
           addHints(clause.hints).
           addShortestPaths(patternContent.shortestPaths: _*)
       }
+    }
+  }
+
+  private def toPropertyMap(expr: Option[Expression]): Map[PropertyKeyName, Expression] = expr match {
+    case None => Map.empty
+    case Some(MapExpression(items)) => items.toMap
+    case e => throw new InternalException(s"Expected MapExpression, got $e")
+  }
+
+  private def toPropertySelection(identifier: Identifier,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
+    case (k, e) => In(Property(identifier, k)(k.position), Collection(Seq(e))(e.position))(identifier.position)
+  }.toSeq
+
+  private def addMergeToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
+    //TODO handle actions
+    if (clause.actions.nonEmpty) throw new CantHandleQueryException("cost planner does not yet support merge actions")
+
+    clause.pattern.patternParts.foldLeft(acc) {
+      //MERGE (n :L1:L2 {prop: 42})
+      case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
+        val propMap = toPropertyMap(props)
+
+        val matchGraph = QueryGraph(
+          patternNodes = Set(IdName.fromIdentifier(id)),
+          selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id, propMap) :_*)
+        )
+      builder
+          .amendUpdateGraph(ug => ug.addMutatingPatterns(MergeNodePattern(IdName.fromIdentifier(id), labels, propMap, matchGraph)))
+
+      case _ => throw new CantHandleQueryException("not supported yet")
     }
   }
 

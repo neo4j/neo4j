@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, LabelName, Prope
 
 sealed trait MutatingPattern
 
-
 case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern
 
 case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
@@ -52,3 +51,5 @@ case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: E
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
+
+case class MergeNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Map[PropertyKeyName, Expression], matchGraph: QueryGraph) extends MutatingPattern

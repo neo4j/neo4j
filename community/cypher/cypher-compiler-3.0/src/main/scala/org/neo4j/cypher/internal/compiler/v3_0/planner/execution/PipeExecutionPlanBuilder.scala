@@ -304,6 +304,12 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case CreateNode(_, idName, labels, props) =>
       CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
 
+    case MergeNode(_, idName, labels, props) =>
+      val commandProperties = props.map {
+        case (k, v) => LazyPropertyKey(k) -> toCommandExpression(v)
+      }
+      MergeNodePipe(source, idName.name, labels, commandProperties)()
+
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
