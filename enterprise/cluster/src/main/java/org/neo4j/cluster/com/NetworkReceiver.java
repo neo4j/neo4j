@@ -240,17 +240,8 @@ public class NetworkReceiver
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
-        String uri;
-
         // Socket.toString() already prepends a '/'
-        if ( address.getAddress().getHostAddress().startsWith( "0" ) )
-        {
-            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort();
-        }
-        else
-        {
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort();
-        }
+        String uri = CLUSTER_SCHEME + "://" + address.getHostString() + ":" + address.getPort();
 
         // Add name if given
         if ( config.name() != null )
