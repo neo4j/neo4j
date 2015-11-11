@@ -29,21 +29,27 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.CsvFile.single;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvFile;
@@ -53,31 +59,26 @@ public class MetricsKernelExtensionFactoryIT
 {
     @Rule
     public final TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
-
-    GraphDatabaseService db;
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
     private File outputFile;
+    private ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws IOException
+    public void setup() throws Exception
     {
-        String dbPath = folder.directory( "data" ).getAbsolutePath();
         outputFile = folder.file( "metrics.csv" );
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).
-                setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).
-                setConfig( csvEnabled, Settings.TRUE ).
-                setConfig( csvFile, single.name() ).
-                setConfig( csvPath, outputFile.getAbsolutePath() ).newGraphDatabase();
-    }
-
-    @After
-    public void shutdown()
-    {
-        db.shutdown();
+        Map<String,String> config = new HashMap<>();
+        config.put( csvEnabled.name(), Settings.TRUE );
+        config.put( csvFile.name(), single.name() );
+        config.put( csvPath.name(), outputFile.getAbsolutePath() );
+        cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
     }
 
     @Test
-    public void mustLoadMetricsExtensionWhenConfigured() throws Exception
+    public void mustLoadMetricsExtensionWhenConfigured() throws Throwable
     {
+        HighlyAvailableGraphDatabase db = cluster.getMaster();
         // Create some activity that will show up in the metrics data.
         for ( int i = 0; i < 1000; i++ )
         {
@@ -88,6 +89,7 @@ public class MetricsKernelExtensionFactoryIT
                 tx.success();
             }
         }
+        cluster.stop();
 
         // Awesome. Let's get some metric numbers.
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
@@ -109,5 +111,6 @@ public class MetricsKernelExtensionFactoryIT
                 committedTransactions = newCommittedTransactions;
             }
         }
+
     }
 }
