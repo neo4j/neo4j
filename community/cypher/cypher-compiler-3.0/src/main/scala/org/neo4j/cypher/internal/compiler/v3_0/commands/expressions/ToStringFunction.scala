@@ -37,6 +37,7 @@ case class ToStringFunction(a: Expression) extends NullInNullOutExpression(a) wi
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
     case v: Number => v.toString
     case v: String => v
+    case v: Boolean => v.toString
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
   }

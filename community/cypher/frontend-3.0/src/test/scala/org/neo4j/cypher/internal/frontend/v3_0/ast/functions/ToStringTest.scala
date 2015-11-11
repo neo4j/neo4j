@@ -27,15 +27,16 @@ class ToStringTest extends FunctionTestBase("toString")  {
     testValidTypes(CTString)(CTString)
     testValidTypes(CTFloat)(CTString)
     testValidTypes(CTInteger)(CTString)
+    testValidTypes(CTBoolean)(CTString)
   }
 
   test("should fail type check for incompatible arguments") {
-    testInvalidApplication(CTCollection(CTAny))(
-      "Type mismatch: expected Float, Integer or String but was Collection<Any>"
+    testInvalidApplication(CTRelationship)(
+      "Type mismatch: expected Boolean, Float, Integer or String but was Relationship"
     )
 
     testInvalidApplication(CTNode)(
-      "Type mismatch: expected Float, Integer or String but was Node"
+      "Type mismatch: expected Boolean, Float, Integer or String but was Node"
     )
   }
 

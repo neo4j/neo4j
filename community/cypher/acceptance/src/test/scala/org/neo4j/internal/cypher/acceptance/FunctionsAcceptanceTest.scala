@@ -154,6 +154,41 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("4")
   }
 
+  test("toString should handle booleans from properties") {
+    // Given
+    createLabeledNode(Map("watched" -> true), "Movie")
+
+    // When
+    val result = executeScalarWithAllPlanners[String](
+      "MATCH (m:Movie) RETURN toString(m.watched)"
+    )
+
+    // Then
+    result should equal("true")
+  }
+
+  test("toString should handle booleans as inlined input") {
+    // Given
+    val query = "RETURN toString(1 < 0)"
+
+    // When
+    val result = executeScalarWithAllPlanners[String](query)
+
+    // Then
+    result should equal("false")
+  }
+
+  test("toString should handle booleans directly") {
+    // Given
+    val query = "RETURN toString(true)"
+
+    // When
+    val result = executeScalarWithAllPlanners[String](query)
+
+    // Then
+    result should equal("true")
+  }
+
   test("case should handle mixed number types") {
     val query =
       """WITH 0.5 AS x
