@@ -28,13 +28,10 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.metrics.MetricsSettings.gangliaEnabled;
-import static org.neo4j.metrics.MetricsSettings.gangliaInterval;
-import static org.neo4j.metrics.MetricsSettings.gangliaServer;
+import static info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode.MULTICAST;
 
 /**
  *  @deprecated  Ganglia support is experimental, and not guaranteed to work.
@@ -42,18 +39,19 @@ import static org.neo4j.metrics.MetricsSettings.gangliaServer;
  *  Please use {@link GraphiteOutput} instead
  */
 @Deprecated
-public class GangliaOutput extends LifecycleAdapter
+public class GangliaOutput implements Lifecycle
 {
-    private final Config config;
+    private final HostnamePort hostnamePort;
+    private long period;
     private final MetricRegistry registry;
     private final Log logger;
     private final String prefix;
     private GangliaReporter gangliaReporter;
-    private HostnamePort hostnamePort;
 
-    public GangliaOutput( Config config, MetricRegistry registry, Log logger, String prefix )
+    public GangliaOutput( HostnamePort hostnamePort, long period, MetricRegistry registry, Log logger, String prefix )
     {
-        this.config = config;
+        this.hostnamePort = hostnamePort;
+        this.period = period;
         this.registry = registry;
         this.logger = logger;
         this.prefix = prefix;
@@ -62,42 +60,32 @@ public class GangliaOutput extends LifecycleAdapter
     @Override
     public void init() throws IOException
     {
-        if ( config.get( gangliaEnabled ) )
-        {
-            // Setup Ganglia reporting
-            hostnamePort = config.get( gangliaServer );
-            final GMetric ganglia = new GMetric(
-                    hostnamePort.getHost(),
-                    hostnamePort.getPort(),
-                    GMetric.UDPAddressingMode.MULTICAST,
-                    1 );
-
-            gangliaReporter = GangliaReporter.forRegistry( registry )
-                                             .prefixedWith( prefix )
-                                             .convertRatesTo( TimeUnit.SECONDS )
-                                             .convertDurationsTo( TimeUnit.MILLISECONDS )
-                                             .filter( MetricFilter.ALL )
-                                             .build( ganglia );
-        }
+        // Setup Ganglia reporting
+        final GMetric ganglia = new GMetric( hostnamePort.getHost(), hostnamePort.getPort(), MULTICAST, 1 );
+        gangliaReporter = GangliaReporter.forRegistry( registry )
+                .prefixedWith( prefix )
+                .convertRatesTo( TimeUnit.SECONDS )
+                .convertDurationsTo( TimeUnit.MILLISECONDS )
+                .filter( MetricFilter.ALL )
+                .build( ganglia );
     }
 
     @Override
     public void start()
     {
-        if ( gangliaReporter != null )
-        {
-            gangliaReporter.start( config.get( gangliaInterval ), TimeUnit.MILLISECONDS );
-            logger.info( "Sending metrics to Ganglia server at " + hostnamePort );
-        }
+        gangliaReporter.start( period, TimeUnit.MILLISECONDS );
+        logger.info( "Sending metrics to Ganglia server at " + hostnamePort );
     }
 
     @Override
     public void stop() throws IOException
     {
-        if ( gangliaReporter != null )
-        {
-            gangliaReporter.close();
-            gangliaReporter = null;
-        }
+        gangliaReporter.close();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        gangliaReporter = null;
     }
 }

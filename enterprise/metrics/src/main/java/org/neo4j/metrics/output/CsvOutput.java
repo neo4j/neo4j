@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.configuration.Config.absoluteFileOrRelativeTo;
@@ -38,7 +38,7 @@ import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvInterval;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 
-public class CsvOutput extends LifecycleAdapter
+public class CsvOutput implements Lifecycle
 {
     private final Config config;
     private final MetricRegistry registry;
@@ -58,22 +58,38 @@ public class CsvOutput extends LifecycleAdapter
     @Override
     public void init()
     {
-        if ( config.get( csvEnabled ) )
+        // Setup CSV reporting
+        File configuredPath = config.get( csvPath );
+        if ( configuredPath == null )
         {
-            // Setup CSV reporting
-            File configuredPath = config.get( csvPath );
-            if ( configuredPath == null )
-            {
-                throw new IllegalArgumentException( csvPath.name() + " configuration is required since " +
-                                                    csvEnabled.name() + " is enabled" );
-            }
-            outputPath = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
-            csvReporter = CsvReporter.forRegistry( registry )
-                    .convertRatesTo( TimeUnit.SECONDS )
-                    .convertDurationsTo( TimeUnit.MILLISECONDS )
-                    .filter( MetricFilter.ALL )
-                    .build( ensureDirectoryExists( outputPath ) );
+            throw new IllegalArgumentException( csvPath.name() + " configuration is required since " +
+                                                csvEnabled.name() + " is enabled" );
         }
+        outputPath = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
+        csvReporter = CsvReporter.forRegistry( registry )
+                .convertRatesTo( TimeUnit.SECONDS )
+                .convertDurationsTo( TimeUnit.MILLISECONDS )
+                .filter( MetricFilter.ALL )
+                .build( ensureDirectoryExists( outputPath ) );
+    }
+
+    @Override
+    public void start()
+    {
+        csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
+        logger.info( "Sending metrics to CSV file at " + outputPath );
+    }
+
+    @Override
+    public void stop() throws IOException
+    {
+        csvReporter.stop();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        csvReporter = null;
     }
 
     private File ensureDirectoryExists( File dir )
@@ -93,25 +109,5 @@ public class CsvOutput extends LifecycleAdapter
                     dir.getAbsolutePath() );
         }
         return dir;
-    }
-
-    @Override
-    public void start()
-    {
-        if ( csvReporter != null )
-        {
-            csvReporter.start( config.get( csvInterval ), TimeUnit.MILLISECONDS );
-            logger.info( "Sending metrics to CSV file at " + outputPath );
-        }
-    }
-
-    @Override
-    public void stop() throws IOException
-    {
-        if ( csvReporter != null )
-        {
-            csvReporter.stop();
-            csvReporter = null;
-        }
     }
 }

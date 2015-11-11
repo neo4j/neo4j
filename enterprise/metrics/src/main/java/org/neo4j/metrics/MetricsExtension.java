@@ -21,7 +21,6 @@ package org.neo4j.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -36,14 +35,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.metrics.output.CsvOutput;
-import org.neo4j.metrics.output.GangliaOutput;
-import org.neo4j.metrics.output.GraphiteOutput;
+import org.neo4j.metrics.output.OutputBuilder;
 import org.neo4j.metrics.source.Neo4jMetricsFactory;
 
 public class MetricsExtension implements Lifecycle
 {
-    private final LifeSupport life;
+    private final LifeSupport life = new LifeSupport();
     private final LogService logService;
     private final Config configuration;
     private final Monitors monitors;
@@ -58,7 +55,6 @@ public class MetricsExtension implements Lifecycle
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
-        life = new LifeSupport();
         logService = dependencies.logService();
         configuration = dependencies.configuration();
         monitors = dependencies.monitors();
@@ -73,62 +69,45 @@ public class MetricsExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         Log logger = logService.getUserLog( getClass() );
+        logger.info( "Initiating metrics..." );
 
         // Setup metrics
         final MetricRegistry registry = new MetricRegistry();
 
-        logger.info( "Initiating metrics.." );
-
         // Setup output
-        String prefix = computePrefix( configuration );
+        boolean outputBuilt = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
 
-        life.add( new CsvOutput( configuration, registry, logger, kernelContext ) );
-        life.add( new GraphiteOutput( configuration, registry, logger, prefix ) );
-        life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
-
-        // Setup metric gathering
-        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors, dataSourceManager,
-                transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
-                dependencyResolver, logService) ;
-        life.add( factory.newInstance() );
+        // if there is any output available then start the metrics
+        if ( outputBuilt )
+        {
+            // Setup metric gathering
+            Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors, dataSourceManager,
+                    transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
+                    dependencyResolver, logService );
+            life.add( factory.newInstance() );
+        }
 
         life.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
-    }
-
-    private String computePrefix( Config config )
-    {
-        String prefix = config.get( MetricsSettings.metricsPrefix );
-
-        if ( prefix.equals( MetricsSettings.metricsPrefix.getDefaultValue() ) )
-        {
-            // If default name and in HA, try to figure out a nicer name
-            if ( config.getParams().containsKey( ClusterSettings.server_id.name() ) )
-            {
-                prefix += "." + config.get( ClusterSettings.cluster_name );
-                prefix += "." + config.get( ClusterSettings.server_id );
-            }
-        }
-        return prefix;
     }
 }
