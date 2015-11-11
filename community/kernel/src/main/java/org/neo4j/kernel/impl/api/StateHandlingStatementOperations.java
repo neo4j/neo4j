@@ -385,14 +385,16 @@ public class StateHandlingStatementOperations implements
     @Override
     public PrimitiveLongIterator nodesGetAll( KernelStatement state )
     {
-        return state.txState().augmentNodesGetAll( storeLayer.nodesGetAll() );
+        PrimitiveLongIterator iterator = storeLayer.nodesGetAll();
+        return state.hasTxStateWithChanges() ? state.txState().augmentNodesGetAll( iterator ) : iterator;
     }
 
     @Override
 
     public RelationshipIterator relationshipsGetAll( KernelStatement state )
     {
-        return state.txState().augmentRelationshipsGetAll( storeLayer.relationshipsGetAll() );
+        RelationshipIterator iterator = storeLayer.relationshipsGetAll();
+        return state.hasTxStateWithChanges() ? state.txState().augmentRelationshipsGetAll( iterator ) : iterator;
     }
 
     @Override
