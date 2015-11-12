@@ -95,6 +95,27 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)
   }
 
+  test("query containing both SKIP and LIMIT") {
+    val i = personCount
+    givenPattern( "MATCH (n:Person) WITH n SKIP 5 LIMIT 10").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), 10.0)
+      )
+  }
+
+  // We do not improve in this case
+  ignore("query containing both SKIP and LIMIT with large skip, so skip + limit exceeds total row count boundary") {
+    val i = personCount
+    givenPattern( s"MATCH (n:Person) WITH n SKIP ${personCount - 5} LIMIT 10").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), 5.0)
+      )
+  }
+
   def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in)
 
