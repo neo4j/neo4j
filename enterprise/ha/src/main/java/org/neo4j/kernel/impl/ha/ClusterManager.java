@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -91,6 +92,7 @@ import org.neo4j.logging.Log;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
+
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -531,14 +533,7 @@ public class ClusterManager
                .append( " (" ).append( client.getClusterServer() ).append( "):" ).append( "\n" );
 
             ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
-
-            for ( ClusterMember clusterMember : members.getMembers() )
-            {
-                buf.append( "  " ).append( clusterMember.getInstanceId() ).append( ":" )
-                   .append( clusterMember.getHARole() )
-                   .append( " (is alive = " ).append( clusterMember.isAlive() ).append( ")" )
-                   .append( "\n" );
-            }
+            buf.append( members );
         }
 
         return buf.toString();
