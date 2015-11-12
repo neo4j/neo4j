@@ -458,7 +458,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         ))
 
     // when
-    updateWithBothPlanners(
+    executeWithCostPlannerOnly(
       "MATCH (foo) WITH foo.x AS x, foo.y AS y " +
         "MERGE (c:N {x: x, y: y+1}) " +
         "MERGE (a:N {x: x, y: y}) " +

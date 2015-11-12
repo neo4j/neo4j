@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cost
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{QueryPlannerConfiguration, Cost}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -65,7 +65,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       metrics = factory.newMetrics(hardcodedStatistics)
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
-    val plans = outerHashJoin(optionalQg, left)
+    val plans = outerHashJoin(optionalQg, left, QueryPlannerConfiguration.default)
 
     plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
   }

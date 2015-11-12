@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan).when(strategy).plan(any())(any(), any())
+    doReturn(plan).when(strategy).plan(any(), any())(any(), any())
     strategy
   }
 

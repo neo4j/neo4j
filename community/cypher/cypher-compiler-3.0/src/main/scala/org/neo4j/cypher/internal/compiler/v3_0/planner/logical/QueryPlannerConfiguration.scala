@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
 object QueryPlannerConfiguration {
-  val default = QueryPlannerConfiguration(
+  val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
       selectPatternPredicates,

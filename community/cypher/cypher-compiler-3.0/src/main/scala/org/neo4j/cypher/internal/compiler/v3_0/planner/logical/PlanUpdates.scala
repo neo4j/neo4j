@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PathExpression}
 /*
  * This coordinates PlannerQuery planning of updates.
  */
-case class PlanUpdates(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart)
+case object PlanUpdates
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
@@ -42,7 +42,9 @@ case class PlanUpdates(planPart: (PlannerQuery, LogicalPlanningContext, Option[L
     //MERGE ()
     case p: MergeNodePattern =>
       val innerContext: LogicalPlanningContext = context.recurse(source)
-      val matchPart = context.strategy.plan(p.matchGraph)(innerContext)
+
+      //todo something else here
+      val matchPart = context.strategy.plan(p.matchGraph, QueryPlannerConfiguration.default)(innerContext)
       val rhs = context.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
       val apply = context.logicalPlanProducer.planApply(source, rhs)
       context.logicalPlanProducer.planMergeNode(apply, p, source.solved)

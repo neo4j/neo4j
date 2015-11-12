@@ -44,8 +44,8 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify( strategy ).planPatternExpression(Set.empty, patExpr1)( context )
-    verify( strategy ).planPatternExpression(Set.empty, patExpr2)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr1, QueryPlannerConfiguration.default)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr2, QueryPlannerConfiguration.default)( context )
     verifyNoMoreInteractions( strategy )
   }
 
@@ -60,8 +60,8 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify( strategy ).planPatternExpression(Set.empty, patExpr1)( context )
-    verify( strategy ).planPatternExpression(Set.empty, patExpr3)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr1, QueryPlannerConfiguration.default)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr3, QueryPlannerConfiguration.default)( context )
     verifyNoMoreInteractions( strategy )
   }
 
@@ -77,9 +77,9 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     val result = expr.endoRewrite(rewriter)
 
     // then
-    verify( strategy ).planPatternExpression(Set.empty, patExpr1)( context )
-    verify( strategy ).planPatternExpression(Set.empty, patExpr3)( context )
-    verify( strategy ).planPatternExpression(Set.empty, patExpr4)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr1, QueryPlannerConfiguration.default)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr3, QueryPlannerConfiguration.default)( context )
+    verify( strategy ).planPatternExpression(Set.empty, patExpr4, QueryPlannerConfiguration.default)( context )
     verifyNoMoreInteractions( strategy )
   }
 
@@ -99,7 +99,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   private def createStrategy: QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression])(any[LogicalPlanningContext])).thenAnswer(
+    when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression], QueryPlannerConfiguration.default)(any[LogicalPlanningContext])).thenAnswer(
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
           val expr = invocation.getArguments()(1).asInstanceOf[PatternExpression]

@@ -62,7 +62,7 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
             children(acc)
           } else {
             val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr, QueryPlannerConfiguration.default)(context)
             val uniqueNamedExpr = namedExpr.copy()
             val nestedPlan = NestedPlanExpression(plan, uniqueNamedExpr)(uniqueNamedExpr.position)
             children(acc.updated(expr, nestedPlan))
