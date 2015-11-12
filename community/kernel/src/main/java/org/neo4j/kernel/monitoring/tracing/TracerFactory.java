@@ -22,6 +22,8 @@ package org.neo4j.kernel.monitoring.tracing;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * A TracerFactory determines the implementation of the tracers, that a database should use. Each implementation has
@@ -38,19 +40,25 @@ public interface TracerFactory
 
     /**
      * Create a new PageCacheTracer instance.
+     *
+     * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
-    PageCacheTracer createPageCacheTracer();
+    PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler );
 
     /**
      * Create a new TransactionTracer instance.
+     *
+     * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
-    TransactionTracer createTransactionTracer();
+    TransactionTracer createTransactionTracer( Monitors monitors, JobScheduler jobScheduler );
 
     /**
      * Create a new CheckPointTracer instance.
+     *
+     * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
-    CheckPointTracer createCheckPointTracer();
+    CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler );
 }

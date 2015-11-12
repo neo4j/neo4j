@@ -147,8 +147,8 @@ public class PlatformModule
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         String desiredImplementationName = config.get( GraphDatabaseFacadeFactory.Configuration.tracer );
-        tracers = dependencies.satisfyDependency(
-                new Tracers( desiredImplementationName, logging.getInternalLog( Tracers.class ) ) );
+        tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
+                logging.getInternalLog( Tracers.class ), monitors, jobScheduler ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
         dependencies.satisfyDependency( tracers.transactionTracer );
         dependencies.satisfyDependency( tracers.checkPointTracer );

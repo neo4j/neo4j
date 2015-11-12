@@ -40,7 +40,9 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 
@@ -112,7 +114,7 @@ public class KernelTransactionsTest
         try ( KernelTransaction transaction = registry.newInstance() )
         {
             // Just pick anything that can flag that changes have been made to this transaction
-            ((KernelTransactionImplementation)transaction).txState().nodeDoCreate( 0 );
+            ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
             transaction.success();
         }
 
@@ -154,9 +156,13 @@ public class KernelTransactionsTest
                 anyLong() ) )
                 .thenReturn( sillyCommandList() );
 
-        return new KernelTransactions( locks, null, null, null, TransactionHeaderInformationFactory.DEFAULT,
-                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
-                new Tracers( "null", NullLog.getInstance() ), storageEngine );
+        Tracers tracers =
+                new Tracers( "null", NullLog.getInstance(), mock( Monitors.class ), mock( JobScheduler.class ) );
+        return new KernelTransactions( locks,
+                null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                commitProcess, null,
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+                tracers, storageEngine );
     }
 
     private static Collection<Command> sillyCommandList()

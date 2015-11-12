@@ -25,6 +25,8 @@ import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * The default TracerFactory, when nothing else is otherwise configured.
@@ -38,20 +40,22 @@ public class DefaultTracerFactory implements TracerFactory
     }
 
     @Override
-    public PageCacheTracer createPageCacheTracer()
+    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler )
     {
         return new DefaultPageCacheTracer();
     }
 
     @Override
-    public TransactionTracer createTransactionTracer()
+    public TransactionTracer createTransactionTracer( Monitors monitors, JobScheduler jobScheduler )
     {
-        return new DefaultTransactionTracer();
+        DefaultTransactionTracer.Monitor monitor = monitors.newMonitor( DefaultTransactionTracer.Monitor.class );
+        return new DefaultTransactionTracer( monitor, jobScheduler );
     }
 
     @Override
-    public CheckPointTracer createCheckPointTracer()
+    public CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler )
     {
-        return new DefaultCheckPointerTracer();
+        DefaultCheckPointerTracer.Monitor monitor = monitors.newMonitor( DefaultCheckPointerTracer.Monitor.class );
+        return new DefaultCheckPointerTracer( monitor, jobScheduler );
     }
 }

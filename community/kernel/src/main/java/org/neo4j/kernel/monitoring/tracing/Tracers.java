@@ -23,6 +23,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 /**
@@ -106,7 +108,7 @@ public class Tracers
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
      * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
      */
-    public Tracers( String desiredImplementationName, Log msgLog )
+    public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler )
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
@@ -141,9 +143,9 @@ public class Tracers
                 msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
             }
 
-            pageCacheTracer = foundFactory.createPageCacheTracer();
-            transactionTracer = foundFactory.createTransactionTracer();
-            checkPointTracer = foundFactory.createCheckPointTracer();
+            pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler );
+            transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
+            checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
         }
     }
 }
