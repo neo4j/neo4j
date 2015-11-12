@@ -55,17 +55,17 @@
                       classpathref="maven.test.classpath" failonerror="true">
                   <arg value="--output=${project.build.directory}/docs/ops/available-metrics.asciidoc" />
 
-                  <arg value="org.neo4j.metrics.source.CheckPointingMetrics" />
-                  <arg value="org.neo4j.metrics.source.EntityCountMetrics" />
-                  <arg value="org.neo4j.metrics.source.PageCacheMetrics" />
-                  <arg value="org.neo4j.metrics.source.TransactionMetrics" />
-                  <arg value="org.neo4j.metrics.source.CypherMetrics" />
-                  <arg value="org.neo4j.metrics.source.LogRotationMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.CheckPointingMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.EntityCountMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.PageCacheMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.TransactionMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.CypherMetrics" />
+                  <arg value="org.neo4j.metrics.source.db.LogRotationMetrics" />
 
-                  <arg value="org.neo4j.metrics.source.NetworkMetrics" />
-                  <arg value="org.neo4j.metrics.source.ClusterMetrics" />
+                  <arg value="org.neo4j.metrics.source.cluster.NetworkMetrics" />
+                  <arg value="org.neo4j.metrics.source.cluster.ClusterMetrics" />
 
-                  <arg value="org.neo4j.metrics.source.JvmMetrics" />
+                  <arg value="org.neo4j.metrics.source.jvm.JvmMetrics" />
                 </java>
               </target>
             </configuration>

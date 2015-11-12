@@ -80,28 +80,25 @@ public class MetricsExtension implements Lifecycle
         // Setup output
         boolean outputBuilt = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
 
-        if ( outputBuilt )
-        {
-            // Setup metric gathering
-            boolean metricsBuilt = new Neo4jMetricsBuilder( registry, configuration, monitors,
-                    dataSourceManager, transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor,
-                    idGeneratorFactory, dependencyResolver, logService, life ).build();
-        }
-        else
-        {
-            if ( metrics.available() )
-            {
-                logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. "
-                             +
-                             "Disabling kernel metrics extension." );
-            }
+        // Setup metric gathering
+        boolean metricsBuilt = new Neo4jMetricsBuilder( registry, configuration, monitors,
+                dataSourceManager, transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor,
+                idGeneratorFactory, dependencyResolver, logService, life ).build();
 
-            if ( output.available() )
-            {
-                logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. "
-                             +
-                             "Disabling kernel metrics extension." );
-            }
+        if ( metricsBuilt && !outputBuilt )
+        {
+            logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. "
+                         +
+                         "Disabling kernel metrics extension." );
+            life.clear();
+        }
+
+        if ( outputBuilt && !metricsBuilt )
+        {
+            logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. "
+                         +
+                         "Disabling kernel metrics extension." );
+            life.clear();
         }
 
         life.init();

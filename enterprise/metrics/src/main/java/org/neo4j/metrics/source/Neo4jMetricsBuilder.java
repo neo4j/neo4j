@@ -34,6 +34,18 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.metrics.source.cluster.ClusterMetrics;
+import org.neo4j.metrics.source.cluster.NetworkMetrics;
+import org.neo4j.metrics.source.db.CheckPointingMetrics;
+import org.neo4j.metrics.source.db.CypherMetrics;
+import org.neo4j.metrics.source.db.EntityCountMetrics;
+import org.neo4j.metrics.source.db.LogRotationMetrics;
+import org.neo4j.metrics.source.db.PageCacheMetrics;
+import org.neo4j.metrics.source.db.TransactionMetrics;
+import org.neo4j.metrics.source.jvm.GCMetrics;
+import org.neo4j.metrics.source.jvm.MemoryBuffersMetrics;
+import org.neo4j.metrics.source.jvm.MemoryPoolMetrics;
+import org.neo4j.metrics.source.jvm.ThreadMetrics;
 
 public class Neo4jMetricsBuilder
 {

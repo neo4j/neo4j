@@ -17,47 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.cypher.PlanCacheMetricsMonitor;
-import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Cypher Metrics" )
-public class CypherMetrics extends LifecycleAdapter
+public class ThreadMetrics extends LifecycleAdapter implements Lifecycle
 {
-    private static final String NAME_PREFIX = "neo4j.cypher";
+    public static final String THREAD_COUNT = name( JvmMetrics.NAME_PREFIX, "thread.count" );
 
-    @Documented( "The total number of times Cypher has decided to re-plan a query" )
-    public static final String REPLAN_EVENTS = name( NAME_PREFIX, "replan_events" );
-
-    private final Monitors monitors;
     private final MetricRegistry registry;
-    private final PlanCacheMetricsMonitor cacheMonitor = new PlanCacheMetricsMonitor();
 
-    public CypherMetrics( Monitors monitors, MetricRegistry registry )
+    public ThreadMetrics( MetricRegistry registry )
     {
-        this.monitors = monitors;
         this.registry = registry;
     }
 
     @Override
     public void start()
     {
-        monitors.addMonitorListener( cacheMonitor );
-
-        registry.register( REPLAN_EVENTS, new Gauge<Long>()
+        registry.register( THREAD_COUNT, new Gauge<Integer>()
         {
             @Override
-            public Long getValue()
+            public Integer getValue()
             {
-                return cacheMonitor.numberOfReplans();
+                return Thread.activeCount();
             }
         } );
     }
@@ -65,9 +54,8 @@ public class CypherMetrics extends LifecycleAdapter
     @Override
     public void stop()
     {
-        registry.remove( REPLAN_EVENTS );
-
-        monitors.removeMonitorListener( cacheMonitor );
+        registry.remove( THREAD_COUNT );
     }
 }
+
 

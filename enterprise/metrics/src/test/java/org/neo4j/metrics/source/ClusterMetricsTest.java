@@ -43,6 +43,7 @@ import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.metrics.source.cluster.ClusterMetrics;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
