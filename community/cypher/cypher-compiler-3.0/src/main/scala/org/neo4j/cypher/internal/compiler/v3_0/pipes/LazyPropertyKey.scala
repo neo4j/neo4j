@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{PropertyKeyName, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_0.{PropertyKeyId, SemanticTable}
 
-case class LazyPropertyKey(name:String) {
-  private var id : Option[PropertyKeyId] = None
+case class LazyPropertyKey(name: String) {
+  private var id: Option[PropertyKeyId] = None
 
   def id(context: TokenContext): Option[PropertyKeyId] = id match {
-    case None => {
+    case None =>
       id = context.getOptPropertyKeyId(name).map(PropertyKeyId)
       id
-    }
-    case x    => x
+    case x => x
   }
 }
 
 object LazyPropertyKey {
-  def apply(name: PropertyKeyName)(implicit table:SemanticTable): LazyPropertyKey = {
+
+  def apply(name: PropertyKeyName)(implicit table: SemanticTable): LazyPropertyKey = {
     val property = new LazyPropertyKey(name.name)
     property.id = name.id
     property
