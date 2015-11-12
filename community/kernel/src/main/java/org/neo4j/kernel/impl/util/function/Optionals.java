@@ -28,7 +28,7 @@ public class Optionals
         @Override
         public Object get()
         {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "Cannot get Optionals.none()" );
         }
 
         @Override
