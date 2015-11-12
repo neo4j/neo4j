@@ -54,23 +54,9 @@ public class LogRotationMetrics extends LifecycleAdapter implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        registry.register( LOG_ROTATION_EVENTS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return logRotationMonitor.numberOfLogRotationEvents();
-            }
-        } );
-
-        registry.register( LOG_ROTATION_TOTAL_TIME, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return logRotationMonitor.logRotationAccumulatedTotalTimeMillis();
-            }
-        } );
+        registry.register( LOG_ROTATION_EVENTS, (Gauge<Long>) logRotationMonitor::numberOfLogRotationEvents );
+        registry.register( LOG_ROTATION_TOTAL_TIME,
+                (Gauge<Long>) logRotationMonitor::logRotationAccumulatedTotalTimeMillis );
     }
 
     @Override

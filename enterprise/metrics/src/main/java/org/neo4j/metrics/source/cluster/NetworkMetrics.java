@@ -75,29 +75,9 @@ public class NetworkMetrics extends LifecycleAdapter
                 ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
         monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient210.class.getName() );
 
-        registry.register( MASTER_NETWORK_TX_WRITES, new Gauge<Long>()
-        {
-            public Long getValue()
-            {
-                return masterNetworkTransactionWrites.getBytesWritten();
-            }
-        } );
-
-        registry.register( MASTER_NETWORK_STORE_WRITES, new Gauge<Long>()
-        {
-            public Long getValue()
-            {
-                return masterNetworkStoreWrites.getBytesWritten();
-            }
-        } );
-
-        registry.register( SLAVE_NETWORK_TX_WRITES, new Gauge<Long>()
-        {
-            public Long getValue()
-            {
-                return slaveNetworkTransactionWrites.getBytesWritten();
-            }
-        } );
+        registry.register( MASTER_NETWORK_TX_WRITES, (Gauge<Long>) masterNetworkTransactionWrites::getBytesWritten );
+        registry.register( MASTER_NETWORK_STORE_WRITES, (Gauge<Long>) masterNetworkStoreWrites::getBytesWritten );
+        registry.register( SLAVE_NETWORK_TX_WRITES, (Gauge<Long>) slaveNetworkTransactionWrites::getBytesWritten );
     }
 
     @Override

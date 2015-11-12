@@ -58,59 +58,12 @@ public class PageCacheMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-        registry.register( PC_PAGE_FAULTS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countFaults();
-            }
-        } );
-
-        registry.register( PC_EVICTIONS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countEvictions();
-            }
-        } );
-
-        registry.register( PC_PINS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countPins();
-            }
-        } );
-
-        registry.register( PC_UNPINS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countUnpins();
-            }
-        } );
-
-        registry.register( PC_FLUSHES, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countFlushes();
-            }
-        } );
-
-        registry.register( PC_EVICTION_EXCEPTIONS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return pageCacheCounters.countEvictionExceptions();
-            }
-        } );
+        registry.register( PC_PAGE_FAULTS, (Gauge<Long>) pageCacheCounters::countFaults );
+        registry.register( PC_EVICTIONS, (Gauge<Long>) pageCacheCounters::countEvictions );
+        registry.register( PC_PINS, (Gauge<Long>) pageCacheCounters::countPins );
+        registry.register( PC_UNPINS, (Gauge<Long>) pageCacheCounters::countUnpins );
+        registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::countFlushes );
+        registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::countEvictionExceptions );
     }
 
     @Override

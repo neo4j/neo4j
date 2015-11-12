@@ -20,8 +20,6 @@
 package org.neo4j.metrics.source.jvm;
 
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.lang.management.GarbageCollectorMXBean;
@@ -52,36 +50,16 @@ public class GCMetrics extends LifecycleAdapter implements Lifecycle
     {
         for ( final GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
         {
-            registry.register( name( GC_TIME, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return gcBean.getCollectionTime();
-                }
-            } );
-
-            registry.register( name( GC_COUNT, prettifyName( gcBean.getName() ) ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return gcBean.getCollectionCount();
-                }
-            } );
+            registry.register( name( GC_TIME, prettifyName( gcBean.getName() ) ),
+                    (Gauge<Long>) gcBean::getCollectionTime );
+            registry.register( name( GC_COUNT, prettifyName( gcBean.getName() ) ),
+                    (Gauge<Long>) gcBean::getCollectionCount );
         }
     }
 
     @Override
     public void stop()
     {
-        registry.removeMatching( new MetricFilter()
-        {
-            @Override
-            public boolean matches( String name, Metric metric )
-            {
-                return name.startsWith( GC_PREFIX );
-            }
-        } );
+        registry.removeMatching( ( name, metric ) -> name.startsWith( GC_PREFIX ) );
     }
 }

@@ -50,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-
 public class ClusterMetricsTest
 {
     private final MetricRegistry metricRegistry = new MetricRegistry();

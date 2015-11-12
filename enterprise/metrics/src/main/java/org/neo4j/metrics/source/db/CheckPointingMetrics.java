@@ -51,23 +51,9 @@ public class CheckPointingMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-        registry.register( CHECK_POINT_EVENTS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return checkPointerMonitor.numberOfCheckPointEvents();
-            }
-        } );
-
-        registry.register( CHECK_POINT_TOTAL_TIME, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return checkPointerMonitor.checkPointAccumulatedTotalTimeMillis();
-            }
-        } );
+        registry.register( CHECK_POINT_EVENTS, (Gauge<Long>) checkPointerMonitor::numberOfCheckPointEvents );
+        registry.register( CHECK_POINT_TOTAL_TIME,
+                (Gauge<Long>) checkPointerMonitor::checkPointAccumulatedTotalTimeMillis );
     }
 
     @Override

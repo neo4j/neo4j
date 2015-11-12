@@ -20,8 +20,6 @@
 package org.neo4j.metrics.source.jvm;
 
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.lang.management.ManagementFactory;
@@ -48,27 +46,14 @@ public class MemoryPoolMetrics extends LifecycleAdapter implements Lifecycle
     {
         for ( final MemoryPoolMXBean memPool : ManagementFactory.getMemoryPoolMXBeans() )
         {
-            registry.register( name( MEMORY_POOL, prettifyName( memPool.getName() ) ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return memPool.getUsage().getUsed();
-                }
-            } );
+            registry.register( name( MEMORY_POOL, prettifyName( memPool.getName() ) ),
+                    (Gauge<Long>) () -> memPool.getUsage().getUsed() );
         }
     }
 
     @Override
     public void stop()
     {
-        registry.removeMatching( new MetricFilter()
-        {
-            @Override
-            public boolean matches( String name, Metric metric )
-            {
-                return name.startsWith( MEMORY_POOL );
-            }
-        } );
+        registry.removeMatching( ( name, metric ) -> name.startsWith( MEMORY_POOL ) );
     }
 }

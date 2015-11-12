@@ -41,14 +41,7 @@ public class ThreadMetrics extends LifecycleAdapter implements Lifecycle
     @Override
     public void start()
     {
-        registry.register( THREAD_COUNT, new Gauge<Integer>()
-        {
-            @Override
-            public Integer getValue()
-            {
-                return Thread.activeCount();
-            }
-        } );
+        registry.register( THREAD_COUNT, (Gauge<Integer>) Thread::activeCount );
     }
 
     @Override

@@ -23,11 +23,14 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
+import static org.neo4j.kernel.IdType.NODE;
+import static org.neo4j.kernel.IdType.PROPERTY;
+import static org.neo4j.kernel.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
 
 @Documented( ".Database Data Metrics" )
 public class EntityCountMetrics extends LifecycleAdapter
@@ -57,41 +60,13 @@ public class EntityCountMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-        registry.register( COUNTS_NODE, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return idGeneratorFactory.get( IdType.NODE ).getNumberOfIdsInUse();
-            }
-        } );
-
-        registry.register( COUNTS_RELATIONSHIP, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return idGeneratorFactory.get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
-            }
-        } );
-
-        registry.register( COUNTS_PROPERTY, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return idGeneratorFactory.get( IdType.PROPERTY ).getNumberOfIdsInUse();
-            }
-        } );
-
-        registry.register( COUNTS_RELATIONSHIP_TYPE, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
-            }
-        } );
+        registry.register( COUNTS_NODE, (Gauge<Long>) () -> idGeneratorFactory.get( NODE ).getNumberOfIdsInUse() );
+        registry.register( COUNTS_RELATIONSHIP,
+                (Gauge<Long>) () -> idGeneratorFactory.get( RELATIONSHIP ).getNumberOfIdsInUse() );
+        registry.register( COUNTS_PROPERTY,
+                (Gauge<Long>) () -> idGeneratorFactory.get( PROPERTY ).getNumberOfIdsInUse() );
+        registry.register( COUNTS_RELATIONSHIP_TYPE,
+                (Gauge<Long>) () -> idGeneratorFactory.get( RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse() );
     }
 
     @Override

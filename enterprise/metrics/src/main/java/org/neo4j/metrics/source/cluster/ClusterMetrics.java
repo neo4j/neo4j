@@ -23,9 +23,8 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -68,26 +67,11 @@ public class ClusterMetrics extends LifecycleAdapter
     {
         monitors.addMonitorListener( monitor );
 
-        registry.register( IS_MASTER, new RoleGauge( Predicates.equalTo( MASTER ) ) );
-        registry.register( IS_AVAILABLE, new RoleGauge( Predicates.not( Predicates.equalTo( UNKNOWN ) ) ) );
+        registry.register( IS_MASTER, new RoleGauge( MASTER::equals ) );
+        registry.register( IS_AVAILABLE, new RoleGauge( ( s ) -> !UNKNOWN.equals( s ) ) );
 
-        registry.register( SLAVE_PULL_UPDATES, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return monitor.events.get();
-            }
-        } );
-
-        registry.register( SLAVE_PULL_UPDATE_UP_TO_TX, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return monitor.lastAppliedTxId;
-            }
-        } );
+        registry.register( SLAVE_PULL_UPDATES, (Gauge<Long>) () -> monitor.events.get() );
+        registry.register( SLAVE_PULL_UPDATE_UP_TO_TX, (Gauge<Long>) () -> monitor.lastAppliedTxId );
     }
 
     @Override

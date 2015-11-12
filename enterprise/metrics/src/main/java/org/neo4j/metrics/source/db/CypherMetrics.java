@@ -51,22 +51,13 @@ public class CypherMetrics extends LifecycleAdapter
     public void start()
     {
         monitors.addMonitorListener( cacheMonitor );
-
-        registry.register( REPLAN_EVENTS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return cacheMonitor.numberOfReplans();
-            }
-        } );
+        registry.register( REPLAN_EVENTS, (Gauge<Long>) cacheMonitor::numberOfReplans );
     }
 
     @Override
     public void stop()
     {
         registry.remove( REPLAN_EVENTS );
-
         monitors.removeMonitorListener( cacheMonitor );
     }
 }

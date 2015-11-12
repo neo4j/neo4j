@@ -20,8 +20,6 @@
 package org.neo4j.metrics.source.jvm;
 
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.lang.management.BufferPoolMXBean;
@@ -49,45 +47,19 @@ public class MemoryBuffersMetrics extends LifecycleAdapter implements Lifecycle
     {
         for ( final BufferPoolMXBean pool : ManagementFactory.getPlatformMXBeans( BufferPoolMXBean.class ) )
         {
-            registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "count" ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pool.getCount();
-                }
-            } );
-
-            registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "used" ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pool.getMemoryUsed();
-                }
-            } );
-
-            registry.register( name( MEMORY_BUFFER, prettifyName( pool.getName() ), "capacity" ), new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pool.getTotalCapacity();
-                }
-            } );
+            registry.register(
+                    name( MEMORY_BUFFER, prettifyName( pool.getName() ), "count" ), (Gauge<Long>) pool::getCount );
+            registry.register(
+                    name( MEMORY_BUFFER, prettifyName( pool.getName() ), "used" ), (Gauge<Long>) pool::getMemoryUsed );
+            registry.register(
+                    name( MEMORY_BUFFER, prettifyName( pool.getName() ), "capacity" ),
+                    (Gauge<Long>) pool::getTotalCapacity );
         }
     }
 
     @Override
     public void stop()
     {
-        registry.removeMatching( new MetricFilter()
-        {
-            @Override
-            public boolean matches( String name, Metric metric )
-            {
-                return name.startsWith( MEMORY_BUFFER );
-            }
-        } );
+        registry.removeMatching( ( name, metric ) -> name.startsWith( MEMORY_BUFFER ) );
     }
 }

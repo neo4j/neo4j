@@ -87,151 +87,35 @@ public class TransactionMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-        registry.register( TX_STARTED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfStartedTransactions();
-            }
-        } );
+        registry.register( TX_STARTED, (Gauge<Long>) transactionCounters::getNumberOfStartedTransactions );
+        registry.register( TX_PEAK_CONCURRENT,
+                (Gauge<Long>) transactionCounters::getPeakConcurrentNumberOfTransactions );
 
-        registry.register( TX_PEAK_CONCURRENT, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getPeakConcurrentNumberOfTransactions();
-            }
-        } );
+        registry.register( TX_ACTIVE, (Gauge<Long>) transactionCounters::getNumberOfActiveTransactions );
+        registry.register( READ_TX_ACTIVE, (Gauge<Long>) transactionCounters::getNumberOfActiveReadTransactions );
+        registry.register( WRITE_TX_ACTIVE, (Gauge<Long>) transactionCounters::getNumberOfActiveWriteTransactions );
 
-        registry.register( TX_ACTIVE, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfActiveTransactions();
-            }
-        } );
+        registry.register( TX_COMMITTED, (Gauge<Long>) transactionCounters::getNumberOfCommittedTransactions );
+        registry.register( READ_TX_COMMITTED, (Gauge<Long>) transactionCounters::getNumberOfCommittedReadTransactions );
+        registry.register( WRITE_TX_COMMITTED,
+                (Gauge<Long>) transactionCounters::getNumberOfCommittedWriteTransactions );
 
-        registry.register( READ_TX_ACTIVE, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfActiveReadTransactions();
-            }
-        } );
+        registry.register( TX_ROLLBACKS, (Gauge<Long>) transactionCounters::getNumberOfRolledBackTransactions );
+        registry.register( READ_TX_ROLLBACKS,
+                (Gauge<Long>) transactionCounters::getNumberOfRolledBackReadTransactions );
+        registry.register( WRITE_TX_ROLLBACKS,
+                (Gauge<Long>) transactionCounters::getNumberOfRolledBackWriteTransactions );
 
-        registry.register( WRITE_TX_ACTIVE, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfActiveWriteTransactions();
-            }
-        } );
+        registry.register( TX_TERMINATED, (Gauge<Long>) transactionCounters::getNumberOfTerminatedTransactions );
+        registry.register( READ_TX_TERMINATED,
+                (Gauge<Long>) transactionCounters::getNumberOfTerminatedReadTransactions );
+        registry.register( WRITE_TX_TERMINATED,
+                (Gauge<Long>) transactionCounters::getNumberOfTerminatedWriteTransactions );
 
-        registry.register( TX_COMMITTED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfCommittedTransactions();
-            }
-        } );
-
-        registry.register( READ_TX_COMMITTED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfCommittedReadTransactions();
-            }
-        } );
-
-        registry.register( WRITE_TX_COMMITTED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfCommittedWriteTransactions();
-            }
-        } );
-
-        registry.register( TX_ROLLBACKS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfRolledBackTransactions();
-            }
-        } );
-
-        registry.register( READ_TX_ROLLBACKS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfRolledBackReadTransactions();
-            }
-        } );
-
-        registry.register( WRITE_TX_ROLLBACKS, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfRolledBackWriteTransactions();
-            }
-        } );
-
-        registry.register( TX_TERMINATED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfTerminatedTransactions();
-            }
-        } );
-
-        registry.register( READ_TX_TERMINATED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfTerminatedReadTransactions();
-            }
-        } );
-
-        registry.register( WRITE_TX_TERMINATED, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return transactionCounters.getNumberOfTerminatedWriteTransactions();
-            }
-        } );
-
-        registry.register( LAST_COMMITTED_TX_ID, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return dataSourceManager.getDataSource().
-                        getNeoStores().getMetaDataStore().getLastCommittedTransactionId();
-            }
-        } );
-
-        registry.register( LAST_CLOSED_TX_ID, new Gauge<Long>()
-        {
-            @Override
-            public Long getValue()
-            {
-                return dataSourceManager.getDataSource().
-                        getNeoStores().getMetaDataStore().getLastClosedTransactionId();
-            }
-        } );
+        registry.register( LAST_COMMITTED_TX_ID, (Gauge<Long>) () ->
+                dataSourceManager.getDataSource().getNeoStores().getMetaDataStore().getLastCommittedTransactionId() );
+        registry.register( LAST_CLOSED_TX_ID, (Gauge<Long>) () ->
+                dataSourceManager.getDataSource().getNeoStores().getMetaDataStore().getLastClosedTransactionId() );
     }
 
     @Override
