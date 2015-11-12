@@ -27,6 +27,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 
+import static java.lang.String.format;
+
 /**
  * Keeps a list of members, their roles and availability for display for example in JMX or REST.
  * <p>
@@ -124,5 +126,19 @@ public class ClusterMembers
         default:
             return member.unavailable();
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder buf = new StringBuilder();
+        for ( ClusterMember clusterMember : getMembers() )
+        {
+            buf.append( "  " ).append( clusterMember.getInstanceId() ).append( ":" )
+               .append( clusterMember.getHARole() )
+               .append( " (is alive = " ).append( clusterMember.isAlive() ).append( ")" )
+               .append( format( "%n" ) );
+        }
+        return buf.toString();
     }
 }

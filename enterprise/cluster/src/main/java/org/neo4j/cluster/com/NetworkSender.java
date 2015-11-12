@@ -101,18 +101,18 @@ public class NetworkSender
 
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
-    private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
-    private Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
+    private final Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
+    private final Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
     // connections to
     private ClientBootstrap clientBootstrap;
 
     private final Monitor monitor;
-    private Configuration config;
+    private final Configuration config;
     private final NetworkReceiver receiver;
-    private Log msgLog;
+    private final Log msgLog;
     private URI me;
 
-    private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     private volatile boolean paused;
@@ -163,6 +163,13 @@ public class NetworkSender
                 Executors.newFixedThreadPool( 2, daemon( "Cluster client worker", monitor ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
+
+        msgLog.debug( "Started NetworkSender for " + toString( config ) );
+    }
+
+    private String toString( Configuration config )
+    {
+        return "defaultPort:" + config.defaultPort() + ", port:" + config.port();
     }
 
     @Override
@@ -188,7 +195,7 @@ public class NetworkSender
 
         channels.close().awaitUninterruptibly();
         clientBootstrap.releaseExternalResources();
-        msgLog.debug( "Shutting down NetworkSender complete" );
+        msgLog.debug( "Shutting down NetworkSender for " + toString( config ) + " complete" );
     }
 
     @Override
