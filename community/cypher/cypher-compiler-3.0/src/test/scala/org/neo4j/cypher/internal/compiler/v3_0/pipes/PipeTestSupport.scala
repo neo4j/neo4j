@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherTestSupport
+import org.neo4j.graphdb.{Node, Relationship}
 import org.scalatest.mock.MockitoSugar
 
 trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
-  val newMonitor = mock[PipeMonitor]
+  implicit val newMonitor = mock[PipeMonitor]
+  val query = mock[QueryContext]
 
   def pipeWithResults(f: QueryState => Iterator[ExecutionContext]): Pipe = new Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
@@ -38,5 +47,63 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     def dup(sources: List[Pipe]): Pipe = ???
     def sources: Seq[Pipe] = ???
     def localEffects: Effects = ???
+  }
+
+  def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
+
+  def setUpRelMockingInQueryContext(rels: Relationship*) {
+    val relsByStartNode = rels.groupBy(_.getStartNode)
+    val relsByEndNode = rels.groupBy(_.getEndNode)
+    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
+      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
+    }.toMap
+
+    setUpRelLookupMocking(SemanticDirection.OUTGOING, relsByStartNode)
+    setUpRelLookupMocking(SemanticDirection.INCOMING, relsByEndNode)
+    setUpRelLookupMocking(SemanticDirection.BOTH, relsByNode)
+  }
+
+  def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
+    relsByNode.foreach {
+      case (node, rels) =>
+        when(query.getRelationshipsForIds(node, direction, None)).thenAnswer(
+          new Answer[Iterator[Relationship]] {
+            def answer(invocation: InvocationOnMock) = rels.iterator
+          })
+
+        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
+    }
+  }
+
+  def newMockedNode(id: Int) = {
+    val node = mock[Node]
+    when(node.getId).thenReturn(id)
+    node
+  }
+
+  def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
+    val relationship = mock[Relationship]
+    when(relationship.getId).thenReturn(id)
+    when(relationship.getStartNode).thenReturn(startNode)
+    when(relationship.getEndNode).thenReturn(endNode)
+    when(relationship.getOtherNode(startNode)).thenReturn(endNode)
+    when(relationship.getOtherNode(endNode)).thenReturn(startNode)
+    relationship
+  }
+
+  def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
+    newMockedPipe(Map(node -> CTNode), rows: _*)
+  }
+
+  def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
+    val pipe = mock[Pipe]
+
+    when(pipe.sources).thenReturn(Seq.empty)
+    when(pipe.symbols).thenReturn(SymbolTable(symbols))
+    when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock) = rows.iterator
+    })
+
+    pipe
   }
 }

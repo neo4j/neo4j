@@ -32,6 +32,9 @@ import scala.collection.Map
 
 abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name: String,  expression: Expression, removeOtherProps: Boolean, pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with MapSupport {
+
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(name, expression)
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
@@ -42,8 +45,6 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
       val item = row.get(name).get
       if (item != null) {
         val itemId = getId(item)
-
-        val needsExclusiveLock = Expression.doesMapExpressionReadSameProperty(name, expression)
         if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
         /* Make the map expression look like a map */
@@ -55,7 +56,7 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
         }
 
         /*Find the property container we'll be working on*/
-        setProperties(qtx, operations(qtx), itemId, map, needsExclusiveLock)
+        setProperties(qtx, operations(qtx), itemId, map)
 
         if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
       }
@@ -85,7 +86,7 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
   def operations(query: QueryContext): Operations[T]
   def operatorName: String
 
-  private def setProperties(qtx: QueryContext, ops: Operations[T], itemId: Long, map: Map[Int, Any], needsExclusiveLock: Boolean) {
+  private def setProperties(qtx: QueryContext, ops: Operations[T], itemId: Long, map: Map[Int, Any]) {
     /*Set all map values on the property container*/
     for ((k, v) <- map) {
       if (v == null)

@@ -34,17 +34,14 @@ object SetPropertyPipe {
 
 abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression, pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(name, expression, propertyKey.name)
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
-
-    val needsExclusiveLock = expression.subExpressions.exists {
-      case Property(_, key) if key.name == propertyKey.name => true
-      case _ => false
-    }
-
     input.map { row =>
       val value = row.get(name).get
-      if (value != null) setProperty(row, state, getId(value), needsExclusiveLock)
+      if (value != null) setProperty(row, state, getId(value))
       row
     }
   }
@@ -53,7 +50,7 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
   def operations(query: QueryContext): Operations[T]
   def operatorName: String
 
-  private def setProperty(context: ExecutionContext, state: QueryState, entityId: Long, needsExclusiveLock: Boolean) = {
+  private def setProperty(context: ExecutionContext, state: QueryState, entityId: Long) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
@@ -66,8 +63,7 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
     if (value == null) ops.removeProperty(entityId, propertyId)
     else ops.setProperty(entityId, propertyId, value)
 
-    // TODO: Is release not needed? (Currently a write lock will be held until the transaction is committed, but will this always be true)
-    if (needsExclusiveLock) ops.acquireExclusiveLock(entityId)
+    if (needsExclusiveLock) ops.releaseExclusiveLock(entityId)
   }
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, identifiers)

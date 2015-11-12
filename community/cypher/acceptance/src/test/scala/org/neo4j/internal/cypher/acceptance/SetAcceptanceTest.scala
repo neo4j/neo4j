@@ -279,6 +279,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
   }
 
+  // Lost updates are still an issue, and it's hard to identify some cases.
+  // We try to document some typical cases below
+
   // We do not support this because, even though the test is just a simple case,
   // in general we would have to solve a complex data flow equation in order
   // to solve this without being too conservative and do unnecessary exclusive locking
@@ -288,6 +291,13 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val query = "MATCH (n) WITH n.prop as p SET n.prop = p + 1"
     val resultQuery = "MATCH (n) RETURN n.prop"
     testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  ignore("lost updates should not happen on set node properties from map with circular dependencies") {
+    val init: () => Unit = () => createNode("prop" -> 0, "prop2" -> 0)
+    val query = "match (n) set n += { prop: n.prop2 + 1, prop2: n.prop + 1 }"
+    val resultQuery = "MATCH (n) RETURN n.prop + n.prop2"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 20)
   }
 
   private def testLostUpdatesWithBothPlanners(init: () => Unit,

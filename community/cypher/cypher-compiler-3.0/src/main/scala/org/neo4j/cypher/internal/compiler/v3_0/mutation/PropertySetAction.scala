@@ -32,10 +32,8 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
 
   val Property(mapExpr, propertyKey) = prop
 
-  private val needsExclusiveLock = valueExpression.subExpressions.exists {
-    case Property(_, key) if key.name == propertyKey.name => true
-    case _ => false
-  }
+  private val needsExclusiveLock =
+    Expression.hasPropertyReadDependency(mapExpr.asInstanceOf[Identifier].entityName, valueExpression, propertyKey.name)
 
   def localEffects(symbols: SymbolTable) = Effects.propertyWrite(mapExpr, symbols)(propertyKey.name)
 

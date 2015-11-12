@@ -141,7 +141,7 @@ trait ExpressionWInnerExpression extends Expression {
 }
 
 object Expression {
-  def doesMapExpressionReadSameProperty(mapEntityName: String, mapExpression: Expression): Boolean =
+  def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
     mapExpression match {
       case LiteralMap(map) => map.exists {
         case (k, v) => v.subExpressions.exists {
@@ -151,5 +151,13 @@ object Expression {
         }
       }
       case _ => false
+    }
+
+  def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
+    expression.subExpressions.exists {
+      case Property(Identifier(name), key) =>
+        name == entityName && key.name == propertyKey
+      case _ =>
+        false
     }
 }

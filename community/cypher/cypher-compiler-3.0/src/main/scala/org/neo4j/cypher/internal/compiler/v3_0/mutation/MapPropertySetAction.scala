@@ -35,6 +35,12 @@ import scala.collection.Map
 case class MapPropertySetAction(element: Expression, mapExpression: Expression, removeOtherProps:Boolean)
   extends SetAction with MapSupport {
 
+  private val elementName = element match {
+    case Identifier(name) => name
+    case _ => ""
+  }
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(elementName, mapExpression)
+
   def exec(context: ExecutionContext, state: QueryState) = {
     val qtx = state.query
     val item = element(context)(state)
@@ -49,11 +55,6 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
       }
 
       val itemId = id(item)
-      val elementName = element match {
-        case Identifier(name) => name
-        case _ => ""
-      }
-      val needsExclusiveLock = Expression.doesMapExpressionReadSameProperty(elementName, mapExpression)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
       /* Make the map expression look like a map */
