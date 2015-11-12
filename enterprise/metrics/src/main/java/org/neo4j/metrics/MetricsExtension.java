@@ -21,11 +21,7 @@ package org.neo4j.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
@@ -33,39 +29,26 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.metrics.output.EventReporter;
 import org.neo4j.metrics.output.OutputBuilder;
 import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 
 public class MetricsExtension implements Lifecycle
 {
     private final LifeSupport life = new LifeSupport();
+    private final MetricsKernelExtensionFactory.Dependencies dependencies;
     private final LogService logService;
     private final Config configuration;
-    private final Monitors monitors;
-    private final TransactionCounters transactionCounters;
-    private final PageCacheMonitor pageCacheCounters;
-    private final CheckPointerMonitor checkPointerMonitor;
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final LogRotationMonitor logRotationMonitor;
-    private final DataSourceManager dataSourceManager;
-    private final DependencyResolver dependencyResolver;
     private final KernelContext kernelContext;
+
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
-        logService = dependencies.logService();
-        configuration = dependencies.configuration();
-        monitors = dependencies.monitors();
-        dataSourceManager = dependencies.dataSourceManager();
-        transactionCounters = dependencies.transactionCounters();
-        pageCacheCounters = dependencies.pageCacheCounters();
-        checkPointerMonitor = dependencies.checkPointerCounters();
-        logRotationMonitor = dependencies.logRotationCounters();
-        idGeneratorFactory = dependencies.idGeneratorFactory();
-        dependencyResolver = dependencies.getDependencyResolver();
-        kernelContext = dependencies.kernelContext();
+        this.dependencies = dependencies;
+        this.logService = dependencies.logService();
+        this.configuration = dependencies.configuration();
+        this.kernelContext = dependencies.kernelContext();
     }
 
     @Override
@@ -78,12 +61,12 @@ public class MetricsExtension implements Lifecycle
         final MetricRegistry registry = new MetricRegistry();
 
         // Setup output
-        boolean outputBuilt = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
+        EventReporter reporter = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
+        boolean outputBuilt = reporter != null;
 
         // Setup metric gathering
-        boolean metricsBuilt = new Neo4jMetricsBuilder( registry, configuration, monitors,
-                dataSourceManager, transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor,
-                idGeneratorFactory, dependencyResolver, logService, life ).build();
+        boolean metricsBuilt =
+                new Neo4jMetricsBuilder( registry, reporter, configuration, logService, dependencies, life ).build();
 
         if ( metricsBuilt && !outputBuilt )
         {

@@ -37,14 +37,14 @@ public class CypherMetrics extends LifecycleAdapter
     @Documented( "The total number of times Cypher has decided to re-plan a query" )
     public static final String REPLAN_EVENTS = name( NAME_PREFIX, "replan_events" );
 
-    private final Monitors monitors;
     private final MetricRegistry registry;
+    private final Monitors monitors;
     private final PlanCacheMetricsMonitor cacheMonitor = new PlanCacheMetricsMonitor();
 
-    public CypherMetrics( Monitors monitors, MetricRegistry registry )
+    public CypherMetrics( MetricRegistry registry, Monitors monitors )
     {
-        this.monitors = monitors;
         this.registry = registry;
+        this.monitors = monitors;
     }
 
     @Override

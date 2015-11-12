@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -37,15 +37,19 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
@@ -66,13 +70,19 @@ public class MetricsKernelExtensionFactoryIT
     @Before
     public void setup() throws Exception
     {
-        outputPath = folder.file( "metrics.csv" );
+        outputPath = folder.directory( "metrics" );
+    }
+
+    private void createCluster( String minCypherReplanInterval, String minCheckPointIntervalTime )
+            throws Throwable
+    {
         Map<String,String> config = new HashMap<>();
         config.put( MetricsSettings.neoEnabled.name(), Settings.TRUE );
         config.put( metricsEnabled.name(), Settings.TRUE );
         config.put( csvEnabled.name(), Settings.TRUE );
-        config.put( cypher_min_replan_interval.name(), "0" );
+        config.put( cypher_min_replan_interval.name(), minCypherReplanInterval );
         config.put( csvPath.name(), outputPath.getAbsolutePath() );
+        config.put( check_point_interval_time.name(), minCheckPointIntervalTime );
         cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
         db = cluster.getMaster();
     }
@@ -80,6 +90,8 @@ public class MetricsKernelExtensionFactoryIT
     @Test
     public void mustLoadMetricsExtensionWhenConfigured() throws Throwable
     {
+        createCluster( "10m", "10m" );
+
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
         cluster.stop();
@@ -87,28 +99,15 @@ public class MetricsKernelExtensionFactoryIT
         // Awesome. Let's get some metric numbers.
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
-        try ( BufferedReader reader = new BufferedReader( new FileReader( metricsFile ) ) )
-        {
-            String[] headers = reader.readLine().split( "," );
-            assertThat( headers[0], is( "t" ) );
-            assertThat( headers[1], is( "value" ) );
-
-            // Now we can verify that the number of committed transactions should never decrease.
-            int committedTransactions = 0;
-            String line;
-            while ( (line = reader.readLine()) != null )
-            {
-                String[] fields = line.split( "," );
-                int newCommittedTransactions = Integer.parseInt( fields[1] );
-                assertThat( newCommittedTransactions, greaterThanOrEqualTo( committedTransactions ) );
-                committedTransactions = newCommittedTransactions;
-            }
-        }
+        long committedTransactions = readMonotonicIncreasingLongValue( metricsFile );
+        assertThat( committedTransactions, lessThanOrEqualTo( 1000L + 2L ) );
     }
 
     @Test
     public void showReplanEvents() throws Throwable
     {
+        createCluster( "0", "10m" );
+
         //do a simple query to populate cache
         try ( Transaction tx = db.beginTx() )
         {
@@ -129,25 +128,29 @@ public class MetricsKernelExtensionFactoryIT
 
         //now we should have one replan event
         File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
-        try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
+        long events = readMonotonicIncreasingLongValue( metricFile );
+        assertThat( events, is( 1L ) );
+    }
+
+    @Test
+    public void shouldUseEventBasedReportingCorrectly() throws Throwable
+    {
+        createCluster( "10m", "1s" );
+        addNodes( 100 );
+
+        CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
+        checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test" ) );
+        cluster.stop();
+
+        File metricFile = new File( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION + ".csv" );
+        // let's wait until the file is in place (since the reporting is async that might take a while)
+        while ( !metricFile.exists() )
         {
-            String[] headers = reader.readLine().split( "," );
-            int replanColumn = Arrays.binarySearch( headers, "value" );
-            assertThat( replanColumn, is( not( -1 ) ) );
-
-            // Now we can verify that the number of committed transactions should never decrease.
-            int replanEvents = 0;
-            String line;
-            while ( (line = reader.readLine()) != null )
-            {
-                String[] fields = line.split( "," );
-                int newReplanEvents = Integer.parseInt( fields[replanColumn] );
-                assertThat( newReplanEvents, greaterThanOrEqualTo( replanEvents ) );
-                replanEvents = newReplanEvents;
-            }
-
-            assertThat( replanEvents, is( 1 ) );
+            Thread.sleep( 1 );
         }
+
+        long events = readMonotonicIncreasingLongValue( metricFile );
+        assertThat( events, greaterThanOrEqualTo( 1L ) );
     }
 
     private void addNodes( int numberOfNodes )
@@ -160,6 +163,29 @@ public class MetricsKernelExtensionFactoryIT
                 node.setProperty( "name", UUID.randomUUID().toString() );
                 tx.success();
             }
+        }
+    }
+
+    private long readMonotonicIncreasingLongValue( File metricFile ) throws IOException
+    {
+        try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
+        {
+            String[] headers = reader.readLine().split( "," );
+            assertThat( headers.length, is( 2 ) );
+            assertThat( headers[0], is( "t" ) );
+            assertThat( headers[1], is( "value" ) );
+
+            // Now we can verify that the number of committed transactions should never decrease.
+            int currentValue = 0;
+            String line;
+            while ( (line = reader.readLine()) != null )
+            {
+                String[] fields = line.split( "," );
+                int newValue = Integer.parseInt( fields[1] );
+                assertThat( newValue, greaterThanOrEqualTo( currentValue ) );
+                currentValue = newValue;
+            }
+            return currentValue;
         }
     }
 }

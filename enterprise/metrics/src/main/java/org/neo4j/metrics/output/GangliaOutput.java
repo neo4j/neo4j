@@ -19,12 +19,18 @@
  */
 package org.neo4j.metrics.output;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.codahale.metrics.ganglia.GangliaReporter;
 import info.ganglia.gmetric4j.gmetric.GMetric;
 
 import java.io.IOException;
+import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.HostnamePort;
@@ -39,7 +45,7 @@ import static info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode.MULTICAST
  *  Please use {@link GraphiteOutput} instead
  */
 @Deprecated
-public class GangliaOutput implements Lifecycle
+public class GangliaOutput implements Lifecycle, EventReporter
 {
     private final HostnamePort hostnamePort;
     private long period;
@@ -87,5 +93,15 @@ public class GangliaOutput implements Lifecycle
     public void shutdown()
     {
         gangliaReporter = null;
+    }
+
+    @Override
+    public void report( SortedMap<String,Gauge> gauges, SortedMap<String,Counter> counters,
+            SortedMap<String,Histogram> histograms, SortedMap<String,Meter> meters, SortedMap<String,Timer> timers )
+    {
+        synchronized ( gangliaReporter )
+        {
+            gangliaReporter.report( gauges, counters, histograms, meters, timers );
+        }
     }
 }

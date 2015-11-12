@@ -55,33 +55,36 @@ public class OutputBuilder
         this.life = life;
     }
 
-    public boolean build()
+    public EventReporter build()
     {
-        boolean result = false;
+        CompositeEventReporter reporter = new CompositeEventReporter();
         final String prefix = createMetricsPrefix( config );
         if ( config.get( csvEnabled ) )
         {
-            life.add( new CsvOutput( config, registry, logger, kernelContext ) );
-            result = true;
+            CsvOutput csvOutput = new CsvOutput( config, registry, logger, kernelContext );
+            reporter.add( csvOutput );
+            life.add( csvOutput );
         }
 
         if ( config.get( graphiteEnabled ) )
         {
             HostnamePort server = config.get( graphiteServer );
             long period = config.get( graphiteInterval );
-            life.add( new GraphiteOutput( server, period, registry, logger, prefix ) );
-            result = true;
+            GraphiteOutput graphiteOutput = new GraphiteOutput( server, period, registry, logger, prefix );
+            reporter.add( graphiteOutput );
+            life.add( graphiteOutput );
         }
 
         if ( config.get( gangliaEnabled ) )
         {
             HostnamePort server = config.get( gangliaServer );
             long period = config.get( gangliaInterval );
-            life.add( new GangliaOutput( server, period, registry, logger, prefix ) );
-            result = true;
+            GangliaOutput gangliaOutput = new GangliaOutput( server, period, registry, logger, prefix );
+            reporter.add( gangliaOutput );
+            life.add( gangliaOutput );
         }
 
-        return result;
+        return reporter.isEmpty() ? null : reporter;
     }
 
     private String createMetricsPrefix( Config config )

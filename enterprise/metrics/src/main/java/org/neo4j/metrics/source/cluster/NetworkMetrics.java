@@ -49,16 +49,16 @@ public class NetworkMetrics extends LifecycleAdapter
                  "to the slaves in order to propagate committed transactions" )
     public static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
 
-    private final Monitors monitors;
     private final MetricRegistry registry;
+    private final Monitors monitors;
     private final ByteCountsMetric masterNetworkTransactionWrites = new ByteCountsMetric();
     private final ByteCountsMetric masterNetworkStoreWrites = new ByteCountsMetric();
     private final ByteCountsMetric slaveNetworkTransactionWrites = new ByteCountsMetric();
 
-    public NetworkMetrics( Monitors monitors, MetricRegistry registry )
+    public NetworkMetrics( MetricRegistry registry, Monitors monitors )
     {
-        this.monitors = monitors;
         this.registry = registry;
+        this.monitors = monitors;
     }
 
     @Override

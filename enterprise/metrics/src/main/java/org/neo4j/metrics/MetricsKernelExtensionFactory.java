@@ -19,43 +19,20 @@
  */
 package org.neo4j.metrics;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 
 public class MetricsKernelExtensionFactory extends KernelExtensionFactory<MetricsKernelExtensionFactory.Dependencies>
 {
-    public interface Dependencies
+    public interface Dependencies extends Neo4jMetricsBuilder.Dependencies
     {
         Config configuration();
 
         LogService logService();
-
-        DataSourceManager dataSourceManager();
-
-        TransactionCounters transactionCounters();
-
-        PageCacheMonitor pageCacheCounters();
-
-        CheckPointerMonitor checkPointerCounters();
-
-        LogRotationMonitor logRotationCounters();
-
-        IdGeneratorFactory idGeneratorFactory();
-
-        Monitors monitors();
-
-        DependencyResolver getDependencyResolver();
 
         KernelContext kernelContext();
     }

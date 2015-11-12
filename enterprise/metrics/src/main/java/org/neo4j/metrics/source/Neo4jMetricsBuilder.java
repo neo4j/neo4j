@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
+import org.neo4j.metrics.output.EventReporter;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.cluster.NetworkMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
@@ -50,35 +51,40 @@ import org.neo4j.metrics.source.jvm.ThreadMetrics;
 public class Neo4jMetricsBuilder
 {
     private final MetricRegistry registry;
+    private final LifeSupport life;
+    private final EventReporter reporter;
     private final Config config;
-    private final Monitors monitors;
-    private final DataSourceManager dataSourceManager;
-    private final TransactionCounters transactionCounters;
-    private final PageCacheMonitor pageCacheCounters;
-    private final CheckPointerMonitor checkPointerMonitor;
-    private final LogRotationMonitor logRotationMonitor;
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final DependencyResolver dependencyResolver;
     private final LogService logService;
-    private LifeSupport life;
+    private final Dependencies deps;
 
-    public Neo4jMetricsBuilder( MetricRegistry registry, Config config, Monitors monitors,
-            DataSourceManager dataSourceManager, TransactionCounters transactionCounters,
-            PageCacheMonitor pageCacheCounters, CheckPointerMonitor checkPointerMonitor,
-            LogRotationMonitor logRotationMonitor, IdGeneratorFactory idGeneratorFactory,
-            DependencyResolver dependencyResolver, LogService logService, LifeSupport life )
+    public interface Dependencies
+    {
+        Monitors monitors();
+
+        DataSourceManager dataSourceManager();
+
+        TransactionCounters transactionCounters();
+
+        PageCacheMonitor pageCacheCounters();
+
+        CheckPointerMonitor checkPointerMonitor();
+
+        LogRotationMonitor logRotationMonitor();
+
+        @SuppressWarnings( "deprecation" )
+        IdGeneratorFactory idGeneratorFactory();
+
+        DependencyResolver getDependencyResolver();
+    }
+
+    public Neo4jMetricsBuilder( MetricRegistry registry, EventReporter reporter, Config config, LogService logService,
+            Dependencies deps, LifeSupport life )
     {
         this.registry = registry;
+        this.reporter = reporter;
         this.config = config;
-        this.monitors = monitors;
-        this.dataSourceManager = dataSourceManager;
-        this.transactionCounters = transactionCounters;
-        this.pageCacheCounters = pageCacheCounters;
-        this.checkPointerMonitor = checkPointerMonitor;
-        this.logRotationMonitor = logRotationMonitor;
-        this.idGeneratorFactory = idGeneratorFactory;
-        this.dependencyResolver = dependencyResolver;
         this.logService = logService;
+        this.deps = deps;
         this.life = life;
     }
 
@@ -87,53 +93,57 @@ public class Neo4jMetricsBuilder
         boolean result = false;
         if ( config.get( MetricsSettings.neoTxEnabled ) )
         {
-            life.add( new TransactionMetrics( registry, dataSourceManager, transactionCounters ) );
+            life.add( new TransactionMetrics( registry, deps.dataSourceManager(), deps.transactionCounters() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
         {
-            life.add( new PageCacheMetrics( registry, pageCacheCounters ) );
+
+            life.add( new PageCacheMetrics( registry, deps.pageCacheCounters() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoCheckPointingEnabled ) )
         {
-            life.add( new CheckPointingMetrics( registry, checkPointerMonitor ) );
+            life.add( new CheckPointingMetrics( reporter, registry,
+                    deps.monitors(), deps.checkPointerMonitor() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoLogRotationEnabled ) )
         {
-            life.add( new LogRotationMetrics( registry, logRotationMonitor ) );
+            life.add( new LogRotationMetrics( reporter, registry,
+                    deps.monitors(), deps.logRotationMonitor() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoCountsEnabled ) )
         {
-            life.add( new EntityCountMetrics( registry, idGeneratorFactory ) );
+            life.add( new EntityCountMetrics( registry, deps.idGeneratorFactory() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoNetworkEnabled ) )
         {
-            life.add( new NetworkMetrics( monitors, registry ) );
+            life.add( new NetworkMetrics( registry, deps.monitors() ) );
             result = true;
         }
 
         if ( config.get( MetricsSettings.neoClusterEnabled ) )
         {
-            final ClusterMembers clusterMembers = resolveClusterMembersOrNull();
+            final ClusterMembers clusterMembers =
+                    resolveClusterMembersOrNull( deps.getDependencyResolver(), logService );
             if ( clusterMembers != null )
             {
-                life.add( new ClusterMetrics( monitors, registry, clusterMembers ) );
+                life.add( new ClusterMetrics( deps.monitors(), registry, clusterMembers ) );
                 result = true;
             }
         }
 
         if ( config.get( MetricsSettings.cypherPlanningEnabled ) )
         {
-            life.add( new CypherMetrics( monitors, registry ) );
+            life.add( new CypherMetrics( registry, deps.monitors() ) );
             result = true;
         }
 
@@ -164,7 +174,7 @@ public class Neo4jMetricsBuilder
         return result;
     }
 
-    private ClusterMembers resolveClusterMembersOrNull()
+    private ClusterMembers resolveClusterMembersOrNull( DependencyResolver dependencyResolver, LogService logService )
     {
         try
         {
