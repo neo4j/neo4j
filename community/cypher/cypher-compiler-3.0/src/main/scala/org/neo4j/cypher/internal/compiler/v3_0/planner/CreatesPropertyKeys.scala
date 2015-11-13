@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, MapExpression, P
  */
 sealed trait CreatesPropertyKeys {
   def overlaps(propertyKeyName: PropertyKeyName): Boolean
+
+  def +(createsPropertyKeys: CreatesPropertyKeys): CreatesPropertyKeys
 }
 
 /*
@@ -33,6 +35,8 @@ sealed trait CreatesPropertyKeys {
  */
 case object CreatesNoPropertyKeys extends CreatesPropertyKeys {
   override def overlaps(propertyKeyName: PropertyKeyName) = false
+
+  override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys
 }
 
 /*
@@ -40,6 +44,12 @@ case object CreatesNoPropertyKeys extends CreatesPropertyKeys {
  */
 case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesPropertyKeys {
   override def overlaps(propertyKeyName: PropertyKeyName): Boolean = keys(propertyKeyName)
+
+  override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys match {
+    case CreatesNoPropertyKeys => this
+    case CreatesKnownPropertyKeys(otherKeys) => CreatesKnownPropertyKeys(keys ++ otherKeys)
+    case CreatesUnknownPropertyKeys => CreatesUnknownPropertyKeys
+  }
 }
 
 /*
@@ -47,6 +57,8 @@ case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesP
  */
 case object CreatesUnknownPropertyKeys extends CreatesPropertyKeys {
   override def overlaps(propertyKeyName: PropertyKeyName) = true
+
+  override def +(createsPropertyKeys: CreatesPropertyKeys) = CreatesUnknownPropertyKeys
 }
 
 object CreatesPropertyKeys {

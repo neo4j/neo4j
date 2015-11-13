@@ -44,6 +44,7 @@ case object PlanUpdates
       val innerContext: LogicalPlanningContext = context.recurse(source)
 
       //use a special unique-index leaf planner
+      //TODO don't use default here
       val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
         QueryPlannerConfiguration.default.leafPlanners)
       val matchPart = context.strategy.plan(p.matchGraph,

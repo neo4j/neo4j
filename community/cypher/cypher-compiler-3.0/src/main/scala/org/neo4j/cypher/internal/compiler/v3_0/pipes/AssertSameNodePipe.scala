@@ -32,8 +32,7 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)(val estim
 
   protected def internalCreateResults(lhsResult: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val rhsResults = inner.createResults(state)
-    if ((lhsResult.isEmpty && rhsResults.nonEmpty) ||
-      (lhsResult.nonEmpty && rhsResults.isEmpty)) {
+    if (lhsResult.isEmpty != rhsResults.isEmpty) {
       throw new MergeConstraintConflictException(
         s"Merge did not find a matching node $node and can not create a new node due to conflicts with existing unique nodes")
     }

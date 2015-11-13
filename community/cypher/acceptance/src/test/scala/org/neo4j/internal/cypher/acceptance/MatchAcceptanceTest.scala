@@ -168,11 +168,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
                   |MATCH (a:A)
                   |DELETE a
                   |MERGE (a2:A)
-                  |RETURN a2
+                  |RETURN a2.value
                 """.stripMargin
 
     // WHEN
-    val result = executeWithRulePlanner(query)
+    val result = updateWithBothPlanners(query)
 
     // THEN
     result.toList should not contain Map("a2" -> node1)

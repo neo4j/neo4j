@@ -117,7 +117,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("should not introduce eagerness between DELETE and MERGE for nodes when there is no read matching the merge") {
+  test("should introduce eagerness between DELETE and MERGE for nodes when there merge matches all labels") {
     createLabeledNode("B")
     createLabeledNode("B")
     val query =
@@ -131,7 +131,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, nodesCreated = 1, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 0)
+    assertNumberOfEagerness(query, 1)
   }
 
   ignore("should not introduce eagerness between DELETE and MERGE for nodes when deleting variable not bound for same label") {

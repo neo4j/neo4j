@@ -55,12 +55,13 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * Finds all node properties being created with CREATE (:L)
    */
-  def createLabels: Set[LabelName] = createNodePatterns.flatMap(_.labels).toSet
+  def createLabels: Set[LabelName] = createNodePatterns.flatMap(_.labels).toSet ++ mergeNodePatterns.flatMap(_.labels)
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
-  def createNodeProperties = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties))
+  def createNodeProperties = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties)) +
+    CreatesKnownPropertyKeys(mergeNodePatterns.flatMap(_.properties.keys).toSet)
 
   /*
    * Finds all rel properties being created with CREATE
@@ -82,7 +83,13 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * Does this UpdateGraph update nodes?
    */
-  def updatesNodes: Boolean = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty
+  def updatesNodes: Boolean = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty || mergeNodePatterns.nonEmpty
+
+  def mergeNodePatterns = mutatingPatterns.collect {
+    case m: MergeNodePattern => m
+  }
+
+  def hasMerge = mergeNodePatterns.nonEmpty
 
   /*
    * Checks if there is overlap between what's being read in the query graph
@@ -91,7 +98,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   def overlaps(qg: QueryGraph) =
       nonEmpty &&
       (createNodeOverlap(qg) || createRelationshipOverlap(qg) ||
-        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg))
+        deleteOverlap(qg) || removeLabelOverlap(qg) || setLabelOverlap(qg) || setPropertyOverlap(qg)
+        || mergeNodeDeleteOverlap)
 
   /*
    * Checks for overlap between nodes being read in the query graph
@@ -115,6 +123,9 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
           propsOverlap(readProps, createNodeProperties)
     })
   }
+
+  //if we do match delete and merge we always need to be eager
+  def mergeNodeDeleteOverlap = deleteExpressions.nonEmpty && mergeNodePatterns.nonEmpty
 
   /*
    * Checks for overlap between rels being read in the query graph

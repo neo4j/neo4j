@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.frontend.v3_0.{MergeConstraintConflictException, CypherTypeException}
+import org.neo4j.cypher.internal.frontend.v3_0.{InvalidSemanticsException, MergeConstraintConflictException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.PropertyKeyToken
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.{Node, Relationship}
@@ -63,10 +63,10 @@ case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], propert
         val propertyId = maybePropertyKey
           .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
         val v = expr(context)(state)
-        //do not set properties for null values
-        if (v != null) {
-          state.query.nodeOps.setProperty(nodeId, propertyId, makeValueNeoSafe(v))
-        }
+        if (v == null) throw new InvalidSemanticsException(s"Cannot merge node using null property value for ${propertyKey.name}")
+
+        //set the actual property
+        state.query.nodeOps.setProperty(nodeId, propertyId, makeValueNeoSafe(v))
     }
   }
 

@@ -99,7 +99,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   private def createStrategy: QueryGraphSolver = {
     val strategy = mock[QueryGraphSolver]
-    when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression], QueryPlannerConfiguration.default)(any[LogicalPlanningContext])).thenAnswer(
+    when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression], any[QueryPlannerConfiguration])(any[LogicalPlanningContext])).thenAnswer(
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
           val expr = invocation.getArguments()(1).asInstanceOf[PatternExpression]
