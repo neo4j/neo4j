@@ -46,7 +46,11 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        return new LuceneKernelExtension( context.storeDir(), dependencies.getConfig(), dependencies.getIndexStore(),
-                context.fileSystem(), dependencies.getIndexProviders() );
+        return new LuceneKernelExtension(
+                context.storeDir(),
+                dependencies.getConfig(),
+                dependencies::getIndexStore,
+                context.fileSystem(),
+                dependencies.getIndexProviders() );
     }
 }

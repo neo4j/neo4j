@@ -28,8 +28,11 @@ import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 /**
@@ -38,6 +41,8 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 public interface StorageEngine
 {
     StoreReadLayer storeReadLayer();
+    TransactionIdStore transactionIdStore();
+    LogVersionRepository logVersionRepository();
 
     @Deprecated
     ProcedureCache procedureCache();
@@ -68,6 +73,9 @@ public interface StorageEngine
 
     @Deprecated
     LegacyIndexApplierLookup legacyIndexApplierLookup();
+
+    @Deprecated
+    IndexConfigStore indexConfigStore();
 
     @Deprecated
     KernelHealth kernelHealth();

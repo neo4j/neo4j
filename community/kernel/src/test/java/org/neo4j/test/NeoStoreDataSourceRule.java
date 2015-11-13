@@ -88,7 +88,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
-                new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
+                new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,
                 mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -43,7 +44,7 @@ public class LuceneRecoveryIT
         String path = "target/hcdb";
         FileUtils.deleteRecursively( new File( path ) );
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-cp", System.getProperty( "java.class.path" ),
+                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
                 Inserter.class.getName(), path
         } );
 

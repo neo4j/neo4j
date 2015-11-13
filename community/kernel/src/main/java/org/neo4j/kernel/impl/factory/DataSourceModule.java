@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -135,9 +134,6 @@ public class DataSourceModule
         transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
                 threadToTransactionBridge );
 
-        IndexConfigStore indexStore =
-                life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
-
         diagnosticsManager.prependProvider( config );
 
         life.add( platformModule.kernelExtensions );
@@ -196,7 +192,7 @@ public class DataSourceModule
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
-                editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
+                editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
                 platformModule.monitors, platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );

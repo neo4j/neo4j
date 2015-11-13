@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -61,6 +62,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
@@ -91,6 +94,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final KernelHealth kernelHealth;
+    private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
     private final IndexUpdatesValidator indexUpdatesValidator;
@@ -119,12 +123,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IndexingService.Monitor indexingServiceMonitor,
             KernelHealth kernelHealth,
             LabelScanStoreProvider labelScanStoreProvider,
-            LegacyIndexProviderLookup legacyIndexProviderLookup )
+            LegacyIndexProviderLookup legacyIndexProviderLookup,
+            IndexConfigStore indexConfigStore )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
         this.kernelHealth = kernelHealth;
+        this.indexConfigStore = indexConfigStore;
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
 
@@ -174,6 +180,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public TransactionIdStore transactionIdStore()
+    {
+        return neoStores.getMetaDataStore();
+    }
+
+    @Override
+    public LogVersionRepository logVersionRepository()
+    {
+        return neoStores.getMetaDataStore();
     }
 
     @Override
@@ -234,6 +252,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public LegacyIndexApplierLookup legacyIndexApplierLookup()
     {
         return legacyIndexApplierLookup;
+    }
+
+    @Override
+    public IndexConfigStore indexConfigStore()
+    {
+        return indexConfigStore;
     }
 
     @Override

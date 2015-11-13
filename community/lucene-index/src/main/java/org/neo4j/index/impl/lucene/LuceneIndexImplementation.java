@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
@@ -57,10 +58,10 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     private LuceneDataSource dataSource;
     private final File storeDir;
     private final Config config;
-    private final IndexConfigStore indexStore;
+    private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public LuceneIndexImplementation( File storeDir, Config config, IndexConfigStore indexStore,
+    public LuceneIndexImplementation( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction )
     {
         this.storeDir = storeDir;
@@ -72,7 +73,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     @Override
     public void init() throws Throwable
     {
-        this.dataSource = new LuceneDataSource( storeDir, config, indexStore, fileSystemAbstraction );
+        this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction );
         this.dataSource.init();
     }
 
