@@ -506,7 +506,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     storeLayerModule.indexUpdatesValidator(),
                     storeLayerModule.storeReadLayer(),
                     updateableSchemaState, storeLayerModule.labelScanStore(),
-                    storeLayerModule.schemaIndexProviderMap(), storeLayerModule.procedureCache() );
+                    storeLayerModule.schemaIndexProviderMap(), storeLayerModule.procedureCache(), storeLayerModule );
 
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -614,60 +614,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                         tokenNameLookup,
                         lockService, indexProvider, indexingServiceMonitor, kernelHealth, labelScanStoreProvider );
-            }
-
-            @Override
-            public NeoStores neoStores()
-            {
-                return neoStores;
-            }
-
-            @Override
-            public MetaDataStore metaDataStore()
-            {
-                return neoStores.getMetaDataStore();
-            }
-
-            @Override
-            public IndexingService indexingService()
-            {
-                return indexingService;
-            }
-
-            @Override
-            public IndexUpdatesValidator indexUpdatesValidator()
-            {
-                return indexUpdatesValidator;
-            }
-
-            @Override
-            public LabelScanStore labelScanStore()
-            {
-                return labelScanStore;
-            }
-
-            @Override
-            public IntegrityValidator integrityValidator()
-            {
-                return integrityValidator;
-            }
-
-            @Override
-            public SchemaIndexProviderMap schemaIndexProviderMap()
-            {
-                return providerMap;
-            }
-
-            @Override
-            public CacheAccessBackDoor cacheAccess()
-            {
-                return cacheAccess;
-            }
-
-            @Override
-            public ProcedureCache procedureCache()
-            {
-                return procedureCache;
             }
         }
 
@@ -885,10 +831,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     private KernelModule buildKernel( IntegrityValidator integrityValidator, TransactionAppender appender,
-            NeoStores neoStores, TransactionRepresentationStoreApplier storeApplier, IndexingService indexingService,
-            IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
-            UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
+                                      NeoStores neoStores, TransactionRepresentationStoreApplier storeApplier,
+                                      IndexingService indexingService,
+                                      IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
+                                      UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
+                                      SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache,
+                                      StorageEngine storageEngine )
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storeApplier,
                 indexUpdatesValidator, config );
@@ -924,11 +872,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final TransactionHooks hooks = new TransactionHooks();
         final KernelTransactions kernelTransactions =
                 life.add( new KernelTransactions( neoStoreTxContextFactory,
-                        neoStores, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
-                        statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
-                        transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
+                        locks, constraintIndexCreator,
+                        statementOperations, updateableSchemaState, schemaWriteGuard,
+                        transactionHeaderInformationFactory, transactionCommitProcess,
                         indexConfigStore, legacyIndexProviderLookup, hooks, constraintSemantics,
-                        transactionMonitor, life, procedureCache, tracers ) );
+                        transactionMonitor, life, tracers, storageEngine ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 

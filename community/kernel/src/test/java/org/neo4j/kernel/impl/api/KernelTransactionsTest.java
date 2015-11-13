@@ -20,18 +20,15 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -139,15 +136,21 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
-
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
         NeoStores neoStores = mock( NeoStores.class );
-        when( neoStores.getMetaDataStore() ).thenReturn( mock( MetaDataStore.class ) );
-        return new KernelTransactions( contextSupplier, neoStores, locks,
-                mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
-                TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
-                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life, new ProcedureCache(),
-                new Tracers( "null", NullLog.getInstance() ));
+
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
+        when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
+
+        return new KernelTransactions( contextSupplier, locks,
+                null, null, null, null,
+                TransactionHeaderInformationFactory.DEFAULT, commitProcess, null,
+                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life,
+                new Tracers( "null", NullLog.getInstance() ), storageEngine );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -159,14 +162,9 @@ public class KernelTransactionsTest
         when( commitProcess.commit(
                 any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ),
                 any( TransactionApplicationMode.class ) ) )
-                .then( new Answer<Long>()
-                {
-                    @Override
-                    public Long answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        slot[0] = ((TransactionRepresentation) invocation.getArguments()[0]);
-                        return 1L;
-                    }
+                .then( invocation -> {
+                    slot[0] = ((TransactionRepresentation) invocation.getArguments()[0]);
+                    return 1L;
                 } );
 
         return commitProcess;

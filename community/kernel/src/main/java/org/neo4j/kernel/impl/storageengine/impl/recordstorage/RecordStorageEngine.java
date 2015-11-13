@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -161,6 +163,60 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public ProcedureCache procedureCache()
+    {
+        return procedureCache;
+    }
+
+    @Override
+    public NeoStores neoStores()
+    {
+        return neoStores;
+    }
+
+    @Override
+    public MetaDataStore metaDataStore()
+    {
+        return neoStores.getMetaDataStore();
+    }
+
+    @Override
+    public IndexingService indexingService()
+    {
+        return indexingService;
+    }
+
+    @Override
+    public IndexUpdatesValidator indexUpdatesValidator()
+    {
+        return indexUpdatesValidator;
+    }
+
+    @Override
+    public LabelScanStore labelScanStore()
+    {
+        return labelScanStore;
+    }
+
+    @Override
+    public IntegrityValidator integrityValidator()
+    {
+        return integrityValidator;
+    }
+
+    @Override
+    public SchemaIndexProviderMap schemaIndexProviderMap()
+    {
+        return providerMap;
+    }
+
+    @Override
+    public CacheAccessBackDoor cacheAccess()
+    {
+        return cacheAccess;
     }
 
     @Override

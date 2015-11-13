@@ -19,7 +19,16 @@
  */
 package org.neo4j.kernel.impl.storageengine;
 
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -27,4 +36,31 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 public interface StorageEngine
 {
     StoreReadLayer storeReadLayer();
+
+    @Deprecated
+    ProcedureCache procedureCache();
+
+    @Deprecated
+    NeoStores neoStores();
+
+    @Deprecated
+    MetaDataStore metaDataStore();
+
+    @Deprecated
+    IndexingService indexingService();
+
+    @Deprecated
+    IndexUpdatesValidator indexUpdatesValidator();
+
+    @Deprecated
+    LabelScanStore labelScanStore();
+
+    @Deprecated
+    IntegrityValidator integrityValidator();
+
+    @Deprecated
+    SchemaIndexProviderMap schemaIndexProviderMap();
+
+    @Deprecated
+    CacheAccessBackDoor cacheAccess();
 }
