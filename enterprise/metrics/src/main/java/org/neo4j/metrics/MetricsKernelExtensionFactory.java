@@ -19,6 +19,7 @@
  */
 package org.neo4j.metrics;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -51,6 +52,8 @@ public class MetricsKernelExtensionFactory
         IdGeneratorFactory idGeneratorFactory();
 
         Monitors monitors();
+
+        DependencyResolver getDependencyResolver();
     }
 
     public MetricsKernelExtensionFactory()
