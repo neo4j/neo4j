@@ -57,13 +57,13 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
-  def plan(queryGraph: QueryGraph, config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    implicit val kit = kitWithShortestPathSupport(config.toKit())
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+    implicit val kit = kitWithShortestPathSupport(context.config.toKit())
     val components = queryGraph.connectedComponents
-    val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components, config)
+    val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
     monitor.startConnectingComponents(queryGraph)
-    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph, config)
+    val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph)
     monitor.endConnectingComponents(queryGraph, result)
     result
   }
@@ -84,9 +84,9 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph], config: QueryPlannerConfiguration)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[LogicalPlan] =
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[LogicalPlan] =
     components.zipWithIndex.map { case (qg, component) =>
-      planComponent(qg, component, config)
+      planComponent(qg, component)
     }
 
   private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[LogicalPlan] = {
@@ -99,10 +99,10 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     Seq(result)
   }
 
-  private def planComponent(qg: QueryGraph, component: Int, config: QueryPlannerConfiguration)
+  private def planComponent(qg: QueryGraph, component: Int)
                            (implicit context: LogicalPlanningContext, kit: QueryPlannerKit, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
-    val leaves = leafPlanFinder(config, qg)
+    val leaves = leafPlanFinder(context.config, qg)
 
     if (qg.patternRelationships.nonEmpty) {
 
@@ -161,7 +161,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     }
   }
 
-  private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph, config: QueryPlannerConfiguration)
+  private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph)
     (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
 
     def findBestCartesianProduct(plans: Set[LogicalPlan]): Set[LogicalPlan] = {
@@ -187,7 +187,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
 
         applicablePlan match {
           case Some(p) =>
-            val candidates = config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p, config))
+            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
             val best = kit.pickBest(candidates).get
             recurse(plans - p + best, optionalMatches.tail)
 

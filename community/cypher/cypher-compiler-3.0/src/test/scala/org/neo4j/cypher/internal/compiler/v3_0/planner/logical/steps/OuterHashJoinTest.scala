@@ -65,7 +65,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       metrics = factory.newMetrics(hardcodedStatistics)
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, QueryPlannerConfiguration.default)
+    val plans = outerHashJoin(optionalQg, left)
 
     plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
   }

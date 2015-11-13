@@ -33,11 +33,11 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
   // NOTE: we assume that the PlanTable type is the same between the 2 solvers
   def emptyPlanTable: GreedyPlanTable = GreedyPlanTable.empty
 
-  def tryPlan(queryGraph: QueryGraph,config: QueryPlannerConfiguration)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val pickBest = config.pickBestCandidate(context)
+  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
+    val pickBest = context.config.pickBestCandidate(context)
 
-    val solution1 = Try(solver1.tryPlan(queryGraph, config))
-    val solution2 = Try(solver2.tryPlan(queryGraph, config))
+    val solution1 = Try(solver1.tryPlan(queryGraph))
+    val solution2 = Try(solver2.tryPlan(queryGraph))
 
     val availableSolutions = (solution1, solution2) match {
       case (Success(s1), Success(s2)) => s1.toSeq ++ s2.toSeq

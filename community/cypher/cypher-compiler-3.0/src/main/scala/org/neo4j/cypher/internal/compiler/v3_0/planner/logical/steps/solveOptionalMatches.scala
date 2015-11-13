@@ -28,14 +28,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningC
 import scala.annotation.tailrec
 
 object solveOptionalMatches {
-  type OptionalSolver = LogicalPlanningFunction3[QueryGraph, LogicalPlan, QueryPlannerConfiguration, Option[LogicalPlan]]
+  type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
 }
 
-case class solveOptionalMatches(solvers: Seq[OptionalSolver], config: QueryPlannerConfiguration) extends GreedyPlanTableTransformer[QueryGraph] {
-
+case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: CandidateSelector) extends GreedyPlanTableTransformer[QueryGraph] {
   override def apply(planTable: GreedyPlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): GreedyPlanTable = {
-    val pickBest = config.toKit.pickBest
-
 
     val p = if (planTable.isEmpty)
       GreedyPlanTable.empty + context.logicalPlanProducer.planSingleRow()
@@ -47,7 +44,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], config: QueryPlann
         val optionalQGs: Seq[QueryGraph] = findQGsToSolve(plan, table, qg.optionalMatches)
         val newPlan = optionalQGs.foldLeft(plan) {
           case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
-            val plans = solvers.flatMap(_.apply(optionalQg, lhs, config))
+            val plans = solvers.flatMap(_.apply(optionalQg, lhs))
             assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
             pickBest(plans).get
         }
@@ -59,7 +56,6 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], config: QueryPlann
     MATCH a->b WHERE b.foo = expr(p)
     OM p = a
    */
-
   private def findQGsToSolve(plan: LogicalPlan, table: GreedyPlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {
 
     @tailrec
@@ -81,18 +77,18 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], config: QueryPlann
 
 
 case object applyOptional extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan, config: QueryPlannerConfiguration)(implicit context: LogicalPlanningContext) = {
+  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val innerContext: LogicalPlanningContext = context.recurse(lhs)
-    val inner = context.strategy.plan(optionalQg, config)(innerContext)
+    val inner = context.strategy.plan(optionalQg)(innerContext)
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols)(innerContext)
     Some(context.logicalPlanProducer.planApply(lhs, rhs))
   }
 }
 
 case object outerHashJoin extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan, config: QueryPlannerConfiguration)(implicit context: LogicalPlanningContext) = {
+  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val joinNodes = optionalQg.argumentIds
-    val rhs = context.strategy.plan(optionalQg.withoutArguments(), config)
+    val rhs = context.strategy.plan(optionalQg.withoutArguments())
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&

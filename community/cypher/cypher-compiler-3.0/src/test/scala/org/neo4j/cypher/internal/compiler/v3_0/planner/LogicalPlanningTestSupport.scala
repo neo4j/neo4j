@@ -104,7 +104,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan).when(strategy).plan(any(), any())(any(), any())
+    doReturn(plan).when(strategy).plan(any())(any(), any())
     strategy
   }
 
@@ -123,7 +123,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.default)
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics

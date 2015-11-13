@@ -41,17 +41,15 @@ case object PlanUpdates
     case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
     //MERGE ()
     case p: MergeNodePattern =>
-      val innerContext: LogicalPlanningContext = context.recurse(source)
-
       //use a special unique-index leaf planner
-      //TODO don't use default here
-      val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
-        QueryPlannerConfiguration.default.leafPlanners)
-      val matchPart = context.strategy.plan(p.matchGraph,
-        QueryPlannerConfiguration.default.withLeafPlanners(leafPlanners))(innerContext)
-      val rhs = context.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
-      val apply = context.logicalPlanProducer.planApply(source, rhs)
-      context.logicalPlanProducer.planMergeNode(apply, p, source.solved)
+    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+        context.config.leafPlanners)
+      val innerContext: LogicalPlanningContext =
+        context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+      val matchPart = innerContext.strategy.plan(p.matchGraph)(innerContext)
+      val rhs = innerContext.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
+      val apply = innerContext.logicalPlanProducer.planApply(source, rhs)(innerContext)
+      innerContext.logicalPlanProducer.planMergeNode(apply, p, source.solved)(innerContext)
     //SET n:Foo:Bar
     case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
     //SET n.prop = 42

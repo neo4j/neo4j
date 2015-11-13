@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.HintException
 class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable])
   extends TentativeQueryGraphSolver {
 
-  def tryPlan(queryGraph: QueryGraph, config: QueryPlannerConfiguration)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
+  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
 
     import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.CandidateGenerator._
-
+    val config = context.config
     val kit = config.toKit()
-    val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, config)
+    val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, kit.pickBest)
 
     def generateLeafPlanTable(): GreedyPlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectAllEndpoints)
