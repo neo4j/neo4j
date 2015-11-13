@@ -99,7 +99,6 @@
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>org.scala-lang:*</include>
-        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
@@ -121,7 +120,6 @@
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>org.scala-lang:*</exclude>
-        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>

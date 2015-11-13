@@ -250,7 +250,7 @@
       <dependency>
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_2.11</artifactId>
-        <version>1.12.4</version>
+        <version>1.12.5</version>
         <scope>test</scope>
       </dependency>
 
@@ -298,12 +298,6 @@
       </dependency>
 
       <!-- other -->
-
-      <dependency>
-        <artifactId>scala-parser-combinators_2.11</artifactId>
-        <groupId>org.scala-lang.modules</groupId>
-        <version>1.0.4</version>
-      </dependency>
 
       <dependency>
         <groupId>org.parboiled</groupId>

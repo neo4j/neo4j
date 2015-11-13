@@ -71,8 +71,6 @@
 
     <!-- Don't write new code using this, use neo-server.external instead -->
     <webdriver.override.neo-server.baseuri/>
-
-    <jetty.version>9.2.4.v20141103</jetty.version>
   </properties>
 
   <scm>
@@ -178,13 +176,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${jetty.version}</version>
     </dependency>
 
     <dependency>

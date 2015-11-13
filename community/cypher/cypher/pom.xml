@@ -49,7 +49,6 @@
     <scala.binary.version>2.11</scala.binary.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <doclint-groups>none</doclint-groups>
-    <jetty.version>9.2.4.v20141103</jetty.version>
   </properties>
 
   <build>
@@ -87,11 +86,6 @@
       <artifactId>scala-reflect</artifactId>
       <groupId>org.scala-lang</groupId>
       <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>scala-parser-combinators_2.11</artifactId>
-      <groupId>org.scala-lang.modules</groupId>
     </dependency>
 
     <!-- scala test dependencies -->
@@ -327,13 +321,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${jetty.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${jetty.version}</version>
       <scope>test</scope>
     </dependency>
 
