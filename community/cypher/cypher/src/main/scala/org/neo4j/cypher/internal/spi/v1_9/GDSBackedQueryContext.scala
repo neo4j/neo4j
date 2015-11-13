@@ -93,7 +93,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
         val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
-        statement.txState().nodeIsDeletedInThisTx(node.getId)
+        statement.hasTxStateWithChanges && statement.txState().nodeIsDeletedInThisTx(node.getId)
       }
     }
   }
@@ -140,7 +140,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
         val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
-        statement.txState().relationshipIsDeletedInThisTx(rel.getId)
+        statement.hasTxStateWithChanges && statement.txState().relationshipIsDeletedInThisTx(rel.getId)
       }
     }
   }
