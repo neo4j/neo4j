@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Collection, SignedDecimalIntegerLiteral, PropertyKeyName, Property, Identifier, In}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, Collection, SignedDecimalIntegerLiteral, PropertyKeyName, Property, Identifier, In}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
+
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -83,5 +85,26 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val emptyResult = EmptyResult(createNode)(solved)
 
     planFor("MERGE(a) CREATE (b)").plan should equal(emptyResult)
+  }
+
+  test("should use AssertSame when multiple unique index matches") {
+
+    val labelScan = NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(solved)
+    val optional = Optional(labelScan)(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq(LazyLabel("X")), Map.empty)(solved)
+    val emptyResult = EmptyResult(mergeNode)(solved)
+
+    (new given {
+      uniqueIndexOn("X", "prop")
+      uniqueIndexOn("Y", "prop")
+    } planFor "MERGE (a:X:Y {prop: 42})").plan should beLike {
+      case EmptyResult(
+            MergeNode(
+              Optional(
+              AssertSameNode(
+                NodeUniqueIndexSeek(IdName("a"), LabelToken("X", _), _, _, _),
+                NodeUniqueIndexSeek(IdName("a"), LabelToken("Y", _), _, _, _)
+              )), _, Seq(LazyLabel("X"), LazyLabel("Y")), _)) => ()
+    }
   }
 }

@@ -255,8 +255,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-
-  //todo is the specific error important
   test("should fail on merge using multiple unique indexes using same key if found different nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -266,7 +264,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     createLabeledNode(Map("id" -> 23), "User")
 
     // when + then
-    intercept[MergeConstraintConflictException](executeScalar[Node]("merge (a:Person:User {id: 23}) return a"))
+    intercept[MergeConstraintConflictException](executeWithCostPlannerOnly("merge (a:Person:User {id: 23}) return a.id"))
     countNodes() should equal(2)
   }
 
@@ -324,13 +322,28 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(2)
   }
 
-  //todo
   test("should fail on merge using multiple unique indexes if it found a node matching single property only") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("Person", "mail")
 
     createLabeledNode(Map("id" -> 23), "Person")
+
+    // when + then
+    val error = intercept[MergeConstraintConflictException](executeWithCostPlannerOnly("merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a"))
+
+    error.getMessage contains "Merge did not find a matching node and can not create a new node due to conflicts with both existing and missing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail"
+
+    countNodes() should equal(1)
+  }
+
+  //TODO rule planner fails on this
+  test("should fail on merge using multiple unique indexes if it found a node matching single property only flipped order") {
+    // given
+    graph.createConstraint("Person", "id")
+    graph.createConstraint("Person", "mail")
+
+    createLabeledNode(Map("mail" -> "emil@neo.com"), "Person")
 
     // when + then
     val error = intercept[MergeConstraintConflictException](executeWithCostPlannerOnly("merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a"))

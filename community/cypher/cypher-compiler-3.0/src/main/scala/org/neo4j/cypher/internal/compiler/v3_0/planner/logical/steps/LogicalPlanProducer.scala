@@ -225,6 +225,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
 
+  def planAssertSameNode(node: IdName, left: LogicalPlan, right :LogicalPlan)(implicit context: LogicalPlanningContext) = {
+    val solved: PlannerQuery = left.solved ++ right.solved
+    AssertSameNode(node, left, right)(solved)
+  }
+
   def planOptionalExpand(left: LogicalPlan,
                          from: IdName,
                          dir: SemanticDirection,

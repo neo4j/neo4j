@@ -375,6 +375,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
         case _ => ApplyPipe(lhs, rhs)()
       }
 
+    case AssertSameNode(node, _, _) =>
+      AssertSameNodePipe(lhs, rhs, node.name)()
+
     case SemiApply(_, _) =>
       SemiApplyPipe(lhs, rhs, negated = false)()
 

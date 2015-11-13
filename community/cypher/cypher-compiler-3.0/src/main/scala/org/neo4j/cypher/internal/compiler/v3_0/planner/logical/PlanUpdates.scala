@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.applyOptional
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{mergeUniqueIndexSeekLeafPlanner, applyOptional}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PathExpression}
 
@@ -43,8 +43,11 @@ case object PlanUpdates
     case p: MergeNodePattern =>
       val innerContext: LogicalPlanningContext = context.recurse(source)
 
-      //todo something else here
-      val matchPart = context.strategy.plan(p.matchGraph, QueryPlannerConfiguration.default)(innerContext)
+      //use a special unique-index leaf planner
+      val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+        QueryPlannerConfiguration.default.leafPlanners)
+      val matchPart = context.strategy.plan(p.matchGraph,
+        QueryPlannerConfiguration.default.withLeafPlanners(leafPlanners))(innerContext)
       val rhs = context.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
       val apply = context.logicalPlanProducer.planApply(source, rhs)
       context.logicalPlanProducer.planMergeNode(apply, p, source.solved)
