@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.storageengine;
 
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -63,4 +65,12 @@ public interface StorageEngine
 
     @Deprecated
     CacheAccessBackDoor cacheAccess();
+
+    @Deprecated
+    LegacyIndexApplierLookup legacyIndexApplierLookup();
+
+    @Deprecated
+    KernelHealth kernelHealth();
+
+    void loadSchemaCache();
 }

@@ -23,12 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
@@ -40,35 +38,35 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
 {
     private final RecoveryLabelScanWriterProvider labelScanWriterProvider;
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
-    private KernelHealth health;
+    private final KernelHealth health;
+    private final IndexingService indexingService;
 
-    public BatchingTransactionRepresentationStoreApplier( IndexingService indexingService,
-            LabelScanStore labelScanStore, NeoStores neoStore, CacheAccessBackDoor cacheAccess,
-            LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, KernelHealth kernelHealth, IdOrderingQueue legacyIndexTransactionOrdering )
+    public BatchingTransactionRepresentationStoreApplier(
+            LockService lockService,
+            IndexConfigStore indexConfigStore,
+            IdOrderingQueue legacyIndexTransactionOrdering,
+            StorageEngine storageEngine )
     {
-        this( indexingService, new RecoveryLabelScanWriterProvider( labelScanStore, 1000 ),
-                neoStore, cacheAccess, lockService,
-                new RecoveryLegacyIndexApplierLookup( legacyIndexProviderLookup, 1000 ),
-                indexConfigStore, kernelHealth, legacyIndexTransactionOrdering );
-        this.health = kernelHealth;
+        this( new RecoveryLabelScanWriterProvider( storageEngine.labelScanStore(), 1000 ),
+                lockService,
+                new RecoveryLegacyIndexApplierLookup( storageEngine.legacyIndexApplierLookup(), 1000 ),
+                indexConfigStore, legacyIndexTransactionOrdering, storageEngine );
     }
 
     private BatchingTransactionRepresentationStoreApplier(
-            IndexingService indexingService,
             RecoveryLabelScanWriterProvider labelScanWriterProvider,
-            NeoStores neoStore,
-            CacheAccessBackDoor cacheAccess,
             LockService lockService,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
             IndexConfigStore indexConfigStore,
-            KernelHealth kernelHealth,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+            IdOrderingQueue legacyIndexTransactionOrdering,
+            StorageEngine storageEngine )
     {
-        super( indexingService, labelScanWriterProvider, neoStore, cacheAccess, lockService, legacyIndexApplierLookup,
-                indexConfigStore, kernelHealth, legacyIndexTransactionOrdering );
+        super( labelScanWriterProvider, lockService,
+                indexConfigStore, legacyIndexTransactionOrdering, storageEngine );
         this.labelScanWriterProvider = labelScanWriterProvider;
         this.legacyIndexApplierLookup = legacyIndexApplierLookup;
+        this.health = storageEngine.kernelHealth();
+        this.indexingService = storageEngine.indexingService();
     }
 
     public void closeBatch() throws IOException

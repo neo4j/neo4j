@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -1479,7 +1480,8 @@ public class NeoStoreTransactionTest
                 new PropertyLoader( neoStores ), indexing, IndexUpdateMode.ONLINE ) );
     }
 
-    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
+    private TransactionRepresentationCommitProcess commitProcess(
+            IndexingService indexing,
             IndexUpdatesValidator indexUpdatesValidator ) throws IOException
     {
         TransactionAppender appenderMock = mock( TransactionAppender.class );
@@ -1489,14 +1491,16 @@ public class NeoStoreTransactionTest
         @SuppressWarnings( "unchecked" )
         Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
         when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.cacheAccess() ).thenReturn( cacheAccessBackDoor );
+        when( storageEngine.indexingService() ).thenReturn( indexing );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStores, cacheAccessBackDoor, locks, null, null, null, null );
+                labelScanStore, locks, null, null, storageEngine );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStores.getMetaDataStore().nextCommittingTransactionId();
-
-        PropertyLoader propertyLoader = new PropertyLoader( neoStores );
 
         return new TransactionRepresentationCommitProcess( appenderMock, applier, indexUpdatesValidator );
     }
@@ -1544,7 +1548,8 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( mockIndexing, indexUpdatesValidator ).commit( recoveredTx, locks, CommitEvent.NULL, mode );
+            commitProcess( mockIndexing, indexUpdatesValidator ).commit(
+                    recoveredTx, locks, CommitEvent.NULL, mode );
         }
     }
 

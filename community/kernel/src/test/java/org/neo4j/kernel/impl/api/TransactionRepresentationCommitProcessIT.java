@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -252,9 +253,14 @@ public class TransactionRepresentationCommitProcessIT
             IdOrderingQueue legacyIndexTransactionOrdering,
             KernelHealth kernelHealth )
     {
-        return new TransactionRepresentationStoreApplier( mock( IndexingService.class ),
-                mock( Supplier.class ), neoStores, mock( CacheAccessBackDoor.class ), mock( LockService.class ),
-                legacyIndexApplierLookup, indexStore, kernelHealth, legacyIndexTransactionOrdering );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.kernelHealth() ).thenReturn( kernelHealth );
+        when( storageEngine.legacyIndexApplierLookup() ).thenReturn( legacyIndexApplierLookup );
+        when( storageEngine.cacheAccess() ).thenReturn( mock( CacheAccessBackDoor.class ) );
+        return new TransactionRepresentationStoreApplier(
+                mock( Supplier.class ), mock( LockService.class ),
+                indexStore, legacyIndexTransactionOrdering, storageEngine );
     }
 
     private CheckPointerImpl createCheckPointer( MetaDataStore metaDataStore, KernelHealth kernelHealth,
@@ -262,8 +268,12 @@ public class TransactionRepresentationCommitProcessIT
     {
         CountCommittedTransactionThreshold committedTransactionThreshold =
                 new CountCommittedTransactionThreshold( 1 );
-        final StoreFlusher storeFlusher = new StoreFlusher( neoStores, mock( IndexingService.class ),
-                mock( LabelScanStore.class ), Iterables.<IndexImplementation>empty() );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.indexingService() ).thenReturn( mock( IndexingService.class ) );
+        when( storageEngine.labelScanStore() ).thenReturn( mock( LabelScanStore.class ) );
+        final StoreFlusher storeFlusher = new StoreFlusher(
+                storageEngine, Iterables.<IndexImplementation>empty() );
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( any( Class.class ) ) ).thenReturn( mock( Log.class ) );
         return new CheckPointerImpl( metaDataStore, committedTransactionThreshold, storeFlusher,

@@ -22,17 +22,15 @@ package org.neo4j.com.storecopy;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -54,20 +52,15 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     public BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
     {
         return new BatchingTransactionRepresentationStoreApplier(
-                resolver.resolveDependency( IndexingService.class ),
-                resolver.resolveDependency( LabelScanStore.class ),
-                resolver.resolveDependency( NeoStoresSupplier.class ).get(),
-                resolver.resolveDependency( CacheAccessBackDoor.class ),
                 resolver.resolveDependency( LockService.class ),
-                resolver.resolveDependency( LegacyIndexApplierLookup.class ),
                 resolver.resolveDependency( IndexConfigStore.class ),
-                resolver.resolveDependency( KernelHealth.class ),
 
                 // Ideally we don't want/need a real IdOrderingQueue here because we know that
                 // we only have a single thread applying updates as a slave anyway. But the thing
                 // is that it's hard to change a TransactionAppender depending on role, so we
                 // use a real one, or rather, whatever is available through the dependency resolver.
-                resolver.resolveDependency( IdOrderingQueue.class ) );
+                resolver.resolveDependency( IdOrderingQueue.class ),
+                resolver.resolveDependency( StorageEngine.class ) );
     }
 
     @Override

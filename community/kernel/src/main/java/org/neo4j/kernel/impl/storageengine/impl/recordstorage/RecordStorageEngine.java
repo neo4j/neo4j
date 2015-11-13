@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -83,22 +85,28 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             setting( "experimental.use_read_locks_on_property_reads", BOOLEAN, TRUE );
 
     private final StoreReadLayer storeLayer;
-    protected final IndexingService indexingService;
-    protected final NeoStores neoStores;
+    private final IndexingService indexingService;
+    private final NeoStores neoStores;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final KernelHealth kernelHealth;
     private final SchemaCache schemaCache;
-    protected final IntegrityValidator integrityValidator;
-    protected final IndexUpdatesValidator indexUpdatesValidator;
-    protected final CacheAccessBackDoor cacheAccess;
-    protected final LabelScanStore labelScanStore;
-    protected final DefaultSchemaIndexProviderMap providerMap;
-    protected final ProcedureCache procedureCache;
+    private final IntegrityValidator integrityValidator;
+    private final IndexUpdatesValidator indexUpdatesValidator;
+    private final CacheAccessBackDoor cacheAccess;
+    private final LabelScanStore labelScanStore;
+    private final DefaultSchemaIndexProviderMap providerMap;
+    private final ProcedureCache procedureCache;
+    private final LegacyIndexApplierLookup legacyIndexApplierLookup;
 
     public RecordStorageEngine(
-            File storeDir, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fs, LogProvider logProvider,
+            File storeDir,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogProvider logProvider,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
@@ -110,11 +118,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             SchemaIndexProvider indexProvider,
             IndexingService.Monitor indexingServiceMonitor,
             KernelHealth kernelHealth,
-            LabelScanStoreProvider labelScanStoreProvider )
+            LabelScanStoreProvider labelScanStoreProvider,
+            LegacyIndexProviderLookup legacyIndexProviderLookup )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
+        this.kernelHealth = kernelHealth;
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
 
@@ -143,6 +153,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             procedureCache = new ProcedureCache();
             storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
             this.labelScanStore = labelScanStoreProvider.getLabelScanStore();
+            legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
         }
         catch ( Throwable failure )
         {
@@ -220,6 +231,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
+    public LegacyIndexApplierLookup legacyIndexApplierLookup()
+    {
+        return legacyIndexApplierLookup;
+    }
+
+    @Override
+    public KernelHealth kernelHealth()
+    {
+        return kernelHealth;
+    }
+
+    @Override
     public void init() throws Throwable
     {
         indexingService.init();
@@ -244,6 +267,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         labelScanStore.start();
     }
 
+    @Override
     public void loadSchemaCache()
     {
         List<SchemaRule> schemaRules = toList( neoStores.getSchemaStore().loadAllSchemaRules() );
