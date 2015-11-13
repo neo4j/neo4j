@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.QueryExecutionException
+import java.util
 
-import scala.collection.JavaConverters._
+import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -390,6 +390,51 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should warn when addition overflows") {
+    executeAndEnsureError(
+      s"RETURN ${Long.MaxValue} + 1",
+      "result of 9223372036854775807 + 1 cannot be represented as an integer (line 1, column 28 (offset: 27))"
+    )
+  }
+
+  test("should fail nicely when addition overflows in runtime") {
+    executeAndEnsureError(
+      s"RETURN {t1} + {t2}",
+      "result of 9223372036854775807 + 1 cannot be represented as an integer",
+      "t1" -> Long.MaxValue, "t2" -> 1
+    )
+  }
+
+  test("should warn when subtraction underflows") {
+    executeAndEnsureError(
+      s"RETURN ${Long.MinValue} - 1",
+      "result of -9223372036854775808 - 1 cannot be represented as an integer (line 1, column 29 (offset: 28))"
+    )
+  }
+
+  test("should fail nicely when subtraction underflows in runtime") {
+    executeAndEnsureError(
+      s"RETURN {t1} - {t2}",
+      "result of -9223372036854775808 - 1 cannot be represented as an integer",
+      "t1" -> Long.MinValue, "t2" -> 1
+    )
+  }
+
+  test("should warn when multiplication overflows") {
+    executeAndEnsureError(
+      s"RETURN ${Long.MaxValue} * 10",
+      "result of 9223372036854775807 * 10 cannot be represented as an integer (line 1, column 28 (offset: 27))"
+    )
+  }
+
+  test("should fail nicely when multiplication overflows in runtime") {
+    executeAndEnsureError(
+      s"RETURN {t1} + {t2}",
+      "result of 9223372036854775807 + 1 cannot be represented as an integer",
+      "t1" -> Long.MaxValue, "t2" -> 1
+    )
+  }
+
   test("should warn on over sized double") {
     executeAndEnsureError(
       "RETURN 1.34E999",
@@ -570,12 +615,16 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "HAS is no longer supported in Cypher, please use EXISTS instead (line 1, column 17 (offset: 16))")
   )
 
-  def executeAndEnsureError(query: String, expected: String) {
+  def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
+    import scala.collection.JavaConverters._
 
     val fixedExpected = expected.fixPosition
     try {
-      graph.execute(query).asScala.size
+      val jParams = new util.HashMap[String, Object]()
+      params.foreach(kv => jParams.put(kv._1, kv._2.asInstanceOf[AnyRef]))
+
+      graph.execute(query, jParams).asScala.size
       fail(s"Did not get the expected syntax error, expected: $fixedExpected")
     } catch {
       case x: QueryExecutionException =>
