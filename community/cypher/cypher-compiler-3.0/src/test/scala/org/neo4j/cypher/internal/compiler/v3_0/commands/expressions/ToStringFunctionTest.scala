@@ -58,8 +58,9 @@ class ToStringFunctionTest extends CypherFunSuite {
     toStringFunction(true) should be("true")
   }
 
-  test("should throw an exception if the argument is an object which cannot be converted to a float") {
-    evaluating { toStringFunction(new Object) } should produce[ParameterWrongTypeException]
+  test("should throw an exception if the argument is an object which cannot be converted to a string") {
+    val caughtException = evaluating { toStringFunction(new Object) } should produce[ParameterWrongTypeException]
+    caughtException.getMessage should startWith("Expected a String, Number or Boolean, got: ")
   }
 
   private def toStringFunction(orig: Any) = {
