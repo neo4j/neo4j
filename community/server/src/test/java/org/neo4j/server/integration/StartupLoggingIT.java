@@ -32,7 +32,6 @@ import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import static java.util.Arrays.asList;
 
@@ -61,7 +60,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         List<String> captured = suppressed.getOutputVoice().lines();
         // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
         //       This should be changed in 3.0.0.
-        assertThat( captured, matchesLines(
+        assertThat( captured, containsAtLeastTheseLines(
                 warn( "Config file \\[config.neo4j-server\\.properties\\] does not exist." ),
                 warn( "Config file \\[config.neo4j\\.properties\\] does not exist." ),
                 info( "Successfully started database" ),
@@ -76,21 +75,33 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         ) );
     }
 
-    public static Matcher<List<String>> matchesLines( final Matcher<String> ... lineMatchers )
+    public static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String> ... expectedLinePatterns )
     {
         return new TypeSafeMatcher<List<String>>()
         {
             @Override
             protected boolean matchesSafely( List<String> lines )
             {
-                if(lineMatchers.length != lines.size())
+                if(expectedLinePatterns.length > lines.size())
                 {
                     return false;
                 }
 
-                for ( int i = 0; i < lines.size(); i++ )
+                for ( int i = 0, e = 0; i < lines.size(); i++ )
                 {
-                    if( !lineMatchers[i].matches( lines.get( i ) ) )
+                    String line = lines.get( i );
+                    boolean matches;
+                    while ( (matches = expectedLinePatterns[e].matches( line )) == false )
+                    {
+                        if ( ++i >= lines.size() )
+                        {
+                            return false;
+                        }
+                        line = lines.get( i );
+                    }
+                    e++;
+
+                    if ( !matches )
                     {
                         return false;
                     }
@@ -101,7 +112,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             @Override
             public void describeTo( Description description )
             {
-                description.appendList( "", "\n", "", asList(lineMatchers) );
+                description.appendList( "", "\n", "", asList(expectedLinePatterns) );
             }
         };
     }
@@ -116,10 +127,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             @Override
             protected boolean matchesSafely( String line )
             {
-                // eg. 2015-10-27 15:44:18.049-0500 INFO  Successfully started database
-                // Assert rather than return boolean, to get the exact line in the error output
-                assertTrue( "[" + line + "] should match pattern [" + messagePattern + "]", line.matches( ".*" + level + "\\s+" + messagePattern ));
-                return true;
+                return line.matches( ".*" + level + "\\s+" + messagePattern );
             }
 
             @Override
