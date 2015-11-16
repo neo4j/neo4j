@@ -65,6 +65,7 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
         // When
+        when( fields.iterator() ).thenReturn( Arrays.asList( "id", "bool" ).iterator() );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         long indexSize = accessor.sampleIndex( output );
 
@@ -78,6 +79,7 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws Exception
     {
         // Given
+        when( fields.iterator() ).thenReturn( Arrays.asList( "id", "string" ).iterator() );
         when( termsEnum.next() ).thenReturn( new BytesRef("aaa"), new BytesRef("ccc"), null );
         when( termsEnum.docFreq() ).thenReturn( 1, 2 );
         when( termsEnum.term() ).thenReturn(
@@ -93,29 +95,6 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
         assertEquals( 3, indexSize );
         assertEquals( 2, output.readFirst() );
         assertEquals( 3, output.readSecond() );
-    }
-
-    @Test
-    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
-    {
-        // Given
-        when( termsEnum.next() ).thenReturn( new BytesRef( "aaa" ), new BytesRef( "bbb" ), null );
-        when( termsEnum.docFreq() ).thenReturn( 1 );
-        when( termsEnum.term() ).thenReturn(
-                // this value should be ignored
-                new BytesRef( "aaa" ),
-                new BytesRef( "bbb" )
-        );
-
-        // When
-
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        long indexSize = accessor.sampleIndex( output );
-
-        // Then
-        assertEquals( 1, indexSize );
-        assertEquals( 1, output.readFirst() );
-        assertEquals( 1, output.readSecond() );
     }
 
     @Test

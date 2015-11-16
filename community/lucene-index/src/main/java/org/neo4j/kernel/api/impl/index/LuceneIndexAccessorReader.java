@@ -39,6 +39,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -75,19 +76,21 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             try
             {
-                Terms terms = readerContext.reader().terms( NODE_ID_KEY );
-                if ( terms != null )
+                Set<String> fieldNames = getFieldNamesToSample( readerContext );
+                for ( String fieldName : fieldNames )
                 {
-                    TermsEnum termsEnum = terms.iterator();
-                    int frequency = termsEnum.docFreq();
-                    BytesRef termsRef;
-                    while ( (termsRef = termsEnum.next()) != null )
+                    Terms terms = readerContext.reader().terms( fieldName );
+                    if ( terms != null )
                     {
-                        sampler.include( termsRef.utf8ToString(), frequency );
-                        checkCancellation();
+                        TermsEnum termsEnum = terms.iterator();
+                        BytesRef termsRef;
+                        while ( (termsRef = termsEnum.next()) != null )
+                        {
+                            sampler.include( termsRef.utf8ToString(), termsEnum.docFreq());
+                            checkCancellation();
+                        }
                     }
                 }
-
             }
             catch ( IOException e )
             {
@@ -96,6 +99,14 @@ class LuceneIndexAccessorReader implements IndexReader
         }
 
         return sampler.result( result );
+    }
+
+    private Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
+    {
+        Fields fields = readerContext.reader().fields();
+        Set<String> fieldNames = Iterables.toSet( fields );
+        assert fieldNames.remove( NODE_ID_KEY );
+        return fieldNames;
     }
 
     @Override
