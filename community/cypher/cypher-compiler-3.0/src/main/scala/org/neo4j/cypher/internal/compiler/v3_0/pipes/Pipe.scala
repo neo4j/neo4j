@@ -88,7 +88,7 @@ trait Pipe extends Effectful {
 
   def isLeaf = false
 
-  def identifiers: immutable.Set[String] = symbols.identifiers.keySet.toSet
+  def variables: immutable.Set[String] = symbols.variables.keySet.toSet
 
   // Used by profiling to identify where to report dbhits and rows
   val id = new Id
@@ -103,7 +103,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, identifiers)
+  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
 
   override def localEffects = Effects()
 

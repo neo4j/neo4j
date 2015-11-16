@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 
@@ -69,19 +69,19 @@ object And {
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: Identifier, prop: Property,
+case class AndedPropertyComparablePredicates(ident: Variable, prop: Property,
                                              override val predicates: NonEmptyList[ComparablePredicate])
   extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
-  private def rewriteIdentifierIfNotTypeChanged(f: (Expression) => Expression) =
+  private def rewriteVariableIfNotTypeChanged(f: (Expression) => Expression) =
     ident.rewrite(f) match {
-      case i: Identifier => i
+      case i: Variable => i
       case _ => ident
     }
 
   def rewrite(f: (Expression) => Expression): Expression =
-    f(AndedPropertyComparablePredicates(rewriteIdentifierIfNotTypeChanged(f),
+    f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 

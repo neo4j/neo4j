@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import commands.{AllIdentifiers, Pattern, Query}
-import commands.expressions.Identifier
+import commands.{AllVariables, Pattern, Query}
+import commands.expressions.Variable
 import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
 import mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
@@ -73,17 +73,17 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
         prepareMergeAction(symbols, mergeAction)
 
       case foreachAction: ForeachAction =>
-        val innerSymbols = foreachAction.addInnerIdentifier(symbols)
+        val innerSymbols = foreachAction.addInnerVariable(symbols)
         val (_, newActions) = foreachAction.actions.foldMap(innerSymbols)(rewrite)
         (symbols, foreachAction.copy(actions = newActions))
 
       case action =>
-        (symbols.add(action.identifiers.toMap), action)
+        (symbols.add(action.variables.toMap), action)
     }
 
     val (_, newUpdates) = plan.query.updates.foldMap(plan.pipe.symbols) {
       case (symbols, Unsolved(action)) if action.symbolDependenciesMet(symbols) => unsolved(rewrite(symbols, action))
-      case (symbols, qt) => (symbols.add(qt.token.identifiers.toMap), qt)
+      case (symbols, qt) => (symbols.add(qt.token.variables.toMap), qt)
     }
 
     plan.copy(query = plan.query.copy(updates = newUpdates))
@@ -92,7 +92,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
   private def createMatchQueryFor(patterns: Seq[Pattern]): PartiallySolvedQuery = PartiallySolvedQuery.apply(
     Query.
       matches(patterns: _*).
-      returns(AllIdentifiers())
+      returns(AllVariables())
   )
 }
 
@@ -109,7 +109,7 @@ object MergePatternBuilder {
     }
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
-    case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) =>
+    case RelationshipEndpoint(Variable(name), props, labels) if !symbols.hasVariableNamed(name) =>
       (symbols.add(name, CTNode), Some(CreateNode(name, props, labels)))
     case _ =>
       (symbols, None)

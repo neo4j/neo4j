@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.True
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
@@ -51,7 +51,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
       case Some(x)                                   => throw new CypherTypeException("Expected `%s` to a node, but it is a %s".format(expect.name, x))
-      case None if expect.e.isInstanceOf[Identifier] => None
+      case None if expect.e.isInstanceOf[Variable] => None
       case None => expect.e(context)(state) match {
         case n: Node  => Some(n)
         case IsMap(_) => None
@@ -89,10 +89,10 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         val createRel = if (dir == SemanticDirection.OUTGOING) {
           CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Seq.empty),
-            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty), relType, relExpectations.properties)
+            RelationshipEndpoint(Variable(other.name), Map(), Seq.empty), relType, relExpectations.properties)
         } else {
           CreateRelationship(rel.name,
-            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty),
+            RelationshipEndpoint(Variable(other.name), Map(), Seq.empty),
             RelationshipEndpoint(Literal(startNode), Map(), Seq.empty), relType, relExpectations.properties)
         }
 
@@ -141,7 +141,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   // so any other links that use these nodes have to have them locked.
   def nodesWProps:Seq[NamedExpectation] = Seq(start,end).filter(_.properties.nonEmpty)
 
-  lazy val identifier2 = Seq(start.name -> CTNode, end.name -> CTNode, rel.name -> CTRelationship)
+  lazy val variable2 = Seq(start.name -> CTNode, end.name -> CTNode, rel.name -> CTRelationship)
 
   def symbolTableDependencies:Set[String] = start.properties.symboltableDependencies ++
     end.properties.symboltableDependencies ++
@@ -217,7 +217,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   }
 
   def effects(symbols: SymbolTable): Effects = {
-    val hasBothEndNodesInScope = symbols.hasIdentifierNamed(start.name) && symbols.hasIdentifierNamed(end.name)
+    val hasBothEndNodesInScope = symbols.hasVariableNamed(start.name) && symbols.hasVariableNamed(end.name)
 
     if (hasBothEndNodesInScope)
       Effects(ReadsRelationshipsWithTypes(relType), CreatesRelationship(relType))

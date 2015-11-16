@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.commands.RelatedTo
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.PatternGraphBuilder
@@ -71,7 +71,7 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
   test("should_handle_a_mandatory_labeled_node_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createNode()
     relate(aNode, bNode)
@@ -88,7 +88,7 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
   test("should_handle_a_mandatory_labeled_node_with_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
+    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
     val aNode = createNode()
     val bNode = createLabeledNode("Person")
     val relationship = relate(aNode, bNode)

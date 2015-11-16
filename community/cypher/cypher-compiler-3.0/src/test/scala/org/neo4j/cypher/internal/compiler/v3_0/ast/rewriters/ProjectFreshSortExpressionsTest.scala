@@ -52,7 +52,7 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
       """.stripMargin)
   }
 
-  test("duplicate WITH containing ORDER BY that refers to previous identifier") {
+  test("duplicate WITH containing ORDER BY that refers to previous variable") {
     assertRewrite(
       """MATCH n
         |WITH n.prop AS prop ORDER BY prop + n.x
@@ -170,7 +170,7 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
       """.stripMargin)
   }
 
-  test("Does not introduce WITH for ORDER BY over preserved identifier") {
+  test("Does not introduce WITH for ORDER BY over preserved variable") {
     assertIsNotRewritten(
     """MATCH n
       |WITH n AS n, n.prop AS prop
@@ -180,7 +180,7 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
     )
   }
 
-  test("Does not introduce WITH for WHERE over preserved identifier") {
+  test("Does not introduce WITH for WHERE over preserved variable") {
     assertIsNotRewritten(
       """MATCH n
         |WITH n AS n, n.prop AS prop

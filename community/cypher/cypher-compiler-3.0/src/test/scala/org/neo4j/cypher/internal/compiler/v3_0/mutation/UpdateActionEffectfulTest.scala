@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.Query
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_0.devNullLogger
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
@@ -34,21 +34,21 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
   import org.neo4j.cypher.internal.compiler.v3_0.parser.ParserFixture.parser
 
   test("correctly computes MergeNodeAction's effects for node property write") {
-    val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
+    val inner = PropertySetAction(Property(Variable("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
     given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsAllNodes, CreatesAnyNode, SetGivenNodeProperty("x")))
   }
 
   test("correctly computes MergeNodeAction's effects for relationship property write") {
-    val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
+    val inner = PropertySetAction(Property(Variable("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("b", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
     given.effects(SymbolTable(Map("a" -> symbols.CTRelationship))) should equal(Effects(ReadsAllNodes, CreatesAnyNode, SetGivenRelationshipProperty("x")))
   }
 
   test("correctly computes MergeNodeAction's effects when inside Foreach") {
-    val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
+    val inner = PropertySetAction(Property(Variable("a"), PropertyKey("x")), Literal(1))
     val merge = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(merge))
 
@@ -56,7 +56,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
   }
 
   test("correctly computes CreateNode's effects when inside Foreach") {
-    val propertySet = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
+    val propertySet = PropertySetAction(Property(Variable("a"), PropertyKey("x")), Literal(1))
     val create = CreateNode("a", Map.empty, Seq.empty)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(create, propertySet))
 

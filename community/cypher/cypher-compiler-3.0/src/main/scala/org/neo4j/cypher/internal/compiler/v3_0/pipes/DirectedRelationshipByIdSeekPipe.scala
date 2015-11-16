@@ -49,7 +49,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, 
     name = "DirectedRelationshipByIdSeekPipe",
     children = NoChildren,
     arguments = Seq(Arguments.EntityByIdRhs(relIdExpr)),
-    identifiers
+    variables
   )
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))

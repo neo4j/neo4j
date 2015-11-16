@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.PlannerName
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{Query, Union}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{DistinctPipe, PipeMonitor, UnionPipe}
@@ -40,7 +40,7 @@ class UnionBuilder(queryBuilder: GraphQueryBuilder) {
 
     val unionPipe = new UnionPipe(pipes.toList, union.queries.head.columns)
     val pipe = if (union.distinct) {
-      val expressions: Map[String, Expression] = union.queries.head.columns.map(k => k -> Identifier(k)).toMap
+      val expressions: Map[String, Expression] = union.queries.head.columns.map(k => k -> Variable(k)).toMap
       new DistinctPipe(unionPipe, expressions)()
     } else {
       unionPipe

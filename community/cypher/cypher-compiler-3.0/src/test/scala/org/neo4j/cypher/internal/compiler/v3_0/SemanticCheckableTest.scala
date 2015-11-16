@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.frontend.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -194,7 +194,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
   }
 
   test("shouldScopeState") {
-    val func1: SemanticCheck = Identifier("name")(DummyPosition(0)).declare(CTNode)
+    val func1: SemanticCheck = Variable("name")(DummyPosition(0)).declare(CTNode)
 
     val error = SemanticError("an error", DummyPosition(0))
     val func2: SemanticCheck = s => {

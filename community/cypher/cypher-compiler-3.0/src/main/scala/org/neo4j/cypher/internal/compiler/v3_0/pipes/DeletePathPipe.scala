@@ -67,7 +67,7 @@ case class DeletePathPipe(src: Pipe, expression: Expression, forced: Boolean)(va
 
   private def name = if (forced) "DetachDeletePath" else "DeletePath"
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, name, identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, name, variables)
 
   def symbols = src.symbols
 

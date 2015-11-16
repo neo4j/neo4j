@@ -31,7 +31,7 @@ class SortBuilderTest extends BuilderTest {
 
   test("should_accept_if_all_work_is_done_and_sorting_not_yet") {
     val q = PartiallySolvedQuery().copy(
-      sort = Seq(Unsolved(SortItem(Property(Identifier("x"), PropertyKey("foo")), ascending = true))),
+      sort = Seq(Unsolved(SortItem(Property(Variable("x"), PropertyKey("foo")), ascending = true))),
       extracted = true
     )
 
@@ -49,7 +49,7 @@ class SortBuilderTest extends BuilderTest {
 
   test("should_not_accept_if_not_yet_extracted") {
     val q = PartiallySolvedQuery().copy(
-      sort = Seq(Unsolved(SortItem(Property(Identifier("x"), PropertyKey("foo")), ascending = true))),
+      sort = Seq(Unsolved(SortItem(Property(Variable("x"), PropertyKey("foo")), ascending = true))),
       extracted = false
     )
 

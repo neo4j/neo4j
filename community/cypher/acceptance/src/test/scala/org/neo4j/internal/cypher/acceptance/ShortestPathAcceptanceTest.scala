@@ -403,7 +403,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
 
-  test("shortest path should work with predicates that reference shortestPath relationship identifier") {
+  test("shortest path should work with predicates that reference shortestPath relationship variable") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER

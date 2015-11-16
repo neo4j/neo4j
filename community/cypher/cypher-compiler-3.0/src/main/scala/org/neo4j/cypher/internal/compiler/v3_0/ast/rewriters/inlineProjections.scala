@@ -31,10 +31,10 @@ case object inlineProjections extends Rewriter {
   val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)
 
-    val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
+    val inlineVariables = TypedRewriter[ASTNode](context.variableRewriter)
     val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
-    val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = true))
-    val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = false))
+    val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = true))
+    val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = false))
 
     val inliningRewriter: Rewriter = replace(replacer => {
       case expr: Expression =>
@@ -43,7 +43,7 @@ case object inlineProjections extends Rewriter {
       case withClause: With if !withClause.distinct =>
         withClause.copy(
           returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
-          where = withClause.where.map(inlineIdentifiers.narrowed)
+          where = withClause.where.map(inlineVariables.narrowed)
         )(withClause.position)
 
       case returnClause: Return =>
@@ -52,8 +52,8 @@ case object inlineProjections extends Rewriter {
         )(returnClause.position)
 
       case m @ Match(_, mPattern, mHints, mOptWhere) =>
-        val newOptWhere = mOptWhere.map(inlineIdentifiers.narrowed)
-        val newHints = mHints.map(inlineIdentifiers.narrowed)
+        val newOptWhere = mOptWhere.map(inlineVariables.narrowed)
+        val newHints = mHints.map(inlineVariables.narrowed)
         // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
         // calling inlineProjections
         val newPattern = inlinePatterns(mPattern)
@@ -63,7 +63,7 @@ case object inlineProjections extends Rewriter {
         throw new CantHandleQueryException
 
       case clause: Clause =>
-        inlineIdentifiers.narrowed(clause)
+        inlineVariables.narrowed(clause)
 
       case astNode =>
         replacer.expand(astNode)
@@ -72,8 +72,8 @@ case object inlineProjections extends Rewriter {
     input.endoRewrite(inliningRewriter)
   }
 
-  private def findAllDependencies(identifier: Identifier, context: InliningContext): Set[Identifier] = {
-    val (dependencies, _) = iterateUntilConverged[(Set[Identifier], List[Identifier])]({
+  private def findAllDependencies(variable: Variable, context: InliningContext): Set[Variable] = {
+    val (dependencies, _) = iterateUntilConverged[(Set[Variable], List[Variable])]({
       case (deps, Nil) =>
         (deps, Nil)
       case (deps, queue) =>
@@ -85,7 +85,7 @@ case object inlineProjections extends Rewriter {
           case None =>
             (deps + id, queue)
         }
-    })((Set(identifier), List(identifier)))
+    })((Set(variable), List(variable)))
     dependencies
   }
 
@@ -94,9 +94,9 @@ case object inlineProjections extends Rewriter {
     case ri: ReturnItems =>
       val newItems = ri.items.flatMap {
         case item: AliasedReturnItem
-          if context.okToRewrite(item.identifier) && inlineAliases =>
-          val dependencies = findAllDependencies(item.identifier, context)
-          if (dependencies == Set(item.identifier)) {
+          if context.okToRewrite(item.variable) && inlineAliases =>
+          val dependencies = findAllDependencies(item.variable, context)
+          if (dependencies == Set(item.variable)) {
             Seq(item)
           } else {
             dependencies.map { id =>

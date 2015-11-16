@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckResult, SemanticState, SymbolUse}
 
-case class Identifier(name: String)(val position: InputPosition) extends Expression {
+case class Variable(name: String)(val position: InputPosition) extends Expression {
 
   def toSymbolUse = SymbolUse(name, position)
 
-  // check the identifier is defined and, if not, define it so that later errors are suppressed
+  // check the variable is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
     case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
@@ -35,16 +35,16 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
 
   // double-dispatch helpers
   def declare(possibleTypes: TypeSpec) =
-    (_: SemanticState).declareIdentifier(this, possibleTypes)
+    (_: SemanticState).declareVariable(this, possibleTypes)
 
   def declare(typeGen: SemanticState => TypeSpec, positions: Set[InputPosition] = Set.empty) =
-    (s: SemanticState) => s.declareIdentifier(this, typeGen(s), positions)
+    (s: SemanticState) => s.declareVariable(this, typeGen(s), positions)
 
   def implicitDeclaration(possibleType: CypherType) =
-    (_: SemanticState).implicitIdentifier(this, possibleType)
+    (_: SemanticState).implicitVariable(this, possibleType)
 
   def ensureDefined() =
-    (_: SemanticState).ensureIdentifierDefined(this)
+    (_: SemanticState).ensureVariableDefined(this)
 
   def copyId = copy()(position)
 
@@ -55,9 +55,9 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
 }
 
-object Identifier {
+object Variable {
   implicit val byName =
-    Ordering.by { (identifier: Identifier) =>
-      (identifier.name, identifier.position)
+    Ordering.by { (variable: Variable) =>
+      (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
 }

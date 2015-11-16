@@ -33,7 +33,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
     val predicate = mock[Expression]
-    when(predicate.dependencies).thenReturn(Set.empty[Identifier])
+    when(predicate.dependencies).thenReturn(Set.empty[Variable])
     val LogicalPlan = newMockedLogicalPlan("x")
     val selections = Selections(Set(Predicate(LogicalPlan.availableSymbols, predicate)))
 
@@ -49,7 +49,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not try to solve predicates with unmet dependencies") {
     // Given
     val predicate = mock[Expression]
-    when(predicate.dependencies).thenReturn(Set.empty[Identifier])
+    when(predicate.dependencies).thenReturn(Set.empty[Variable])
 
     val selections = Selections(Set(Predicate(Set(IdName("x")), predicate)))
     val LogicalPlan = newMockedLogicalPlanWithProjections("x")
@@ -66,10 +66,10 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when two predicates not already solved are solvable, they should be applied") {
     // Given
     val predicate1 = mock[Expression]
-    when(predicate1.dependencies).thenReturn(Set.empty[Identifier])
+    when(predicate1.dependencies).thenReturn(Set.empty[Variable])
 
     val predicate2 = mock[Expression]
-    when(predicate2.dependencies).thenReturn(Set.empty[Identifier])
+    when(predicate2.dependencies).thenReturn(Set.empty[Variable])
 
     val selections = Selections(Set(
       Predicate(Set(IdName("x")), predicate1),

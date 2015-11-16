@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{MatchingContext, 
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],
                      patternGraph: PatternGraph,
-                     identifiersInClause: Set[String])
+                     variablesInClause: Set[String])
                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, identifiersInClause)
+  val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, variablesInClause)
   val symbols = matchingContext.symbols
-  val identifiersBoundInSource = identifiersInClause intersect source.symbols.keys.toSet
+  val variablesBoundInSource = variablesInClause intersect source.symbols.keys.toSet
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     //register as parent so that stats are associated with this pipe
@@ -38,7 +38,7 @@ case class MatchPipe(source: Pipe,
 
     input.flatMap {
       ctx =>
-        if (identifiersBoundInSource.exists(i => ctx(i) == null))
+        if (variablesBoundInSource.exists(i => ctx(i) == null))
           None
         else
           matchingContext.getMatches(ctx, state)
@@ -52,7 +52,7 @@ case class MatchPipe(source: Pipe,
   }
 
   override def planDescription =
-    source.planDescription.andThen(this.id, matchingContext.builder.name, identifiers)
+    source.planDescription.andThen(this.id, matchingContext.builder.name, variables)
 
   def mergeStartPoint = matchingContext.builder.startPoint
 

@@ -53,7 +53,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)))")
+      "Selection(Vector(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)))")
   }
 
   test("should build plans for two matches separated by WITH") {

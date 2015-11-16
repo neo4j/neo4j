@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.VariableLengthStepTrail
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.EndPoint
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.RelationshipIdentifier
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.RelationshipVariable
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.SingleStepTrail
 import annotation.tailrec
 
@@ -52,7 +52,7 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
     def transformToTrail(p: Pattern, done: Trail, patternsToDo: Seq[Pattern]): (Trail, Seq[Pattern]) = {
 
       def rewriteTo(originalName: String, newExpr: Expression)(e: Expression) = e match {
-        case Identifier(name) if name == originalName => newExpr
+        case Variable(name) if name == originalName => newExpr
         case _                                        => e
       }
 
@@ -64,11 +64,11 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
 
         val relPred: Predicate = Predicate.
           fromSeq(orgRelPred).
-          rewriteAsPredicate(rewriteTo(rel.relName, RelationshipIdentifier()))
+          rewriteAsPredicate(rewriteTo(rel.relName, RelationshipVariable()))
 
         val nodePred: Predicate = Predicate.
           fromSeq(orgNodePred).
-          rewriteAsPredicate(rewriteTo(end, NodeIdentifier()))
+          rewriteAsPredicate(rewriteTo(end, NodeVariable()))
 
         done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred, nodePred, rel, orgNodePred ++ orgRelPred))
       }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.DeleteEntityAction
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
@@ -31,14 +31,14 @@ class DeleteAndPropertySetBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_solve_done_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Solved(DeleteEntityAction(Variable("x"), forced = false))))
 
     withClue("Should not be able to build on this")(builder.canWorkWith(plan(q), planContext)) should equal(false)
   }
 
   test("offers_to_solve_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Variable("x"), forced = false))))
 
     val pipe = createPipe(nodes = Seq("x"))
 
@@ -54,7 +54,7 @@ class DeleteAndPropertySetBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_delete_something_not_yet_there") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Variable("x"), forced = false))))
 
     val executionPlan = plan(q)
     withClue("Should not accept this")(builder.canWorkWith(executionPlan, planContext)) should equal(false)

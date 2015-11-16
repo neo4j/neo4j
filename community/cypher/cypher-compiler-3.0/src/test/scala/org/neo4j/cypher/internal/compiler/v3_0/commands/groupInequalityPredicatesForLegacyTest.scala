@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
 
-  val n_prop1: Property = Property(Identifier("n"), PropertyKey("prop1"))
-  val m_prop1: Property = Property(Identifier("m"), PropertyKey("prop1"))
-  val m_prop2: Property = Property(Identifier("m"), PropertyKey("prop2"))
+  val n_prop1: Property = Property(Variable("n"), PropertyKey("prop1"))
+  val m_prop1: Property = Property(Variable("m"), PropertyKey("prop1"))
+  val m_prop2: Property = Property(Variable("m"), PropertyKey("prop2"))
 
   test("Should handle single predicate") {
     groupInequalityPredicatesForLegacy(NonEmptyList(lessThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
@@ -74,11 +74,11 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
 
   test("Should not group inequalities on non-property lookups") {
     groupInequalityPredicatesForLegacy(NonEmptyList(
-      lessThan(Identifier("x"), 1),
-      greaterThanOrEqual(Identifier("x"), 1)
+      lessThan(Variable("x"), 1),
+      greaterThanOrEqual(Variable("x"), 1)
     )).toSet should equal(NonEmptyList(
-      lessThan(Identifier("x"), 1),
-      greaterThanOrEqual(Identifier("x"), 1)
+      lessThan(Variable("x"), 1),
+      greaterThanOrEqual(Variable("x"), 1)
     ).toSet)
   }
 
@@ -98,8 +98,8 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
     GreaterThanOrEqual(lhs, Literal(v))
 
   private def anded(property: Property, first: ComparablePredicate, others: ComparablePredicate*) = {
-    val identifier = property.mapExpr.asInstanceOf[Identifier]
+    val variable = property.mapExpr.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
-    AndedPropertyComparablePredicates(identifier, property, inequalities)
+    AndedPropertyComparablePredicates(variable, property, inequalities)
   }
 }

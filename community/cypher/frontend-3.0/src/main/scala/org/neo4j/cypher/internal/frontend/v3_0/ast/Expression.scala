@@ -62,13 +62,13 @@ object Expression {
       traversable.foldSemanticCheck { _.expectType(possibleTypes) }
   }
 
-  final case class TreeAcc[A](data: A, stack: Stack[Set[Identifier]] = Stack.empty) {
-    def toSet: Set[Identifier] = stack.toSet.flatten
+  final case class TreeAcc[A](data: A, stack: Stack[Set[Variable]] = Stack.empty) {
+    def toSet: Set[Variable] = stack.toSet.flatten
     def map(f: A => A): TreeAcc[A] = copy(data = f(data))
-    def push(newIdentifier: Identifier): TreeAcc[A] = push(Set(newIdentifier))
-    def push(newIdentifiers: Set[Identifier]): TreeAcc[A] = copy(stack = stack.push(newIdentifiers))
+    def push(newVariable: Variable): TreeAcc[A] = push(Set(newVariable))
+    def push(newVariables: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
     def pop: TreeAcc[A] = copy(stack = stack.pop)
-    def contains(identifier: Identifier) = stack.exists(_.contains(identifier))
+    def contains(variable: Variable) = stack.exists(_.contains(variable))
   }
 }
 
@@ -85,16 +85,16 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
       (acc, _) => acc :+ e
   }
 
-  // All identifiers referenced from this expression or any of its childs
+  // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
-  def dependencies: Set[Identifier] =
-    this.treeFold(TreeAcc[Set[Identifier]](Set.empty)) {
+  def dependencies: Set[Variable] =
+    this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
       case scope: ScopeExpression => {
         case (acc, children) =>
-          val newAcc = acc.push(scope.identifiers)
+          val newAcc = acc.push(scope.variables)
           children(newAcc).pop
       }
-      case id: Identifier => {
+      case id: Variable => {
         case (acc, children) if acc.contains(id) =>
           children(acc)
         case (acc, children) =>
@@ -104,11 +104,11 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
 
   // List of child expressions together with any of its dependencies introduced
   // by any of its parent expressions (where this expression is the root of the tree)
-  def inputs: Seq[(Expression, Set[Identifier])] =
-    this.treeFold(TreeAcc[Seq[(Expression, Set[Identifier])]](Seq.empty)) {
+  def inputs: Seq[(Expression, Set[Variable])] =
+    this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
       case scope: ScopeExpression=> {
         case (acc, children) =>
-          val newAcc = acc.push(scope.identifiers).map { case pairs => pairs :+ (scope -> acc.toSet) }
+          val newAcc = acc.push(scope.variables).map { case pairs => pairs :+ (scope -> acc.toSet) }
           children(newAcc).pop
       }
 

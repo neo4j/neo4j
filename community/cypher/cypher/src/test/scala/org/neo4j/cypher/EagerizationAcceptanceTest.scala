@@ -131,7 +131,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  ignore("should not introduce eagerness between DELETE and MERGE for nodes when deleting identifier not bound for same label") {
+  ignore("should not introduce eagerness between DELETE and MERGE for nodes when deleting variable not bound for same label") {
     // TODO: Delete must know what label(s) on nodes it deletes to be able to solve this
 
     createLabeledNode("B")
@@ -209,7 +209,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 2)
   }
 
-  ignore("should not introduce eagerness between DELETE and MERGE for relationships when deleting identifier not bound for same type") {
+  ignore("should not introduce eagerness between DELETE and MERGE for relationships when deleting variable not bound for same type") {
     // TODO: Delete must know what type(s) of relationship it deletes to be able to solve this
     val a = createNode()
     val b = createNode()
@@ -947,7 +947,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should not be eager when merging on already bound identifiers") {
+  test("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country)"
 
     assertStats(executeWithRulePlanner(query), nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)

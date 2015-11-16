@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.{devNullLogger, InternalNotificationLogger}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Identifier
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
@@ -39,7 +39,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
 
-  def forExpressionPlanning(nodes: Iterable[Identifier], rels: Iterable[Identifier]) = {
+  def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]) = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
     val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
     copy(
@@ -57,14 +57,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
 object NodeIdName {
   def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case identifier@Identifier(name) if context.semanticTable.isNode(identifier) => Some(IdName(identifier.name))
+    case variable@Variable(name) if context.semanticTable.isNode(variable) => Some(IdName(variable.name))
     case _ => None
   }
 }
 
 object RelationshipIdName {
   def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case identifier@Identifier(name) if context.semanticTable.isRelationship(identifier) => Some(IdName(identifier.name))
+    case variable@Variable(name) if context.semanticTable.isRelationship(variable) => Some(IdName(variable.name))
     case _ => None
   }
 }

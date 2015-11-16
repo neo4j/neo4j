@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Identifier}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
@@ -32,7 +32,7 @@ import scala.language.postfixOps
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def asIdentifier = Identifier(name)(position)
+  def asVariable = Variable(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -86,11 +86,11 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
-  def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]) =
-    copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+  def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]) =
+    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
 
-  def mergePositions(identifier: String, positions: Set[InputPosition]) = symbolTable.get(identifier) match {
-    case Some(symbol) => copy(symbolTable = symbolTable.updated(identifier, symbol.copy(positions = positions ++ symbol.positions)))
+  def mergePositions(variable: String, positions: Set[InputPosition]) = symbolTable.get(variable) match {
+    case Some(symbol) => copy(symbolTable = symbolTable.updated(variable, symbol.copy(positions = positions ++ symbol.positions)))
     case None => self
   }
 
@@ -110,10 +110,10 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
   def symbolDefinitions: Set[SymbolUse] =
     symbolTable.values.map(_.definition).toSet
 
-  def allIdentifierDefinitions: Map[SymbolUse, SymbolUse] =
-    allScopes.map(_.identifierDefinitions).reduce(_ ++ _)
+  def allVariableDefinitions: Map[SymbolUse, SymbolUse] =
+    allScopes.map(_.variableDefinitions).reduce(_ ++ _)
 
-  def identifierDefinitions: Map[SymbolUse, SymbolUse] =
+  def variableDefinitions: Map[SymbolUse, SymbolUse] =
     symbolTable.values.flatMap { symbol =>
       val name = symbol.name
       val definition = symbol.definition
@@ -176,11 +176,11 @@ object SemanticState {
       case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
     }
 
-    def updateIdentifier(identifier: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
-      location.replace(scope.updateIdentifier(identifier, types, positions))
+    def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
+      location.replace(scope.updateVariable(variable, types, positions))
 
-    def mergePositions(identifier: String, positions: Set[InputPosition]): ScopeLocation =
-      location.replace(scope.mergePositions(identifier, positions))
+    def mergePositions(variable: String, positions: Set[InputPosition]): ScopeLocation =
+      location.replace(scope.mergePositions(variable, positions))
   }
 }
 
@@ -203,45 +203,45 @@ case class SemanticState(currentScope: ScopeLocation,
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
 
-  def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
-    currentScope.localSymbol(identifier.name) match {
+  def declareVariable(variable: ast.Variable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
+    currentScope.localSymbol(variable.name) match {
       case None =>
-        Right(updateIdentifier(identifier, possibleTypes, positions + identifier.position))
+        Right(updateVariable(variable, possibleTypes, positions + variable.position))
       case Some(symbol) =>
-        Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions.toSeq: _*))
+        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
     }
 
   def addNotification(notification: InternalNotification) = copy(notifications = notifications + notification)
 
-  def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
-    this.symbol(identifier.name) match {
+  def implicitVariable(variable: ast.Variable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
+    this.symbol(variable.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Set(identifier.position)))
+        Right(updateVariable(variable, possibleTypes, Set(variable.position)))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
-          Right(updateIdentifier(identifier, inferredTypes, symbol.positions + identifier.position))
+          Right(updateVariable(variable, inferredTypes, symbol.positions + variable.position))
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
-            s"Type mismatch: ${identifier.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
-            identifier.position, symbol.positions.toSeq: _*))
+            s"Type mismatch: ${variable.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
+            variable.position, symbol.positions.toSeq: _*))
         }
     }
 
-  def ensureIdentifierDefined(identifier: ast.Identifier): Either[SemanticError, SemanticState] =
-    this.symbol(identifier.name) match {
+  def ensureVariableDefined(variable: ast.Variable): Either[SemanticError, SemanticState] =
+    this.symbol(variable.name) match {
       case None         =>
-        Left(SemanticError(s"${identifier.name} not defined", identifier.position))
+        Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
       case Some(symbol) =>
-        Right(updateIdentifier(identifier, symbol.types, symbol.positions + identifier.position))
+        Right(updateVariable(variable, symbol.types, symbol.positions + variable.position))
     }
 
   def specifyType(expression: ast.Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     expression match {
-      case identifier: ast.Identifier =>
-        implicitIdentifier(identifier, possibleTypes)
+      case variable: ast.Variable =>
+        implicitVariable(variable, possibleTypes)
       case _                          =>
         Right(copy(typeTable = typeTable.updated(expression, ExpressionTypeInfo(possibleTypes))))
     }
@@ -254,10 +254,10 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Set[InputPosition]) =
+  private def updateVariable(variable: ast.Variable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(
-      currentScope = currentScope.updateIdentifier(identifier.name, types, locations),
-      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
+      currentScope = currentScope.updateVariable(variable.name, types, locations),
+      typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))
     )
 
   def noteCurrentScope(astNode: ast.ASTNode): SemanticState =

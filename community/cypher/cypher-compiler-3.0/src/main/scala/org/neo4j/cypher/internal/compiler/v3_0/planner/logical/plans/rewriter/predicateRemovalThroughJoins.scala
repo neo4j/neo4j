@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 
 /*
-A join on given identifier is similar to a logical AND - any predicates evaluated on the LHS will in effect
+A join on given variable is similar to a logical AND - any predicates evaluated on the LHS will in effect
 also be applied to the output of the join. This means that evaluating the same predicate on the RHS is redundant.
 
-This rewriters finds predicates on the join identifiers, and removes any predicates on the RHS that already
+This rewriters finds predicates on the join variables, and removes any predicates on the RHS that already
 exist on the LHS.
  */
 case object predicateRemovalThroughJoins extends Rewriter {

@@ -38,12 +38,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   val symbols: SymbolTable = createSymbols()
 
   private def createSymbols() = {
-    val keyIdentifiers = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
-    val aggrIdentifiers = aggregations.map {
+    val keyVariables = keyExpressions.map(id => id -> source.symbols.evaluateType(id, CTAny)).toMap
+    val aggrVariables = aggregations.map {
       case (innerId, exp) => innerId -> exp.getType(source.symbols)
     }
 
-    SymbolTable(keyIdentifiers ++ aggrIdentifiers)
+    SymbolTable(keyVariables ++ aggrVariables)
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
@@ -94,7 +94,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
+                        andThen(this.id, "EagerAggregation", variables, Arguments.KeyNames(keyExpressions.toSeq))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

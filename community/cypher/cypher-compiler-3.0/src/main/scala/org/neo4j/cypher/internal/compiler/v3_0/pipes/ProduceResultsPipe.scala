@@ -41,7 +41,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])(val estimatedC
   }
 
   def planDescriptionWithoutCardinality = source.planDescription
-    .andThen(this.id, "ProduceResults", identifiers, KeyNames(columns))
+    .andThen(this.id, "ProduceResults", variables, KeyNames(columns))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

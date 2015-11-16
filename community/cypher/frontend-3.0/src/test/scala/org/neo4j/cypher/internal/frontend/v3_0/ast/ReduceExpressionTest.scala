@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticCheckResu
 
 class ReduceExpressionTest extends CypherFunSuite {
 
-  test("shouldEvaluateReduceExpressionWithTypedIdentifiers") {
+  test("shouldEvaluateReduceExpressionWithTypedVariables") {
     val error = SemanticError("dummy error", DummyPosition(10))
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
@@ -38,9 +38,9 @@ class ReduceExpressionTest extends CypherFunSuite {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x")(DummyPosition(2)),
+      accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(CTString),
-      identifier = Identifier("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(CTCollection(CTInteger)),
       expression = reduceExpression
     )(DummyPosition(0))
@@ -64,9 +64,9 @@ class ReduceExpressionTest extends CypherFunSuite {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x")(DummyPosition(2)),
+      accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(initType),
-      identifier = Identifier("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyPosition(0))
@@ -89,9 +89,9 @@ class ReduceExpressionTest extends CypherFunSuite {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x")(DummyPosition(2)),
+      accumulator = Variable("x")(DummyPosition(2)),
       init = DummyExpression(accumulatorType),
-      identifier = Identifier("y")(DummyPosition(6)),
+      variable = Variable("y")(DummyPosition(6)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyPosition(0))

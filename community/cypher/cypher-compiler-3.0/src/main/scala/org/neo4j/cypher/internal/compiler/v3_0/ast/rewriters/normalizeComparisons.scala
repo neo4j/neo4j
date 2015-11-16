@@ -28,18 +28,18 @@ case object normalizeComparisons extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
     case c@NotEquals(lhs, rhs) =>
-      NotEquals(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      NotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@Equals(lhs, rhs) =>
-      Equals(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      Equals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@LessThan(lhs, rhs) =>
-      LessThan(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      LessThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@LessThanOrEqual(lhs, rhs) =>
-      LessThanOrEqual(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      LessThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@GreaterThan(lhs, rhs) =>
-      GreaterThan(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      GreaterThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@GreaterThanOrEqual(lhs, rhs) =>
-      GreaterThanOrEqual(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      GreaterThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
     case c@InvalidNotEquals(lhs, rhs) =>
-      InvalidNotEquals(lhs.endoRewrite(copyIdentifiers), rhs.endoRewrite(copyIdentifiers))(c.position)
+      InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
   }
 }

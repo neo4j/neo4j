@@ -39,7 +39,7 @@ class PatternRelationship(key: String,
   extends PatternElement(key) {
   private val types = LazyTypes(relTypes)
 
-  def identifiers2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
+  def variables2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
@@ -132,7 +132,7 @@ class VariableLengthPatternRelationship(pathName: String,
   extends PatternRelationship(pathName, start, end, relType, properties, dir) {
 
 
-  override def identifiers2: Map[String, CypherType] =
+  override def variables2: Map[String, CypherType] =
     Map(startNode.key -> CTNode,
       endNode.key -> CTNode,
       key -> CTCollection(CTRelationship)) ++ relIterable.map(_ -> CTCollection(CTRelationship)).toMap

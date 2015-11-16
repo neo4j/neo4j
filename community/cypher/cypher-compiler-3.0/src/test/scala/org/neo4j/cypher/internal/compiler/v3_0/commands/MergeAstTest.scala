@@ -31,7 +31,7 @@ class MergeAstTest extends CypherFunSuite {
 
   test("simple_node_without_labels_or_properties") {
     // given
-    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)))
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Variable(A), Map.empty, Seq.empty)))
 
     // then
     from.nextStep() should equal(Seq(MergeNodeAction(A, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
@@ -39,7 +39,7 @@ class MergeAstTest extends CypherFunSuite {
 
   test("node_with_labels") {
     // given
-    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)))))
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Variable(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)))))
 
     // then
     val a = from.nextStep().head
@@ -56,13 +56,13 @@ class MergeAstTest extends CypherFunSuite {
 
   test("node_with_properties") {
     // given
-    val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map(propertyKey.name -> expression), Seq.empty)))
+    val from = mergeAst(patterns = Seq(ParsedEntity(A, Variable(A), Map(propertyKey.name -> expression), Seq.empty)))
 
     from.nextStep() should equal(Seq(MergeNodeAction(A,
       props = Map(propertyKey -> expression),
       labels = Seq.empty,
-      expectations = Seq(Equals(Property(Identifier(A), propertyKey), expression)),
-      onCreate = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
+      expectations = Seq(Equals(Property(Variable(A), propertyKey), expression)),
+      onCreate = Seq(PropertySetAction(Property(Variable(A), propertyKey), expression)),
       onMatch = Seq.empty,
       maybeNodeProducer = NO_PRODUCER)))
   }
@@ -70,15 +70,15 @@ class MergeAstTest extends CypherFunSuite {
   test("node_with_on_create") {
     // given MERGE A ON CREATE SET A.prop = exp
     val from = mergeAst(
-      patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)),
-      onActions = Seq(OnAction(On.Create, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+      patterns = Seq(ParsedEntity(A, Variable(A), Map.empty, Seq.empty)),
+      onActions = Seq(OnAction(On.Create, Seq(PropertySetAction(Property(Variable(A), propertyKey), expression)))))
 
     // then
     from.nextStep() should equal(Seq(MergeNodeAction(A,
       props = Map.empty,
       labels = Seq.empty,
       expectations = Seq.empty,
-      onCreate = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
+      onCreate = Seq(PropertySetAction(Property(Variable(A), propertyKey), expression)),
       onMatch = Seq.empty,
       maybeNodeProducer = NO_PRODUCER)))
   }
@@ -86,8 +86,8 @@ class MergeAstTest extends CypherFunSuite {
   test("node_with_on_match") {
     // given MERGE A ON MATCH SET A.prop = exp
     val from = mergeAst(
-      patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)),
-      onActions = Seq(OnAction(On.Match, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
+      patterns = Seq(ParsedEntity(A, Variable(A), Map.empty, Seq.empty)),
+      onActions = Seq(OnAction(On.Match, Seq(PropertySetAction(Property(Variable(A), propertyKey), expression)))))
 
     // then
     from.nextStep() should equal(Seq(MergeNodeAction(A,
@@ -95,7 +95,7 @@ class MergeAstTest extends CypherFunSuite {
       labels = Seq.empty,
       expectations = Seq.empty,
       onCreate = Seq.empty,
-      onMatch = Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)),
+      onMatch = Seq(PropertySetAction(Property(Variable(A), propertyKey), expression)),
       maybeNodeProducer = NO_PRODUCER)))
   }
 
@@ -107,11 +107,11 @@ class MergeAstTest extends CypherFunSuite {
   val propertyKey = PropertyKey("property")
   val expression = TimestampFunction()
 
-  def nodeHasLabelPredicate(id: String) = HasLabel(Identifier(id), KeyToken.Unresolved(labelName, TokenType.Label))
+  def nodeHasLabelPredicate(id: String) = HasLabel(Variable(id), KeyToken.Unresolved(labelName, TokenType.Label))
 
-  def setNodeLabels(id: String) = LabelAction(Identifier(id), LabelSetOp, Seq(KeyToken.Unresolved(labelName, TokenType.Label)))
+  def setNodeLabels(id: String) = LabelAction(Variable(id), LabelSetOp, Seq(KeyToken.Unresolved(labelName, TokenType.Label)))
 
-  def setProperty(id: String) = PropertySetAction(Property(Identifier(id), propertyKey), expression)
+  def setProperty(id: String) = PropertySetAction(Property(Variable(id), propertyKey), expression)
 
   def mergeAst(patterns: Seq[AbstractPattern] = Seq.empty,
                onActions: Seq[OnAction] = Seq.empty,

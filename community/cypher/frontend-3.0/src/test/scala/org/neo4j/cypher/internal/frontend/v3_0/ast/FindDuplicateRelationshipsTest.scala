@@ -26,8 +26,8 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
   val pos = DummyPosition(0)
   val node = NodePattern(None, Seq.empty, None)(pos)
-  val relR = Identifier("r")(pos)
-  val relS = Identifier("s")(pos)
+  val relR = Variable("r")(pos)
+  val relS = Variable("s")(pos)
 
   test("find duplicate relationships across pattern parts") {
     val relPath = EveryPath(RelationshipChain(node, relPattern(relR), node)(pos))
@@ -58,11 +58,11 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
     Pattern.findDuplicateRelationships(pattern) should equal(Set.empty)
   }
 
-  private def relChain(ids: Identifier*) =
+  private def relChain(ids: Variable*) =
     ids.foldRight(node.asInstanceOf[PatternElement]) {
       (id, n) => RelationshipChain(n, relPattern(id), node)(pos)
     }
 
-  private def relPattern(id: Identifier) =
+  private def relPattern(id: Variable) =
     RelationshipPattern(Some(id), optional = false, Seq(), None, None, SemanticDirection.OUTGOING)(pos)
 }

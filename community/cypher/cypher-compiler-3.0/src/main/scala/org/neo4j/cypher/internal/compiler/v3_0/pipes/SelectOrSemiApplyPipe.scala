@@ -50,7 +50,7 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
     name = name,
     children = TwoChildren(source.planDescription, inner.planDescription),
     arguments = Seq(LegacyExpression(predicate)),
-    identifiers = identifiers)
+    variables = variables)
 
   def symbols: SymbolTable = source.symbols
 

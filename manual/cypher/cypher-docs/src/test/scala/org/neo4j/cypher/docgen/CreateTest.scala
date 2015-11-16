@@ -127,7 +127,7 @@ for this to work.""",
         """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
-      optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
+      optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path variable, " +
         "and returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }

@@ -98,7 +98,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "All Nodes Scan",
       text =
-        """Reads all nodes from the node store. The identifier that will contain the nodes is seen in the arguments.
+        """Reads all nodes from the node store. The variable that will contain the nodes is seen in the arguments.
           |If your query is using this operator, you are very likely to see performance problems on any non-trivial database.""".stripMargin,
       queryText = """MATCH (n) RETURN n""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("AllNodesScan"))
@@ -218,7 +218,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   @Test def nodeByIndexSeek() {
     profileQuery(
       title = "Node index seek",
-      text = """Finds nodes using an index seek. The node identifier and the index used is shown in the arguments of the operator.
+      text = """Finds nodes using an index seek. The node variable and the index used is shown in the arguments of the operator.
                 |If the index is a unique index, the operator is called NodeUniqueIndexSeek instead.""".stripMargin,
       queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
@@ -301,7 +301,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Optional expand traverses relationships from a given node, and makes sure that predicates are evaluated before producing rows.
           |
-          |If no matching relationships are found, a single row with `NULL` for the relationship and end node identifier is produced.""".stripMargin,
+          |If no matching relationships are found, a single row with `NULL` for the relationship and end node variable is produced.""".stripMargin,
       queryText =
         """MATCH (p:Person)
            OPTIONAL MATCH (p)-[works_in:WORKS_IN]->(l) WHERE works_in.duration > 180

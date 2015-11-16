@@ -30,7 +30,7 @@ import scala.collection.Map
 
 class PatternMatchingBuilder(patternGraph: PatternGraph,
                              predicates: Seq[Predicate],
-                             identifiersInClause: Set[String]) extends MatcherBuilder {
+                             variablesInClause: Set[String]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
@@ -80,7 +80,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
     ).toSeq
 
   private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
-      new PatternMatcher(boundPairs, predicates, source, state, identifiersInClause)
+      new PatternMatcher(boundPairs, predicates, source, state, variablesInClause)
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
     case (key, node: Node) if patternGraph.contains(key)        => Seq(key -> MatchingPair(patternGraph(key), node))

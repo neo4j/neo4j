@@ -68,7 +68,7 @@ class ExtractBuilderTest extends BuilderTest {
   test("does_not_introduce_extract_pipe_unless_necessary") {
     //GIVEN
     val q = PartiallySolvedQuery().
-      copy(returns = Seq(Unsolved(ReturnItem(Identifier("foo"), "foo")))
+      copy(returns = Seq(Unsolved(ReturnItem(Variable("foo"), "foo")))
     )
 
     val p = createPipe(nodes = Seq("foo"))

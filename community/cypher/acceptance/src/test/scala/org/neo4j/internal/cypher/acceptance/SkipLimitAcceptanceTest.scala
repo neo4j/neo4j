@@ -22,15 +22,15 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
 
 class SkipLimitAcceptanceTest extends ExecutionEngineFunSuite {
-  test("SKIP should not allow identifiers") {
+  test("SKIP should not allow variables") {
     intercept[SyntaxException](execute("MATCH (n) RETURN n SKIP n.count"))
   }
 
-  test("LIMIT should not allow identifiers") {
+  test("LIMIT should not allow variables") {
     intercept[SyntaxException](execute("MATCH (n) RETURN n LIMIT n.count"))
   }
 
-  test("SKIP with an expression that does not depend on identifiers should work") {
+  test("SKIP with an expression that does not depend on variables should work") {
     1 to 10 foreach { _ => createNode() }
 
     val query = "MATCH (n) RETURN n SKIP toInt(rand()*9)"
@@ -39,7 +39,7 @@ class SkipLimitAcceptanceTest extends ExecutionEngineFunSuite {
     result.toList should not be empty
   }
 
-  test("LIMIT with an expression that does not depend on identifiers should work") {
+  test("LIMIT with an expression that does not depend on variables should work") {
     1 to 3 foreach { _ => createNode() }
 
     val query = "MATCH (n) RETURN n LIMIT toInt(ceil(1.7))"

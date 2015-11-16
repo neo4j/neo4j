@@ -80,8 +80,8 @@ object wrappersFor2_3 {
   }
 
   def as2_3(notification: InternalNotification): InternalNotification2_3 = notification match {
-    case CartesianProductNotification(pos, identifiers) =>
-      frontend2_3.notification.CartesianProductNotification(as2_3(pos), identifiers)
+    case CartesianProductNotification(pos, variables) =>
+      frontend2_3.notification.CartesianProductNotification(as2_3(pos), variables)
     case LegacyPlannerNotification =>
       frontend2_3.notification.LegacyPlannerNotification
     case LengthOnNonPathNotification(pos) =>
@@ -92,10 +92,10 @@ object wrappersFor2_3 {
       frontend2_3.notification.RuntimeUnsupportedNotification
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
       frontend2_3.notification.IndexHintUnfulfillableNotification(label, propertyKey)
-    case JoinHintUnfulfillableNotification(identifiers) =>
-      frontend2_3.notification.JoinHintUnfulfillableNotification(identifiers)
-    case JoinHintUnsupportedNotification(identifiers) =>
-      frontend2_3.notification.JoinHintUnsupportedNotification(identifiers)
+    case JoinHintUnfulfillableNotification(variables) =>
+      frontend2_3.notification.JoinHintUnfulfillableNotification(variables)
+    case JoinHintUnsupportedNotification(variables) =>
+      frontend2_3.notification.JoinHintUnsupportedNotification(variables)
     case IndexLookupUnfulfillableNotification(labels) =>
       frontend2_3.notification.IndexLookupUnfulfillableNotification(labels)
     case EagerLoadCsvNotification =>
@@ -113,8 +113,8 @@ object wrappersFor2_3 {
   }
 
   def as3_0(notification: InternalNotification2_3): InternalNotification = notification match {
-    case frontend2_3.notification.CartesianProductNotification(pos, identifiers) =>
-      CartesianProductNotification(as3_0(pos), identifiers)
+    case frontend2_3.notification.CartesianProductNotification(pos, variables) =>
+      CartesianProductNotification(as3_0(pos), variables)
     case frontend2_3.notification.LegacyPlannerNotification =>
       LegacyPlannerNotification
     case frontend2_3.notification.LengthOnNonPathNotification(pos) =>
@@ -125,10 +125,10 @@ object wrappersFor2_3 {
       RuntimeUnsupportedNotification
     case frontend2_3.notification.IndexHintUnfulfillableNotification(label, propertyKey) =>
       IndexHintUnfulfillableNotification(label, propertyKey)
-    case frontend2_3.notification.JoinHintUnfulfillableNotification(identifiers) =>
-      JoinHintUnfulfillableNotification(identifiers)
-    case frontend2_3.notification.JoinHintUnsupportedNotification(identifiers) =>
-      JoinHintUnsupportedNotification(identifiers)
+    case frontend2_3.notification.JoinHintUnfulfillableNotification(variables) =>
+      JoinHintUnfulfillableNotification(variables)
+    case frontend2_3.notification.JoinHintUnsupportedNotification(variables) =>
+      JoinHintUnsupportedNotification(variables)
     case frontend2_3.notification.IndexLookupUnfulfillableNotification(labels) =>
       IndexLookupUnfulfillableNotification(labels)
     case frontend2_3.notification.EagerLoadCsvNotification =>

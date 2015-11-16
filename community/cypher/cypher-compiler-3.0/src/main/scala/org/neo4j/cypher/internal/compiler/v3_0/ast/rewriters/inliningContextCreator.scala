@@ -32,38 +32,38 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         (context, children) =>
           children(context.enterQueryPart(aliasedReturnItems(withClause.returnItems.items)))
 
-      // When just passing an identifier through a WITH, do not count the identifier as used. This case shortcuts the
-      // tree folding so the identifiers are not tracked.
-      case AliasedReturnItem(Identifier(n1), alias@Identifier(n2)) if n1 == n2 =>
+      // When just passing a variable through a WITH, do not count the variable as used. This case shortcuts the
+      // tree folding so the variables are not tracked.
+      case AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
         (context, children) =>
           context
 
-      case identifier: Identifier =>
+      case variable: Variable =>
         (context, children) =>
-          children(context.trackUsageOfIdentifier(identifier))
+          children(context.trackUsageOfVariable(variable))
 
-      // When an identifier is used in ORDER BY, it should never be inlined
+      // When a variable is used in ORDER BY, it should never be inlined
       case sortItem: SortItem =>
         (context, children) =>
-          children(context.spoilIdentifier(sortItem.expression.asInstanceOf[Identifier]))
+          children(context.spoilVariable(sortItem.expression.asInstanceOf[Variable]))
 
-      // Do not inline pattern identifiers, unless they are clean aliases of previous identifiers
-      case NodePattern(Some(identifier), _, _) =>
+      // Do not inline pattern variables, unless they are clean aliases of previous variables
+      case NodePattern(Some(variable), _, _) =>
         (context, children) =>
-          if (context.isAliasedIdentifier(identifier))
+          if (context.isAliasedVarible(variable))
             children(context)
           else
-            children(context.spoilIdentifier(identifier))
+            children(context.spoilVariable(variable))
 
-      case RelationshipPattern(Some(identifier), _, _, _, _, _) =>
+      case RelationshipPattern(Some(variable), _, _, _, _, _) =>
         (context, children) =>
-          if (context.isAliasedIdentifier(identifier))
+          if (context.isAliasedVarible(variable))
             children(context)
           else
-            children(context.spoilIdentifier(identifier))
+            children(context.spoilVariable(variable))
     }
   }
 
-  private def aliasedReturnItems(items: Seq[ReturnItem]): Map[Identifier, Expression] =
+  private def aliasedReturnItems(items: Seq[ReturnItem]): Map[Variable, Expression] =
     items.collect { case AliasedReturnItem(expr, ident) => ident -> expr }.toMap
 }

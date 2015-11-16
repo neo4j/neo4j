@@ -56,7 +56,7 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
     Iterator(context)
   }
 
-  def identifiers = Nil
+  def variables = Nil
 
   def children = Seq(prop, valueExpression)
 

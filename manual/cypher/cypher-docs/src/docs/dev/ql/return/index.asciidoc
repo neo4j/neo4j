@@ -22,7 +22,7 @@ include::return-property.asciidoc[]
 
 include::return-all-elements.asciidoc[]
 
-include::identifier-with-uncommon-characters.asciidoc[]
+include::variable-with-uncommon-characters.asciidoc[]
 
 include::column-alias.asciidoc[]
 

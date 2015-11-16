@@ -471,7 +471,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     }
   }
 
-  test("merge should handle array properties properly from identifier") {
+  test("merge should handle array properties properly from variable") {
     val query =
       """
         |CREATE (a:Foo),(b:Bar) WITH a,b

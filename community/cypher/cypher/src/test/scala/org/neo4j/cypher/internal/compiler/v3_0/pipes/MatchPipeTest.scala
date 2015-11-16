@@ -30,8 +30,8 @@ class MatchPipeTest extends CypherFunSuite {
     implicit val monitor = mock[PipeMonitor]
     val source = new FakePipe(Iterator(Map("x"->null)), "x"->CTNode)
     val patternGraph = new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
-    val identifiersInClause = Set("x", "r", "z")
-    val matchPipe = new MatchPipe(source, predicates = Seq.empty, patternGraph, identifiersInClause)
+    val variablesInClause = Set("x", "r", "z")
+    val matchPipe = new MatchPipe(source, predicates = Seq.empty, patternGraph, variablesInClause)
     val result: Iterator[ExecutionContext] = matchPipe.createResults(QueryStateHelper.empty)
     result.toList shouldBe empty
   }

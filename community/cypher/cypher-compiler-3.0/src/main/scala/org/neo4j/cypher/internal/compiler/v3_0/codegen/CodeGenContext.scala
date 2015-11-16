@@ -36,13 +36,13 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
   val operatorIds: mutable.Map[Id, String] = mutable.Map()
 
-  def addVariable(queryIdentifier: String, variable: Variable) {
-    variables.put(queryIdentifier, variable)
+  def addVariable(queryVariable: String, variable: Variable) {
+    variables.put(queryVariable, variable)
   }
 
-  def getVariable(queryIdentifier: String): Variable = variables(queryIdentifier)
+  def getVariable(queryVariable: String): Variable = variables(queryVariable)
 
-  def variableQueryIdentifiers(): Set[String] = variables.keySet.toSet
+  def variableQueryVariables(): Set[String] = variables.keySet.toSet
 
   def addProbeTable(plan: CodeGenPlan, codeThunk: JoinData) {
     probeTables.put(plan, codeThunk)

@@ -427,7 +427,7 @@ order by a.COL1""")
     executeWithAllPlannersAndRuntimes("match (a)-->(b) where a = {a} return b", "a" -> b) shouldBe empty
   }
 
-  test("shouldHandleParametersNamedAsIdentifiers") {
+  test("should handle parameters names as variables") {
     createNode("bar" -> "Andres")
 
     val result = executeWithAllPlanners("match (foo) where id(foo) = 0 and foo.bar = {foo} return foo.bar", "foo" -> "Andres")
@@ -591,7 +591,7 @@ order by a.COL1""")
     result.toList should equal(List(Map("b" -> b)))
   }
 
-  test("can use identifiers created inside the foreach") {
+  test("can use variables created inside the foreach") {
     createNode()
     val result = executeWithRulePlanner("match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 

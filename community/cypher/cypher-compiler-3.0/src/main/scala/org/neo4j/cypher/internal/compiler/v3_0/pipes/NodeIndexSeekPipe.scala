@@ -80,7 +80,7 @@ case class NodeIndexSeekPipe(ident: String,
       case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
-    new PlanDescriptionImpl(this.id, name, NoChildren, Seq(indexDesc), identifiers)
+    new PlanDescriptionImpl(this.id, name, NoChildren, Seq(indexDesc), variables)
   }
 
   def symbols = new SymbolTable(Map(ident -> CTNode))

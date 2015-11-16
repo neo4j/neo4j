@@ -70,7 +70,7 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
     processMap(map) should equal(Map(52 -> "  UNNAMED53", 59 -> "  UNNAMED60"))
   }
 
-  private def processMap(map: Map[PatternElement, Identifier]) = {
+  private def processMap(map: Map[PatternElement, Variable]) = {
     map.collect {
       case (pattern: NodePattern, ident) => pattern.position.offset -> ident.name
       case (pattern: RelationshipChain, ident) => pattern.relationship.position.offset -> ident.name

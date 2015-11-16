@@ -52,7 +52,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     result.map(_("b")).toList should equal(List(node2))
   }
 
-  test("should support joining on two different identifiers") {
+  test("should support joining on two different variables") {
     // given
     val node0 = newMockedNode(0)
     val node1 = newMockedNode(1)

@@ -46,7 +46,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
   def planDescriptionWithoutCardinality = source
     .planDescription
-    .andThen(this.id, "Limit", identifiers, LegacyExpression(exp))
+    .andThen(this.id, "Limit", variables, LegacyExpression(exp))
 
   def symbols: SymbolTable = source.symbols
 

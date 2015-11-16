@@ -34,16 +34,16 @@ case class DropIndex(label: LabelName, property: PropertyKeyName)(val position: 
 }
 
 trait PropertyConstraintCommand extends Command with SemanticChecking {
-  def identifier: Identifier
+  def variable: Variable
 
   def property: Property
 
   def entityType: CypherType
 
   def semanticCheck =
-    identifier.declare(entityType) chain
+    variable.declare(entityType) chain
       property.semanticCheck(Expression.SemanticContext.Simple) chain
-      when(!property.map.isInstanceOf[ast.Identifier]) {
+      when(!property.map.isInstanceOf[ast.Variable]) {
         SemanticError("Cannot index nested properties", property.position)
       }
 }
@@ -62,14 +62,14 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class DropUniquePropertyConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class CreateNodePropertyExistenceConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class DropNodePropertyExistenceConstraint(identifier: Identifier, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
 
-case class CreateRelationshipPropertyExistenceConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
 
-case class DropRelationshipPropertyExistenceConstraint(identifier: Identifier, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand

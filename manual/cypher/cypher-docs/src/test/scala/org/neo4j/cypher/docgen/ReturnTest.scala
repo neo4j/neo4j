@@ -66,13 +66,13 @@ class ReturnTest extends DocumentingTestBase {
 
   @Test def weird_variable_names() {
     testQuery(
-      title = "Identifier with uncommon characters",
+      title = "Variable with uncommon characters",
       text = """To introduce a placeholder that is made up of characters that are
-      outside of the english alphabet, you can use the +`+ to enclose the identifier, like this:""",
-      queryText = """match (`This isn't a common identifier`) where `This isn't a common identifier`.name='A'
-return `This isn't a common identifier`.happy""",
+      outside of the english alphabet, you can use the +`+ to enclose the variable, like this:""",
+      queryText = """match (`This isn't a common variable`) where `This isn't a common variable`.name='A'
+return `This isn't a common variable`.happy""",
       optionalResultExplanation = """The node with name "A" is returned""",
-      assertions = (p) => assertEquals(List(Map("`This isn't a common identifier`.happy" -> "Yes!")), p.toList))
+      assertions = (p) => assertEquals(List(Map("`This isn't a common variable`.happy" -> "Yes!")), p.toList))
   }
 
   @Test def nullable_properties() {
@@ -117,7 +117,7 @@ return `This isn't a common identifier`.happy""",
       })
   }
 
-  @Test def return_all_identifiers() {
+  @Test def return_all_variables() {
     testQuery(
       title = "Return all elements",
       text = """When you want to return all nodes, relationships and paths found in a query, you can use the `*` symbol.""",

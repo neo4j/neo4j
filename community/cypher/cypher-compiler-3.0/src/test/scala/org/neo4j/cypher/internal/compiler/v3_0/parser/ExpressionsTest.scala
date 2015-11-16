@@ -74,17 +74,17 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
   }
 
   test("list_comprehension") {
-    val predicate = predicates.Equals(legacy.Property(legacy.Identifier("x"), PropertyKey("prop")), legacy.Literal(42))
-    val mapExpression = legacy.Property(legacy.Identifier("x"), PropertyKey("name"))
+    val predicate = predicates.Equals(legacy.Property(legacy.Variable("x"), PropertyKey("prop")), legacy.Literal(42))
+    val mapExpression = legacy.Property(legacy.Variable("x"), PropertyKey("name"))
 
     parsing("[x in collection WHERE x.prop = 42 | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.FilterFunction(legacy.Identifier("collection"), "x", predicate), "x", mapExpression)
+      legacy.ExtractFunction(legacy.FilterFunction(legacy.Variable("collection"), "x", predicate), "x", mapExpression)
 
     parsing("[x in collection WHERE x.prop = 42]") shouldGive
-      legacy.FilterFunction(legacy.Identifier("collection"), "x", predicate)
+      legacy.FilterFunction(legacy.Variable("collection"), "x", predicate)
 
     parsing("[x in collection | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.Identifier("collection"), "x", mapExpression)
+      legacy.ExtractFunction(legacy.Variable("collection"), "x", mapExpression)
   }
 
   test("array_indexing") {
@@ -97,7 +97,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.CollectionSliceExpression(legacy.CollectionSliceExpression(collection, Some(legacy.Literal(1)), Some(legacy.Literal(2))), Some(legacy.Literal(2)), Some(legacy.Literal(3)))
 
     parsing("collection[1..2]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
+      legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2)))
 
     parsing("[1,2,3,4][2]") shouldGive
       legacy.ContainerIndex(collection, legacy.Literal(2))
@@ -106,13 +106,13 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.ContainerIndex(legacy.ContainerIndex(legacy.Collection(legacy.Collection(legacy.Literal(1), legacy.Literal(2))), legacy.Literal(0)), legacy.Literal(6))
 
     parsing("collection[1..2][0]") shouldGive
-      legacy.ContainerIndex(legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
+      legacy.ContainerIndex(legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), Some(legacy.Literal(2))), legacy.Literal(0))
 
     parsing("collection[..-2]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Identifier("collection"), None, Some(legacy.Literal(-2)))
+      legacy.CollectionSliceExpression(legacy.Variable("collection"), None, Some(legacy.Literal(-2)))
 
     parsing("collection[1..]") shouldGive
-      legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), None)
+      legacy.CollectionSliceExpression(legacy.Variable("collection"), Some(legacy.Literal(1)), None)
   }
 
   test("literal_maps") {
@@ -128,7 +128,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
 
   test("better_map_support") {
     parsing("map.key1.key2.key3") shouldGive
-      legacy.Property(legacy.Property(legacy.Property(legacy.Identifier("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
+      legacy.Property(legacy.Property(legacy.Property(legacy.Variable("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
 
     parsing("({ key: 'value' }).key") shouldGive
       legacy.Property(legacy.LiteralMap(Map("key" -> legacy.Literal("value"))), PropertyKey("key"))

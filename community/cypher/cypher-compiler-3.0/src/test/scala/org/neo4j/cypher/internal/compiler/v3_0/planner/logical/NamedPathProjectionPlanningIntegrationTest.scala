@@ -33,32 +33,32 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Projection(
         Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
         expressions = Map(
-          "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+          "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
         )
       )(solved)
     )
   }
 
   test("should build plans containing path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan
 
     result should equal(
       Selection(
         Seq(Equals(
-          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, ident("p")) _) _,
-          ident("a")
+          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
+          varFor("a")
         ) _),
         Projection(
           Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r")))(solved)
+          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r")))(solved)
       )(solved)
     )
   }
 
   test("should build plans containing multiple path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").plan
 
@@ -66,17 +66,17 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Selection(
         Seq(
           Equals(
-            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, ident("p")) _) _,
-            Identifier("a") _
+            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
+            Variable("a") _
           ) _,
           GreaterThan(
-            FunctionInvocation(FunctionName("length") _, ident("p")) _,
+            FunctionInvocation(FunctionName("length") _, varFor("p")) _,
             SignedDecimalIntegerLiteral("10") _
           ) _
         ),
         Projection(
           Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> ident("a"), "b" -> ident("b"), "p" -> pathExpr, "r" -> ident("r"))
+          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r"))
         )(solved)
       )(solved)
     )

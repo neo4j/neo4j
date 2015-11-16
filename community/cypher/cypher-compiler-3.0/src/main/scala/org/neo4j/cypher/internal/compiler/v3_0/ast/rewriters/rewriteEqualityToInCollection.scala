@@ -40,7 +40,7 @@ case object rewriteEqualityToInCollection extends Rewriter {
       In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 
     // a.prop = value => a.prop IN [value]
-    case predicate@Equals(prop@Property(id: Identifier, propKeyName), idValueExpr) =>
+    case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>
       In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   }
 }

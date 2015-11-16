@@ -29,7 +29,7 @@ object aggregation {
 
     val groupingExpressions: Map[String, Expression] = aggregation.groupingKeys
 
-    val identifiersToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
+    val variablesToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
       case (_, exp) => exp.dependencies
     }.toList.distinct.map {
       case id => id.name -> id
@@ -37,7 +37,7 @@ object aggregation {
 
     //  TODO: we need to project here since the pipe does not do that,
     //  when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, groupingExpressions ++ identifiersToKeep)
+    val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep)
     context.logicalPlanProducer.planAggregation(projectedPlan, groupingExpressions, aggregation.aggregationExpressions)
   }
 }

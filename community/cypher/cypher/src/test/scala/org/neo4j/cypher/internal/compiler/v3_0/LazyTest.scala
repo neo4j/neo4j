@@ -31,7 +31,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{GreaterThan, True}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
@@ -256,7 +256,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     //Given:
     val limited = new LimitedIterator[Map[String, Any]](4, (x) => Map("val" -> x))
     val input = new FakePipe(limited, "val" -> CTInteger)
-    val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))()
+    val pipe = new FilterPipe(input, GreaterThan(Variable("val"), Literal(3)))()
 
     //When:
     val iter = pipe.createResults(QueryStateHelper.empty)

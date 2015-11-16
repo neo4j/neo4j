@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 /*
- *|                                             NamedPatternPart                                            |
- *|Identifier|                                     AnonymousPatternPart                                     |
+ *|                                            NamedPatternPart                                            |
+ *|Variable |                                      AnonymousPatternPart                                     |
  *                           |                                 PatternElement                              |
  *                           |               PatternElement               |        RelationshipChain       |
  *                           |NodePattern |        RelationshipChain      ||RelationshipPattern|NodePattern|
@@ -41,7 +41,7 @@ trait Patterns extends Parser
   }
 
   def PatternPart: Rule1[ast.PatternPart] = rule("a pattern") (
-      group(Identifier ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
+      group(Variable ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
     | AnonymousPatternPart
   )
 
@@ -78,14 +78,14 @@ trait Patterns extends Parser
   }
 
   private def RelationshipDetail: Rule5[
-      Option[ast.Identifier],
+      Option[ast.Variable],
       Boolean,
       Seq[ast.RelTypeName],
       Option[Option[ast.Range]],
       Option[ast.Expression]] = rule("[") {
     (
         "[" ~~
-          MaybeIdentifier ~~
+          MaybeVariable ~~
           ("?" ~ push(true) | EMPTY ~ push(false)) ~~
           RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
@@ -108,12 +108,12 @@ trait Patterns extends Parser
   )
 
   private def NodePattern: Rule1[ast.NodePattern] = rule("a node pattern") (
-      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _))
-    | group(Identifier ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
+      group("(" ~~ MaybeVariable ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _))
+    | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
-  private def MaybeIdentifier: Rule1[Option[ast.Identifier]] = rule("an identifier") {
-    optional(Identifier)
+  private def MaybeVariable: Rule1[Option[ast.Variable]] = rule("a variable") {
+    optional(Variable)
   }
 
   private def MaybeNodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") (

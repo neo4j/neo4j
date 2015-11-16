@@ -44,7 +44,7 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
 
   private def computeScopeMap(expression: Expression) = {
     val exprScopes = expression.inputs.map {
-      case (k, v) => k -> v.map(IdName.fromIdentifier)
+      case (k, v) => k -> v.map(IdName.fromVariable)
     }
     IdentityMap(exprScopes: _*)
   }

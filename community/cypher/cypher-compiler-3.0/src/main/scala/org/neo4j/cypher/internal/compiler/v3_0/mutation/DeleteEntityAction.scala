@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
@@ -62,7 +62,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
     }
   }
 
-  def identifiers: Seq[(String, CypherType)] = Nil
+  def variables: Seq[(String, CypherType)] = Nil
 
   def rewrite(f: (Expression) => Expression) =
     DeleteEntityAction(elementToDelete.rewrite(f), forced)
@@ -72,7 +72,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
 
   def localEffects(symbols: SymbolTable) = elementToDelete match {
-    case i: Identifier => symbols.identifiers(i.entityName) match {
+    case i: Variable => symbols.variables(i.entityName) match {
       case _: NodeType         => Effects(DeletesNode)
       case _: RelationshipType => Effects(DeletesRelationship)
       case _: PathType         => Effects(DeletesNode, DeletesRelationship)

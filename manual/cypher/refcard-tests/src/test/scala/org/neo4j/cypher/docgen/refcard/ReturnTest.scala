@@ -72,7 +72,7 @@ MATCH (n)
 
 RETURN *###
 
-Return the value of all identifiers.
+Return the value of all variables.
 
 ### assertion=alias
 MATCH (n)

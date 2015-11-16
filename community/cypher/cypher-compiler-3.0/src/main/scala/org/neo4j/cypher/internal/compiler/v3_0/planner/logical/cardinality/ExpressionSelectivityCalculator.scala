@@ -71,7 +71,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyExistence(scannable.name, selections, scannable.propertyKey)
 
     // Implicit relation uniqueness predicates
-    case Not(Equals(lhs: Identifier, rhs: Identifier))
+    case Not(Equals(lhs: Variable, rhs: Variable))
       if areRelationships(semanticTable, lhs, rhs) =>
       GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
@@ -99,7 +99,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean = {
+  def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
     val l = semanticTable.isRelationship(lhs)
     val r = semanticTable.isRelationship(rhs)
     l && r
@@ -110,12 +110,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     labelCardinality / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
   }
 
-  private def calculateSelectivityForPropertyEquality(identifier: String,
+  private def calculateSelectivityForPropertyEquality(variable: String,
                                                       sizeHint: Option[Int],
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(identifier))
+    val labels = selections.labelsOnNode(IdName(variable))
     val indexSelectivities = labels.toSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
@@ -134,7 +134,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     selectivity
   }
 
-  private def calculateSelectivityForPrefixRangeSeekable(identifier: String,
+  private def calculateSelectivityForPrefixRangeSeekable(variable: String,
                                                    selections: Selections,
                                                    propertyKey: PropertyKeyName,
                                                    prefix: Option[String])
@@ -148,7 +148,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
      * s in (0,1) = (1 - e) * f
      * return min(x, e + s in (0,1))
      */
-    val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(identifier, None, selections, propertyKey).factor)
+    val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(variable, None, selections, propertyKey).factor)
     val prefixLength = math.BigDecimal.valueOf(prefix match {
       case Some(n) => n.length + 1
       case None => DEFAULT_PREFIX_LENGTH
@@ -159,7 +159,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val result = Selectivity.of(equality.add(slack).doubleValue()).get
 
     //we know for sure we are no worse than a propertyExistence check
-    val existence = calculateSelectivityForPropertyExistence(identifier, selections, propertyKey)
+    val existence = calculateSelectivityForPropertyExistence(variable, selections, propertyKey)
     if (existence < result) existence else result
   }
 
@@ -175,11 +175,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     result
   }
 
-  private def calculateSelectivityForPropertyExistence(identifier: String,
+  private def calculateSelectivityForPropertyExistence(variable: String,
                                                       selections: Selections,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = selections.labelsOnNode(IdName(identifier))
+    val labels = selections.labelsOnNode(IdName(variable))
     val indexPropertyExistsSelectivities = labels.toSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {

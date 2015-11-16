@@ -30,7 +30,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   def nonEmpty: Boolean = !isEmpty
 
-  def identifiers: Seq[String] = patternGraph.keys.toSeq
+  def variables: Seq[String] = patternGraph.keys.toSeq
 
   def isEmpty: Boolean = patternNodes.isEmpty && patternRels.isEmpty
 
@@ -81,10 +81,10 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
-      throw new PatternException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
+      throw new PatternException("Some variables are used as both relationships and nodes: " + overlaps.mkString(", "))
     }
 
-    val elementsMap: Map[String, PatternElement] = (patternNodes.values ++ patternRels.values).map(x => (x.key -> x)).toMap
+    val elementsMap: Map[String, PatternElement] = (patternNodes.values ++ patternRels.values).map(x => x.key -> x).toMap
     val allElements = elementsMap.values.toSeq
 
     val boundPattern: Seq[PatternElement] = boundElements.flatMap(i => elementsMap.get(i))

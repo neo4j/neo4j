@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  val identA  = ident("a")
-  val identB  = ident("b")
-  val identR  = ident("r")
-  val identP  = ident("p")
-  val identX1 = ident("x1")
-  val identX2 = ident("x2")
+  val identA  = varFor("a")
+  val identB  = varFor("b")
+  val identR  = varFor("r")
+  val identP  = varFor("p")
+  val identX1 = varFor("x1")
+  val identX2 = varFor("x2")
 
-  test("should not spoil aliased node identifiers") {
+  test("should not spoil aliased node variables") {
     val ast = parser.parse("match (a) with a as b match (b) return b")
 
     val context = inliningContextCreator(ast)
@@ -48,7 +48,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
     context.projections should equal(Map.empty)
   }
 
-  test("should not spoil aliased relationship identifiers") {
+  test("should not spoil aliased relationship variables") {
     val ast = parser.parse("match ()-[a]->() with a as b match ()-[b]->() return b")
 
     val context = inliningContextCreator(ast)
@@ -57,7 +57,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
     context.alias(identB) should equal(Some(identA))
   }
 
-  test("should spoil all the identifiers when WITH has aggregations") {
+  test("should spoil all the variables when WITH has aggregations") {
     val ast = parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2")
 
     val context = inliningContextCreator(ast)

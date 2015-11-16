@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, HasLabels, Identifier, LabelName, _}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, HasLabels, Variable, LabelName, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -62,7 +62,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Predicate(idNames("a"), aIsPerson),
       Predicate(idNames("a"), aIsPerson),
       Predicate(idNames("b"), bIsAnimal),
-      Predicate(idNames("c"), Equals(Identifier("c") _, SignedDecimalIntegerLiteral("42") _) _)
+      Predicate(idNames("c"), Equals(Variable("c") _, SignedDecimalIntegerLiteral("42") _) _)
     ))
 
     selections.labelPredicates should equal(Map(
@@ -119,8 +119,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def idNames(names: String*) = names.map(IdName(_)).toSet
 
   private def compareBothSides(left: String, right: String): Equals = {
-    val l: Identifier = Identifier(left)_
-    val r: Identifier = Identifier(right)_
+    val l: Variable = Variable(left)_
+    val r: Variable = Variable(right)_
     val propName1 = PropertyKeyName("prop1")_
     val leftProp = Property(l, propName1)_
     val rightProp = Property(r, propName1)_

@@ -27,15 +27,15 @@ object PredicateSplitter {
 
   def apply(semanticTable: SemanticTable, statement: Statement): PredicateSplitter = {
     val recordedScopes = semanticTable.recordedScopes
-    val lookup = (clause: Clause) => recordedScopes(clause).identifierDefinitions.values.map(_.asIdentifier).toSet
+    val lookup = (clause: Clause) => recordedScopes(clause).variableDefinitions.values.map(_.asVariable).toSet
     apply(lookup, statement)
   }
 
-  def apply(scopeLookup: Clause => Set[Identifier], statement: Statement): PredicateSplitter = {
+  def apply(scopeLookup: Clause => Set[Variable], statement: Statement): PredicateSplitter = {
     statement.treeFold(PredicateSplitter.empty) {
       case clause@Match(false, pattern, _, Some(where)) =>
         (acc, children) =>
-          val namedPaths = namedPatternPartIdentifiers(pattern)
+          val namedPaths = namedPatternPartVariables(pattern)
           val predicates = conjunctionPredicates(where.expression)
           val (matchPredicates, withPredicates) = predicates.partition(x => (x.dependencies `intersect` namedPaths).isEmpty)
 
@@ -45,9 +45,9 @@ object PredicateSplitter {
             } else {
               val newMatchClause = clause.copy(where = optWhere(where, matchPredicates))(clause.position)
 
-              val identifiersInScope = scopeLookup(clause)
-              val returnItems = (identifiersInScope ++ namedPaths).map(_.asAlias).toSeq
-              val newWithWhere = optWhere(where, withPredicates).endoRewrite(bottomUp(Rewriter.lift { case ident: Identifier if namedPaths(ident) => ident.copyId }))
+              val variablesInScope = scopeLookup(clause)
+              val returnItems = (variablesInScope ++ namedPaths).map(_.asAlias).toSeq
+              val newWithWhere = optWhere(where, withPredicates).endoRewrite(bottomUp(Rewriter.lift { case ident: Variable if namedPaths(ident) => ident.copyId }))
               val newWithClause = With(distinct = false, ReturnItems(includeExisting = false, returnItems)(where.position), None, None, None, newWithWhere)(where.position)
 
               acc + (Ref(clause) -> (newMatchClause -> newWithClause))
@@ -57,9 +57,9 @@ object PredicateSplitter {
     }
   }
 
-  private def namedPatternPartIdentifiers(pattern: Pattern): Set[Identifier] = pattern.patternParts.flatMap {
+  private def namedPatternPartVariables(pattern: Pattern): Set[Variable] = pattern.patternParts.flatMap {
       case NamedPatternPart(_, _: ShortestPaths) => None
-      case part: NamedPatternPart => Some(part.identifier)
+      case part: NamedPatternPart => Some(part.variable)
       case _ => None
     }.toSet
 

@@ -45,7 +45,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Seq(Not(Equals(Identifier("r1")_, Identifier("r2")_)_)_),
+        Seq(Not(Equals(Variable("r1")_, Variable("r2")_)_)_),
         NodeHashJoin(
           Set(IdName("b")),
           Expand(
@@ -77,7 +77,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       NodeHashJoin(
         Set(IdName("b")),
         Selection(
-          Seq(In(Property(ident("b"), PropertyKeyName("name") _) _, Collection(Seq(StringLiteral("Andres") _)) _) _, HasLabels(ident("b"), Seq(LabelName("Person") _)) _),
+          Seq(In(Property(varFor("b"), PropertyKeyName("name") _) _, Collection(Seq(StringLiteral("Andres") _)) _) _, HasLabels(varFor("b"), Seq(LabelName("Person") _)) _),
           Expand(
             NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Jakub") _), Set.empty)(solved),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
@@ -107,9 +107,9 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Seq(Not(Equals(Identifier("r1") _, Identifier("r2") _) _) _,
-          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _,
-            Collection(List(Property(Identifier("c") _, PropertyKeyName("prop") _) _)) _) _
+        Seq(Not(Equals(Variable("r1") _, Variable("r2") _) _) _,
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _,
+            Collection(List(Property(Variable("c") _, PropertyKeyName("prop") _) _)) _) _
         ),
         NodeHashJoin(
           Set(IdName("b")),

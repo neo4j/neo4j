@@ -113,7 +113,7 @@ class MatchBuilderTest extends BuilderTest {
     assertRejects(inP, inQ)
   }
 
-  test("should_pass_on_the_whole_list_of_identifier_in_match_to_created_pipe") {
+  test("should_pass_on_the_whole_list_of_variable_in_match_to_created_pipe") {
     // GIVEN MATCH (a)-[r1]->b-[r2]-(c)
     // a-[r1]->b is already solved
     val inQ = PartiallySolvedQuery().
@@ -128,6 +128,6 @@ class MatchBuilderTest extends BuilderTest {
     val result = assertAccepts(inP, inQ)
 
     val matchPipe = result.pipe.asInstanceOf[MatchPipe]
-    matchPipe.identifiersInClause should equal(Set("a", "r1", "b", "r2", "c"))
+    matchPipe.variablesInClause should equal(Set("a", "r1", "b", "r2", "c"))
   }
 }

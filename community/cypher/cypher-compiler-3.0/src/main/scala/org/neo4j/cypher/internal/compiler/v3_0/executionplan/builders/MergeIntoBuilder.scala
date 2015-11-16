@@ -64,7 +64,7 @@ class MergeIntoBuilder extends PlanBuilder {
   private def canWorkWith(m: MergePatternAction, s: SymbolTable): Boolean =
     m.patterns.size == 1 &&
       m.patterns.forall {
-        case r: RelatedTo => s.hasIdentifierNamed(r.left.name) && s.hasIdentifierNamed(r.right.name)
+        case r: RelatedTo => s.hasVariableNamed(r.left.name) && s.hasVariableNamed(r.right.name)
         case _ => false
       }
 }

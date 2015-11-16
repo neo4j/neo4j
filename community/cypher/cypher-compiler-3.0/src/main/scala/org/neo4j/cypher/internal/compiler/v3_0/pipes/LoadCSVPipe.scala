@@ -38,7 +38,7 @@ case object NoHeaders extends CSVFormat
 case class LoadCSVPipe(source: Pipe,
                   format: CSVFormat,
                   urlExpression: Expression,
-                  identifier: String,
+                  variable: String,
                   fieldTerminator: Option[String])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) {
 
@@ -84,7 +84,7 @@ case class LoadCSVPipe(source: Pipe,
         internalMap.putValues(row)
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
-        context.newWith(identifier -> internalMap.copy)
+        context.newWith(variable -> internalMap.copy)
       } else null
     }
   }
@@ -92,7 +92,7 @@ case class LoadCSVPipe(source: Pipe,
   private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.newWith(identifier -> inner.next().toSeq)
+    override def next(): ExecutionContext = context.newWith(variable -> inner.next().toSeq)
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -115,11 +115,11 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   def planDescription: InternalPlanDescription =
-    source.planDescription.andThen(this.id, "LoadCSV", identifiers)
+    source.planDescription.andThen(this.id, "LoadCSV", variables)
 
   def symbols: SymbolTable = format match {
-    case HasHeaders => source.symbols.add(identifier, MapType.instance)
-    case NoHeaders => source.symbols.add(identifier, CollectionType(AnyType.instance))
+    case HasHeaders => source.symbols.add(variable, MapType.instance)
+    case NoHeaders => source.symbols.add(variable, CollectionType(AnyType.instance))
   }
 
   override def localEffects = Effects()

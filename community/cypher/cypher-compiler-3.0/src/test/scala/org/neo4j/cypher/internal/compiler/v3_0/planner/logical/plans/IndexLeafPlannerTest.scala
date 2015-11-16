@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
-  val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
+  val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
+  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
   val lit42: Expression = SignedDecimalIntegerLiteral("42") _
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
@@ -79,10 +79,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   }
 
-  test("plans index seeks when identifier exists as an argument") {
+  test("plans index seeks when variable exists as an argument") {
     new given {
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
-      val x = ident("x")
+      val x = varFor("x")
       qg = queryGraph(In(property, Collection(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
 
       indexOn("Awesome", "prop")
@@ -100,7 +100,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new given { // MATCH a, x WHERE a.prop IN [x]
-       val x = ident("x")
+       val x = varFor("x")
       qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels)
 
       indexOn("Awesome", "prop")
@@ -131,7 +131,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -153,7 +153,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, PropertyKeyName("prop")(pos))_
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))

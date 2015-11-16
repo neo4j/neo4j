@@ -150,24 +150,24 @@ case class True() extends Predicate {
   def symbolTableDependencies = Set()
 }
 
-case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = identifier(m) match {
+case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = variable(m) match {
     case pc: Node         => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.getId, _)))
     case pc: Relationship => Some(propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.getId, _)))
     case IsMap(map)       => Some(map(state.query).get(propertyKey.name).orNull != null)
     case null             => None
-    case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
+    case _                => throw new CypherTypeException("Expected " + variable + " to be a property container.")
   }
 
-  override def toString: String = s"hasProp($identifier.${propertyKey.name})"
+  override def toString: String = s"hasProp($variable.${propertyKey.name})"
 
   def containsIsNull = false
 
-  def rewrite(f: (Expression) => Expression) = f(PropertyExists(identifier.rewrite(f), propertyKey.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(PropertyExists(variable.rewrite(f), propertyKey.rewrite(f)))
 
-  def arguments = Seq(identifier)
+  def arguments = Seq(variable)
 
-  def symbolTableDependencies = identifier.symbolTableDependencies
+  def symbolTableDependencies = variable.symbolTableDependencies
 }
 
 trait StringOperator {

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.GraphElementPropertyFunctions
 import org.neo4j.graphdb.Node
-case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel])
+case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
@@ -33,7 +33,7 @@ case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val item = row.get(identifier).get
+      val item = row.get(variable).get
       if (item != null) removeLabels(row, state, CastSupport.castOrFail[Node](item).getId)
       row
     }
@@ -47,7 +47,7 @@ case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel
     state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
   }
 
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "RemoveLabels", identifiers)
+  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "RemoveLabels", variables)
 
   override def symbols = src.symbols
 
@@ -55,7 +55,7 @@ case class RemoveLabelsPipe(src: Pipe, identifier: String, labels: Seq[LazyLabel
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    RemoveLabelsPipe(onlySource, identifier, labels)(estimatedCardinality)
+    RemoveLabelsPipe(onlySource, variable, labels)(estimatedCardinality)
   }
 
   override def localEffects = Effects(labels.map(label => SetLabel(label.name)): _*)

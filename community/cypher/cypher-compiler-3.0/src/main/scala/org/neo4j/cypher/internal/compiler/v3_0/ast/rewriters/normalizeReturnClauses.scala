@@ -49,7 +49,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
           i
         case i =>
           val newPosition = i.expression.position.bumped()
-          AliasedReturnItem(i.expression, Identifier(i.name)(newPosition))(i.position)
+          AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)
       })
       Seq(
         clause.copy(returnItems = ri.copy(items = aliasedItems)(ri.position))(clause.position)
@@ -57,21 +57,21 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
-      var rewrites = Map[Expression, Identifier]()
+      var rewrites = Map[Expression, Variable]()
 
       val (aliasProjection, finalProjection) = ri.items.map {
         i =>
           val returnColumn = i.alias match {
             case Some(alias) => alias
-            case None        => Identifier(i.name)(i.expression.position.bumped())
+            case None        => Variable(i.name)(i.expression.position.bumped())
           }
 
-          val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
+          val newVariable = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
-          rewrites = rewrites + (returnColumn -> newIdentifier)
-          rewrites = rewrites + (i.expression -> newIdentifier)
+          rewrites = rewrites + (returnColumn -> newVariable)
+          rewrites = rewrites + (i.expression -> newVariable)
 
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier.copyId, returnColumn)(i.position))
+          (AliasedReturnItem(i.expression, newVariable)(i.position), AliasedReturnItem(newVariable.copyId, returnColumn)(i.position))
       }.unzip
 
       val newOrderBy = orderBy.endoRewrite(topDown(Rewriter.lift {

@@ -133,7 +133,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
       val selections = qg.selections
       val where = if (selections.isEmpty) nothing else section("WHERE")(pretty(selections))
 
-      val hints = breakList(qg.hints.toSeq.sorted(Hint.byIdentifier
+      val hints = breakList(qg.hints.toSeq.sorted(Hint.byVariable
 
       ).map(pretty[Hint]))
 
@@ -184,7 +184,7 @@ case object plannerDocGen extends CustomDocGen[Any] {
         generateDoc(queryProjection.projections, queryProjection.shuffle)
 
       case queryProjection: UnwindProjection =>
-        section("UNWIND")(generateDoc(Map(queryProjection.identifier.name -> queryProjection.exp), QueryShuffle.empty))
+        section("UNWIND")(generateDoc(Map(queryProjection.variable.name -> queryProjection.exp), QueryShuffle.empty))
     }
 
     def generateDoc(projections: Map[String, Expression], queryShuffle: QueryShuffle): RecipeAppender[Any] = {

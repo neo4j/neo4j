@@ -93,10 +93,10 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
     }
   }
 
-  case class TraverseResult(identifier: String, element: PropertyContainer, link: UniqueLink)
+  case class TraverseResult(variable: String, element: PropertyContainer, link: UniqueLink)
 
   private def traverseNextStep(nextSteps: Seq[TraverseResult], oldContext: ExecutionContext): ExecutionContext = {
-    val uniqueKVPs = nextSteps.map(x => x.identifier -> x.element).distinct
+    val uniqueKVPs = nextSteps.map(x => x.variable -> x.element).distinct
     val uniqueKeys = uniqueKVPs.toMap
 
     if (uniqueKeys.size != uniqueKVPs.size) {
@@ -108,14 +108,14 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   private def fail(nextSteps: Seq[TraverseResult]): Nothing = {
     //We can only go forward following a unique path. Fail.
-    val problemResultsByIdentifier: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.identifier).
+    val problemResultsByVariable: Map[String, Seq[TraverseResult]] = nextSteps.groupBy(_.variable).
       filter(_._2.size > 1)
 
-    val message = problemResultsByIdentifier.map {
-      case (identifier, links: Seq[TraverseResult]) =>
+    val message = problemResultsByVariable.map {
+      case (variable, links: Seq[TraverseResult]) =>
         val hits = links.map(result => "%s found by : %s".format(result.element, result.link))
 
-        "Nodes for identifier: `%s` were found with differing values by these pattern relationships: %s".format(identifier, hits.mkString("\n  ", "\n  ", "\n"))
+        "Nodes for variable: `%s` were found with differing values by these pattern relationships: %s".format(variable, hits.mkString("\n  ", "\n  ", "\n"))
     }
 
     throw new UniquePathNotUniqueException(message.mkString("CREATE UNIQUE error\n", "\n", "\n"))
@@ -170,7 +170,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   override def children = links.flatMap(_.children)
 
-  def identifiers: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
+  def variables: Seq[(String,CypherType)] = links.flatMap(_.variable2).distinct
 
   override def rewrite(f: (Expression) => Expression) = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 

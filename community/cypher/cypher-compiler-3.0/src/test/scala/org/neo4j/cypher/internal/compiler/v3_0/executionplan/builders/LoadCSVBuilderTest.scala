@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllIdentifiers, LoadCSV, Query}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllVariables, LoadCSV, Query}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LoadCSVPipe
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 
@@ -32,7 +32,7 @@ class LoadCSVBuilderTest extends BuilderTest {
     val loadCSV = LoadCSV(withHeaders = false, new Literal("file:///tmp/data.csv"), "row", None)
     val q = Query.
       start(loadCSV).
-      returns(AllIdentifiers())
+      returns(AllVariables())
 
     val result = assertAccepts(q)
 
@@ -41,7 +41,7 @@ class LoadCSVBuilderTest extends BuilderTest {
   }
 
   test("should_reject_queries_containing_no_unsolved_load_csv_items") {
-    val q = Query.start().returns(AllIdentifiers())
+    val q = Query.start().returns(AllVariables())
     assertRejects(q)
   }
 }

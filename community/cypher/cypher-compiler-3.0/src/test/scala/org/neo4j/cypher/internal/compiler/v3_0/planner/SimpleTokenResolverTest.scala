@@ -44,9 +44,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
             Seq(),
-            Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Resolved"))))
+            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
           ),
           Return(false, ReturnItems(true, Seq()), None, None, None)
         ))) =>
@@ -67,9 +67,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
             Seq(),
-            Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Unresolved"))))
+            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
           ),
           Return(false, ReturnItems(true, Seq()), None, None, None)
         ))) =>
@@ -90,9 +90,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
           Seq(),
-          Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
+          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
         ),
         Return(false, ReturnItems(true, Seq()), None, None, None)
       ))) =>
@@ -113,9 +113,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
           Seq(),
-          Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
+          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
         ),
         Return(false, ReturnItems(true, Seq()), None, None, None)
       ))) =>

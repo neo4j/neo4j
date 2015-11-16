@@ -30,7 +30,7 @@ case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double
 
   def symbols: SymbolTable = src.symbols
 
-  override def planDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
+  override def planDescription = src.planDescription.andThen(this.id, "RepeatableRead", variables)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val cached = state.repeatableReads.getOrElseUpdate(this, input.toList)
@@ -41,7 +41,7 @@ case class RepeatableReadPipe(src: Pipe)(val estimatedCardinality: Option[Double
     cached.map(_ ++ state.initialContext.getOrElse(ExecutionContext.empty)).toIterator
   }
 
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "RepeatableRead", identifiers)
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = src.planDescription.andThen(this.id, "RepeatableRead", variables)
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 

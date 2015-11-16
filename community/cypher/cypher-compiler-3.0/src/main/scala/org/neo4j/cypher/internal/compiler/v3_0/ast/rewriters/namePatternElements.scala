@@ -29,13 +29,13 @@ case object nameAllPatternElements extends Rewriter {
   override def apply(in: AnyRef): AnyRef = bottomUp(namingRewriter).apply(in)
 
   val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case pattern: NodePattern if !pattern.identifier.isDefined =>
+    case pattern: NodePattern if !pattern.variable.isDefined =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined  =>
+    case pattern: RelationshipPattern if !pattern.variable.isDefined  =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   })
 }
 

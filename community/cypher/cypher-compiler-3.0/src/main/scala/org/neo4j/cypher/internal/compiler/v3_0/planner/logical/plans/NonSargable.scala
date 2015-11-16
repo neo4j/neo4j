@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case WithSeekableArgs(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
     case _ =>
       None
   }
@@ -36,27 +35,27 @@ object AsDynamicPropertyNonSeekable {
 object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
 
-    case func@FunctionInvocation(_, _, IndexedSeq(ContainerIndex(identifier: Identifier, _)))
+    case func@FunctionInvocation(_, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
       if  func.function.contains(functions.Exists) =>
-      Some(identifier)
+      Some(variable)
 
-    case Equals(ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case Equals(ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
 
     case expr: InequalityExpression =>
       expr.lhs match {
-        case ContainerIndex(identifier: Identifier, _) => Some(identifier)
+        case ContainerIndex(variable: Variable, _) => Some(variable)
         case _ => None
       }
 
-    case StartsWith(ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case StartsWith(ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
 
-    case RegexMatch(ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case RegexMatch(ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
 
-    case NotEquals(ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case NotEquals(ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
 
     case _ =>
       None
@@ -66,8 +65,8 @@ object AsDynamicPropertyNonScannable {
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case startsWith@StartsWith(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
+    case startsWith@StartsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
     case _ =>
       None
   }
@@ -76,25 +75,25 @@ object AsStringRangeNonSeekable {
 // This is when dynamic properties are used
 object AsValueRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case GreaterThan(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
-    case GreaterThan(_, prop@ContainerIndex(identifier: Identifier, _)) =>
-      Some(identifier)
+    case GreaterThan(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case GreaterThan(_, prop@ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
 
-    case GreaterThanOrEqual(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
-    case GreaterThanOrEqual(_, prop@ContainerIndex(identifier: Identifier, _)) =>
-      Some(identifier)
+    case GreaterThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case GreaterThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
 
-    case LessThan(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
-    case LessThan(_, prop@ContainerIndex(identifier: Identifier, _)) =>
-      Some(identifier)
+    case LessThan(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case LessThan(_, prop@ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
 
-    case LessThanOrEqual(prop@ContainerIndex(identifier: Identifier, _), _) =>
-      Some(identifier)
-    case LessThanOrEqual(_, prop@ContainerIndex(identifier: Identifier, _)) =>
-      Some(identifier)
+    case LessThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case LessThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
 
     case _ =>
       None

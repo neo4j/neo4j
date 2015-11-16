@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CollectionSliceExpression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CollectionSliceExpression, Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
 
@@ -45,11 +45,11 @@ class UpdateActionBuilderTest extends BuilderTest {
   test("full_path") {
     val q = PartiallySolvedQuery().copy(start = Seq(
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r1",
-        RelationshipEndpoint(Identifier("a"), Map(), Seq.empty),
-        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty), "KNOWS", Map()))),
+        RelationshipEndpoint(Variable("a"), Map(), Seq.empty),
+        RelationshipEndpoint(Variable("  UNNAMED1"), Map(), Seq.empty), "KNOWS", Map()))),
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r2",
-        RelationshipEndpoint(Identifier("b"), Map(),  Seq.empty),
-        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty), "LOVES", Map())))))
+        RelationshipEndpoint(Variable("b"), Map(),  Seq.empty),
+        RelationshipEndpoint(Variable("  UNNAMED1"), Map(), Seq.empty), "LOVES", Map())))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -60,8 +60,8 @@ class UpdateActionBuilderTest extends BuilderTest {
   test("single_relationship_missing_nodes") {
     val q = PartiallySolvedQuery().copy(start = Seq(
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r",
-        RelationshipEndpoint(Identifier("a"), Map(), Seq.empty),
-        RelationshipEndpoint(Identifier("b"), Map(), Seq.empty), "LOVES", Map())))))
+        RelationshipEndpoint(Variable("a"), Map(), Seq.empty),
+        RelationshipEndpoint(Variable("b"), Map(), Seq.empty), "LOVES", Map())))))
 
     assertAccepts(q)
   }
@@ -69,22 +69,22 @@ class UpdateActionBuilderTest extends BuilderTest {
   test("single_relationship_missing_nodes_with_expression") {
     val q = PartiallySolvedQuery().copy(updates = Seq(
       Unsolved(CreateRelationship("r",
-        RelationshipEndpoint(CollectionSliceExpression(Identifier("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty),
-        RelationshipEndpoint(Identifier("b"), Map(), Seq.empty), "LOVES", Map()))))
+        RelationshipEndpoint(CollectionSliceExpression(Variable("p"), Some(Literal(0)), Some(Literal(1))), Map(), Seq.empty),
+        RelationshipEndpoint(Variable("b"), Map(), Seq.empty), "LOVES", Map()))))
 
     assertRejects(q)
   }
 
   test("does_not_offer_to_solve_done_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Solved(DeleteEntityAction(Variable("x"), forced = false))))
 
     assertRejects(q)
   }
 
   test("offers_to_solve_queries") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Variable("x"), forced = false))))
     val pipe = createPipe(nodes = Seq("x"))
 
     val resultPlan = assertAccepts(pipe, q)
@@ -95,7 +95,7 @@ class UpdateActionBuilderTest extends BuilderTest {
 
   test("does_not_offer_to_delete_something_not_yet_there") {
     val q = PartiallySolvedQuery().
-      copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x"), forced = false))))
+      copy(updates = Seq(Unsolved(DeleteEntityAction(Variable("x"), forced = false))))
 
     assertRejects(q)
   }

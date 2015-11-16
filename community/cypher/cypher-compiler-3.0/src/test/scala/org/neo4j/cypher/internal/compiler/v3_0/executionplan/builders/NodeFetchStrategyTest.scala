@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.AnyInCollection
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Collection, Variable, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
@@ -41,8 +41,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
   test("should not select schema index when expression is missing dependencies") {
     //Given
     val noSymbols = new SymbolTable()
-    val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
-    val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
+    val equalityPredicate = Equals(Property(Variable("a"), UnresolvedProperty(propertyName)), Variable("b"))
+    val labelPredicate = HasLabel(Variable("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
     val indexDescriptor = new IndexDescriptor(0, 0)
 
@@ -58,8 +58,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
   test("should select schema index when expression valid") {
     //Given
     val noSymbols = new SymbolTable(Map("b"->CTNode))
-    val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
-    val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
+    val equalityPredicate = Equals(Property(Variable("a"), UnresolvedProperty(propertyName)), Variable("b"))
+    val labelPredicate = HasLabel(Variable("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
     val indexDescriptor = new IndexDescriptor(0, 0)
 
@@ -76,8 +76,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
   test("should select schema index when expression property check with in") {
     //Given
     val noSymbols = new SymbolTable(Map("b"->CTNode))
-    val inPredicate = AnyInCollection(Collection(Identifier("b")),"_inner_",Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("_inner_")))
-    val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
+    val inPredicate = AnyInCollection(Collection(Variable("b")),"_inner_",Equals(Property(Variable("a"), UnresolvedProperty(propertyName)), Variable("_inner_")))
+    val labelPredicate = HasLabel(Variable("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]
     val indexDescriptor = new IndexDescriptor(0, 0)
 
@@ -98,8 +98,8 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         //Given
         val nodeName = "n"
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
-        val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
-        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(ident(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
+        val labelPredicate = HasLabel(Variable(nodeName), UnresolvedLabel(labelName))
+        val startsWith: ast.StartsWith = ast.StartsWith(ast.Property(varFor(nodeName), ast.PropertyKeyName(propertyName)_)_, ast.StringLiteral("prefix%")_)_
         val startsWithPredicate = toCommandPredicate(startsWith)
 
         val planCtx = mock[PlanContext]
@@ -126,9 +126,9 @@ class NodeFetchStrategyTest extends CypherFunSuite {
         //Given
         val nodeName = "n"
         val symbols = new SymbolTable(Map(nodeName -> CTNode))
-        val labelPredicate = HasLabel(Identifier(nodeName), UnresolvedLabel(labelName))
-        val prop: ast.Property = ast.Property(ident("n"), ast.PropertyKeyName("prop") _) _
-        val inequality = ast.AndedPropertyInequalities(ident("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
+        val labelPredicate = HasLabel(Variable(nodeName), UnresolvedLabel(labelName))
+        val prop: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop") _) _
+        val inequality = ast.AndedPropertyInequalities(varFor("n"), prop, NonEmptyList(ast.GreaterThan(prop, ast.SignedDecimalIntegerLiteral("42") _) _))
 
         val inequalityPredicate = toCommandPredicate(inequality)
 

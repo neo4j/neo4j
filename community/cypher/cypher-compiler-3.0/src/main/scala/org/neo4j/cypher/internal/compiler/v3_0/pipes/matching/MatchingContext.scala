@@ -33,24 +33,24 @@ import collection.immutable
  * The deciding factor is whether or not the pattern has loops in it. If it does, we have to use the much more
  * expensive pattern matching. If it doesn't, we get away with much simpler methods
  */
-class MatchingContext(boundIdentifiers: SymbolTable,
+class MatchingContext(boundVariables: SymbolTable,
                       predicates: Seq[Predicate] = Seq(),
                       patternGraph: PatternGraph,
-                      identifiersInClause: Set[String]) {
+                      variablesInClause: Set[String]) {
 
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
-  private def identifiers: immutable.Map[String, CypherType] =
-    patternGraph.patternRels.values.flatMap(p => p.identifiers2).toMap
+  private def variables: immutable.Map[String, CypherType] =
+    patternGraph.patternRels.values.flatMap(p => p.variables2).toMap
 
   lazy val symbols = {
-    val ids = identifiers
+    val ids = variables
 
-    val identifiersAlreadyInContext = ids.filter(identifier => boundIdentifiers.hasIdentifierNamed(identifier._1))
+    val variablesAlreadyInContext = ids.filter(variable => boundVariables.hasVariableNamed(variable._1))
 
-    identifiersAlreadyInContext.foreach( identifier => boundIdentifiers.evaluateType(identifier._1, identifier._2) )
+    variablesAlreadyInContext.foreach( variable => boundVariables.evaluateType(variable._1, variable._2) )
 
-    boundIdentifiers.add(ids)
+    boundVariables.add(ids)
   }
 
   def getMatches(sourceRow: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
@@ -59,9 +59,9 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 
   private def decideWhichMatcherToUse(): MatcherBuilder = {
     if(SimplePatternMatcherBuilder.canHandle(patternGraph)) {
-      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols, identifiersInClause)
+      new SimplePatternMatcherBuilder(patternGraph, predicates, symbols, variablesInClause)
     } else {
-      new PatternMatchingBuilder(patternGraph, predicates, identifiersInClause)
+      new PatternMatchingBuilder(patternGraph, predicates, variablesInClause)
     }
   }
 }

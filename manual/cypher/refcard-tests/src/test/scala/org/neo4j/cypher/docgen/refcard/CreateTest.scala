@@ -104,7 +104,7 @@ CREATE (n)-[r:KNOWS]->(m)
 
 RETURN r###
 
-Create a relationship with the given type and direction; bind an identifier to it.
+Create a relationship with the given type and direction; bind a variable to it.
 
 ###assertion=create-rel-prop parameters=ayear
 MATCH (n), (m)

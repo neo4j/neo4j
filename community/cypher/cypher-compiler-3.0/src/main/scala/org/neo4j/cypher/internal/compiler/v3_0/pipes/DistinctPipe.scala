@@ -66,11 +66,11 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.
-                        andThen(this.id, "Distinct", identifiers, KeyNames(expressions.keys.toSeq))
+                        andThen(this.id, "Distinct", variables, KeyNames(expressions.keys.toSeq))
 
   def symbols: SymbolTable = {
-    val identifiers = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
-    SymbolTable(identifiers)
+    val variables = Eagerly.immutableMapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
+    SymbolTable(variables)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

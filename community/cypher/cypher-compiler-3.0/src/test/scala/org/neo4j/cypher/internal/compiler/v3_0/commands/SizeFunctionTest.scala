@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, PathImpl, SizeFunction}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, PathImpl, SizeFunction}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -32,7 +32,7 @@ class SizeFunctionTest extends CypherFunSuite {
     //given
     val l = Seq("it", "was", "the")
     val m = ExecutionContext.from("l" -> l)
-    val sizeFunction = SizeFunction(Identifier("l"))
+    val sizeFunction = SizeFunction(Variable("l"))
 
     //when
     val result = sizeFunction.apply(m)(QueryStateHelper.empty)
@@ -45,7 +45,7 @@ class SizeFunctionTest extends CypherFunSuite {
     //given
     val s = "it was the"
     val m = ExecutionContext.from("s" -> s)
-    val sizeFunction = SizeFunction(Identifier("s"))
+    val sizeFunction = SizeFunction(Variable("s"))
 
     //when
     val result = sizeFunction.apply(m)(QueryStateHelper.empty)
@@ -58,7 +58,7 @@ class SizeFunctionTest extends CypherFunSuite {
     //given
     val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = ExecutionContext.from("p" -> p)
-    val sizeFunction = SizeFunction(Identifier("p"))
+    val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then
     intercept[CypherTypeException](sizeFunction.apply(m)(QueryStateHelper.empty))

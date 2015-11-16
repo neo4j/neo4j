@@ -115,7 +115,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
     ))
   }
 
-  test("unwind does not remove identifiers from scope") {
+  test("unwind does not remove variables from scope") {
     val s1 = createLabeledNode("Start")
     val n2 = createNode()
     relate(s1, n2, "X")

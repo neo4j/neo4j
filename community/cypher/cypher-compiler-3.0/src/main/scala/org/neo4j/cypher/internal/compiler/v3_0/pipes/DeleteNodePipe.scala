@@ -44,7 +44,7 @@ case class DeleteNodePipe(src: Pipe, expression: Expression)(val estimatedCardin
     }
   }
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "DeleteNode", identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "DeleteNode", variables)
 
   def symbols = src.symbols
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import commands.expressions.Identifier
+import commands.expressions.Variable
 import mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -44,12 +44,12 @@ trait UpdateCommandExpander {
 
     def add(action: UpdateAction) {
       actions += action
-      symbols  = symbols.add(action.identifiers.toMap)
+      symbols  = symbols.add(action.variables.toMap)
     }
 
     def addCreateNodeIfNecessary(e: RelationshipEndpoint) =
       e.node match {
-        case Identifier(name) if !symbols.checkType(name, CTNode) =>
+        case Variable(name) if !symbols.checkType(name, CTNode) =>
           add(CreateNode(name, e.props, e.labels))
           e.asBare
 
@@ -59,7 +59,7 @@ trait UpdateCommandExpander {
 
     commands.foreach {
       case foreach: ForeachAction =>
-        val expandedCommands = expandCommands(foreach.actions, foreach.addInnerIdentifier(symbols)).toList
+        val expandedCommands = expandCommands(foreach.actions, foreach.addInnerVariable(symbols)).toList
         add(foreach.copy(actions = expandedCommands))
 
       case createRel: CreateRelationship =>

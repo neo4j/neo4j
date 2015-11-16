@@ -65,7 +65,7 @@ RETURN user
 ###
 
 The `WITH` syntax is similar to `RETURN`.
-It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
+It separates query parts explicitly, allowing you to declare which variables to carry over to the next part.
 
 ###assertion=with-limit
 //

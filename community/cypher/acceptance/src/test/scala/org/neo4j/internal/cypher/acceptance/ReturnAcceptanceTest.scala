@@ -72,7 +72,7 @@ order by a.age""").toList)
     result should equal(List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
   }
 
-  test("return all identifiers") {
+  test("return all variables") {
     val a = createLabeledNode("Start")
     val b = createNode()
     val r = relate(a, b)
@@ -336,7 +336,7 @@ order by a.age""").toList)
     result.toList should equal(List(Map("count" -> 2)))
   }
 
-  test("reusing identifier names should not be problematic") {
+  test("reusing variable names should not be problematic") {
     val result = executeWithAllPlanners(
       """MATCH (person:Person       )<-                               -(message)<-[like]-(liker:Person)
         |WITH                 like.creationDate AS likeTime, person AS person

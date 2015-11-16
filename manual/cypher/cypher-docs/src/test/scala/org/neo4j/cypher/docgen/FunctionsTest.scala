@@ -48,14 +48,14 @@ class FunctionsTest extends DocumentingTestBase {
 
   val common_arguments = List(
     "collection" -> "An expression that returns a collection",
-    "identifier" -> "This is the identifier that can be used from the predicate.",
+    "variable" -> "This is the variable that can be used from the predicate.",
     "predicate" -> "A predicate that is tested against all items in the collection."
   )
 
   @Test def all() {
     testThis(
       title = "ALL",
-      syntax = "ALL(identifier in collection WHERE predicate)",
+      syntax = "ALL(variable in collection WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for all element of this collection collection.""",
       queryText = """match p=(a)-[*1..3]->(b) where a.name='Alice' and b.name='Daniel' and all(x in nodes(p) WHERE x.age > 30) return p""",
@@ -66,7 +66,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "ANY",
-      syntax = "ANY(identifier in collection WHERE predicate)",
+      syntax = "ANY(variable in collection WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for at least one element in the collection.""",
       queryText = """match (a) where a.name='Eskil' and any(x in a.array WHERE x = "one") return a""",
@@ -77,7 +77,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "NONE",
-      syntax = "NONE(identifier in collection WHERE predicate)",
+      syntax = "NONE(variable in collection WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for no element in the collection.""",
       queryText = """match p=(n)-[*1..3]->(b) where n.name='Alice' and NONE(x in nodes(p) WHERE x.age = 25) return p""",
@@ -88,7 +88,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "SINGLE",
-      syntax = "SINGLE(identifier in collection WHERE predicate)",
+      syntax = "SINGLE(variable in collection WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for exactly one of the elements in the collection.""",
       queryText = """match p=(n)-->(b) where n.name='Alice' and SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
@@ -100,7 +100,7 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "EXISTS",
       syntax = "EXISTS( pattern-or-property )",
-      arguments = List("pattern-or-property" -> "A pattern or a property (in the form 'identifier.prop')."),
+      arguments = List("pattern-or-property" -> "A pattern or a property (in the form 'variable.prop')."),
       text = """Returns true if a match for the pattern exists in the graph, or the property exists in the node, relationship or map.""",
       queryText = """match (n) where EXISTS(n.name) return n.name AS name, EXISTS( (n)-[:MARRIED]->() ) AS is_married""",
       returns = """This query returns all the nodes with a name property along with a boolean true/false indicating if they are married.""",
@@ -202,10 +202,10 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def extract() {
     testThis(
       title = "EXTRACT",
-      syntax = "EXTRACT( identifier in collection | expression )",
+      syntax = "EXTRACT( variable in collection | expression )",
       arguments = List(
         "collection" -> "An expression that returns a collection",
-        "identifier" -> "The closure will have an identifier introduced in it's context. Here you decide which identifier to use.",
+        "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
         "expression" -> "This expression will run once per value in the collection, and produces the result collection."
       ),
       text = """To return a single property, or the value of a function from a collection of nodes or relationships,
@@ -219,12 +219,12 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def reduce() {
     testThis(
       title = "REDUCE",
-      syntax = "REDUCE( accumulator = initial,  identifier in collection | expression )",
+      syntax = "REDUCE( accumulator = initial, variable in collection | expression )",
       arguments = List(
-        "accumulator" -> "An identifier that will hold the result and the partial results as the collection is iterated",
+        "accumulator" -> "A variable that will hold the result and the partial results as the collection is iterated",
         "initial"    -> "An expression that runs once to give a starting value to the accumulator",
         "collection" -> "An expression that returns a collection",
-        "identifier" -> "The closure will have an identifier introduced in it's context. Here you decide which identifier to use.",
+        "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
         "expression" -> "This expression will run once per value in the collection, and produces the result value."
       ),
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
@@ -280,7 +280,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def filter() {
     testThis(
       title = "FILTER",
-      syntax = "FILTER(identifier in collection WHERE predicate)",
+      syntax = "FILTER(variable in collection WHERE predicate)",
       arguments = common_arguments,
       text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
       queryText = """match (a) where a.name='Eskil' return a.array, filter(x in a.array WHERE size(x) = 3)""",

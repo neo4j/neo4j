@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, SyntaxExcep
 
 class SymbolTableTest extends CypherFunSuite {
 
-  test("anytype_is_ok") {
+  test("anytype is ok") {
     //given
     val s = symbols("p" -> CTPath)
 
@@ -36,7 +36,7 @@ class SymbolTableTest extends CypherFunSuite {
     s.evaluateType("p", CTAny) should equal(CTPath)
   }
 
-  test("missing_identifier") {
+  test("missing variable") {
     //given
     val s = symbols()
 
@@ -44,7 +44,7 @@ class SymbolTableTest extends CypherFunSuite {
     intercept[SyntaxException](s.evaluateType("p", CTAny))
   }
 
-  test("identifier_with_wrong_type") {
+  test("variable with wrong type") {
     //given
     val symbolTable = symbols("x" -> CTString)
 
@@ -52,7 +52,7 @@ class SymbolTableTest extends CypherFunSuite {
     intercept[CypherTypeException](symbolTable.evaluateType("x", CTNumber))
   }
 
-  test("identifier_with_type_not_specific_enough") {
+  test("variable with type not specific enough") {
     //given
     val symbolTable = symbols("x" -> CTMap)
 
@@ -60,7 +60,7 @@ class SymbolTableTest extends CypherFunSuite {
     symbolTable.evaluateType("x", CTRelationship)
   }
 
-  test("adding_string_with_string_gives_string_type") {
+  test("adding string with string gives string type") {
     //given
     val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTString), new FakeExpression(CTString))
@@ -72,7 +72,7 @@ class SymbolTableTest extends CypherFunSuite {
     returnType should equal(CTString)
   }
 
-  test("adding_number_with_number_gives_number_type") {
+  test("adding number with number gives number type") {
     //given
     val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTNumber), new FakeExpression(CTNumber))
@@ -84,7 +84,7 @@ class SymbolTableTest extends CypherFunSuite {
     returnType should equal(CTNumber)
   }
 
-  test("adding_to_string_collection") {
+  test("adding to string collection") {
     //given
     val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTCollection(CTString)), new FakeExpression(CTString))

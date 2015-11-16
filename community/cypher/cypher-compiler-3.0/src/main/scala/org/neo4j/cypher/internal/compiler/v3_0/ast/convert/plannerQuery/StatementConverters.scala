@@ -63,7 +63,7 @@ object StatementConverters {
           case _: UnionDistinct => true
         }
         val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => toPlannerQueryBuilder(x, semanticTable))
-        //UNION requires all queries to return the same identifiers
+        //UNION requires all queries to return the same variables
         assert(plannedQueries.nonEmpty)
         val returns = plannedQueries.head.returns
         assert(plannedQueries.forall(_.returns == returns))

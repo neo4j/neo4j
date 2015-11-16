@@ -19,30 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class AllIdentifiersTest extends CypherFunSuite {
-  val x = AllIdentifiers()
+class AllVariablesTest extends CypherFunSuite {
+  val x = AllVariables()
 
   test("nodes") {
     val symbols = getSymbols("n" -> CTNode)
 
-     x.expressions(symbols) should equal(Map("n" -> Identifier("n")))
+     x.expressions(symbols) should equal(Map("n" -> Variable("n")))
   }
 
   test("relationships") {
     val symbols = getSymbols("r" -> CTRelationship)
 
-     x.expressions(symbols) should equal(Map("r" -> Identifier("r")))
+     x.expressions(symbols) should equal(Map("r" -> Variable("r")))
   }
 
   test("paths") {
     val symbols = getSymbols("p" -> CTPath)
 
-     x.expressions(symbols) should equal(Map("p" -> Identifier("p")))
+     x.expressions(symbols) should equal(Map("p" -> Variable("p")))
   }
 
   private def getSymbols(k: (String, CypherType)*) = SymbolTable(k.toMap)

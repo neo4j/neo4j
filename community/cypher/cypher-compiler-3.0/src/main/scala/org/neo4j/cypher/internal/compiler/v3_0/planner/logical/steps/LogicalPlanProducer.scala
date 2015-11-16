@@ -112,7 +112,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                     dir: SemanticDirection,
                     to: IdName,
                     pattern: PatternRelationship,
-                    predicates: Seq[(Identifier, Expression)],
+                    predicates: Seq[(Variable, Expression)],
                     allPredicates: Seq[Expression],
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext) = pattern.length match {
     case l: VarPatternLength =>
@@ -190,7 +190,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
                         (implicit context: LogicalPlanningContext) = {
     val patternNode = hint match {
-      case n: NodeHint => Seq(IdName(n.identifier.name))
+      case n: NodeHint => Seq(IdName(n.variable.name))
       case _ => Seq.empty
     }
     val solved = PlannerQuery(queryGraph = QueryGraph.empty
@@ -426,7 +426,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
   def planDistinct(left: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val returnAll = QueryProjection.forIds(left.availableSymbols) map {
-      case AliasedReturnItem(e, Identifier(key)) => key -> e // This smells awful.
+      case AliasedReturnItem(e, Variable(key)) => key -> e // This smells awful.
     }
 
     Aggregation(left, returnAll.toMap, Map.empty)(left.solved)

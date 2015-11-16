@@ -76,16 +76,16 @@ trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
   def expression: Expression
 
   def semanticCheck =
-    containsNoIdentifiers chain
+    containsNoVariables chain
       literalShouldBeUnsignedInteger chain
       expression.semanticCheck(Expression.SemanticContext.Simple) chain
       expression.expectType(CTInteger.covariant)
 
-  private def containsNoIdentifiers: SemanticCheck = {
+  private def containsNoVariables: SemanticCheck = {
     val deps = dependencies
     if (deps.nonEmpty) {
       val id = deps.toSeq.sortBy(_.position).head
-      SemanticError(s"It is not allowed to refer to identifiers in $name", id.position)
+      SemanticError(s"It is not allowed to refer to variables in $name", id.position)
     }
     else SemanticCheckResult.success
   }

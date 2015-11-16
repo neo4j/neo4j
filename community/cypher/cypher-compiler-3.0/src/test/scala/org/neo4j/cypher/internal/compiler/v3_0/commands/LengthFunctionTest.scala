@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{LengthFunction, Identifier, PathImpl, SizeFunction}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{LengthFunction, Variable, PathImpl, SizeFunction}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
@@ -31,7 +31,7 @@ class LengthFunctionTest extends CypherFunSuite {
     //given
     val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = ExecutionContext.from("p" -> p)
-    val lengthFunction = LengthFunction(Identifier("p"))
+    val lengthFunction = LengthFunction(Variable("p"))
 
     //when
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)
@@ -44,7 +44,7 @@ class LengthFunctionTest extends CypherFunSuite {
     //given
     val l = Seq("it", "was", "the")
     val m = ExecutionContext.from("l" -> l)
-    val lengthFunction = LengthFunction(Identifier("l"))
+    val lengthFunction = LengthFunction(Variable("l"))
 
     //when
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)
@@ -57,7 +57,7 @@ class LengthFunctionTest extends CypherFunSuite {
     //given
     val s = "it was the"
     val m = ExecutionContext.from("s" -> s)
-    val lengthFunction = LengthFunction(Identifier("s"))
+    val lengthFunction = LengthFunction(Variable("s"))
 
     //when
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)

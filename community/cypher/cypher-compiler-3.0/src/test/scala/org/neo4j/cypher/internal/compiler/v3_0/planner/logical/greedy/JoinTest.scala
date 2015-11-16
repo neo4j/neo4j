@@ -58,7 +58,7 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
-  test("finds a single join that overlaps two identifiers") {
+  test("finds a single join that overlaps two variables") {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )

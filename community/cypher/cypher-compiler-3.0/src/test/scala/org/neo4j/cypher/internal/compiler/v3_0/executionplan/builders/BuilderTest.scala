@@ -33,10 +33,10 @@ trait BuilderTest extends CypherFunSuite {
   implicit val monitor = mock[PipeMonitor]
 
   def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()): FakePipe = {
-    val nodeIdentifiers = nodes.map(x => x -> CTNode)
-    val relIdentifiers = relationships.map(x => x -> CTRelationship)
+    val nodeVaribles = nodes.map(x => x -> CTNode)
+    val relVariables = relationships.map(x => x -> CTRelationship)
 
-    new FakePipe(Seq(MutableMaps.empty), (nodeIdentifiers ++ relIdentifiers): _*)
+    new FakePipe(Seq(MutableMaps.empty), nodeVaribles ++ relVariables: _*)
   }
 
   // for avoiding missing an override while refactoring

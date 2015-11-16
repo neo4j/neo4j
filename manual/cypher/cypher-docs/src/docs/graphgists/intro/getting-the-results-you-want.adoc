@@ -106,7 +106,7 @@ There are also more advanced ways of filtering like collection-predicates which 
 
 == Returning Results
 
-So far we've returned only nodes, relationships, or paths directly via their identifiers.
+So far we've returned only nodes, relationships, or paths directly via their variables.
 But the `RETURN` clause can actually return any number of expressions.
 But what are actually expressions in Cypher?
 

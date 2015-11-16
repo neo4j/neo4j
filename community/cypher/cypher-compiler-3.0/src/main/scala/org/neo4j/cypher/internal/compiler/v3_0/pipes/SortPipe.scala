@@ -46,7 +46,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     array.toIterator
   }
 
-  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
+  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", variables, KeyNames(orderBy.map(_.id)))
 
   def symbols = source.symbols
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, LabelName, PathExpression, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, PathExpression, PropertyKeyName, RelTypeName, Variable}
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
@@ -48,8 +48,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    * Finds all identifiers being deleted.
    */
   def identifiersToDelete = (deleteExpressions flatMap {
-    case DeleteExpression(identifier:Identifier, _) => Seq(IdName.fromIdentifier(identifier))
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromIdentifier)
+    case DeleteExpression(identifier:Variable, _) => Seq(IdName.fromVariable(identifier))
+    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
   }).toSet
 
   /*

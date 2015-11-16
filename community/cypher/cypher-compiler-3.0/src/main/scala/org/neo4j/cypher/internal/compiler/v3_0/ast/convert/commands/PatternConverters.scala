@@ -44,26 +44,26 @@ object PatternConverters {
 
   implicit class PatternPartConverter(val part: ast.PatternPart) extends AnyVal {
     def asLegacyPatterns: Seq[commands.Pattern] = part match {
-      case ast.NamedPatternPart(identifier, anonPart) =>
-        anonPart.asLegacyPatterns(Some(identifier.name))
+      case ast.NamedPatternPart(variable, anonPart) =>
+        anonPart.asLegacyPatterns(Some(variable.name))
       case anonPart: ast.AnonymousPatternPart =>
         anonPart.asLegacyPatterns(None)
     }
     def asLegacyNamedPath: Option[commands.NamedPath] = part match {
-      case ast.NamedPatternPart(identifier, anonPart) =>
-        anonPart.asLegacyNamedPath(identifier.name)
+      case ast.NamedPatternPart(variable, anonPart) =>
+        anonPart.asLegacyNamedPath(variable.name)
       case anonPart: ast.AnonymousPatternPart =>
         None
     }
     def asLegacyCreates: Seq[mutation.UpdateAction] = part match {
-      case ast.NamedPatternPart(identifier, anonPart) =>
+      case ast.NamedPatternPart(variable, anonPart) =>
         anonPart.asLegacyCreates
       case anonPart: ast.AnonymousPatternPart =>
         anonPart.asLegacyCreates
     }
     def asAbstractPatterns: Seq[AbstractPattern] = part match {
-      case ast.NamedPatternPart(identifier, anonPart) =>
-        anonPart.asAbstractPatterns(Some(identifier.name))
+      case ast.NamedPatternPart(variable, anonPart) =>
+        anonPart.asAbstractPatterns(Some(variable.name))
       case anonPart: ast.AnonymousPatternPart =>
         anonPart.asAbstractPatterns(None)
     }
@@ -122,7 +122,7 @@ object PatternConverters {
           throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
       }
       val reltypes = rel.types.map(_.name)
-      val relIteratorName = rel.identifier.map(_.name)
+      val relIteratorName = rel.variable.map(_.name)
       val (allowZeroLength, maxDepth) = rel.length match {
         case Some(Some(ast.Range(lower, max))) => (lower.exists(_.value == 0L),  max.map(_.value.toInt))
         case None                              => (false, Some(1))//non-varlength case
@@ -204,7 +204,7 @@ object PatternConverters {
               chain.relationship.types.map(_.name), chain.relationship.direction, chain.relationship.optional)
 
           case _    =>
-            val (relName, relIterator) = chain.relationship.identifier match {
+            val (relName, relIterator) = chain.relationship.variable match {
               case Some(_) =>
                 (UnNamedNameGenerator.name(chain.relationship.position), Some(chain.relationship.legacyName))
               case None =>
@@ -230,14 +230,14 @@ object PatternConverters {
       Seq(mutation.CreateNode(node.legacyName, node.legacyProperties, labels))
 
     def asAbstractPatterns: Seq[AbstractPattern] =
-      Seq(ParsedEntity(node.legacyName, commandexpressions.Identifier(node.legacyName), node.legacyProperties, labels))
+      Seq(ParsedEntity(node.legacyName, commandexpressions.Variable(node.legacyName), node.legacyProperties, labels))
 
     def asRelationshipEndpoint: mutation.RelationshipEndpoint =
-      mutation.RelationshipEndpoint(commandexpressions.Identifier(node.legacyName), node.legacyProperties, labels)
+      mutation.RelationshipEndpoint(commandexpressions.Variable(node.legacyName), node.legacyProperties, labels)
 
     def asLegacyNode = commands.SingleNode(node.legacyName, labels.map(x => commandvalues.UnresolvedLabel(x.name)), properties = node.legacyProperties)
 
-    def legacyName = node.identifier.fold(UnNamedNameGenerator.name(node.position))(_.name)
+    def legacyName = node.variable.fold(UnNamedNameGenerator.name(node.position))(_.name)
 
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
@@ -258,7 +258,7 @@ object PatternConverters {
             case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
             case None        => (None, None)
           }
-          val relIterator = relationship.identifier.map(_.name)
+          val relIterator = relationship.variable.map(_.name)
           commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode, rightNode.asLegacyNode, min, max,
             relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties)
         case None             =>
@@ -280,7 +280,7 @@ object PatternConverters {
       mutation.CreateRelationship(relationship.legacyName, from, to, typeName, legacyProperties)
     }
 
-    def legacyName = relationship.identifier.fold(UnNamedNameGenerator.name(relationship.position))(_.name)
+    def legacyName = relationship.variable.fold(UnNamedNameGenerator.name(relationship.position))(_.name)
 
     def legacyProperties: Map[String, CommandExpression] = relationship.properties match {
       case None                       => Map.empty[String, CommandExpression]

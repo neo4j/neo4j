@@ -34,10 +34,10 @@ object Pattern {
     case object Expression extends SemanticContext
   }
 
-  object findDuplicateRelationships extends (Pattern => Set[Seq[Identifier]]) {
+  object findDuplicateRelationships extends (Pattern => Set[Seq[Variable]]) {
 
-    def apply(pattern: Pattern): Set[Seq[Identifier]] = {
-      val (seen, duplicates) = pattern.fold((Set.empty[Identifier], Seq.empty[Identifier])) {
+    def apply(pattern: Pattern): Set[Seq[Variable]] = {
+      val (seen, duplicates) = pattern.fold((Set.empty[Variable], Seq.empty[Variable])) {
         case RelationshipChain(_, RelationshipPattern(Some(rel), _, _, None, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
@@ -51,10 +51,10 @@ object Pattern {
           identity
       }
 
-      val m0: Map[String, Seq[Identifier]] = duplicates.groupBy(_.name)
+      val m0: Map[String, Seq[Variable]] = duplicates.groupBy(_.name)
 
       val resultMap = seen.foldLeft(m0) {
-        case (m, ident @ Identifier(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
+        case (m, ident @ Variable(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
         case (m, _)                                            => m
       }
 
@@ -73,7 +73,7 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
   }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) chain
+    patternParts.foldSemanticCheck(_.declareVariables(ctx)) chain
     patternParts.foldSemanticCheck(_.semanticCheck(ctx)) chain
     ensureNoDuplicateRelationships(this, ctx)
 
@@ -83,27 +83,27 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
         val id = duplicates.head
         val dups = duplicates.tail
 
-        acc chain SemanticError(s"Cannot use the same relationship identifier '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
+        acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
     }
   }
 }
 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode with ASTParticle {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    element.declareIdentifiers(ctx) chain
+    element.declareVariables(ctx) chain
     element.semanticCheck(ctx)
 }
 
 
 sealed abstract class PatternPart extends ASTNode with ASTParticle {
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck
+  def declareVariables(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def element: PatternElement
 }
 
-case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
-  def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) chain identifier.declare(CTPath)
+case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
+  def declareVariables(ctx: SemanticContext) = patternPart.declareVariables(ctx) chain variable.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
   def element: PatternElement = patternPart.element
@@ -115,13 +115,13 @@ sealed trait AnonymousPatternPart extends PatternPart
 case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def position = element.position
 
-  def declareIdentifiers(ctx: SemanticContext) = (element, ctx) match {
+  def declareVariables(ctx: SemanticContext) = (element, ctx) match {
     case (n: NodePattern, SemanticContext.Match) =>
-      element.declareIdentifiers(ctx) // single node identifier is allowed to be already bound in MATCH
+      element.declareVariables(ctx) // single node variable is allowed to be already bound in MATCH
     case (n: NodePattern, _)                     =>
-      n.identifier.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareIdentifiers(ctx)
+      n.variable.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareVariables(ctx)
     case _                                       =>
-      element.declareIdentifiers(ctx)
+      element.declareVariables(ctx)
   }
 
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
@@ -134,15 +134,15 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     else
       "allShortestPaths"
 
-  def declareIdentifiers(ctx: SemanticContext) =
-    element.declareIdentifiers(ctx)
+  def declareVariables(ctx: SemanticContext) =
+    element.declareVariables(ctx)
 
   def semanticCheck(ctx: SemanticContext) =
     checkContext(ctx) chain
     checkContainsSingle chain
     checkKnownEnds chain
     checkLength chain
-    checkRelIdentifiersUnknown chain
+    checkRelVariablesUnknown chain
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
@@ -165,9 +165,9 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 
   private def checkKnownEnds: SemanticCheck = element match {
     case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
-      if (l.identifier.isEmpty)
+      if (l.variable.isEmpty)
         SemanticError(s"$name(...) requires named nodes", position, l.position)
-      else if (r.identifier.isEmpty)
+      else if (r.variable.isEmpty)
         SemanticError(s"$name(...) requires named nodes", position, r.position)
       else
         None
@@ -189,10 +189,10 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     case _ => SemanticCheckResult(state, Seq.empty)
   }
 
-  private def checkRelIdentifiersUnknown: SemanticCheck = state => {
+  private def checkRelVariablesUnknown: SemanticCheck = state => {
     element match {
       case RelationshipChain(_, rel, _) =>
-        rel.identifier.flatMap(id => state.symbol(id.name)) match {
+        rel.variable.flatMap(id => state.symbol(id.name)) match {
           case Some(symbol) if symbol.positions.size > 1 => {
             SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions.head))
           }
@@ -206,8 +206,8 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode with ASTParticle {
-  def identifier: Option[Identifier]
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck
+  def variable: Option[Variable]
+  def declareVariables(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def isSingleNode = false
@@ -216,12 +216,12 @@ sealed abstract class PatternElement extends ASTNode with ASTParticle {
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
   extends PatternElement {
 
-  def identifier: Option[Identifier] = relationship.identifier
+  def variable: Option[Variable] = relationship.variable
 
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    element.declareIdentifiers(ctx) chain
-    relationship.declareIdentifiers(ctx) chain
-    rightNode.declareIdentifiers(ctx)
+  def declareVariables(ctx: SemanticContext): SemanticCheck =
+    element.declareVariables(ctx) chain
+    relationship.declareVariables(ctx) chain
+    rightNode.declareVariables(ctx)
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.semanticCheck(ctx) chain
@@ -230,11 +230,11 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 }
 
 object InvalidNodePattern {
-  def apply(id: Identifier, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
+  def apply(id: Variable, labels: Seq[LabelName], properties: Option[Expression])(position: InputPosition) =
     new InvalidNodePattern(id)(position)
 }
 
-class InvalidNodePattern(val id: Identifier)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
+class InvalidNodePattern(val id: Variable)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = super.semanticCheck(ctx) chain
     SemanticError(s"Parentheses are required to identify nodes in patterns, i.e. (${id.name})", position)
 
@@ -251,19 +251,19 @@ class InvalidNodePattern(val id: Identifier)(position: InputPosition) extends No
 }
 
 case class NodePattern(
-  identifier: Option[Identifier],
+  variable: Option[Variable],
   labels: Seq[LabelName],
   properties: Option[Expression])(val position: InputPosition) extends PatternElement with SemanticChecking {
 
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    identifier.fold(SemanticCheckResult.success) {
-      identifier =>
+  def declareVariables(ctx: SemanticContext): SemanticCheck =
+    variable.fold(SemanticCheckResult.success) {
+      variable =>
         ctx match {
           case SemanticContext.Expression =>
-            identifier.ensureDefined() chain
-            identifier.expectType(CTNode.covariant)
+            variable.ensureDefined() chain
+            variable.expectType(CTNode.covariant)
           case _                          =>
-            identifier.implicitDeclaration(CTNode)
+            variable.implicitDeclaration(CTNode)
         }
     }
 
@@ -284,22 +284,22 @@ case class NodePattern(
 
 
 case class RelationshipPattern(
-    identifier: Option[Identifier],
+    variable: Option[Variable],
     optional: Boolean,
     types: Seq[RelTypeName],
     length: Option[Option[Range]],
     properties: Option[Expression],
     direction: SemanticDirection)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
 
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    identifier.fold(SemanticCheckResult.success) {
-      identifier =>
+  def declareVariables(ctx: SemanticContext): SemanticCheck =
+    variable.fold(SemanticCheckResult.success) {
+      variable =>
         val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
 
         ctx match {
-          case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
-          case SemanticContext.Expression => identifier.ensureDefined() chain identifier.expectType(possibleType.covariant)
-          case _                          => identifier.declare(possibleType)
+          case SemanticContext.Match      => variable.implicitDeclaration(possibleType)
+          case SemanticContext.Expression => variable.ensureDefined() chain variable.expectType(possibleType.covariant)
+          case _                          => variable.declare(possibleType)
         }
     }
 

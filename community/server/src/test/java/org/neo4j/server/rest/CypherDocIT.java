@@ -352,7 +352,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         assertThat( responseMap.keySet(), containsInAnyOrder(
                 "message", "exception", "fullname", "stackTrace", "cause", "errors" ) );
         assertThat( response, containsString( "message" ) );
-        assertThat( ((String) responseMap.get( "message" )), containsString( "frien not defined" ) );
+        assertThat( ((String) responseMap.get( "message" )), containsString( "Variable `frien` not defined" ) );
     }
 
     @SafeVarargs

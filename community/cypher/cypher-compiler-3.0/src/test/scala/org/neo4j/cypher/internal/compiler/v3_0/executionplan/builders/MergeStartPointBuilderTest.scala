@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken.Unresolved
@@ -35,19 +34,19 @@ class MergeStartPointBuilderTest extends BuilderTest {
   def builder = new MergeStartPointBuilder
 
   context = mock[PlanContext]
-  val identifier = "n"
-  val otherIdentifier = "p"
+  val variable = "n"
+  val otherVariable = "p"
   val label = "Person"
   val property = "prop"
   val propertyKey = PropertyKey(property)
   val otherProperty = "prop2"
   val otherPropertyKey = PropertyKey(otherProperty)
   val expression = Literal(42)
-  val mergeNodeAction = MergeNodeAction("x", Map.empty, Seq(Label("Label")), Seq(HasLabel(Identifier("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)
+  val mergeNodeAction = MergeNodeAction("x", Map.empty, Seq(Label("Label")), Seq(HasLabel(Variable("x"), KeyToken.Unresolved("Label", TokenType.Label))), Seq.empty, Seq.empty, None)
 
   test("should_solved_merge_node_start_points") {
     // Given MERGE (x:Label)
-    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
+    val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
     val query = newQuery(
       updates = Seq(mergeNodeAction)
     )
@@ -66,11 +65,11 @@ class MergeStartPointBuilderTest extends BuilderTest {
 
   test("should_solved_merge_node_start_points_inside_foreach") {
     // Given FOREACH(x in [1,2,3] | MERGE (x:Label {prop:x}))
-    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
+    val pipe = new FakePipe(Iterator.empty, variable -> CTNode)
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
     val query = newQuery(
-      updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Identifier("x"))))))
+      updates = Seq(ForeachAction(collection, "x", Seq(mergeNodeAction.copy(props = Map(prop -> Variable("x"))))))
     )
     when(context.getOptLabelId("Label")).thenReturn(Some(42))
     when(context.getUniquenessConstraint("Label", "prop")).thenReturn(None)

@@ -75,7 +75,7 @@ class OptionalMatchTest extends DocumentingTestBase with SoftReset {
   @Test def optionalTypedRelationship() {
     testQuery(
       title = "Optional typed and named relationship",
-      text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
+      text = "Just as with a normal relationship, you can decide which variable it goes into, and what relationship type " +
         "you need.",
       queryText = """match (a:Movie {title: 'Wall Street'}) optional match (a)-[r:ACTS_IN]->() return r""",
       optionalResultExplanation = """This returns a node, and +NULL+, since the node has no outgoing `ACTS_IN` relationships.""",

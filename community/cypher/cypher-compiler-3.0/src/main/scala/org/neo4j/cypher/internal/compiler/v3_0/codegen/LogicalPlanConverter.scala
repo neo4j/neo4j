@@ -212,7 +212,7 @@ object LogicalPlanConverter {
 
         val lhsSymbols = nodeHashJoin.left.availableSymbols.map(_.name)
         val nodeNames = nodeHashJoin.nodes.map(_.name)
-        val notNodeSymbols = lhsSymbols intersect context.variableQueryIdentifiers() diff nodeNames
+        val notNodeSymbols = lhsSymbols intersect context.variableQueryVariables() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
 
@@ -230,7 +230,7 @@ object LogicalPlanConverter {
 
         val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
         val joinData = context.getProbeTable(this)
-        joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.identifier, symbol.outgoing) }
+        joinData.vars foreach { case (_, symbol) => context.addVariable(symbol.variable, symbol.outgoing) }
 
         val (methodHandle, actions) = context.popParent().consume(context, this)
 

@@ -73,37 +73,37 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute dependencies of simple expressions") {
-    ident("a").dependencies should equal(Set(ident("a")))
+    varFor("a").dependencies should equal(Set(varFor("a")))
     SignedDecimalIntegerLiteral("1")(pos).dependencies should equal(Set())
   }
 
   test("should compute dependencies of composite expressions") {
-    Add(ident("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), ident("b"))_)(pos).dependencies should equal(Set(ident("a"), ident("b")))
+    Add(varFor("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), varFor("b"))_)(pos).dependencies should equal(Set(varFor("a"), varFor("b")))
   }
 
   test("should compute dependencies for filtering expressions") {
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(ident("n")), Seq.empty, None)_,
+        NodePattern(Some(varFor("n")), Seq.empty, None)_,
         RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(ident("k")), Seq.empty, None)_
+        NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_
     val expr: Expression = ExtractExpression(
-      ident("x"),
+      varFor("x"),
       PatternExpression(pat),
       None,
-      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, ident("x"))_)_)
+      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, varFor("x"))_)_)
     )_
 
-    expr.dependencies should equal(Set(ident("n"), ident("k")))
+    expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
 
 
   test("should compute inputs of composite expressions") {
-    val identA = ident("a")
-    val identB = ident("b")
+    val identA = varFor("a")
+    val identB = varFor("b")
     val lit1 = SignedDecimalIntegerLiteral("1")(pos)
     val sub = Subtract(lit1, identB)(pos)
     val add = Add(identA, sub)(pos)
@@ -121,18 +121,18 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // given
     val pat = PatternExpression(RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(ident("n")), Seq.empty, None)_,
+        NodePattern(Some(varFor("n")), Seq.empty, None)_,
         RelationshipPattern(None, optional = false, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(ident("k")), Seq.empty, None)_
+        NodePattern(Some(varFor("k")), Seq.empty, None)_
       )_
     )_)
 
-    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, ident("x"))_
+    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x"))_
     val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
 
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val expr: Expression = ExtractExpression(
-      ident("x"),
+      varFor("x"),
       pat,
       None,
       Some(callHead)
@@ -142,8 +142,8 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val inputs = IdentityMap(expr.inputs: _*)
 
     // then
-    inputs(callNodes) should equal(Set(ident("x")))
-    inputs(callHead) should equal(Set(ident("x")))
+    inputs(callNodes) should equal(Set(varFor("x")))
+    inputs(callHead) should equal(Set(varFor("x")))
     inputs(expr) should equal(Set.empty)
     inputs(pat) should equal(Set.empty)
   }

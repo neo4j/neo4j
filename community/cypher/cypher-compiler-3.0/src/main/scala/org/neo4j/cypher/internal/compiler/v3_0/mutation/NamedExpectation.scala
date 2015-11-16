@@ -41,7 +41,7 @@ object NamedExpectation {
     new NamedExpectation(name, e, properties, Seq.empty)
 
   def apply(name: String, properties: Map[String, Expression], labels: Seq[KeyToken]): NamedExpectation =
-    new NamedExpectation(name, Identifier(name), properties, labels)
+    new NamedExpectation(name, Variable(name), properties, labels)
 }
 
 case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
@@ -60,7 +60,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
   */
   def getExpectations(ctx: ExecutionContext, state: QueryState): DataExpectation = {
     val expectedProps = e match {
-      case _: Identifier =>
+      case _: Variable =>
         properties
       case _             =>
         e(ctx)(state) match {

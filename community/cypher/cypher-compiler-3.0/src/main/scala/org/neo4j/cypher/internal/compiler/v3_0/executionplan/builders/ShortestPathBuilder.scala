@@ -58,6 +58,6 @@ class ShortestPathBuilder extends PlanBuilder {
     unsolvedShortestPaths.
       flatMap(sp => symbols.missingSymbolTableDependencies(sp)).
       distinct.
-      map("Unknown identifier `%s`".format(_))
+      map("Unknown variable `%s`".format(_))
   }
 }

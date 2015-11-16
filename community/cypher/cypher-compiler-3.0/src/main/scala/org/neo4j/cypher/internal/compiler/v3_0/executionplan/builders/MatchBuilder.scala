@@ -38,8 +38,8 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     val newPipe = if (graph.isEmpty)
       p
     else {
-      val identifiersInClause = Pattern.identifiers(q.patterns.map(_.token))
-      new MatchPipe(p, predicates, graph, identifiersInClause)
+      val variablesInClause = Pattern.variables(q.patterns.map(_.token))
+      new MatchPipe(p, predicates, graph, variablesInClause)
     }
 
     val donePatterns = graph.patternsContained.map(Unsolved.apply)
@@ -58,9 +58,9 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
   private def yesOrNo(q: QueryToken[_], p: Pipe, start: Seq[QueryToken[StartItem]]) = q match {
     case Unsolved(x: ShortestPath) => false
     case Unsolved(x: Pattern)      => {
-      val patternIdentifiers: Seq[String] = x.possibleStartPoints.map(_._1)
+      val patternVariables: Seq[String] = x.possibleStartPoints.map(_._1)
 
-      val areStartPointsResolved = start.forall(si => patternIdentifiers.find(_ == si.token.identifierName) match {
+      val areStartPointsResolved = start.forall(si => patternVariables.find(_ == si.token.variableName) match {
         case Some(_) => si.solved
         case None    => true
       })

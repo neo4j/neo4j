@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.ast
+package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
-class IdentifierTest extends CypherFunSuite {
+case object copyVariables extends Rewriter {
+  private val instance = Rewriter.lift { case variable: Variable => variable.copyId }
 
-  test("shouldDefineIdentifierDuringSemanticCheckWhenUndefined") {
-    val position = DummyPosition(0)
-    val identifier = Identifier("x")(position)
-
-    val result = identifier.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    result.errors should have size 1
-    result.errors.head.position should equal(position)
-    result.state.symbol("x").isDefined should equal(true)
-    result.state.symbolTypes("x") should equal(CTAny.covariant)
-  }
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 }

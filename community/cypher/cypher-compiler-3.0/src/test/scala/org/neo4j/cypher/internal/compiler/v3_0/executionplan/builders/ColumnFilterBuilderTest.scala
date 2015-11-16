@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ReturnItem, Slice, SortItem}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PartiallySolvedQuery
 
@@ -77,7 +77,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
   test("should_not_introduce_column_filter_pipe_unless_needed") {
     val q = PartiallySolvedQuery().copy(
       extracted = true,
-      returns = Seq(Solved(ReturnItem(Identifier("foo"), "foo")))
+      returns = Seq(Solved(ReturnItem(Variable("foo"), "foo")))
     )
 
     val p = createPipe(nodes = Seq("foo"))

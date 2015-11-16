@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("should consider identifiers introduced by outer list comprehensions when planning pattern predicates") {
+  test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
       cardinality = mapCardinality {
         // expand
@@ -45,7 +45,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                Seq(HasLabels(ident("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
+                Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
                   Argument(Set("f"))(solved)(),
                   "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
@@ -106,7 +106,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED27", "  UNNAMED20"
         )(solved),
-        GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
       )(solved)
     )
   }
@@ -120,8 +120,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED42", "  UNNAMED35"
         )(solved),
         Ors(Set(
-          In(Property(Identifier("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
-          GreaterThan(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _,
+          GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
         )) _
       )(solved)
     )
@@ -135,7 +135,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED45", "  UNNAMED38"
         )(solved),
-        In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
       )(solved)
     )
   }
@@ -150,13 +150,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
           )(solved),
           "  FRESHID30",
-          In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
         )(solved),
         Expand(
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
         )(solved),
-        ident("  FRESHID30")
+        varFor("  FRESHID30")
       )(solved)
     )
   }
@@ -176,7 +176,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
         )(solved),
-        ident("  FRESHID16")
+        varFor("  FRESHID16")
       )(solved)
     )
   }
@@ -196,7 +196,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Argument(Set("a"))(solved)(),
           "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
         )(solved),
-        ident("  FRESHID20")
+        varFor("  FRESHID20")
       )(solved)
     )
   }

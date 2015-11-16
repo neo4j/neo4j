@@ -42,7 +42,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(), identifiers)
+  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(), variables)
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 

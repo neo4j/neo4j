@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
+case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
                        (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val notFoundExecutionContext: ExecutionContext =
-    nullableIdentifiers.foldLeft(ExecutionContext.empty)( (context, identifier) => context += identifier -> null )
+    nullableVariables.foldLeft(ExecutionContext.empty)( (context, variable) => context += variable -> null )
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext) else input
@@ -40,7 +40,7 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
       "Optional",
       SingleChild(source.planDescription),
       Seq.empty,
-      identifiers
+      variables
     )
 
   def symbols: SymbolTable = source.symbols

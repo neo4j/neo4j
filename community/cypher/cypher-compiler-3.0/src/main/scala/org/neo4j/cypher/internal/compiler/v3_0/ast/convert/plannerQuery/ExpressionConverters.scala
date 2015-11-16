@@ -63,7 +63,7 @@ object ExpressionConverters {
     def asPredicates: Set[Predicate] = {
       predicate.treeFold(Set.empty[Predicate]) {
         // n:Label
-        case p@HasLabels(Identifier(name), labels) =>
+        case p@HasLabels(Variable(name), labels) =>
           (acc, _) => acc ++ labels.map {
             label: LabelName =>
               Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))

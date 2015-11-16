@@ -257,7 +257,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
                              OptionalExpand(
                                NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
                                SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll,
-                               Seq(HasLabels(ident("b"), Seq(LabelName("T1")(pos)))(pos)))(solved))
+                               Seq(HasLabels(varFor("b"), Seq(LabelName("T1")(pos)))(pos)))(solved))
 
     //when
     val compiled: InternalExecutionResult = compileAndExecute(plan)
@@ -325,7 +325,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
     val optionalExpandInto = OptionalExpand(
       expandAll, IdName("a"), SemanticDirection.OUTGOING,
-      Seq.empty, IdName("b"), IdName("r2"), ExpandInto, Seq(HasLabels(ident("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+      Seq.empty, IdName("b"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
 
 
     val plan = ProduceResult(List("a", "b", "r2"), optionalExpandInto)
@@ -428,7 +428,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expandInto = OptionalExpand(
       expandAll, IdName("b"), SemanticDirection.INCOMING,
       Seq(RelTypeName("R3")(pos)), IdName("a"), IdName("r2"), ExpandInto,
-      Seq(HasLabels(ident("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+      Seq(HasLabels(varFor("b"), Seq(LabelName("T2")(pos)))(pos)))(solved)
 
 
     val plan = ProduceResult(List("a", "b", "r2"), expandInto)
@@ -509,7 +509,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val scan3 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
     val join1 = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
     val join2 = NodeHashJoin(Set(IdName("a")), scan3, join1)(solved)
-    val projection = Projection(join2, Map("a" -> ident("a")))(solved)
+    val projection = Projection(join2, Map("a" -> varFor("a")))(solved)
     val plan = ProduceResult(List("a"), projection)
 
     val compiled = compileAndExecute(plan)
@@ -875,17 +875,17 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val iNode = mockNode(8L, "i")
 
   private val semanticTable =  mock[SemanticTable]
-  when(semanticTable.isNode(ident("a"))).thenReturn(true)
-  when(semanticTable.isNode(ident("b"))).thenReturn(true)
-  when(semanticTable.isNode(ident("c"))).thenReturn(true)
-  when(semanticTable.isNode(ident("d"))).thenReturn(true)
-  when(semanticTable.isNode(ident("e"))).thenReturn(true)
-  when(semanticTable.isNode(ident("f"))).thenReturn(true)
-  when(semanticTable.isNode(ident("g"))).thenReturn(true)
-  when(semanticTable.isNode(ident("h"))).thenReturn(true)
-  when(semanticTable.isNode(ident("i"))).thenReturn(true)
-  when(semanticTable.isRelationship(ident("r1"))).thenReturn(true)
-  when(semanticTable.isRelationship(ident("r2"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("a"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("b"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("c"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("d"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("e"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("f"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("g"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("h"))).thenReturn(true)
+  when(semanticTable.isNode(varFor("i"))).thenReturn(true)
+  when(semanticTable.isRelationship(varFor("r1"))).thenReturn(true)
+  when(semanticTable.isRelationship(varFor("r2"))).thenReturn(true)
 
   private val allNodes = Seq(aNode, bNode, cNode, dNode, eNode, fNode, gNode, hNode, iNode)
   private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))

@@ -27,32 +27,32 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def Expression: Rule1[ast.Expression] = ???
   val t = DummyPosition(0)
 
-  test("testIdentifierCanContainASCII") {
-    implicit val parserToTest = Identifier
+  test("test variable can contain ascii") {
+    implicit val parserToTest = Variable
 
-    parsing("abc") shouldGive ast.Identifier("abc")(t)
-    parsing("a123") shouldGive ast.Identifier("a123")(t)
-    parsing("ABC") shouldGive ast.Identifier("ABC")(t)
-    parsing("_abc") shouldGive ast.Identifier("_abc")(t)
-    parsing("abc_de") shouldGive ast.Identifier("abc_de")(t)
+    parsing("abc") shouldGive ast.Variable("abc")(t)
+    parsing("a123") shouldGive ast.Variable("a123")(t)
+    parsing("ABC") shouldGive ast.Variable("ABC")(t)
+    parsing("_abc") shouldGive ast.Variable("_abc")(t)
+    parsing("abc_de") shouldGive ast.Variable("abc_de")(t)
   }
 
-  test("testIdentifierCanContainUTF8") {
-    implicit val parserToTest = Identifier
+  test("test variable can contain utf8") {
+    implicit val parserToTest = Variable
 
-    parsing("aé") shouldGive ast.Identifier("aé")(t)
-    parsing("⁔") shouldGive ast.Identifier("⁔")(t)
-    parsing("＿test") shouldGive ast.Identifier("＿test")(t)
-    parsing("a＿test") shouldGive ast.Identifier("a＿test")(t)
+    parsing("aé") shouldGive ast.Variable("aé")(t)
+    parsing("⁔") shouldGive ast.Variable("⁔")(t)
+    parsing("＿test") shouldGive ast.Variable("＿test")(t)
+    parsing("a＿test") shouldGive ast.Variable("a＿test")(t)
   }
 
-  test("testIdentifierCannotStartWithNumber") {
-    implicit val parserToTest = Identifier
+  test("test variable name can not start with number") {
+    implicit val parserToTest = Variable
 
     assertFails("1bcd")
   }
 
-  test("testCanParseNumbers") {
+  test("can parse numbersz") {
     implicit val parserToTest = NumberLiteral
 
     parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)

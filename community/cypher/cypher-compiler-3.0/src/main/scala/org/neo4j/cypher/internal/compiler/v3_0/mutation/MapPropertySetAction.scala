@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
@@ -95,7 +95,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
     }
   }
 
-  def identifiers = Nil
+  def variables = Nil
 
   def children = Seq(element, mapExpression)
 
@@ -109,7 +109,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
   }
 
   def localEffects(symbols: SymbolTable) = element match {
-    case i: Identifier => symbols.identifiers(i.entityName) match {
+    case v: Variable => symbols.variables(v.entityName) match {
       case _: NodeType => Effects(WriteAnyNodeProperty)
       case _: RelationshipType => Effects(WriteAnyRelationshipProperty)
       case _ => Effects()

@@ -59,7 +59,7 @@ class AggregationTest extends DocumentingTestBase with SoftReset {
     testQuery(
       title = "Count entities",
       text = "Instead of counting the number of results with `count(*)`, it might be more expressive to include " +
-        "the name of the identifier you care about.",
+        "the name of the variable you care about.",
       queryText = "match (n {name: 'A'})-->(x) return count(x)",
       optionalResultExplanation = "The example query returns the number of connected nodes from the start node.",
       assertions = p => assertEquals(Map("count(x)" -> 3), p.toList.head))
@@ -68,7 +68,7 @@ class AggregationTest extends DocumentingTestBase with SoftReset {
   @Test def countNonNullValues() {
     testQuery(
       title = "Count non-null values",
-      text = "You can count the non-`NULL` values by using +count(<identifier>)+.",
+      text = "You can count the non-`NULL` values by using +count(<expression>)+.",
       queryText = "match (n:Person) return count(n.property)",
       optionalResultExplanation = "The count of related nodes with the `property` property set is returned by the query.",
       assertions = p => assertEquals(Map("count(n.property)" -> 3), p.toList.head))

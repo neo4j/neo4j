@@ -76,8 +76,8 @@ class TrailToStepTest extends CypherFunSuite {
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val r1Pred = Equals(Property(Identifier("pr1"), PropertyKey("prop")), Literal(42))
-    val r2Pred = Equals(Property(Identifier("pr2"), PropertyKey("prop")), Literal("FOO"))
+    val r1Pred = Equals(Property(Variable("pr1"), PropertyKey("prop")), Literal(42))
+    val r2Pred = Equals(Property(Variable("pr2"), PropertyKey("prop")), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, SemanticDirection.INCOMING, "pr2", Seq("B"), "b", r2Pred, True(), BtoC, Seq())
@@ -93,7 +93,7 @@ class TrailToStepTest extends CypherFunSuite {
     //()-[pr1:A]->(a)-[pr2:B]->()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val nodePred = Equals(Property(Identifier("b"), PropertyKey("prop")), Literal(42))
+    val nodePred = Equals(Property(Variable("b"), PropertyKey("prop")), Literal(42))
 
     val forward2 = step(1, Seq(B), SemanticDirection.INCOMING, None, nodePredicate = nodePred)
     val forward1 = step(0, Seq(A), SemanticDirection.INCOMING, Some(forward2))
@@ -111,8 +111,8 @@ class TrailToStepTest extends CypherFunSuite {
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
 
-    val predForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
-    val predForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
+    val predForB = Equals(Property(NodeVariable(), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(NodeVariable(), PropertyKey("name")), Literal("c"))
 
     val forward3 = step(2, Seq(), SemanticDirection.INCOMING, None)
     val forward2 = step(1, Seq(), SemanticDirection.OUTGOING, Some(forward3), nodePredicate = predForC)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesRelationship, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Node
 import scala.collection.Map
 
 object RelationshipEndpoint {
-  def apply(name:String) = new RelationshipEndpoint(Identifier(name), Map.empty, Seq.empty)
+  def apply(name:String) = new RelationshipEndpoint(Variable(name), Map.empty, Seq.empty)
 }
 
 case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[KeyToken])
@@ -42,14 +42,14 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
 
   def symbolTableDependencies: Set[String] = {
     val nodeDeps = node match {
-      case _: Identifier => Set[String]()
+      case _: Variable => Set[String]()
       case e => e.symbolTableDependencies
     }
     nodeDeps ++ props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
   }
 
-  def introducedIdentifier: Option[String] = node match {
-    case Identifier(name) => Some(name)
+  def introducedVariable: Option[String] = node match {
+    case Variable(name) => Some(name)
     case e => None
   }
 
@@ -90,12 +90,12 @@ extends UpdateAction
     Iterator(context)
   }
 
-  def identifiers = Seq(key-> CTRelationship)
+  def variables = Seq(key-> CTRelationship)
 
   override def symbolTableDependencies: Set[String] = {
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
       val b = from.symbolTableDependencies
       val c = to.symbolTableDependencies
-      a ++ b ++ c -- from.introducedIdentifier -- to.introducedIdentifier
+      a ++ b ++ c -- from.introducedVariable -- to.introducedVariable
     }
 }

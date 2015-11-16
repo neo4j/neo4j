@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, DummyPosition}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{SignedDecimalIntegerLiteral, StringLiteral, MapExpression, RelTypeName, PropertyKeyName, Property, In, LabelName, Identifier, HasLabels}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{HasLabels, In, LabelName, MapExpression, Property, PropertyKeyName, RelTypeName, SignedDecimalIntegerLiteral, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticDirection}
 
 class UpdateGraphTest extends CypherFunSuite {
 
@@ -44,7 +44,7 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("overlap when reading and creating the same label") {
     //MATCH (a:L) CREATE (b:L)
-    val selections = Selections.from(HasLabels(Identifier("a")(pos), Seq(LabelName("L")(pos)))(pos))
+    val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
 
@@ -53,7 +53,7 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("no overlap when reading and creating different labels") {
     //MATCH (a:L1:L2) CREATE (b:L3)
-    val selections = Selections.from(HasLabels(Identifier("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
+    val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None)))
 
@@ -62,8 +62,8 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("no overlap when properties don't overlap even though labels do") {
     //MATCH (a {foo: 42}) CREATE (a:L)
-    val selections = Selections.from(In(Identifier("a")(pos),
-      Property(Identifier("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val selections = Selections.from(In(Variable("a")(pos),
+      Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
 
@@ -73,8 +73,8 @@ class UpdateGraphTest extends CypherFunSuite {
   test("no overlap when properties don't overlap even though labels explicitly do") {
     //MATCH (a:L {foo: 42}) CREATE (a:L)
     val selections = Selections.from(
-      In(Identifier("a")(pos),Property(Identifier("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
-      HasLabels(Identifier("a")(pos), Seq(LabelName("L")(pos)))(pos))
+      In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
+      HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = UpdateGraph(Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
 
@@ -116,8 +116,8 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("no overlap when reading and writing same rel types but matching on rel property") {
     //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
-    val selections = Selections.from(In(Identifier("a")(pos),
-      Property(Identifier("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val selections = Selections.from(In(Variable("a")(pos),
+      Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),
@@ -130,8 +130,8 @@ class UpdateGraphTest extends CypherFunSuite {
 
   test("overlap when reading and writing same property and rel type") {
     //MATCH (a)-[r:T1 {foo: 42}]->(b)  CREATE (a)-[r2:T1]->(b)
-    val selections = Selections.from(In(Identifier("a")(pos),
-      Property(Identifier("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
+    val selections = Selections.from(In(Variable("a")(pos),
+      Property(Variable("r")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")),
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)),

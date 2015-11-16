@@ -55,7 +55,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       .plan should equal(
-      Selection(Seq(StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
+      Selection(Seq(StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _, StringLiteral("short") _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -72,7 +72,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost = nodeIndexScanCost
     } planFor "MATCH (a:Person) WHERE a.name STARTS WITH 'longer' AND NOT a.lastname STARTS WITH 'short' RETURN a")
       .plan should equal(
-      Selection(Seq(Not(StartsWith(Property(Identifier("a") _, PropertyKeyName("lastname") _) _, StringLiteral("short") _) _) _),
+      Selection(Seq(Not(StartsWith(Property(Variable("a") _, PropertyKeyName("lastname") _) _, StringLiteral("short") _) _) _),
                 NodeIndexSeek(
                   "a",
                   LabelToken("Person", LabelId(0)),
@@ -83,7 +83,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan property equality index seek instead of index seek by prefix") {
-    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+    val startsWith: StartsWith = StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _,
                                             StringLiteral("prefix") _) _
     (new given {
       indexOn("Person", "name")
@@ -100,7 +100,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan property equality index seek using IN instead of index seek by prefix") {
-    val startsWith: StartsWith = StartsWith(Property(Identifier("a") _, PropertyKeyName("name") _) _,
+    val startsWith: StartsWith = StartsWith(Property(Variable("a") _, PropertyKeyName("name") _) _,
                                             StringLiteral("prefix%") _) _
     (new given {
       indexOn("Person", "name")
@@ -172,9 +172,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Selection(
         Seq(
           AndedPropertyInequalities(
-            ident("a"),
-            Property(ident("a"), PropertyKeyName("age")_)_,
-            NonEmptyList(GreaterThan(Property(ident("a"), PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("40")_)_)
+            varFor("a"),
+            Property(varFor("a"), PropertyKeyName("age")_)_,
+            NonEmptyList(GreaterThan(Property(varFor("a"), PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("40")_)_)
         )),
         NodeIndexSeek(
           "a",
@@ -285,7 +285,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE exists(n.prop) AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(ident("n"), PropertyKeyName("prop") _) _) _),
+      Selection(Seq(FunctionInvocation(FunctionName("exists") _, Property(varFor("n"), PropertyKeyName("prop") _) _) _),
         NodeIndexSeek(
           "n",
           LabelToken("Awesome", LabelId(0)),
@@ -325,7 +325,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
       )(solved)
     )
@@ -336,7 +336,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Parameter("param")_), Set.empty)(solved)
       )(solved)
     )
@@ -361,7 +361,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("Awesome")
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan should equal (
       Selection(
-        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
         NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
       )(solved)
     )
@@ -420,7 +420,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        Seq(HasLabels(ident("n"), Seq(LabelName("Foo")_))_, HasLabels(ident("n"), Seq(LabelName("Baz")_))_),
+        Seq(HasLabels(varFor("n"), Seq(LabelName("Foo")_))_, HasLabels(varFor("n"), Seq(LabelName("Baz")_))_),
         NodeByLabelScan("n", LazyLabel("Bar"), Set.empty)(solved)
       )(solved)
     )
@@ -454,7 +454,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
@@ -478,7 +478,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
@@ -492,13 +492,13 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       Selection(
-        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        List(In(Property(varFor("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
 
-  test("should plan node by ID seek based on a predicate with an id collection identifier as the rhs") {
+  test("should plan node by ID seek based on a predicate with an id collection variable as the rhs") {
     implicit val plan = new given {
       cost =  {
         case (_: AllNodesScan, _) => 1000.0
@@ -512,7 +512,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Aggregation(
         Apply(
           Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
-          NodeByIdSeek(IdName("n"), ManySeekableArgs(Identifier("arr")_),Set(IdName("arr")))(solved)
+          NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(), Map("count(*)" -> CountStar()_)
       )(solved)

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val n_prop1: Property = Property(ident("n"), PropertyKeyName("prop1")_)_
-  val m_prop1: Property = Property(ident("m"), PropertyKeyName("prop1")_)_
-  val m_prop2: Property = Property(ident("m"), PropertyKeyName("prop2")_)_
+  val n_prop1: Property = Property(varFor("n"), PropertyKeyName("prop1")_)_
+  val m_prop1: Property = Property(varFor("m"), PropertyKeyName("prop1")_)_
+  val m_prop2: Property = Property(varFor("m"), PropertyKeyName("prop2")_)_
 
   test("Should handle single predicate") {
     groupInequalityPredicates(NonEmptyList(pred(lessThan(n_prop1, 1)))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
@@ -74,11 +74,11 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
 
   test("Should not group inequalities on non-property lookups") {
     groupInequalityPredicates(NonEmptyList(
-      pred(lessThan(ident("x"), 1)),
-      pred(greaterThanOrEqual(ident("x"), 1))
+      pred(lessThan(varFor("x"), 1)),
+      pred(greaterThanOrEqual(varFor("x"), 1))
     )).toSet should equal(NonEmptyList(
-      pred(lessThan(ident("x"), 1)),
-      pred(greaterThanOrEqual(ident("x"), 1))
+      pred(lessThan(varFor("x"), 1)),
+      pred(greaterThanOrEqual(varFor("x"), 1))
     ).toSet)
   }
 
@@ -101,9 +101,9 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     Predicate(expr.dependencies.map { ident => IdName(ident.name) }, expr)
 
   private def anded(property: Property, first: InequalityExpression, others: InequalityExpression*) = {
-    val identifier = property.map.asInstanceOf[Identifier]
+    val variable = property.map.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
     val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident => IdName(ident.name) }
-    Predicate(deps, AndedPropertyInequalities(identifier, property, inequalities))
+    Predicate(deps, AndedPropertyInequalities(variable, property, inequalities))
   }
 }

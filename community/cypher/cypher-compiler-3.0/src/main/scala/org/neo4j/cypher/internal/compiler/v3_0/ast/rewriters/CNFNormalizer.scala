@@ -45,7 +45,7 @@ case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rew
 
   private val step = Rewriter.lift {
     case p@Xor(expr1, expr2) =>
-      And(Or(expr1, expr2)(p.position), Not(And(expr1.endoRewrite(copyIdentifiers), expr2.endoRewrite(copyIdentifiers))(p.position))(p.position))(p.position)
+      And(Or(expr1, expr2)(p.position), Not(And(expr1.endoRewrite(copyVariables), expr2.endoRewrite(copyVariables))(p.position))(p.position))(p.position)
     case p@Not(And(exp1, exp2)) =>
       Or(Not(exp1)(p.position), Not(exp2)(p.position))(p.position)
     case p@Not(Or(exp1, exp2)) =>
@@ -77,8 +77,8 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
   }
 
   private val step = Rewriter.lift {
-    case p@Or(exp1, And(exp2, exp3)) => And(Or(exp1, exp2)(p.position), Or(exp1.endoRewrite(copyIdentifiers), exp3)(p.position))(p.position)
-    case p@Or(And(exp1, exp2), exp3) => And(Or(exp1, exp3)(p.position), Or(exp2, exp3.endoRewrite(copyIdentifiers))(p.position))(p.position)
+    case p@Or(exp1, And(exp2, exp3)) => And(Or(exp1, exp2)(p.position), Or(exp1.endoRewrite(copyVariables), exp3)(p.position))(p.position)
+    case p@Or(And(exp1, exp2), exp3) => And(Or(exp1, exp3)(p.position), Or(exp2, exp3.endoRewrite(copyVariables))(p.position))(p.position)
   }
 
   private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)

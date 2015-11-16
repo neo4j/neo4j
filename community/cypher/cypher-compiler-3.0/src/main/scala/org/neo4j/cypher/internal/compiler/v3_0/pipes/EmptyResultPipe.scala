@@ -35,7 +35,7 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
     Iterator.empty
   }
 
-  override def planDescription = source.planDescription.andThen(this.id, "EmptyResult", identifiers)
+  override def planDescription = source.planDescription.andThen(this.id, "EmptyResult", variables)
 
   def symbols = SymbolTable()
 
@@ -50,7 +50,7 @@ case class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) exte
 
   def estimatedCardinality: Option[Double] = Some(0.0)
 
-  override def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, identifiers)
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, variables)
 
   override def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
     //TODO should enforce estimated == 0.0

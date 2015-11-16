@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -30,12 +30,12 @@ class ColumnFilterPipeTest extends CypherFunSuite {
 
   test("should return columns from return items") {
     val col = "extractReturnItems"
-    val returnItems = List(ReturnItem(Identifier(col), col))
+    val returnItems = List(ReturnItem(Variable(col), col))
     val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), col -> CTNode)
 
     val columnPipe = new ColumnFilterPipe(source, returnItems)(mock[PipeMonitor])
 
-    columnPipe.symbols.identifiers should equal(Map(col -> CTNode))
+    columnPipe.symbols.variables should equal(Map(col -> CTNode))
     columnPipe.createResults(QueryStateHelper.empty).toList should equal(List(Map(col -> "bar")))
   }
 }

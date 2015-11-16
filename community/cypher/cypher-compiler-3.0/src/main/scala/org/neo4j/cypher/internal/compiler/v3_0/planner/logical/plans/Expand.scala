@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Identifier, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 
 sealed trait ExpansionMode
@@ -63,7 +63,7 @@ case class VarExpand(left: LogicalPlan,
                      relName: IdName,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
-                     predicates: Seq[(Identifier, Expression)] = Seq.empty)
+                     predicates: Seq[(Variable, Expression)] = Seq.empty)
                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)

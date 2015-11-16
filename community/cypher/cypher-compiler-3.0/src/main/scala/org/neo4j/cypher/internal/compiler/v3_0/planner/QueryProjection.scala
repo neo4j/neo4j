@@ -36,7 +36,7 @@ sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[Que
   def preferredStrictness: Option[StrictnessMode]
 
   def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
-    case id: Identifier =>
+    case id: Variable =>
       (acc, children) => children(acc + IdName(id.name))
   }
 }
@@ -60,7 +60,7 @@ object QueryProjection {
 
   def forIds(coveredIds: Set[IdName]) =
     coveredIds.toSeq.map(idName =>
-      AliasedReturnItem(Identifier(idName.name)(null), Identifier(idName.name)(null))(null))
+      AliasedReturnItem(Variable(idName.name)(null), Variable(idName.name)(null))(null))
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
     case (left: RegularQueryProjection, right: RegularQueryProjection) =>
@@ -151,8 +151,8 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   override def exposedSymbols(qg: QueryGraph) = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
-case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + identifier
+case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + variable
 
   override def dependingExpressions = Seq(exp)
 

@@ -100,20 +100,20 @@ class HintException(message: String, cause: Throwable)
   val status = Status.Schema.NoSuchIndex
 }
 
-class IndexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable)
+class IndexHintException(variable: String, label: String, property: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
   val status = Status.Statement.ExecutionFailure
 }
 
-class JoinHintException(identifier: String, message: String, cause: Throwable)
+class JoinHintException(variable: String, message: String, cause: Throwable)
   extends CypherException(message, cause) {
   val status = Status.Statement.ExecutionFailure
 }
 
-class LabelScanHintException(identifier: String, label: String, message: String, cause: Throwable)
+class LabelScanHintException(variable: String, label: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`", cause) {
   val status = Status.Statement.InvalidSemantics
-  def this(identifier: String, label: String, message: String) = this(identifier, label, message, null)
+  def this(variable: String, label: String, message: String) = this(variable, label, message, null)
 }
 
 class InvalidSemanticsException(message: String, cause: Throwable) extends CypherException(message, cause) {

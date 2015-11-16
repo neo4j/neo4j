@@ -58,7 +58,7 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
     else ops.setProperty(id, propertyId, value)
   }
 
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, identifiers)
+  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, variables)
 
   override def symbols = src.symbols
 }

@@ -99,7 +99,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       )
       ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
-        val predicate: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
+        val predicate: Expression = Equals(Variable("a1")_, Variable("a2")_)_
         predicates should equal(Seq(predicate))
     }
   }
@@ -137,7 +137,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                          |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
     val s = solved
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
-    val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
+    val predicate: Expression = In(Property(varFor("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
     plan should equal(
       OptionalExpand(allNodesN, IdName("n"), SemanticDirection.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
         Vector(predicate))(s)

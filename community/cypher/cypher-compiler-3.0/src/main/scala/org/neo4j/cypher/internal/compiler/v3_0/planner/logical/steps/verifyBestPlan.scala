@@ -55,7 +55,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.identifier.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
+        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.label.name, firstIndexHint.property.name, "No such index")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.property.name))
@@ -69,10 +69,10 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
         val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.identifiers.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
+        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), "Unable to plan hash join")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.identifiers.map(_.name).toSeq))
+          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toSeq))
         }
       }
     }
@@ -81,11 +81,11 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property)
-      case hint@UsingIndexHint(Identifier(name), LabelName(label), PropertyKeyName(property))
+      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property))
         if planContext.getIndexRule( label, property ).isDefined ||
           planContext.getUniqueIndexRule( label, property ).isDefined => None
       // no such index exists
-      case hint@UsingIndexHint(Identifier(name), LabelName(label), PropertyKeyName(property)) => Option(hint)
+      case hint@UsingIndexHint(Variable(name), LabelName(label), PropertyKeyName(property)) => Option(hint)
       // don't care about other hints
       case hint => None
     }

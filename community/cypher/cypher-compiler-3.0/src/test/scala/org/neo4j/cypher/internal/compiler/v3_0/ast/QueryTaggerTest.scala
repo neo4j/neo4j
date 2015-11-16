@@ -68,8 +68,8 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MATCH ()-[]->() RETURN 1") should not contain SingleNodePatternTag
   }
 
-  test(queryTag(IdentifierExpressionTag)) {
-    QueryTagger("RETURN n") should contain(IdentifierExpressionTag)
+  test(queryTag(VariableExpressionTag)) {
+    QueryTagger("RETURN n") should contain(VariableExpressionTag)
   }
 
   test(queryTag(LiteralExpressionTag)) {
@@ -136,7 +136,7 @@ class QueryTaggerTest extends CypherFunSuite {
       RegularMatchTag,
       SingleNodePatternTag,
       ReturnTag,
-      IdentifierExpressionTag)
+      VariableExpressionTag)
     )
   }
 

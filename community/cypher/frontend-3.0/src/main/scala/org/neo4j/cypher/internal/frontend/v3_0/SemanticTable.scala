@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, ASTNode, Expression, ASTAnnotationMap}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, ASTNode, Expression, ASTAnnotationMap}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 
 import scala.collection.mutable
@@ -40,37 +40,37 @@ class SemanticTable(
 
   def getTypeFor(s: String): TypeSpec = try {
     val reducedType = types.collect {
-      case (Identifier(name), typ) if name == s => typ.specified
+      case (Variable(name), typ) if name == s => typ.specified
     }.reduce(_ & _)
 
     if (reducedType.isEmpty)
-      throw new InternalException(s"This semantic table contains conflicting type information for identifier $s")
+      throw new InternalException(s"This semantic table contains conflicting type information for variable $s")
 
     reducedType
   } catch {
     case e: UnsupportedOperationException =>
-      throw new InternalException(s"Did not find any type information for identifier $s", e)
+      throw new InternalException(s"Did not find any type information for variable $s", e)
   }
 
   def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
 
   def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant
 
-  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
+  def isNode(expr: Variable) = types(expr).specified == symbols.CTNode.invariant
 
-  def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
+  def isRelationship(expr: Variable) = types(expr).specified == symbols.CTRelationship.invariant
 
-  def addNode(expr: Identifier) =
+  def addNode(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTNode.invariant, None)))
 
-  def addRelationship(expr: Identifier) =
+  def addRelationship(expr: Variable) =
     copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
 
-  def replaceKeys(replacements: (Identifier, Identifier)*): SemanticTable =
+  def replaceKeys(replacements: (Variable, Variable)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
 
-  def symbolDefinition(identifier: Identifier) =
-    recordedScopes(identifier).symbolTable(identifier.name).definition
+  def symbolDefinition(variable: Variable) =
+    recordedScopes(variable).symbolTable(variable.name).definition
 
   override def clone() = copy()
 

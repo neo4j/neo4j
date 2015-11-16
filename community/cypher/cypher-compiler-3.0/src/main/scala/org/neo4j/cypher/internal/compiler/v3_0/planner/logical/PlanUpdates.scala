@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Identifier, PathExpression}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PathExpression}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -57,9 +57,9 @@ case object PlanUpdates
     //DELETE a
     case p: DeleteExpression =>
       p.expression match {
-        case Identifier(n) if context.semanticTable.isNode(n) =>
+        case Variable(n) if context.semanticTable.isNode(n) =>
           context.logicalPlanProducer.planDeleteNode(inner, p)
-        case Identifier(r) if context.semanticTable.isRelationship(r) =>
+        case Variable(r) if context.semanticTable.isRelationship(r) =>
           context.logicalPlanProducer.planDeleteRelationship(inner, p)
         case PathExpression(e)  =>
           context.logicalPlanProducer.planDeletePath(inner, p)

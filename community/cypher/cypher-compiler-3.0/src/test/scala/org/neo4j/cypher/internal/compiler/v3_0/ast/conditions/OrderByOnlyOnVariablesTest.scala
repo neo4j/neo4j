@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.frontend.v3_0.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class OrderByOnlyOnIdentifiersTest extends CypherFunSuite with AstConstructionTestSupport {
+class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val condition: (Any => Seq[String]) = orderByOnlyOnIdentifiers
+  private val condition: (Any => Seq[String]) = orderByOnlyOnVariables
 
-  test("unhappy when when order by sort on non-identifier expressions") {
+  test("unhappy when when order by sort on non-variable expressions") {
     val expr: Expression = UnsignedDecimalIntegerLiteral("42")_
     val orderByPos = DummyPosition(42)
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(ident("n"), ident("n"))_))_, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
 
-    condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of an identifier"))
+    condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of a variable"))
   }
 
-  test("happy when order by sort on identifier") {
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(ident("n"), ident("n"))_))_, Some(OrderBy(Seq(AscSortItem(ident("n"))_))_), None, None)_
+  test("happy when order by sort on variable") {
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))_), None, None)_
 
     condition(ast) shouldBe empty
   }

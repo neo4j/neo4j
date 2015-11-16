@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal, Property}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
@@ -86,12 +86,12 @@ class TrailBuilderTest extends CypherFunSuite {
   test("find_longest_path_between_two_points_with_a_predicate") {
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
-    val r1Pred = Equals(Property(Identifier("pr1"), PropertyKey("prop")), Literal(42))
-    val r2Pred = Equals(Property(Identifier("pr2"), PropertyKey("prop")), Literal("FOO"))
+    val r1Pred = Equals(Property(Variable("pr1"), PropertyKey("prop")), Literal(42))
+    val r2Pred = Equals(Property(Variable("pr2"), PropertyKey("prop")), Literal("FOO"))
     val predicates = Seq(r1Pred, r2Pred)
 
-    val rewrittenR1 = Equals(Property(RelationshipIdentifier(), PropertyKey("prop")), Literal(42))
-    val rewrittenR2 = Equals(Property(RelationshipIdentifier(), PropertyKey("prop")), Literal("FOO"))
+    val rewrittenR1 = Equals(Property(RelationshipVariable(), PropertyKey("prop")), Literal(42))
+    val rewrittenR2 = Equals(Property(RelationshipVariable(), PropertyKey("prop")), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, SemanticDirection.OUTGOING, "pr2", Seq("B"), "b", rewrittenR2, True(), pattern = BtoC, Seq(r2Pred))
@@ -106,10 +106,10 @@ class TrailBuilderTest extends CypherFunSuite {
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)
     //WHERE b.prop = 42
 
-    val nodePred = Equals(Property(Identifier("b"), PropertyKey("prop")), Literal(42))
+    val nodePred = Equals(Property(Variable("b"), PropertyKey("prop")), Literal(42))
     val predicates = Seq(nodePred)
 
-    val rewrittenPredicate = Equals(Property(NodeIdentifier(), PropertyKey("prop")), Literal(42))
+    val rewrittenPredicate = Equals(Property(NodeVariable(), PropertyKey("prop")), Literal(42))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, SemanticDirection.OUTGOING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
@@ -306,11 +306,11 @@ class TrailBuilderTest extends CypherFunSuite {
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
 
-    val predForB = Equals(Property(Identifier("b"), PropertyKey("name")), Literal("b"))
-    val predForC = Equals(Property(Identifier("c"), PropertyKey("name")), Literal("c"))
+    val predForB = Equals(Property(Variable("b"), PropertyKey("name")), Literal("b"))
+    val predForC = Equals(Property(Variable("c"), PropertyKey("name")), Literal("c"))
 
-    val expectedForB = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("b"))
-    val expectedForC = Equals(Property(NodeIdentifier(), PropertyKey("name")), Literal("c"))
+    val expectedForB = Equals(Property(NodeVariable(), PropertyKey("name")), Literal("b"))
+    val expectedForC = Equals(Property(NodeVariable(), PropertyKey("name")), Literal("c"))
 
     val s1 = RelatedTo(SingleNode("a"), SingleNode("b"), "r1", Seq(), SemanticDirection.OUTGOING, Map.empty)
     val s2 = RelatedTo(SingleNode("b"), SingleNode("c"), "r2", Seq(), SemanticDirection.OUTGOING, Map.empty)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
@@ -36,8 +36,8 @@ class UpdateCommandExpanderTest extends CypherFunSuite with UpdateCommandExpande
   val createC = CreateNode("c", Map.empty, Seq.empty)
   val createD = CreateNode("d", Map.empty, Seq.empty)
 
-  val lushA = RelationshipEndpoint(Identifier("a"), Map("x"->Literal(42)), Seq(UnresolvedLabel("LABEL")))
-  val lushB = RelationshipEndpoint(Identifier("b"), Map("x"->Literal(23)), Seq(UnresolvedLabel("LABEL2")))
+  val lushA = RelationshipEndpoint(Variable("a"), Map("x"->Literal(42)), Seq(UnresolvedLabel("LABEL")))
+  val lushB = RelationshipEndpoint(Variable("b"), Map("x"->Literal(23)), Seq(UnresolvedLabel("LABEL2")))
   val createRelationshipWithLushNodes = CreateRelationship("r1", lushA, lushB, "REL", Map.empty)
   val lushCreateA = CreateNode("a", Map("x"->Literal(42)), Seq(UnresolvedLabel("LABEL")))
   val lushCreateB = CreateNode("b", Map("x"->Literal(23)), Seq(UnresolvedLabel("LABEL2")))

@@ -47,7 +47,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ZERO)
@@ -64,7 +64,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
@@ -81,7 +81,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
@@ -106,7 +106,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val labels = new mutable.HashMap[String, LabelId]()
     for (i <- 1 to 100) labels.put(i.toString, LabelId(i))
     val labelNames = labels.keys.map(LabelName(_)(pos))
-    val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(l))(pos))).toSet
+    val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(l))(pos))).toSet
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = labels)
     implicit val selections = Selections(predicates)

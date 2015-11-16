@@ -264,7 +264,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("should introduce apply for unsolved optional match and solve predicates on the pattern") {
     // Given MATCH a OPTIONAL MATCH (a)-[r]->(b:X)
-    val labelPredicate: ast.Expression = ast.HasLabels(ident("b"), Seq(ast.LabelName("X")_ )) _
+    val labelPredicate: ast.Expression = ast.HasLabels(varFor("b"), Seq(ast.LabelName("X")_ )) _
     val qg = QueryGraph(patternNodes = Set("a")).
              withAddedOptionalMatch(qgForAtoB.addPredicates(labelPredicate))
 

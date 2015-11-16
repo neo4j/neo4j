@@ -70,11 +70,11 @@ extends PipeWithSource(left, pipeMonitor) with RonjaPipe with NoEffectsPipe {
     name = "TriadicSelection",
     children = TwoChildren(left.planDescription, right.planDescription),
     arguments = Seq(KeyNames(Seq(source, seen, target))),
-    identifiers = identifiers)
+    variables = variables)
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  override def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers)
+  override def symbols: SymbolTable = left.symbols.add(right.symbols.variables)
 
   override def dup(sources: List[Pipe]) = {
     val (left :: right :: Nil) = sources

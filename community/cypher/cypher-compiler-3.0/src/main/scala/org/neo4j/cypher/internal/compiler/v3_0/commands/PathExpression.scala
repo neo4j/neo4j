@@ -34,11 +34,11 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   extends Expression
   with PathExtractor
   with PatternGraphBuilder {
-  val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
-  val symbols2 = SymbolTable(identifiers.toMap)
-  val identifiersInClause = Pattern.identifiers(pathPattern)
+  val variables: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
+  val symbols2 = SymbolTable(variables.toMap)
+  val variablesInClause = Pattern.variables(pathPattern)
 
-  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), identifiersInClause)
+  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), variablesInClause)
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).

@@ -33,11 +33,11 @@ case class ArgumentPipe(symbols: SymbolTable)
   def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 
   def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(this.id, "Argument", NoChildren, Seq.empty, identifiers)
+    new PlanDescriptionImpl(this.id, "Argument", NoChildren, Seq.empty, variables)
 
   private val typeAssertions =
     SymbolTypeAssertionCompiler.compile(
-      symbols.identifiers.toSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
+      symbols.variables.toSeq.collect { case entry@(_, typ) if typ == CTNode || typ == CTRelationship => entry}
     )
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =

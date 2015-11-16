@@ -31,9 +31,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val ROWS = "Rows"
   private val HITS = "DB Hits"
   private val TIME = "Time (ms)"
-  private val IDENTIFIERS = "Identifiers"
+  private val VARIABLES = "Variables"
   private val OTHER = "Other"
-  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, TIME, IDENTIFIERS, OTHER)
+  private val HEADERS = Seq(OPERATOR, ESTIMATED_ROWS, ROWS, HITS, TIME, VARIABLES, OTHER)
 
   def apply(plan: InternalPlanDescription): String = {
 
@@ -105,7 +105,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     case Time(nanos) => mapping(TIME, Right("%.3f".format(nanos/1000000.0)))
     case _ => None
   }.toMap + (
-    IDENTIFIERS -> Left(identifiers(description)),
+    VARIABLES -> Left(variables(description)),
     OTHER -> Left(other(description)))
 
   private def mapping(key: String, value: Justified)(implicit columns: mutable.Map[String,Int]) = {
@@ -117,10 +117,10 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     columns.put(key, math.max(columns.getOrElse(key, 0), length))
   }
 
-  private def identifiers(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): String = {
-    val result: String = description.orderedIdentifiers.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", ")
+  private def variables(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): String = {
+    val result: String = description.orderedVariables.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", ")
     if (result.nonEmpty) {
-      update(columns, IDENTIFIERS, result.length)
+      update(columns, VARIABLES, result.length)
     }
     result
   }

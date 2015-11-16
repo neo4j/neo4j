@@ -94,7 +94,7 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
 
-  def labelScanHintException(identifier: String, label: String, message: String, cause: Throwable) = throw new LabelScanHintException(identifier, label, message, cause)
+  def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) = throw new LabelScanHintException(variable, label, message, cause)
 
   def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
 
@@ -102,9 +102,9 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
 
-  def indexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable) = throw new IndexHintException(identifier, label, property, message, cause)
+  def indexHintException(variable: String, label: String, property: String, message: String, cause: Throwable) = throw new IndexHintException(variable, label, property, message, cause)
 
-  def joinHintException(identifier: String, message: String, cause: Throwable) = throw new JoinHintException(identifier, message, cause)
+  def joinHintException(variable: String, message: String, cause: Throwable) = throw new JoinHintException(variable, message, cause)
 
   def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
@@ -293,8 +293,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
   def notifications = inner.notifications.map(asKernelNotification)
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
-    case CartesianProductNotification(pos, identifiers) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(identifiers.asJava))
+    case CartesianProductNotification(pos, variables) =>
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LegacyPlannerNotification =>
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
@@ -305,10 +305,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
-    case JoinHintUnfulfillableNotification(identifiers) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(identifiers.asJava))
-    case JoinHintUnsupportedNotification(identifiers) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(identifiers.asJava))
+    case JoinHintUnfulfillableNotification(variables) =>
+      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+    case JoinHintUnsupportedNotification(variables) =>
+      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
       NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case BareNodeSyntaxDeprecatedNotification(pos) =>

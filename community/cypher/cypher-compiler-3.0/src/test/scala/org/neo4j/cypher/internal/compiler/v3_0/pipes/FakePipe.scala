@@ -28,15 +28,15 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Map
 
-class FakePipe(val data: Iterator[Map[String, Any]], newIdentifiers: (String, CypherType)*) extends Pipe with MockitoSugar {
+class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, CypherType)*) extends Pipe with MockitoSugar {
 
-  def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
+  def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
 
-  val symbols = SymbolTable(newIdentifiers.toMap)
+  val symbols = SymbolTable(newVariables.toMap)
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def planDescription: InternalPlanDescription = SingleRowPlanDescription(this.id, identifiers = identifiers)
+  def planDescription: InternalPlanDescription = SingleRowPlanDescription(this.id, variables = variables)
 
   def exists(pred: Pipe => Boolean) = ???
 

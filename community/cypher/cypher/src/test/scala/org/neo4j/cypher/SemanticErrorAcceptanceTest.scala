@@ -28,7 +28,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("return node that's not there") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return bar",
-      "bar not defined (line 1, column 34 (offset: 33))"
+      "Variable `bar` not defined (line 1, column 34 (offset: 33))"
     )
   }
 
@@ -59,10 +59,10 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("cant re-use relationship identifier") {
+  test("cant re-use relationship variable") {
     executeAndEnsureError(
       "match (a)-[r]->(b)-[r]->(a) where id(a) = 0 return r",
-      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21 (offset: 20))"
+      "Cannot use the same relationship variable 'r' for multiple patterns (line 1, column 21 (offset: 20))"
     )
   }
 
@@ -80,10 +80,10 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should complain about unknown identifier") {
+  test("should complain about unknown variable") {
     executeAndEnsureError(
       "match (s) where s.name = Name and s.age = 10 return s",
-      "Name not defined (line 1, column 26 (offset: 25))"
+      "Variable `Name` not defined (line 1, column 26 (offset: 25))"
     )
   }
 
@@ -159,10 +159,10 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should be semantically incorrect to refer to unknown identifier in create constraint") {
+  test("should be semantically incorrect to refer to unknown variable in create constraint") {
     executeAndEnsureError(
       "create constraint on (foo:Foo) assert bar.name is unique",
-      "bar not defined (line 1, column 39 (offset: 38))"
+      "Variable `bar` not defined (line 1, column 39 (offset: 38))"
     )
   }
 
@@ -173,10 +173,10 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should be semantically incorrect to refer to unknown identifier in drop constraint") {
+  test("should be semantically incorrect to refer to unknown variable in drop constraint") {
     executeAndEnsureError(
       "drop constraint on (foo:Foo) assert bar.name is unique",
-      "bar not defined (line 1, column 37 (offset: 36))"
+      "Variable `bar` not defined (line 1, column 37 (offset: 36))"
     )
   }
 
@@ -195,43 +195,43 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should not allow identifier to be overwritten by create") {
+  test("should not allow variable to be overwritten by create") {
     executeAndEnsureError(
       "match (a) where id(a) = 0 create (a)",
-      "a already declared (line 1, column 35 (offset: 34))"
+      "Variable `a` already declared (line 1, column 35 (offset: 34))"
     )
   }
 
-  test("should not allow identifier to be overwritten by merge") {
+  test("should not allow variable to be overwritten by merge") {
     executeAndEnsureError(
       "match (a) where id(a) = 0 merge (a)",
-      "a already declared (line 1, column 34 (offset: 33))"
+      "Variable `a` already declared (line 1, column 34 (offset: 33))"
     )
   }
 
-  test("should not allow identifier to be overwritten by create relationship") {
+  test("should not allow variable to be overwritten by create relationship") {
     executeAndEnsureError(
       "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 create (a)-[r:TYP]->()",
-      "r already declared (line 1, column 64 (offset: 63))"
+      "Variable `r` already declared (line 1, column 64 (offset: 63))"
     )
   }
 
-  test("should not allow identifier to be overwritten by merge relationship") {
+  test("should not allow variable to be overwritten by merge relationship") {
     executeAndEnsureError(
       "match (a), ()-[r]-() where id(a) = 0 and id(r) = 1 merge (a)-[r:TYP]->()",
-      "r already declared (line 1, column 63 (offset: 62))"
+      "Variable `r` already declared (line 1, column 63 (offset: 62))"
     )
   }
 
-  test("should not allow identifier to be introduced in pattern expression") {
+  test("should not allow variable to be introduced in pattern expression") {
     executeAndEnsureError(
       "match (n) return (n)-[:TYP]->(b)",
-      "b not defined (line 1, column 31 (offset: 30))"
+      "Variable `b` not defined (line 1, column 31 (offset: 30))"
     )
 
     executeAndEnsureError(
       "match (n) return (n)-[r:TYP]->()",
-      "r not defined (line 1, column 23 (offset: 22))"
+      "Variable `r` not defined (line 1, column 23 (offset: 22))"
     )
   }
 
@@ -315,10 +315,10 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail if using an hint with an unknown identifier") {
+  test("should fail if using an hint with an unknown variable") {
     executeAndEnsureError(
       "match (n:Person)-->() using index m:Person(name) where n.name = \"kabam\" return n",
-      "m not defined (line 1, column 35 (offset: 34))"
+      "Variable `m` not defined (line 1, column 35 (offset: 34))"
     )
   }
 
@@ -345,14 +345,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should fail if unknown identifier in merge action set clause") {
+  test("should fail if unknown variable in merge action set clause") {
     executeAndEnsureError(
       "MERGE (n:Person) ON CREATE SET x.foo = 1",
-      "x not defined (line 1, column 32 (offset: 31))"
+      "Variable `x` not defined (line 1, column 32 (offset: 31))"
     )
     executeAndEnsureError(
       "MERGE (n:Person) ON MATCH SET x.foo = 1",
-      "x not defined (line 1, column 31 (offset: 30))")
+      "Variable `x` not defined (line 1, column 31 (offset: 30))")
   }
 
   test("should fail if using legacy optionals match") {
@@ -558,21 +558,21 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     val error = intercept[QueryExecutionException](graph.execute(query))
 
     val first :: second :: third :: Nil = error.getMessage.lines.toList
-    first should equal("o not defined (line 1, column 37 (offset: 36))")
+    first should equal("Variable `o` not defined (line 1, column 37 (offset: 36))")
     second should equal(s""""$query"""")
     third should startWith(" "*37 + "^")
   }
 
   test("positions should not be cached") {
     executeAndEnsureError("EXPLAIN MATCH (m), (n) RETURN m, n, o LIMIT 25",
-      "o not defined (line 1, column 37 (offset: 36))")
+      "Variable `o` not defined (line 1, column 37 (offset: 36))")
     executeAndEnsureError("MATCH (m), (n) RETURN m, n, o LIMIT 25",
-      "o not defined (line 1, column 29 (offset: 28))")
+      "Variable `o` not defined (line 1, column 29 (offset: 28))")
   }
 
-  test("not allowed to refer to identifiers in SKIP")(
+  test("not allowed to refer to variables in SKIP")(
     executeAndEnsureError("MATCH (n) RETURN n SKIP n.count",
-                          "It is not allowed to refer to identifiers in SKIP (line 1, column 25 (offset: 24))")
+                          "It is not allowed to refer to variables in SKIP (line 1, column 25 (offset: 24))")
   )
 
   test("only allowed to use positive integer literals in SKIP") (
@@ -580,9 +580,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
                           "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 25 (offset: 24))")
   )
 
-  test("not allowed to refer to identifiers in LIMIT")(
+  test("not allowed to refer to variables in LIMIT")(
     executeAndEnsureError("MATCH (n) RETURN n LIMIT n.count",
-                          "It is not allowed to refer to identifiers in LIMIT (line 1, column 26 (offset: 25))")
+                          "It is not allowed to refer to variables in LIMIT (line 1, column 26 (offset: 25))")
   )
 
   test("only allowed to use positive integer literals in LIMIT") (

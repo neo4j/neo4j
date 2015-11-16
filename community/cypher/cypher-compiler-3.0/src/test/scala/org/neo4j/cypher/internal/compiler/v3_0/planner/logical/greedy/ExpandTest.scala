@@ -142,19 +142,19 @@ class ExpandTest
     val planA = newMockedLogicalPlan("a")
     val plan = greedyPlanTableWith(planA)
 
-    val relIdentifier: Identifier = Identifier(rName.name)_
-    val innerPredicate: Expression = Equals(Property(Identifier("foo")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("20")_)_
+    val relVariable: Variable = Variable(rName.name)_
+    val innerPredicate: Expression = Equals(Property(Variable("foo")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("20")_)_
     val allPredicate = AllIterablePredicate(
-      Identifier("foo")_,
-      relIdentifier,
+      Variable("foo")_,
+      relVariable,
       Some(innerPredicate) // foo.prop = 20
     )_
     val predicate: Predicate = Predicate(Set(rName), allPredicate)
     val qg = createQuery(rVarRel).addSelections(Selections(Set(predicate)))
-    val fooIdentifier: Identifier = Identifier("foo")_
+    val fooVariable: Variable = Variable("foo")_
     val result = expand(plan, qg)
     result should equal(
-      Seq(VarExpand(planA, aNode, SemanticDirection.OUTGOING, rVarRel.dir, Seq.empty, bNode, rVarRel.name, VarPatternLength.unlimited, ExpandAll, Seq(fooIdentifier -> innerPredicate))(solved))
+      Seq(VarExpand(planA, aNode, SemanticDirection.OUTGOING, rVarRel.dir, Seq.empty, bNode, rVarRel.name, VarPatternLength.unlimited, ExpandAll, Seq(fooVariable -> innerPredicate))(solved))
     )
   }
 }

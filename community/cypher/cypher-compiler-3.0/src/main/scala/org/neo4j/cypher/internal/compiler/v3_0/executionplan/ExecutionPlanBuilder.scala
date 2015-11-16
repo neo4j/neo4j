@@ -194,7 +194,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
       }
 
       query.returns.columns.flatMap {
-        case "*" => currentSymbols.identifiers.keys
+        case "*" => currentSymbols.variables.keys
         case x => Seq(x)
       }
 

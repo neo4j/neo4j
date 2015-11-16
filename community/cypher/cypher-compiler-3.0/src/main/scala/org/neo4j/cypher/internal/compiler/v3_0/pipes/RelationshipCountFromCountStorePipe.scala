@@ -63,7 +63,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
 
   def planDescriptionWithoutCardinality = PlanDescriptionImpl(
     this.id, "RelationshipCountFromCountStore", NoChildren,
-    Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel, bothDirections)), identifiers)
+    Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel, bothDirections)), variables)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 

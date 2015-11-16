@@ -27,14 +27,14 @@ trait Literals extends Parser
 
   def Expression: Rule1[ast.Expression]
 
-  def Identifier: Rule1[ast.Identifier] =
-    rule("an identifier") { SymbolicNameString ~~>> (ast.Identifier(_) ) }.memoMismatches
+  def Variable: Rule1[ast.Variable] =
+    rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
 
   def FunctionName: Rule1[ast.FunctionName] =
     rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
 
-  def EscapedIdentifier: Rule1[ast.Identifier] =
-    rule("an identifier") { EscapedSymbolicNameString ~~>> (ast.Identifier(_)) }
+  def EscapedVariable: Rule1[ast.Variable] =
+    rule("a variable") { EscapedSymbolicNameString ~~>> (ast.Variable(_)) }
 
   def PropertyKeyName: Rule1[ast.PropertyKeyName] =
     rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
@@ -45,8 +45,8 @@ trait Literals extends Parser
   def RelTypeName: Rule1[ast.RelTypeName] =
     rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
 
-  def Operator: Rule1[ast.Identifier] = rule {
-    OpChar ~ zeroOrMore(OpCharTail) ~>>> (ast.Identifier(_: String)) ~ !OpCharTail
+  def Operator: Rule1[ast.Variable] = rule {
+    OpChar ~ zeroOrMore(OpCharTail) ~>>> (ast.Variable(_: String)) ~ !OpCharTail
   }
 
   def MapLiteral: Rule1[ast.MapExpression] = rule {

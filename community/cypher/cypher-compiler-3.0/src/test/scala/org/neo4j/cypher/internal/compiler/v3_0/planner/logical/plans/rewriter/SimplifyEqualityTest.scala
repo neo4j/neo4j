@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class SimplifyEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
     val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
-    val predicate: Expression = In(Property(ident("x"), PropertyKeyName("prop")(pos))(pos), Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
-    val cleanPredicate: Expression = Equals(Property(ident("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
+    val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), singleRow)(solved)
 
     selection.endoRewrite(simplifyEquality) should equal(
@@ -38,7 +38,7 @@ class SimplifyEqualityTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("should not rewrite WHERE x.prop in [1, 2]") {
     val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val collection = Collection(Seq(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("2")(pos)))(pos)
-    val orgPredicate: Expression = In(Property(ident("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
+    val orgPredicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
     val selection = Selection(Seq(orgPredicate), singleRow)(solved)
 
     selection.endoRewrite(simplifyEquality) should equal(selection)

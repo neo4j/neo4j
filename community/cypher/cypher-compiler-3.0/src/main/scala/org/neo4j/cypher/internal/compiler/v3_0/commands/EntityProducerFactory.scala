@@ -90,13 +90,13 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
   val nodeByLabel: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     // The label exists at compile time - no need to look up the label id for every run
-    case (planContext, startItem@NodeByLabel(identifier, label)) if planContext.getOptLabelId(label).nonEmpty =>
+    case (planContext, startItem@NodeByLabel(variable, label)) if planContext.getOptLabelId(label).nonEmpty =>
       val labelId: Int = planContext.getOptLabelId(label).get
 
       NodeByLabelEntityProducer(startItem, labelId)
 
     // The label is missing at compile time - we look it up every time this plan is run
-    case (planContext, startItem@NodeByLabel(identifier, label)) => asProducer(startItem) {
+    case (planContext, startItem@NodeByLabel(variable, label)) => asProducer(startItem) {
       (m: ExecutionContext, state: QueryState) =>
         state.query.getOptLabelId(label) match {
           case Some(labelId) => state.query.getNodesByLabel(labelId)
@@ -106,23 +106,23 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val nodesAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ AllNodes(identifier)) =>
+    case (planContext, startItem @ AllNodes(variable)) =>
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.nodeOps.all }
   }
 
   val relationshipsAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ AllRelationships(identifier)) =>
+    case (planContext, startItem @ AllRelationships(variable)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         state.query.relationshipOps.all }
   }
 
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, Some(ScanQueryExpression(_)))) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, AnyIndex, Some(ScanQueryExpression(_)))) =>
 
       val indexGetter = planContext.getIndexRule(labelName, propertyName)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
@@ -130,12 +130,12 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         resultNodes
       }
 
-    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, AnyIndex, valueExp)) =>
 
       val indexGetter = planContext.getIndexRule(labelName, propertyName)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
@@ -145,12 +145,12 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
       }
 
-    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
+    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyName, UniqueIndex, valueExp)) =>
 
       val indexGetter = planContext.getUniqueIndexRule(labelName, propertyName)
 
       val index = indexGetter getOrElse
-        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+        (throw new IndexHintException(variable, labelName, propertyName, "No such index found."))
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))

@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 
-case class AndedPropertyInequalities(identifier: Identifier, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
-  def position = identifier.position
+case class AndedPropertyInequalities(variable: Variable, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
+  def position = variable.position
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     inequalities.map(_.semanticCheck(ctx)).reduceLeft(_ chain _)

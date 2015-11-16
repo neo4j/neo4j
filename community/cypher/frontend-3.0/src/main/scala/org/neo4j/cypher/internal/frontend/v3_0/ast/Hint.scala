@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifiers: NonEmptyList[Identifier]
+  def variables: NonEmptyList[Variable]
 }
 
 trait NodeHint {
@@ -36,8 +36,8 @@ trait RelationshipHint {
 }
 
 object Hint {
-  implicit val byIdentifier: Ordering[Hint] =
-    Ordering.by { (hint: Hint) => hint.identifiers.head }(Identifier.byName)
+  implicit val byVariable: Ordering[Hint] =
+    Ordering.by { (hint: Hint) => hint.variables.head }(Variable.byName)
 }
 // allowed on match
 
@@ -48,63 +48,63 @@ sealed trait UsingHint extends Hint
 sealed trait LegacyIndexHint extends Hint {
   self: StartItem =>
 
-  def identifier: Identifier
-  def identifiers = NonEmptyList(identifier)
+  def variable: Variable
+  def variables = NonEmptyList(variable)
 }
 
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
-  def identifiers = NonEmptyList(identifier)
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+case class UsingIndexHint(variable: Variable, label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends UsingHint with NodeHint {
+  def variables = NonEmptyList(variable)
+  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 }
 
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
-  def identifiers = NonEmptyList(identifier)
-  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
+case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
+  def variables = NonEmptyList(variable)
+  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 }
 
 object UsingJoinHint {
   import NonEmptyList._
 
-  def apply(elts: Seq[Identifier])(pos: InputPosition): UsingJoinHint =
-    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new InternalException("Expected non-empty sequence of identifiers")))(pos)
+  def apply(elts: Seq[Variable])(pos: InputPosition): UsingJoinHint =
+    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new InternalException("Expected non-empty sequence of variables")))(pos)
 }
 
-case class UsingJoinHint(identifiers: NonEmptyList[Identifier])(val position: InputPosition) extends UsingHint with NodeHint {
+case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
-    identifiers.map { identifier => identifier.ensureDefined chain identifier.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
+    variables.map { variable => variable.ensureDefined chain variable.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
 }
 
 // start items
 
 sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
-  def identifier: Identifier
-  def name = identifier.name
+  def variable: Variable
+  def name = variable.name
 }
 
 sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = identifier.declare(CTNode)
+  def semanticCheck = variable.declare(CTNode)
 }
 
-case class NodeByIdentifiedIndex(identifier: Identifier, index: String, key: String, value: Expression)(val position: InputPosition)
+case class NodeByIdentifiedIndex(variable: Variable, index: String, key: String, value: Expression)(val position: InputPosition)
   extends NodeStartItem with LegacyIndexHint with NodeHint
 
-case class NodeByIndexQuery(identifier: Identifier, index: String, query: Expression)(val position: InputPosition)
+case class NodeByIndexQuery(variable: Variable, index: String, query: Expression)(val position: InputPosition)
   extends NodeStartItem with LegacyIndexHint with NodeHint
 
-case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
-case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem
+case class NodeByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
+case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = identifier.declare(CTRelationship)
+  def semanticCheck = variable.declare(CTRelationship)
 }
 
-case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
-case class AllRelationships(identifier: Identifier)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIdentifiedIndex(identifier: Identifier, index: String, key: String, value: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
-case class RelationshipByIndexQuery(identifier: Identifier, index: String, query: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
+case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
+case class AllRelationships(variable: Variable)(val position: InputPosition) extends RelationshipStartItem
+case class RelationshipByIdentifiedIndex(variable: Variable, index: String, key: String, value: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
+case class RelationshipByIndexQuery(variable: Variable, index: String, query: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
 
 // no longer supported non-hint legacy start items
 
-case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
+case class NodeByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends NodeStartItem
 

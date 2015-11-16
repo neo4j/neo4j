@@ -109,8 +109,8 @@ class MatchTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("Directed relationships and identifier") {
-        p("If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, this is how you introduce the identifier.")
+      section("Directed relationships and variable") {
+        p("If an variable is needed, either for filtering on properties of the relationship, or to return the relationship, this is how you introduce the variable.")
         query("MATCH (:Person { name:'Oliver Stone' })-[r]->(movie) RETURN type(r)", assertRelationshipIsDirected) {
           p("Returns the type of each outgoing relationship from Oliver.")
           resultTable()
@@ -130,8 +130,8 @@ class MatchTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("Match by relationship type and use an identifier") {
-        p("If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, just add them both, like this:")
+      section("Match by relationship type and use an variable") {
+        p("If you both want to introduce an variable to hold the relationship, and specify the relationship type you want, just add them both, like this:")
         query("MATCH (wallstreet { title:'Wall Street' })<-[r:ACTED_IN]-(actor) RETURN r.role", assertRelationshipsToWallStreetAreReturned) {
           p("Returns +ACTED_IN+ roles for Wall Street.")
           resultTable()
@@ -177,8 +177,8 @@ class MatchTest extends DocumentingTest {
           resultTable()
         }
       }
-      section("Relationship identifier in variable length relationships") {
-        p("When the connection between two nodes is of variable length, a relationship identifier becomes a collection of relationships.")
+      section("Relationship variable in variable length relationships") {
+        p("When the connection between two nodes is of variable length, a relationship variable becomes a collection of relationships.")
         query("MATCH (actor { name:'Charlie Sheen' })-[r:ACTED_IN*2]-(co_actor) RETURN r", assertActedInRelationshipsAreReturned) {
           p("Returns a collection of relationships.")
           resultTable()
@@ -209,7 +209,7 @@ class MatchTest extends DocumentingTest {
       }
       section("Zero length paths") {
         p(
-          """Using variable length paths that have the lower bound zero means that two identifiers can point to the same node.
+          """Using variable length paths that have the lower bound zero means that two variables can point to the same node.
             | If the path length between two nodes is zero, they are by definition the same node.
             | Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.""")
         query("MATCH (wallstreet:Movie { title:'Wall Street' })-[*0..1]-(x) RETURN x", assertLabelStats("x", Map("Movie" -> 1, "Person" -> 4))) {
@@ -302,10 +302,10 @@ class MatchTest extends DocumentingTest {
     } finally tx.close()
   })
 
-  private def assertLabelStats(identifier: String, stats: Map[String, Int]) = ResultAndDbAssertions((result, db) => {
+  private def assertLabelStats(variable: String, stats: Map[String, Int]) = ResultAndDbAssertions((result, db) => {
     val tx = db.beginTx()
     try {
-      val nodes = result.columnAs[Node](identifier).toList
+      val nodes = result.columnAs[Node](variable).toList
       val labelStats = nodes.foldLeft(Map[String,Int]()) { (acc, node) =>
         val label = node.getLabels.iterator().next().name()
         val count = if (acc.isDefinedAt(label)) acc(label) else 0
@@ -345,18 +345,6 @@ class MatchTest extends DocumentingTest {
       Map("actor.name" -> "Michael Douglas"),
       Map("actor.name" -> "Martin Sheen"),
       Map("actor.name" -> "Charlie Sheen")))
-  )
-
-  private def assertResultSet(data: Set[Map[String, Any]]): ResultAssertions = ResultAssertions(result =>
-    result.toSet should equal(data)
-  )
-
-  private def assertWallstreetAndContributorsAreFound: ResultAssertions = ResultAssertions(result =>
-    result.toSet should equal(Set(
-      Map("x.name" -> "Oliver Stone"),
-      Map("x.name" -> "Michael Douglas"),
-      Map("x.name" -> "Martin Sheen"),
-      Map("x.name" -> "Charlie Sheen")))
   )
 
   private def assertRelType(name: String) = ResultAssertions(result =>

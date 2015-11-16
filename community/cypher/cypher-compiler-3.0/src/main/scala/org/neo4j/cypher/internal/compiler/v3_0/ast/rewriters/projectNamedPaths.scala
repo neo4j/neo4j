@@ -29,30 +29,30 @@ import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter {
 
-  case class Projectibles(paths: Map[Identifier, PathExpression] = Map.empty,
-                          protectedIdentifiers: Set[Ref[Identifier]] = Set.empty,
-                          identifierRewrites: Map[Ref[Identifier], PathExpression] = Map.empty) {
+  case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
+                          protectedVariables: Set[Ref[Variable]] = Set.empty,
+                          variableRewrites: Map[Ref[Variable], PathExpression] = Map.empty) {
 
     self =>
 
     def withoutNamedPaths = copy(paths = Map.empty)
-    def withProtectedIdentifier(ident: Ref[Identifier]) = copy(protectedIdentifiers = protectedIdentifiers + ident)
-    def withNamedPath(entry: (Identifier, PathExpression)) = copy(paths = paths + entry)
-    def withRewrittenIdentifier(entry: (Ref[Identifier], PathExpression)) = {
+    def withProtectedVariable(ident: Ref[Variable]) = copy(protectedVariables = protectedVariables + ident)
+    def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
+    def withRewrittenVariable(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry
-      copy(identifierRewrites = identifierRewrites + (ref -> pathExpr.endoRewrite(copyIdentifiers)))
+      copy(variableRewrites = variableRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
     }
 
     def returnItems = paths.map {
       case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
     }.toSeq
 
-    def withIdentifierRewritesForExpression(expr: Expression) =
+    def withVariableRewritesForExpression(expr: Expression) =
       expr.treeFold(self) {
-        case ident: Identifier =>
+        case ident: Variable =>
           (acc, children) =>
             acc.paths.get(ident) match {
-              case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+              case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
               case None => children(acc)
             }
       }
@@ -63,11 +63,11 @@ case object projectNamedPaths extends Rewriter {
   }
 
   def apply(input: AnyRef): AnyRef = {
-    val Projectibles(paths, protectedIdentifiers, identifierRewrites) = collectProjectibles(input)
+    val Projectibles(paths, protectedVariables, variableRewrites) = collectProjectibles(input)
     val applicator = Rewriter.lift {
 
-      case (ident: Identifier) if !protectedIdentifiers(Ref(ident)) =>
-        identifierRewrites.getOrElse(Ref(ident), ident)
+      case (ident: Variable) if !protectedVariables(Ref(ident)) =>
+        variableRewrites.getOrElse(Ref(ident), ident)
 
       case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
         namedPart
@@ -85,12 +85,12 @@ case object projectNamedPaths extends Rewriter {
   private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
       (acc, children) =>
-        children(acc.withProtectedIdentifier(Ref(aliased.identifier)))
+        children(acc.withProtectedVariable(Ref(aliased.variable)))
 
-    case ident: Identifier =>
+    case ident: Variable =>
       (acc, children) =>
         acc.paths.get(ident) match {
-          case Some(pathExpr) => children(acc.withRewrittenIdentifier(Ref(ident) -> pathExpr))
+          case Some(pathExpr) => children(acc.withRewrittenVariable(Ref(ident) -> pathExpr))
           case None => children(acc)
         }
 
@@ -109,19 +109,19 @@ case object projectNamedPaths extends Rewriter {
 
     case projection: With =>
       (acc, children) =>
-        val projectedIdentifiers = projection.returnItems.items.flatMap(_.alias).toSet
+        val projectedVariables = projection.returnItems.items.flatMap(_.alias).toSet
         val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) {
-          (acc, expr) => acc.withIdentifierRewritesForExpression(expr)
+          (acc, expr) => acc.withVariableRewritesForExpression(expr)
         }
         children(projectedAcc.withoutNamedPaths)
 
     case NamedPatternPart(_, part: ShortestPaths) =>
       (acc, children) => children(acc)
 
-    case part @ NamedPatternPart(identifier, patternPart) =>
+    case part @ NamedPatternPart(variable, patternPart) =>
       (acc, children) =>
         val pathExpr = PathExpression(patternPartPathExpression(patternPart))(part.position)
-        children(acc.withNamedPath(identifier -> pathExpr).withProtectedIdentifier(Ref(identifier)))
+        children(acc.withNamedPath(variable -> pathExpr).withProtectedVariable(Ref(variable)))
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {

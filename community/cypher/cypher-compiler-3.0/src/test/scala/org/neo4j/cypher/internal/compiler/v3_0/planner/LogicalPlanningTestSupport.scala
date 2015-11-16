@@ -135,7 +135,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
-    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
     FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(PlannerQuery(
         horizon = projections,
         queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
@@ -191,7 +191,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def identHasLabel(name: String, labelName: String): HasLabels = {
     val labelNameObj: LabelName = LabelName(labelName)_
-    HasLabels(Identifier(name)_, Seq(labelNameObj))_
+    HasLabels(Variable(name)_, Seq(labelNameObj))_
   }
 
   def greedyPlanTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =

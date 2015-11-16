@@ -34,7 +34,7 @@ sealed trait InternalPlanDescription {
   def id: Id
   def name: String
   def children: Children
-  def identifiers: Set[String]
+  def variables: Set[String]
 
   def cd(name: String): InternalPlanDescription = children.find(name).head
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription
@@ -50,10 +50,10 @@ sealed trait InternalPlanDescription {
     flattenAcc(Seq.empty, this)
   }
 
-  def andThen(id: Id, name: String, identifiers: Set[String], arguments: Argument*) =
-    PlanDescriptionImpl(id, name, SingleChild(this), arguments, identifiers)
+  def andThen(id: Id, name: String, variables: Set[String], arguments: Argument*) =
+    PlanDescriptionImpl(id, name, SingleChild(this), arguments, variables)
 
-  def orderedIdentifiers: Seq[String] = identifiers.toSeq.sorted
+  def orderedVariables: Seq[String] = variables.toSeq.sorted
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
@@ -149,7 +149,7 @@ final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
                                      arguments: Seq[Argument],
-                                     identifiers: Set[String]) extends InternalPlanDescription {
+                                     variables: Set[String]) extends InternalPlanDescription {
   def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
       Some(this)
@@ -181,9 +181,9 @@ final case class PlanDescriptionImpl(id: Id,
   }
 }
 
-final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {
-  override def andThen(id: Id, name: String, identifiers: Set[String], newArguments: Argument*) =
-    new PlanDescriptionImpl(id, name, NoChildren, newArguments, identifiers)
+final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String]) extends InternalPlanDescription {
+  override def andThen(id: Id, name: String, variables: Set[String], newArguments: Argument*) =
+    new PlanDescriptionImpl(id, name, NoChildren, newArguments, variables)
 
   def children = NoChildren
 

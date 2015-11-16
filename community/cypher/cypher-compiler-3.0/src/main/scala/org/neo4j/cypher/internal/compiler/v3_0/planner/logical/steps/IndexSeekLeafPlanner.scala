@@ -43,7 +43,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       yield {
         val propertyName = propertyKeyName.name
         val hint = qg.hints.collectFirst {
-          case hint @ UsingIndexHint(Identifier(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
+          case hint @ UsingIndexHint(Variable(`name`), `labelName`, PropertyKeyName(`propertyName`)) => hint
         }
         val entryConstructor: (Seq[Expression]) => LogicalPlan =
           constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head),
@@ -52,7 +52,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       }
     }
 
-    val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
+    val arguments = qg.argumentIds.map(n => Variable(n.name)(null))
 
     val resultPlans = predicates.collect {
       // n.prop IN [ ... ]
@@ -70,13 +70,13 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     }.flatten
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
+      DynamicPropertyNotifier.process(findNonSeekableVariables(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
   }
 
-  private def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
+  private def findNonSeekableVariables(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
       // n['some' + n.prop] IN [ ... ]
       case predicate@AsDynamicPropertyNonSeekable(nonSeekableId)
@@ -141,8 +141,8 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     qg.hints.toSeq.collect {
-      case hint: LegacyIndexHint if !qg.argumentIds(IdName(hint.identifier.name)) =>
-        context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
+      case hint: LegacyIndexHint if !qg.argumentIds(IdName(hint.variable.name)) =>
+        context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.variable.name), hint, qg.argumentIds)
     }
   }
 }

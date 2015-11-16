@@ -32,7 +32,7 @@ As we started out with an empty database, we now have a database with a single n
 
 //graph
 
-If case we also want to return the created data we can add a `RETURN` clause, which refers to the identifier we've assigned to our pattern elements.
+If case we also want to return the created data we can add a `RETURN` clause, which refers to the variable we've assigned to our pattern elements.
 
 [source,cypher]
 ----
@@ -160,7 +160,7 @@ Properties set: 3
 Labels added: 1
 ----
 
-TIP: It is important to remember that we can assign identifiers to both nodes and relationships and use them later on, no matter if they were created or matched.
+TIP: It is important to remember that we can assign variables to both nodes and relationships and use them later on, no matter if they were created or matched.
 
 It is possible to attach both node and relationship in a single `CREATE` clause.
 For readability it helps to split them up though.
@@ -195,9 +195,9 @@ RETURN m
 We get a result in any both cases: either the data (potentially more than one row) that was already in the graph or a single, newly created `Movie` node.
 
 [NOTE]
-A `MERGE` clause without any previously assigned identifiers in it either matches the full pattern or creates the full pattern.
+A `MERGE` clause without any previously assigned variables in it either matches the full pattern or creates the full pattern.
 It never produces a partial mix of matching and creating within a pattern.
-To achieve a partial match/create, make sure to use already defined identifiers for the parts that shouldn't be affected.
+To achieve a partial match/create, make sure to use already defined variables for the parts that shouldn't be affected.
 
 So foremost `MERGE` makes sure that you can't create duplicate information or structures, but it comes with the cost of needing to check for existing matches first.
 Especially on large graphs it can be costly to scan a large set of labeled nodes for a certain property.

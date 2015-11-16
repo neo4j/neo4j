@@ -33,7 +33,7 @@ import collection.JavaConverters._
 class SimplePatternMatcherBuilder(pattern: PatternGraph,
                                   predicates: Seq[Predicate],
                                   symbolTable: SymbolTable,
-                                  identifiersInClause: Set[String]) extends MatcherBuilder {
+                                  variablesInClause: Set[String]) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
     pattern.patternNodes.map {
       case (key, pn) =>
@@ -84,13 +84,13 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
   def getMatches(ctx: ExecutionContext, state: QueryState) = {
     val (patternNodes, patternRels) = setAssociations(ctx)
     val validPredicates = predicates.filter(p => p.symbolDependenciesMet(symbolTable))
-    // We sort the patternNodes here to always start at the lexicographically smaller identifier
+    // We sort the patternNodes here to always start at the lexicographically smaller variable
     // This is suboptimal and will be superseded by a better planner
     val values = patternNodes.values.toList.sortBy(pn => pn.toString)
     val startPoint = values.find(_.getAssociation != null).get
 
     val incomingRels: Set[Relationship] = ctx.collect {
-      case (k, r: Relationship) if identifiersInClause.contains(k) => r
+      case (k, r: Relationship) if variablesInClause.contains(k) => r
     }.toSet
 
     val boundRels = patternRels.values.collect {

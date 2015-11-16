@@ -123,10 +123,10 @@ Check for node labels.
 ###assertion=returns-one
 MATCH (n), (m)
 WHERE id(n) = %A% AND id(m) = %B%
-OPTIONAL MATCH (n)-[identifier]->(m)
+OPTIONAL MATCH (n)-[variable]->(m)
 WHERE
 
-identifier IS NULL
+variable IS NULL
 
 RETURN n,m###
 

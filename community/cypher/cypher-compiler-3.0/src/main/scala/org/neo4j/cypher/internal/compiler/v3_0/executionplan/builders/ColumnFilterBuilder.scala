@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{PipeMonitor, Pipe, ColumnFilterPipe}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{AllVariables, ReturnItem, ReturnColumn}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 
 /**
@@ -36,7 +36,7 @@ class ColumnFilterBuilder extends PlanBuilder {
 
     val isLastPipe = q.tail.isEmpty
 
-    if (!isLastPipe && q.returns == Seq(Unsolved(AllIdentifiers()))) {
+    if (!isLastPipe && q.returns == Seq(Unsolved(AllVariables()))) {
       handleWithClause(q, plan)
     } else {
       handleReturnClause(q, p, plan)
@@ -76,7 +76,7 @@ class ColumnFilterBuilder extends PlanBuilder {
 
   private def getReturnItems(q: Seq[QueryToken[ReturnColumn]], symbols: SymbolTable): Seq[ReturnItem] = q.map(_.token).flatMap {
     case x: ReturnItem     => Seq(x)
-    case x: AllIdentifiers => x.expressions(symbols).map {
+    case x: AllVariables => x.expressions(symbols).map {
       case (n, e) => ReturnItem(e, n)
     }
   }

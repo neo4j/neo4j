@@ -41,7 +41,7 @@ To do this, three things are done.
 
 class StartPointChoosingBuilder extends PlanBuilder {
   type LabelName = String
-  type IdentifierName = String
+  type VariableName = String
   type PropertyKey = String
 
   val entityProducerFactory = new EntityProducerFactory
@@ -70,7 +70,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
   private def findStartItemsForDisconnectedPatterns(plan: ExecutionPlanInProgress, ctx: PlanContext): Seq[RatedStartItem] = {
     val disconnectedPatterns = plan.query.matchPattern.disconnectedPatternsWithout(plan.pipe.symbols.keys)
-    val startPointNames = plan.query.start.map(_.token.identifierName)
+    val startPointNames = plan.query.start.map(_.token.variableName)
     val allPredicates = plan.query.where.map(_.token)
 
     def findSingleNodePoints(startPoints: Set[RatedStartItem]): Iterable[RatedStartItem] =
@@ -79,7 +79,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
       }
 
     def findStartItemFor(pattern: MatchPattern): Iterable[RatedStartItem] = {
-      val shortestPathPoints: Set[IdentifierName] = plan.query.patterns.collect {
+      val shortestPathPoints: Set[VariableName] = plan.query.patterns.collect {
         case Unsolved(ShortestPath(_, start, end, _, _, _, _, _, _)) => Seq(start.name, end.name)
       }.flatten.toSet
 
@@ -87,11 +87,11 @@ class StartPointChoosingBuilder extends PlanBuilder {
         pattern.nodes.map(key => NodeFetchStrategy.findStartStrategy(key, allPredicates, ctx, plan.pipe.symbols)).toSet
 
       val singleNodePoints = findSingleNodePoints(startPoints)
-      val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet
+      val shortestPathPointsInPattern: Set[VariableName] = shortestPathPoints intersect pattern.nodes.toSet
 
       if (shortestPathPointsInPattern.nonEmpty) {
         startPoints.filter {
-          case RatedStartItem(si, r, _, _) => shortestPathPoints.contains(si.identifierName)
+          case RatedStartItem(si, r, _, _) => shortestPathPoints.contains(si.variableName)
         }.toSet union singleNodePoints.toSet
       } else if (singleNodePoints.nonEmpty) {
         // We want to keep all these start points because cartesian product with them is free

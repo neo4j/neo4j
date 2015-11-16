@@ -28,7 +28,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
   val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
   val rewriterUnderTest: Rewriter = normalizeWithClauses(mkException)
 
-  test("ensure identifiers are aliased") {
+  test("ensure variables are aliased") {
     assertRewrite(
       """MATCH (n)
         |WITH n
@@ -80,7 +80,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces aliases for ORDER BY expressions the depend on existing identifiers") {
+  test("introduces aliases for ORDER BY expressions the depend on existing variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n ORDER BY length(n.prop)
@@ -94,7 +94,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces aliases for WHERE expression the depends on existing identifiers") {
+  test("introduces aliases for WHERE expression the depends on existing variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n WHERE length(n.prop) > 10
@@ -136,7 +136,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces identifiers for ORDER BY expressions that depend on non-aliased identifiers") {
+  test("introduces variables for ORDER BY expressions that depend on non-aliased variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n.prop AS prop ORDER BY n.foo DESC
@@ -150,7 +150,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("introduces identifiers for WHERE expression that depend on non-aliased identifiers") {
+  test("introduces variables for WHERE expression that depend on non-aliased variables") {
     assertRewrite(
       """MATCH (n)
         |WITH n.prop AS prop WHERE n.foo > 10
@@ -164,7 +164,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("does not introduce identifiers for ORDER BY expressions in WITH *") {
+  test("does not introduce variables for ORDER BY expressions in WITH *") {
     assertRewrite(
       """MATCH (n)
         |WITH *, n.prop AS prop ORDER BY n.foo DESC
@@ -178,7 +178,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
       """.stripMargin)
   }
 
-  test("does not introduce identifiers for WHERE expression in WITH *") {
+  test("does not introduce variables for WHERE expression in WITH *") {
     assertRewrite(
       """MATCH (n)
         |WITH *, n.prop AS prop WHERE n.foo > 10
@@ -398,7 +398,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID50`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 39 (offset: 48))")
+      "Variable `n` not defined (line 2, column 39 (offset: 48))")
 
     assertRewriteAndSemanticErrors(
       """MATCH (n)
@@ -411,7 +411,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID65`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 54 (offset: 63))")
+      "Variable `n` not defined (line 2, column 54 (offset: 63))")
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE with non-grouping expression") {
@@ -427,7 +427,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID47`
         |RETURN prop
       """.stripMargin,
-      "n not defined (line 2, column 36 (offset: 45))")
+      "Variable `n` not defined (line 2, column 36 (offset: 45))")
 
 
     assertRewriteAndSemanticErrors(
@@ -441,7 +441,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
         |_PRAGMA WITHOUT `  FRESHID62`
         |RETURN prop, foos
       """.stripMargin,
-      "n not defined (line 2, column 51 (offset: 60))")
+      "Variable `n` not defined (line 2, column 51 (offset: 60))")
   }
 
 

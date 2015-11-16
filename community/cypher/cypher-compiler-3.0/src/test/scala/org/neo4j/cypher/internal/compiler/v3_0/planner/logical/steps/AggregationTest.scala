@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
 
-  val propExp: Expression = Property(ident("n"), PropertyKeyName("prop")(pos))(pos)
+  val propExp: Expression = Property(varFor("n"), PropertyKeyName("prop")(pos))(pos)
   val countExp: Expression = FunctionInvocation(FunctionName("count")(pos), propExp)(pos)
   val aggregatingMap2: Map[String, Expression] = Map("count(n.prop)" -> countExp)
 
-  val propExp2: Expression = Property(ident("n"), PropertyKeyName("bar")(pos))(pos)
+  val propExp2: Expression = Property(varFor("n"), PropertyKeyName("bar")(pos))(pos)
   val groupingMap: Map[String, Expression] = Map("n.bar" -> propExp2)
 
   test("should introduce aggregation when needed") {
@@ -51,7 +51,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
   }
 
-  test("should introduce identifiers when needed") {
+  test("should introduce variables when needed") {
     //match (n) return n.y, sum(n.x)
     val projectionPlan = AggregatingQueryProjection(
       groupingKeys = groupingMap,
@@ -66,15 +66,15 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     aggregation(startPlan, projectionPlan)(context) should equal(
       Aggregation(
-        projection(startPlan, groupingMap + ("n" -> ident("n"))),
+        projection(startPlan, groupingMap + ("n" -> varFor("n"))),
         groupingMap, aggregatingMap2)(solved)
     )
   }
 
   test("RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)") {
     // Given RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)
-    val groupingMap = Map("x.prop" -> Property(Identifier("x")(pos), PropertyKeyName("prop")(pos))(pos))
-    val groupingKeyMap = Map("x.prop" -> Identifier("x.prop")(pos))
+    val groupingMap = Map("x.prop" -> Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos))
+    val groupingKeyMap = Map("x.prop" -> Variable("x.prop")(pos))
     val projection = AggregatingQueryProjection(
       groupingKeys = groupingKeyMap,
       aggregationExpressions = aggregatingMap

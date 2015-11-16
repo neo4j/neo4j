@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, True, Not}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNumber
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
@@ -109,7 +109,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = new FakePipe(Iterator.empty)
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
@@ -128,7 +128,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
@@ -148,7 +148,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Identifier("a"), Literal(2)), negated = false)()(newMonitor).
+      LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)()(newMonitor).
         createResults(QueryStateHelper.empty).toList
     result should equal(List(
       Map("a" -> 3, "let" -> false),

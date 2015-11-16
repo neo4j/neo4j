@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CachedExpression, Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CachedExpression, Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{PlanDescriptionImpl, SingleChild}
@@ -38,11 +38,11 @@ object ExtractPipe {
   }
 
   private def canMerge(source:ExtractPipe, expressions: Map[String, Expression]) = {
-    val symbols = source.source.symbols.identifiers.keySet
+    val symbols = source.source.symbols.variables.keySet
     val expressionsDependenciesMet = expressions.values.forall(_.symbolDependenciesMet(source.source.symbols))
     val expressionsDependOnIntroducedSymbols = expressions.values.exists {
       case e => e.exists {
-        case Identifier(x) => symbols.contains(x)
+        case Variable(x) => symbols.contains(x)
         case _             => false
       }
     }
@@ -55,24 +55,24 @@ object ExtractPipe {
 case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean)
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols: SymbolTable = {
-    val newIdentifiers = expressions.map {
+    val newVariables = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
     }
 
-    source.symbols.add(newIdentifiers)
+    source.symbols.add(newVariables)
   }
 
   /*
   Most of the time, we can execute expressions and put the results straight back into the original execution context.
-  Some times, an expression we want to run can overwrite an identifier that already exists in the context. In these
+  Some times, an expression we want to run can overwrite an variable that already exists in the context. In these
   cases, we need to run the expressions on the original execution context. Here we decide which one it is we're dealing
   with and hard code the version to use
    */
   val applyExpressions: (ExecutionContext, QueryState) => ExecutionContext = {
-    val overwritesAlreadyExistingIdentifiers = expressions.exists {
-      case (name, Identifier(originalName)) => name != originalName
+    val overwritesAlreadyExistingVariables = expressions.exists {
+      case (name, Variable(originalName)) => name != originalName
       case (name, CachedExpression(originalName, _)) => name != originalName
-      case (name, _) => source.symbols.hasIdentifierNamed(name)
+      case (name, _) => source.symbols.hasVariableNamed(name)
     }
 
     val applyExpressionsOverwritingOriginal = (ctx: ExecutionContext, state: QueryState) => {
@@ -91,7 +91,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
       ctx
     }
 
-    if (overwritesAlreadyExistingIdentifiers)
+    if (overwritesAlreadyExistingVariables)
       applyExpressionsWhileKeepingOriginal
     else
       applyExpressionsOverwritingOriginal
@@ -107,7 +107,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   override def planDescription = {
     val arguments = expressions.map(_._1).toSeq
 
-    new PlanDescriptionImpl(this.id, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), identifiers)
+    new PlanDescriptionImpl(this.id, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), variables)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

@@ -39,9 +39,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple node by id seek with a collection of node ids") {
     // given
-    val identifier: Identifier = Identifier("n")_
+    val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(identifier))_,
+      FunctionInvocation(FunctionName("id")_, distinct = false, Array(variable))_,
       Collection(
         Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
@@ -60,7 +60,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)
@@ -73,12 +73,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
   }
 
-  test("node by id seek with a collection of node ids via previous identifier") {
+  test("node by id seek with a collection of node ids via previous variable") {
     // given
-    val identifier: Identifier = Identifier("n")_
+    val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, identifier)_,
-      Identifier("arr")_
+      FunctionInvocation(FunctionName("id")_, variable)_,
+      Variable("arr")_
     )_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
@@ -95,23 +95,23 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek(IdName("n"), ManySeekableArgs(Identifier("arr")_), Set("arr"))(solved))
+      Seq(NodeByIdSeek(IdName("n"), ManySeekableArgs(Variable("arr")_), Set("arr"))(solved))
     )
   }
 
-  test("node by id seek should not be produced when the argument expression is an unbound identifier") {
+  test("node by id seek should not be produced when the argument expression is an unbound variable") {
     // given match (n) where id(n) in arr
-    val identifier: Identifier = Identifier("n")_
+    val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, identifier)_,
-      Identifier("arr")_
+      FunctionInvocation(FunctionName("id")_, variable)_,
+      Variable("arr")_
     )_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
@@ -128,7 +128,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)
@@ -137,12 +137,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Seq.empty)
   }
 
-  test("node by id seek should not be produced when the node identifier is an argument") {
+  test("node by id seek should not be produced when the node variable is an argument") {
     // given match (n) where id(n) in arr
-    val identifier: Identifier = Identifier("n")_
+    val variable: Variable = Variable("n")_
     val expr = In(
-      FunctionInvocation(FunctionName("id")_, identifier)_,
-      Identifier("arr")_
+      FunctionInvocation(FunctionName("id")_, variable)_,
+      Variable("arr")_
     )_
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
@@ -159,7 +159,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(statistics)
     )
-    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+    when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)
@@ -170,7 +170,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Identifier = Identifier("r")_
+    val rIdent: Variable = Variable("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
@@ -208,7 +208,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Identifier = Identifier("r")_
+    val rIdent: Variable = Variable("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
@@ -245,7 +245,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Identifier = Identifier("r")_
+    val rIdent: Variable = Variable("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
@@ -291,7 +291,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
     // given
-    val rIdent: Identifier = Identifier("r")_
+    val rIdent: Variable = Variable("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(Seq(SignedDecimalIntegerLiteral("42")_))_

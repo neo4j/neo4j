@@ -30,7 +30,7 @@ case object astExpressionDocGen  extends CustomDocGen[ASTNode] {
   import Pretty._
 
   def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-      case identifier: Identifier => Pretty(identifier.unquote)
+      case variable: Variable => Pretty(variable.unquote)
       case literal: Literal => Pretty(literal.unquote)
       case hasLabels: HasLabels => Pretty(hasLabels.unquote)
       case property: Property => Pretty(property.unquote)
@@ -45,8 +45,8 @@ case object astExpressionDocGen  extends CustomDocGen[ASTNode] {
       case _ => None
     }
 
-  implicit class IdentifierConverter(identifier: Identifier) extends Converter {
-    def unquote = AstNameConverter(identifier.name).unquote
+  implicit class VariableConverter(variable: Variable) extends Converter {
+    def unquote = AstNameConverter(variable.name).unquote
   }
 
   implicit class LiteralConverter(literal: Literal) extends Converter {
