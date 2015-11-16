@@ -30,7 +30,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
-import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -507,7 +506,7 @@ public class SwitchToSlave
 
     private URI createHaURI( URI me, Server<?,?> server )
     {
-        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
+        String hostString = server.getSocketAddress().getHostString();
         int port = server.getSocketAddress().getPort();
         InstanceId serverId = config.get( ClusterSettings.server_id );
         String host = hostString.contains( HighAvailabilityModeSwitcher.INADDR_ANY ) ? me.getHost() : hostString;

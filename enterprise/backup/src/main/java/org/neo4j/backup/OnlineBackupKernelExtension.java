@@ -29,7 +29,6 @@ import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.function.Supplier;
@@ -245,7 +244,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     }
 
     private URI createBackupURI() {
-        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
+        String hostString = server.getSocketAddress().getHostString();
         String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
         int port = server.getSocketAddress().getPort();
         return URI.create("backup://" + host + ":" + port);
