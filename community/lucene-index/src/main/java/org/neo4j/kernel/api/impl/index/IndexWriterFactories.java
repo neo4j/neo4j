@@ -23,8 +23,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 
 import org.neo4j.helpers.Settings;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
+import org.neo4j.index.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.lucene.legacy.MultipleBackupDeletionPolicy;
 
 public final class IndexWriterFactories
 {

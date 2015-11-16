@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +33,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
+import static org.neo4j.index.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class LuceneIndexWriterTest
 {
