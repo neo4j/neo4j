@@ -28,11 +28,18 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 
 
-object SetPropertyPipe {
+trait SetAction {
+  def set(): Unit
+}
+
+case class SetNodeProperty
+
+object SetPipe {
   val PROPERTY_MISSING = -1L
 }
 
-abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression, pipeMonitor: PipeMonitor)
+
+abstract class SetPipe[T <: PropertyContainer](src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression, pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
 
   private val needsExclusiveLock = Expression.hasPropertyReadDependency(name, expression, propertyKey.name)
@@ -74,7 +81,7 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
 case class SetNodePropertyPipe(src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor)
-  extends SetPropertyPipe[Node](src, name, propertyKey, expression, pipeMonitor){
+  extends SetPipe[Node](src, name, propertyKey, expression, pipeMonitor){
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
@@ -95,7 +102,7 @@ case class SetNodePropertyPipe(src: Pipe, name: String, propertyKey: LazyPropert
 case class SetRelationshipPropertyPipe(src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor)
-  extends SetPropertyPipe[Relationship](src, name, propertyKey, expression, pipeMonitor){
+  extends SetPipe[Relationship](src, name, propertyKey, expression, pipeMonitor){
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
