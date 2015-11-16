@@ -103,7 +103,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 throw new IllegalArgumentException( "No such file: " + arg );
             }
         }
-        NeoStores.StoreType storeType = STORE_FILENAME_TYPE_MAPPER.apply( file.getName() );
+        StoreType storeType = StoreType.typeOf( file.getName() );
         try ( NeoStores neoStores = createStoreFactory.apply( file ).openNeoStores( storeType ) )
         {
             switch ( storeType )
@@ -350,33 +350,4 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     {
         return record.inUse() ? record : null;
     }
-
-    static Function<String,NeoStores.StoreType> STORE_FILENAME_TYPE_MAPPER = new Function<String,NeoStores.StoreType>()
-    {
-        @Override
-        public NeoStores.StoreType apply( String filename )
-        {
-            switch ( filename )
-            {
-            case "neostore.nodestore.db":
-                return NeoStores.StoreType.NODE;
-            case "neostore.relationshipstore.db":
-                return NeoStores.StoreType.RELATIONSHIP;
-            case "neostore.propertystore.db":
-                return NeoStores.StoreType.PROPERTY;
-            case "neostore.schemastore.db":
-                return NeoStores.StoreType.SCHEMA;
-            case "neostore.propertystore.db.index":
-                return NeoStores.StoreType.PROPERTY_KEY_TOKEN;
-            case "neostore.labeltokenstore.db":
-                return NeoStores.StoreType.LABEL_TOKEN;
-            case "neostore.relationshiptypestore.db":
-                return NeoStores.StoreType.RELATIONSHIP_TYPE_TOKEN;
-            case "neostore.relationshipgroupstore.db":
-                return NeoStores.StoreType.RELATIONSHIP_GROUP;
-            default:
-                throw new IllegalArgumentException( "Unknown store file: " + filename );
-            }
-        }
-    };
 }

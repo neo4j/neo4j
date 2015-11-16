@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -91,7 +92,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         List<File> indexesToBeDeleted = new ArrayList<>();
         storeFactory.setStoreDir( storeDir );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( NeoStores.StoreType.SCHEMA ) )
+        try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.SCHEMA ) )
         {
             SchemaStore schema = neoStores.getSchemaStore();
             Iterator<SchemaRule> rules = schema.loadAllSchemaRules();
