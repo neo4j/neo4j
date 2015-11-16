@@ -22,11 +22,22 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 
+import org.neo4j.helpers.Settings;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
 
 public final class IndexWriterFactories
 {
+
+    private static final int MAX_BUFFERED_DOCS =
+            Integer.getInteger( "org.neo4j.lucene.writer.max_buffered_docs", 100000 );
+    private static final int MERGE_POLICY_MERGE_FACTOR =
+            Integer.getInteger( "org.neo4j.lucene.merge.policy.factor", 2 );
+    private static final double MERGE_POLICY_NO_CFS_RATIO =
+            Settings.getDouble( "org.neo4j.lucene.merge.policy.nocfs.ratio.", 1.0 );
+    private static final double MERGE_POLICY_MIN_MERGE_MB =
+            Settings.getDouble( "org.neo4j.lucene.merge.policy.min.merge", 0.1 );
+
     private IndexWriterFactories()
     {
         throw new AssertionError( "Not for instantiation!" );
@@ -51,15 +62,15 @@ public final class IndexWriterFactories
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 
-        writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
+        writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS ); // TODO figure out depending on environment?
         writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
         writerConfig.setUseCompoundFile( true );
 
         // TODO: TieredMergePolicy & possibly SortingMergePolicy
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-        mergePolicy.setNoCFSRatio( 1.0 );
-        mergePolicy.setMinMergeMB( 0.1 );
-        mergePolicy.setMergeFactor( 2 );
+        mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
+        mergePolicy.setMinMergeMB( MERGE_POLICY_MIN_MERGE_MB );
+        mergePolicy.setMergeFactor( MERGE_POLICY_MERGE_FACTOR );
         writerConfig.setMergePolicy( mergePolicy );
 
         return writerConfig;
