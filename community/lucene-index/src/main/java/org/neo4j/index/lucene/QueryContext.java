@@ -29,7 +29,7 @@ import org.apache.lucene.search.SortedSetSortField;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.index.impl.lucene.LuceneUtil;
+import org.neo4j.index.lucene.legacy.LuceneUtil;
 
 /**
  * This class has the extra query configuration to use

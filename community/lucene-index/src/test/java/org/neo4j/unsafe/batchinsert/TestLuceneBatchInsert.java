@@ -44,9 +44,9 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
+import org.neo4j.index.lucene.legacy.LuceneBatchInserterIndexProviderNewImpl;
+import org.neo4j.index.lucene.legacy.LuceneIndexImplementation;
+import org.neo4j.index.lucene.legacy.MyStandardAnalyzer;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -68,8 +68,8 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.lucene.legacy.Contains.contains;
+import static org.neo4j.index.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneBatchInsert
