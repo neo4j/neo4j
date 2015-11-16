@@ -36,7 +36,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
   extends SetAction with MapSupport {
 
   private val needsExclusiveLock = element match {
-    case Identifier(elementName) =>
+    case Variable(elementName) =>
       Expression.mapExpressionHasPropertyReadDependency(elementName, mapExpression)
     case _ => false
   }
@@ -113,7 +113,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
   def children = Seq(element, mapExpression)
 
   def rewrite(f: (Expression) => Expression): MapPropertySetAction =
-    MapPropertySetAction(element.rewrite(f).asInstanceOf[Identifier], mapExpression.rewrite(f), removeOtherProps)
+    MapPropertySetAction(element.rewrite(f).asInstanceOf[Variable], mapExpression.rewrite(f), removeOtherProps)
 
   def symbolTableDependencies = element.symbolTableDependencies ++ mapExpression.symbolTableDependencies
 

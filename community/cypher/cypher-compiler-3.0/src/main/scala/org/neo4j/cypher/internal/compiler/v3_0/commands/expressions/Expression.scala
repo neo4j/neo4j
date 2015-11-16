@@ -145,7 +145,7 @@ object Expression {
     mapExpression match {
       case LiteralMap(map) => map.exists {
         case (k, v) => v.subExpressions.exists {
-          case Property(Identifier(entityName), propertyKey) =>
+          case Property(Variable(entityName), propertyKey) =>
             entityName == mapEntityName && propertyKey.name == k
           case _ => false
         }
@@ -155,7 +155,7 @@ object Expression {
 
   def hasPropertyReadDependency(entityName: String, expression: Expression, propertyKey: String): Boolean =
     expression.subExpressions.exists {
-      case Property(Identifier(name), key) =>
+      case Property(Variable(name), key) =>
         name == entityName && key.name == propertyKey
       case _ =>
         false
