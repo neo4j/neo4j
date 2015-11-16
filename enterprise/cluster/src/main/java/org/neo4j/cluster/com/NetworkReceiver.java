@@ -243,19 +243,14 @@ public class NetworkReceiver
 
     private URI getURI( InetSocketAddress address )
     {
-        String uri;
-
-        if ( address.getAddress().getHostAddress().startsWith( "0" ) )
-            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort(); // Socket.toString() already prepends a /
-        else
-        {
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostName() + ":" + address.getPort(); // Socket
-        }
-            // .toString() already prepends a /
+        // Socket.toString() already prepends a '/'
+        String uri = CLUSTER_SCHEME + "://" + address.getHostString() + ":" + address.getPort();
 
         // Add name if given
-        if (config.name() != null)
-            uri += "/?name="+config.name();
+        if ( config.name() != null )
+        {
+            uri += "/?name=" + config.name();
+        }
 
         return URI.create( uri );
     }
