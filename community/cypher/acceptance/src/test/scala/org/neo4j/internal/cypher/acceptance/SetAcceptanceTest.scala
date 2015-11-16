@@ -236,4 +236,93 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     b should haveProperty("x").withValue("X")
     c should haveProperty("x").withValue("X")
   }
+
+  test("Lost updates should not happen on set node property") {
+    val init: () => Unit = () => createNode("prop" -> 0)
+    val query = "MATCH (n) SET n.prop = n.prop + 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  test("Lost updates should not happen on set node property with an entangled expression") {
+    val init: () => Unit = () => createNode("prop" -> 0)
+    val query = "MATCH (n) SET n.prop = 2 + (10 * n.prop) / 10 - 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  test("Lost updates should not happen for set node property with map") {
+    val init: () => Unit = () => createNode("prop" -> 0)
+    val query = "MATCH (n) SET n = {prop: n.prop + 1}"
+    val resultQuery = "MATCH (n) RETURN n.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  test("Lost updates should not happen on set relationship property") {
+    val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
+    val query = "MATCH ()-[r]->() SET r.prop = r.prop + 1"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  test("Lost updates should not happen on set relationship property with an entangled expression") {
+    val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
+    val query = "MATCH ()-[r]->() SET r.prop = 2 + (10 * r.prop) / 10 - 1"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  test("Lost updates should not happen for set relationship property with map") {
+    val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
+    val query = "MATCH ()-[r]->() SET r = {prop: r.prop + 1}"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  // Lost updates are still an issue, and it's hard to identify some cases.
+  // We try to document some typical cases below
+
+  // We do not support this because, even though the test is just a simple case,
+  // in general we would have to solve a complex data flow equation in order
+  // to solve this without being too conservative and do unnecessary exclusive locking
+  // (which could be really bad for concurrency in bad cases)
+  ignore("Lost updates should not happen on set node property with the read in a preceding statement") {
+    val init: () => Unit = () => createNode("prop" -> 0)
+    val query = "MATCH (n) WITH n.prop as p SET n.prop = p + 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 10)
+  }
+
+  ignore("lost updates should not happen on set node properties from map with circular dependencies") {
+    val init: () => Unit = () => createNode("prop" -> 0, "prop2" -> 0)
+    val query = "match (n) set n += { prop: n.prop2 + 1, prop2: n.prop + 1 }"
+    val resultQuery = "MATCH (n) RETURN n.prop + n.prop2"
+    testLostUpdatesWithBothPlanners(init, query, resultQuery, 10, 20)
+  }
+
+  private def testLostUpdatesWithBothPlanners(init: () => Unit,
+                                              query: String,
+                                              resultQuery: String,
+                                              updates: Int,
+                                              resultValue: Int) = {
+    Seq("rule", "cost").foreach { planner =>
+      init()
+      val queryWithPlanner = s"CYPHER planner=$planner $query"
+      val threads = (0 until updates).map { i =>
+        new Thread(new Runnable {
+          override def run(): Unit = {
+            eengine.execute(queryWithPlanner)
+          }
+        })
+      }
+      threads.foreach(_.start())
+      threads.foreach(_.join())
+
+      val result = executeScalar[Long](resultQuery)
+      assert(result == resultValue, s": we lost updates with $planner planner!")
+
+      // Reset for run on next planner
+      eengine.execute("MATCH (n) DETACH DELETE n")
+    }
+  }
 }

@@ -32,6 +32,9 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
 
   val Property(mapExpr, propertyKey) = prop
 
+  private val needsExclusiveLock =
+    Expression.hasPropertyReadDependency(mapExpr.asInstanceOf[Variable].entityName, valueExpression, propertyKey.name)
+
   def localEffects(symbols: SymbolTable) = Effects.propertyWrite(mapExpr, symbols)(propertyKey.name)
 
   def exec(context: ExecutionContext, state: QueryState) = {
@@ -47,10 +50,14 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
         case _ => throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
       }
 
+      if (needsExclusiveLock) ops.acquireExclusiveLock(id)
+
       makeValueNeoSafe(valueExpression(context)) match {
         case null => propertyKey.getOptId(qtx).foreach(ops.removeProperty(id, _))
         case value => ops.setProperty(id, propertyKey.getOrCreateId(qtx), value)
       }
+
+      if (needsExclusiveLock) ops.releaseExclusiveLock(id)
     }
 
     Iterator(context)

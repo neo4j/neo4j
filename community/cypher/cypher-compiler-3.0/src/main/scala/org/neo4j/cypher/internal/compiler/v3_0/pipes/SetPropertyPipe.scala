@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Property, Expression}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{SetGivenRelationshipProperty, SetGivenNodeProperty, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
@@ -34,6 +34,9 @@ object SetPropertyPipe {
 
 abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, propertyKey: LazyPropertyKey, expression: Expression, pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
+
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(name, expression, propertyKey.name)
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
@@ -47,15 +50,20 @@ abstract class SetPropertyPipe[T <: PropertyContainer](src: Pipe, name: String, 
   def operations(query: QueryContext): Operations[T]
   def operatorName: String
 
-  private def setProperty(context: ExecutionContext, state: QueryState, id: Long) = {
+  private def setProperty(context: ExecutionContext, state: QueryState, entityId: Long) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
         .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
     val ops = operations(queryContext)
+
+    if (needsExclusiveLock) ops.acquireExclusiveLock(entityId)
+
     val value = makeValueNeoSafe(expression(context)(state))
-    if (value == null) ops.removeProperty(id, propertyId)
-    else ops.setProperty(id, propertyId, value)
+    if (value == null) ops.removeProperty(entityId, propertyId)
+    else ops.setProperty(entityId, propertyId, value)
+
+    if (needsExclusiveLock) ops.releaseExclusiveLock(entityId)
   }
 
   override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, operatorName, variables)

@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.frontend.v3_0
 
 package object symbols {
-  val CTAny = AnyType.instance
-  val CTBoolean = BooleanType.instance
-  val CTString = StringType.instance
-  val CTNumber = NumberType.instance
-  val CTFloat = FloatType.instance
-  val CTInteger = IntegerType.instance
-  val CTMap = MapType.instance
-  val CTNode = NodeType.instance
-  val CTRelationship = RelationshipType.instance
-  val CTPoint = PointType.instance
-  val CTPath = PathType.instance
-  def CTCollection(inner: CypherType) = CollectionType(inner)
+  val CTAny: AnyType = AnyType.instance
+  val CTBoolean: BooleanType = BooleanType.instance
+  val CTString: StringType = StringType.instance
+  val CTNumber: NumberType = NumberType.instance
+  val CTFloat: FloatType = FloatType.instance
+  val CTInteger: IntegerType = IntegerType.instance
+  val CTMap: MapType = MapType.instance
+  val CTNode: NodeType = NodeType.instance
+  val CTRelationship: RelationshipType = RelationshipType.instance
+  val CTPoint: PointType = PointType.instance
+  val CTPath: PathType = PathType.instance
+  def CTCollection(inner: CypherType): CollectionType = CollectionType(inner)
 
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }

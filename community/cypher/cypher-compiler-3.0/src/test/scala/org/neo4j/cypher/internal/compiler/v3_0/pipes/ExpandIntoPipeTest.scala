@@ -23,17 +23,13 @@ import org.mockito.Matchers.{eq => mockEq, _}
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{ Node, Relationship}
+import org.neo4j.graphdb.Relationship
 
-class ExpandIntoPipeTest extends CypherFunSuite {
+class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
-  implicit val monitor = mock[PipeMonitor]
   val startNode = newMockedNode(1)
   val endNode1 = newMockedNode(2)
   val endNode2 = newMockedNode(3)
@@ -42,13 +38,12 @@ class ExpandIntoPipeTest extends CypherFunSuite {
   val relationship2 = newMockedRelationship(2, startNode, endNode2)
   val relationship3 = newMockedRelationship(3, startNode, endNode3)
   val selfRelationship = newMockedRelationship(4, startNode, startNode)
-  val query = mock[QueryContext]
 
   val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("should support expand between two nodes with a relationship") {
     // given
-    setUpRelMockingInQuertyContext(relationship1)
+    setUpRelMockingInQueryContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1))
 
@@ -91,7 +86,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships") {
     // given
-    setUpRelMockingInQuertyContext(relationship1, relationship2, relationship3)
+    setUpRelMockingInQueryContext(relationship1, relationship2, relationship3)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),
       row("a" -> startNode, "b" -> endNode2)
@@ -108,7 +103,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("should support expand between two nodes with multiple relationships and self loops") {
     // given
-    setUpRelMockingInQuertyContext(relationship1, selfRelationship, relationship3)
+    setUpRelMockingInQueryContext(relationship1, selfRelationship, relationship3)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> endNode1),
       row("a" -> startNode, "b" -> startNode)
@@ -125,7 +120,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given empty input, should return empty output") {
     // given
-    setUpRelMockingInQuertyContext()
+    setUpRelMockingInQueryContext()
     val left = newMockedPipe("a", row("a" -> null, "b" -> null))
 
     // when
@@ -137,7 +132,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given a null start point, returns an empty iterator") {
     // given
-    setUpRelMockingInQuertyContext(relationship1)
+    setUpRelMockingInQueryContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> null, "b" -> endNode1))
 
@@ -150,7 +145,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
 
   test("given a null end point, returns an empty iterator") {
     // given
-    setUpRelMockingInQuertyContext(relationship1)
+    setUpRelMockingInQueryContext(relationship1)
     val left = newMockedPipe("a",
       row("a" -> startNode, "b" -> null))
 
@@ -168,7 +163,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     val rel0 = newMockedRelationship(0, node0, node1)
     val rel1 = newMockedRelationship(1, node1, node0)
 
-    setUpRelMockingInQuertyContext(rel0, rel1)
+    setUpRelMockingInQueryContext(rel0, rel1)
 
     val source = newMockedPipe(
       Map("n" -> CTNode, "r2" -> CTRelationship, "k" -> CTNode),
@@ -191,7 +186,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     val rel0 = newMockedRelationship(0, node0, node1)
     val rel1 = newMockedRelationship(1, node1, node0)
 
-    setUpRelMockingInQuertyContext(rel0, rel1)
+    setUpRelMockingInQueryContext(rel0, rel1)
 
     val source = newMockedPipe(
       Map("n" -> CTNode, "r2" -> CTRelationship, "k" -> CTNode),
@@ -212,61 +207,4 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     verify(query, times(1)).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(None))
   }
 
-  private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
-
-  private def setUpRelMockingInQuertyContext(rels: Relationship*) {
-    val relsByStartNode = rels.groupBy(_.getStartNode)
-    val relsByEndNode = rels.groupBy(_.getEndNode)
-    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
-      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
-    }.toMap
-
-    setUpRelLookupMocking(SemanticDirection.OUTGOING, relsByStartNode)
-    setUpRelLookupMocking(SemanticDirection.INCOMING, relsByEndNode)
-    setUpRelLookupMocking(SemanticDirection.BOTH, relsByNode)
-  }
-
-  private def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
-    relsByNode.foreach {
-      case (node, rels) =>
-        when(query.getRelationshipsForIds(node, direction, None)).thenAnswer(
-          new Answer[Iterator[Relationship]] {
-            def answer(invocation: InvocationOnMock) = rels.iterator
-          })
-
-        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
-    }
-  }
-
-  private def newMockedNode(id: Int) = {
-    val node = mock[Node]
-    when(node.getId).thenReturn(id)
-    node
-  }
-
-  private def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
-    val relationship = mock[Relationship]
-    when(relationship.getId).thenReturn(id)
-    when(relationship.getStartNode).thenReturn(startNode)
-    when(relationship.getEndNode).thenReturn(endNode)
-    when(relationship.getOtherNode(startNode)).thenReturn(endNode)
-    when(relationship.getOtherNode(endNode)).thenReturn(startNode)
-    relationship
-  }
-
-  private def newMockedPipe(node: String, rows: ExecutionContext*): Pipe = {
-    newMockedPipe(Map(node -> CTNode), rows: _*)
-  }
-
-  private def newMockedPipe(symbols: Map[String, CypherType], rows: ExecutionContext*): Pipe = {
-    val pipe = mock[Pipe]
-
-    when(pipe.sources).thenReturn(Seq.empty)
-    when(pipe.symbols).thenReturn(SymbolTable(symbols))
-    when(pipe.createResults(any())).thenAnswer(new Answer[Iterator[ExecutionContext]] {
-      def answer(invocation: InvocationOnMock) = rows.iterator
-    })
-
-    pipe
-  }
 }

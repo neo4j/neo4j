@@ -495,7 +495,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    SetNodePropery(inner, pattern.idName, pattern.propertyKey,  pattern.expression)(solved)
+    SetNodeProperty(inner, pattern.idName, pattern.propertyKey, pattern.expression)(solved)
   }
 
   def planSetNodePropertiesFromMap(inner: LogicalPlan,
