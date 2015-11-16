@@ -56,7 +56,7 @@ abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name:
         }
 
         /*Find the property container we'll be working on*/
-        setProperties(qtx, operations(qtx), itemId, map)
+        setProperties(qtx, ops, itemId, map)
 
         if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
       }

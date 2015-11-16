@@ -35,11 +35,11 @@ import scala.collection.Map
 case class MapPropertySetAction(element: Expression, mapExpression: Expression, removeOtherProps:Boolean)
   extends SetAction with MapSupport {
 
-  private val elementName = element match {
-    case Identifier(name) => name
-    case _ => ""
+  private val needsExclusiveLock = element match {
+    case Identifier(elementName) =>
+      Expression.mapExpressionHasPropertyReadDependency(elementName, mapExpression)
+    case _ => false
   }
-  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(elementName, mapExpression)
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val qtx = state.query
