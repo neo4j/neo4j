@@ -170,4 +170,8 @@ trait Operations[T <: PropertyContainer] {
   def isDeleted(obj: T): Boolean
 
   def all: Iterator[T]
+
+  def acquireExclusiveLock(obj: Long): Unit
+
+  def releaseExclusiveLock(obj: Long): Unit
 }

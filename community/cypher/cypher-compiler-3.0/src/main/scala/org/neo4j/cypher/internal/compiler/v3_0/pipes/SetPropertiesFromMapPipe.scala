@@ -32,20 +32,34 @@ import scala.collection.Map
 
 abstract class SetPropertiesFromMapPipe[T <: PropertyContainer](src: Pipe, name: String,  expression: Expression, removeOtherProps: Boolean, pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with MapSupport {
+
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(name, expression)
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
+    val qtx = state.query
+    val ops = operations(qtx)
+
     input.map { row =>
 
-      /* Make the map expression look like a map */
-      val qtx = state.query
-      val map = expression(row)(state) match {
-        case IsMap(createMapFrom) => propertyKeyMap(qtx, createMapFrom(qtx))
-        case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
-      }
-
-      /*Find the property container we'll be working on*/
       val item = row.get(name).get
-      if (item != null) setProperties(qtx, operations(qtx), getId(item), map)
+      if (item != null) {
+        val itemId = getId(item)
+        if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
+
+        /* Make the map expression look like a map */
+        val map = expression(row)(state) match {
+          case IsMap(createMapFrom) => {
+            propertyKeyMap(qtx, createMapFrom(qtx))
+          }
+          case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
+        }
+
+        /*Find the property container we'll be working on*/
+        setProperties(qtx, ops, itemId, map)
+
+        if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
+      }
       row
     }
   }

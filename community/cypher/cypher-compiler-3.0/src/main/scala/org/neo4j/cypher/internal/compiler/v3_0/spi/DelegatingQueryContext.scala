@@ -179,4 +179,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   def all: Iterator[T] = manyDbHits(inner.all)
 
   def isDeleted(obj: T): Boolean = inner.isDeleted(obj)
+
+  override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
+
+  override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }

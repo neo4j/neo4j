@@ -65,28 +65,57 @@ For example, if a write lock is taken on a common node or relationship, then all
 
 In Cypher it is possible to acquire write locks to simulate improved isolation in some cases.
 Consider the case where multiple concurrent Cypher queries increment the value of a property.
-Due to the limitations of the read-committed isolation level, the increments will not result in a deterministic final value.
+Due to the limitations of the read-committed isolation level, the increments might not result in a deterministic final value.
+If there is a direct dependency, Cypher will automatically acquire a write lock before reading.
+A direct dependency is when the right-hand side of a `SET` has a dependent property read in the expression, or in the value of a key-value pair in a literal map.
 
-For example, the following query, if run by one hundred concurrent clients, will very likely not increment the property `n.prop` to 100, but some value lower than 100.
+For example, the following query, if run by one hundred concurrent clients, will very likely not increment the property `n.prop` to 100, unless a write lock is acquired before reading the property value.
+This is because all queries would read the value of `n.prop` within their own transaction, and would not see the incremented value from any other transaction that has not yet committed.
+In the worst case scenario the final value would be as low as 1, if all threads perform the read before any has committed their transaction.
 
+.Requires a write lock, and Cypher automatically acquires one.
 [source,cypher]
 ----
 MATCH (n:X {id: 42})
 SET n.prop = n.prop + 1
 ----
 
-This is because all queries will read the value of `n.prop` within their own transaction.
-They will not see the incremented value from any other transaction that has not yet committed.
-In the worst case scenario the final value could be as low as 1, if all threads perform the read before any has committed their transaction.
+.Also requires a write lock, and Cypher automatically acquires one.
+[source,cypher]
+----
+MATCH (n)
+SET n += { prop: n.prop + 1 }
+----
 
-To ensure deterministic behavior, it is necessary to grab a write lock on the node in question.
-In Cypher there is no explicit support for this, but we can work around this limitation by writing to a temporary property.
+Due to the complexity of determining such a dependency in the general case, Cypher does not cover any of the below example cases:
 
+.Variable depending on results from reading the property in an earlier statement.
+[source,cypher]
+----
+MATCH (n)
+WITH n.prop as p
+// ... operations depending on p, producing k
+SET n.prop = k + 1
+----
+
+.Circular dependency between properties read and written in the same query.
+[source,cypher]
+----
+MATCH (n)
+SET n += { propA: n.propB + 1, propB: n.propA + 1 }
+----
+
+To ensure deterministic behavior also in the more complex cases, it is necessary to explicitly acquire a write lock on the node in question.
+In Cypher there is no explicit support for this, but it is possible to work around this limitation by writing to a temporary property.
+
+.Acquires a write lock for the node by writing to a dummy property before reading the requested value.
 [source,cypher]
 ----
 MATCH (n:X {id: 42})
 SET n._LOCK_ = true
-SET n.prop = n.prop + 1
+WITH n.prop as p
+// ... operations depending on p, producing k
+SET n.prop = k + 1
 REMOVE n._LOCK_
 ----
 
