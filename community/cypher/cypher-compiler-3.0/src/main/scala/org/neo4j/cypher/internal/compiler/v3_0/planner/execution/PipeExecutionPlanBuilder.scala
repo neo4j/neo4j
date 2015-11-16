@@ -304,31 +304,34 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case CreateNode(_, idName, labels, props) =>
       CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
 
-    case MergeNode(_, idName, labels, props) =>
+    case MergeNode(_, idName, labels, props, onCreate, onMatch) =>
       val commandProperties = props.map {
         case (k, v) => LazyPropertyKey(k) -> toCommandExpression(v)
       }
-      MergeNodePipe(source, idName.name, labels, commandProperties)()
+      MergeNodePipe(source, idName.name, labels, commandProperties,
+        onCreate.map(SetOperation.toSetOperation), onMatch.map(SetOperation.toSetOperation))()
 
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
-      SetLabelsPipe(source, name, labels)()
+     SetPipe(source, SetLabelsOperation(name, labels))()
 
-    case SetNodeProperty(_, idName, propertyKey, expression) =>
-      SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
-        toCommandExpression(expression))()
+    case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
+      SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression)))()
 
-    case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
-      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
+    case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+      SetPipe(source,
+        SetNodePropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
 
-    case SetRelationshipPropery(_, idName, propertyKey, expression) =>
-      SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
-        toCommandExpression(expression))()
+    case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
+      SetPipe(source,
+        SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), toCommandExpression(expression)))()
 
-    case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
-      SetRelationshipPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
+    case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
+      SetPipe(source,
+        SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
 
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()

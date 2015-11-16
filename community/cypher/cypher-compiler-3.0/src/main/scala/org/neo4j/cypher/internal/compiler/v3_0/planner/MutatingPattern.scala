@@ -38,18 +38,21 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
   def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
 }
 
-case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
+sealed trait SetMutatingPattern extends MutatingPattern
 
-case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
+case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern
 
-case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends MutatingPattern
+case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
 
-case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends MutatingPattern
+case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
 
-case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends MutatingPattern
+case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
 
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
 
-case class MergeNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Map[PropertyKeyName, Expression], matchGraph: QueryGraph) extends MutatingPattern
+case class MergeNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Map[PropertyKeyName, Expression],
+                            matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern

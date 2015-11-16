@@ -52,9 +52,9 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)(val estim
   }
 
   def planDescriptionWithoutCardinality =
-    PlanDescriptionImpl(this.id, "AssertSameNode", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+    PlanDescriptionImpl(this.id, "AssertSameNode", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (l :: r :: Nil) = sources

@@ -779,6 +779,108 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   // TESTS FOR MATCH AND MERGE
 
+  test("on match set label on unstable iterator should be eager") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON MATCH SET q:Two RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 1)
+    assertNumberOfEagerness(query, 1)
+    result.toList should equal(List(Map("c" -> 36)))
+  }
+
+  test("on match set label on unstable iterator should not be eager if no overlap") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON MATCH SET q:One RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 3)
+    assertNumberOfEagerness(query, 0)
+    result.toList should equal(List(Map("c" -> 36)))
+  }
+
+  test("on create set label on unstable iterator should be eager") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON CREATE SET q:Two RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 0)
+    result.toList should equal(List(Map("c" -> 36)))
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("on match set property on unstable iterator should be eager") {
+    createNode()
+    createNode(Map("id" -> 0))
+    createNode(Map("id" -> 0))
+    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a.id = 0 RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("c" -> 36)))
+    assertStats(result, propertiesSet = 36)
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("on match set property on unstable iterator should not be eager if no overlap") {
+    createNode()
+    createNode(Map("id" -> 0))
+    createNode(Map("id" -> 0))
+    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a.id2 = 0 RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("c" -> 36)))
+    assertStats(result, propertiesSet = 36)
+
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("on create set overwrite property with literal map on unstable iterator should be eager") {
+    createNode()
+    createNode(Map("id" -> 0))
+    createNode(Map("id" -> 0))
+    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON CREATE SET a = {id: 0} RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("c" -> 36)))
+    assertStats(result, propertiesSet = 0)
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("on create set append property with literal map on unstable iterator should be eager") {
+    createNode()
+    createNode(Map("id" -> 0))
+    createNode(Map("id" -> 0))
+    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON CREATE SET a += {id: 0} RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query)
+    result.toList should equal(List(Map("c" -> 36)))
+    assertStats(result, propertiesSet = 0)
+
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("on match set property with parameter map on unstable iterator should be eager") {
+    createNode()
+    createNode(Map("id" -> 0))
+    createNode(Map("id" -> 0))
+    val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a = {map} RETURN count(*) AS c"
+
+    val result = updateWithBothPlanners(query, "map" -> Map("id" -> 0))
+    result.toList should equal(List(Map("c" -> 36)))
+    assertStats(result, propertiesSet = 36)
+
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should not introduce eagerness for MATCH nodes and CREATE UNIQUE relationships") {
     createNode()
     createNode()
@@ -896,7 +998,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   test("should not be eager when merging on two different labels") {
     val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 2, propertiesSet = 1, labelsAdded = 2)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 2, propertiesSet = 1, labelsAdded = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -905,7 +1007,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("L1")
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query))
+    assertStats(updateWithBothPlanners(query))
     assertNumberOfEagerness(query, 0)
   }
 
@@ -913,7 +1015,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 1, labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -922,7 +1024,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("Person")
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query))
+    assertStats(updateWithBothPlanners(query))
     assertNumberOfEagerness(query, 0)
   }
 
@@ -931,7 +1033,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -939,14 +1041,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query))
+    assertStats(updateWithBothPlanners(query))
     assertNumberOfEagerness(query, 0)
   }
 
   test("does not need to be eager when no merge has labels, merges create") {
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(executeWithRulePlanner(query), nodesCreated = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1)
     assertNumberOfEagerness(query, 0)
   }
 

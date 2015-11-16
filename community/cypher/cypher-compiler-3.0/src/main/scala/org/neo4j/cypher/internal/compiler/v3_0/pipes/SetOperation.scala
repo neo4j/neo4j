@@ -1,12 +1,33 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, Operations}
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{SetLabelPattern, SetMutatingPattern, SetNodePropertiesFromMapPattern, SetNodePropertyPattern, SetRelationshipPropertiesFromMapPattern, SetRelationshipPropertyPattern}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, SemanticTable}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map
 
@@ -18,11 +39,30 @@ sealed trait SetOperation {
 
 object SetOperation {
 
-  private[pipes] def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState, ops: Operations[T],itemId: Long, propertyKey: LazyPropertyKey, expression: Expression) = {
+  import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
+
+  def toSetOperation(pattern: SetMutatingPattern)(implicit table: SemanticTable) = pattern match {
+    case SetLabelPattern(IdName(name), labels) =>
+      SetLabelsOperation(name, labels.map(LazyLabel(_)))
+    case SetNodePropertyPattern(IdName(name), propKey, expression) =>
+      SetNodePropertyOperation(name, LazyPropertyKey(propKey.name), toCommandExpression(expression))
+    case SetNodePropertiesFromMapPattern(IdName(name), expression, removeOtherProps) =>
+      SetNodePropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
+    case SetRelationshipPropertyPattern(IdName(name), propKey, expression) =>
+      SetRelationshipPropertyOperation(name, LazyPropertyKey(propKey.name), toCommandExpression(expression))
+    case SetRelationshipPropertiesFromMapPattern(IdName(name), expression, removeOtherProps) =>
+      SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
+  }
+
+  private[pipes] def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState,
+                                                         ops: Operations[T],
+                                                         itemId: Long, propertyKey: LazyPropertyKey,
+                                                         expression: Expression) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
         .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
+
     val value = makeValueNeoSafe(expression(context)(state))
 
     if (value == null) ops.removeProperty(itemId, propertyId)
@@ -31,6 +71,7 @@ object SetOperation {
 
   private[pipes] def setPropertiesFromMap[T <: PropertyContainer](qtx: QueryContext, ops: Operations[T], itemId: Long,
                               map: Map[Int, Any], removeOtherProps: Boolean) {
+
     /*Set all map values on the property container*/
     for ((k, v) <- map) {
       if (v == null)
@@ -53,7 +94,7 @@ object SetOperation {
     /* Make the map expression look like a map */
     val qtx = state.query
     expression(executionContext)(state) match {
-      case IsMap(createMapFrom) => SetOperation.propertyKeyMap(qtx, createMapFrom(qtx))
+      case IsMap(createMapFrom) => propertyKeyMap(qtx, createMapFrom(qtx))
       case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
     }
   }
@@ -78,13 +119,19 @@ object SetOperation {
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation{
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(nodeName, expression, propertyKey.name)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value = executionContext.get(nodeName).get
     if (value != null) {
-      val node = CastSupport.castOrFail[Node](value)
-      SetOperation.setProperty(executionContext, state, state.query.nodeOps, node.getId, propertyKey,
-        expression)
+      val nodeId = CastSupport.castOrFail[Node](value).getId
+      val ops = state.query.nodeOps
+      if (needsExclusiveLock) ops.acquireExclusiveLock(nodeId)
+
+      try {
+        SetOperation.setProperty(executionContext, state, ops, nodeId, propertyKey,
+          expression)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(nodeId)
     }
   }
 
@@ -92,29 +139,38 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 }
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation{
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(relName, expression, propertyKey.name)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value = executionContext.get(relName).get
     if (value != null) {
-      val relationship = CastSupport.castOrFail[Relationship](value)
-      SetOperation.setProperty(executionContext, state, state.query.relationshipOps,
-        relationship.getId, propertyKey, expression)
+      val relationshipId = CastSupport.castOrFail[Relationship](value).getId
+      val ops = state.query.relationshipOps
+      if (needsExclusiveLock) ops.acquireExclusiveLock(relationshipId)
+      try {
+        SetOperation.setProperty(executionContext, state, ops,
+          relationshipId, propertyKey, expression)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(relationshipId)
     }
   }
 
   override def name = "SetRelationshipProperty"
-
 }
 
 case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression, removeOtherProps: Boolean) extends SetOperation{
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(nodeName, expression)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value = executionContext.get(nodeName).get
     if (value != null) {
-      val map = SetOperation.toMap(executionContext, state, expression)
+      val ops = state.query.nodeOps
+      val nodeId = CastSupport.castOrFail[Node](value).getId
+      if (needsExclusiveLock) ops.acquireExclusiveLock(nodeId)
+      try {
+        val map = SetOperation.toMap(executionContext, state, expression)
 
-      val node = CastSupport.castOrFail[Node](value)
-      SetOperation.setPropertiesFromMap(state.query, state.query.nodeOps, node.getId, map, removeOtherProps)
+        SetOperation.setPropertiesFromMap(state.query, ops, nodeId, map, removeOtherProps)
+      }  finally if (needsExclusiveLock) ops.releaseExclusiveLock(nodeId)
     }
   }
 
@@ -122,15 +178,19 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 }
 
 case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression, removeOtherProps: Boolean) extends SetOperation{
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(relName, expression)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value = executionContext.get(relName).get
     if (value != null) {
-      val map = SetOperation.toMap(executionContext, state, expression)
-
-      val relationship = CastSupport.castOrFail[Relationship](value)
-      SetOperation
-        .setPropertiesFromMap(state.query, state.query.relationshipOps, relationship.getId, map, removeOtherProps)
+      val ops = state.query.relationshipOps
+      val relationshipId = CastSupport.castOrFail[Relationship](value).getId
+      if (needsExclusiveLock) ops.acquireExclusiveLock(relationshipId)
+      try {
+        val map = SetOperation.toMap(executionContext, state, expression)
+        SetOperation
+          .setPropertiesFromMap(state.query, ops, relationshipId, map, removeOtherProps)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(relationshipId)
     }
   }
 

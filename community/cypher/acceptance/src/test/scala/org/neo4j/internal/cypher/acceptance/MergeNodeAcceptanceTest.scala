@@ -46,36 +46,20 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("merge node with label add label on create") {
     // When
-    val result = executeWithRulePlanner("merge (a:Label) on create set a:Foo return a")
+    val result = updateWithBothPlanners("merge (a:Label) on create set a:Foo return labels(a)")
 
     // Then
-    val createdNodes = result.columnAs[Node]("a").toList
 
-    createdNodes should have size 1
+    result.toList should equal(List(Map("labels(a)" -> List("Label", "Foo"))))
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
-
-    graph.inTx {
-      createdNodes.foreach {
-        n => n.labels.toSet should equal(Set("Label", "Foo"))
-      }
-    }
   }
 
-  test("merge_node_with_label_add_property_on_update") {
+  test("merge node with label add property on update") {
     // When
-    val result = executeWithRulePlanner("merge (a:Label) on create set a.prop = 42 return a")
+    val result = updateWithBothPlanners("merge (a:Label) on create set a.prop = 42 return a.prop")
 
-    // Then
-    val createdNodes = result.columnAs[Node]("a").toList
-
-    createdNodes should have size 1
+    result.toList should equal(List(Map("a.prop" -> 42)))
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
-
-    graph.inTx {
-      createdNodes.foreach {
-        n => n.getProperty("prop") should equal(42)
-      }
-    }
   }
 
   test("merge node with label when it exists") {
@@ -92,44 +76,40 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
-  test("merge_node_with_label_add_label_on_create_when_it_exists") {
+  test("merge node with label add label on create when it exists") {
     // Given
-    val existingNode = createLabeledNode("Label")
+    createLabeledNode("Label")
 
     // When
-    val result = executeWithRulePlanner("merge (a:Label) on match set a:Foo return a")
+    val result = updateWithBothPlanners("merge (a:Label) on match set a:Foo return labels(a)")
 
     // Then
-    val createdNodes = result.columnAs[Node]("a").toList
-
-    createdNodes should equal(List(existingNode))
+    result.toList should equal(List(Map("labels(a)" -> List("Label", "Foo"))))
     assertStats(result, nodesCreated = 0, labelsAdded = 1)
   }
 
-  test("merge_node_with_label_add_property_on_update_when_it_exists") {
+  test("merge node with label add property on update when it exists") {
     // Given
-    val existingNode = createLabeledNode("Label")
+    createLabeledNode("Label")
 
     // When
-    val result = executeWithRulePlanner("merge (a:Label) on create set a.prop = 42 return a")
+    val result = updateWithBothPlanners("merge (a:Label) on create set a.prop = 42 return a.prop")
 
     // Then
-    val createdNodes = result.columnAs[Node]("a").toList
-
-    createdNodes should equal(List(existingNode))
+    result.toList should equal(List(Map("a.prop" -> null)))
+    assertStats(result, nodesCreated = 0)
   }
 
-  test("merge_node_and_set_property_on_match") {
+  test("merge node and set property on match") {
     // Given
-    val existingNode = createLabeledNode("Label")
+    createLabeledNode("Label")
 
     // When
-    executeWithRulePlanner("merge (a:Label) on match set a.prop = 42 return a")
+    val result = updateWithBothPlanners("merge (a:Label) on match set a.prop = 42 return a.prop")
 
     // Then
-    graph.inTx{
-      existingNode.getProperty("prop") should equal(42)
-    }
+    result.toList should equal(List(Map("a.prop" -> 42)))
+    assertStats(result, propertiesSet = 1)
   }
 
   test("merge node should match properties given ad map") {
@@ -437,27 +417,29 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
   }
 
-  test("works_with_property_repeated_in_literal_map_in_set") {
+  test("works with property repeated in literal map in set") {
     // given
     graph.createConstraint("Person","ssn")
 
     // when
-    val result = executeWithRulePlanner("MERGE (person:Person {ssn:42}) ON CREATE SET person = {ssn:42,name:'Robert Paulsen'} RETURN person")
+    val result = updateWithBothPlanners("MERGE (person:Person {ssn:42}) ON CREATE SET person = {ssn:42,name:'Robert Paulsen'} RETURN person.ssn")
 
     // then - does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
+    result.toList should equal(List(Map("person.ssn" -> 42)))
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
   }
 
-  test("works_with_property_in_map_that_gets_set") {
+  test("works with property in map that gets set") {
     // given
     graph.createConstraint("Person","ssn")
 
     // when
-    val result = executeWithRulePlanner("MERGE (person:Person {ssn:{p}.ssn}) ON CREATE SET person = {p} RETURN person",
-      "p"->Map("ssn" -> 42, "name"->"Robert Paulsen"))
+    val result = updateWithBothPlanners("MERGE (person:Person {ssn:{p}.ssn}) ON CREATE SET person = {p} RETURN person.ssn",
+      "p" -> Map("ssn" -> 42, "name"->"Robert Paulsen"))
 
     // then - does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
+    result.toList should equal(List(Map("person.ssn" -> 42)))
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
   }
 
   test("should work when finding multiple elements") {

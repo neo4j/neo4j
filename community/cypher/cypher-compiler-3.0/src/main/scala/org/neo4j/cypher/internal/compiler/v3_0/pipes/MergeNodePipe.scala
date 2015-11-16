@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsMap}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.frontend.v3_0.{InvalidSemanticsException, MergeConstraintConflictException, CypherTypeException}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.PropertyKeyToken
+import org.neo4j.cypher.internal.frontend.v3_0.InvalidSemanticsException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException
 
 import scala.collection.Map
 
-case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Map[LazyPropertyKey, Expression])
+case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel],
+                         properties: Map[LazyPropertyKey, Expression],
+                         onCreate: Seq[SetOperation],
+                         onMatch: Seq[SetOperation])
                         (val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
@@ -41,13 +41,16 @@ case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], propert
                                       state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       val value = row.get(key).get
-      if (value == null) createNode(row, state)
+      if (value == null) {
+        createNode(row, state)
+        onCreate.foreach(_.set(row, state))
+      } else onMatch.foreach(_.set(row, state))
+
       row
     }
   }
 
   private def createNode(context: ExecutionContext, state: QueryState): ExecutionContext = {
-
     val node = state.query.createNode()
     setProperties(context, state, node.getId)
     setLabels(context, state, node.getId)
@@ -78,7 +81,7 @@ case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], propert
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeNode", identifiers)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeNode", variables)
 
   def symbols = src.symbols.add(key, CTNode)
 
@@ -86,7 +89,7 @@ case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], propert
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    MergeNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
+    MergeNodePipe(onlySource, key, labels, properties, onCreate, onMatch)(estimatedCardinality)
   }
 
   override def localEffects = if (labels.isEmpty)

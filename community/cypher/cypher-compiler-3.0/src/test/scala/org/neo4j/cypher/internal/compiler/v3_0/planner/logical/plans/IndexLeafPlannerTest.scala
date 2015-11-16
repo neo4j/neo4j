@@ -36,7 +36,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   val inCollectionValue = In(property, Collection(Seq(lit42))_)_
 
-  private def hasLabel(l: String) = HasLabels(ident("n"), Seq(LabelName(l) _)) _
+  private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
   test("does not plan index seek when no index exist") {
     new given {
@@ -187,7 +187,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // then
       resultPlans should beLike {
-        case Seq(AssertSameNode(
+        case Seq(AssertSameNode(`idName`,
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
       }
@@ -222,8 +222,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-        AssertSameNode(
-          AssertSameNode(
+        AssertSameNode(`idName`,
+          AssertSameNode(`idName`,
             NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
             NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _)),
           NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _))) => ()
@@ -248,9 +248,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-        AssertSameNode(
-          AssertSameNode(
-            AssertSameNode(
+        AssertSameNode(`idName`,
+          AssertSameNode(`idName`,
+            AssertSameNode(`idName`,
               NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
               NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
             NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),

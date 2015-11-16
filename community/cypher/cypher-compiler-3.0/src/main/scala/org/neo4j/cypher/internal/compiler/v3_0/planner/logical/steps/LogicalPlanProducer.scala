@@ -467,7 +467,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     val updated = solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
     MergeNode(inner, pattern.nodeName,
-      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(updated)
+      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties, pattern.onCreate, pattern.onMatch)(updated)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)

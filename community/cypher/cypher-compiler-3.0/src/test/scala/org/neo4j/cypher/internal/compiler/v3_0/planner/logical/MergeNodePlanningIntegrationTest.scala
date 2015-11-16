@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, Collection, SignedDecimalIntegerLiteral, PropertyKeyName, Property, Identifier, In}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, Collection, In, LabelToken, Property, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
 
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -32,7 +32,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan single merge node") {
     val allNodesScan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map.empty)(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map.empty, Seq.empty, Seq.empty)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     planFor("MERGE (a)").plan should equal(emptyResult)
@@ -42,7 +42,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     val labelScan = NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(solved)
     val optional = Optional(labelScan)(solved)
-    val mergeNode = MergeNode(optional, IdName("a"), Seq(LazyLabel("X")), Map.empty)(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq(LazyLabel("X")), Map.empty, Seq.empty, Seq.empty)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     (new given {
@@ -57,10 +57,10 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val allNodesScan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val propertyKeyName = PropertyKeyName("prop")(pos)
     val propertyValue = SignedDecimalIntegerLiteral("42")(pos)
-    val selection = Selection(Seq(In(Property(Identifier("a")(pos), propertyKeyName)(pos),
+    val selection = Selection(Seq(In(Property(Variable("a")(pos), propertyKeyName)(pos),
       Collection(Seq(propertyValue))(pos))(pos)), allNodesScan)(solved)
     val optional = Optional(selection)(solved)
-    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map(propertyKeyName -> propertyValue))(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map(propertyKeyName -> propertyValue), Seq.empty, Seq.empty)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     planFor("MERGE (a {prop: 42})").plan should equal(emptyResult)
@@ -71,7 +71,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val allNodesScan = AllNodesScan(IdName("b"), Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
     val apply = Apply(createNode, optional)(solved)
-    val mergeNode = MergeNode(apply, IdName("b"), Seq.empty, Map.empty)(solved)
+    val mergeNode = MergeNode(apply, IdName("b"), Seq.empty, Map.empty, Seq.empty, Seq.empty)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     planFor("CREATE (a) MERGE (b)").plan should equal(emptyResult)
@@ -80,7 +80,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan merge followed by create") {
     val allNodesScan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
-    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map.empty)(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq.empty, Map.empty, Seq.empty, Seq.empty)(solved)
     val createNode = CreateNode(mergeNode, IdName("b"), Seq.empty, None)(solved)
     val emptyResult = EmptyResult(createNode)(solved)
 
@@ -91,7 +91,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     val labelScan = NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(solved)
     val optional = Optional(labelScan)(solved)
-    val mergeNode = MergeNode(optional, IdName("a"), Seq(LazyLabel("X")), Map.empty)(solved)
+    val mergeNode = MergeNode(optional, IdName("a"), Seq(LazyLabel("X")), Map.empty, Seq.empty, Seq.empty)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     (new given {
@@ -101,10 +101,10 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       case EmptyResult(
             MergeNode(
               Optional(
-              AssertSameNode(
+              AssertSameNode(IdName("a"),
                 NodeUniqueIndexSeek(IdName("a"), LabelToken("X", _), _, _, _),
                 NodeUniqueIndexSeek(IdName("a"), LabelToken("Y", _), _, _, _)
-              )), _, Seq(LazyLabel("X"), LazyLabel("Y")), _)) => ()
+              )), _, Seq(LazyLabel("X"), LazyLabel("Y")), _, _, _)) => ()
     }
   }
 }

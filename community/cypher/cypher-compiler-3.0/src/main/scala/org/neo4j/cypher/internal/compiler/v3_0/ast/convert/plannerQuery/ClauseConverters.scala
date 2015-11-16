@@ -24,10 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternC
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, InternalException, SyntaxException}
 
-import scala.collection.immutable.Iterable
 import scala.collection.mutable
 
 object ClauseConverters {
@@ -94,53 +92,12 @@ object ClauseConverters {
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder = {
+  private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =
     clause.items.foldLeft(acc) {
-      // SET n:Foo
-      case (builder, SetLabelItem(identifier, labelNames)) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetLabelPattern(IdName.fromVariable(identifier), labelNames)))
 
-      // SET n.prop = ...
-      case (builder, SetPropertyItem(Property(node: Variable, propertyKey), expr))
-        if acc.semanticTable.isNode(node) =>
-       builder.amendUpdateGraph(ug =>
-         ug.addMutatingPatterns(
-           SetNodePropertyPattern(IdName.fromVariable(node), propertyKey, expr)))
-
-      // SET r.prop = ...
-      case (builder, SetPropertyItem(Property(rel: Variable, propertyKey), expr))
-        if acc.semanticTable.isRelationship(rel) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetRelationshipPropertyPattern(IdName.fromVariable(rel), propertyKey, expr)))
-
-      // SET n = { id: 0, name: 'Mats', ... }
-      case (builder, SetExactPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = true)))
-
-      // SET r = { id: 0, name: 'Mats', ... }
-      case (builder, SetExactPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = true)))
-
-      // SET n += { id: 10, ... }
-      case (builder, SetIncludingPropertiesFromMapItem(node, expression)) if acc.semanticTable.isNode(node) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = false)))
-
-      // SET r += { id: 10, ... }
-      case (builder, SetIncludingPropertiesFromMapItem(rel, expression)) if acc.semanticTable.isRelationship(rel) =>
-        builder.amendUpdateGraph(ug =>
-          ug.addMutatingPatterns(
-            SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = false)))
+      case (builder, item) =>
+        builder.amendUpdateGraph(_.addMutatingPatterns(toSetPattern(acc.semanticTable)(item)))
     }
-  }
 
   private def addCreateToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
     clause.pattern.patternParts.foldLeft(acc) {
@@ -266,13 +223,39 @@ object ClauseConverters {
     case e => throw new InternalException(s"Expected MapExpression, got $e")
   }
 
-  private def toPropertySelection(identifier: Identifier,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
+  private def toPropertySelection(identifier: Variable,  map:Map[PropertyKeyName, Expression]): Seq[Expression] = map.map {
     case (k, e) => In(Property(identifier, k)(k.position), Collection(Seq(e))(e.position))(identifier.position)
   }.toSeq
 
+  private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
+    case SetLabelItem(id, labels) => SetLabelPattern(IdName.fromVariable(id), labels)
+
+    case SetPropertyItem(Property(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
+      SetNodePropertyPattern(IdName.fromVariable(node), propertyKey, expr)
+
+    case SetPropertyItem(Property(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
+      SetRelationshipPropertyPattern(IdName.fromVariable(rel), propertyKey, expr)
+
+    case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
+      SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = true)
+
+    case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
+      SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = true)
+
+    case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
+      SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = false)
+
+    case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.isRelationship(rel) =>
+      SetRelationshipPropertiesFromMapPattern(IdName.fromVariable(rel), expression, removeOtherProps = false)
+  }
+
   private def addMergeToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Merge): PlannerQueryBuilder = {
-    //TODO handle actions
-    if (clause.actions.nonEmpty) throw new CantHandleQueryException("cost planner does not yet support merge actions")
+    val onCreate = clause.actions.collect {
+      case OnCreate(setClause) => setClause.items.map(toSetPattern(acc.semanticTable))
+    }.flatten
+    val onMatch = clause.actions.collect {
+      case OnMatch(setClause) => setClause.items.map(toSetPattern(acc.semanticTable))
+    }.flatten
 
     clause.pattern.patternParts.foldLeft(acc) {
       //MERGE (n :L1:L2 {prop: 42})
@@ -280,11 +263,12 @@ object ClauseConverters {
         val propMap = toPropertyMap(props)
 
         val matchGraph = QueryGraph(
-          patternNodes = Set(IdName.fromIdentifier(id)),
+          patternNodes = Set(IdName.fromVariable(id)),
           selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id, propMap) :_*)
         )
       builder
-          .amendUpdateGraph(ug => ug.addMutatingPatterns(MergeNodePattern(IdName.fromIdentifier(id), labels, propMap, matchGraph)))
+          .amendUpdateGraph(ug =>
+            ug.addMutatingPatterns(MergeNodePattern(IdName.fromVariable(id), labels, propMap, matchGraph, onCreate, onMatch)))
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }

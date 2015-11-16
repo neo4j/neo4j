@@ -51,6 +51,9 @@ case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesP
     case CreatesUnknownPropertyKeys => CreatesUnknownPropertyKeys
   }
 }
+object CreatesKnownPropertyKeys {
+  def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys = CreatesKnownPropertyKeys(propertyKeyNames.toSet)
+}
 
 /*
  * CREATE ({props})
@@ -62,7 +65,7 @@ case object CreatesUnknownPropertyKeys extends CreatesPropertyKeys {
 }
 
 object CreatesPropertyKeys {
-  def apply(properties: Seq[Expression]) = {
+  def apply(properties: Expression*): CreatesPropertyKeys = {
     //CREATE ()
     if (properties.isEmpty) CreatesNoPropertyKeys
     else {
