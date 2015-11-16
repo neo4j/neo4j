@@ -105,17 +105,16 @@ public class UpgradableDatabase
         {
         case missingStoreFile:
             throw new StoreUpgrader.UpgradeMissingStoreFilesException( getPathToStoreFile( storeDirectory, result ) );
-            case storeVersionNotFound:
-                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
-                        getPathToStoreFile( storeDirectory, result ) );
-            case unexpectedUpgradingStoreVersion:
-                throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                        getPathToStoreFile( storeDirectory, result ),
-                        Legacy23Store.LEGACY_VERSION, result.actualVersion );
-            case storeNotCleanlyShutDown:
-                throw new StoreUpgrader.DatabaseNotCleanlyShutDown();
-            default:
-                throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
+        case storeVersionNotFound:
+            throw new StoreUpgrader.UpgradingStoreVersionNotFoundException(
+                    getPathToStoreFile( storeDirectory, result ) );
+        case unexpectedUpgradingStoreVersion:
+            throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
+                    getPathToStoreFile( storeDirectory, result ), Legacy23Store.LEGACY_VERSION, result.actualVersion );
+        case storeNotCleanlyShutDown:
+            throw new StoreUpgrader.DatabaseNotCleanlyShutDown();
+        default:
+            throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
     }
 
