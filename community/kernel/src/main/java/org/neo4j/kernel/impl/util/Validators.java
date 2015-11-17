@@ -112,8 +112,8 @@ public class Validators
                 if ( value.length < length )
                 {
                     throw new IllegalArgumentException( "Expected '" + key + "' to have at least " +
-                            length + " item" + (length == 1 ? "" : "s") + ", but had " + value.length +
-                            " (" + Arrays.toString( value ) + ")" );
+                            length + " valid item" + (length == 1 ? "" : "s") + ", but had " + value.length +
+                            " " + Arrays.toString( value ) );
                 }
             }
         };

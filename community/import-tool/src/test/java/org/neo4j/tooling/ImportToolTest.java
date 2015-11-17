@@ -761,22 +761,24 @@ public class ImportToolTest
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 IteratorUtil.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
                 "Relationship missing mandatory field 'END_ID', read more about relationship " +
-                "format in the manual:  http://neo4j.com/docs/" + Version.getKernelVersion() +
+                "format in the manual:  http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 IteratorUtil.iterator( new RelationshipDataLine( "", "1", "type", "name" ) ),
                 "Relationship missing mandatory field 'START_ID', read more" +
-                " about relationship format in the manual:  http://neo4j.com/docs/" + Version.getKernelVersion() +
+                " about relationship format in the manual:  http://neo4j.com/docs/" +
+                Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
                 IteratorUtil.iterator( new RelationshipDataLine( "1", "2", "", "name" ) ),
                 "Relationship missing mandatory field 'TYPE', read more about relationship " +
-                "format in the manual:  http://neo4j.com/docs/" + Version.getKernelVersion() +
+                "format in the manual:  http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( Arrays.asList( "1", "1" ),
                 IteratorUtil.iterator( new RelationshipDataLine( "1", "2", "type", "name" ) ),
                 "Duplicate input ids that would otherwise clash can be put into separate id space, read more " +
-                "about how to use id spaces in the manual: http://neo4j.com/docs/" + Version.getKernelVersion() +
+                "about how to use id spaces in the manual: http://neo4j.com/docs/" +
+                Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-id-spaces" );
     }
 

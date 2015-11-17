@@ -482,10 +482,8 @@ public class ImportTool
 
     private static String manualReference( ManualPage page, Anchor anchor )
     {
-        return " http://neo4j.com/docs/" + Version.getKernel().getVersion() + "/" + page.getReference( anchor );
+        return " http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() + "/" + page.getReference( anchor );
     }
-
-
 
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
@@ -749,7 +747,7 @@ public class ImportTool
 
     private enum ManualPage
     {
-        IMPORT_TOOL_FORMAT("import-tool-header-format.html");
+        IMPORT_TOOL_FORMAT( "import-tool-header-format.html" );
 
         private final String page;
 
@@ -758,7 +756,7 @@ public class ImportTool
             this.page = page;
         }
 
-        public String getReference(Anchor anchor)
+        public String getReference( Anchor anchor )
         {
             return page + "#" + anchor.anchor;
         }
@@ -766,8 +764,8 @@ public class ImportTool
 
     private enum Anchor
     {
-        ID_SPACES("import-tool-id-spaces"),
-        RELATIONSHIP("import-tool-header-format-rels");
+        ID_SPACES( "import-tool-id-spaces" ),
+        RELATIONSHIP( "import-tool-header-format-rels" );
 
         private final String anchor;
 
@@ -776,5 +774,4 @@ public class ImportTool
             this.anchor = anchor;
         }
     }
-
 }
