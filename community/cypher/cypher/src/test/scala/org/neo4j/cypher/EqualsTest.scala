@@ -92,4 +92,9 @@ class EqualsTest extends ExecutionEngineFunSuite {
       execute("MATCH (a)-[b]->() RETURN b = a")
     } should produce[IncomparableValuesException]
   }
+
+  test("should treat chars as strings in equality") {
+    executeScalar[Boolean]("RETURN 'a' = {param}", "param" -> 'a') shouldBe true
+    executeScalar[Boolean]("RETURN {param} = 'a'", "param" -> 'a') shouldBe true
+  }
 }
