@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,9 +37,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -67,12 +69,13 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 @RunWith( Parameterized.class )
-@Ignore
 public class StoreUpgraderInterruptionTestIT
 {
     @Parameterized.Parameter( 0 )
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
+            InMemoryLabelScanStore(), 2 );
 
     @Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
@@ -85,6 +88,12 @@ public class StoreUpgraderInterruptionTestIT
                 new Object[]{Legacy23Store.LEGACY_VERSION}
         );
     }
+
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
@@ -104,9 +113,10 @@ public class StoreUpgraderInterruptionTestIT
         {
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir, SchemaIndexProvider schemaIndexProvider,
-                    String versionToMigrateFrom ) throws IOException
+                    LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider, versionToMigrateFrom );
+                super.migrate( sourceStoreDir, targetStoreDir, schemaIndexProvider, labelScanStoreProvider,
+                        versionToMigrateFrom );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
@@ -116,8 +126,8 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator )
-                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+            newUpgrader( createIndexMigrator(), failingStoreMigrator )
+                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider  );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -130,12 +140,19 @@ public class StoreUpgraderInterruptionTestIT
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
-        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = createIndexMigrator();
+        newUpgrader( indexMigrator, migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase,
+                schemaIndexProvider, labelScanStoreProvider );
 
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         assertConsistentStore( workingDirectory );
+    }
+
+    private SchemaIndexMigrator createIndexMigrator()
+    {
+        return new SchemaIndexMigrator( fs );
     }
 
     @Test
@@ -167,8 +184,8 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator )
-                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+            newUpgrader( createIndexMigrator(), failingStoreMigrator )
+                    .migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -183,7 +200,8 @@ public class StoreUpgraderInterruptionTestIT
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
-        newUpgrader( migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase, schemaIndexProvider );
+        newUpgrader( createIndexMigrator(), migrator ).migrateIfNeeded( workingDirectory, upgradableDatabase,
+                schemaIndexProvider, labelScanStoreProvider );
 
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
@@ -193,17 +211,12 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDirectory );
     }
 
-    private StoreUpgrader newUpgrader( StoreMigrator migrator )
+    private StoreUpgrader newUpgrader( SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
     {
-        StoreUpgrader upgrader =
-                new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR,
+                NullLogProvider.getInstance() );
+        upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );
         return upgrader;
     }
-
-    @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 }

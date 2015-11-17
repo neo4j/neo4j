@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -50,7 +51,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             public Object call() throws Exception
             {
                 CommunityBootstrapper boot = new CommunityBootstrapper();
-                CommunityBootstrapper.start( boot, new String[]{} );
+                boot.start( null, Pair.of("allow_store_upgrade", "true") );
                 boot.stop();
                 return null;
             }

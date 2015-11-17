@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoresSupplier;
@@ -71,8 +72,7 @@ public class LuceneLabelScanStoreBuilder
             labelScanStore = new LuceneLabelScanStore(
                     new NodeRangeDocumentLabelScanStorageStrategy(),
                     DirectoryFactory.PERSISTENT,
-                    // <db>/schema/label/lucene
-                    new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
+                    LabelScanStoreProvider.getStoreDirectory( storeDir ),
                     fileSystem, IndexWriterFactories.tracking(),
                     fullStoreLabelUpdateStream( neoStoresSupplier ),
                     LuceneLabelScanStore.loggerMonitor( logProvider ) );

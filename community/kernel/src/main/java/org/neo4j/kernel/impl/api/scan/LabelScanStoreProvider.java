@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.scan;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.io.File;
 import java.util.Iterator;
-import java.util.List;
 
-import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -39,8 +36,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
 /**
  * Used by a {@link KernelExtensions} to provide access a {@link LabelScanStore} and prioritize against other.
@@ -56,37 +51,20 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  */
 public class LabelScanStoreProvider extends LifecycleAdapter implements Comparable<LabelScanStoreProvider>
 {
-    /**
-     * SelectionStrategy for {@link KernelExtensions kernel extensions loading} where the one with highest
-     * {@link #priority} will be selected. If there are no such stores  then an {@link IllegalStateException} will be
-     * thrown.
-     */
-    public static SelectionStrategy HIGHEST_PRIORITIZED =
-            new SelectionStrategy()
-    {
-        @Override
-        public <T> T select( Class<T> type, Iterable<T> candidates )
-                throws IllegalArgumentException
-        {
-            List<Comparable> all = (List<Comparable>) addToCollection( candidates, new ArrayList<T>() );
-            if ( all.isEmpty() )
-            {
-                throw new IllegalArgumentException( "No label scan store provider " +
-                        LabelScanStoreProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
-            }
-            Collections.sort( all );
-            return (T) all.get( all.size()-1 );
-        }
-    };
+    private static final String KEY = "lucene";
 
     private final LabelScanStore labelScanStore;
-
     private final int priority;
 
     public LabelScanStoreProvider( LabelScanStore labelScanStore, int priority )
     {
         this.labelScanStore = labelScanStore;
         this.priority = priority;
+    }
+
+    public static File getStoreDirectory( File storeRootDir )
+    {
+        return new File( new File( new File( storeRootDir, "schema" ), "label" ), KEY );
     }
 
     public LabelScanStore getLabelScanStore()

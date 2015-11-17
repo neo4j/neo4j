@@ -71,10 +71,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
                 new NodeRangeDocumentLabelScanStorageStrategy(),
-
-                // <db>/schema/label/lucene
-                directoryFactory, new File( new File( new File( context.storeDir(), "schema" ), "label" ), "lucene" ),
-
+                directoryFactory, LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
                 context.fileSystem(), tracking(),
                 fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );

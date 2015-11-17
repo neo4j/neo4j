@@ -33,6 +33,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -67,8 +68,7 @@ public class TestLuceneSchemaBatchInsertIT
         GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabase( storeDir );
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency(
-                SchemaIndexProvider.class,
-                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+                SchemaIndexProvider.class, HighestSelectionStrategy.getInstance() );
 
         // assert the indexProvider is a Lucene one
         try ( Transaction ignore = db.beginTx() )
