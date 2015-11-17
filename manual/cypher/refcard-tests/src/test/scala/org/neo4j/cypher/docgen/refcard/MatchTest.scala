@@ -34,6 +34,7 @@ class MatchTest extends RefcardTest with QueryStatisticsTestSupport {
       case "related" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
+      case "none" =>
     }
   }
 
@@ -97,6 +98,16 @@ OPTIONAL MATCH (n)-[r]->(m)
 RETURN r###
 
 Optional pattern, ++NULL++s will be used for missing parts.
+
+###assertion=none
+MATCH (m:Person)
+USING SCAN m:Person
+
+WHERE m.name = 'Alice'
+
+RETURN m###
+
+Force the planner to use a label scan to solve the query (for manual performance tuning).
 
 """
 }
