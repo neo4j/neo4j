@@ -92,10 +92,9 @@ public class HaBeanIT
 
     private void assertMasterInformation( HighAvailability ha )
     {
-        assertTrue( "single instance should be master and available", ha.isAvailable() );
-        assertEquals( "single instance should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
-        ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertEquals( "single instance should be the returned instance id", "1", info.getInstanceId() );
+        assertTrue( "should be available", ha.isAvailable() );
+        assertEquals( "should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
+        assertEquals( "should be instance 1", "1", ha.getInstanceId() );
     }
 
     @Test
