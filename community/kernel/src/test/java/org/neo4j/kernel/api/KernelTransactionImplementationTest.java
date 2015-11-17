@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -372,8 +373,10 @@ public class KernelTransactionImplementationTest
         verifyZeroInteractions( pool );
     }
 
+    private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final NeoStores neoStores = mock( NeoStores.class );
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
+    private final StoreReadLayer readLayer = mock( StoreReadLayer.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
@@ -390,18 +393,21 @@ public class KernelTransactionImplementationTest
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
+        when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        ProcedureCache procedureCache = new ProcedureCache();
+        when( storageEngine.procedureCache() ).thenReturn( procedureCache );
     }
 
     private KernelTransactionImplementation newTransaction()
     {
-        StoreReadLayer readLayer = mock(StoreReadLayer.class);
-        when(readLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
-
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, null, null, null, recordState, null, neoStores, new NoOpClient(),
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
-                pool, mock(ConstraintSemantics.class), clock, TransactionTracer.NULL, new ProcedureCache() );
+                null, null, null, recordState, new NoOpClient(),
+                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexState,
+                pool, mock( ConstraintSemantics.class ), clock, TransactionTracer.NULL,
+                storageEngine );
         transaction.initialize( 0 );
         return transaction;
     }

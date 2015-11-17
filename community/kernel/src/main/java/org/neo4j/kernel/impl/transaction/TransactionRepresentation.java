@@ -28,15 +28,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 /**
  * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.
  */
-public interface TransactionRepresentation
+public interface TransactionRepresentation extends CommandStream
 {
-    /**
-     * Accepts a visitor into the commands making up this transaction.
-     * @param visitor {@link Visitor} which will see the commands.
-     * @throws IOException if there were any problem reading the commands.
-     */
-    void accept( Visitor<Command, IOException> visitor ) throws IOException;
-
     /**
      * @return an additional header of this transaction. Just arbitrary bytes that means nothing
      * to this transaction representation.

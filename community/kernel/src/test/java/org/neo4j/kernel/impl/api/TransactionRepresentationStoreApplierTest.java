@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -58,7 +60,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.util.function.Optionals.some;
 
@@ -66,7 +67,7 @@ public class TransactionRepresentationStoreApplierTest
 {
     private final IndexingService indexService = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStores neoStores = mock( NeoStores.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = new ReentrantLockService();
@@ -75,20 +76,28 @@ public class TransactionRepresentationStoreApplierTest
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
     private final IdOrderingQueue queue = mock( IdOrderingQueue.class );
     private final KernelHealth kernelHealth = mock( KernelHealth.class );
+    private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final int transactionId = 12;
 
+    @Before
+    public void setUp()
     {
         final CountsTracker tracker = mock( CountsTracker.class );
         when( neoStores.getCounts() ).thenReturn( tracker );
         when( tracker.apply( anyLong() ) ).thenReturn( some( mock( CountsAccessor.Updater.class ) ) );
+        when( storageEngine.indexingService() ).thenReturn( indexService );
+        when( storageEngine.cacheAccess() ).thenReturn( cacheAccess );
+        when( storageEngine.legacyIndexApplierLookup() ).thenReturn( legacyIndexProviderLookup );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.kernelHealth() ).thenReturn( kernelHealth );
     }
 
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
         TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStores, cacheAccess,
-                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+                new TransactionRepresentationStoreApplier( labelScanStore,
+                        lockService, indexConfigStore, queue, storageEngine );
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
@@ -107,8 +116,8 @@ public class TransactionRepresentationStoreApplierTest
         NodeStore nodeStore = mock( NodeStore.class );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStores, cacheAccess,
-                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+                new TransactionRepresentationStoreApplier( labelScanStore,
+                        lockService, indexConfigStore, queue, storageEngine );
         long nodeId = 5L;
         TransactionRepresentation transaction = createNodeTransaction( nodeId );
 
@@ -127,8 +136,8 @@ public class TransactionRepresentationStoreApplierTest
         // GIVEN
         IdOrderingQueue queue = mock( IdOrderingQueue.class );
         TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStores, cacheAccess,
-                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+                new TransactionRepresentationStoreApplier( labelScanStore,
+                        lockService, indexConfigStore, queue, storageEngine );
         TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
 
         // WHEN
@@ -147,8 +156,8 @@ public class TransactionRepresentationStoreApplierTest
         // GIVEN
         IdOrderingQueue queue = mock( IdOrderingQueue.class );
         TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( indexService, labelScanStore, neoStores, cacheAccess,
-                        lockService, legacyIndexProviderLookup, indexConfigStore, kernelHealth, queue );
+                new TransactionRepresentationStoreApplier( labelScanStore,
+                        lockService, indexConfigStore, queue, storageEngine );
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         IOException ioex = new IOException();
         //noinspection unchecked

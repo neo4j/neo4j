@@ -618,7 +618,7 @@ public class BackupServiceIT
 
         final DependencyResolver resolver = db.getDependencyResolver();
         NeoStoreDataSource ds = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-        long expectedLastTxId = ds.getNeoStores().getMetaDataStore().getLastCommittedTransactionId();
+        long expectedLastTxId = ds.getLastCommittedTransactionId();
 
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );

@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -52,18 +51,15 @@ import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
@@ -128,12 +124,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
-    private final IndexingService indexService;
     private final TransactionHooks hooks;
-    private final LabelScanStore labelScanStore;
     private final SchemaStorage schemaStorage;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final Pool<KernelTransactionImplementation> pool;
@@ -146,7 +139,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final StoreReadLayer storeLayer;
-    private final ProcedureCache procedureCache;
+    private final StorageEngine storageEngine;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
@@ -174,32 +167,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
-                                            LabelScanStore labelScanStore,
-                                            IndexingService indexService,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState recordState,
-                                            SchemaIndexProviderMap providerMap,
-                                            NeoStores neoStores,
                                             Locks.Client locks,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransactionState,
                                             Pool<KernelTransactionImplementation> pool,
                                             ConstraintSemantics constraintSemantics,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            ProcedureCache procedureCache )
+                                            StorageEngine storageEngine )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
-        this.labelScanStore = labelScanStore;
-        this.indexService = indexService;
         this.recordState = recordState;
-        this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.hooks = hooks;
         this.locks = locks;
@@ -207,13 +192,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.storeLayer = storeLayer;
-        this.procedureCache = procedureCache;
+        this.storeLayer = storageEngine.storeReadLayer();
+        this.storageEngine = storageEngine;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
         this.constraintSemantics = constraintSemantics;
         this.clock = clock;
-        this.schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+        this.schemaStorage = new SchemaStorage( storageEngine.neoStores().getSchemaStore() );
         this.tracer = tracer;
     }
 
@@ -277,8 +262,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         if ( currentStatement == null )
         {
-            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( storageEngine.indexingService() ),
+                    storageEngine.labelScanStore(), this, locks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -800,7 +785,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
+            SchemaIndexProvider.Descriptor providerDescriptor = storageEngine.schemaIndexProviderMap().getDefaultProvider()
                     .getProviderDescriptor();
             IndexRule rule;
             if ( isConstraintIndex )
@@ -965,13 +950,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
             // production. This will need to be changed before we release a useful 3.x series release.
-            procedureCache.createProcedure( procedureDescriptor );
+            storageEngine.procedureCache().createProcedure( procedureDescriptor );
         }
 
         @Override
         public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
         {
-            procedureCache.dropProcedure( procedureDescriptor );
+            storageEngine.procedureCache().dropProcedure( procedureDescriptor );
         }
     }
 

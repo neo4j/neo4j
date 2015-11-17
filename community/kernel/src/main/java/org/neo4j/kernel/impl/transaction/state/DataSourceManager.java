@@ -69,28 +69,14 @@ public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
         this.dataSource = dataSource;
         if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
         {
-            Listeners.notifyListeners( dsRegistrationListeners, new Listeners.Notification<Listener>()
-            {
-                @Override
-                public void notify( Listener listener )
-                {
-                    listener.registered( dataSource );
-                }
-            } );
+            Listeners.notifyListeners( dsRegistrationListeners, listener -> listener.registered( dataSource ) );
         }
     }
 
     public void unregister( final NeoStoreDataSource dataSource )
     {
         this.dataSource = null;
-        Listeners.notifyListeners( dsRegistrationListeners, new Listeners.Notification<Listener>()
-        {
-            @Override
-            public void notify( Listener listener )
-            {
-                listener.unregistered( dataSource );
-            }
-        } );
+        Listeners.notifyListeners( dsRegistrationListeners, listener -> listener.unregistered( dataSource ) );
         life.remove( dataSource );
     }
 

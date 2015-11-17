@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -85,7 +85,7 @@ public class NeoTransactionStoreApplierTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexingService indexingService = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
-    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 
@@ -104,7 +104,7 @@ public class NeoTransactionStoreApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Before

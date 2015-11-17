@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -71,6 +70,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -94,9 +94,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
@@ -117,6 +114,7 @@ import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 public class IndexingServiceTest
 {
     private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
+    private static final Runnable DO_NOTHING_CALLBACK = () -> {};
 
     @Rule
     public final LifeRule life = new LifeRule();
@@ -308,8 +306,8 @@ public class IndexingServiceTest
 
         IndexingService indexingService = life.add( IndexingService.create( new IndexSamplingConfig( new Config() ),
                 mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup,
-                mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ),
-                logProvider, IndexingService.NO_MONITOR ) );
+                asList( onlineIndex, populatingIndex, failedIndex ),
+                logProvider, IndexingService.NO_MONITOR, DO_NOTHING_CALLBACK ) );
 
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
@@ -346,8 +344,9 @@ public class IndexingServiceTest
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
         IndexingService indexingService = IndexingService.create( new IndexSamplingConfig( new Config() ),
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup, mock( UpdateableSchemaState.class ),
-                asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR );
+                mock( JobScheduler.class ), providerMap, storeView, mockLookup,
+                asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
+                DO_NOTHING_CALLBACK );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -867,8 +866,6 @@ public class IndexingServiceTest
                                                                       IndexingService.Monitor monitor,
                                                                       IndexRule... rules ) throws IOException
     {
-        UpdateableSchemaState schemaState = mock( UpdateableSchemaState.class );
-
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
@@ -888,10 +885,10 @@ public class IndexingServiceTest
                         new DefaultSchemaIndexProviderMap( indexProvider ),
                         storeView,
                         nameLookup,
-                        schemaState,
                         loop( iterator( rules ) ),
                         logProvider,
-                        monitor )
+                        monitor,
+                        DO_NOTHING_CALLBACK )
         );
     }
 

@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -78,21 +77,19 @@ public class NeoStoreDataSourceRule extends ExternalResource
         final Config config = new Config( stringMap( additionalConfig ),
                 GraphDatabaseSettings.class );
 
-        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                NullLogProvider.getInstance() );
-
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        dataSource = new NeoStoreDataSource( storeDir, config, sf, NullLogProvider.getInstance(),
+        dataSource = new NeoStoreDataSource( storeDir, config, new DefaultIdGeneratorFactory( fs ),
+                NullLogProvider.getInstance(),
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
                 fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
-                new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
-                new CommunityCommitProcessFactory(), mock( PageCache.class ),
+                new StartupStatisticsProvider(), mock( NodeManager.class ), null,
+                new CommunityCommitProcessFactory(), pageCache,
                 mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
         return dataSource;

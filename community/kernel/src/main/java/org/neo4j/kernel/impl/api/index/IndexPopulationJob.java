@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -65,28 +64,28 @@ public class IndexPopulationJob implements Runnable
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final IndexStoreView storeView;
-    private final UpdateableSchemaState updateableSchemaState;
     private final String indexUserDescription;
     private final FailedIndexProxyFactory failureDelegate;
     private final LogProvider logProvider;
     private final Log log;
     private final IndexCountsRemover indexCountsRemover;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
+    private final Runnable schemaStateChangeCallback;
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob(IndexDescriptor descriptor,
-                              IndexConfiguration config,
-                              SchemaIndexProvider.Descriptor providerDescriptor,
-                              String indexUserDescription,
-                              FailedIndexProxyFactory failureDelegateFactory,
-                              IndexPopulator populator,
-                              FlippableIndexProxy flipper,
-                              IndexStoreView storeView,
-                              UpdateableSchemaState updateableSchemaState,
-                              LogProvider logProvider,
-                              IndexingService.Monitor monitor )
+    public IndexPopulationJob( IndexDescriptor descriptor,
+                               IndexConfiguration config,
+                               SchemaIndexProvider.Descriptor providerDescriptor,
+                               String indexUserDescription,
+                               FailedIndexProxyFactory failureDelegateFactory,
+                               IndexPopulator populator,
+                               FlippableIndexProxy flipper,
+                               IndexStoreView storeView,
+                               LogProvider logProvider,
+                               IndexingService.Monitor monitor,
+                               Runnable schemaStateChangeCallback )
     {
         this.descriptor = descriptor;
         this.config = config;
@@ -94,7 +93,7 @@ public class IndexPopulationJob implements Runnable
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
-        this.updateableSchemaState = updateableSchemaState;
+        this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
         this.logProvider = logProvider;
@@ -141,7 +140,7 @@ public class IndexPopulationJob implements Runnable
                                 indexSize );
 
                         populator.close( true );
-                        updateableSchemaState.clear();
+                        schemaStateChangeCallback.run();
                         return null;
                     }
                 };

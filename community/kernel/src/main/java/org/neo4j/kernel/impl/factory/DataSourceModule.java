@@ -62,11 +62,9 @@ import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -136,9 +134,6 @@ public class DataSourceModule
         transactionEventHandlers = new TransactionEventHandlers( nodeActions, relationshipActions,
                 threadToTransactionBridge );
 
-        IndexConfigStore indexStore =
-                life.add( deps.satisfyDependency( new IndexConfigStore( storeDir, fileSystem ) ) );
-
         diagnosticsManager.prependProvider( config );
 
         life.add( platformModule.kernelExtensions );
@@ -163,8 +158,6 @@ public class DataSourceModule
 
         // Factories for things that needs to be created later
         PageCache pageCache = platformModule.pageCache;
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, editionModule.idGeneratorFactory,
-                pageCache, fileSystem, logging.getInternalLogProvider() );
 
         StartupStatisticsProvider startupStatistics = deps.satisfyDependency( new StartupStatisticsProvider() );
 
@@ -191,7 +184,7 @@ public class DataSourceModule
                 logging.getInternalLog( KernelHealth.class ) ) );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
-                storeFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
+                editionModule.idGeneratorFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
@@ -199,7 +192,7 @@ public class DataSourceModule
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
-                editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
+                editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
                 platformModule.monitors, platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );

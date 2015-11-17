@@ -39,12 +39,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -56,11 +56,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexMapReference;
 import org.neo4j.kernel.impl.api.index.IndexProxySetup;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -79,6 +77,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -109,6 +108,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -127,9 +127,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1483,7 +1480,8 @@ public class NeoStoreTransactionTest
                 new PropertyLoader( neoStores ), indexing, IndexUpdateMode.ONLINE ) );
     }
 
-    private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing,
+    private TransactionRepresentationCommitProcess commitProcess(
+            IndexingService indexing,
             IndexUpdatesValidator indexUpdatesValidator ) throws IOException
     {
         TransactionAppender appenderMock = mock( TransactionAppender.class );
@@ -1491,16 +1489,18 @@ public class NeoStoreTransactionTest
                 Matchers.<TransactionRepresentation>any(),
                 any( LogAppendEvent.class ) ) ).thenReturn( new FakeCommitment( nextTxId++, neoStores.getMetaDataStore() ) );
         @SuppressWarnings( "unchecked" )
-        Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
-        when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
+        Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
+        when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.neoStores() ).thenReturn( neoStores );
+        when( storageEngine.cacheAccess() ).thenReturn( cacheAccessBackDoor );
+        when( storageEngine.indexingService() ).thenReturn( indexing );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                indexing, labelScanStore, neoStores, cacheAccessBackDoor, locks, null, null, null, null );
+                labelScanStore, locks, null, null, storageEngine );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStores.getMetaDataStore().nextCommittingTransactionId();
-
-        PropertyLoader propertyLoader = new PropertyLoader( neoStores );
 
         return new TransactionRepresentationCommitProcess( appenderMock, applier, indexUpdatesValidator );
     }
@@ -1548,7 +1548,8 @@ public class NeoStoreTransactionTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess( mockIndexing, indexUpdatesValidator ).commit( recoveredTx, locks, CommitEvent.NULL, mode );
+            commitProcess( mockIndexing, indexUpdatesValidator ).commit(
+                    recoveredTx, locks, CommitEvent.NULL, mode );
         }
     }
 
@@ -1595,7 +1596,6 @@ public class NeoStoreTransactionTest
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( locks, neoStores );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState schemaState = new KernelSchemaStateStore( NULL_LOG_PROVIDER );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         IndexMapReference indexMapRef = new IndexMapReference();
@@ -1604,7 +1604,8 @@ public class NeoStoreTransactionTest
                 samplingConfig, storeView, null, tokenNameLookup, NULL_LOG_PROVIDER
         );
         IndexProxySetup proxySetup =
-                new IndexProxySetup( samplingConfig, storeView, providerMap, schemaState, null, null, NULL_LOG_PROVIDER );
+                new IndexProxySetup( samplingConfig, storeView, providerMap, null, null, NULL_LOG_PROVIDER,
+                        () -> {} );
         IndexSamplingController samplingController = samplingFactory.create( indexMapRef );
         return new CapturingIndexingService(
                 proxySetup,

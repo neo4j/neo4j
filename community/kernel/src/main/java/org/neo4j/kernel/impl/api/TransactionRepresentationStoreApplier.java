@@ -20,17 +20,15 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
+import org.neo4j.kernel.impl.transaction.CommandStream;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
@@ -48,53 +46,48 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
  */
 public class TransactionRepresentationStoreApplier
 {
-    private final NeoStores neoStores;
-    protected final IndexingService indexingService;
-    private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
-    private final Provider<LabelScanWriter> labelScanWriters;
+    private final Supplier<LabelScanWriter> labelScanWriters;
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexApplierLookup legacyIndexProviderLookup;
-    private final KernelHealth health;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
-    private final WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
+    private final StorageEngine storageEngine;
 
     public TransactionRepresentationStoreApplier(
-            IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStores neoStores,
-            CacheAccessBackDoor cacheAccess, LockService lockService, LegacyIndexApplierLookup
-            legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, KernelHealth health, IdOrderingQueue legacyIndexTransactionOrdering )
+            Supplier<LabelScanWriter> labelScanWriters,
+            LockService lockService,
+            IndexConfigStore indexConfigStore,
+            IdOrderingQueue legacyIndexTransactionOrdering,
+            StorageEngine storageEngine )
     {
-        this.indexingService = indexingService;
+        this.storageEngine = storageEngine;
         this.labelScanWriters = labelScanWriters;
-        this.neoStores = neoStores;
-        this.cacheAccess = cacheAccess;
         this.lockService = lockService;
-        this.legacyIndexProviderLookup = legacyIndexProviderLookup;
+        this.legacyIndexProviderLookup = storageEngine.legacyIndexApplierLookup();
         this.indexConfigStore = indexConfigStore;
-        this.health = health;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         labelScanStoreSync = new WorkSync<>( labelScanWriters );
     }
 
-    public void apply( TransactionRepresentation representation, ValidatedIndexUpdates indexUpdates, LockGroup locks,
+    public void apply( CommandStream representation, ValidatedIndexUpdates indexUpdates, LockGroup locks,
             long transactionId, TransactionApplicationMode mode ) throws IOException
     {
         // Graph store application. The order of the decorated store appliers is irrelevant
         CommandHandler storeApplier = new NeoStoreTransactionApplier(
-                neoStores, cacheAccess, lockService, locks, transactionId );
+                storageEngine.neoStores(), storageEngine.cacheAccess(), lockService, locks, transactionId );
         if ( mode.needsIdTracking() )
         {
-            storeApplier = new HighIdTransactionApplier( storeApplier, neoStores );
+            storeApplier = new HighIdTransactionApplier( storeApplier, storageEngine.neoStores() );
         }
         if ( mode.needsCacheInvalidationOnUpdates() )
         {
-            storeApplier = new CacheInvalidationTransactionApplier( storeApplier, neoStores, cacheAccess );
+            storeApplier = new CacheInvalidationTransactionApplier( storeApplier, storageEngine.neoStores(), storageEngine.cacheAccess() );
         }
 
         // Schema index application
-        IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService, indexUpdates,
+        IndexTransactionApplier indexApplier = new IndexTransactionApplier( storageEngine.indexingService(), indexUpdates,
                 labelScanStoreSync );
 
         // Legacy index application
@@ -112,7 +105,7 @@ public class TransactionRepresentationStoreApplier
         }
         catch ( Throwable cause )
         {
-            health.panic( cause );
+            storageEngine.kernelHealth().panic( cause );
             throw cause;
         }
     }
@@ -120,7 +113,7 @@ public class TransactionRepresentationStoreApplier
     private CommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
     {
         Optional<CommandHandler> handlerOption =
-                neoStores.getCounts().apply( transactionId ).map( CountsStoreApplier.FACTORY );
+                storageEngine.neoStores().getCounts().apply( transactionId ).map( CountsStoreApplier.FACTORY );
         if ( mode == TransactionApplicationMode.RECOVERY )
         {
             handlerOption = handlerOption.or( CommandHandler.EMPTY );
@@ -131,7 +124,8 @@ public class TransactionRepresentationStoreApplier
     public TransactionRepresentationStoreApplier withLegacyIndexTransactionOrdering(
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        return new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStores, cacheAccess,
-                lockService, legacyIndexProviderLookup, indexConfigStore, health, legacyIndexTransactionOrdering );
+        return new TransactionRepresentationStoreApplier( labelScanWriters,
+                lockService, indexConfigStore, legacyIndexTransactionOrdering,
+                storageEngine );
     }
 }
