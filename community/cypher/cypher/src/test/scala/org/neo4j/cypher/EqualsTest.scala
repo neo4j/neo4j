@@ -104,4 +104,9 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     val result = executeWithAllPlannersAndRuntimes("MATCH (a:Person)-->(b:Person) WHERE a = b RETURN a")
     result.toList should equal(List(Map("a" -> node)))
   }
+
+  test("should treat chars as strings in equality") {
+    executeScalar[Boolean]("RETURN 'a' = {param}", "param" -> 'a') shouldBe true
+    executeScalar[Boolean]("RETURN {param} = 'a'", "param" -> 'a') shouldBe true
+  }
 }
