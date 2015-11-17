@@ -97,6 +97,8 @@ abstract class LogicalPlan
     }
 
   def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan
+
+  def debugId: String = f"0x${hashCode()}%08x"
 }
 
 trait LogicalPlanWithoutExpressions {

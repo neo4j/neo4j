@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{And, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.SetAction
-import org.neo4j.cypher.internal.compiler.v2_3.{InternalNotificationLogger, On, OnAction, commands, mutation}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, ast}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.SetClause
 import org.neo4j.cypher.internal.frontend.v2_3.notification.JoinHintUnsupportedNotification
@@ -34,9 +34,9 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 object StatementConverters {
 
   implicit class StatementConverter(val statement: ast.Statement) extends AnyVal {
-    def asQuery(notifications: InternalNotificationLogger): commands.AbstractQuery = statement match {
+    def asQuery(notifications: InternalNotificationLogger, plannerName: String = ""): commands.AbstractQuery = statement match {
       case s: ast.Query =>
-        val innerQuery = s.part.asQuery(notifications)
+        val innerQuery = s.part.asQuery(notifications, plannerName)
         s.periodicCommitHint match {
           case Some(hint) => PeriodicCommitQuery(innerQuery, hint.size.map(_.value))
           case _          => innerQuery
@@ -87,18 +87,18 @@ object StatementConverters {
   }
 
   implicit class QueryPartConverter(val queryPart: ast.QueryPart) extends AnyVal {
-    def asQuery(notifications: InternalNotificationLogger): commands.AbstractQuery = queryPart match {
+    def asQuery(notifications: InternalNotificationLogger, plannerName: String): commands.AbstractQuery = queryPart match {
       case s: ast.SingleQuery =>
-        s.asQuery(notifications)
+        s.asQuery(notifications, plannerName)
       case s: ast.UnionAll =>
-        commands.Union(s.unionedQueries.reverseMap(_.asQuery(notifications)), commands.QueryString.empty, distinct = false)
+        commands.Union(s.unionedQueries.reverseMap(_.asQuery(notifications, plannerName)), commands.QueryString.empty, distinct = false)
       case s: ast.UnionDistinct =>
-        commands.Union(s.unionedQueries.reverseMap(_.asQuery(notifications)), commands.QueryString.empty, distinct = true)
+        commands.Union(s.unionedQueries.reverseMap(_.asQuery(notifications, plannerName)), commands.QueryString.empty, distinct = true)
     }
   }
 
   implicit class SingleQueryConverter(val singleQuery: ast.SingleQuery) extends AnyVal {
-    def asQuery(notifications: InternalNotificationLogger): commands.Query =
+    def asQuery(notifications: InternalNotificationLogger, plannerName: String): commands.Query =
       groupClauses(singleQuery.clauses).foldRight(None: Option[commands.Query], (_: commands.QueryBuilder).returns()) {
         case (group, (tail, defaultClose)) =>
           val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
@@ -106,7 +106,7 @@ object StatementConverters {
           val builder = group.foldLeft(b)((b, clause) => clause match {
             case c: ast.LoadCSV      => c.addToQueryBuilder(b)
             case c: ast.Start        => c.addToQueryBuilder(b)
-            case c: ast.Match        => c.addToQueryBuilder(b, notifications)
+            case c: ast.Match        => c.addToQueryBuilder(b, notifications, plannerName)
             case c: ast.Unwind       => c.addToQueryBuilder(b)
             case c: ast.Merge        => c.addToQueryBuilder(b)
             case c: ast.Create       => c.addToQueryBuilder(b)
@@ -211,10 +211,10 @@ object StatementConverters {
   }
 
   implicit class MatchConverter(val clause: ast.Match) extends AnyVal {
-    def addToQueryBuilder(builder: commands.QueryBuilder, notifications: InternalNotificationLogger) = {
+    def addToQueryBuilder(builder: commands.QueryBuilder, notifications: InternalNotificationLogger, plannerName: String) = {
       val matches = builder.matching ++ clause.pattern.asLegacyPatterns
       val namedPaths = builder.namedPaths ++ clause.pattern.asLegacyNamedPaths
-      val indexHints: Seq[StartItem with Hint] = builder.using ++ clause.hints.flatMap(_.asCommandStartHint(notifications))
+      val indexHints: Seq[StartItem with Hint] = builder.using ++ clause.hints.flatMap(_.asCommandStartHint(notifications, plannerName))
       val wherePredicate: Predicate = (builder.where, clause.where) match {
         case (p, None)                  => p
         case (True(), Some(w))          => toCommandPredicate(w.expression)
@@ -231,13 +231,15 @@ object StatementConverters {
   }
 
   implicit class RonjaHintConverter(val item: ast.UsingHint) extends AnyVal {
-    def asCommandStartHint(notifications: InternalNotificationLogger) = item match {
+    def asCommandStartHint(notifications: InternalNotificationLogger, plannerName: String) = item match {
       case ast.UsingIndexHint(identifier, label, property) =>
         Some(commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None))
       case ast.UsingScanHint(identifier, label) =>
         Some(commands.NodeByLabel(identifier.name, label.name))
       case ast.UsingJoinHint(identifiers) =>
-        notifications.log(JoinHintUnsupportedNotification(identifiers.map(_.name).toSeq))
+        if (PlannerName(plannerName) == RulePlannerName) {
+          notifications.log(JoinHintUnsupportedNotification(identifiers.map(_.name).toSeq))
+        }
         None
     }
   }

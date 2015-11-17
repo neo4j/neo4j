@@ -28,9 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOption
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v2_3.InternalException
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.function
-import org.neo4j.graphdb.Relationship
-
 import scala.annotation.tailrec
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
@@ -41,6 +38,10 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
   def emptyComponentPlanned(graph: QueryGraph, plan: LogicalPlan): Unit
   def startConnectingComponents(graph: QueryGraph): Unit
   def endConnectingComponents(graph: QueryGraph, result: LogicalPlan): Unit
+}
+
+object IDPQueryGraphSolver {
+  val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 }
 
 /**
@@ -105,34 +106,41 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
     val leaves = leafPlanFinder(config, qg)
 
-    if (qg.patternRelationships.nonEmpty) {
+    val bestPlan =
+      if (qg.patternRelationships.nonEmpty) {
 
-      val generators = solvers.map(_(qg))
-      val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-      val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+        val generators = solvers.map(_(qg))
+        val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
+        val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
-      val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
-        generator = generator,
-        projectingSelector = kit.pickBest,
-        maxTableSize = maxTableSize,
-        monitor = monitor
-      )
+        val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
+          generator = generator,
+          projectingSelector = kit.pickBest,
+          maxTableSize = maxTableSize,
+          monitor = monitor
+        )
 
-      monitor.initTableFor(qg, component)
-      val seed = initTable(qg, kit, leaves)
-      monitor.startIDPIterationFor(qg, component)
-      val solutions = solver(seed, qg.patternRelationships)
-      val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
-      monitor.endIDPIterationFor(qg, component, result)
-      result
-    } else {
-      val solutionPlans = leaves collect {
-        case plan if (qg.coveredIds -- plan.availableSymbols).isEmpty => kit.select(plan, qg)
+        monitor.initTableFor(qg, component)
+        val seed = initTable(qg, kit, leaves)
+        monitor.startIDPIterationFor(qg, component)
+        val solutions = solver(seed, qg.patternRelationships)
+        val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
+        monitor.endIDPIterationFor(qg, component, result)
+
+        result
+      } else {
+        val solutionPlans = leaves collect {
+          case plan if (qg.coveredIds -- plan.availableSymbols).isEmpty => kit.select(plan, qg)
+        }
+        val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
+        monitor.noIDPIterationFor(qg, component, result)
+        result
       }
-      val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
-      monitor.noIDPIterationFor(qg, component, result)
-      result
-    }
+
+    if (IDPQueryGraphSolver.VERBOSE)
+      println(s"Result (picked best plan):\n\tPlan #${bestPlan.debugId}\n\t${bestPlan.toString}\n\n")
+
+    bestPlan
   }
 
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
@@ -155,10 +163,8 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
       case plan =>
         val (start, end) = pattern.nodes
         val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
-        val leftJoin = planJoinsOnTopOfExpands(qg, leftExpand, leaves)
         val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
-        val rightJoin = planJoinsOnTopOfExpands(qg, rightExpand, leaves)
-        leftExpand.toSet ++ rightExpand.toSet ++ leftJoin.toSet ++ rightJoin.toSet
+        leftExpand.toSet ++ rightExpand.toSet
     }
   }
 

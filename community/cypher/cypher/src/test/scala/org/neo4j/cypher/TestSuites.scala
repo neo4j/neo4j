@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer}
+import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -93,5 +94,18 @@ abstract class ExecutionEngineFunSuite
         rawFailureMessage = s"Result should have $count rows",
         rawNegatedFailureMessage = s"Plan should not have $count rows")
     }
+  }
+
+  def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
+    val resultCodes = result.notifications.map(_.getCode)
+    statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
+  }
+
+  def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
+    shouldHaveWarnings(result, List(notification))
+  }
+
+  def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
+    shouldHaveWarnings(result, List())
   }
 }

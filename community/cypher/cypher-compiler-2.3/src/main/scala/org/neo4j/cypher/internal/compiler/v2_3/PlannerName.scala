@@ -75,6 +75,8 @@ object PlannerName {
     case GreedyPlannerName.name => GreedyPlannerName
     case IDPPlannerName.name => IDPPlannerName
     case DPPlannerName.name => DPPlannerName
+    case "COST" => CostBasedPlannerName.default
+    case "DEFAULT" => CostBasedPlannerName.default
 
     // Note that conservative planner is not exposed to end users.
     case n => throw new IllegalArgumentException(s"""$n is not a a valid planner, valid options are
