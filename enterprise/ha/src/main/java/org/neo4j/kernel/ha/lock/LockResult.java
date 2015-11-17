@@ -22,18 +22,18 @@ package org.neo4j.kernel.ha.lock;
 public class LockResult
 {
     private final LockStatus status;
-    private final String deadlockMessage;
-    
+    private final String message;
+
     public LockResult( LockStatus status )
     {
         this.status = status;
-        this.deadlockMessage = null;
+        this.message = null;
     }
-    
-    public LockResult( String deadlockMessage )
+
+    public LockResult( LockStatus status, String message )
     {
-        this.status = LockStatus.DEAD_LOCKED;
-        this.deadlockMessage = deadlockMessage;
+        this.status = status;
+        this.message = message;
     }
 
     public LockStatus getStatus()
@@ -41,14 +41,14 @@ public class LockResult
         return status;
     }
 
-    public String getDeadlockMessage()
+    public String getMessage()
     {
-        return deadlockMessage;
+        return message;
     }
-    
+
     @Override
     public String toString()
     {
-        return "LockResult[" + status + ", " + deadlockMessage + "]";
+        return "LockResult[" + status + ", " + message + "]";
     }
 }

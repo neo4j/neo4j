@@ -311,7 +311,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( "Unable to acquire exclusive lock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED, "Unable to acquire exclusive lock: " + e.getMessage() ) );
         }
         try
         {
@@ -323,7 +323,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( DeadlockDetectedException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( "Can't acquire exclusive lock, because it would have caused a deadlock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.DEAD_LOCKED,"Can't acquire exclusive lock, because it would have caused a deadlock: " + e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
@@ -347,7 +347,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( "Unable to acquire shared lock: " + e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.NOT_LOCKED, "Unable to acquire shared lock: " + e.getMessage() ) );
         }
         try
         {
@@ -360,7 +360,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( DeadlockDetectedException e )
         {
-            return spi.packTransactionObligationResponse( context, new LockResult( e.getMessage() ) );
+            return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.DEAD_LOCKED, e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
         {
