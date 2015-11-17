@@ -118,84 +118,92 @@ object SetOperation {
   }
 }
 
-case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation{
-  private val needsExclusiveLock = Expression.hasPropertyReadDependency(nodeName, expression, propertyKey.name)
+abstract class SetPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation {
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(itemName, expression, propertyKey.name)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value = executionContext.get(nodeName).get
-    if (value != null) {
-      val nodeId = CastSupport.castOrFail[Node](value).getId
-      val ops = state.query.nodeOps
-      if (needsExclusiveLock) ops.acquireExclusiveLock(nodeId)
+    val item = executionContext.get(itemName).get
+    if (item != null) {
+      val itemId = id(item)
+      val ops = operations(state.query)
+      if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
       try {
-        SetOperation.setProperty(executionContext, state, ops, nodeId, propertyKey,
+        SetOperation.setProperty(executionContext, state, ops, itemId, propertyKey,
           expression)
-      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(nodeId)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
+
+  protected def id(item: Any): Long
+  protected def operations(qtx: QueryContext): Operations[T]
+}
+
+case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
+                                    expression: Expression)
+  extends SetPropertyOperation[Node](nodeName, propertyKey, expression) {
 
   override def name = "SetNodeProperty"
+
+  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+
+  override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
 
-case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation{
-  private val needsExclusiveLock = Expression.hasPropertyReadDependency(relName, expression, propertyKey.name)
-
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value = executionContext.get(relName).get
-    if (value != null) {
-      val relationshipId = CastSupport.castOrFail[Relationship](value).getId
-      val ops = state.query.relationshipOps
-      if (needsExclusiveLock) ops.acquireExclusiveLock(relationshipId)
-      try {
-        SetOperation.setProperty(executionContext, state, ops,
-          relationshipId, propertyKey, expression)
-      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(relationshipId)
-    }
-  }
+case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
+                                            expression: Expression)
+  extends SetPropertyOperation[Relationship](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
+
+  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+
+  override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
 
-case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression, removeOtherProps: Boolean) extends SetOperation{
-  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(nodeName, expression)
+abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: String, expression: Expression,
+                                           removeOtherProps: Boolean) extends SetOperation {
+  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(itemName, expression)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value = executionContext.get(nodeName).get
-    if (value != null) {
-      val ops = state.query.nodeOps
-      val nodeId = CastSupport.castOrFail[Node](value).getId
-      if (needsExclusiveLock) ops.acquireExclusiveLock(nodeId)
+    val item = executionContext.get(itemName).get
+    if (item != null) {
+      val ops = operations(state.query)
+      val itemId = id(item)
+      if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
+
       try {
         val map = SetOperation.toMap(executionContext, state, expression)
 
-        SetOperation.setPropertiesFromMap(state.query, ops, nodeId, map, removeOtherProps)
-      }  finally if (needsExclusiveLock) ops.releaseExclusiveLock(nodeId)
+        SetOperation.setPropertiesFromMap(state.query, ops, itemId, map, removeOtherProps)
+      }  finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
+  protected def id(item: Any): Long
+  protected def operations(qtx: QueryContext): Operations[T]
+
+}
+
+case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
+                                           removeOtherProps: Boolean)
+  extends SetPropertyFromMapOperation[Node](nodeName, expression, removeOtherProps) {
 
   override def name = "SetNodePropertyFromMap"
+
+  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+
+  override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
 
-case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression, removeOtherProps: Boolean) extends SetOperation{
-  private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(relName, expression)
-
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value = executionContext.get(relName).get
-    if (value != null) {
-      val ops = state.query.relationshipOps
-      val relationshipId = CastSupport.castOrFail[Relationship](value).getId
-      if (needsExclusiveLock) ops.acquireExclusiveLock(relationshipId)
-      try {
-        val map = SetOperation.toMap(executionContext, state, expression)
-        SetOperation
-          .setPropertiesFromMap(state.query, ops, relationshipId, map, removeOtherProps)
-      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(relationshipId)
-    }
-  }
+case class SetRelationshipPropertyFromMapOperation(relName: String, expression: Expression,
+                                                   removeOtherProps: Boolean)
+  extends SetPropertyFromMapOperation[Relationship](relName, expression, removeOtherProps) {
 
   override def name = "SetRelationshipPropertyFromMap"
 
+  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+
+  override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {

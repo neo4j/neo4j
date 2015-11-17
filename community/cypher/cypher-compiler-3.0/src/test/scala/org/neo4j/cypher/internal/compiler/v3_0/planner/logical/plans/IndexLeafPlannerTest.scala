@@ -194,7 +194,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
-  test("plans no merge unique index seeks when there are only one unique index") {
+  test("plans merge unique index seeks when there are only one unique index") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"))
 
@@ -204,11 +204,13 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
-      resultPlans shouldBe empty
+      resultPlans should beLike {
+        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
+      }
     }
   }
 
-  test("plans merge unique index seeks when there are three unique indexes") {
+  test("plans merge unique index seeks with AssertSameNode when there are three unique indexes") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"), hasLabel("Awesomest"))
 
@@ -231,7 +233,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
-  test("plans merge unique index seeks when there are four unique indexes") {
+  test("plans merge unique index seeks with AssertSameNode when there are four unique indexes") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"),
         hasLabel("Awesomest"), hasLabel("Awesomestest"))

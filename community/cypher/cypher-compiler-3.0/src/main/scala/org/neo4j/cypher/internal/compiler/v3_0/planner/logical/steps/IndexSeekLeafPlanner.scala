@@ -108,8 +108,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       }
   }
 
-
-
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,

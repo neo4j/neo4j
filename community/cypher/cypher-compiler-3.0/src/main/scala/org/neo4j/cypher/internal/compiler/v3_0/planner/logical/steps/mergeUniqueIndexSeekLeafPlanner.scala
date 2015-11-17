@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    assert(qg.patternNodes.size == 1) //TODO is this guranteed?
+    assert(qg.patternNodes.size == 1)
 
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
@@ -50,8 +50,8 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
     val resultPlans = collectPlans(predicates, qg.argumentIds, labelPredicateMap, qg.hints)
 
-    if (resultPlans.size >= 2) Seq(resultPlans.reduce(context.logicalPlanProducer.planAssertSameNode(node, _, _)))
-    else Seq.empty
+    if (resultPlans.size < 2) resultPlans
+    else Seq(resultPlans.reduce(context.logicalPlanProducer.planAssertSameNode(node, _, _)))
   }
 
   override def constructPlan(idName: IdName,

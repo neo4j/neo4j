@@ -40,7 +40,7 @@ case class MergeNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel],
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      val value = row.get(key).get
+      val value = row(key)
       if (value == null) {
         createNode(row, state)
         onCreate.foreach(_.set(row, state))

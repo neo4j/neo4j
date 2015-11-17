@@ -86,13 +86,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * Does this UpdateGraph update nodes?
    */
-  def updatesNodes: Boolean = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty || mergeNodePatterns.nonEmpty
-
-  def mergeNodePatterns = mutatingPatterns.collect {
-    case m: MergeNodePattern => m
-  }
-
-  def hasMerge = mergeNodePatterns.nonEmpty
+  def updatesNodes: Boolean = createNodePatterns.nonEmpty || removeLabelPatterns.nonEmpty ||
+    mergeNodePatterns.nonEmpty || setLabelPatterns.nonEmpty || setNodePropertyPatterns.nonEmpty
 
   /*
    * Checks if there is overlap between what's being read in the query graph
@@ -154,7 +149,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   /*
    * Checks for overlap between labels being read in query graph
-   * and labels being updated with SET here
+   * and labels being updated with SET and MERGE here
    */
   def setLabelOverlap(qg: QueryGraph): Boolean = {
 
@@ -180,7 +175,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   /*
    * Checks for overlap between what props are read in query graph
-   * and what is updated with SET her
+   * and what is updated with SET and MERGE here
    */
   def setPropertyOverlap(qg: QueryGraph) = setNodePropertyOverlap(qg) || setRelPropertyOverlap(qg)
 
@@ -264,6 +259,24 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
   private def removeLabelPatterns = mutatingPatterns.collect {
     case p: RemoveLabelPattern => p
+  }
+
+  private def setLabelPatterns = mutatingPatterns.collect {
+    case p: SetLabelPattern => p
+  }
+
+  private def setNodePropertyPatterns = mutatingPatterns.collect {
+    case p: SetNodePropertyPattern => p
+    case p: SetNodePropertiesFromMapPattern => p
+  }
+
+  private def setRelationshipPropertyPatterns = mutatingPatterns.collect {
+    case p: SetRelationshipPropertyPattern => p
+    case p: SetRelationshipPropertiesFromMapPattern => p
+  }
+
+  private def mergeNodePatterns = mutatingPatterns.collect {
+    case m: MergeNodePattern => m
   }
 }
 

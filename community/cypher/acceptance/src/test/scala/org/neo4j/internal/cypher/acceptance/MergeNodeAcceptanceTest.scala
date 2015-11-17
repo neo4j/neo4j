@@ -76,6 +76,74 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
+  test("merge node with property when it exists") {
+    // Given
+    createNode("prop" -> 42)
+
+    // When
+    val result = updateWithBothPlanners("merge (a {prop: 42}) return a.prop")
+
+    // Then
+    result.toList should equal(List(Map("a.prop" -> 42)))
+    assertStats(result, nodesCreated = 0)
+  }
+
+  test("merge node should create when it doesn't match") {
+    // Given
+    createNode("prop" -> 42)
+
+    // When
+    val result = updateWithBothPlanners("merge (a {prop: 43}) return a.prop")
+
+    // Then
+    result.toList should equal(List(Map("a.prop" -> 43)))
+    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+  }
+
+  test("merge node with prop and label") {
+    // Given
+    createLabeledNode(Map("prop" -> 42), "Label")
+
+    // When
+    val result = updateWithBothPlanners("merge (a:Label {prop: 42}) return a.prop")
+
+    // Then
+    result.toList should equal(List(Map("a.prop" -> 42)))
+    assertStats(result, nodesCreated = 0)
+  }
+
+  test("merge node with prop and label and unique index") {
+    // Given
+    graph.createConstraint("Label", "prop")
+    createLabeledNode(Map("prop" -> 42), "Label")
+
+    // When
+    val result = updateWithBothPlanners("merge (a:Label {prop: 42}) return a.prop")
+    // Then
+    result.toList should equal(List(Map("a.prop" -> 42)))
+    assertStats(result, nodesCreated = 0)
+  }
+
+  test("merge node with prop and label and unique index when no match") {
+    // Given
+    graph.createConstraint("Label", "prop")
+    createLabeledNode(Map("prop" -> 42), "Label")
+
+    // When
+    val result = updateWithBothPlanners("merge (a:Label {prop: 11}) return a.prop")
+
+    // Then
+    result.toList should equal(List(Map("a.prop" -> 11)))
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+  }
+
+  test("multiple merges after each other") {
+    1 to 100 foreach { prop =>
+      val result = updateWithBothPlanners(s"merge (a:Label {prop: $prop}) return a.prop")
+      assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    }
+  }
+
   test("merge node with label add label on create when it exists") {
     // Given
     createLabeledNode("Label")
