@@ -76,29 +76,4 @@ class UsingTest extends DocumentingTestBase {
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }
-
-  @Test def query_forcing_join() {
-    profileQuery(
-      title = "Hinting a join on a single node",
-      text = "To force the query planner to produce plans with joins in them, use +USING+ +JOIN+.",
-      queryText = "match (andres {name:'Andres'})-->(x)<--(emil {name: 'Emil'}) using join on x return x",
-      assertions = (p) => assert(p.toList === List(Map("x" -> node("Peter"))))
-    )
-  }
-
-  @Test def query_forcing_join_using_multiple_nodes() {
-    profileQuery(
-      title = "Hinting a join on multiple nodes",
-      text = "To force the query planner to produce plans with joins in them, use +USING+ +JOIN+.",
-      queryText = "match (andy {name:'Andres'})-[r1]->(x)<-[r2]-(y)-[r3]-(andy) using join on x, y return x, y",
-      assertions = (p) => {
-        assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
-        assert(p.toSet === Set(
-          Map("x" -> node("Peter"), "y" -> node("Emil")),
-          Map("x" -> node("Peter"), "y" -> node("Jim")),
-          Map("x" -> node("Peter"), "y" -> node("Stefan"))
-        ))
-      }
-    )
-  }
 }
