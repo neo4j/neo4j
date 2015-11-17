@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -76,8 +75,9 @@ public class ConstraintCreationIT
             assertEquals(0, Iterables.count(db.schema().getIndexes() ));
         }
 
-        File schemaStorePath = SchemaIndexProvider
-                .getRootDirectory( new File( db.getStoreDir() ), LuceneSchemaIndexProviderFactory.KEY );
+        SchemaIndexProvider schemaIndexProvider =
+                db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
+        File schemaStorePath = schemaIndexProvider.getStoreDirectory( new File( db.getStoreDir() ) );
 
         String indexId = "1";
         File[] files = new File(schemaStorePath, indexId ).listFiles();

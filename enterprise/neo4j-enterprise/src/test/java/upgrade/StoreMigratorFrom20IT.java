@@ -34,16 +34,22 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.impl.index.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -65,15 +71,51 @@ import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final Config config = MigrationTestUtils.defaultConfig();
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private StoreFactory storeFactory;
+    private PageCache pageCache;
+    private final LifeSupport life = new LifeSupport();
+    private UpgradableDatabase upgradableDatabase;
+
+    private SchemaIndexProvider schemaIndexProvider;
+    private LabelScanStoreProvider labelScanStoreProvider;
+
+    @Before
+    public void setUp()
+    {
+        pageCache = pageCacheRule.getPageCache( fs );
+
+        schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory() );
+        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1);
+
+        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance() );
+        upgradableDatabase =
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
+    }
 
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
         StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        upgrader( storeMigrator ).migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), upgradableDatabase, schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs );
+        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded(
+                find20FormatStoreDirectory( storeDir.directory() ), upgradableDatabase, schemaIndexProvider,
+                labelScanStoreProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -106,7 +148,9 @@ public class StoreMigratorFrom20IT
 
         // When
         StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        upgrader( storeMigrator ).migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs );
+        upgrader( indexMigrator, storeMigrator )
+                .migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
@@ -152,39 +196,12 @@ public class StoreMigratorFrom20IT
         assertEquals( 1042l, metaDataStore.getLastCommittedTransactionId() );
     }
 
-    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
+    private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( storeMigrator );
         return upgrader;
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    private final Config config = MigrationTestUtils.defaultConfig();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
-    private StoreFactory storeFactory;
-    private PageCache pageCache;
-    private final LifeSupport life = new LifeSupport();
-    private UpgradableDatabase upgradableDatabase;
-
-    @Before
-    public void setUp()
-    {
-        pageCache = pageCacheRule.getPageCache( fs );
-        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
-        upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
-    }
-
-    @After
-    public void tearDown()
-    {
-        life.shutdown();
-    }
 }

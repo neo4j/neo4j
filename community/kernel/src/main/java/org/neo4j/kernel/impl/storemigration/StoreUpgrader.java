@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -107,6 +108,11 @@ public class StoreUpgrader
         this.log = logProvider.getLog( getClass() );
     }
 
+    /**
+     * Add migration participant into a participants list.
+     * Participant will be added into the end of a list and will be executed only after all predecessors.
+     * @param participant - participant to add into migration
+     */
     public void addParticipant( StoreMigrationParticipant participant )
     {
         assert participant != null;
@@ -114,7 +120,7 @@ public class StoreUpgrader
     }
 
     public void migrateIfNeeded( File storeDirectory, UpgradableDatabase upgradableDatabase,
-            SchemaIndexProvider schemaIndexProvider )
+            SchemaIndexProvider schemaIndexProvider, LabelScanStoreProvider labelScanStoreProvider )
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 
@@ -149,7 +155,8 @@ public class StoreUpgrader
             versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
             cleanMigrationDirectory( migrationDirectory );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-            migrateToIsolatedDirectory( storeDirectory, migrationDirectory, schemaIndexProvider, versionToMigrateFrom );
+            migrateToIsolatedDirectory( storeDirectory, migrationDirectory, schemaIndexProvider,
+                    labelScanStoreProvider, versionToMigrateFrom );
             MigrationStatus.moving.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
@@ -241,13 +248,15 @@ public class StoreUpgrader
     }
 
     private void migrateToIsolatedDirectory( File storeDir, File migrationDirectory,
-            SchemaIndexProvider schemaIndexProvider, String versionToMigrateFrom )
+            SchemaIndexProvider schemaIndexProvider, LabelScanStoreProvider labelScanStoreProvider,
+            String versionToMigrateFrom )
     {
         try
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.migrate( storeDir, migrationDirectory, schemaIndexProvider, versionToMigrateFrom );
+                participant.migrate( storeDir, migrationDirectory, schemaIndexProvider, labelScanStoreProvider,
+                        versionToMigrateFrom );
             }
         }
         catch ( IOException e )

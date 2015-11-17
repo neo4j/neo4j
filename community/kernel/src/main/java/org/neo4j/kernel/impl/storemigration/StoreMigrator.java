@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -151,7 +152,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-            String versionToMigrateFrom ) throws IOException
+            LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
     {
         progressMonitor.started();
 

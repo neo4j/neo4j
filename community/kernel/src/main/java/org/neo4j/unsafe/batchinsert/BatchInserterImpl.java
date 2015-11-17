@@ -77,6 +77,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -327,10 +328,10 @@ public class BatchInserterImpl implements BatchInserter
                                             UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
-                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+                HighestSelectionStrategy.getInstance() );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
+                HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
         actions = new BatchSchemaActions();
 
         // Record access

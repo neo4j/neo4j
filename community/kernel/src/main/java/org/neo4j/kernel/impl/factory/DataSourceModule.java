@@ -168,8 +168,8 @@ public class DataSourceModule
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logging.getInternalLog( StoreMigrator.class ) );
-        storeMigrationProcess.addParticipant(
-                new StoreMigrator( progressMonitor, fileSystem, pageCache, config, logging ) );
+
+        StoreMigrator storeMigrator = new StoreMigrator( progressMonitor, fileSystem, pageCache, config, logging );
 
         Guard guard = config.get( execution_guard_enabled ) ?
                       deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
@@ -190,7 +190,7 @@ public class DataSourceModule
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
                 editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
-                storeMigrationProcess, platformModule.transactionMonitor, databaseHealth,
+                storeMigrationProcess, storeMigrator, platformModule.transactionMonitor, databaseHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,

@@ -21,106 +21,53 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
-import org.neo4j.logging.NullLogProvider;
-
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
-import static org.neo4j.kernel.impl.store.record.SchemaRule.Kind.UNIQUENESS_CONSTRAINT;
 
 public class SchemaIndexMigrator implements StoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
-    private final StoreFactory storeFactory;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, StoreFactory storeFactory )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
-        this.storeFactory = storeFactory;
-
-        storeFactory.setConfig( new Config() );
-        storeFactory.setFileSystemAbstraction( fileSystem );
-        storeFactory.setIdGeneratorFactory( new DefaultIdGeneratorFactory( fileSystem ) );
-        storeFactory.setLogProvider( NullLogProvider.getInstance() );
-        storeFactory.setPageCache( pageCache );
     }
 
     @Override
     public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-            String versionToMigrateFrom ) throws IOException
+            LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
     {
         switch ( versionToMigrateFrom )
         {
         case Legacy19Store.LEGACY_VERSION:
-            break;
         case Legacy20Store.LEGACY_VERSION:
         case Legacy21Store.LEGACY_VERSION:
-            deleteIndexesContainingArrayValues( storeDir, schemaIndexProvider );
-            break;
         case Legacy22Store.LEGACY_VERSION:
         case Legacy23Store.LEGACY_VERSION:
+            deleteIndexes( storeDir, schemaIndexProvider, labelScanStoreProvider );
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
     }
 
-    private void deleteIndexesContainingArrayValues( File storeDir,
-                                                     SchemaIndexProvider schemaIndexProvider ) throws IOException
+    private void deleteIndexes( File storeDir, SchemaIndexProvider schemaIndexProvider,
+            LabelScanStoreProvider labelScanStoreProvider ) throws IOException
     {
-        File indexRoot = getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-        List<File> indexesToBeDeleted = new ArrayList<>();
-        storeFactory.setStoreDir( storeDir );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.SCHEMA ) )
-        {
-            SchemaStore schema = neoStores.getSchemaStore();
-            Iterator<SchemaRule> rules = schema.loadAllSchemaRules();
-            while ( rules.hasNext() )
-            {
-                SchemaRule rule = rules.next();
-                IndexConfiguration indexConfig = new IndexConfiguration( rule.getKind() == UNIQUENESS_CONSTRAINT );
-                try ( IndexAccessor accessor =
-                              schemaIndexProvider.getOnlineAccessor( rule.getId(), indexConfig, samplingConfig ) )
-                {
-                    try ( IndexReader reader = accessor.newReader() )
-                    {
-                        if ( reader.valueTypesInIndex().contains( Array.class ) )
-                        {
-                            indexesToBeDeleted.add( new File( indexRoot, "" + rule.getId() ) );
-                        }
-                    }
-                }
-            }
-        }
+        deleteIndexes( schemaIndexProvider.getStoreDirectory( storeDir ) );
+        deleteIndexes( labelScanStoreProvider.getStoreDirectory( storeDir ) );
+    }
 
-        for ( File index : indexesToBeDeleted )
-        {
-            fileSystem.deleteRecursively( index );
-        }
-
+    private void deleteIndexes( File indexRootDirectory ) throws IOException
+    {
+        fileSystem.deleteRecursively( indexRootDirectory );
     }
 
     @Override

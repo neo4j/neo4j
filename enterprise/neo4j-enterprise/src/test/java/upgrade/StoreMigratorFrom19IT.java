@@ -43,6 +43,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -80,6 +83,39 @@ import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UP
 
 public class StoreMigratorFrom19IT
 {
+
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final Config config = MigrationTestUtils.defaultConfig();
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final LabelScanStoreProvider labelScanStoreProvider = new LabelScanStoreProvider( new
+            InMemoryLabelScanStore(), 1 );
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private PageCache pageCache;
+    private StoreFactory storeFactory;
+    private UpgradableDatabase upgradableDatabase;
+    private final LifeSupport life = new LifeSupport();
+
+    @Before
+    public void setUp()
+    {
+        pageCache = pageCacheRule.getPageCache( fs );
+        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance() );
+        upgradableDatabase =
+                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
+    }
+
     @Test
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
@@ -87,7 +123,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -121,7 +157,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
 
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -144,7 +180,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), upgradableDatabase, schemaIndexProvider );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -238,42 +274,13 @@ public class StoreMigratorFrom19IT
         throw new IllegalArgumentException( name + " not found" );
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-
     private StoreUpgrader newStoreUpgrader()
     {
         StoreUpgrader upgrader =
                 new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        upgrader.addParticipant( new SchemaIndexMigrator( fs ) );
         upgrader.addParticipant(
                 new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() ) );
         return upgrader;
-    }
-
-    private final Config config = MigrationTestUtils.defaultConfig();
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
-    private PageCache pageCache;
-    private StoreFactory storeFactory;
-    private UpgradableDatabase upgradableDatabase;
-    private final LifeSupport life = new LifeSupport();
-
-    @Before
-    public void setUp()
-    {
-        pageCache = pageCacheRule.getPageCache( fs );
-        storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance() );
-        upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
-    }
-
-    @After
-    public void tearDown()
-    {
-        life.shutdown();
     }
 }

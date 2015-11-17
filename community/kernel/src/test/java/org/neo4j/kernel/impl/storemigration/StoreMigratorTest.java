@@ -34,6 +34,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -63,6 +65,8 @@ public class StoreMigratorTest
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final LabelScanStoreProvider labelScanStoreProvider =
+            new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
 
     @Parameterized.Parameter( 0 )
     public String version;
@@ -104,7 +108,8 @@ public class StoreMigratorTest
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
+                versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
@@ -135,7 +140,8 @@ public class StoreMigratorTest
         StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
+                versionToMigrateFrom );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
@@ -169,7 +175,8 @@ public class StoreMigratorTest
         fs.mkdirs( migrationDir );
 
         // WHEN migrating
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
+                versionToMigrateFrom );
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );

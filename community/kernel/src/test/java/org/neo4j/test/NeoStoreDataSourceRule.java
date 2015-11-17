@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -86,7 +87,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
-                fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), databaseHealth,
+                fs, mock( StoreUpgrader.class ), mock( StoreMigrator.class), mock( TransactionMonitor.class ), databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,

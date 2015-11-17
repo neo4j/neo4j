@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
@@ -88,6 +89,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -294,6 +297,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private final StoreUpgrader storeMigrationProcess;
+    private StoreMigrator storeMigrator;
     private final TransactionMonitor transactionMonitor;
     private final DatabaseHealth databaseHealth;
     private final PhysicalLogFile.Monitor physicalLogMonitor;
@@ -354,6 +358,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             IndexingService.Monitor indexingServiceMonitor,
             FileSystemAbstraction fs,
             StoreUpgrader storeMigrationProcess,
+            StoreMigrator storeMigrator,
             TransactionMonitor transactionMonitor,
             DatabaseHealth databaseHealth,
             PhysicalLogFile.Monitor physicalLogMonitor,
@@ -382,6 +387,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.indexingServiceMonitor = indexingServiceMonitor;
         this.fs = fs;
         this.storeMigrationProcess = storeMigrationProcess;
+        this.storeMigrator = storeMigrator;
         this.transactionMonitor = transactionMonitor;
         this.databaseHealth = databaseHealth;
         this.physicalLogMonitor = physicalLogMonitor;
@@ -439,7 +445,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         life = new LifeSupport();
 
         indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+                HighestSelectionStrategy.getInstance() );
+
+        LabelScanStoreProvider labelScanStoreProvider =
+                dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
+                        HighestSelectionStrategy.getInstance() );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );
@@ -454,7 +464,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         life.add( new Lifecycle.Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
-        upgradeStore( storeDir, storeMigrationProcess, indexProvider );
+        upgradeStore( storeDir, storeMigrationProcess, indexProvider, labelScanStoreProvider );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -561,13 +571,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     // Startup sequence
     // By doing this sequence of method calls we can ensure that no dependency cycles exist, and get a clearer view
     // of the dependency tree, starting at the bottom
-    private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
+    private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider,
+            LabelScanStoreProvider labelScanStoreProvider )
     {
         UpgradableDatabase upgradableDatabase =
                 new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
-        storeMigrationProcess
-                .addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache ) );
-        storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider );
+        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache ) );
+        storeMigrationProcess.addParticipant( storeMigrator );
+        storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider, labelScanStoreProvider );
     }
 
     private StorageEngine buildStorageEngine(
@@ -577,7 +588,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             Runnable schemaStateChangeCallback )
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                LabelScanStoreProvider.HIGHEST_PRIORITIZED );
+                HighestSelectionStrategy.getInstance());
         return life.add(
                 new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,

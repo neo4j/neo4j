@@ -137,24 +137,6 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
             };
 
-    public static final SelectionStrategy HIGHEST_PRIORITIZED_OR_NONE =
-            new SelectionStrategy()
-    {
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException
-        {
-            List<Comparable> all = (List<Comparable>) addToCollection( candidates, new ArrayList<T>() );
-            if ( all.isEmpty() )
-            {
-                throw new IllegalArgumentException( "No schema index provider " +
-                        SchemaIndexProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
-            }
-            Collections.sort( all );
-            return (T) all.get( all.size()-1 );
-        }
-    };
-
     protected final int priority;
     private final Descriptor providerDescriptor;
 
@@ -233,9 +215,9 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return result;
     }
 
-    public static File getRootDirectory( File storeDir, String key )
+    public File getStoreDirectory( File storeDir )
     {
-        return new File( new File( new File( storeDir, "schema" ), "index" ), key );
+        return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );

@@ -29,6 +29,8 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -97,21 +99,23 @@ public class StoreMigrationTool
         // Add the kernel store migrator
         life.start();
         SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
-                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+                HighestSelectionStrategy.getInstance() );
+
+        LabelScanStoreProvider labelScanStoreProvider = kernelExtensions
+                .resolveDependency( LabelScanStoreProvider.class, HighestSelectionStrategy.getInstance() );
 
         Log log = userLogProvider.getLog( StoreMigrationTool.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             UpgradableDatabase upgradableDatabase =
                     new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+            migrationProcess.addParticipant( new SchemaIndexMigrator( fs ) );
             migrationProcess.addParticipant( new StoreMigrator(
                     new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
                     fs, pageCache, config, logService ) );
-            migrationProcess.addParticipant(
-                    schemaIndexProvider.storeMigrationParticipant( fs, pageCache ) );
             // Perform the migration
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( legacyStoreDirectory, upgradableDatabase, schemaIndexProvider );
+            migrationProcess.migrateIfNeeded( legacyStoreDirectory, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
