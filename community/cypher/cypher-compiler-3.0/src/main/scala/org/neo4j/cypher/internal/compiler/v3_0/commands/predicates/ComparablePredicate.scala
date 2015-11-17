@@ -76,6 +76,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
       case (l, r: Node) if !l.isInstanceOf[Node]                 => incomparable(l, r)
       case (l: Relationship, r) if !r.isInstanceOf[Relationship] => incomparable(l, r)
       case (l, r: Relationship) if !l.isInstanceOf[Relationship] => incomparable(l, r)
+      case (l: String, r: Character)                             => Some(l == r.toString)
+      case (l: Character, r: String)                             => Some(l.toString == r)
       case _                                                     => Some(a1 == b1)
     }
   }
