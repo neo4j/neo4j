@@ -38,7 +38,7 @@ public interface StoreMigrationParticipant
      * @param storeDir data to migrate.
      * @param migrationDir place to migrate to.
      * @param schemaIndexProvider The SchemaIndexProvider for the migrating database.
-     * @param labelScanStoreProvider The LabelScnaStoreProvider for the migrating database.
+     * @param labelScanStoreProvider The LabelScanStoreProvider for the migrating database.
      * @param versionToMigrateFrom the version to migrate from
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.

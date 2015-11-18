@@ -11,6 +11,7 @@ Apache Software License, Version 2.0
   Jackson
   Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
   Lucene QueryParsers
   Metrics Core
   Netty/All-in-One

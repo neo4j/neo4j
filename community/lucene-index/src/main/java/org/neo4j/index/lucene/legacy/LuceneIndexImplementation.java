@@ -97,6 +97,12 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
+    public File getStoreDirectory(File storeDir)
+    {
+        return LuceneDataSource.getStoreDirectory(storeDir);
+    }
+
+    @Override
     public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
         return new LuceneLegacyIndexTransaction( dataSource, commandFactory );

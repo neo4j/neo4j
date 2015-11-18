@@ -35,6 +35,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface IndexImplementation extends Lifecycle
 {
+
+    File getStoreDirectory( File storeDir );
+
     /**
      * Returns a {@link LegacyIndexProviderTransaction} that keeps transaction state for all
      * indexes for a given provider in a transaction.

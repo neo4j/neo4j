@@ -105,6 +105,8 @@
         <include>org.neo4j:*</include>
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
+        <include>org.apache.lucene:lucene-analyzers-common</include>
+        <include>org.apache.lucene:lucene-queryparser</include>
         <include>io.netty:netty</include>
         <include>org.scala-lang:*</include>
         <include>org.parboiled:*</include>
@@ -135,6 +137,8 @@
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
+        <exclude>org.apache.lucene:lucene-analyzers-common</exclude>
+        <exclude>org.apache.lucene:lucene-queryparser</exclude>
         <exclude>io.netty:netty</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
