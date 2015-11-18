@@ -187,7 +187,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         // TODO: Maybe we shouldn't encode distinct as an empty aggregation.
         case Aggregation(Projection(source, expressions), groupingExpressions, aggregatingExpressions)
           if aggregatingExpressions.isEmpty && expressions == groupingExpressions =>
-          DistinctPipe(buildPipe(source), groupingExpressions.mapValues(toCommandExpression))()
+          DistinctPipe(buildPipe(source), Eagerly.immutableMapValues(groupingExpressions, buildExpression))()
 
         case Aggregation(source, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
           DistinctPipe(buildPipe(source), groupingExpressions.mapValues(toCommandExpression))()

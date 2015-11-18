@@ -529,6 +529,18 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(1)(result)("NodeByLabelScan")
   }
 
+  test("distinct should not look up properties every time") {
+    // GIVEN
+    createNode("prop"-> 42)
+    createNode("prop"-> 42)
+
+    // WHEN
+    val result = profileWithAllPlanners("MATCH (n) RETURN DISTINCT n.prop")
+
+    // THEN
+    assertDbHits(2)(result)("Distinct")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
