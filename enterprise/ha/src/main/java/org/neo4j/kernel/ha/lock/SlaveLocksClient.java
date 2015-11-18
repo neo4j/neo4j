@@ -258,7 +258,7 @@ class SlaveLocksClient implements Locks.Client
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:
-                throw new DeadlockDetectedException( result.getDeadlockMessage() );
+                throw new DeadlockDetectedException( result.getMessage() );
             case NOT_LOCKED:
                 throw new UnsupportedOperationException();
             case OK_LOCKED:
