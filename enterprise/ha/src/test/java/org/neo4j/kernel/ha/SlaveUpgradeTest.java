@@ -47,7 +47,9 @@ public class SlaveUpgradeTest
 
             new TestHighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:9999" ) // Mandatory setting, irrelevant for this test though, just needs to be here
+                    .newGraphDatabase();
 
             fail( "Should exit abnormally" );
         }

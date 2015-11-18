@@ -73,7 +73,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
-        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed );
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_descending );
 
         for ( int i = 0; i < 5; i++ )
         {
@@ -81,6 +81,21 @@ public class TxPushStrategyConfigIT
             assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID + 1 + i ) );
             assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
             assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID ) );
+        }
+    }
+
+
+    @Test
+    public void shouldPushToSlavesInAscendingOrder() throws Exception
+    {
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_ascending );
+
+        for ( int i = 0; i < 5; i++ )
+        {
+            createTransactionOnMaster( cluster );
+            assertLastTransactions( cluster, lastTx( FIRST_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( cluster, lastTx( SECOND_SLAVE, BASE_TX_ID + 1 + i ) );
+            assertLastTransactions( cluster, lastTx( THIRD_SLAVE, BASE_TX_ID ) );
         }
     }
 
@@ -115,7 +130,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void shouldPushToOneLessSlaveOnSlaveCommit() throws Exception
     {
-        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed );
+        ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_descending );
 
         createTransactionOn( cluster, new InstanceId( FIRST_SLAVE ) );
         assertLastTransactions( cluster,
@@ -142,7 +157,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
     {
-        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
 
         cluster.shutdown( cluster.getAnySlave() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
@@ -151,7 +166,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
-        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
@@ -165,7 +180,7 @@ public class TxPushStrategyConfigIT
     @Test
     public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
     {
-        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed );
+        ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
         cluster.fail( cluster.getAnySlave() );
 
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
