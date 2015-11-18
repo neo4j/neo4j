@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
@@ -45,10 +45,10 @@ import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.CleanupRule;
 
@@ -59,7 +59,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
@@ -190,8 +189,8 @@ public class TestMasterCommittingAtSlave
     public void testFixedPriorityStrategy()
     {
         int[] serverIds = new int[]{55, 101, 66};
-        SlavePriority fixed = SlavePriorities.fixed();
-        ArrayList<Slave> slaves = new ArrayList<Slave>( 3 );
+        SlavePriority fixed = SlavePriorities.fixedDescending();
+        ArrayList<Slave> slaves = new ArrayList<>( 3 );
         slaves.add( new FakeSlave( false, serverIds[0] ) );
         slaves.add( new FakeSlave( false, serverIds[1] ) );
         slaves.add( new FakeSlave( false, serverIds[2] ) );

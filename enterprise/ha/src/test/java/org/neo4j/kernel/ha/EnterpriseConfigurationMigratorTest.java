@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.hamcrest.CoreMatchers.is;
+import org.junit.Test;
 
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.logging.NullLog;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_strategy;
 
 /**
  * EnterpriseConfigurationMigrator tests
@@ -42,9 +45,9 @@ public class EnterpriseConfigurationMigratorTest
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "true" );
         Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
-        Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
-        Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
-        Assert.assertThat( migrated.get( "online_backup_server" ), is( OnlineBackupSettings.online_backup_server.getDefaultValue() ) );
+        assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
+        assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
+        assertThat( migrated.get( "online_backup_server" ), is( OnlineBackupSettings.online_backup_server.getDefaultValue() ) );
     }
 
     @Test
@@ -53,9 +56,9 @@ public class EnterpriseConfigurationMigratorTest
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "port=123" );
         Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
-        Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
-        Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
-        Assert.assertThat( migrated.get( "online_backup_server" ), is( "0.0.0.0:123" ) );
+        assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
+        assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
+        assertThat( migrated.get( "online_backup_server" ), is( "0.0.0.0:123" ) );
     }
 
     @Test
@@ -64,7 +67,21 @@ public class EnterpriseConfigurationMigratorTest
     {
         Map<String, String> original = MapUtil.stringMap( "ha.machine_id", "123" );
         Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
-        Assert.assertThat( migrated.containsKey( "ha.machine_id" ), is( false ) );
-        Assert.assertThat( migrated.get( "ha.server_id" ), is( "123" ) );
+        assertThat( migrated.containsKey( "ha.machine_id" ), is( false ) );
+        assertThat( migrated.get( "ha.server_id" ), is( "123" ) );
+    }
+
+    @Test
+    public void testFixedPushStrategyMigration()
+            throws Exception
+    {
+        // Given
+        Map<String, String> original = MapUtil.stringMap( tx_push_strategy.name(), "fixed" );
+
+        // When
+        Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
+
+        // Then
+        assertThat( migrated.get( tx_push_strategy.name() ), equalTo( HaSettings.TxPushStrategy.fixed_descending.name() ) );
     }
 }

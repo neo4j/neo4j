@@ -103,8 +103,11 @@ public class TransactionPropagator implements Lifecycle
             {
                 switch ( config.get( HaSettings.tx_push_strategy ) )
                 {
-                    case fixed:
-                        return SlavePriorities.fixed();
+                    case fixed_descending:
+                        return SlavePriorities.fixedDescending();
+
+                    case fixed_ascending:
+                        return SlavePriorities.fixedAscending();
 
                     case round_robin:
                         return SlavePriorities.roundRobin();

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.IOException;
-
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
 /**
