@@ -21,11 +21,15 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
@@ -35,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
@@ -51,9 +56,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -102,7 +109,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void shouldIncludeRandomBytesInAdditionalHeader() throws TransactionFailureException
+    public void shouldIncludeRandomBytesInAdditionalHeader() throws Exception
     {
         // Given
         TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
@@ -111,9 +118,12 @@ public class KernelTransactionsTest
                 newRememberingCommitProcess( transactionRepresentation ), newMockContextFactoryWithChanges() );
 
         // When
-        KernelTransaction transaction = registry.newInstance();
-        transaction.success();
-        transaction.close();
+        try ( KernelTransaction transaction = registry.newInstance() )
+        {
+            // Just pick anything that can flag that changes have been made to this transaction
+            ((KernelTransactionImplementation)transaction).txState().nodeDoCreate( 0 );
+            transaction.success();
+        }
 
         // Then
         byte[] additionalHeader = transactionRepresentation[0].additionalHeader();
@@ -121,13 +131,13 @@ public class KernelTransactionsTest
         assertTrue( additionalHeader.length > 0 );
     }
 
-    private static KernelTransactions newKernelTransactions()
+    private static KernelTransactions newKernelTransactions() throws Exception
     {
         return newKernelTransactions( mock( TransactionCommitProcess.class ), newMockContextFactory() );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            NeoStoreTransactionContextFactory contextSupplier )
+            NeoStoreTransactionContextFactory contextSupplier ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -145,12 +155,23 @@ public class KernelTransactionsTest
         when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
+        when( storageEngine.createCommands( any( TransactionState.class ), any( LegacyIndexTransactionState.class ),
+                any( Locks.Client.class ), anyLong() ) )
+                .thenReturn( sillyCommandList() );
 
         return new KernelTransactions( contextSupplier, locks,
-                null, null, null, null,
-                TransactionHeaderInformationFactory.DEFAULT, commitProcess, null,
-                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life,
+                null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                commitProcess, null,
+                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 new Tracers( "null", NullLog.getInstance() ), storageEngine );
+    }
+
+    private static Collection<Command> sillyCommandList()
+    {
+        Collection<Command> commands = new ArrayList<>();
+        Command command = mock( Command.class );
+        commands.add( command );
+        return commands;
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

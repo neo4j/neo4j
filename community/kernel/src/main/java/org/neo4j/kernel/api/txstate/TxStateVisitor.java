@@ -94,6 +94,8 @@ public interface TxStateVisitor
 
     void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor );
 
+    void done();
+
     class Adapter implements TxStateVisitor
     {
         private final TxStateVisitor next;
@@ -332,6 +334,15 @@ public interface TxStateVisitor
             if( next != null )
             {
                 next.visitDroppedProcedure( procedureDescriptor );
+            }
+        }
+
+        @Override
+        public void done()
+        {
+            if ( next != null )
+            {
+                next.done();
             }
         }
     }

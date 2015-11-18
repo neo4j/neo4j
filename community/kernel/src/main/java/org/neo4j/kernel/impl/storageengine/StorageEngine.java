@@ -19,9 +19,17 @@
  */
 package org.neo4j.kernel.impl.storageengine;
 
+import java.util.Collection;
+
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
@@ -29,8 +37,10 @@ import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
@@ -41,6 +51,24 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 public interface StorageEngine
 {
     StoreReadLayer storeReadLayer();
+
+    // TODO Transitional (Collection), might be Stream or whatever
+    Collection<Command> createCommands( TransactionState state, LegacyIndexTransactionState legacyIndexTransactionState,
+            Locks.Client locks, long lastTransactionIdWhenStarted  )
+            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException;
+
+    /**
+     * @deprecated method to ease the transition a bit
+     * We may want a <pre>void apply( CommandStream changes, long transactionId, ... );</pre> instead
+     */
+    @Deprecated
+    TransactionRepresentationStoreApplier transactionApplier();
+
+    @Deprecated
+    TransactionRepresentationStoreApplier transactionApplierForRecovery();
+
+//     Stream<Command> deserialise( SequenceOfBytes source );
+
     TransactionIdStore transactionIdStore();
     LogVersionRepository logVersionRepository();
 

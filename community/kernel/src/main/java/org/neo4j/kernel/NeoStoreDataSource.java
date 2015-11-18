@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
-import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
@@ -759,15 +757,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup, StorageEngine storageEngine )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        final RecoveryLabelScanWriterProvider labelScanWriters =
-                new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
-        final RecoveryLegacyIndexApplierLookup recoveryLegacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
-                legacyIndexApplierLookup, 1000 );
-        final RecoveryIndexingUpdatesValidator indexUpdatesValidator = new RecoveryIndexingUpdatesValidator( indexingService );
-        final TransactionRepresentationStoreApplier storeRecoverer =
-                new TransactionRepresentationStoreApplier( labelScanWriters,
-                        lockService, storageEngine.indexConfigStore(), IdOrderingQueue.BYPASS,
-                        storageEngine );
+        final TransactionRepresentationStoreApplier storeRecoverer = storageEngine.transactionApplierForRecovery();
 
         RecoveryVisitor recoveryVisitor =
                 new RecoveryVisitor( metaDataStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
@@ -838,10 +828,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final KernelTransactions kernelTransactions =
                 life.add( new KernelTransactions( neoStoreTxContextFactory,
                         locks, constraintIndexCreator,
-                        statementOperations, updateableSchemaState, schemaWriteGuard,
+                        statementOperations, schemaWriteGuard,
                         transactionHeaderInformationFactory, transactionCommitProcess,
-                        storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, constraintSemantics,
-                        transactionMonitor, life, tracers, storageEngine ) );
+                        storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, transactionMonitor,
+                        life, tracers, storageEngine ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
