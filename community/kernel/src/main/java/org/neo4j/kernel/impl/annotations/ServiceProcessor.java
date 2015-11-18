@@ -32,7 +32,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 
-@SupportedSourceVersion( SourceVersion.RELEASE_7 )
+@SupportedSourceVersion( SourceVersion.RELEASE_8 )
 @SupportedAnnotationTypes( "org.neo4j.helpers.Service.Implementation" )
 public class ServiceProcessor extends AnnotationProcessor
 {
