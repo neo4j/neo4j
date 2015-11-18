@@ -1496,13 +1496,14 @@ public class NeoStoreTransactionTest
         when( storageEngine.cacheAccess() ).thenReturn( cacheAccessBackDoor );
         when( storageEngine.indexingService() ).thenReturn( indexing );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
-                labelScanStore, locks, null, null, storageEngine );
+                labelScanStore, locks, null, null, null, neoStores, cacheAccessBackDoor, indexing, null );
+        when( storageEngine.transactionApplier() ).thenReturn( applier );
 
         // Call this just to make sure the counters have been initialized.
         // This is only a problem in a mocked environment like this.
         neoStores.getMetaDataStore().nextCommittingTransactionId();
 
-        return new TransactionRepresentationCommitProcess( appenderMock, applier, indexUpdatesValidator );
+        return new TransactionRepresentationCommitProcess( appenderMock, storageEngine, indexUpdatesValidator );
     }
 
     @After

@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
-import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -40,8 +38,6 @@ import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.tryOpenForVe
 
 public class DefaultRecoverySPI implements Recovery.SPI
 {
-    private final RecoveryLabelScanWriterProvider labelScanWriters;
-    private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
     private final StoreFlusher storeFlusher;
     private final NeoStores neoStores;
     private final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer;
@@ -49,25 +45,21 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
-    private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
+    private final Closeable beforeForcing;
 
-    public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
-            RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,
+    public DefaultRecoverySPI( Closeable beforeForcing,
             StoreFlusher storeFlusher, NeoStores neoStores,
             Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer,
             PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
-            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
-            RecoveryIndexingUpdatesValidator indexUpdatesValidator )
+            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder )
     {
-        this.labelScanWriters = labelScanWriters;
-        this.legacyIndexApplierLookup = legacyIndexApplierLookup;
+        this.beforeForcing = beforeForcing;
         this.storeFlusher = storeFlusher;
         this.neoStores = neoStores;
         this.logFileRecoverer = logFileRecoverer;
         this.logFiles = logFiles;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.logVersionRepository = logVersionRepository;
-        this.indexUpdatesValidator = indexUpdatesValidator;
         this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
     }
 
@@ -76,9 +68,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     {
         try
         {
-            labelScanWriters.close();
-            legacyIndexApplierLookup.close();
-            indexUpdatesValidator.close();
+            beforeForcing.close();
         }
         catch ( IOException e )
         {

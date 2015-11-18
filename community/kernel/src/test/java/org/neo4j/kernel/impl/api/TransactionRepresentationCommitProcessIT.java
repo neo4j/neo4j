@@ -259,8 +259,15 @@ public class TransactionRepresentationCommitProcessIT
         when( storageEngine.legacyIndexApplierLookup() ).thenReturn( legacyIndexApplierLookup );
         when( storageEngine.cacheAccess() ).thenReturn( mock( CacheAccessBackDoor.class ) );
         return new TransactionRepresentationStoreApplier(
-                mock( Supplier.class ), mock( LockService.class ),
-                indexStore, legacyIndexTransactionOrdering, storageEngine );
+                mock( Supplier.class ),
+                mock( LockService.class ),
+                indexStore,
+                legacyIndexTransactionOrdering,
+                legacyIndexApplierLookup,
+                neoStores,
+                mock( CacheAccessBackDoor.class ),
+                mock( IndexingService.class ),
+                kernelHealth );
     }
 
     private CheckPointerImpl createCheckPointer( MetaDataStore metaDataStore, KernelHealth kernelHealth,
@@ -389,8 +396,10 @@ public class TransactionRepresentationCommitProcessIT
             IndexUpdatesValidator updatesValidator = mock( IndexUpdatesValidator.class );
             when( updatesValidator.validate( any( TransactionRepresentation.class ) ) )
                     .thenReturn( mock( ValidatedIndexUpdates.class ) );
+            StorageEngine storageEngine = mock( StorageEngine.class );
+            when( storageEngine.transactionApplier() ).thenReturn( storeApplier );
 
-            return new TransactionRepresentationCommitProcess( appender, storeApplier, updatesValidator );
+            return new TransactionRepresentationCommitProcess( appender, storageEngine, updatesValidator );
         }
 
         public boolean isCompleted()

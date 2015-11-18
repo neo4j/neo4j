@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,12 +42,14 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -95,6 +98,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 
@@ -137,8 +141,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
-
-    private TransactionRepresentationStoreApplier applierForRecovery;
+    private final TransactionRepresentationStoreApplier applierForRecovery;
+    private final RecoveryIndexingUpdatesValidator indexUpdatesValidatorForRecovery;
+    private final Closeable toCloseAfterRecovery;
+    private final TransactionRepresentationStoreApplier applierForTransactions;
+    private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public RecordStorageEngine(
             File storeDir,
@@ -209,14 +216,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
             relationshipDeleter = new RelationshipDeleter( relGroupGetter, propertyDeleter );
 
-            final RecoveryLabelScanWriterProvider labelScanWriters =
+            final RecoveryLabelScanWriterProvider recoveryLabelScanWriters =
                     new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
             final RecoveryLegacyIndexApplierLookup recoveryLegacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
                     legacyIndexApplierLookup, 1000 );
-            final RecoveryIndexingUpdatesValidator indexUpdatesValidator = new RecoveryIndexingUpdatesValidator( indexingService );
-            applierForRecovery = new TransactionRepresentationStoreApplier( labelScanWriters,
+            indexUpdatesValidatorForRecovery = new RecoveryIndexingUpdatesValidator( indexingService );
+            toCloseAfterRecovery = () -> {
+                recoveryLabelScanWriters.close();
+                recoveryLegacyIndexApplierLookup.close();
+                indexUpdatesValidatorForRecovery.close();
+            };
+            applierForRecovery = new TransactionRepresentationStoreApplier( recoveryLabelScanWriters,
                     lockService, indexConfigStore, IdOrderingQueue.BYPASS, legacyIndexApplierLookup,
                     neoStores, cacheAccess, indexingService, kernelHealth );
+
+            legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+            applierForTransactions = new TransactionRepresentationStoreApplier(
+                    labelScanStore::newWriter, lockService, indexConfigStore, legacyIndexTransactionOrdering,
+                    legacyIndexApplierLookup, neoStores, cacheAccess, indexingService, kernelHealth );
         }
         catch ( Throwable failure )
         {
@@ -240,26 +257,44 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public Collection<Command> createCommands( TransactionState txState,
+    public Collection<Command> createCommands(
+            TransactionState txState,
             LegacyIndexTransactionState legacyIndexTransactionState,
-            Locks.Client locks, long lastTransactionIdWhenStarted )
+            Locks.Client locks,
+            StatementOperationParts operations,
+            StoreStatement storeStatement,
+            long lastTransactionIdWhenStarted )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException
     {
         // Create objects to be populated with command-friendly changes
         Collection<Command> commands = new ArrayList<>();
+
+        if ( txState == null )
+        {
+            // Bypass creating commands for record transaction state if we have no transaction state
+            legacyIndexTransactionState.extractCommands( commands );
+            return commands;
+        }
+
         NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
         TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
         recordState.initialize( lastTransactionIdWhenStarted );
 
         // Visit transaction state and populate these record state objects
-        TxStateVisitor recordStateVisitor = new TransactionToRecordStateVisitor( recordState,
+        TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
                 schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap,
                 legacyIndexTransactionState, procedureCache );
         CountsRecordState countsRecordState = new CountsRecordState();
-        recordStateVisitor = new TransactionCountingStateVisitor(
-                recordStateVisitor, storeLayer, txState, countsRecordState );
-        txState.accept( recordStateVisitor );
-        recordStateVisitor.done();
+        txStateVisitor = constraintSemantics.decorateTxStateVisitor(
+                operations,
+                storeStatement,
+                storeLayer,
+                new DirectTxStateHolder( txState, legacyIndexTransactionState ),
+                txStateVisitor );
+        txStateVisitor = new TransactionCountingStateVisitor(
+                txStateVisitor, storeLayer, txState, countsRecordState );
+        txState.accept( txStateVisitor );
+        txStateVisitor.done();
 
         // Convert record state into commands
         recordState.extractCommands( commands );
@@ -272,13 +307,25 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public TransactionRepresentationStoreApplier transactionApplier()
     {
-        return null;
+        return applierForTransactions;
+    }
+
+    @Override
+    public Closeable toCloseAfterRecovery()
+    {
+        return toCloseAfterRecovery;
+    }
+
+    @Override
+    public IndexUpdatesValidator indexUpdatesValidatorForRecovery()
+    {
+        return indexUpdatesValidatorForRecovery;
     }
 
     @Override
     public TransactionRepresentationStoreApplier transactionApplierForRecovery()
     {
-        return null;
+        return applierForRecovery;
     }
 
     @Override
@@ -366,6 +413,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
+    public IdOrderingQueue legacyIndexTransactionOrdering()
+    {
+        return legacyIndexTransactionOrdering;
+    }
+
+    @Override
     public void init() throws Throwable
     {
         indexingService.init();
@@ -409,5 +462,35 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.shutdown();
         indexingService.shutdown();
+    }
+
+    private static class DirectTxStateHolder implements TxStateHolder
+    {
+        private final TransactionState txState;
+        private final LegacyIndexTransactionState legacyIndexTransactionState;
+
+        public DirectTxStateHolder( TransactionState txState, LegacyIndexTransactionState legacyIndexTransactionState )
+        {
+            this.txState = txState;
+            this.legacyIndexTransactionState = legacyIndexTransactionState;
+        }
+
+        @Override
+        public TransactionState txState()
+        {
+            return txState;
+        }
+
+        @Override
+        public LegacyIndexTransactionState legacyIndexTxState()
+        {
+            return legacyIndexTransactionState;
+        }
+
+        @Override
+        public boolean hasTxStateWithChanges()
+        {
+            return txState.hasChanges();
+        }
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
@@ -70,7 +71,11 @@ public class TransactionRepresentationCommitProcessTest
                 any( LogAppendEvent.class ) );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender, storeApplier,
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.transactionApplier() ).thenReturn( storeApplier );
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+                appender,
+                storageEngine,
                 mockedIndexUpdatesValidator() );
 
         // WHEN
@@ -101,7 +106,11 @@ public class TransactionRepresentationCommitProcessTest
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
         doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
                 any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( appender, storeApplier,
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.transactionApplier() ).thenReturn( storeApplier );
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+                appender,
+                storageEngine,
                 mockedIndexUpdatesValidator() );
         TransactionRepresentation transaction = mockedTransaction();
 
@@ -130,8 +139,12 @@ public class TransactionRepresentationCommitProcessTest
         RuntimeException error = new UnderlyingStorageException( new IndexCapacityExceededException( 10, 10 ) );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ) ) ).thenThrow( error );
 
+        TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
+        StorageEngine storageEngine = mock( StorageEngine.class );
+        when( storageEngine.transactionApplier() ).thenReturn( storeApplier );
         TransactionRepresentationCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                mock( TransactionAppender.class ), mock( TransactionRepresentationStoreApplier.class ),
+                mock( TransactionAppender.class ),
+                storageEngine,
                 indexUpdatesValidator );
 
         try ( LockGroup lockGroup = new LockGroup() )

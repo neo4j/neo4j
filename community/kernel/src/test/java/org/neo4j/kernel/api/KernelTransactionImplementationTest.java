@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -376,8 +377,14 @@ public class KernelTransactionImplementationTest
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
-        when( storageEngine.createCommands( any( TransactionState.class ), any( LegacyIndexTransactionState.class ),
-                any( Locks.Client.class ), anyLong() ) ).thenReturn( sillyCommandList() );
+        when( storageEngine.createCommands(
+                any( TransactionState.class ),
+                any( LegacyIndexTransactionState.class ),
+                any( Locks.Client.class ),
+                any( StatementOperationParts.class ),
+                any( StoreStatement.class ),
+                anyLong() ) ).thenReturn( sillyCommandList() );
+
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
             transaction.initialize( 5L );

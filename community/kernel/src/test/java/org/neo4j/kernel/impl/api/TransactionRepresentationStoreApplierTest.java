@@ -95,9 +95,7 @@ public class TransactionRepresentationStoreApplierTest
     @Test
     public void transactionRepresentationShouldAcceptApplierVisitor() throws IOException
     {
-        TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( labelScanStore,
-                        lockService, indexConfigStore, queue, storageEngine );
+        TransactionRepresentationStoreApplier applier = createStoreApplier();
 
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
 
@@ -109,15 +107,20 @@ public class TransactionRepresentationStoreApplierTest
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command,IOException>>any() );
     }
 
+    private TransactionRepresentationStoreApplier createStoreApplier()
+    {
+        return new TransactionRepresentationStoreApplier( labelScanStore,
+                lockService, indexConfigStore, queue, legacyIndexProviderLookup, neoStores, cacheAccess,
+                indexService, kernelHealth );
+    }
+
     @Test
     public void shouldUpdateIdGeneratorsOnExternalCommit() throws IOException
     {
         // GIVEN
         NodeStore nodeStore = mock( NodeStore.class );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
-        TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( labelScanStore,
-                        lockService, indexConfigStore, queue, storageEngine );
+        TransactionRepresentationStoreApplier applier = createStoreApplier();
         long nodeId = 5L;
         TransactionRepresentation transaction = createNodeTransaction( nodeId );
 
@@ -134,10 +137,7 @@ public class TransactionRepresentationStoreApplierTest
     public void shouldNotifyIdQueueWhenAppliedToLegacyIndexes() throws Exception
     {
         // GIVEN
-        IdOrderingQueue queue = mock( IdOrderingQueue.class );
-        TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( labelScanStore,
-                        lockService, indexConfigStore, queue, storageEngine );
+        TransactionRepresentationStoreApplier applier = createStoreApplier();
         TransactionRepresentation transaction = new PhysicalTransactionRepresentation( indexTransaction() );
 
         // WHEN
@@ -154,10 +154,7 @@ public class TransactionRepresentationStoreApplierTest
     public void shouldPanicOnIOExceptions() throws Exception
     {
         // GIVEN
-        IdOrderingQueue queue = mock( IdOrderingQueue.class );
-        TransactionRepresentationStoreApplier applier =
-                new TransactionRepresentationStoreApplier( labelScanStore,
-                        lockService, indexConfigStore, queue, storageEngine );
+        TransactionRepresentationStoreApplier applier = createStoreApplier();
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         IOException ioex = new IOException();
         //noinspection unchecked

@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -37,14 +38,14 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFaile
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final TransactionAppender appender;
-    private final TransactionRepresentationStoreApplier storeApplier;
+    private final StorageEngine storageEngine;
     private final IndexUpdatesValidator indexUpdatesValidator;
 
     public TransactionRepresentationCommitProcess( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
+            StorageEngine storageEngine, IndexUpdatesValidator indexUpdatesValidator )
     {
         this.appender = appender;
-        this.storeApplier = storeApplier;
+        this.storageEngine = storageEngine;
         this.indexUpdatesValidator = indexUpdatesValidator;
     }
 
@@ -97,7 +98,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     {
         try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {
-            storeApplier.apply( transaction, indexUpdates, locks, commitment.transactionId(), mode );
+            storageEngine.transactionApplier().apply( transaction, indexUpdates, locks, commitment.transactionId(), mode );
         }
         // TODO catch different types of exceptions here, some which are OK
         catch ( Throwable cause )

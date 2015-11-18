@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,8 +33,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -75,6 +74,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -139,17 +139,14 @@ public class RecoveryTest
         final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         try
         {
-            RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
-            RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
-            RecoveryIndexingUpdatesValidator validator = mock( RecoveryIndexingUpdatesValidator.class );
-
+            Closeable toClose = mock( Closeable.class );
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
-                    logFiles, fs, logVersionRepository, finder, validator )
+            life.add( new Recovery( new DefaultRecoverySPI( toClose, flusher, mock( NeoStores.class ), null,
+                    logFiles, fs, logVersionRepository, finder )
             {
                 @Override
                 public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
@@ -232,17 +229,14 @@ public class RecoveryTest
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
         try
         {
-            RecoveryLabelScanWriterProvider provider = mock( RecoveryLabelScanWriterProvider.class );
-            RecoveryLegacyIndexApplierLookup lookup = mock( RecoveryLegacyIndexApplierLookup.class );
-            RecoveryIndexingUpdatesValidator validator = mock( RecoveryIndexingUpdatesValidator.class );
-
+            Closeable toClose = mock( Closeable.class );
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( provider, lookup, flusher, mock( NeoStores.class ), null,
-                    logFiles, fs, logVersionRepository, finder, validator )
+            life.add( new Recovery( new DefaultRecoverySPI( toClose, flusher, mock( NeoStores.class ), null,
+                    logFiles, fs, logVersionRepository, finder )
             {
                 @Override
                 public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()

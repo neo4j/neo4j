@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine;
 
+import java.io.Closeable;
 import java.util.Collection;
 
 import org.neo4j.kernel.KernelHealth;
@@ -29,12 +30,14 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -53,8 +57,13 @@ public interface StorageEngine
     StoreReadLayer storeReadLayer();
 
     // TODO Transitional (Collection), might be Stream or whatever
-    Collection<Command> createCommands( TransactionState state, LegacyIndexTransactionState legacyIndexTransactionState,
-            Locks.Client locks, long lastTransactionIdWhenStarted  )
+    Collection<Command> createCommands(
+            TransactionState state,
+            LegacyIndexTransactionState legacyIndexTransactionState,
+            Locks.Client locks,
+            StatementOperationParts operations,
+            StoreStatement storeStatement,
+            long lastTransactionIdWhenStarted  )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException;
 
     /**
@@ -63,6 +72,12 @@ public interface StorageEngine
      */
     @Deprecated
     TransactionRepresentationStoreApplier transactionApplier();
+
+    @Deprecated
+    IndexUpdatesValidator indexUpdatesValidatorForRecovery();
+
+    @Deprecated
+    Closeable toCloseAfterRecovery();
 
     @Deprecated
     TransactionRepresentationStoreApplier transactionApplierForRecovery();
@@ -107,6 +122,9 @@ public interface StorageEngine
 
     @Deprecated
     KernelHealth kernelHealth();
+
+    @Deprecated
+    IdOrderingQueue legacyIndexTransactionOrdering();
 
     void loadSchemaCache();
 }

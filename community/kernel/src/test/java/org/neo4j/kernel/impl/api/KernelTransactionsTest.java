@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
@@ -155,8 +156,13 @@ public class KernelTransactionsTest
         when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
-        when( storageEngine.createCommands( any( TransactionState.class ), any( LegacyIndexTransactionState.class ),
-                any( Locks.Client.class ), anyLong() ) )
+        when( storageEngine.createCommands(
+                any( TransactionState.class ),
+                any( LegacyIndexTransactionState.class ),
+                any( Locks.Client.class ),
+                any( StatementOperationParts.class ),
+                any( StoreStatement.class ),
+                anyLong() ) )
                 .thenReturn( sillyCommandList() );
 
         return new KernelTransactions( contextSupplier, locks,
