@@ -304,12 +304,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case CreateNode(_, idName, labels, props) =>
       CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
 
-    case MergeNode(_, idName, labels, props, onCreate, onMatch) =>
-      val commandProperties = props.map {
-        case (k, v) => LazyPropertyKey(k) -> toCommandExpression(v)
-      }
-      MergeNodePipe(source, idName.name, labels, commandProperties,
-        onCreate.map(SetOperation.toSetOperation), onMatch.map(SetOperation.toSetOperation))()
+    case MergeCreateNode(_, idName, labels, props) =>
+      MergeCreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
 
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
@@ -404,6 +400,12 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
 
     case apply@LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
       LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)()
+
+    case apply@ConditionalApply(_, _, IdName(name)) =>
+      ConditionalApplyPipe(lhs, rhs, name, negated = false)()
+
+    case apply@AntiConditionalApply(_, _, IdName(name)) =>
+      ConditionalApplyPipe(lhs, rhs, name, negated = true)()
 
     case Union(_, _) =>
       NewUnionPipe(lhs, rhs)()

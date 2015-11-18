@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, CypherExecutionException, ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, MergeConstraintConflictException, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException
 
@@ -354,7 +354,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  //todo
   test("should fail on merge using multiple unique indexes if found different nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -514,6 +513,89 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(updateWithBothPlanners( "CREATE (:X) CREATE (:X) MERGE (:X)"), nodesCreated = 2, labelsAdded = 2)
   }
 
+  test("merge should handle argument properly") {
+    createNode("x" -> 42)
+
+    val query = """WITH 42 AS x MERGE (c:N {x: x})"""
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+  }
+
+  test("should be able to merge using property from match") {
+    createLabeledNode(Map("name" -> "A", "bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("name" -> "B", "bornIn" -> "Ohio"), "Person")
+    createLabeledNode(Map("name" -> "C", "bornIn" -> "New Jersey"), "Person")
+    createLabeledNode(Map("name" -> "D", "bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("name" -> "E", "bornIn" -> "Ohio"), "Person")
+    createLabeledNode(Map("name" -> "F", "bornIn" -> "New Jersey"), "Person")
+
+    val query = "MATCH (person:Person) MERGE (city: City {name: person.bornIn}) RETURN person.name"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
+  }
+
+  test("should be able to merge using property from match with index") {
+    graph.createIndex("City", "name")
+
+    createLabeledNode(Map("name" -> "A", "bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("name" -> "B", "bornIn" -> "Ohio"), "Person")
+    createLabeledNode(Map("name" -> "C", "bornIn" -> "New Jersey"), "Person")
+    createLabeledNode(Map("name" -> "D", "bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("name" -> "E", "bornIn" -> "Ohio"), "Person")
+    createLabeledNode(Map("name" -> "F", "bornIn" -> "New Jersey"), "Person")
+
+    val query = "MATCH (person:Person) MERGE (city: City {name: person.bornIn}) RETURN person.name"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
+  }
+
+  test("should be able to use properties from match in ON CREATE") {
+    createLabeledNode(Map("bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("bornIn" -> "Ohio"), "Person")
+
+    val query = "MATCH (person:Person) MERGE (city: City) ON CREATE SET city.name = person.bornIn RETURN person.bornIn"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+  }
+
+  test("should be able to use properties from match in ON MATCH") {
+    createLabeledNode(Map("bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("bornIn" -> "Ohio"), "Person")
+
+    val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET city.name = person.bornIn RETURN person.bornIn"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+  }
+
+  test("should be able to use properties from match in ON MATCH 2") {
+    createLabeledNode(Map("bornIn" -> "New York"), "Person")
+    createLabeledNode(Map("bornIn" -> "Ohio"), "Person")
+
+    val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET person.name = 'Pontus' RETURN person.bornIn"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+  }
+
+  test("should be able to set labels on match") {
+    createNode()
+
+    val query = "MERGE (a) ON MATCH SET a:L"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 1)
+  }
+
+
   test("should support updates while merging") {
     (0 to 2) foreach(x =>
       (0 to 2) foreach( y=>
@@ -585,7 +667,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     graph.createConstraint("L", "prop")
     val node = createLabeledNode(Map("prop" -> 42), "L", "A")
 
-    val result = intercept[CypherExecutionException](executeWithRulePlanner("merge (test:L:B {prop : 42}) return labels(test) as labels"))
+    val result = intercept[CypherExecutionException](updateWithBothPlanners("merge (test:L:B {prop : 42}) return labels(test) as labels"))
 
     result.getCause shouldBe a [UniquePropertyConstraintViolationKernelException]
     result.getMessage should equal(s"""Node ${node.getId} already exists with label L and property "prop"=[42]""")

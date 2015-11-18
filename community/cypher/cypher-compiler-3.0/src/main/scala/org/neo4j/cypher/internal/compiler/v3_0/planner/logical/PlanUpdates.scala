@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{mergeUniqueIndexSeekLeafPlanner, applyOptional}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PathExpression}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{PathExpression, Variable}
 
 /*
  * This coordinates PlannerQuery planning of updates.
@@ -34,7 +34,7 @@ case object PlanUpdates
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     query.updateGraph.mutatingPatterns.foldLeft(plan)((plan, pattern) => planUpdate(query, plan, pattern))
 
-  private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext) = pattern match {
+  private def planUpdate(query: PlannerQuery, source: LogicalPlan, pattern: MutatingPattern)(implicit context: LogicalPlanningContext): LogicalPlan = pattern match {
     //CREATE ()
     case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p)
     //CREATE (a)-[:R]->(b)
@@ -42,14 +42,34 @@ case object PlanUpdates
     //MERGE ()
     case p: MergeNodePattern =>
       //use a special unique-index leaf planner
-    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+      val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
         context.config.leafPlanners)
       val innerContext: LogicalPlanningContext =
         context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+
       val matchPart = innerContext.strategy.plan(p.matchGraph)(innerContext)
-      val rhs = innerContext.logicalPlanProducer.planOptional(matchPart, source.availableSymbols)(innerContext)
-      val apply = innerContext.logicalPlanProducer.planApply(source, rhs)(innerContext)
-      innerContext.logicalPlanProducer.planMergeNode(apply, p, source.solved)(innerContext)
+      val producer = innerContext.logicalPlanProducer
+      val rhs = producer.planOptional(matchPart, source.availableSymbols)(innerContext)
+      val apply = producer.planApply(source, rhs)(innerContext)
+
+      val conditionalApply = if (p.onMatch.nonEmpty) {
+        val onMatch = p.onMatch.foldLeft[LogicalPlan](producer.planSingleRow()) {
+          case (src, current) => planUpdate(query, src, current)
+        }
+        producer.planConditionalApply(apply, onMatch, p.createNodePattern.nodeName)(innerContext)
+      } else apply
+
+      val create = producer.planMergeCreateNode(context.logicalPlanProducer.planSingleRow(), p.createNodePattern)
+
+      val onCreate = p.onCreate.foldLeft(create) {
+        case (src, current) => planUpdate(query, src, current)
+      }
+      //we have to force the plan to solve what we actually solve
+      val solved = producer.estimatePlannerQuery(
+        source.solved.amendUpdateGraph(u => u.addMutatingPatterns(p)))
+
+      producer.planAntiConditionalApply(
+        conditionalApply, onCreate, p.createNodePattern.nodeName)(innerContext).updateSolved(solved)
     //SET n:Foo:Bar
     case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
     //SET n.prop = 42

@@ -20,18 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, PropertyKeyName}
 
-case class SetNodeProperty(source: LogicalPlan, idName: IdName, propertyKey: PropertyKeyName,
-                           value: Expression)
-                          (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, item: IdName)(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols + item
 }

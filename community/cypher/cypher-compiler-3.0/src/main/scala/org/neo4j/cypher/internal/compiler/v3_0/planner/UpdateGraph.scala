@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelName, PathExpression, PropertyKeyName, RelTypeName, Variable}
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
 
 case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
 
@@ -58,13 +57,13 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * Finds all node properties being created with CREATE (:L)
    */
-  def createLabels: Set[LabelName] = createNodePatterns.flatMap(_.labels).toSet ++ mergeNodePatterns.flatMap(_.labels)
+  def createLabels: Set[LabelName] = createNodePatterns.flatMap(_.labels).toSet ++ mergeNodePatterns.flatMap(_.createNodePattern.labels)
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
   def createNodeProperties = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
-    CreatesKnownPropertyKeys(mergeNodePatterns.flatMap(_.properties.keys).toSet)
+    CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNodePattern.properties):_*)
 
   /*
    * Finds all rel properties being created with CREATE
@@ -163,7 +162,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
       patterns match {
         case Nil => acc
         case SetLabelPattern(_, labels) :: tl => toLabelPattern(tl, acc ++ labels)
-        case MergeNodePattern(_, _, _, _, onCreate, onMatch) :: tl =>
+        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
           toLabelPattern(tl, acc ++ extractLabels(onCreate) ++ extractLabels(onMatch))
         case hd :: tl => toLabelPattern(tl, acc)
       }
@@ -222,7 +221,7 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
         case Nil => acc
         case SetNodePropertiesFromMapPattern(_, expression, _) :: tl => CreatesPropertyKeys(expression)
         case SetNodePropertyPattern(_, key, _) :: tl => toNodePropertyPattern(tl, acc + CreatesKnownPropertyKeys(key))
-        case MergeNodePattern(_, _, _, _, onCreate, onMatch) :: tl =>
+        case MergeNodePattern(_, _, onCreate, onMatch) :: tl =>
           toNodePropertyPattern(tl, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
         case hd :: tl => toNodePropertyPattern(tl, acc)
       }

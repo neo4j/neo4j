@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternC
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, InternalException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticTable, SyntaxException}
 
 import scala.collection.mutable
 
@@ -260,15 +260,17 @@ object ClauseConverters {
     clause.pattern.patternParts.foldLeft(acc) {
       //MERGE (n :L1:L2 {prop: 42})
       case (builder, EveryPath(NodePattern(Some(id), labels, props))) =>
-        val propMap = toPropertyMap(props)
-
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
-          selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id, propMap) :_*)
+          selections = Selections.from(labels.map(l => HasLabels(id, Seq(l))(id.position)) ++ toPropertySelection(id,
+            toPropertyMap(props)) :_*),
+          argumentIds = acc.currentlyAvailableVariables
         )
       builder
           .amendUpdateGraph(ug =>
-            ug.addMutatingPatterns(MergeNodePattern(IdName.fromVariable(id), labels, propMap, matchGraph, onCreate, onMatch)))
+            ug.addMutatingPatterns(
+              MergeNodePattern(CreateNodePattern(IdName.fromVariable(id), labels, props),
+                matchGraph, onCreate, onMatch)))
 
       case _ => throw new CantHandleQueryException("not supported yet")
     }

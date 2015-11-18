@@ -54,5 +54,4 @@ case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends Mu
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
 
-case class MergeNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Map[PropertyKeyName, Expression],
-                            matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern
+case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern

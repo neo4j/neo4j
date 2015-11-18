@@ -150,8 +150,9 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
     val ug = UpdateGraph(Seq(
       DeleteExpression(Variable("a")(pos), forced = false),
-      MergeNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)),
-        Map.empty, QueryGraph.empty, Seq.empty, Seq.empty)
+      MergeNodePattern(
+        CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+        QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
     ug.overlaps(qg) shouldBe true
