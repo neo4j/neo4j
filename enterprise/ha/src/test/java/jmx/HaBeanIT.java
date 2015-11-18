@@ -92,10 +92,9 @@ public class HaBeanIT
 
     private void assertMasterInformation( HighAvailability ha )
     {
-        assertTrue( "single instance should be master and available", ha.isAvailable() );
-        assertEquals( "single instance should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
-        ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertEquals( "single instance should be the returned instance id", "1", info.getInstanceId() );
+        assertTrue( "should be available", ha.isAvailable() );
+        assertEquals( "should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
+        assertEquals( "should be instance 1", "1", ha.getInstanceId() );
     }
 
     @Test
@@ -249,8 +248,8 @@ public class HaBeanIT
     @Test
     public void leftInstanceDisappearsFromMemberList() throws Throwable
     {
-        // Start the second db and make sure it's visible in the member list.
-        // Then shut it down to see if it disappears from the member list again.
+        // Start the cluster and make sure it's up.
+        // Then shut down one of the slaves to see if it disappears from the member list.
         ManagedCluster cluster = clusterRule.startCluster();
         assertEquals( 3, ha( cluster.getAnySlave() ).getInstancesInCluster().length );
         RepairKit repair = cluster.shutdown( cluster.getAnySlave() );
@@ -258,8 +257,8 @@ public class HaBeanIT
         try
         {
             cluster.await( masterSeesMembers( 2 ) );
-            assertEquals( 2, ha( cluster.getMaster() ).getInstancesInCluster().length );
-            assertMasterInformation( ha( cluster.getMaster() ) );
+            HighAvailability haMaster = ha( cluster.getMaster() );
+            assertEquals( 2, haMaster.getInstancesInCluster().length );
         }
         finally
         {
