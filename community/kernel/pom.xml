@@ -294,6 +294,11 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-logging</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-lucene-upgrade</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- test dependencies -->
     <dependency>

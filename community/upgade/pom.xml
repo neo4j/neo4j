@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <properties>
+        <short-name>lucene-index-upgrade</short-name>
+        <license-text.header>GPL-3-header.txt</license-text.header>
+        <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+        <lucene4.version>4.10.4</lucene4.version>
+        <lucene5.version>5.3.1</lucene5.version>
+    </properties>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>neo4j-lucene-upgrade</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
+
+    <packaging>jar</packaging>
+    <name>Neo4j - Lucene Index Upgrade</name>
+    <description>Neo4j Lucene Index Upgrade for legacy index migrations</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <!-- List of artifacts that will be packed inside of jar.
+                                    As soon as you add an artifact here please do not forget to add it also to
+                                    a dependency list to be able to generate correct license -->
+                                <artifactItem>
+                                    <groupId>org.apache.lucene</groupId>
+                                    <artifactId>lucene-core</artifactId>
+                                    <version>${lucene4.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.lucene</groupId>
+                                    <artifactId>lucene-core</artifactId>
+                                    <version>${lucene5.version}</version>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.lucene</groupId>
+                                    <artifactId>lucene-backward-codecs</artifactId>
+                                    <version>${lucene5.version}</version>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>standalone</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/main/assembly/assembly.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene5.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-backward-codecs</artifactId>
+            <version>${lucene5.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

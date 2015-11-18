@@ -46,13 +46,15 @@ public class SchemaIndexMigratorTest
     private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs );
 
     @Test
-    public void migrationRemovesAllIndexes() throws IOException
+    public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
     {
         when( schemaIndexProvider.getProviderDescriptor() )
                 .thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
         migrator.migrate( storeDir, migrationDir, schemaIndexProvider, labelScanStoreProvider,
                 Legacy23Store.LEGACY_VERSION );
+
+        migrator.moveMigratedFiles( migrationDir, storeDir, Legacy23Store.LEGACY_VERSION );
 
         verify( fs ).deleteRecursively( schemaIndexProvider.getStoreDirectory( storeDir ) );
         verify( fs ).deleteRecursively( labelScanStoreProvider.getStoreDirectory( storeDir ) );

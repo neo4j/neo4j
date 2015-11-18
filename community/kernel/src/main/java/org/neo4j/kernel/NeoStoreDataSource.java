@@ -94,6 +94,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.storemigration.LegacyIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -321,7 +322,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Dependencies dependencies;
     private LifeSupport life;
-    private SchemaIndexProvider indexProvider;
+    private SchemaIndexProvider schemaIndexProvider;
     private File storeDir;
     private boolean readOnly;
 
@@ -451,7 +452,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         dependencies = new Dependencies();
         life = new LifeSupport();
 
-        indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+        schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
 
         LabelScanStoreProvider labelScanStoreProvider =
@@ -471,7 +472,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         life.add( new Lifecycle.Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
-        upgradeStore( storeDir, storeMigrationProcess, indexProvider, labelScanStoreProvider );
+        upgradeStore( storeDir, storeMigrationProcess, schemaIndexProvider, labelScanStoreProvider, indexProviders,
+                logProvider );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -579,11 +581,13 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     // By doing this sequence of method calls we can ensure that no dependency cycles exist, and get a clearer view
     // of the dependency tree, starting at the bottom
     private void upgradeStore( File storeDir, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider,
-            LabelScanStoreProvider labelScanStoreProvider )
+            LabelScanStoreProvider labelScanStoreProvider, Map<String,IndexImplementation> indexProviders,
+            LogProvider logProvider )
     {
         UpgradableDatabase upgradableDatabase =
                 new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant( fs, pageCache ) );
+        storeMigrationProcess.addParticipant( new LegacyIndexMigrator( fs, indexProviders, logProvider) );
         storeMigrationProcess.addParticipant( storeMigrator );
         storeMigrationProcess.migrateIfNeeded( storeDir, upgradableDatabase, indexProvider, labelScanStoreProvider );
     }
@@ -599,7 +603,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return life.add(
                 new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, kernelHealth,
+                        tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, kernelHealth,
                         labelScanStore, legacyIndexProviderLookup, indexConfigStore ) );
     }
 

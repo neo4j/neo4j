@@ -137,7 +137,12 @@ public class LuceneDataSource extends LifecycleAdapter
         closed = false;
     }
 
-    private File baseDirectory( File storeDir )
+    public static File getStoreDirectory(File storeDir)
+    {
+        return baseDirectory( storeDir );
+    }
+
+    private static File baseDirectory( File storeDir )
     {
         return new File( storeDir, "index" );
     }

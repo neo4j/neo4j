@@ -31,9 +31,18 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 
+/**
+ * Migrates schema and label indexes between different neo4j versions.
+ * Participates in store upgrade as one of the migration participants.
+ * <p>
+ * Since index format can be completely incompatible between version should be executed before {@link StoreMigrator}
+ */
 public class SchemaIndexMigrator implements StoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
+    private boolean deleteObsoleteIndexes = false;
+    private File labelIndexDirectory;
+    private File schemaIndexDirectory;
 
     public SchemaIndexMigrator( FileSystemAbstraction fileSystem )
     {
@@ -51,18 +60,23 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
         case Legacy21Store.LEGACY_VERSION:
         case Legacy22Store.LEGACY_VERSION:
         case Legacy23Store.LEGACY_VERSION:
-            deleteIndexes( storeDir, schemaIndexProvider, labelScanStoreProvider );
+            schemaIndexDirectory = schemaIndexProvider.getStoreDirectory( storeDir );
+            labelIndexDirectory = labelScanStoreProvider.getStoreDirectory( storeDir );
+            deleteObsoleteIndexes = true;
             break;
         default:
             throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
         }
     }
 
-    private void deleteIndexes( File storeDir, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider ) throws IOException
+    @Override
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
     {
-        deleteIndexes( schemaIndexProvider.getStoreDirectory( storeDir ) );
-        deleteIndexes( labelScanStoreProvider.getStoreDirectory( storeDir ) );
+        if ( deleteObsoleteIndexes )
+        {
+            deleteIndexes( schemaIndexDirectory );
+            deleteIndexes( labelIndexDirectory );
+        }
     }
 
     private void deleteIndexes( File indexRootDirectory ) throws IOException
@@ -71,17 +85,14 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
-    { // nothing to do
-    }
-
-    @Override
     public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
-    { // nothing to do
+    {
+        // nothing to do
     }
 
     @Override
     public void cleanup( File migrationDir ) throws IOException
-    { // nothing to do
+    {
+        // nothing to do
     }
 }
