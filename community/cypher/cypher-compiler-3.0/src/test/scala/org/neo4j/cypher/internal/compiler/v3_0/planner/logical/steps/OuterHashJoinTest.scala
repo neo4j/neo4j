@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{QueryPlannerConfiguration, Cost}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite

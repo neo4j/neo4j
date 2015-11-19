@@ -76,8 +76,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
     executeScalar[Int]("match (a:Label) return count(a)") shouldBe nodeCount
 
-    println(execute("match (a:Label) return a").dumpToString())
-    0 until nodeCount foreach {i =>
+    0 until nodeCount foreach { i =>
       withClue(s"did not find node with id $i") {
         execute(s"match (:Label {id:$i}) return 1") should have size 1
       }

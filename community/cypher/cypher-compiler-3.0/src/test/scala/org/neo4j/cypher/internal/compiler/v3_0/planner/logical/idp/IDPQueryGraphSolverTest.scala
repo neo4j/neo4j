@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{QueryPlannerConfiguration, Cardinality}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, LogicalPlanningTestSupport2, QueryGraph, Selections}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection

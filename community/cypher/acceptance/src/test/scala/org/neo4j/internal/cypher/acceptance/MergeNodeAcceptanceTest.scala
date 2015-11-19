@@ -576,14 +576,15 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
   }
 
-  test("should be able to use properties from match in ON MATCH 2") {
+  test("should be able to use properties from match in ON MATCH and ON CREATE") {
     createLabeledNode(Map("bornIn" -> "New York"), "Person")
     createLabeledNode(Map("bornIn" -> "Ohio"), "Person")
 
-    val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET person.name = 'Pontus' RETURN person.bornIn"
+    val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET city.name = person.bornIn ON CREATE SET city.name = person.bornIn RETURN person.bornIn"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+    executeWithAllPlanners("MATCH (n:City) WHERE NOT exists(n.name) RETURN n").toList shouldBe empty
   }
 
   test("should be able to set labels on match") {
@@ -593,6 +594,19 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
     assertStats(result, labelsAdded = 1)
+  }
+
+  test("should be able to set labels on match and on create") {
+    createNode()
+    createNode()
+
+    val query = "MATCH () MERGE (a:L) ON MATCH SET a:M1 ON CREATE SET a:M2"
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated=1, labelsAdded = 3)
+    executeScalarWithAllPlanners[Int]("MATCH (a:L) RETURN count(a)") should equal(1)
+    executeScalarWithAllPlanners[Int]("MATCH (a:M1) RETURN count(a)") should equal(1)
+    executeScalarWithAllPlanners[Int]("MATCH (a:M2) RETURN count(a)") should equal(1)
   }
 
 

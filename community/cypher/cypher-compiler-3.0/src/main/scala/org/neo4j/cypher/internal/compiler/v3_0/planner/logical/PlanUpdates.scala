@@ -40,36 +40,7 @@ case object PlanUpdates
     //CREATE (a)-[:R]->(b)
     case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
     //MERGE ()
-    case p: MergeNodePattern =>
-      //use a special unique-index leaf planner
-      val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
-        context.config.leafPlanners)
-      val innerContext: LogicalPlanningContext =
-        context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
-
-      val matchPart = innerContext.strategy.plan(p.matchGraph)(innerContext)
-      val producer = innerContext.logicalPlanProducer
-      val rhs = producer.planOptional(matchPart, source.availableSymbols)(innerContext)
-      val apply = producer.planApply(source, rhs)(innerContext)
-
-      val conditionalApply = if (p.onMatch.nonEmpty) {
-        val onMatch = p.onMatch.foldLeft[LogicalPlan](producer.planSingleRow()) {
-          case (src, current) => planUpdate(query, src, current)
-        }
-        producer.planConditionalApply(apply, onMatch, p.createNodePattern.nodeName)(innerContext)
-      } else apply
-
-      val create = producer.planMergeCreateNode(context.logicalPlanProducer.planSingleRow(), p.createNodePattern)
-
-      val onCreate = p.onCreate.foldLeft(create) {
-        case (src, current) => planUpdate(query, src, current)
-      }
-      //we have to force the plan to solve what we actually solve
-      val solved = producer.estimatePlannerQuery(
-        source.solved.amendUpdateGraph(u => u.addMutatingPatterns(p)))
-
-      producer.planAntiConditionalApply(
-        conditionalApply, onCreate, p.createNodePattern.nodeName)(innerContext).updateSolved(solved)
+    case p: MergeNodePattern => planMergeNode(query, source, p)
     //SET n:Foo:Bar
     case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
     //SET n.prop = 42
@@ -98,5 +69,71 @@ case object PlanUpdates
 
         case e => throw new CypherTypeException(s"Don't know how to delete a $e")
       }
+  }
+
+  /*
+   * Merges either match or create. It is planned as following.
+   *
+   *                     |
+   *                anti-cond-apply
+   *                  /     \
+   *                 /    on-create
+   *                /        \
+   *               /   merge-create-part
+   *         cond-apply
+   *             /   \
+   *          apply  on-match
+   *          /   \
+   *         /  optional
+   *        /      \
+   *  (source)  merge-read-part
+   *
+   * Note also that merge uses a special leaf planner to enforce the correct behavior
+   * when having uniqueness constraints.
+   */
+  private def planMergeNode(query: PlannerQuery, source: LogicalPlan, merge: MergeNodePattern)(implicit context: LogicalPlanningContext) = {
+    //use a special unique-index leaf planner
+    val leafPlanners = PriorityLeafPlannerList(LeafPlannerList(mergeUniqueIndexSeekLeafPlanner),
+      context.config.leafPlanners)
+    val innerContext: LogicalPlanningContext =
+      context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+
+    //        apply
+    //        /   \
+    //       /  optional
+    //      /       \
+    //(source)  merge-read-part
+    val matchPart = innerContext.strategy.plan(merge.matchGraph)(innerContext)
+    val producer = innerContext.logicalPlanProducer
+    val rhs = producer.planOptional(matchPart, source.availableSymbols)(innerContext)
+    val apply = producer.planApply(source, rhs)(innerContext)
+
+    //           cond-apply
+    //             /   \
+    //          apply  on-match
+    val conditionalApply = if (merge.onMatch.nonEmpty) {
+      val onMatch = merge.onMatch.foldLeft[LogicalPlan](producer.planSingleRow()) {
+        case (src, current) => planUpdate(query, src, current)
+      }
+      producer.planConditionalApply(apply, onMatch, merge.createNodePattern.nodeName)(innerContext)
+    } else apply
+
+    //       anti-cond-apply
+    //         /     \
+    //        /    on-create
+    //       /        \
+    //      /   merge-create-part
+    //cond-apply
+    val create = producer.planMergeCreateNode(context.logicalPlanProducer.planSingleRow(),
+      merge.createNodePattern)
+    val onCreate = merge.onCreate.foldLeft(create) {
+      case (src, current) => planUpdate(query, src, current)
+    }
+    //we have to force the plan to solve what we actually solve
+    val solved = producer.estimatePlannerQuery(
+      source.solved.amendUpdateGraph(u => u.addMutatingPatterns(merge)))
+
+    producer.planAntiConditionalApply(
+      conditionalApply, onCreate, merge.createNodePattern.nodeName)(innerContext).updateSolved(solved)
   }
 }

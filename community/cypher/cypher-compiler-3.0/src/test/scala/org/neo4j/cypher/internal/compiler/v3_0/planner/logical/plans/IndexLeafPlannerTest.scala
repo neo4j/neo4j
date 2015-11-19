@@ -245,7 +245,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
-      println(resultPlans)
 
       // then
       resultPlans should beLike {
