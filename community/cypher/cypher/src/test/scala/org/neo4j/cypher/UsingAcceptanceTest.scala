@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.kernel.api.exceptions.Status
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -219,6 +220,41 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         |RETURN 13 as id""".stripMargin)
 
     result.toList should be(empty)
+  }
+
+  test("when failing to support all hints we should provide an understandable error message") {
+    // GIVEN
+    graph.createIndex("LocTag", "id")
+
+    // WHEN
+    val query = """MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
+                  |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
+                  |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
+                  |     <-[:Child*0..]-(t2:LocTag {id:1642})
+                  |USING INDEX t1:LocTag(id)
+                  |USING INDEX t2:LocTag(id)
+                  |RETURN count(u)""".stripMargin
+
+
+    val error = intercept[HintException](executeWithAllPlanners(query))
+
+    error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
+    error.status should equal(Status.Statement.ExecutionFailure)
+  }
+
+  test("correct status code when no index") {
+
+    // GIVEN
+    val query = """MATCH (n:Test)
+                  |USING INDEX n:Test(foo)
+                  |WHERE n.foo = {foo}
+                  |RETURN n""".stripMargin
+
+    // WHEN
+    val error = intercept[IndexHintException](executeWithAllPlanners(query))
+
+    // THEN
+    error.status should equal(Status.Schema.NoSuchIndex)
   }
 
 }

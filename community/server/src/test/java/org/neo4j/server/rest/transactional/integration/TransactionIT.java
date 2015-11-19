@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -30,9 +33,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -54,7 +54,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -823,7 +822,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // given
         final String hostname = "dummy.example.org";
         final String scheme = "http";
-        
+
         // when
         Response rs = http.withHeaders( XForwardUtil.X_FORWARD_HOST_HEADER_KEY, hostname )
                 .POST( "/db/data/transaction/commit", quotedJson(
@@ -851,6 +850,15 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname, scheme );
         assertPath( restNode.get( "incoming_typed_relationships" ),
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
+    }
+
+    @Test
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
+    {
+        // begin and execute and commit
+        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
+                                                                               "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
+        assertThat( begin, hasErrors( Status.Request.Schema.NoSuchIndex ) );
     }
 
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )

@@ -98,12 +98,12 @@ class UnknownLabelException(labelName: String) extends CypherException(s"The pro
 
 class HintException( message: String)
   extends CypherException(message) {
-  val status = Status.Schema.NoSuchIndex
+  val status = Status.Statement.ExecutionFailure
 }
 
 class IndexHintException(identifier: String, label: String, property: String, message: String)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Schema.NoSuchIndex
 }
 
 class LabelScanHintException(identifier: String, label: String, message: String)
