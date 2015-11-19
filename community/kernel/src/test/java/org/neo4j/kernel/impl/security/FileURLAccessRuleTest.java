@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
+import java.io.File;
 import java.net.URL;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -33,6 +33,7 @@ import org.neo4j.kernel.security.URLAccessValidationError;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -92,9 +93,7 @@ public class FileURLAccessRuleTest
     @Test
     public void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
-        final URL url = SystemUtils.IS_OS_WINDOWS
-                        ? new URL( "file:///C:/bar/baz.csv" )
-                        : new URL( "file:///bar/baz.csv" );
+        final URL url = new File( "/bar/baz.csv" ).toURI().toURL();
         final GraphDatabaseAPI gdb = mock( GraphDatabaseAPI.class );
         final DependencyResolver mockResolver = mock( DependencyResolver.class );
         when( gdb.getDependencyResolver() ).thenReturn( mockResolver );
@@ -102,9 +101,7 @@ public class FileURLAccessRuleTest
         when( mockResolver.resolveDependency( eq( Config.class ) ) ).thenReturn( config );
 
         URL accessURL = URLAccessRules.fileAccess().validate( gdb, url );
-        URL expected = SystemUtils.IS_OS_WINDOWS
-                       ? new URL( "file:///C:/var/lib/neo4j/import/bar/baz.csv" )
-                       : new URL( "file:///var/lib/neo4j/import/bar/baz.csv" );
-        assertThat( accessURL, equalTo( expected ) );
+        URL expected = new File( "/var/lib/neo4j/import/bar/baz.csv" ).toURI().toURL();
+        assertEquals( expected, accessURL );
     }
 }
