@@ -99,7 +99,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
   def symbols: SymbolTable = new SymbolTable()
 
   def internalCreateResults(state: QueryState) =
-      Iterator(ExecutionContext.empty)
+    Iterator(state.initialContext.getOrElse(ExecutionContext.empty))
 
   def exists(pred: Pipe => Boolean) = pred(this)
 

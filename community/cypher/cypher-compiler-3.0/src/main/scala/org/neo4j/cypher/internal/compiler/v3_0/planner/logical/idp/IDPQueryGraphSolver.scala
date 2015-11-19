@@ -53,13 +53,12 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                maxTableSize: Int = 256,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
-                               config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    implicit val kit = kitWithShortestPathSupport(config.toKit())
+    implicit val kit = kitWithShortestPathSupport(context.config.toKit())
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
@@ -103,7 +102,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   private def planComponent(qg: QueryGraph, component: Int)
                            (implicit context: LogicalPlanningContext, kit: QueryPlannerKit, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
-    val leaves = leafPlanFinder(config, qg)
+    val leaves = leafPlanFinder(context.config, qg)
 
     if (qg.patternRelationships.nonEmpty) {
 
@@ -188,7 +187,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
 
         applicablePlan match {
           case Some(p) =>
-            val candidates = config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
+            val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
             val best = kit.pickBest(candidates).get
             recurse(plans - p + best, optionalMatches.tail)
 

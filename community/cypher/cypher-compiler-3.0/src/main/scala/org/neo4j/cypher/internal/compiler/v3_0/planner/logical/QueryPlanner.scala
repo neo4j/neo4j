@@ -28,7 +28,6 @@ trait QueryPlanner {
 }
 
 case class DefaultQueryPlanner(planRewriter: Rewriter,
-                               config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery())
   extends QueryPlanner {
 

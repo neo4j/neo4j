@@ -26,18 +26,15 @@ import org.neo4j.cypher.internal.frontend.v3_0.HintException
 
 import scala.util.{Failure, Success, Try}
 
-class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver,
-                                val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
+class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver)
   extends TentativeQueryGraphSolver {
 
-  assert(config == solver2.config)
-  assert(solver1.config == solver2.config)
 
   // NOTE: we assume that the PlanTable type is the same between the 2 solvers
   def emptyPlanTable: GreedyPlanTable = GreedyPlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val pickBest = config.pickBestCandidate(context)
+    val pickBest = context.config.pickBestCandidate(context)
 
     val solution1 = Try(solver1.tryPlan(queryGraph))
     val solution2 = Try(solver2.tryPlan(queryGraph))

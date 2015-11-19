@@ -17,19 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
-case class SetNodeProperty(source: LogicalPlan, idName: IdName, propertyKey: PropertyKeyName,
-                           value: Expression)
+case class MergeCreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LazyLabel], properties: Option[Expression])
                           (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def availableSymbols: Set[IdName] = source.availableSymbols + idName
+  override def availableSymbols: Set[IdName] = {
+    source.availableSymbols + idName
+  }
 
   override def rhs: Option[LogicalPlan] = None
 

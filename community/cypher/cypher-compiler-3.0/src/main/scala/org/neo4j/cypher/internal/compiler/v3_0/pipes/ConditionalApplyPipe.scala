@@ -21,37 +21,38 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
-                       (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, item: String, negated: Boolean)(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  private def notFoundExecutionContext: ExecutionContext = {
-    val context = ExecutionContext.empty
-    nullableVariables.foreach(v => context += v -> null)
-    context
-  }
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    if (input.isEmpty) Iterator(notFoundExecutionContext) else input
+    input.flatMap {
+      (outerContext) =>
+        if (condition(outerContext.get(item).get)) {
+          val original = outerContext.clone()
+          val innerState = state.withInitialContext(outerContext)
+          val innerResults = inner.createResults(innerState)
+          innerResults.map { context => original ++ context }
+        } else Iterator.single(outerContext)
+    }
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription =
-    new PlanDescriptionImpl(
-      this.id,
-      "Optional",
-      SingleChild(source.planDescription),
-      Seq.empty,
-      variables
-    )
+  private def condition(value: Any) = if (negated) value == null else value != null
 
-  def symbols: SymbolTable = source.symbols
+  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
 
-  def dup(sources: List[Pipe]) = {
-    val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+  def planDescriptionWithoutCardinality =
+    PlanDescriptionImpl(this.id, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty, variables)
+
+  def symbols: SymbolTable = source.symbols.add(inner.symbols.variables)
+
+  def dup(sources: List[Pipe]): Pipe = {
+    val (l :: r :: Nil) = sources
+    copy(source = l, inner= r)(estimatedCardinality)
   }
+
+  override val sources: Seq[Pipe] = Seq(source, inner)
 
   override def localEffects = Effects()
 
