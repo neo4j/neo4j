@@ -100,7 +100,7 @@ class CombiningOperatorsTest extends DocumentingTest {
                |OPTIONAL MATCH (p)-[:WORKS_IN]->(city)
                |RETURN city.name""", assertPlanContains("Apply")) {
         p("Finds all the people with more than two friends and returns the city they work in.")
-        resultTable()
+        executionPlan()
       }
     }
     section("SemiApply") {
@@ -113,7 +113,7 @@ class CombiningOperatorsTest extends DocumentingTest {
                |WHERE (p)-[:FRIENDS_WITH]->()
                |RETURN p.name""", assertPlanContains("SemiApply")) {
         p("Finds all the people who have friends.")
-        resultTable()
+        executionPlan()
       }
     }
     section("AntiSemiApply") {
@@ -126,7 +126,7 @@ class CombiningOperatorsTest extends DocumentingTest {
                |WHERE NOT (me)-[:FRIENDS_WITH]->(other)
                |RETURN other.name""", assertPlanContains("AntiSemiApply")) {
         p("Finds the names of all the people who are not my friends.")
-        resultTable()
+        executionPlan()
       }
     }
     section("LetSemiApply") {
@@ -139,7 +139,7 @@ class CombiningOperatorsTest extends DocumentingTest {
         p("""Finds the names of all the people who have a friend or who work somewhere.
             |The `LetSemiApply` operator will be used to check for the existence of the `FRIENDS_WITH`
             |relationship from each person.""")
-        resultTable()
+        executionPlan()
       }
     }
     section("LetAntiSemiApply") {
@@ -153,7 +153,7 @@ class CombiningOperatorsTest extends DocumentingTest {
         p("""Finds all the people who don't have any friends or who work somewhere.
             |The `LetAntiSemiApply` operator will be used to check for the absence of
             |the `FRIENDS_WITH` relationship from each person.""")
-        resultTable()
+        executionPlan()
       }
     }
     section("SelectOrSemiApply") {
@@ -166,7 +166,7 @@ class CombiningOperatorsTest extends DocumentingTest {
               |WHERE other.age > 25 OR (other)-[:FRIENDS_WITH]->()
               |RETURN other.name""", assertPlanContains("SelectOrSemiApply")) {
         p("Finds the names of all people who have friends, or are older than 25.")
-        resultTable()
+        executionPlan()
       }
     }
     section("SelectOrAntiSemiApply") {
@@ -175,7 +175,7 @@ class CombiningOperatorsTest extends DocumentingTest {
               |WHERE other.age > 25 OR NOT (other)-[:FRIENDS_WITH]->()
               |RETURN other.name""", assertPlanContains("SelectOrAntiSemiApply")) {
         p("Finds the names of all people who do not have friends, or are older than 25.")
-        resultTable()
+        executionPlan()
       }
     }
     section("ConditionalApply") {
@@ -183,7 +183,7 @@ class CombiningOperatorsTest extends DocumentingTest {
       query("""MERGE (p:Person {name: 'Andres'}) ON MATCH SET p.exists = true""",
             assertPlanContains("ConditionalApply")) {
         p("Looks for the existence of a person called Andres, and if found sets the `exists` property to `true`.")
-        resultTable()
+        executionPlan()
       }
     }
     section("AntiConditionalApply") {
@@ -192,7 +192,7 @@ class CombiningOperatorsTest extends DocumentingTest {
             assertPlanContains("ConditionalApply")) {
         p("""Looks for the existence of a person called Andres, and if not found, creates one and
           |sets the `exists` property to `true`.""")
-        resultTable()
+        executionPlan()
       }
     }
     section("AssertSameNode") {
@@ -203,7 +203,7 @@ class CombiningOperatorsTest extends DocumentingTest {
           |it will be created. Due to the existence of two uniqueness constraints
           |on `:Team(name)` and `:Team(id)`, any node that would be found by the `UniqueIndexSeek`s
           |must be the very same node, or the constraints would be violated.""")
-        resultTable()
+        executionPlan()
       }
     }
     section("NodeHashJoin") {
@@ -216,7 +216,7 @@ class CombiningOperatorsTest extends DocumentingTest {
                       |  CREATE (person)-[:WORKS_IN]->(london)
                       |)""")
         p("Returns the name of the location where the matched persons both work.")
-        resultTable()
+        executionPlan()
       }
     }
     section("Triadic") {
@@ -229,7 +229,7 @@ class CombiningOperatorsTest extends DocumentingTest {
               |RETURN other.name""",
             assertPlanContains("Triadic")) {
         p("Finds the names of all friends of my friends that are not already my friends.")
-        resultTable()
+        executionPlan()
       }
     }
   }.build()
