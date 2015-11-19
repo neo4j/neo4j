@@ -21,6 +21,9 @@ package org.neo4j.graphdb.factory;
 
 import org.junit.Test;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
+
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
@@ -29,6 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -59,5 +63,23 @@ public class GraphDatabaseSettingsTest
         String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
         new Config( stringMap( name, "" + (pageSize * 2 - 1) ) ).get( setting );
+    }
+
+    @Test
+    public void noDuplicateSettingsAreAllowed() throws Exception
+    {
+        final HashMap<String,String> fields = new HashMap<>();
+        for ( Field field : GraphDatabaseSettings.class.getDeclaredFields() )
+        {
+            if ( field.getType() == Setting.class )
+            {
+                Setting setting = (Setting) field.get( null );
+
+                assertFalse(
+                        String.format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(),
+                                fields.get( setting.name() ) ), fields.containsKey( setting.name() ) );
+                fields.put( setting.name(), field.getName() );
+            }
+        }
     }
 }
