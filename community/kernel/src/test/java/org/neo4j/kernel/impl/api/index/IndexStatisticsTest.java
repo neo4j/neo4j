@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import com.google.common.jimfs.Jimfs;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,9 +41,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
@@ -60,8 +57,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -635,16 +631,8 @@ public class IndexStatisticsTest
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
     @Rule
-    public DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
     {
-        @Override
-        protected GraphDatabaseFactory newFactory()
-        {
-            TestGraphDatabaseFactory factory = (TestGraphDatabaseFactory) super.newFactory();
-            factory.setFileSystem( new DelegateFileSystemAbstraction( Jimfs.newFileSystem() ) );
-            return factory;
-        }
-
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
