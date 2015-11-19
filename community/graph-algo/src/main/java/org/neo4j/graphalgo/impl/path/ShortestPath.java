@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -69,6 +70,7 @@ public class ShortestPath implements PathFinder<Path>
     private final PathExpander expander;
     private Metadata lastMetadata;
     private ShortestPathPredicate predicate;
+    private DataMonitor dataMontitor = new DebugDataMonitor();
 
     public interface ShortestPathPredicate {
         boolean test(Path path);
@@ -229,6 +231,7 @@ public class ShortestPath implements PathFinder<Path>
                 Hit hit = new Hit( startSideData, endSideData, nextNode );
                 Node start = startSide.startNode;
                 Node end = (startSide == directionData) ? otherSide.startNode : directionData.startNode;
+                monitorData( directionData, otherSide );
                 if ( filterPaths( hitToPaths( hit, start, end, stopAsap ) ).size() > 0 )
                 {
                     if ( hits.add( hit, depth ) >= maxResultCount )
@@ -254,6 +257,15 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
+    private void monitorData( DirectionData directionData, DirectionData otherSide )
+    {
+        if ( dataMontitor != null )
+        {
+            dataMontitor.monitorData( directionData.visitedNodes, directionData.nextNodes, otherSide.visitedNodes,
+                    otherSide.nextNodes );
+        }
+    }
+
     private Collection<Path> filterPaths( Collection<Path> paths )
     {
         if ( predicate == null )
@@ -271,6 +283,66 @@ public class ShortestPath implements PathFinder<Path>
                 }
             }
             return filteredPaths;
+        }
+    }
+
+    public interface DataMonitor
+    {
+        void monitorData( Map<Node,LevelData> theseVisitedNodes, Collection<Node> theseNextNodes,
+                Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes );
+    }
+
+    private class DebugDataMonitor implements DataMonitor
+    {
+        public void monitorData( Map<Node,LevelData> theseVisitedNodes, Collection<Node> theseNextNodes,
+                Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes )
+        {
+            System.out.println( "------------------------------------------------------------" );
+            debug( System.out, 5, thoseVisitedNodes, thoseNextNodes );
+            debug( System.out, 5, theseVisitedNodes, theseNextNodes );
+            System.out.println();
+        }
+
+        private int debugNode( int dim, HashMap<String,String> matrix, int cellSize, Node node, String text )
+        {
+            Long row = node.getId() / dim;
+            Long col = node.getId() - dim * row;
+            String key = row.toString() + col.toString();
+            String value = matrix.get( key );
+            value = value == null ? text : value + text;
+            matrix.put( key, value );
+            return Math.max( cellSize, value.length() );
+        }
+
+        public void debug( PrintStream out, int dim, Map<Node,LevelData> visitedNodes, Collection<Node> nextNodes )
+        {
+            int cellSize = 0;
+            HashMap<String,String> matrix = new HashMap<String,String>();
+            for ( Map.Entry<Node,LevelData> entry : visitedNodes.entrySet() )
+            {
+                cellSize = debugNode( dim, matrix, cellSize, entry.getKey(), "[" + entry.getValue().depth + "]" );
+            }
+            for ( Node node : nextNodes )
+            {
+                cellSize = debugNode( dim, matrix, cellSize, node, "(*)" );
+            }
+            for ( int row = 0; row < dim; row++ )
+            {
+                out.print( Integer.toString( row ) + ":" );
+                for ( int col = 0; col < dim; col++ )
+                {
+                    String text = matrix.get( Integer.toString( row ) + Integer.toString( col ) );
+                    text = text == null ? "-" : text;
+                    StringBuffer padding = new StringBuffer();
+                    for ( int i = 0; i < 4 + cellSize - text.length(); i++ )
+                    {
+                        padding.append( " " );
+                    }
+                    out.print( padding + text );
+                }
+                out.println();
+            }
+            out.println();
         }
     }
 
