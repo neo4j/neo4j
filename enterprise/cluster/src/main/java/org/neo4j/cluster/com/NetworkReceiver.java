@@ -324,7 +324,7 @@ public class NetworkReceiver
         }
     }
 
-    private class MessageReceiver
+    class MessageReceiver
             extends SimpleChannelHandler
     {
         @Override
