@@ -136,9 +136,7 @@
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
-        <exclude>org.apache.lucene:lucene-core</exclude>
-        <exclude>org.apache.lucene:lucene-analyzers-common</exclude>
-        <exclude>org.apache.lucene:lucene-queryparser</exclude>
+        <exclude>org.apache.lucene:*</exclude>
         <exclude>io.netty:netty</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
