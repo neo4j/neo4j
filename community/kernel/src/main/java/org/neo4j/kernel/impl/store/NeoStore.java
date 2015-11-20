@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -440,6 +439,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getUpgradeTime()
     {
+        assertNotClosed();
         checkInitialized( upgradeTimeField );
         return upgradeTimeField;
     }
@@ -460,6 +460,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getCreationTime()
     {
+        assertNotClosed();
         checkInitialized( creationTimeField );
         return creationTimeField;
     }
@@ -472,6 +473,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getRandomNumber()
     {
+        assertNotClosed();
         checkInitialized( randomNumberField );
         return randomNumberField;
     }
@@ -485,6 +487,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long getCurrentLogVersion()
     {
+        assertNotClosed();
         checkInitialized( versionField );
         return versionField;
     }
@@ -531,6 +534,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getStoreVersion()
     {
+        assertNotClosed();
         checkInitialized( storeVersionField );
         return storeVersionField;
 
@@ -544,6 +548,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getGraphNextProp()
     {
+        assertNotClosed();
         checkInitialized( graphNextPropField );
         return graphNextPropField;
     }
@@ -556,6 +561,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getLatestConstraintIntroducingTx()
     {
+        assertNotClosed();
         checkInitialized( latestConstraintIntroducingTxField );
         return latestConstraintIntroducingTxField;
     }
@@ -895,6 +901,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long nextCommittingTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastCommittingTxField.incrementAndGet();
     }
@@ -902,6 +909,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void transactionCommitted( long transactionId, long checksum )
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         if ( highestCommittedTransaction.offer( transactionId, checksum ) )
         {
@@ -926,6 +934,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long getLastCommittedTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get().transactionId();
     }
@@ -933,6 +942,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public TransactionId getLastCommittedTransaction()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get();
     }
@@ -940,6 +950,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public TransactionId getUpgradeTransaction()
     {
+        assertNotClosed();
         checkInitialized( upgradeTxChecksumField );
         return new TransactionId( upgradeTxIdField, upgradeTxChecksumField );
     }
@@ -947,11 +958,17 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long getLastClosedTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastClosedTx.getHighestGapFreeNumber();
     }
 
-    // Ensures that all fields are read from the store, by checking the initial value of the field in question
+
+    /**
+     * Ensures that all fields are read from the store, by checking the initial value of the field in question
+     *
+     * @param field the value
+     */
     private void checkInitialized( long field )
     {
         if ( field == FIELD_NOT_INITIALIZED )
@@ -964,6 +981,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum )
     {
+        assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
         setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
         checkInitialized( lastCommittingTxField.get() );

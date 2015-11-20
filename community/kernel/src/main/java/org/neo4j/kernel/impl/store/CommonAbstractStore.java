@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.nio.ByteBuffer.wrap;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
@@ -123,7 +122,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             {
                 try
                 {
-                    storeFile.close();
+                    closeStoreFile();
                 }
                 catch ( IOException failureToClose )
                 {
@@ -713,6 +712,19 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /**
+     * Checks if this store is closed and throws exception if it is.
+     *
+     * @throws IllegalStateException if the store is closed
+     */
+    protected void assertNotClosed()
+    {
+        if ( storeFile == null )
+        {
+            throw new IllegalStateException( this + " for file '" + storageFileName + "' is closed" );
+        }
+    }
+
+    /**
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
@@ -731,7 +743,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         closeStorage();
         try
         {
-            storeFile.close();
+            closeStoreFile();
         }
         catch ( IOException e )
         {
@@ -776,7 +788,19 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    protected void releaseFileLockAndCloseFileChannel()
+    private void closeStoreFile() throws IOException
+    {
+        try
+        {
+            storeFile.close();
+        }
+        finally
+        {
+            storeFile = null;
+        }
+    }
+
+    private void releaseFileLockAndCloseFileChannel()
     {
         try
         {
