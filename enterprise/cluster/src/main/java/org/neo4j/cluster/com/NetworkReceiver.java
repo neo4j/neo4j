@@ -241,7 +241,7 @@ public class NetworkReceiver
         }
     }
 
-    private URI getURI( InetSocketAddress address )
+    URI getURI( InetSocketAddress address )
     {
         String uri;
 
