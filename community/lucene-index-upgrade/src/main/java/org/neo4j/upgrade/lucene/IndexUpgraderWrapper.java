@@ -51,18 +51,18 @@ class IndexUpgraderWrapper implements AutoCloseable
 
     public void upgradeIndex( Path indexPath ) throws Throwable
     {
+        // since lucene use ServiceLocator to load services, context class loader need to be replaced as well
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         try
         {
             if ( mainMethod == null )
             {
                 luceneLoader = jarLoaderSupplier.get();
-                Thread.currentThread().setContextClassLoader( luceneLoader.getJarsClassLoader() );
-                Class<?> upgrader = luceneLoader.loadEmbeddedClass( LUCENE_INDEX_UPGRADER_CLASS_NAME );
+                Class upgrader = luceneLoader.loadEmbeddedClass( LUCENE_INDEX_UPGRADER_CLASS_NAME );
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
-                mainMethod = lookup.findStatic( upgrader, "main",
-                        MethodType.methodType( void.class, String[].class ) );
+                mainMethod = lookup.findStatic( upgrader, "main", MethodType.methodType( void.class, String[].class ) );
             }
+            Thread.currentThread().setContextClassLoader( luceneLoader.getJarsClassLoader() );
             mainMethod.invokeExact( new String[]{indexPath.toString()} );
         }
         finally
