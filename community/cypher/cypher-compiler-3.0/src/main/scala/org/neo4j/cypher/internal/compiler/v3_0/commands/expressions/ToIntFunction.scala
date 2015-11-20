@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.{ParameterWrongTypeException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
@@ -47,6 +47,6 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
           null
       }
     case v =>
-      throw new CypherTypeException("Expected a String or Number, got: " + v.toString)
+      throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
   }
 }
