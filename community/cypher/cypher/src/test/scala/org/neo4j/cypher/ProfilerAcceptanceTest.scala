@@ -360,7 +360,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = profileWithAllPlanners("match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
 
     //THEN
-    assertDbHits(7)(result)("Projection")
+    assertDbHits(7)(result)("Expand(All)")
     assertDbHits(1)(result)("NodeUniqueIndexSeek")
    }
 
