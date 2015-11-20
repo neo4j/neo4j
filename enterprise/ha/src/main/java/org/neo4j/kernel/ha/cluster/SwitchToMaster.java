@@ -24,6 +24,7 @@ import java.net.URI;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Supplier;
@@ -122,9 +123,9 @@ public class SwitchToMaster implements AutoCloseable
 
     private URI getMasterUri( URI me, MasterServer masterServer )
     {
-        String hostname = config.get( HaSettings.ha_server ).getHost(
-                masterServer.getSocketAddress().getHostString().contains( "0.0.0.0" ) ? me.getHost()
-                        : masterServer.getSocketAddress().getHostString() );
+        String hostname = config.get( HaSettings.ha_server ).getHost( ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
+                            me.getHost() :
+                            ServerUtil.getHostString( masterServer.getSocketAddress() ));
 
         int port = masterServer.getSocketAddress().getPort();
 

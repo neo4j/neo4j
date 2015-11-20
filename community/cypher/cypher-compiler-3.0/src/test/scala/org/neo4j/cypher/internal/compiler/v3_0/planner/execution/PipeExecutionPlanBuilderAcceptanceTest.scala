@@ -19,22 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.execution
 
+import org.mockito.Mockito.{verify, when, atLeastOnce}
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.True
+import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken.Resolved
+import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.helpers.Clock
 
 class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val planContext = newMockedPlanContext
+  implicit val planContext: PlanContext = newMockedPlanContext
   implicit val pipeMonitor = mock[PipeMonitor]
   implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
@@ -184,5 +188,26 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
       ExpandAllPipe( AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)(),
       ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", SemanticDirection.INCOMING, LazyTypes.empty)()
     )())
+  }
+
+  test("Aggregation on top of Projection => DistinctPipe with resolved expressions") {
+    // GIVEN
+    val token = 42
+    when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
+    val allNodesScan = AllNodesScan("n", Set.empty)(solved)
+    val expressions = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))
+    val projection = Projection(allNodesScan, expressions)(solved)
+    val aggregation = Aggregation(projection, expressions, Map.empty) _
+
+    // WHEN
+    val pipe = build(aggregation).pipe
+
+    // THEN
+    verify(planContext, atLeastOnce()).getOptPropertyKeyId("prop")
+    pipe should equal(
+      DistinctPipe(
+        AllNodesScanPipe("n")(),
+        Map("n.prop" -> legacy.Property(legacy.Variable("n"),
+          Resolved("prop", token, TokenType.PropertyKey))))())
   }
 }
