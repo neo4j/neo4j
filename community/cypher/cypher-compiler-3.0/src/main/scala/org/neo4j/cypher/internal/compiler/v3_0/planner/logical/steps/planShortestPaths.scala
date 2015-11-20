@@ -98,7 +98,7 @@ case object planShortestPaths {
 
     // Projection with path
     val map = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
-    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map)
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, map)
 
     // Filter using predicates
     val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsProjection)

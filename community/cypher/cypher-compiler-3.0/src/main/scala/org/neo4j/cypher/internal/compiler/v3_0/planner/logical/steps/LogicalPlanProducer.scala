@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{SortDescription, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
@@ -347,14 +347,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)
 
-  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression])
+  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
                         (implicit context: LogicalPlanningContext) =
-    inner.updateSolved(_.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions))))
+    inner.updateSolved(_.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported))))
 
-  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression])
+  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
                            (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions)))
+    val solved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
     Projection(inner, expressions)(solved)
+  }
+
+  def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
+                 collectionName: IdName, identifierToCollect: IdName,
+                 nullable: Set[IdName]): LogicalPlan = {
+    RollUpApply(lhs, rhs, collectionName, identifierToCollect, nullable)(lhs.solved)
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LabelName], argumentIds: Set[IdName])
