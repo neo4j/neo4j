@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -70,7 +71,7 @@ public class EdgeServerReplicationIT
     public void shouldNotBeAbleToWriteToEdge() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1);
+        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
 
         GraphDatabaseService edgeDB = cluster.findAnEdgeServer();
 
@@ -96,7 +97,7 @@ public class EdgeServerReplicationIT
     public void allServersBecomeAvailable() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1);
+        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
 
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
@@ -110,7 +111,7 @@ public class EdgeServerReplicationIT
     public void shouldEventuallyPullTransactionDownToAllEdgeServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0);
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
@@ -162,7 +163,7 @@ public class EdgeServerReplicationIT
         File edgeDatabaseStoreFileLocation = createExistingEdgeStore( dir.directory().getAbsolutePath() +
                 pathSeparator + "edgeStore" );
 
-        cluster = Cluster.start( dir.directory(), 3, 0);
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         GraphDatabaseService coreDB = this.cluster.findLeader( 5000 );
 

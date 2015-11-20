@@ -29,15 +29,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.legacy.consistency.ConsistencyCheckService;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.legacy.consistency.ConsistencyCheckService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,7 +67,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -81,7 +82,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
@@ -96,7 +97,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0);
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
@@ -137,7 +138,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 2, 1);
+        cluster = Cluster.start( dbDir, 2, 1, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         final GraphDatabaseService coreDB = cluster.findLeader( 5000 );

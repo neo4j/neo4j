@@ -35,7 +35,7 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     public TestOnlyCoreDiscoveryService( Config config, TestOnlyDiscoveryServiceFactory cluster )
     {
         this.cluster = cluster;
-        synchronized ( cluster.coreMembers )
+        synchronized ( cluster )
         {
             this.me = toCoreMember( config );
             cluster.coreMembers.add( me );
@@ -57,39 +57,49 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     }
 
     @Override
-    public synchronized void addMembershipListener( Listener listener )
+    public void addMembershipListener( Listener listener )
     {
-        cluster.membershipListeners.add( listener );
-    }
-
-    @Override
-    public synchronized void removeMembershipListener( Listener listener )
-    {
-        cluster.membershipListeners.remove( listener );
-    }
-
-    @Override
-    public synchronized void start() throws Throwable
-    {
-        notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology() ) );
-    }
-
-    @Override
-    public synchronized void stop()
-    {
-        cluster.coreMembers.remove( me );
-
-        // Move the bootstrappable instance, if necessary
-        if ( cluster.bootstrappable == me )
+        synchronized ( cluster )
         {
-            cluster.bootstrappable = first( cluster.coreMembers );
+            cluster.membershipListeners.add( listener );
+            listener.onTopologyChange( currentTopology() );
         }
+    }
 
+    @Override
+    public void removeMembershipListener( Listener listener )
+    {
+        synchronized ( cluster )
+        {
+            cluster.membershipListeners.remove( listener );
+        }
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
         notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology() ) );
     }
 
     @Override
-    public synchronized ClusterTopology currentTopology()
+    public void stop()
+    {
+        synchronized ( cluster )
+        {
+            cluster.coreMembers.remove( me );
+
+            // Move the bootstrappable instance, if necessary
+            if ( cluster.bootstrappable == me )
+            {
+                cluster.bootstrappable = first( cluster.coreMembers );
+            }
+
+            notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology() ) );
+        }
+    }
+
+    @Override
+    public ClusterTopology currentTopology()
     {
         CoreMember firstMember = first( cluster.coreMembers );
         return new TestOnlyClusterTopology( firstMember != null && firstMember.equals( me ),
