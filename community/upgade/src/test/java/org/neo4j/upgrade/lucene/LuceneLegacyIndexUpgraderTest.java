@@ -19,9 +19,7 @@
  */
 package org.neo4j.upgrade.lucene;
 
-import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.Rule;
@@ -31,6 +29,7 @@ import org.junit.rules.ExpectedException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -82,7 +81,7 @@ public class LuceneLegacyIndexUpgraderTest
         TrackingLuceneLegacyIndexUpgrader indexUpgrader = new TrackingLuceneLegacyIndexUpgrader( indexFolder, true );
 
         expectedException.expect( LegacyIndexMigrationException.class );
-        expectedException.expect( new LegacyIndexMigrationExceptionBaseMatcher("index1") );
+        expectedException.expect( new LegacyIndexMigrationExceptionBaseMatcher("index1", "index2") );
 
         indexUpgrader.upgradeIndexes();
     }
@@ -95,24 +94,25 @@ public class LuceneLegacyIndexUpgraderTest
     private class LegacyIndexMigrationExceptionBaseMatcher extends TypeSafeDiagnosingMatcher<LegacyIndexMigrationException>
     {
 
-        private String failedIndexName;
+        private String[] failedIndexNames;
 
-        public LegacyIndexMigrationExceptionBaseMatcher(String failedIndexName)
+        public LegacyIndexMigrationExceptionBaseMatcher(String... failedIndexNames)
         {
-            this.failedIndexName = failedIndexName;
+            this.failedIndexNames = failedIndexNames;
         }
 
         @Override
         public void describeTo( Description description )
         {
-            description.appendText( failedIndexName ).appendText( " should fail during migration. " );
+            description.appendText( "Failed index should be one of:" )
+                    .appendText( Arrays.toString( failedIndexNames ) );
         }
 
         @Override
         protected boolean matchesSafely( LegacyIndexMigrationException item, Description mismatchDescription )
         {
             String brokendIndexName = item.getFailedIndexName();
-            boolean matched = this.failedIndexName.equals( brokendIndexName );
+            boolean matched = Arrays.asList(failedIndexNames).contains( brokendIndexName );
             if (!matched)
             {
                 mismatchDescription.appendText( "Failed index is: " ).appendText( brokendIndexName );
