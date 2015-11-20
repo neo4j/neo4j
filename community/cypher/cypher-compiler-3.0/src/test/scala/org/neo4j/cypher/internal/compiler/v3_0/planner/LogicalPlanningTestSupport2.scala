@@ -170,7 +170,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val unionQuery = toUnionQuery(ast, semanticTable)
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer,
+            metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty,
+            devNullLogger, useErrorsOverWarnings = false,
+            config.queryPlannerConfiguration)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
           SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)

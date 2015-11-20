@@ -134,7 +134,24 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     context.planContext.getUniqueIndexRule(label, property)
 }
 
-object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+object allIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+  protected def constructPlan(idName: IdName,
+                              label: LabelToken,
+                              propertyKey: PropertyKeyToken,
+                              valueExpr: QueryExpression[Expression],
+                              hint: Option[UsingIndexHint],
+                              argumentIds: Set[IdName])
+                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
+    (predicates: Seq[Expression]) =>
+      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+
+  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
+    context.planContext.getIndexRule(label, property)
+  }
+}
+
+//only looks at non-unique indexes
+object nonUniqueindexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,

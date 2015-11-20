@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{allIndexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -43,7 +43,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(inCollectionValue, hasLabels)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = allIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans shouldBe empty
@@ -70,7 +70,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = allIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
@@ -90,7 +90,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val x = cfg.x
-      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = allIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
@@ -107,7 +107,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = allIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans shouldBe empty
@@ -140,7 +140,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
+      val resultPlans = allIndexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {

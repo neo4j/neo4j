@@ -22,8 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.ast
-import org.neo4j.cypher.internal.compiler.v3_0.parser
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -33,10 +31,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
@@ -123,7 +121,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.default)
+      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.readOnly)
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics

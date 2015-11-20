@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Cost, Selectivity}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Cost, QueryPlannerConfiguration, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, HasLabels}
+import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, SemanticTable}
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
@@ -41,6 +41,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   var indexes: Set[(String, String)] = Set.empty
   var uniqueIndexes: Set[(String, String)] = Set.empty
+  var queryPlannerConfiguration = QueryPlannerConfiguration.default
 
   def indexOn(label: String, property: String) {
     indexes = indexes + (label -> property)

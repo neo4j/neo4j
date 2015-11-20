@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 
 trait LeafPlannerIterable {
   def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+  def + (leafPlanner: LeafPlanner): LeafPlannerIterable
 }
 
 case class LeafPlannerList(leafPlanners: LeafPlanner*) extends LeafPlannerIterable {
@@ -31,6 +32,8 @@ case class LeafPlannerList(leafPlanners: LeafPlanner*) extends LeafPlannerIterab
     val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
     logicalPlans.groupBy(_.availableSymbols).values
   }
+
+  override def +(leafPlanner: LeafPlanner) = LeafPlannerList(leafPlanners :+ leafPlanner:_*)
 }
 
 case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable) extends LeafPlannerIterable {
@@ -41,4 +44,7 @@ case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: Leaf
     if (priorityPlans.nonEmpty) priorityPlans
     else fallback.candidates(qg, f)
   }
+
+  override def +(leafPlanner: LeafPlanner) = copy(fallback = fallback + leafPlanner)
+
 }

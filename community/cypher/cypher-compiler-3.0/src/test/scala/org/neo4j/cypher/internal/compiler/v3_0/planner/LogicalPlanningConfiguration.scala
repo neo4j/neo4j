@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cost, _}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId, SemanticTable}
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
@@ -36,6 +35,7 @@ trait LogicalPlanningConfiguration {
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
   def qg: QueryGraph
+  def queryPlannerConfiguration: QueryPlannerConfiguration
 
   protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
 }
@@ -51,6 +51,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
   override def qg = parent.qg
+  override def queryPlannerConfiguration = parent.queryPlannerConfiguration
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {

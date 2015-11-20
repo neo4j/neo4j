@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -170,7 +170,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
   }
 
-  test("should plan a UniqueIndexSeek when constraint exists") {
+  test("should plan an IndexSeek when constraint exists") {
 
     graph.inTx {
       (1 to 100).foreach { _ =>
@@ -189,7 +189,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val result = executeWithAllPlanners("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
-    result should (use(UniqueIndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
+    result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
   }
 
   test("should be able to plan index seek for numerical less than") {
