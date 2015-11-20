@@ -9,6 +9,7 @@ Apache Software License, Version 2.0
   Guava: Google Core Libraries for Java
   javax.inject
   Lucene Core
+  Lucene Memory
   Netty/All-in-One
   opencsv
   parboiled-core
