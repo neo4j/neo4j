@@ -56,7 +56,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       addUniquenessPredicates,
       isolateAggregation,
       enableCondition(aggregationsAreIsolated),
-      replaceLiteralDynamicPropertyLookups
+      replaceLiteralDynamicPropertyLookups,
+      getDegreeOptimizer
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)

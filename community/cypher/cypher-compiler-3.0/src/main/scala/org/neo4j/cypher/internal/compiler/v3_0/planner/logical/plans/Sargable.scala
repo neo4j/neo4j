@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.{ManyQueryExpression, Qu
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.parser.{LikePatternOp, LikePatternParser, MatchText, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound}
 
 object WithSeekableArgs {
