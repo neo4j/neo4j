@@ -639,11 +639,6 @@
         <version>9.2.10.v20150310</version>
       </dependency>
       <dependency>
-        <groupId>org.rrd4j</groupId>
-        <artifactId>rrd4j</artifactId>
-        <version>2.2</version>
-      </dependency>
-      <dependency>
         <groupId>org.mozilla</groupId>
         <artifactId>rhino</artifactId>
         <version>1.7R4</version>
