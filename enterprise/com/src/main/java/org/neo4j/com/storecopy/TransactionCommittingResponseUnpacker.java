@@ -19,313 +19,146 @@
  */
 package org.neo4j.com.storecopy;
 
-import java.io.IOException;
-
-import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
-import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.function.Supplier;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.util.Access;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Receives and unpacks {@link Response responses}.
  * Transaction obligations are handled by {@link TransactionObligationFulfiller} and
- * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
- * store},
- * in batches.
- * <p/>
- * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
- * and same thread.
+ * {@link TransactionStream transaction streams} are {@link TransactionCommitProcess committed to the
+ * store}, in batches.
  */
-public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, Lifecycle
+public class TransactionCommittingResponseUnpacker extends LifecycleAdapter implements ResponseUnpacker
 {
+    /**
+     * Dependencies that this {@link TransactionCommittingResponseUnpacker} has. These are called upon
+     * in {@link TransactionCommittingResponseUnpacker#start()}.
+     */
     public interface Dependencies
     {
-        BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier();
+        /**
+         * Responsible for committing batches of transactions received from transaction stream responses.
+         */
+        TransactionCommitProcess commitProcess();
 
-        IndexUpdatesValidator indexUpdatesValidator();
+        /**
+         * Responsible for fulfilling transaction obligations received from transaction obligation responses.
+         */
+        TransactionObligationFulfiller obligationFulfiller();
+    }
 
-        LogFile logFile();
+    /**
+     * Common implementation which pulls out dependencies from a {@link DependencyResolver} and constructs
+     * whatever components it needs from that.
+     */
+    private static class ResolvableDependencies implements Dependencies
+    {
+        private final DependencyResolver resolver;
 
-        LogRotation logRotation();
+        public ResolvableDependencies( DependencyResolver resolver )
+        {
+            this.resolver = resolver;
+        }
 
-        KernelHealth kernelHealth();
+        @Override
+        public TransactionCommitProcess commitProcess()
+        {
+            // We simply can't resolve the commit process here, since the commit process of a slave
+            // is one that sends transactions to the master. We here, however would like to actually
+            // commit transactions in this db.
+            return new TransactionRepresentationCommitProcess(
+                    resolver.resolveDependency( TransactionAppender.class ),
+                    resolver.resolveDependency( StorageEngine.class ),
+                    resolver.resolveDependency( IndexUpdatesValidator.class ) );
+        }
 
-        // Components that change during role switches
-
-        Supplier<TransactionObligationFulfiller> transactionObligationFulfiller();
-
-        Supplier<TransactionAppender> transactionAppender();
-
-        LogService logService();
+        @Override
+        public TransactionObligationFulfiller obligationFulfiller()
+        {
+            try
+            {
+                return resolver.resolveDependency( TransactionObligationFulfiller.class );
+            }
+            catch ( UnsatisfiedDependencyException e )
+            {
+                return toTxId -> {
+                    throw new UnsupportedOperationException( "Should not be called" );
+                };
+            }
+        }
     }
 
     public static final int DEFAULT_BATCH_SIZE = 100;
-    private final TransactionQueue transactionQueue;
-    // Visits all queued transactions, committing them
-    private final TransactionVisitor batchCommitter = new TransactionVisitor()
-    {
-        @Override
-        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
-        {
-            // Tuck away the Commitment returned from the call to append. We'll use each Commitment right before
-            // applying each transaction.
-            Commitment commitment = appender.append( transaction.getTransactionRepresentation(),
-                    transaction.getCommitEntry().getTxId() );
-            commitmentAccess.set( commitment );
-        }
-    };
-    // Visits all queued, and recently appended, transactions, applying them to the store
-    private final TransactionVisitor batchApplier = new TransactionVisitor()
-    {
-        @Override
-        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
-        {
-            long transactionId = transaction.getCommitEntry().getTxId();
-            TransactionRepresentation representation = transaction.getTransactionRepresentation();
-            commitmentAccess.get().publishAsCommitted();
-            try ( LockGroup locks = new LockGroup();
-                  ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation ) )
-            {
-                storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
-                handler.accept( transaction );
-            }
-        }
-    };
-    private final TransactionVisitor batchCloser = new TransactionVisitor()
-    {
-        @Override
-        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
-                Access<Commitment> commitmentAccess ) throws IOException
-        {
-            Commitment commitment = commitmentAccess.get();
-            if ( commitment.markedAsCommitted() )
-            {
-                commitment.publishAsApplied();
-            }
-        }
-    };
 
     static final String msg = "Kernel panic detected: pulled transactions cannot be applied to a non-healthy database. "
             + "In order to resolve this issue a manual restart of this instance is required.";
 
+    // Assigned in constructor
     private final Dependencies dependencies;
-    private TransactionAppender appender;
-    private BatchingTransactionRepresentationStoreApplier storeApplier;
-    private IndexUpdatesValidator indexUpdatesValidator;
+    private final int maxBatchSize;
+
+    // Assigned in start()
+    private TransactionCommitProcess commitProcess;
     private TransactionObligationFulfiller obligationFulfiller;
-    private LogFile logFile;
-    private LogRotation logRotation;
-    private KernelHealth kernelHealth;
-    private Log log;
+
+    // Assigned in stop()
     private volatile boolean stopped;
 
-    public TransactionCommittingResponseUnpacker( Dependencies dependencies )
+    public TransactionCommittingResponseUnpacker( DependencyResolver dependencies, int maxBatchSize )
     {
-        this( dependencies, DEFAULT_BATCH_SIZE );
+        this( new ResolvableDependencies( dependencies ), maxBatchSize );
     }
 
     public TransactionCommittingResponseUnpacker( Dependencies dependencies, int maxBatchSize )
     {
         this.dependencies = dependencies;
-        this.transactionQueue = new TransactionQueue( maxBatchSize );
-    }
-
-    private static TransactionObligationFulfiller resolveTransactionObligationFulfiller(
-            Supplier<TransactionObligationFulfiller> supplier)
-    {
-        try
-        {
-            return supplier.get();
-        }
-        catch ( UnsatisfiedDependencyException e )
-        {
-            return new TransactionObligationFulfiller()
-            {
-                @Override
-                public void fulfill( long toTxId )
-                {
-                    throw new UnsupportedOperationException( "Should not be called" );
-                }
-            };
-        }
+        this.maxBatchSize = maxBatchSize;
     }
 
     @Override
-    public void unpackResponse( Response<?> response, final TxHandler txHandler ) throws IOException
+    public void unpackResponse( Response<?> response, TxHandler txHandler ) throws Exception
     {
         if ( stopped )
         {
             throw new IllegalStateException( "Component is currently stopped" );
         }
 
+        BatchingResponseHandler responseHandler = new BatchingResponseHandler( maxBatchSize,
+                (batch) -> {
+                    commitProcess.commit( batch, CommitEvent.NULL, EXTERNAL );
+                }, obligationFulfiller, txHandler );
         try
         {
-            response.accept( new BatchingResponseHandler( txHandler ) );
+            response.accept( responseHandler );
         }
         finally
         {
-            if ( response.hasTransactionsToBeApplied() )
-            {
-                applyQueuedTransactions();
-            }
-        }
-    }
-
-    private void applyQueuedTransactions() throws IOException
-    {
-        // Synchronize to guard for concurrent shutdown
-        synchronized ( logFile )
-        {
-            // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-
-            // Check kernel health after log rotation
-            if ( !kernelHealth.isHealthy() )
-            {
-                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
-                log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
-                throw new IOException( msg, causeOfPanic );
-            }
-
-            try
-            {
-                // Apply whatever is in the queue
-                if ( transactionQueue.accept( batchCommitter ) > 0 )
-                {
-                    // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
-                    // Reason being that even if there would be a reordering in some layer where a store file would be
-                    // changed before that change would have ended up in the log, it would be fine sine as a slave
-                    // you would pull that transaction again anyhow before making changes to (after reading) any record.
-                    appender.force();
-                    try
-                    {
-                        // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
-                        // We mark as closed below.
-                        transactionQueue.accept( batchApplier );
-                        // Ensure that all changes are flushed to the store, we're doing some batching of transactions
-                        // here so some shortcuts are taken in places. Although now comes the time where we must
-                        // ensure that all pending changes are applied and flushed properly.
-                        storeApplier.closeBatch();
-                    }
-                    finally
-                    {
-                        // Mark the applied transactions as closed. We must do this as a separate step after
-                        // applying them, with a closeBatch() call in between, otherwise there might be
-                        // threads waiting for transaction obligations to be fulfilled and since they are looking
-                        // at last closed transaction id they might get notified to continue before all data
-                        // has actually been flushed properly.
-                        transactionQueue.accept( batchCloser );
-                    }
-                }
-            }
-            finally
-            {
-                transactionQueue.clear();
-            }
+            responseHandler.applyQueuedTransactions();
         }
     }
 
     @Override
-    public void init() throws Throwable
-    {   // Nothing to init
-    }
-
-    @Override
-    public void start() throws Throwable
+    public void start()
     {
-        this.appender = dependencies.transactionAppender().get();
-        this.storeApplier = dependencies.transactionRepresentationStoreApplier();
-        this.indexUpdatesValidator = dependencies.indexUpdatesValidator();
-        this.obligationFulfiller = resolveTransactionObligationFulfiller( dependencies.transactionObligationFulfiller() );
-        this.logFile = dependencies.logFile();
-        this.logRotation = dependencies.logRotation();
-        this.kernelHealth = dependencies.kernelHealth();
-        this.log = dependencies.logService().getInternalLogProvider().getLog( getClass() );
+        this.commitProcess = dependencies.commitProcess();
+        this.obligationFulfiller = dependencies.obligationFulfiller();
         this.stopped = false;
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         this.stopped = true;
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {   // Nothing to shut down
-    }
-
-    private class BatchingResponseHandler implements Response.Handler,
-            Visitor<CommittedTransactionRepresentation,IOException>
-    {
-        private final TxHandler txHandler;
-
-        private BatchingResponseHandler( TxHandler txHandler )
-        {
-            this.txHandler = txHandler;
-        }
-
-        @Override
-        public void obligation( long txId ) throws IOException
-        {
-            if ( txId == TransactionIdStore.BASE_TX_ID )
-            {   // Means "empty" response
-                return;
-            }
-
-            try
-            {
-                obligationFulfiller.fulfill( txId );
-            }
-            catch ( IllegalStateException e )
-            {
-                throw new ComException( "Failed to pull updates", e );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IOException( e );
-            }
-        }
-
-        @Override
-        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
-        {
-            return this;
-        }
-
-        @Override
-        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-        {
-            if ( transactionQueue.queue( transaction, txHandler ) )
-            {
-                applyQueuedTransactions();
-            }
-            return false;
-        }
     }
 }

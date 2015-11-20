@@ -108,11 +108,6 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         {
             return StoreApplyEvent.NULL;
         }
-
-        @Override
-        public void setTransactionId( long transactionId )
-        {
-        }
     };
 
     private final TransactionEvent transactionEvent = new TransactionEvent()

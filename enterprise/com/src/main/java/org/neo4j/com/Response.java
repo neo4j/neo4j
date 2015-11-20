@@ -65,7 +65,7 @@ public abstract class Response<T> implements AutoCloseable
         return (Response<T>) EMPTY;
     }
 
-    public abstract void accept( Handler handler ) throws IOException;
+    public abstract void accept( Handler handler ) throws Exception;
 
     /**
      * @return {@code true} if this response has transactions to be applied as part of unpacking it,
@@ -90,7 +90,7 @@ public abstract class Response<T> implements AutoCloseable
         /**
          * @return a {@link Visitor} which will {@link Visitor#visit(Object) receive} calls about transactions.
          */
-        Visitor<CommittedTransactionRepresentation,IOException> transactions();
+        Visitor<CommittedTransactionRepresentation,Exception> transactions();
     }
 
     public static final Response<Void> EMPTY = new TransactionObligationResponse<>( null, StoreId.DEFAULT,

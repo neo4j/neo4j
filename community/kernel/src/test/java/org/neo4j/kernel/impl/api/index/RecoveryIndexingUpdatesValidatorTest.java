@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
@@ -62,7 +63,7 @@ public class RecoveryIndexingUpdatesValidatorTest
         // When
         try ( ValidatedIndexUpdates updates = validator.validate( tx ) )
         {
-            updates.flush();
+            updates.flush( new HashSet<>() );
         }
 
         // Then

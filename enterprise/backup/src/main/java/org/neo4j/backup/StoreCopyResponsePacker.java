@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -72,7 +70,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
@@ -88,7 +86,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
 
     @Override
     protected void extractTransactions( long startingAtTransactionId,
-            Visitor<CommittedTransactionRepresentation, IOException> accumulator ) throws IOException
+            Visitor<CommittedTransactionRepresentation,Exception> accumulator ) throws Exception
     {
         try
         {

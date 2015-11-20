@@ -83,7 +83,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
                 for ( int i = 1; i <= txCount; i++ )
                 {

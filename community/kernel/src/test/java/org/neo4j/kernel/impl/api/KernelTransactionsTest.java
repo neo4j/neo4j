@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -187,10 +186,10 @@ public class KernelTransactionsTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
 
         when( commitProcess.commit(
-                any( TransactionRepresentation.class ), any( LockGroup.class ), any( CommitEvent.class ),
+                any( TransactionToApply.class ), any( CommitEvent.class ),
                 any( TransactionApplicationMode.class ) ) )
                 .then( invocation -> {
-                    slot[0] = ((TransactionRepresentation) invocation.getArguments()[0]);
+                    slot[0] = ((TransactionToApply) invocation.getArguments()[0]).transactionRepresentation();
                     return 1L;
                 } );
 

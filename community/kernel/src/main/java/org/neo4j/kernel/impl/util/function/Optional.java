@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.function;
 
-import org.neo4j.function.Function;
+
+import java.util.function.Function;
 
 /**
  * Represents a value that may or may not exist.

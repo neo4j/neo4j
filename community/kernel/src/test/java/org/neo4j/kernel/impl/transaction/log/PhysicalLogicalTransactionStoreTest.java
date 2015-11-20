@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,16 +31,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.test.TargetDirectory;
 
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -60,6 +60,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static java.lang.String.format;
+
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
@@ -152,7 +155,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
+            public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
             {
                 return recoverer;
             }
@@ -358,7 +361,7 @@ public class PhysicalLogicalTransactionStoreTest
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
                 timeCommitted, -1 );
-        appender.append( transaction, LogAppendEvent.NULL );
+        appender.append( new TransactionToApply( transaction ), LogAppendEvent.NULL );
     }
 
     private Collection<Command> singleCreateNodeCommand()
@@ -376,7 +379,7 @@ public class PhysicalLogicalTransactionStoreTest
         return commands;
     }
 
-    private static class FakeRecoveryVisitor implements CloseableVisitor<RecoverableTransaction, IOException>
+    private static class FakeRecoveryVisitor implements CloseableVisitor<RecoverableTransaction,Exception>
     {
         private final byte[] additionalHeader;
         private final int masterId;
@@ -416,7 +419,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             // nothing to do
         }

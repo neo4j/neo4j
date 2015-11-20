@@ -46,7 +46,7 @@ public class Recovery extends LifecycleAdapter
     {
         void forceEverything();
 
-        Visitor<LogVersionedStoreChannel,IOException> getRecoverer();
+        Visitor<LogVersionedStoreChannel,Exception> getRecoverer();
 
         Iterator<LogVersionedStoreChannel> getLogFiles( long fromVersion ) throws IOException;
 
@@ -77,7 +77,7 @@ public class Recovery extends LifecycleAdapter
         Iterator<LogVersionedStoreChannel> logFiles = spi.getLogFiles( recoveryPosition.getLogVersion() );
         monitor.recoveryRequired( recoveryPosition );
         spi.recoveryRequired();
-        Visitor<LogVersionedStoreChannel,IOException> recoverer = spi.getRecoverer();
+        Visitor<LogVersionedStoreChannel,Exception> recoverer = spi.getRecoverer();
         while ( logFiles.hasNext() )
         {
             try ( LogVersionedStoreChannel toRecover = logFiles.next() )

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -27,7 +26,6 @@ import java.util.NoSuchElementException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -40,20 +38,18 @@ public class DefaultRecoverySPI implements Recovery.SPI
 {
     private final StoreFlusher storeFlusher;
     private final NeoStores neoStores;
-    private final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer;
+    private final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer;
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
-    private final Closeable beforeForcing;
 
-    public DefaultRecoverySPI( Closeable beforeForcing,
+    public DefaultRecoverySPI(
             StoreFlusher storeFlusher, NeoStores neoStores,
-            Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer,
+            Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer,
             PhysicalLogFiles logFiles, FileSystemAbstraction fileSystemAbstraction,
             LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder )
     {
-        this.beforeForcing = beforeForcing;
         this.storeFlusher = storeFlusher;
         this.neoStores = neoStores;
         this.logFileRecoverer = logFileRecoverer;
@@ -66,19 +62,11 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public void forceEverything()
     {
-        try
-        {
-            beforeForcing.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
         storeFlusher.forceEverything();
     }
 
     @Override
-    public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
+    public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
     {
         return logFileRecoverer;
     }

@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -36,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.collection.primitive.Primitive.longSet;
 
-class NodePropertyCommandsExtractor
+public class NodePropertyCommandsExtractor
         extends CommandHandler.Adapter implements Visitor<Command,IOException>
 {
     final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
@@ -49,7 +50,8 @@ class NodePropertyCommandsExtractor
         return false;
     }
 
-    public void clear()
+    @Override
+    public void begin( TransactionToApply transaction )
     {
         nodeCommandsById.clear();
         propertyCommandsByNodeIds.clear();
@@ -92,5 +94,15 @@ class NodePropertyCommandsExtractor
             uniqueIds.addAll( propertyCommandsByNodeIds.iterator() );
             uniqueIds.visitKeys( updatedNodeVisitor );
         }
+    }
+
+    public PrimitiveLongObjectMap<NodeCommand> nodeCommandsById()
+    {
+        return nodeCommandsById;
+    }
+
+    public PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
+    {
+        return propertyCommandsByNodeIds;
     }
 }

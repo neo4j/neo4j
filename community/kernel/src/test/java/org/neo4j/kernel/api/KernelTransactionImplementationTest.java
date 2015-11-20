@@ -42,10 +42,10 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
@@ -468,11 +468,12 @@ public class KernelTransactionImplementationTest
         private TransactionRepresentation transaction;
 
         @Override
-        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
-                TransactionApplicationMode mode ) throws TransactionFailureException
+        public long commit( TransactionToApply batch, CommitEvent commitEvent,
+                            TransactionApplicationMode mode ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
-            transaction = representation;
+            assert batch.next() == null : "Designed to only allow one transaction";
+            transaction = batch.transactionRepresentation();
             return txId++;
         }
     }

@@ -135,7 +135,7 @@ public class RecoveryIT
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     private File copyTransactionLogs() throws IOException

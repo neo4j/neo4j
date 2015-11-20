@@ -47,8 +47,8 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -388,7 +388,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
-        try ( LockGroup locks = new LockGroup() )
+        try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
@@ -400,8 +400,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
-            commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
+            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
+                    transactionIdStore.getLastCommittedTransactionId(), nodes );
+            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }
         finally

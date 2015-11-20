@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -445,40 +444,38 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if ( hasChanges() )
             {
-                try ( LockGroup lockGroup = new LockGroup() )
+                // Gather up commands from the various sources
+                Collection<Command> extractedCommands = storageEngine.createCommands(
+                        txState,
+                        legacyIndexTransactionState,
+                        locks,
+                        operations,
+                        storeStatement,
+                        lastTransactionIdWhenStarted );
+
+                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+                 * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+                 * previously made changes in that same transaction, and so at some point a transaction may have
+                 * changes and at another point, after more changes seemingly,
+                 * the transaction may not have any changes.
+                 * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+                 * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+                 * have produced any commands to add to the logical log.
+                 */
+                if ( !extractedCommands.isEmpty() )
                 {
-                    // Gather up commands from the various sources
-                    Collection<Command> extractedCommands = storageEngine.createCommands(
-                            txState,
-                            legacyIndexTransactionState,
-                            locks,
-                            operations,
-                            storeStatement,
-                            lastTransactionIdWhenStarted );
+                    // Finish up the whole transaction representation
+                    PhysicalTransactionRepresentation transactionRepresentation =
+                            new PhysicalTransactionRepresentation( extractedCommands );
+                    TransactionHeaderInformation headerInformation = headerInformationFactory.create();
+                    transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                            headerInformation.getMasterId(),
+                            headerInformation.getAuthorId(),
+                            startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
+                            locks.getLockSessionId() );
 
-                    /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
-                     * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
-                     * previously made changes in that same transaction, and so at some point a transaction may have
-                     * changes and at another point, after more changes seemingly,
-                     * the transaction may not have any changes.
-                     * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
-                     * and get right.... So to really make sure the transaction has changes we re-check by looking if we
-                     * have produced any commands to add to the logical log.
-                     */
-                    if ( !extractedCommands.isEmpty() )
-                    {
-                        // Finish up the whole transaction representation
-                        PhysicalTransactionRepresentation transactionRepresentation =
-                                new PhysicalTransactionRepresentation( extractedCommands );
-                        TransactionHeaderInformation headerInformation = headerInformationFactory.create();
-                        transactionRepresentation
-                                .setHeader( headerInformation.getAdditionalHeader(), headerInformation.getMasterId(),
-                                        headerInformation.getAuthorId(), startTimeMillis, lastTransactionIdWhenStarted,
-                                        clock.currentTimeMillis(), locks.getLockSessionId() );
-
-                        // Commit the transaction
-                        commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
-                    }
+                    // Commit the transaction
+                    commitProcess.commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
                 }
             }
             success = true;

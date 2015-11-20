@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,7 +61,8 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.Label.label;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class StoreCopyClientTest
 {
@@ -75,7 +75,7 @@ public class StoreCopyClientTest
 
     @Test
     public void shouldCopyStoreFilesAcrossIfACancellationRequestHappensAfterTheTempStoreHasBeenRecovered()
-            throws IOException
+            throws Exception
     {
         // given
         final File copyDir = new File( testDir.directory(), "copy" );
@@ -145,7 +145,7 @@ public class StoreCopyClientTest
 
     @Test
     public void shouldEndUpWithAnEmptyStoreIfCancellationRequestIssuedJustBeforeRecoveryTakesPlace()
-            throws IOException
+            throws Exception
     {
         // given
         final File copyDir = new File( testDir.directory(), "copy" );

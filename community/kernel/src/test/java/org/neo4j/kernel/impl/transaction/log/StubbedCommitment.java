@@ -41,8 +41,8 @@ public class StubbedCommitment implements Commitment
     }
 
     @Override
-    public long transactionId()
+    public boolean hasLegacyIndexChanges()
     {
-        throw new UnsupportedOperationException();
+        return false;
     }
 }

@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -139,19 +138,18 @@ public class RecoveryTest
         final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         try
         {
-            Closeable toClose = mock( Closeable.class );
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( toClose, flusher, mock( NeoStores.class ), null,
+            life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
                     logFiles, fs, logVersionRepository, finder )
             {
                 @Override
-                public Visitor<LogVersionedStoreChannel,IOException> getRecoverer()
+                public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
                 {
-                    return new Visitor<LogVersionedStoreChannel,IOException>()
+                    return new Visitor<LogVersionedStoreChannel,Exception>()
                     {
                         @Override
                         public boolean visit( LogVersionedStoreChannel element ) throws IOException
@@ -229,17 +227,16 @@ public class RecoveryTest
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
         try
         {
-            Closeable toClose = mock( Closeable.class );
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
                     LogEntryVersion.CURRENT.byteCode() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
-            life.add( new Recovery( new DefaultRecoverySPI( toClose, flusher, mock( NeoStores.class ), null,
+            life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
                     logFiles, fs, logVersionRepository, finder )
             {
                 @Override
-                public Visitor<LogVersionedStoreChannel, IOException> getRecoverer()
+                public Visitor<LogVersionedStoreChannel,Exception> getRecoverer()
                 {
                     throw new AssertionError( "Recovery should not be required" );
                 }

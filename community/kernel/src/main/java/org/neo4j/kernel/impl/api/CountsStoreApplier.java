@@ -21,46 +21,60 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
-import org.neo4j.function.Function;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 public class CountsStoreApplier extends CommandHandler.Adapter
 {
-    static final Function<CountsAccessor.Updater,CommandHandler> FACTORY =
-            new Function<CountsAccessor.Updater,CommandHandler>()
-            {
-                @Override
-                public CommandHandler apply( CountsAccessor.Updater updater )
-                {
-                    return new CountsStoreApplier( updater );
-                }
-            };
-    private final CountsAccessor.Updater countsUpdater;
+    private final CountsTracker countsTracker;
+    private CountsTracker.Updater countsUpdater;
+    private final TransactionApplicationMode mode;
 
-    public CountsStoreApplier( CountsAccessor.Updater countsUpdater )
+    public CountsStoreApplier( CountsTracker countsTracker, TransactionApplicationMode mode )
     {
-        this.countsUpdater = countsUpdater;
+        this.countsTracker = countsTracker;
+        this.mode = mode;
     }
 
     @Override
-    public void close()
+    public void begin( TransactionToApply transaction ) throws IOException
     {
-        countsUpdater.close();
+        countsTracker.apply( transaction.transactionId() ).map(
+                ( CountsTracker.Updater updater ) -> this.countsUpdater = updater );
+        assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
+    }
+
+    @Override
+    public void end()
+    {
+        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        if ( countsUpdater != null )
+        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
+            countsUpdater.close();
+        }
     }
 
     @Override
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
     {
-        countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
+        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        if ( countsUpdater != null )
+        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
+            countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
+        }
         return false;
     }
 
     @Override
     public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
     {
-        countsUpdater.incrementRelationshipCount(
-                command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
+        assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
+        if ( countsUpdater != null )
+        {   // CountsUpdater is null if we're in recovery and the counts store already has had this transaction applied.
+            countsUpdater.incrementRelationshipCount(
+                    command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
+        }
         return false;
     }
 }

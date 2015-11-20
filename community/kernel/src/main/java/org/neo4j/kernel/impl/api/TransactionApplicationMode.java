@@ -52,24 +52,24 @@ public enum TransactionApplicationMode
             false, // id tracking not needed because id generators will be rebuilt after recovery anyway
             false, // during recovery there's not really a cache to invalidate so don't bother
             true   // extra care needs to be taken to ensure idempotency since this transaction
-                    // may have been applied previously
+                   // may have been applied previously
             );
 
-    private final boolean needsIdTracking;
+    private final boolean needsHighIdTracking;
     private final boolean needsCacheInvalidation;
     private final boolean needsIdempotencyChecks;
 
-    TransactionApplicationMode( boolean needsIdTracking, boolean needsCacheInvalidation,
+    TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation,
             boolean ensureIdempotency )
     {
-        this.needsIdTracking = needsIdTracking;
+        this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
         this.needsIdempotencyChecks = ensureIdempotency;
     }
 
-    public boolean needsIdTracking()
+    public boolean needsHighIdTracking()
     {
-        return needsIdTracking;
+        return needsHighIdTracking;
     }
 
     public boolean needsCacheInvalidationOnUpdates()

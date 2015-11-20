@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -505,7 +504,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             dependencies.satisfyDependency( storageEngine.schemaIndexProviderMap() );
             dependencies.satisfyDependency( storageEngine.legacyIndexApplierLookup() );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
-            dependencies.satisfyDependency( storageEngine.transactionApplier() );
             dependencies.satisfyDependency( storageEngine );
             satisfyDependencies( transactionLogModule, kernelModule );
         }
@@ -740,20 +738,19 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine )
     {
+        @SuppressWarnings( "resource" )
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        final TransactionRepresentationStoreApplier storeRecoverer = storageEngine.transactionApplierForRecovery();
 
-        RecoveryVisitor recoveryVisitor =
-                new RecoveryVisitor( metaDataStore, storeRecoverer, storageEngine.indexUpdatesValidatorForRecovery(),
-                        recoveryVisitorMonitor );
+        @SuppressWarnings( "resource" )
+        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( metaDataStore, storageEngine, recoveryVisitorMonitor );
 
         LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
+        final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
-        Recovery.SPI spi = new DefaultRecoverySPI( storageEngine.toCloseAfterRecovery(),
+        Recovery.SPI spi = new DefaultRecoverySPI(
                 storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
                 checkPointFinder );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
@@ -955,7 +952,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private void awaitAllTransactionsClosed()
     {
-        while ( !storageEngine.neoStores().getMetaDataStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
+        // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
+        // otherwise if there has been a panic transactions will not be applied properly anyway.
+        while ( kernelHealth.isHealthy() &&
+                !storageEngine.neoStores().getMetaDataStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }

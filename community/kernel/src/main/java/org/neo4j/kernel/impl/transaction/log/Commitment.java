@@ -30,6 +30,31 @@ package org.neo4j.kernel.impl.transaction.log;
  */
 public interface Commitment
 {
+    Commitment NO_COMMITMENT = new Commitment()
+    {
+        @Override
+        public void publishAsCommitted()
+        {
+        }
+
+        @Override
+        public void publishAsApplied()
+        {
+        }
+
+        @Override
+        public boolean markedAsCommitted()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean hasLegacyIndexChanges()
+        {
+            return false;
+        }
+    };
+
     /**
      * <p>
      *     Marks the transaction as committed and makes this fact public.
@@ -44,10 +69,7 @@ public interface Commitment
      */
     void publishAsApplied();
 
-    /**
-     * @return the commitment transaction id
-     */
-    long transactionId();
-
     boolean markedAsCommitted();
+
+    boolean hasLegacyIndexChanges();
 }

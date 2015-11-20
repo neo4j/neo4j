@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -46,16 +47,21 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final LockGroup lockGroup;
-    private final long transactionId;
+    private long transactionId;
 
     public NeoStoreTransactionApplier( NeoStores store, CacheAccessBackDoor cacheAccess,
-                                       LockService lockService, LockGroup lockGroup, long transactionId )
+            LockService lockService, LockGroup lockGroup )
     {
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
-        this.transactionId = transactionId;
         this.lockGroup = lockGroup;
+    }
+
+    @Override
+    public void begin( TransactionToApply transaction ) throws IOException
+    {
+        transactionId = transaction.transactionId();
     }
 
     @Override
