@@ -42,66 +42,142 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans that contain multiple WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`").plan
 
-    val resultText = result.toString
-
-    resultText should equal(
-      // oh perty where art thou!?
-      "Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),SignedDecimalIntegerLiteral(1))")
+    result.toString should equal(
+      """Limit(SignedDecimalIntegerLiteral(1)) {
+        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
+        |    LHS -> Apply() {
+        |      LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |        LHS -> AllNodesScan(IdName(a), Set()) {}
+        |      }
+        |      RHS -> Argument(Set(IdName(a))) {}
+        |    }
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Selection(Vector(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)))")
+      """Selection(Vector(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
+        |  LHS -> Apply() {
+        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |      LHS -> AllNodesScan(IdName(a), Set()) {}
+        |    }
+        |    RHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
+        |      LHS -> Argument(Set(IdName(a))) {}
+        |    }
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
 
     result.toString should equal(
-      "Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),SignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll)")
+      """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
+        |  LHS -> Apply() {
+        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |      LHS -> AllNodesScan(IdName(a), Set()) {}
+        |    }
+        |    RHS -> Argument(Set(IdName(a))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(r))),IdName(r),IdName(u),false,IdName(v),false,None,true,SimplePatternLength))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(u), false, IdName(v), false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(b), IdName(r))),IdName(r),IdName(a),true,IdName(b),true,None,true,SimplePatternLength))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b), true, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(IdName(a), IdName(b), IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, SimplePatternLength) {
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,false,SimplePatternLength))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> Expand(IdName(b), INCOMING, List(), IdName(a), IdName(r), ExpandAll) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, false, SimplePatternLength) {
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Apply(Limit(VarExpand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),ExpandAll,Vector()),SignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,VarPatternLength(1,None)))")
+      """Apply() {
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> VarExpand(IdName(b), INCOMING, OUTGOING, List(), IdName(a), IdName(r), VarPatternLength(1,None), ExpandAll, Vector()) {
+        |      LHS -> AllNodesScan(IdName(b), Set()) {}
+        |    }
+        |  }
+        |  RHS -> ProjectEndpoints(IdName(r), IdName(a), true, IdName(b2), false, None, true, VarPatternLength(1,None)) {
+        |    LHS -> Argument(Set(IdName(a), IdName(r))) {}
+        |  }
+        |}""".stripMargin)
   }
 }

@@ -74,7 +74,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
   }
 
   test("Prints on toString") {
-    TestLeafPlan(12).toString should equal("TestLeafPlan(12)")
+    TestLeafPlan(12).toString should equal("TestLeafPlan(12) {}")
   }
 
   case class TestLeafPlan(x: Int) extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
