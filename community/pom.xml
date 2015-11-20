@@ -44,6 +44,7 @@
     <module>udc</module>
     <module>monitor-logging</module>
     <module>lucene-index</module>
+    <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
     <module>graph-matching</module>
     <module>neo4j</module>
@@ -61,7 +62,6 @@
     <module>consistency-check</module>
     <module>neo4j-harness</module>
     <module>licensecheck-config</module>
-    <module>upgade</module>
   </modules>
 
   <licenses>
