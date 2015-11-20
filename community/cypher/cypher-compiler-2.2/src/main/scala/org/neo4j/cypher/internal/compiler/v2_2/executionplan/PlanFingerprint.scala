@@ -27,10 +27,10 @@ case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: Graph
 case class PlanFingerprintReference(clock: Clock, ttl: Long, statsDivergenceThreshold : Double,
                                     var fingerprint: Option[PlanFingerprint])
 {
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = {
+  def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
     fingerprint.fold(false) { f =>
       lazy val currentTimeMillis = clock.currentTimeMillis()
-      lazy val currentTxId = lastTxId()
+      lazy val currentTxId = lastCommittedTxId()
 
       check(f.creationTimeMillis + ttl <= currentTimeMillis, {}) &&
       check(currentTxId != f.txId, { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&

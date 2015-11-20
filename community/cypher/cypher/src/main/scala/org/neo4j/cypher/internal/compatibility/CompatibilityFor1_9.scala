@@ -23,7 +23,7 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_2.{ProfileMode, NormalMode, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -71,6 +71,6 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,
 
     def isPeriodicCommit = false
 
-    def isStale(lastTxId: () => Long, statement: Statement): Boolean = false
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement): Boolean = false
   }
 }
