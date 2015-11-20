@@ -33,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
@@ -57,39 +56,24 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
     private final long x = 0xCAFEBABEDEADBEEFL;
     private final long y = 0xDECAFC0FFEEDECAFL;
-    private CountDownLatch backgroundFlushLatch;
+    private MuninnPageCacheFixture fixture;
 
     @Override
-    protected MuninnPageCache createPageCache(
-            PageSwapperFactory swapperFactory,
-            int maxPages,
-            int pageSize,
-            PageCacheTracer tracer )
+    protected Fixture<MuninnPageCache> createFixture()
     {
-        return new MuninnPageCache( swapperFactory, maxPages, pageSize, tracer );
-    }
-
-    @Override
-    protected void tearDownPageCache( MuninnPageCache pageCache ) throws IOException
-    {
-        if ( backgroundFlushLatch != null )
-        {
-            backgroundFlushLatch.countDown();
-            backgroundFlushLatch = null;
-        }
-        pageCache.close();
+        return fixture = new MuninnPageCacheFixture();
     }
 
     private PageCacheTracer blockCacheFlush( PageCacheTracer delegate )
     {
-        backgroundFlushLatch = new CountDownLatch( 1 );
+        fixture.backgroundFlushLatch = new CountDownLatch( 1 );
         return new DelegatingPageCacheTracer( delegate )
         {
             public MajorFlushEvent beginCacheFlush()
             {
                 try
                 {
-                    backgroundFlushLatch.await();
+                    fixture.backgroundFlushLatch.await();
                 }
                 catch ( InterruptedException e )
                 {
