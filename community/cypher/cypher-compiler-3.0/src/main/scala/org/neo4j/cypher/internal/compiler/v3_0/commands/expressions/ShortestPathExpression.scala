@@ -43,7 +43,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Stream[Path] = {
     if (anyStartpointsContainNull(ctx)) {
       Stream.empty
     } else {
@@ -51,7 +51,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     }
   }
 
-  private def getMatches(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  private def getMatches(ctx: ExecutionContext)(implicit state: QueryState): Stream[Path] = {
     val start = getEndPoint(ctx, shortestPathPattern.left)
     val end = getEndPoint(ctx, shortestPathPattern.right)
     val expander: Expander = addPredicates(ctx, makeRelationshipTypeExpander())
@@ -162,18 +162,18 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 }
 
 trait ShortestPathStrategy {
-  def findResult(start: Node, end: Node): Any
+  def findResult(start: Node, end: Node): Stream[Path]
 }
 
 class SingleShortestPathStrategy(expander: Expander, allowZeroLength: Boolean, depth: Int, predicate: ShortestPathPredicate) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth, predicate)
 
-  def findResult(start: Node, end: Node): Path = {
-    val result = finder.findSinglePath(start, end)
+  def findResult(start: Node, end: Node): Stream[Path] = {
+    val result: Path = finder.findSinglePath(start, end)
     if (!allowZeroLength && result != null && result.length() == 0)
-      null
+      Stream.empty
     else
-      result
+      Stream(result)
   }
 }
 

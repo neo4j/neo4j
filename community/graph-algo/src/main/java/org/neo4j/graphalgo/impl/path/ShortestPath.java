@@ -231,7 +231,7 @@ public class ShortestPath implements PathFinder<Path>
                 Hit hit = new Hit( startSideData, endSideData, nextNode );
                 Node start = startSide.startNode;
                 Node end = (startSide == directionData) ? otherSide.startNode : directionData.startNode;
-                monitorData( directionData, otherSide );
+                monitorData( startSide, (otherSide == startSide) ? directionData : otherSide);
                 if ( filterPaths( hitToPaths( hit, start, end, stopAsap ) ).size() > 0 )
                 {
                     if ( hits.add( hit, depth ) >= maxResultCount )
@@ -298,8 +298,8 @@ public class ShortestPath implements PathFinder<Path>
                 Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes )
         {
             System.out.println( "------------------------------------------------------------" );
-            debug( System.out, 5, thoseVisitedNodes, thoseNextNodes );
             debug( System.out, 5, theseVisitedNodes, theseNextNodes );
+            debug( System.out, 5, thoseVisitedNodes, thoseNextNodes );
             System.out.println();
         }
 
@@ -418,23 +418,16 @@ public class ShortestPath implements PathFinder<Path>
 
                 Node result = nextRel.getOtherNode( this.lastPath.endNode() );
                 LevelData levelData = this.visitedNodes.get( result );
-                boolean createdLevelData = false;
                 if ( levelData == null )
                 {
                     levelData = new LevelData( nextRel, this.currentDepth );
                     this.visitedNodes.put( result, levelData );
-                    createdLevelData = true;
-                }
-                if ( this.currentDepth == levelData.depth && !createdLevelData )
-                {
-                    levelData.addRel( nextRel );
-                }
-                // Was this level data created right now, i.e. have we visited this node before?
-                // In that case don't add it as next node to traverse
-                if ( createdLevelData )
-                {
                     this.nextNodes.add( result );
                     return result;
+                }
+                else if ( this.currentDepth == levelData.depth )
+                {
+                    levelData.addRel( nextRel );
                 }
             }
         }

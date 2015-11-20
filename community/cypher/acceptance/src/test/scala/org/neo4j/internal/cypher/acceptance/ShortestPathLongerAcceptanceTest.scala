@@ -280,7 +280,6 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       acc + (name -> Map(node -> acc.size))
     }
     0 to dMax foreach { row =>
-      print(row + ": ")
       0 to dMax foreach { col =>
         val name = s"$row$col"
         val text = if (nodeMap.isDefinedAt(name)) nodeMap(name).values.head.toString else "-"
