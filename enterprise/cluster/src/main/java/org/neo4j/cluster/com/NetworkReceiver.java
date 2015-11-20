@@ -245,13 +245,15 @@ public class NetworkReceiver
     {
         String uri;
 
+        // Socket.toString() already prepends a /
         if ( address.getAddress().getHostAddress().startsWith( "0" ) )
-            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort(); // Socket.toString() already prepends a /
+        {
+            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort();
+        }
         else
         {
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostName() + ":" + address.getPort(); // Socket
+            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort();
         }
-            // .toString() already prepends a /
 
         // Add name if given
         if (config.name() != null)
@@ -347,7 +349,7 @@ public class NetworkReceiver
 
             // Fix FROM header since sender cannot know it's correct IP/hostname
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
-            String remoteAddress = remote.getAddress().getHostName();
+            String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
             fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
