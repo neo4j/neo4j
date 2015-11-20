@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CardinalityCostModel, Cost, Metrics, StatisticsBackedCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CardinalityCostModel, Cost, Metrics, QueryPlannerConfiguration, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 
@@ -48,6 +48,6 @@ case class RealLogicalPlanningConfiguration()
   override def uniqueIndexes = Set.empty
   override def labelCardinality = Map.empty
   override def knownLabels = Set.empty
-
   override def qg: QueryGraph = ???
+  override def queryPlannerConfiguration = QueryPlannerConfiguration.default
 }
