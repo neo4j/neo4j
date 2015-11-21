@@ -274,7 +274,7 @@ Here's an example of how to create an exact index which is case-insensitive:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=org/neo4j/index/impl/lucene/TestLuceneIndex.java
+source=org/neo4j/index/lucene/legacy/TestLuceneIndex.java
 tag=exact-case-insensitive
 ----
 
