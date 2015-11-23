@@ -39,6 +39,11 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     case p: CreateNodePattern => p
   }
 
+
+  def mergeNodePatterns = mutatingPatterns.collect {
+    case m: MergeNodePattern => m
+  }
+
   /*
    * Finds all nodes being created with CREATE ()-[r]->()
    */
@@ -272,10 +277,6 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   private def setRelationshipPropertyPatterns = mutatingPatterns.collect {
     case p: SetRelationshipPropertyPattern => p
     case p: SetRelationshipPropertiesFromMapPattern => p
-  }
-
-  private def mergeNodePatterns = mutatingPatterns.collect {
-    case m: MergeNodePattern => m
   }
 }
 

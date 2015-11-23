@@ -686,4 +686,16 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     result.getCause shouldBe a [UniquePropertyConstraintViolationKernelException]
     result.getMessage should equal(s"""Node ${node.getId} already exists with label L and property "prop"=[42]""")
   }
+
+  test("merge followed by multiple creates") {
+    val query =
+      """MERGE (t:T {id:42})
+        |CREATE (f:R)
+        |CREATE (t)-[:REL]->(f)
+      """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 1)
+  }
 }

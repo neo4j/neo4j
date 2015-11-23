@@ -57,7 +57,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val all = q.allPlannerQueries.toSet
 
     all.flatMap(_.queryGraph.patternNodes) ++
-      all.flatMap(_.updateGraph.createNodePatterns.map(_.nodeName))
+      all.flatMap { pq =>
+        val ug = pq.updateGraph
+        ug.createNodePatterns.map(_.nodeName) ++
+          ug.mergeNodePatterns.map(_.createNodePattern.nodeName)
+      }
   }
 
   def readOnly: Boolean = q.updateGraph.isEmpty
