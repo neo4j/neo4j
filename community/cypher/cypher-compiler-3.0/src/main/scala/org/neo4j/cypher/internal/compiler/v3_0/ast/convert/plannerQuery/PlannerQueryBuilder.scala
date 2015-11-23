@@ -43,7 +43,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   def currentlyAvailableVariables: Set[IdName] =
-    currentQueryGraph.allCoveredIds
+    currentQueryGraph.coveredIds
 
   def currentQueryGraph: QueryGraph = {
     var current = q
@@ -57,11 +57,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val all = q.allPlannerQueries.toSet
 
     all.flatMap(_.queryGraph.patternNodes) ++
-      all.flatMap { pq =>
-        val ug = pq.updateGraph
-        ug.createNodePatterns.map(_.nodeName) ++
-          ug.mergeNodePatterns.map(_.createNodePattern.nodeName)
-      }
+      all.flatMap(pq => pq.updateGraph.createNodePatterns.map(_.nodeName))
   }
 
   def readOnly: Boolean = q.updateGraph.isEmpty

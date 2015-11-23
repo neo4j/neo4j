@@ -29,7 +29,7 @@ This coordinates PlannerQuery planning and delegates work to the classes that do
 QueryGraphs and EventHorizons
  */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
-                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
+                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon(),
                            expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                            planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
                            planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
@@ -38,16 +38,11 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
     val planWithEffect =
-      if (conflicts(partPlan, in))
-        context.logicalPlanProducer.planEager(partPlan)
+      if (conflicts(partPlan, in)) context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
-    val planWithUpdatesAndEffects =
-      if (in.updateGraph.mergeNodeDeleteOverlap)
-        context.logicalPlanProducer.planEager(planWithUpdates)
-      else planWithUpdates
 
-    val projectedPlan = planEventHorizon(in, planWithUpdatesAndEffects)
+    val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
     val completePlan = projectedPlan.endoRewrite(expressionRewriter)

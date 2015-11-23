@@ -101,7 +101,7 @@ class InvalidSemanticsException(message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidSemanticException(message, this)
 }
 
-class MergeConstraintConflictException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class MergeConstraintConflictException(message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.mergeConstraintConflictException(message, this)
 }
 

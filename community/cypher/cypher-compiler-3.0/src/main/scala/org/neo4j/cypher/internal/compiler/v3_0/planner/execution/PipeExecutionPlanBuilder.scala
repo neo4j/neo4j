@@ -304,30 +304,25 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case CreateNode(_, idName, labels, props) =>
       CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
 
-    case MergeCreateNode(_, idName, labels, props) =>
-      MergeCreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
-
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
-     SetPipe(source, SetLabelsOperation(name, labels))()
+      SetLabelsPipe(source, name, labels)()
 
-    case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
-      SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
-        toCommandExpression(expression)))()
+    case SetNodeProperty(_, idName, propertyKey, expression) =>
+      SetNodePropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
 
-    case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
-      SetPipe(source,
-        SetNodePropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
+    case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetNodePropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
 
-    case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
-      SetPipe(source,
-        SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), toCommandExpression(expression)))()
+    case SetRelationshipPropery(_, idName, propertyKey, expression) =>
+      SetRelationshipPropertyPipe(source, idName.name, LazyPropertyKey(propertyKey),
+        toCommandExpression(expression))()
 
-    case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
-      SetPipe(source,
-        SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
+    case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
+      SetRelationshipPropertiesFromMapPipe(source, idName.name, toCommandExpression(expression), removeOtherProps)()
 
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels)()
@@ -374,9 +369,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
         case _ => ApplyPipe(lhs, rhs)()
       }
 
-    case AssertSameNode(node, _, _) =>
-      AssertSameNodePipe(lhs, rhs, node.name)()
-
     case SemiApply(_, _) =>
       SemiApplyPipe(lhs, rhs, negated = false)()
 
@@ -400,12 +392,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
 
     case apply@LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
       LetSelectOrSemiApplyPipe(lhs, rhs, idName.name, buildPredicate(predicate), negated = true)()
-
-    case apply@ConditionalApply(_, _, IdName(name)) =>
-      ConditionalApplyPipe(lhs, rhs, name, negated = false)()
-
-    case apply@AntiConditionalApply(_, _, IdName(name)) =>
-      ConditionalApplyPipe(lhs, rhs, name, negated = true)()
 
     case Union(_, _) =>
       NewUnionPipe(lhs, rhs)()

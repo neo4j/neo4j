@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{SingleQueryExpression, ManyQueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -35,8 +36,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
   val inCollectionValue = In(property, Collection(Seq(lit42))_)_
-
-  private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
   test("does not plan index seek when no index exist") {
     new given {
@@ -173,91 +172,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
         case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
-  }
 
-  test("plans merge unique index seeks when there are two unique indexes") {
-    new given {
-      qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"))
-
-      uniqueIndexOn("Awesome", "prop")
-      uniqueIndexOn("Awesomer", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(AssertSameNode(`idName`,
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
-      }
-    }
-  }
-
-  test("plans merge unique index seeks when there are only one unique index") {
-    new given {
-      qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"))
-
-      uniqueIndexOn("Awesome", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(NodeUniqueIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
-      }
-    }
-  }
-
-  test("plans merge unique index seeks with AssertSameNode when there are three unique indexes") {
-    new given {
-      qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"), hasLabel("Awesomest"))
-
-      uniqueIndexOn("Awesome", "prop")
-      uniqueIndexOn("Awesomer", "prop")
-      uniqueIndexOn("Awesomest", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(
-        AssertSameNode(`idName`,
-          AssertSameNode(`idName`,
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _))) => ()
-      }
-    }
-  }
-
-  test("plans merge unique index seeks with AssertSameNode when there are four unique indexes") {
-    new given {
-      qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"),
-        hasLabel("Awesomest"), hasLabel("Awesomestest"))
-
-      uniqueIndexOn("Awesome", "prop")
-      uniqueIndexOn("Awesomer", "prop")
-      uniqueIndexOn("Awesomest", "prop")
-      uniqueIndexOn("Awesomestest", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = mergeUniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(
-        AssertSameNode(`idName`,
-          AssertSameNode(`idName`,
-            AssertSameNode(`idName`,
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
-      }
-    }
   }
 
   private def queryGraph(predicates: Expression*) =

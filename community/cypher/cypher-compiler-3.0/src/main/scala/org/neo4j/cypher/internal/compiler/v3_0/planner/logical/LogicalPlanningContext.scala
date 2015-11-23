@@ -34,8 +34,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   strategy: QueryGraphSolver,
                                   input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
                                   notificationLogger: InternalNotificationLogger = devNullLogger,
-                                  useErrorsOverWarnings: Boolean = false,
-                                  config: QueryPlannerConfiguration = QueryPlannerConfiguration.default) {
+                                  useErrorsOverWarnings: Boolean = false) {
   def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
 
   def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))

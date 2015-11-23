@@ -26,13 +26,14 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, Lo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches
 import org.neo4j.cypher.internal.frontend.v3_0.HintException
 
-class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable])
+class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
+                             val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
   extends TentativeQueryGraphSolver {
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
 
     import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.CandidateGenerator._
-    val config = context.config
+
     val kit = config.toKit()
     val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, kit.pickBest)
 
