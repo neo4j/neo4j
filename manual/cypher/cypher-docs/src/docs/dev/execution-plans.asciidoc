@@ -33,7 +33,7 @@ include::execution-plan-groups/expand.asciidoc[]
 
 :leveloffset: 1
 
-include::execution-plan-groups/combining-operators.adoc[]
+include::execution-plan-groups/combining.asciidoc[]
 
 :leveloffset: 1
 

@@ -85,9 +85,9 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     """.stripMargin)
 
   override val setupConstraintQueries = List(
-    "CREATE INDEX ON :Location(name)",
-    "CREATE INDEX ON :Person(name)",
-    "CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE"
+    "CREATE INDEX ON :Location(name)".stripMargin,
+    "CREATE INDEX ON :Person(name)".stripMargin,
+    "CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE".stripMargin
   )
 
   def section = "Query Plan"
@@ -358,6 +358,101 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def semiApply() {
+    profileQuery(
+      title = "Semi Apply",
+      text =
+        """Tests for the existence of a pattern predicate.
+          |`SemiApply` takes a row from it's child operator and feeds it to the `Argument` operator on the right hand side of `SemiApply`.
+          |If the right hand side operator tree yields at least one row, the row from the left hand side is yielded by the `SemiApply` operator.
+          |This makes `SemiApply` a filtering operator, used mostly for pattern predicates in queries.""".stripMargin,
+      queryText =
+        """MATCH (other:Person)
+           WHERE (other)-[:FRIENDS_WITH]->()
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SemiApply"))
+    )
+  }
+
+  @Test def letSemiApply() {
+    profileQuery(
+      title = "Let Semi Apply",
+      text =
+        """Tests for the existence of a pattern predicate.
+          |When a query contains multiple pattern predicates `LetSemiApply` will be used to evaluate the first of these.
+          |It will record the result of evaluating the predicate but will leave any filtering to a another operator.
+          |The following query will find all the people who have a friend or who work somewhere. The `LetSemiApply` operator
+          |will be used to check for the existence of the `FRIENDS_WITH` relationship from each person.
+        """.stripMargin,
+      queryText =
+        """MATCH (other:Person)
+           WHERE (other)-[:FRIENDS_WITH]->() OR (other)-[:WORKS_IN]->()
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetSemiApply"))
+    )
+  }
+
+  @Test def letAntiSemiApply() {
+    profileQuery(
+      title = "Let Anti Semi Apply",
+      text =
+        """Tests for the absence of a pattern predicate.
+          |When a query contains multiple pattern predicates `LetSemiApply` will be used to evaluate the first of these.
+          |It will record the result of evaluating the predicate but will leave any filtering to another operator.
+          |The following query will find all the people who don't have anyfriend or who work somewhere. The `LetSemiApply` operator
+          |will be used to check for the absence of the `FRIENDS_WITH` relationship from each person.
+        """.stripMargin,
+      queryText =
+        """MATCH (other:Person)
+           WHERE NOT((other)-[:FRIENDS_WITH]->()) OR (other)-[:WORKS_IN]->()
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("LetAntiSemiApply"))
+    )
+  }
+
+
+  @Test def selectOrSemiApply() {
+    profileQuery(
+      title = "Select Or Semi Apply",
+      text =
+        """Tests for the existence of a pattern predicate and evaluates a predicate.
+          |This operator allows for the mixing of normal predicates and pattern predicates that check for the existing of a pattern.
+          |First the normal expression predicate is evaluated, and only if it returns `FALSE` the costly pattern predicate evaluation is performed.""".stripMargin,
+      queryText =
+        """MATCH (other:Person)
+           WHERE other.age > 25 OR (other)-[:FRIENDS_WITH]->()
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrSemiApply"))
+    )
+  }
+
+  @Test def antiSemiApply() {
+    profileQuery(
+      title = "Anti Semi Apply",
+      text =
+        """Tests for the absence of a pattern predicate.
+          |A pattern predicate that is prepended by `NOT` is solved with `AntiSemiApply`.""".stripMargin,
+      queryText =
+        """MATCH (me:Person {name: "me"}), (other:Person)
+           WHERE NOT (me)-[:FRIENDS_WITH]->(other)
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("AntiSemiApply"))
+    )
+  }
+
+  @Test def selectOrAntiSemiApply() {
+    profileQuery(
+      title = "Select Or Anti Semi Apply",
+      text =
+        """Tests for the absence of a pattern predicate and evaluates a predicate.""".stripMargin,
+      queryText =
+        """MATCH (other:Person)
+           WHERE other.age > 25 OR NOT (other)-[:FRIENDS_WITH]->()
+           RETURN other""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("SelectOrAntiSemiApply"))
+    )
+  }
+
   @Test def directedRelationshipById() {
     profileQuery(
       title = "Directed Relationship By Id Seek",
@@ -387,6 +482,42 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     )
   }
 
+  @Test def nodeHashJoin() {
+    executePreparationQueries((0 to 250).map { i =>
+      """MATCH (london:Location {name: 'London'}), (person:Person {name: 'Pontus'})
+        |FOREACH(x in range(0,250) |
+        |  CREATE (person)-[:WORKS_IN]->(london)
+        |)""".stripMargin
+
+    }.toList)
+
+    profileQuery(
+      title = "Node Hash Join",
+      text =
+        """Using a hash table, a node hash join joins the inputs coming from the left with the inputs coming from the right. The join key is specified in the arguments of the operator.""".stripMargin,
+      queryText =
+        """MATCH (andy:Person {name:'Andreas'})-[:WORKS_IN]->(loc)<-[:WORKS_IN]-(matt:Person {name:'Mattis'})
+           RETURN loc""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeHashJoin"))
+    )
+  }
+
+  @Test def triadic() {
+    profileQuery(
+      title = "Triadic",
+      text =
+        """Triadic is used to solve triangular queries, such as the very common "find my friend-of-friends that are not already my friend".
+          |It does so by putting all the "friends" in a set, and use that set to check if the friend-of-friends are already connected to me.
+        """.stripMargin,
+      queryText =
+        """MATCH (me:Person)-[:FRIENDS_WITH]-()-[:FRIENDS_WITH]-(other) WHERE NOT (me)-[:FRIENDS_WITH]-(other)
+           RETURN other""",
+      assertions = (p) => {
+        assertThat(p.executionPlanDescription().toString, containsString("Triadic"))
+      }
+    )
+  }
+
   @Test def skip() {
     profileQuery(
       title = "Skip",
@@ -400,6 +531,24 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            SKIP 1
         """.stripMargin,
       assertions = (p) =>  assertThat(p.executionPlanDescription().toString, containsString("Skip"))
+    )
+  }
+
+  @Test def apply() {
+    profileQuery(
+      title = "Apply",
+      text =
+        """Apply works by performing a nested loop.
+          |Every row being produced on the left hand side of the Apply operator will be fed to the Argument operator on the right hand side, and then Apply will yield the results coming from the RHS.
+          |Apply, being a nested loop, can be seen as a warning that a better plan was not found.""".stripMargin,
+      queryText =
+        """MATCH (p:Person)-[:FRIENDS_WITH]->(f)
+           WITH p, count(f) as fs
+           WHERE fs > 0
+           OPTIONAL MATCH (p)-[:WORKS_IN*1..2]->(city)
+           RETURN p, city
+        """.stripMargin,
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
     )
   }
 
