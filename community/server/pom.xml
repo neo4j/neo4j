@@ -215,11 +215,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.rrd4j</groupId>
-      <artifactId>rrd4j</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.mozilla</groupId>
       <artifactId>rhino</artifactId>
     </dependency>

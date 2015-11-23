@@ -29,7 +29,6 @@ Apache Software License, Version 2.0
   opencsv
   parboiled-core
   parboiled-scala
-  RRD4J
 ------------------------------------------------------------------------------
 
                                  Apache License
