@@ -99,6 +99,22 @@ abstract class LogicalPlan
   def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan
 
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
+
+  override def toString = {
+    val children = lhs.toSeq ++ rhs.toSeq
+    val nonChildFields = productIterator.filterNot(children.contains).mkString(", ")
+    val l = lhs.map(p => indent("LHS -> " + p) + "\n").getOrElse("")
+    val r = rhs.map(p => indent("RHS -> " + p) + "\n").getOrElse("")
+
+    val childrenText = if (l+r == "") "{}" else s"""{
+                                               |$l$r}""".stripMargin
+
+    s"""$productPrefix($nonChildFields) $childrenText""".stripMargin
+  }
+
+  private def indent(in: String) = {
+    in.split("\n").map("  " + _).mkString("\n")
+  }
 }
 
 trait LogicalPlanWithoutExpressions {
