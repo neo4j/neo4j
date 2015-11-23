@@ -41,7 +41,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
  */
 @BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
 @RunWith( BootClassPathRunner.class )
-public class MuninnPageCacheWithAdversarialFileDispatcherTest extends MuninnPageCacheWithRealFileSystemTest
+public class MuninnPageCacheWithAdversarialFileDispatcherIT extends MuninnPageCacheWithRealFileSystemIT
 {
     @BeforeClass
     public static void enableAdversarialFileDispatcher()

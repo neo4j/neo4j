@@ -94,14 +94,14 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void mkdirs( File path ) throws IOException
     {
-        if (path.exists())
+        if ( path.exists() )
         {
             return;
         }
 
-        boolean directoriesWereCreated = path.mkdirs();
+        path.mkdirs();
 
-        if (directoriesWereCreated)
+        if ( path.exists() )
         {
             return;
         }

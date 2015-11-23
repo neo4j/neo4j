@@ -17,32 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
+import org.junit.Rule;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
 
-public class SingleFilePageSwapperWithRealFileSystemTest extends SingleFilePageSwapperTest
+public class MuninnPageCacheWithRealFileSystemIT extends MuninnPageCacheTest
 {
-    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    @Rule
+    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Override
-    public void tearDown()
+    protected Fixture<MuninnPageCache> createFixture()
     {
-        // Do nothing
-    }
-
-    @Override
-    protected File getFile()
-    {
-        return testDir.file( super.getFile().getName() );
-    }
-
-    @Override
-    protected FileSystemAbstraction getFs()
-    {
-        return fs;
+        return super.createFixture()
+                    .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
+                    .withFileConstructor( pathname -> directory.file( pathname ) );
     }
 }

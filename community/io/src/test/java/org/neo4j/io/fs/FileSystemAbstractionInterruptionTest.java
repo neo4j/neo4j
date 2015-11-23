@@ -85,19 +85,15 @@ public class FileSystemAbstractionInterruptionTest
     }
 
     @Before
-    public void interruptPriorToCall()
-    {
-        Thread.currentThread().interrupt();
-    }
-
-    @Before
     public void createWorkingDirectoryAndTestFile() throws IOException
     {
+        Thread.interrupted();
         fs.mkdirs( testdir.directory() );
         file = testdir.file( "a" );
         fs.create( file ).close();
         channel = null;
         channelShouldBeClosed = false;
+        Thread.currentThread().interrupt();
     }
 
     private StoreChannel channel;

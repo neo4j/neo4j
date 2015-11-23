@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
 
 @BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
 @RunWith( BootClassPathRunner.class )
-public class SingleFilePageSwapperWithAdversarialFileDispatcherTest extends SingleFilePageSwapperWithRealFileSystemTest
+public class SingleFilePageSwapperWithAdversarialFileDispatcherIT extends SingleFilePageSwapperWithRealFileSystemIT
 {
     @BeforeClass
     public static void enableAdversarialFileDispatcher()

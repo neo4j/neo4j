@@ -19,28 +19,27 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
 
-import java.io.File;
+import org.neo4j.adversaries.fs.AdversarialFileChannel;
+import org.neo4j.test.bootclasspathrunner.BootClassPathRunner;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
-
-public class MuninnPageCacheWithRealFileSystemTest extends MuninnPageCacheTest
+@BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
+@RunWith( BootClassPathRunner.class )
+public class MuninnPageCacheSlowTestWithAdversarialFileDispatcherIT extends MuninnPageCacheSlowTestWithRealFileSystemIT
 {
-    @Rule
-    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-
-    @Override
-    protected File file( String pathname )
+    @BeforeClass
+    public static void enableAdversarialFileDispatcher()
     {
-        return directory.file( pathname );
+        AdversarialFileChannel.useAdversarialFileDispatcherHack = true;
     }
 
-    @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
+    @AfterClass
+    public static void disableAdversarialFileDispatcher()
     {
-        return new DefaultFileSystemAbstraction();
+        AdversarialFileChannel.useAdversarialFileDispatcherHack = false;
     }
 }
