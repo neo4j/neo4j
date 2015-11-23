@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherTestSupport
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -96,9 +97,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   //todo once the compiled runtime handles dumpToString and plan descriptions, we should enable it by default here
   //in that way we will notice when we support new queries
-  override def databaseConfig(): Map[String, String] =
-    Map("cypher_parser_version" -> CypherVersion.v3_0.name,
-        GraphDatabaseSettings.query_non_indexed_label_warning_threshold.name() -> "10")
+  override def databaseConfig(): Map[Setting[_], String] =
+    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_0.name,
+        GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
 

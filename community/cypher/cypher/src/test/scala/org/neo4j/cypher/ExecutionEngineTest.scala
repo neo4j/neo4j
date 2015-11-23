@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
+import java.util
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSu
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.TopLevelTransaction
@@ -485,7 +487,8 @@ order by a.COL1""")
   }
 
   test("createEngineWithSpecifiedParserVersion") {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "2.3").asJava)
+    val config = Map[Setting[_], String](GraphDatabaseSettings.cypher_parser_version ->  "2.3")
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava)
     val engine = new ExecutionEngine(db)
 
     try {
@@ -498,7 +501,6 @@ order by a.COL1""")
       db.shutdown()
     }
   }
-
 
   test("issue 446") {
     val a = createNode()
@@ -972,8 +974,8 @@ order by a.COL1""")
   }
 
   override def databaseConfig() = super.databaseConfig() ++ Map(
-    "dbms.cypher.min_replan_interval" -> "0",
-    "dbms.cypher.compiler_tracing" -> "true"
+    GraphDatabaseSettings.cypher_min_replan_interval -> "0",
+    GraphDatabaseSettings.cypher_compiler_tracing -> "true"
   )
 
   case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends TimingCompilationTracer.EventListener {
