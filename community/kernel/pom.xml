@@ -134,7 +134,7 @@ the relevant Commercial Agreement.
         <configuration>
           <dotGitDirectory>${git.directory}</dotGitDirectory>
           <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <useNativeGit>true</useNativeGit>
+          <useNativeGit>false</useNativeGit>
         </configuration>
       </plugin>
       <plugin>
