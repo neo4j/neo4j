@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.id;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -38,6 +37,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.ha.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -130,8 +130,6 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             generator.switchToSlave( master.cement() );
         }
     }
-
-    private static final long VALUE_REPRESENTING_NULL = -1;
 
     private enum IdGeneratorState
     {
@@ -283,7 +281,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         private volatile long highestIdInUse;
         private volatile long defragCount;
-        private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
+        private volatile IdRangeIterator idQueue;
         private final Master master;
         private final IdType idType;
         private final Log log;
@@ -297,6 +295,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             this.master = master;
             this.log = log;
             this.requestContextFactory = requestContextFactory;
+            idQueue = EMPTY_ID_RANGE_ITERATOR;
         }
 
         @Override
@@ -331,7 +330,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public synchronized long nextId()
         {
             long nextId = nextLocalId();
-            if ( nextId == VALUE_REPRESENTING_NULL )
+            if ( nextId == IdRangeIterator.VALUE_REPRESENTING_NULL )
             {
                 // If we don't have anymore grabbed ids from master, grab a bunch
                 try ( Response<IdAllocation> response =
@@ -388,54 +387,5 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    private static class IdRangeIterator
-    {
-        private int position = 0;
-        private final long[] defrag;
-        private final long start;
-        private final int length;
 
-        IdRangeIterator( IdRange idRange )
-        {
-            this.defrag = idRange.getDefragIds();
-            this.start = idRange.getRangeStart();
-            this.length = idRange.getRangeLength();
-        }
-
-        long next()
-        {
-            try
-            {
-                if ( position < defrag.length )
-                {
-                    return defrag[position];
-                }
-                else
-                {
-                    int offset = position - defrag.length;
-                    return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
-                }
-            }
-            finally
-            {
-                ++position;
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            return "IdRangeIterator[start:" + start + ", length:" + length + ", position:" + position + ", defrag:" + Arrays.toString( defrag ) + "]";
-        }
-    }
-
-    private static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
-            new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
-            {
-                @Override
-                long next()
-                {
-                    return VALUE_REPRESENTING_NULL;
-                }
-            };
 }
