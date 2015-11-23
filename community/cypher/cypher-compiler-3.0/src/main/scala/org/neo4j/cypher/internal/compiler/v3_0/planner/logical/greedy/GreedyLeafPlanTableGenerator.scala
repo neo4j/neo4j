@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{QueryPlannerConfiguration, LogicalPlanningContext, leafPlanOptions}
 
-case object GreedyLeafPlanTableGenerator extends GreedyPlanTableGenerator {
+case class GreedyLeafPlanTableGenerator(config: QueryPlannerConfiguration) extends GreedyPlanTableGenerator {
   def apply(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): GreedyPlanTable = {
-    val bestLeafPlans = leafPlanOptions(context.config, queryGraph)
+    val bestLeafPlans = leafPlanOptions(config, queryGraph)
     val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)
     bestLeafPlans.foldLeft(startTable)(_ + _)
   }

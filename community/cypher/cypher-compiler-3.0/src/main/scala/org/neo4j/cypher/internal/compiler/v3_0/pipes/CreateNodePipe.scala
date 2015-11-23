@@ -24,14 +24,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesAnyNode, CreatesNodesWithLabels, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
 
-abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression], pipeMonitor: PipeMonitor)
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+                         (val estimatedCardinality: Option[Double] = None)
+                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(src, pipeMonitor) with RonjaPipe with GraphElementPropertyFunctions with CollectionSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],
@@ -57,15 +58,18 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
         case IsMap(f) =>
           val propertiesMap: Map[String, Any] = f(state.query)
           propertiesMap.foreach {
-            case (k, v) => setProperty(nodeId, k, v, state.query)
+            case (k, v) =>
+              //do not set properties for null values
+              if (v != null) {
+                val propertyKeyId = state.query.getOrCreatePropertyKeyId(k)
+                state.query.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(v))
+              }
           }
         case _ =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
       }
     }
   }
-
-  def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext): Unit
 
   private def setLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     val labelIds = labels.map(l => {
@@ -75,52 +79,19 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
   }
 
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
+
   def symbols = src.symbols.add(key, CTNode)
 
-  override def localEffects = if (labels.isEmpty)
-    Effects(CreatesAnyNode)
-  else
-    Effects(CreatesNodesWithLabels(labels.map(_.name).toSet))
-}
-
-case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateNode", variables)
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
     CreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
   }
 
-  override def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) = {
-    //do not set properties for null values
-    if (value != null) {
-      val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-      qtx.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
-    }
-  }
-}
-
-case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
-
-  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateNode", variables)
-
-  override def dup(sources: List[Pipe]): Pipe = {
-    val (onlySource :: Nil) = sources
-    MergeCreateNodePipe(onlySource, key, labels, properties)(estimatedCardinality)
-  }
-
-  override def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) = {
-    //merge cannot use null properties, since in that case the match part will not find the result of the create
-    if (value == null) throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")
-
-    val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
-    qtx.nodeOps.setProperty(nodeId, propertyKeyId, makeValueNeoSafe(value))
-  }
+  override def localEffects = if (labels.isEmpty)
+    Effects(CreatesAnyNode)
+  else
+    Effects(CreatesNodesWithLabels(labels.map(_.name).toSet))
 }

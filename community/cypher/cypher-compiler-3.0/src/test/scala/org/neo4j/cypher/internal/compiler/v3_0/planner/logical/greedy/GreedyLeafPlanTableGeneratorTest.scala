@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Que
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  private val solver = GreedyLeafPlanTableGenerator
+  private val solver = GreedyLeafPlanTableGenerator(QueryPlannerConfiguration.default)
 
   test("single pattern node") {
     new given {

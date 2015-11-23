@@ -43,7 +43,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   def currentlyAvailableVariables: Set[IdName] =
-    currentQueryGraph.allCoveredIds
+    currentQueryGraph.coveredIds
 
   def currentQueryGraph: QueryGraph = {
     var current = q

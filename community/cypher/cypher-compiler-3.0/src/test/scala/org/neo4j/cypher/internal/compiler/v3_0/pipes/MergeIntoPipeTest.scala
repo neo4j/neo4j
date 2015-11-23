@@ -383,8 +383,7 @@ class MergeIntoPipeTest extends CypherFunSuite {
   }
 
   private def createPipeAndRun(query: QueryContext, left: Pipe, dir: SemanticDirection = OUTGOING, relType: String,
-                               relProperties: Map[String, Expression], onCreateProperties: Seq[SetAction] = Seq.empty,
-                               onMatchProperties: Seq[SetAction] = Seq.empty): List[ExecutionContext] = {
+                               relProperties: Map[String, Expression], onCreateProperties: Seq[SetAction] = Seq.empty, onMatchProperties: Seq[SetAction] = Seq.empty): List[ExecutionContext] = {
     val f: PartialFunction[(String, Expression), (KeyToken, Expression)] = {
       case (k, v) => resolve(k) -> v
     }
