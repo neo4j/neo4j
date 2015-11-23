@@ -33,12 +33,12 @@ trait EnterpriseGraphDatabaseTestSupport extends GraphDatabaseTestSupport {
 
   var dir: Path = null
 
-  override protected def createGraphDatabase(): GraphDatabaseAPI with Snitch = {
+  override protected def createGraphDatabase(): GraphDatabaseAPI = {
     val config = new util.HashMap[String, String]()
     config.put(GraphDatabaseSettings.pagecache_memory.name, "8M")
     dir = Files.createTempDirectory(getClass.getSimpleName)
     val state = new GraphDatabaseFactoryState()
-    new EnterpriseGraphDatabase(dir.toFile, config, state.databaseDependencies()) with Snitch
+    new EnterpriseGraphDatabase(dir.toFile, config, state.databaseDependencies())
   }
 
   override protected def stopTest() {
