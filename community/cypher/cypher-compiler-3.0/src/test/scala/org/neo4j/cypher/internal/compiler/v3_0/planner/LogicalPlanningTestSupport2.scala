@@ -234,9 +234,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
 
-  def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
+  def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[SemanticPlan] = new BeMatcher[SemanticPlan] {
     import Foldable._
-    override def apply(actual: LogicalPlan): MatchResult = {
+    override def apply(actual: SemanticPlan): MatchResult = {
       val matches = actual.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => (acc, children) => true
       }

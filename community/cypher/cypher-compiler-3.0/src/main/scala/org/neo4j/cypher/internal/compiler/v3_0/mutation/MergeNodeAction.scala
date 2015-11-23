@@ -114,29 +114,27 @@ case class MergeNodeAction(variable: String,
         filter(ctx => expectations.forall(_.isTrue(ctx)(state)))
 
     // unique index lookup
-    // If multiple unique indexes match the node description, they must all be queried, and they have to agree on the
-    // found node before it is returned.
     case UniqueMergeNodeProducers(indexNodeProducers) =>
       val firstProducer = indexNodeProducers.head
-      val first = optNode(firstProducer(context, state))
+      val checkedOptNode: Option[Node] = optNode(firstProducer(context, state))
 
       indexNodeProducers.tail.foreach { (producer: EntityProducer[Node]) =>
         optNode(producer(context, state)) match {
-          case Some(other) if first.isDefined =>
-            val firstId = first.get.getId
-            val otherId = other.getId
-            if (firstId != otherId) {
+          case Some(node) if checkedOptNode.isDefined =>
+            val firstId = checkedOptNode.get.getId
+            val foundId = node.getId
+            if (firstId != foundId) {
               throw new MergeConstraintConflictException(s"Merge did not find a matching node and can not create a new node due to conflicts with existing unique nodes. The conflicting constraints are on: $firstProducer and $producer")
             }
           case None =>
-            if (first.isDefined) {
+            if (checkedOptNode.isDefined) {
               throw new MergeConstraintConflictException(s"Merge did not find a matching node and can not create a new node due to conflicts with both existing and missing unique nodes. The conflicting constraints are on: $firstProducer and $producer")
             }
-          case _ =>
+          case _ => false
         }
       }
 
-      first match {
+      checkedOptNode match {
         case Some(node) =>
           val resultContext = context.newWith(variable -> node)
           if (expectations.forall(_.isTrue(resultContext))) Iterator(resultContext) else Iterator.empty

@@ -20,20 +20,36 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, SetLabel}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.CastSupport
+import org.neo4j.graphdb.Node
 
-case class SetPipe(src: Pipe, setOperation: SetOperation)
-                  (val estimatedCardinality: Option[Double] = None)
-                  (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with RonjaPipe{
+case class SetLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
+                        (val estimatedCardinality: Option[Double] = None)
+                        (implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(src, pipeMonitor) with RonjaPipe {
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      setOperation.set(row, state)
+      val value = row.get(variable).get
+      if (value != null) {
+        val nodeId = CastSupport.castOrFail[Node](value).getId
+        setLabels(row, state, nodeId)
+      }
       row
     }
   }
 
-  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, setOperation.name, variables)
+  private def setLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
+    val labelIds = labels.map(l => {
+      val maybeLabelId = l.id(state.query).map(_.id)
+      maybeLabelId getOrElse state.query.getOrCreateLabelId(l.name)
+    })
+    state.query.setLabelsOnNode(nodeId, labelIds.iterator)
+  }
+
+  override def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "SetLabels", variables)
 
   override def symbols = src.symbols
 
@@ -41,9 +57,8 @@ case class SetPipe(src: Pipe, setOperation: SetOperation)
 
   override def dup(sources: List[Pipe]): Pipe = {
     val (onlySource :: Nil) = sources
-    SetPipe(onlySource, setOperation)(estimatedCardinality)
+    SetLabelsPipe(onlySource, variable, labels)(estimatedCardinality)
   }
 
-  //rule planner stay away from this pipe!
-  override def localEffects = throw new UnsupportedOperationException
+  override def localEffects = Effects(labels.map(label => SetLabel(label.name)): _*)
 }

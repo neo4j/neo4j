@@ -22,9 +22,9 @@ package org.neo4j.cypher
 class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
   val nodeCount = 100
-  val threadCount = 10
+  val threadCount = Runtime.getRuntime.availableProcessors() * 2
 
-  test("should handle ten simultaneous threads") {
+  test("should_handle_ten_simultaneous_threads") {
       // Given a constraint on :Label(id), create a linked list
       execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
 
@@ -52,34 +52,5 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       val details = "\n" + execute("match (a)-[r]->(b) return a.id, b.id, id(a), id(r), id(b)").dumpToString()
 
       assert(execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1").size === 1, details)
-  }
-
-  test("should handle ten simultaneous threads with only nodes") {
-    // Given a constraint on :Label(id), create a linked list
-    execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
-
-    val runner = new Runnable {
-      def run() {
-        (0 until nodeCount) foreach {
-          x =>
-            execute("MERGE (a:Label {id:{id}})", "id" -> x)
-        }
-      }
-    }
-
-    val threads: Seq[Thread] = (0 to threadCount-1) map (x => new Thread(runner))
-
-    threads.foreach(_.start())
-    threads.foreach(_.join())
-
-    // Check that we haven't created duplicate nodes or duplicate relationships
-    execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
-    executeScalar[Int]("match (a:Label) return count(a)") shouldBe nodeCount
-
-    0 until nodeCount foreach { i =>
-      withClue(s"did not find node with id $i") {
-        execute(s"match (:Label {id:$i}) return 1") should have size 1
-      }
-    }
   }
 }

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticDirection}
 
 class UpdateGraphTest extends CypherFunSuite {
-  private val pos = DummyPosition(0)
 
+  private val pos = DummyPosition(0)
   test("should not be empty after adding label to set") {
     val original = UpdateGraph()
     val setLabel = SetLabelPattern(IdName("name"), Seq.empty)
@@ -140,20 +140,6 @@ class UpdateGraphTest extends CypherFunSuite {
       IdName("a"), RelTypeName("T1")(pos), IdName("b"),
       Some(MapExpression(Seq((PropertyKeyName("foo")(pos),
         SignedDecimalIntegerLiteral("42")(pos))))(pos)), SemanticDirection.OUTGOING)))
-
-    ug.overlaps(qg) shouldBe true
-  }
-
-  test("overlap when reading, deleting and merging") {
-    //MATCH (a:L1:L2) DELETE a CREATE (b:L3)
-    val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
-    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
-    val ug = UpdateGraph(Seq(
-      DeleteExpression(Variable("a")(pos), forced = false),
-      MergeNodePattern(
-        CreateNodePattern(IdName("b"), Seq(LabelName("L3")(pos), LabelName("L3")(pos)), None),
-        QueryGraph.empty, Seq.empty, Seq.empty)
-    ))
 
     ug.overlaps(qg) shouldBe true
   }

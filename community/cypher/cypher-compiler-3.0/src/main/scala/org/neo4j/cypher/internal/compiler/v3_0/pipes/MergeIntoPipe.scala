@@ -23,16 +23,18 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, SetAction, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions, SetAction}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidSemanticsException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
+import org.neo4j.kernel.api.properties.Property
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Merge when both end-points are known, find all relationships of the given

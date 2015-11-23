@@ -520,21 +520,21 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should use index on label and property") {
-    val plan = (new given {
+    val plan = new given {
       indexOn("Crew", "name")
-    } planFor "MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n").plan
+    } planFor "MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n"
 
     plan shouldBe using[NodeIndexSeek]
   }
 
   test("should use index when there are multiple labels on the node") {
-    val plan = (new given {
+    val plan = new given {
       indexOn("Crew", "name")
       cost = {
         case (_: NodeByIdSeek, _) => 1.0
         case _ => 100.0
       }
-    } planFor "MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n").plan
+    } planFor "MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n"
 
     plan shouldBe using[NodeIndexSeek]
   }
