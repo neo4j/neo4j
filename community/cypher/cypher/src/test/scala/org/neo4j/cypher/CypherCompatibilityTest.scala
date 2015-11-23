@@ -270,7 +270,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
   private def runWithConfig(m: (String, String)*)(run: ExecutionEngine => Unit) = {
     val config: util.Map[String, String] = m.toMap.asJava
 
-    val graph = new ImpermanentGraphDatabase(config) with Snitch
+    val graph = new ImpermanentGraphDatabase(config)
     try {
       val engine = new ExecutionEngine(graph)
       run(engine)

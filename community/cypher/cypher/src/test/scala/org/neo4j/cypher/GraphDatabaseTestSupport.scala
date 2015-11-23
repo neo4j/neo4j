@@ -37,7 +37,7 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseAPI with Snitch = null
+  var graph: GraphDatabaseAPI = null
   var nodes: List[Node] = null
 
   def databaseConfig(): Map[String,String] = Map()
@@ -47,9 +47,9 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase(): GraphDatabaseAPI with Snitch = {
+  protected def createGraphDatabase(): GraphDatabaseAPI = {
     val config: Map[String, String] = databaseConfig() + (GraphDatabaseSettings.pagecache_memory.name -> "8M")
-    new ImpermanentGraphDatabase(config.asJava) with Snitch
+    new ImpermanentGraphDatabase(config.asJava)
   }
 
   override protected def stopTest() {
@@ -225,14 +225,4 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
-}
-
-trait Snitch extends GraphDatabaseAPI {
-  val createdNodes = collection.mutable.Queue[Node]()
-
-  abstract override def createNode(): Node = {
-    val n = super.createNode()
-    createdNodes.enqueue(n)
-    n
-  }
 }
