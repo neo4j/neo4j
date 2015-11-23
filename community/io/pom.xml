@@ -120,13 +120,6 @@ the relevant Commercial Agreement.
           </jvmArgs>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <parallel>methods</parallel>
-          <perCoreThreadCount>2</perCoreThreadCount>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
