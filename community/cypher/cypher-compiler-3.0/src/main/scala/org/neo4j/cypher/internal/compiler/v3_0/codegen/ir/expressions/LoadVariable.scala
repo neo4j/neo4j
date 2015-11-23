@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Variable, CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-case class LoadVariable(varName: String) extends CodeGenExpression {
+case class LoadVariable(variable: Variable) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.load(varName)
+    structure.load(variable.name)
 
-  override def nullable(implicit context: CodeGenContext): Boolean = context.getVariable(varName).nullable
-
-  override def cypherType(implicit context: CodeGenContext): CypherType = context.getVariable(varName).cypherType
+  override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable
+  override def cypherType(implicit context: CodeGenContext): CypherType = variable.cypherType
 }

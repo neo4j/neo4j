@@ -476,4 +476,26 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
   }
 
+  test("id on a node should work in both runtimes")  {
+    // GIVEN
+    val expected = createNode().getId
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n) RETURN id(n)")
+
+    // THEN
+    result.toList should equal(List(Map("id(n)" -> expected)))
+
+  }
+
+  test("id on a rel should work in both runtimes")  {
+    // GIVEN
+    val expected = relate(createNode(), createNode()).getId
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimes("MATCH ()-[r]->() RETURN id(r)")
+
+    // THEN
+    result.toList should equal(List(Map("id(r)" -> expected)))
+  }
 }
