@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
+import org.scalatest.Ignore
+import org.junit.{Ignore, Test}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
@@ -169,7 +171,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
            | The Eager operator can cause high memory usage when importing data or migrating graph structures.
            | In such cases split up your operations into simpler steps e.g. you can import nodes and relationships separately.
            | Alternatively return the records to be updated and run an update statement afterwards.""".stripMargin,
-      queryText = """MATCH (a)-[r]-(b) DELETE r,a,b MERGE ()""",
+      queryText = """MATCH (), (p:Person) MERGE (:Person:Clone {name:p.name})""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Eager"))
     )
   }

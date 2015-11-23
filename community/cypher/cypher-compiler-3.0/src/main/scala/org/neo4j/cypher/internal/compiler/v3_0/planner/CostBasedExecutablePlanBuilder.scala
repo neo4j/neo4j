@@ -83,7 +83,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val unionQuery = toUnionQuery(ast, semanticTable)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-    val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.default)
+    val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
 
     val plan = queryPlanner.plan(unionQuery)(context)
 

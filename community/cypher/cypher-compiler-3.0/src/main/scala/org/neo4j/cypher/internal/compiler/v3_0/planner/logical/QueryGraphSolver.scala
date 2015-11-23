@@ -42,8 +42,8 @@ trait PatternExpressionSolving {
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
 
     val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
-    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier}
-    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier}
+    val namedNodes = namedMap.collect { case (elem: NodePattern, variable) => variable}
+    val namedRels = namedMap.collect { case (elem: RelationshipChain, variable) => variable}
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
     val plan = self.plan(qg)(patternPlanningContext, argLeafPlan)
     (plan, namedExpr)
@@ -51,6 +51,7 @@ trait PatternExpressionSolving {
 }
 
 trait TentativeQueryGraphSolver extends QueryGraphSolver with PatternExpressionSolving {
+  def config: QueryPlannerConfiguration
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): Option[LogicalPlan]
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
     tryPlan(queryGraph).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
 object QueryPlannerConfiguration {
-  val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
+  val default = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
       selectPatternPredicates,
@@ -66,7 +66,7 @@ object QueryPlannerConfiguration {
   )
 }
 
-case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
+case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
                                      applySelections: PlanTransformer[QueryGraph],
                                      projectAllEndpoints: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
@@ -78,8 +78,6 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
       projectAllEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectAllEndpoints(plan, qg),
       pickBest = pickBestCandidate(context)
     )
-
-  def withLeafPlanners(leafPlanners: LeafPlannerIterable) = copy(leafPlanners = leafPlanners)
 }
 
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,

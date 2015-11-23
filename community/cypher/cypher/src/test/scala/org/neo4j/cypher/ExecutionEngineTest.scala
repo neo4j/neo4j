@@ -885,7 +885,7 @@ order by a.COL1""")
 
   test("merge should support single parameter") {
     //WHEN
-    val result = updateWithBothPlanners("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
+    val result = executeWithRulePlanner("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
 
     //THEN DOESN'T THROW EXCEPTION
     result.toList shouldBe empty

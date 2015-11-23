@@ -50,7 +50,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved: PlannerQuery = right.solved.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
-    val solved: PlannerQuery = left.solved ++ rhsSolved
+    val lhsSolved: PlannerQuery = left.solved
+    val solved: PlannerQuery = lhsSolved ++ rhsSolved
     Apply(left, right)(solved = solved)
   }
 
@@ -222,11 +223,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       .addArgumentIds(argumentIds.toSeq)
     )
     NodeUniqueIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
-  }
-
-  def planAssertSameNode(node: IdName, left: LogicalPlan, right :LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = left.solved ++ right.solved
-    AssertSameNode(node, left, right)(solved)
   }
 
   def planOptionalExpand(left: LogicalPlan,
@@ -451,14 +447,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
   }
 
-  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)(implicit context: LogicalPlanningContext): LogicalPlan = {
-
-    val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
-
-    MergeCreateNode(inner, pattern.nodeName,
-      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
-  }
-
   def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
                     (implicit context: LogicalPlanningContext): LogicalPlan = {
 
@@ -466,20 +454,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     CreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
       pattern.endNode, pattern.properties)(solved)
-  }
-
-  def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idName: IdName)
-                    (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = lhs.solved ++ rhs.solved
-
-    ConditionalApply(lhs, rhs, idName)(solved)
-  }
-
-  def planAntiConditionalApply(inner: LogicalPlan, outer: LogicalPlan, idName: IdName)
-                          (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved ++ outer.solved
-
-    AntiConditionalApply(inner, outer, idName)(solved)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression)

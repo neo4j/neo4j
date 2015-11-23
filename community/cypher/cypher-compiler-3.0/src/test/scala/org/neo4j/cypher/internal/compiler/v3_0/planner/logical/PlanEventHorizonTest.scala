@@ -39,7 +39,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val inputPlan = SingleRow()(CardinalityEstimation.lift(PlannerQuery(), Cardinality(1)))
 
     // When
-    val producedPlan = PlanEventHorizon(pq, inputPlan)
+    val producedPlan = PlanEventHorizon()(pq, inputPlan)
 
     // Then
     producedPlan should equal(Projection(inputPlan, Map("a" -> literal))(CardinalityEstimation.lift(PlannerQuery(), Cardinality(1))))

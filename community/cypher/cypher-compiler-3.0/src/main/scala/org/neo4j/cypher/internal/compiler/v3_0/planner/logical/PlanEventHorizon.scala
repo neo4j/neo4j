@@ -28,11 +28,11 @@ Planning event horizons means planning the WITH clauses between query patterns. 
 away when going from a string query to a QueryGraph. The remaining WITHs are the ones containing ORDER BY/LIMIT,
 aggregation and UNWIND.
  */
-case object PlanEventHorizon
+case class PlanEventHorizon(config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
   extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph)
+    val selectedPlan = config.applySelections(plan, query.queryGraph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = plan match {

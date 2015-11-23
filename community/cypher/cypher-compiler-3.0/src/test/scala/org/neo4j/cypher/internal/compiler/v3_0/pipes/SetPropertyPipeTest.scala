@@ -45,7 +45,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should grab an exclusive lock if the rhs reads from the same node property") {
     val rhs = Add(Property(Variable("n"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
+    val pipe = SetNodePropertyPipe(mockedSource, "n", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -59,7 +59,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should grab an exclusive lock if the rhs reads from the same relationship property") {
     val rhs = Add(Property(Variable("r"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyOperation("r", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
+    val pipe = SetRelationshipPropertyPipe(mockedSource, "r", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
@@ -73,7 +73,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock if the rhs reads from another node property") {
     val rhs = Add(Property(Variable("n"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n", LazyPropertyKey(PropertyKeyName("prop2")(InputPosition.NONE)), rhs))()
+    val pipe = SetNodePropertyPipe(mockedSource, "n", LazyPropertyKey(PropertyKeyName("prop2")(InputPosition.NONE)), rhs)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -87,7 +87,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock if the rhs reads from another relationship property") {
     val rhs = Add(Property(Variable("r"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyOperation("r", LazyPropertyKey(PropertyKeyName("prop2")(InputPosition.NONE)), rhs))()
+    val pipe = SetRelationshipPropertyPipe(mockedSource, "r", LazyPropertyKey(PropertyKeyName("prop2")(InputPosition.NONE)), rhs)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
@@ -101,7 +101,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock if the rhs reads from the same node property on another node") {
     val rhs = Add(Property(Variable("n"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10), "n2" -> newMockedNode(20)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n2", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
+    val pipe = SetNodePropertyPipe(mockedSource, "n2", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -118,7 +118,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = Add(Property(Variable("r"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node]),
                                               "r2" -> newMockedRelationship(20, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyOperation("r2", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
+    val pipe = SetRelationshipPropertyPipe(mockedSource, "r2", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
@@ -134,7 +134,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should grab an exclusive lock when setting node props from a map with dependencies") {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("n"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
+    val pipe = SetNodePropertiesFromMapPipe(mockedSource, "n", rhs, removeOtherProps = false)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -150,7 +150,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should grab an exclusive lock when setting rel props from a map with dependencies") {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("r"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyFromMapOperation("r", rhs, removeOtherProps = true))()
+    val pipe = SetRelationshipPropertiesFromMapPipe(mockedSource, "r", rhs, removeOtherProps = true)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
@@ -166,7 +166,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting node props from a map with same prop but other node") {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("n2"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10), "n2" -> newMockedNode(20)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
+    val pipe = SetNodePropertiesFromMapPipe(mockedSource, "n", rhs, removeOtherProps = false)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -186,7 +186,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("r2"), KeyToken.Resolved("prop", 1, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node]),
                                               "r2" -> newMockedRelationship(20, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyFromMapOperation("r", rhs, removeOtherProps = true))()
+    val pipe = SetRelationshipPropertiesFromMapPipe(mockedSource, "r", rhs, removeOtherProps = true)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
@@ -204,7 +204,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting node props from a map with same node but other prop") {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("n"), KeyToken.Resolved("prop2", 2, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("n", row("n" -> newMockedNode(10)))
-    val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
+    val pipe = SetNodePropertiesFromMapPipe(mockedSource, "n", rhs, removeOtherProps = false)()
 
     val nodeOps = mock[Operations[Node]]
     when(qtx.nodeOps).thenReturn(nodeOps)
@@ -221,7 +221,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should not grab an exclusive lock when setting rel props from a map with same rel but other prop") {
     val rhs = LiteralMap(Map("prop" -> Add(Property(Variable("r"), KeyToken.Resolved("prop2", 2, TokenType.PropertyKey)), Literal(1))))
     val mockedSource = newMockedPipe("r", row("r" -> newMockedRelationship(10, mock[Node], mock[Node])))
-    val pipe = SetPipe(mockedSource, SetRelationshipPropertyFromMapOperation("r", rhs, removeOtherProps = true))()
+    val pipe = SetRelationshipPropertiesFromMapPipe(mockedSource, "r", rhs, removeOtherProps = true)()
 
     val relOps = mock[Operations[Relationship]]
     when(qtx.relationshipOps).thenReturn(relOps)
