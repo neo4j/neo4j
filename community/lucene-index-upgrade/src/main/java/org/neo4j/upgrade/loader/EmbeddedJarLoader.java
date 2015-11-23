@@ -24,11 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.JarURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.jar.JarEntry;
@@ -47,7 +50,7 @@ import java.util.jar.JarFile;
 public class EmbeddedJarLoader implements AutoCloseable
 {
     private String[] jars;
-    private Collection<File> extractedFiles;
+    private Collection<File> extractedFiles = new ArrayList<>();
     private URLClassLoader jarsClassLoader;
 
     EmbeddedJarLoader( String... jars )
@@ -57,6 +60,7 @@ public class EmbeddedJarLoader implements AutoCloseable
 
     /**
      * Load class from embedded jar
+     *
      * @param className fully qualified class name
      * @return Loaded class
      * @throws ClassNotFoundException in case if specified class not found
@@ -69,6 +73,7 @@ public class EmbeddedJarLoader implements AutoCloseable
 
     /**
      * Get class loaded of embedded jar files
+     *
      * @return jar files class loader
      * @throws IOException if exception occurred during class loader construction
      */
@@ -84,6 +89,7 @@ public class EmbeddedJarLoader implements AutoCloseable
     /**
      * Release class loader that was used for class loading and attempt to delete all extracted jars.
      * If deletion will not succeed, they will be deleted on JVM exit.
+     *
      * @throws IOException
      */
     @Override
@@ -94,48 +100,92 @@ public class EmbeddedJarLoader implements AutoCloseable
             jarsClassLoader.close();
         }
 
-        if ( extractedFiles != null )
-        {
-            extractedFiles.forEach( File::delete );
-        }
+        extractedFiles.forEach( File::delete );
+        extractedFiles.clear();
     }
 
     private URLClassLoader buildJarClassLoader() throws IOException
     {
-        Collection<File> jarFiles = extractJars();
+        Collection<File> jarFiles = getJars();
         URL[] urls = jarFiles.stream().map( EmbeddedJarLoader::getFileURL ).toArray( URL[]::new );
         return new URLClassLoader( urls, null );
     }
 
-    private Collection<File> extractJars() throws IOException
+    private Collection<File> getJars() throws IOException
     {
-        extractedFiles = new ArrayList<>();
+        Collection<File> jarFiles = new ArrayList<>();
         for ( String jar : jars )
         {
             URL url = getClass().getClassLoader().getResource( jar );
             if ( url == null )
             {
-                throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
-            }
-            URLConnection connection = url.openConnection();
-            if ( connection instanceof JarURLConnection )
-            {
-                JarURLConnection urlConnection = (JarURLConnection) connection;
-                JarFile jarFile = urlConnection.getJarFile();
-                JarEntry jarEntry = urlConnection.getJarEntry();
-                if ( jarEntry == null )
-                {
-                    throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
-                }
-                File extractedFile = extract( jarFile, jarEntry );
-                extractedFiles.add( extractedFile );
+                // we can't find jar file as a resource (for example when running from IDE)
+                // will try to find it in relative parent directory
+                // build should be executed at least once for this to work
+                jarFiles.add( loadJarFromRelativePath( jar ) );
             }
             else
             {
-                throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
+                // jar file can be found as resource, lets extract it and use
+                File extractedFile = extractJar( url, jar );
+                jarFiles.add( extractedFile );
+                extractedFiles.add( extractedFile );
             }
         }
-        return this.extractedFiles;
+        return jarFiles;
+    }
+
+    /**
+     * Extract jar that is stored ad resource in a parent jar into temporary file
+     * @param resourceUrl resource jar resourceUrl
+     * @param jar jar resource path
+     * @return jar temporary file
+     * @throws IOException on exception during jar extractions
+     * @throws EmbeddedJarNotFoundException if jar not found or can't be extracted.
+     */
+    private File extractJar( URL resourceUrl, String jar ) throws IOException
+    {
+        URLConnection connection = resourceUrl.openConnection();
+        if ( connection instanceof JarURLConnection )
+        {
+            JarURLConnection urlConnection = (JarURLConnection) connection;
+            JarFile jarFile = urlConnection.getJarFile();
+            JarEntry jarEntry = urlConnection.getJarEntry();
+            if ( jarEntry == null )
+            {
+                throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
+            }
+            return extract( jarFile, jarEntry );
+        }
+        else
+        {
+            throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
+        }
+    }
+
+    /**
+     * Try to load jar from relative ../lib/ directory for cases when we do not have jars in a class path.
+     * @param jar - path to a jar file to load.
+     * @return loaded jar file
+     * @throws EmbeddedJarNotFoundException if jar not exist or file name can't be represented as URI.
+     */
+    private File loadJarFromRelativePath( String jar )
+    {
+        try
+        {
+            CodeSource codeSource = getClass().getProtectionDomain().getCodeSource();
+            URI uri = codeSource.getLocation().toURI();
+            File jarFile = new File( new File( uri ).getParent(), jar );
+            if ( !jarFile.exists() )
+            {
+                throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
+            }
+            return jarFile;
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new EmbeddedJarNotFoundException( "Jar file '" + jar + "' not found." );
+        }
     }
 
     private File extract( JarFile jarFile, JarEntry jarEntry ) throws IOException

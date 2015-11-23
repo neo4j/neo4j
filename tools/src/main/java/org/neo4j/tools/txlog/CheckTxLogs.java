@@ -46,6 +46,7 @@ import org.neo4j.test.LogTestUtils;
  * It then simply iterates over all commands in those logs, compares before state for current record with previously
  * seen after state and stores after state for current record, if before state is consistent.
  */
+//: TODO introduce abstract tool class as soon as we will have several tools in tools module
 public class CheckTxLogs
 {
     private static final String HELP_FLAG = "help";
