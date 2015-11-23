@@ -19,12 +19,6 @@
  */
 package org.neo4j.browser;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -40,19 +34,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.is;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyIterable;
 import static org.jsoup.helper.StringUtil.join;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -99,44 +97,31 @@ public class CannedCypherExecutionTest
                             {
                                 try ( Transaction transaction = database.beginTx() )
                                 {
-                                    Iterable<Notification> actual = database.execute(
+                                    Iterable<Notification> notifications = database.execute(
                                             prependExplain( statement ) ).getNotifications();
-                                    boolean skipKnownInefficientCypher = !cypherElement.parent().select( ".warn" ).isEmpty();
-                                    if ( skipKnownInefficientCypher  )
+
+                                    List<Status.Statement> ignorableStatusCodes = new ArrayList<>();
+                                    if ( hasWarningInHtml( cypherElement ) )
                                     {
+                                        ignorableStatusCodes.add( Status.Statement.CartesianProduct );
+                                        ignorableStatusCodes.add( Status.Statement.UnboundedPatternWarning );
+                                    }
 
-                                        List<Notification> targetCollection = new ArrayList<Notification>();
-                                        CollectionUtils.addAll( targetCollection, actual );
-                                        CollectionUtils.filter( targetCollection, new org.apache.commons.collections4
-                                                .Predicate<Notification>()
-
+                                    List<Notification> filteredNotifications = new ArrayList<>();
+                                    for ( Notification notification : notifications )
+                                    {
+                                        if ( !hasIgnorableNotificationCode( notification, ignorableStatusCodes ) )
                                         {
-                                            @Override
-                                            public boolean evaluate( Notification notification )
-                                            {
-                                                return notification.getDescription().contains( NotificationCode.CARTESIAN_PRODUCT.values()
-                                                        .toString() );
-                                            }
-                                        } );
-
-
-                                        assertThat( format( "Query [%s] should only produce cartesian product " +
-                                                                "notifications. [%s]",
-                                                        statement, fileName ),
-                                                targetCollection, empty() );
-
-                                        explainCount.incrementAndGet();
-                                        transaction.success();
-
+                                            filteredNotifications.add( notification );
+                                        }
                                     }
-                                    else
-                                    {
-                                        assertThat( format( "Query [%s] should produce no notifications. [%s]",
-                                                        statement, fileName ),
-                                                actual, is( emptyIterable() ) );
-                                        explainCount.incrementAndGet();
-                                        transaction.success();
-                                    }
+
+                                    assertThat( format( "Query [%s] should only produce %s notifications. [%s]",
+                                                    ignorableStatusCodes, statement, fileName ),
+                                            filteredNotifications, empty() );
+
+                                    explainCount.incrementAndGet();
+                                    transaction.success();
                                 }
                                 catch ( QueryExecutionException e )
                                 {
@@ -168,6 +153,23 @@ public class CannedCypherExecutionTest
                 explainCount );
         System.out.printf( "Executed %s cypher statements extracted from HTML files, with no errors.%n",
                 executionCount );
+    }
+
+    private boolean hasWarningInHtml( Element cypherElement )
+    {
+        return !cypherElement.parent().select( ".warn" ).isEmpty();
+    }
+
+    private boolean hasIgnorableNotificationCode( Notification notification, List<Status.Statement> ignorableCodes )
+    {
+        for ( Status.Statement ignorableCode : ignorableCodes )
+        {
+            if ( ignorableCode.code().toString().contains( notification.getCode() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String replaceAngularExpressions( String statement )

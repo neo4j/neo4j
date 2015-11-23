@@ -364,26 +364,6 @@
       </build>
     </profile>
 
-    <!-- Firefox is default implementation, set in properties at the top of this file. -->
-    <profile>
-      <id>htmlunit</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.htmlunit.HtmlUnitDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-    <profile>
-      <id>chrome</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.chrome.ChromeDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-    <profile>
-      <id>ie</id>
-      <properties>
-        <webdriver.impl.class>org.openqa.selenium.ie.InternetExplorerDriver</webdriver.impl.class>
-      </properties>
-    </profile>
-
     <profile>
       <id>initial-build</id>
       <repositories>
