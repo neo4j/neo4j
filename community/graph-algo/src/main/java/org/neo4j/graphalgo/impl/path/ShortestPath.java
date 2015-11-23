@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,8 +45,10 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.util.MutableBoolean;
 import org.neo4j.kernel.impl.util.MutableInteger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
@@ -70,7 +71,7 @@ public class ShortestPath implements PathFinder<Path>
     private final PathExpander expander;
     private Metadata lastMetadata;
     private ShortestPathPredicate predicate;
-    private DataMonitor dataMontitor = new DebugDataMonitor();
+    private DataMonitor dataMonitor;
 
     public interface ShortestPathPredicate {
         boolean test(Path path);
@@ -131,6 +132,19 @@ public class ShortestPath implements PathFinder<Path>
     {
         Iterator<Path> paths = internalPaths( start, end, true ).iterator();
         return paths.hasNext() ? paths.next() : null;
+    }
+
+    private void resolveMonitor( Node node )
+    {
+        if ( dataMonitor == null )
+        {
+            GraphDatabaseService service = node.getGraphDatabase();
+            if ( service instanceof GraphDatabaseFacade )
+            {
+                Monitors monitors = ((GraphDatabaseFacade) service).platformModule.monitors;
+                dataMonitor = monitors.newMonitor( DataMonitor.class );
+            }
+        }
     }
 
     private Iterable<Path> internalPaths( Node start, Node end, boolean stopAsap )
@@ -248,7 +262,9 @@ public class ShortestPath implements PathFinder<Path>
                         { return; }
                         directionData.stop = true;
                     }
-                } else {
+                }
+                else
+                {
                     directionData.haveFoundSomething = false;
                     directionData.sharedFrozenDepth.value = NULL;
                     otherSide.stop = false;
@@ -259,9 +275,10 @@ public class ShortestPath implements PathFinder<Path>
 
     private void monitorData( DirectionData directionData, DirectionData otherSide )
     {
-        if ( dataMontitor != null )
+        resolveMonitor( directionData.startNode );
+        if ( dataMonitor != null )
         {
-            dataMontitor.monitorData( directionData.visitedNodes, directionData.nextNodes, otherSide.visitedNodes,
+            dataMonitor.monitorData( directionData.visitedNodes, directionData.nextNodes, otherSide.visitedNodes,
                     otherSide.nextNodes );
         }
     }
@@ -290,60 +307,6 @@ public class ShortestPath implements PathFinder<Path>
     {
         void monitorData( Map<Node,LevelData> theseVisitedNodes, Collection<Node> theseNextNodes,
                 Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes );
-    }
-
-    private class DebugDataMonitor implements DataMonitor
-    {
-        public void monitorData( Map<Node,LevelData> theseVisitedNodes, Collection<Node> theseNextNodes,
-                Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes )
-        {
-            System.out.println( "------------------------------------------------------------" );
-            debug( System.out, 5, theseVisitedNodes, theseNextNodes );
-            debug( System.out, 5, thoseVisitedNodes, thoseNextNodes );
-            System.out.println();
-        }
-
-        private int debugNode( int dim, HashMap<String,String> matrix, int cellSize, Node node, String text )
-        {
-            Long row = node.getId() / dim;
-            Long col = node.getId() - dim * row;
-            String key = row.toString() + col.toString();
-            String value = matrix.get( key );
-            value = value == null ? text : value + text;
-            matrix.put( key, value );
-            return Math.max( cellSize, value.length() );
-        }
-
-        public void debug( PrintStream out, int dim, Map<Node,LevelData> visitedNodes, Collection<Node> nextNodes )
-        {
-            int cellSize = 0;
-            HashMap<String,String> matrix = new HashMap<String,String>();
-            for ( Map.Entry<Node,LevelData> entry : visitedNodes.entrySet() )
-            {
-                cellSize = debugNode( dim, matrix, cellSize, entry.getKey(), "[" + entry.getValue().depth + "]" );
-            }
-            for ( Node node : nextNodes )
-            {
-                cellSize = debugNode( dim, matrix, cellSize, node, "(*)" );
-            }
-            for ( int row = 0; row < dim; row++ )
-            {
-                out.print( Integer.toString( row ) + ":" );
-                for ( int col = 0; col < dim; col++ )
-                {
-                    String text = matrix.get( Integer.toString( row ) + Integer.toString( col ) );
-                    text = text == null ? "-" : text;
-                    StringBuffer padding = new StringBuffer();
-                    for ( int i = 0; i < 4 + cellSize - text.length(); i++ )
-                    {
-                        padding.append( " " );
-                    }
-                    out.print( padding + text );
-                }
-                out.println();
-            }
-            out.println();
-        }
     }
 
     // Two long-lived instances
@@ -546,10 +509,10 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     // Many long-lived instances
-    private static class LevelData
+    public static class LevelData
     {
         private long[] relsToHere;
-        private final int depth;
+        public final int depth;
 
         LevelData( Relationship relToHere, int depth )
         {

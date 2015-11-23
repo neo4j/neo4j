@@ -23,9 +23,13 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.graphalgo.impl.path.ShortestPath
+import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.{Path, Node}
+import org.neo4j.kernel.monitoring.Monitors
 import scala.collection.mutable
 import scala.collection.JavaConverters._
+import java.util
 
 class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -247,6 +251,9 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
         }
       }
     }
+
+    val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
+    monitors.addMonitorListener(new DebugDataMonitor)
   }
 
   private def addDiagonal(): Unit = {
@@ -359,4 +366,47 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
     }
 
+  private class DebugDataMonitor extends DataMonitor {
+
+    def monitorData(theseVisitedNodes: util.Map[Node, ShortestPath.LevelData], theseNextNodes: util.Collection[Node],
+                    thoseVisitedNodes: util.Map[Node, ShortestPath.LevelData], thoseNextNodes: util.Collection[Node]) {
+      println("------------------------------------------------------------")
+      debug(dim, theseVisitedNodes, theseNextNodes)
+      debug(dim, thoseVisitedNodes, thoseNextNodes)
+      println
+    }
+
+    private def debugNode(dim: Int, matrix: mutable.Map[String, String], cellSize: Int, node: Node,
+                          text: String): Int = {
+      val row: Long = node.getId / dim
+      val col: Long = node.getId - dim * row
+      val key: String = row.toString + col.toString
+      val value = if (matrix.isDefinedAt(key)) matrix(key) + text else text
+      matrix += (key -> value)
+      return Math.max(cellSize, value.length)
+    }
+
+    def debug(dim: Int, visitedNodes: util.Map[Node, ShortestPath.LevelData],
+              nextNodes: util.Collection[Node]) {
+      import scala.collection.JavaConversions._
+      val matrix: mutable.Map[String, String] = mutable.Map[String, String]()
+      var cellSize: Int = 0
+      for (entry <- visitedNodes.entrySet) {
+        cellSize = debugNode(dim, matrix, cellSize, entry.getKey, "[" + entry.getValue.depth + "]")
+      }
+      for (node <- nextNodes) {
+        cellSize = debugNode(dim, matrix, cellSize, node, "(*)")
+      }
+      0 until dim foreach { row =>
+        print(s"$row:")
+        0 until dim foreach { col =>
+          val key = s"$row$col"
+          val text = matrix.getOrElse(key, "- ")
+          printf(s"%${4 + cellSize}s", text)
+        }
+        println
+      }
+      println
+    }
+  }
 }
