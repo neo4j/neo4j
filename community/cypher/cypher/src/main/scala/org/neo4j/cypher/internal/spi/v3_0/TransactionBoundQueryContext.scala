@@ -339,7 +339,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.index.forNodes(name).query(query).iterator().asScala
 
     def isDeleted(n: Node): Boolean =
-      kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
 
     override def acquireExclusiveLock(obj: Long) =
       statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -386,7 +386,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.index.forRelationships(name).query(query).iterator().asScala
 
     def isDeleted(r: Relationship): Boolean =
-      kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
 
     override def acquireExclusiveLock(obj: Long) =
       statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
