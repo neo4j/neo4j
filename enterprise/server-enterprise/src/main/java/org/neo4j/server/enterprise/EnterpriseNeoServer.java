@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -39,21 +41,43 @@ import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
+import org.neo4j.server.webadmin.rest.DatabaseRoleInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer
 {
-    public static final String HA = "HA";
+    public enum Mode
+    {
+        SINGLE,
+        HA,
+        CORE,
+        EDGE;
+
+        public static Mode fromString( String value )
+        {
+            try
+            {
+                return Mode.valueOf( value );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                return SINGLE;
+            }
+        }
+
+    }
+
     private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
         public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
+
             File storeDir = config.get( ServerInternalSettings.legacy_db_location );
             return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
         }
@@ -68,6 +92,26 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         }
     };
 
+    private static final GraphFactory CORE_FACTORY = new GraphFactory()
+    {
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
+        {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
+        }
+    };
+
+    private static final GraphFactory EDGE_FACTORY = new GraphFactory()
+    {
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
+        {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
+        }
+    };
+
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
         super( config, createDbFactory( config ), dependencies, logProvider );
@@ -75,16 +119,28 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
-        return lifecycleManagingDatabase( mode.equals( HA ) ? HA_FACTORY : ENTERPRISE_FACTORY );
+        final Mode mode = Mode.fromString( config.get( EnterpriseServerSettings.mode ).toUpperCase() );
+
+        switch ( mode )
+        {
+        case HA:
+            return lifecycleManagingDatabase( HA_FACTORY );
+        case CORE:
+            return lifecycleManagingDatabase( CORE_FACTORY );
+        case EDGE:
+            return lifecycleManagingDatabase( EDGE_FACTORY );
+        default: // Anything else gives community, including Mode.SINGLE
+            return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
+        }
     }
+
 
     @SuppressWarnings( "unchecked" )
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
         return mix(
-                asList( (ServerModule) new MasterInfoServerModule( webServer, getConfig(),
+                asList( (ServerModule) new DatabaseRoleInfoServerModule( webServer, getConfig(),
                         logProvider ) ), super.createServerModules() );
     }
 
