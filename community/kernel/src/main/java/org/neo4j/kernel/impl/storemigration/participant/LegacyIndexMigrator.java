@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,24 +25,23 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
-import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
+import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader;
 
 /**
  * Migrates legacy lucene indexes between different neo4j versions.
  * Participates in store upgrade as one of the migration participants.
  */
-public class LegacyIndexMigrator implements StoreMigrationParticipant
+public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
 {
     private static final String LUCENE_LEGACY_INDEX_PROVIDER_NAME = "lucene";
     private Map<String,IndexImplementation> indexProviders;
@@ -61,8 +60,8 @@ public class LegacyIndexMigrator implements StoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+            String versionToMigrateFrom ) throws IOException
     {
         IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
         if ( indexImplementation != null )
@@ -122,15 +121,4 @@ public class LegacyIndexMigrator implements StoreMigrationParticipant
         return new LuceneLegacyIndexUpgrader( indexRootPath );
     }
 
-    @Override
-    public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
-    {
-        // nothing to do
-    }
-
-    @Override
-    public void cleanup( File migrationDir ) throws IOException
-    {
-        // nothing to do
-    }
 }

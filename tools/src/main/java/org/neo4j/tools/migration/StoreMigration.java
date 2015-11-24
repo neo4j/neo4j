@@ -28,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,15 +42,10 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
-import org.neo4j.kernel.impl.storemigration.LegacyIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.FormattedLogProvider;
@@ -59,7 +55,6 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
 
 /**
  * Stand alone tool for migrating/upgrading a neo4j database from one version to the next.
@@ -84,36 +79,36 @@ public class StoreMigration
         FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
         StoreMigration migration = new StoreMigration();
         migration.run( new DefaultFileSystemAbstraction(), storeDir, getMigrationConfig(),
-                userLogProvider, NO_MONITOR );
+                userLogProvider );
     }
 
     private static Config getMigrationConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), "true" ) );
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
-            LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
+            LogProvider userLogProvider ) throws IOException
     {
-        ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
-        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, userLogProvider );
+        LogService logService =
+                StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, storeDirectory );
+
+        VisibleMigrationProgressMonitor progressMonitor =
+                new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigration.class ) );
 
         LifeSupport life = new LifeSupport();
 
         // Add participants from kernel extensions...
-        LegacyIndexProvider indexProvider = new LegacyIndexProvider();
+        LegacyIndexProvider legacyIndexProvider = new LegacyIndexProvider();
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fs, config );
-        deps.satisfyDependencies( indexProvider );
+        deps.satisfyDependencies( legacyIndexProvider );
 
         KernelContext kernelContext = new MigrationKernelContext( fs, storeDirectory );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );
-
-        LogService logService =
-                StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, storeDirectory );
 
         // Add the kernel store migrator
         life.start();
@@ -126,18 +121,16 @@ public class StoreMigration
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
-            UpgradableDatabase upgradableDatabase =
-                    new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
-            migrationProcess.addParticipant( new SchemaIndexMigrator( fs ) );
-            migrationProcess.addParticipant( new LegacyIndexMigrator( fs, indexProvider.getIndexProviders(),
-                    userLogProvider ) );
-            migrationProcess.addParticipant( new StoreMigrator(
-                    new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigration.class ) ),
-                    fs, pageCache, config, logService ) );
-            // Perform the migration
             long startTime = System.currentTimeMillis();
-            migrationProcess
-                    .migrateIfNeeded( storeDirectory, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
+            new DatabaseMigrator(
+                    progressMonitor,
+                    fs,
+                    config,
+                    logService,
+                    schemaIndexProvider,
+                    labelScanStoreProvider,
+                    legacyIndexProvider.getIndexProviders(),
+                    pageCache ).migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
@@ -203,7 +196,7 @@ public class StoreMigration
     {
         if ( args.orphans().size() != 1 )
         {
-            System.out.println("Error: too much arguments provided.");
+            System.out.println( "Error: too much arguments provided." );
             printUsageAndExit();
         }
         File dir = new File( args.orphans().get( 0 ) );
@@ -220,10 +213,10 @@ public class StoreMigration
         System.out.println( "Store migration tool performs migration of a store in specified location to latest " +
                             "supported store version." );
         System.out.println();
-        System.out.println("Options:");
-        System.out.println("-help    print this help message");
+        System.out.println( "Options:" );
+        System.out.println( "-help    print this help message" );
         System.out.println();
-        System.out.println("Usage:");
+        System.out.println( "Usage:" );
         System.out.println( "./storeMigration [option] <store directory>" );
         System.exit( 1 );
     }

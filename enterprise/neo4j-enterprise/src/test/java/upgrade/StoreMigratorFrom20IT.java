@@ -30,17 +30,17 @@ import java.io.IOException;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -49,8 +49,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -66,7 +66,6 @@ import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
@@ -93,7 +92,7 @@ public class StoreMigratorFrom20IT
         pageCache = pageCacheRule.getPageCache( fs );
 
         schemaIndexProvider = new LuceneSchemaIndexProvider( fs, DirectoryFactory.PERSISTENT, storeDir.directory() );
-        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1);
+        labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
 
         storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, NullLogProvider.getInstance() );
@@ -111,11 +110,9 @@ public class StoreMigratorFrom20IT
     public void shouldMigrate() throws IOException, ConsistencyCheckIncompleteException
     {
         // WHEN
-        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs );
-        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded(
-                find20FormatStoreDirectory( storeDir.directory() ), upgradableDatabase, schemaIndexProvider,
-                labelScanStoreProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( find20FormatStoreDirectory( storeDir.directory() ) );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -147,10 +144,9 @@ public class StoreMigratorFrom20IT
         File legacyStoreDir = find20FormatStoreDirectory( storeDir.directory() );
 
         // When
-        StoreMigrator storeMigrator = new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() );
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs );
-        upgrader( indexMigrator, storeMigrator )
-                .migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
+        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+        upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( legacyStoreDir );
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
@@ -198,7 +194,10 @@ public class StoreMigratorFrom20IT
 
     private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        Config allowUpgrade = new Config( MapUtil.stringMap( GraphDatabaseSettings
+                .allow_store_upgrade.name(), "true" ) );
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, allowUpgrade, fs,
+                NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( storeMigrator );
         return upgrader;

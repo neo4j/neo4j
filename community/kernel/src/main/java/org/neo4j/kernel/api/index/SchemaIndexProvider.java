@@ -21,22 +21,16 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -125,7 +119,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                        PageCache pageCache, LabelScanStoreProvider labelScanStoreProvider )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -220,7 +215,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+            LabelScanStoreProvider labelScanStoreProvider );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.

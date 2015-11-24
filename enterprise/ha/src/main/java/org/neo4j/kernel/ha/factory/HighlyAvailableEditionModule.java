@@ -53,6 +53,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -136,8 +138,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -531,7 +531,7 @@ public class HighlyAvailableEditionModule
             }
         };
 
-        upgradeConfiguration = new HAUpgradeConfiguration();
+        config.augment( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.FALSE ) );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
@@ -843,15 +843,5 @@ public class HighlyAvailableEditionModule
                 return config.get( HaSettings.ha_server );
             }
         };
-    }
-
-
-    private static final class HAUpgradeConfiguration implements UpgradeConfiguration
-    {
-        @Override
-        public void checkConfigurationAllowsAutomaticUpgrade()
-        {
-            throw new UpgradeNotAllowedByDatabaseModeException();
-        }
     }
 }

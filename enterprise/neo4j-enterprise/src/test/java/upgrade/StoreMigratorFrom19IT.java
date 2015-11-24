@@ -35,6 +35,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -53,8 +55,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -79,7 +81,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatHugeStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19FormatStoreDirectory;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorFrom19IT
 {
@@ -123,7 +124,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // WHEN
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
 
         // THEN
         assertEquals( 100, monitor.eventSize() );
@@ -157,7 +158,7 @@ public class StoreMigratorFrom19IT
         File legacyStoreDir = find19FormatHugeStoreDirectory( storeDir.directory() );
 
         // When
-        newStoreUpgrader().migrateIfNeeded( legacyStoreDir, upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
+        newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
 
         ClusterManager.ManagedCluster cluster = buildClusterWithMasterDirIn( fs, legacyStoreDir, life );
         cluster.await( allSeesAllAsAvailable() );
@@ -180,7 +181,7 @@ public class StoreMigratorFrom19IT
         // WHEN
         // upgrading that store, the two key tokens for "name" should be merged
 
-        newStoreUpgrader().migrateIfNeeded( storeDir.directory(), upgradableDatabase, schemaIndexProvider, labelScanStoreProvider );
+        newStoreUpgrader().migrateIfNeeded( storeDir.directory() );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -276,11 +277,13 @@ public class StoreMigratorFrom19IT
 
     private StoreUpgrader newStoreUpgrader()
     {
+        Config allowUpgrade = new Config( MapUtil.stringMap( GraphDatabaseSettings
+                .allow_store_upgrade.name(), "true" ) );
         StoreUpgrader upgrader =
-                new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
-        upgrader.addParticipant( new SchemaIndexMigrator( fs ) );
+                new StoreUpgrader(upgradableDatabase, monitor, allowUpgrade, fs, NullLogProvider.getInstance() );
+        upgrader.addParticipant( new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider ) );
         upgrader.addParticipant(
-                new StoreMigrator( monitor, fs, pageCache, config, NullLogService.getInstance() ) );
+                new StoreMigrator( fs, pageCache, config, NullLogService.getInstance(), schemaIndexProvider ) );
         return upgrader;
     }
 }

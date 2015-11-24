@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Test;
 
@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
@@ -50,8 +51,7 @@ public class LegacyIndexMigratorTest
 
     private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private LogProvider logProvider = mock( LogProvider.class );
-    private SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private LabelScanStoreProvider labelScanStoreProvider = mock( LabelScanStoreProvider.class );
+    private MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
     private File storeDir = mock( File.class );
     private File migrationDir = mock( File.class );
     private File originalIndexStore = mock( File.class );
@@ -63,8 +63,7 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
 
         verify( fs ).copyRecursively( originalIndexStore, migratedIndexStore );
     }
@@ -75,8 +74,7 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                Legacy23Store.LEGACY_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
         reset( fs );
 
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any" );
@@ -95,10 +93,9 @@ public class LegacyIndexMigratorTest
         try
         {
             LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, false );
-            indexMigrator.migrate( storeDir, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                    Legacy23Store.LEGACY_VERSION );
+            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
 
-            fail("Index migration should fail");
+            fail( "Index migration should fail" );
         }
         catch ( IOException e )
         {

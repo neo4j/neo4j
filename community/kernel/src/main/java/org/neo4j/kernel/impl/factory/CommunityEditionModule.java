@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -104,8 +103,6 @@ public class CommunityEditionModule
         schemaWriteGuard = createSchemaWriteGuard();
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
-
-        upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
         constraintSemantics = createSchemaRuleVerifier();
 

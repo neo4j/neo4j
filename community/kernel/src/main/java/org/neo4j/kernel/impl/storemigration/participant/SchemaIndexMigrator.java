@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.
@@ -37,21 +38,26 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
  * <p>
  * Since index format can be completely incompatible between version should be executed before {@link StoreMigrator}
  */
-public class SchemaIndexMigrator implements StoreMigrationParticipant
+public class SchemaIndexMigrator extends BaseStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes = false;
     private File labelIndexDirectory;
     private File schemaIndexDirectory;
+    private SchemaIndexProvider schemaIndexProvider;
+    private LabelScanStoreProvider labelScanStoreProvider;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider,
+            LabelScanStoreProvider labelScanStoreProvider )
     {
         this.fileSystem = fileSystem;
+        this.schemaIndexProvider = schemaIndexProvider;
+        this.labelScanStoreProvider = labelScanStoreProvider;
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+            String versionToMigrateFrom ) throws IOException
     {
         switch ( versionToMigrateFrom )
         {
@@ -82,17 +88,5 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     private void deleteIndexes( File indexRootDirectory ) throws IOException
     {
         fileSystem.deleteRecursively( indexRootDirectory );
-    }
-
-    @Override
-    public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
-    {
-        // nothing to do
-    }
-
-    @Override
-    public void cleanup( File migrationDir ) throws IOException
-    {
-        // nothing to do
     }
 }

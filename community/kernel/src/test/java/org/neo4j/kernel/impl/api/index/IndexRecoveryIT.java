@@ -57,7 +57,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -84,7 +86,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
 import static org.neo4j.graphdb.Neo4jMatchers.haveState;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 public class IndexRecoveryIT
 {
@@ -272,8 +273,9 @@ public class IndexRecoveryIT
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
-        when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class), any( PageCache.class ) ) ).thenReturn( NOT_PARTICIPATING );
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ),
+                any( PageCache.class ), any( LabelScanStoreProvider.class ) ) )
+                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")

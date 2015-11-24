@@ -26,10 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -62,49 +63,20 @@ public class StoreUpgrader
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
 
-    public interface Monitor
-    {
-        void migrationNeeded();
-
-        void migrationNotAllowed();
-
-        void migrationCompleted();
-    }
-
-    public static abstract class MonitorAdapter implements Monitor
-    {
-        @Override
-        public void migrationNeeded()
-        {   // Do nothing
-        }
-
-        @Override
-        public void migrationNotAllowed()
-        {   // Do nothing
-        }
-
-        @Override
-        public void migrationCompleted()
-        {   // Do nothing
-        }
-    }
-
-    public static final Monitor NO_MONITOR = new MonitorAdapter()
-    {
-    };
-
+    private final UpgradableDatabase upgradableDatabase;
+    private final MigrationProgressMonitor progressMonitor;
     private final List<StoreMigrationParticipant> participants = new ArrayList<>();
-    private final UpgradeConfiguration upgradeConfiguration;
+    private final Config config;
     private final FileSystemAbstraction fileSystem;
-    private final Monitor monitor;
     private final Log log;
 
-    public StoreUpgrader( UpgradeConfiguration upgradeConfiguration, FileSystemAbstraction fileSystem,
-            Monitor monitor, LogProvider logProvider )
+    public StoreUpgrader( UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor, Config
+            config, FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
+        this.upgradableDatabase = upgradableDatabase;
+        this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
-        this.upgradeConfiguration = upgradeConfiguration;
-        this.monitor = monitor;
+        this.config = config;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -119,8 +91,7 @@ public class StoreUpgrader
         this.participants.add( participant );
     }
 
-    public void migrateIfNeeded( File storeDirectory, UpgradableDatabase upgradableDatabase,
-            SchemaIndexProvider schemaIndexProvider, LabelScanStoreProvider labelScanStoreProvider )
+    public void migrateIfNeeded( File storeDirectory)
     {
         File migrationDirectory = new File( storeDirectory, MIGRATION_DIRECTORY );
 
@@ -134,17 +105,13 @@ public class StoreUpgrader
             return;
         }
 
+        if ( !isUpgradeAllowed() )
+        {
+            throw new UpgradeNotAllowedByConfigurationException();
+        }
+
         // One or more participants would like to do migration
-        monitor.migrationNeeded();
-        try
-        {
-            upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
-        }
-        catch ( UpgradeNotAllowedException e )
-        {
-            monitor.migrationNotAllowed();
-            throw e;
-        }
+        progressMonitor.started();
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fileSystem, migrationStateFile );
         String versionToMigrateFrom = null;
@@ -155,8 +122,7 @@ public class StoreUpgrader
             versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
             cleanMigrationDirectory( migrationDirectory );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-            migrateToIsolatedDirectory( storeDirectory, migrationDirectory, schemaIndexProvider,
-                    labelScanStoreProvider, versionToMigrateFrom );
+            migrateToIsolatedDirectory( storeDirectory, migrationDirectory, versionToMigrateFrom );
             MigrationStatus.moving.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
@@ -177,7 +143,13 @@ public class StoreUpgrader
         }
 
         cleanup( participants, migrationDirectory );
-        monitor.migrationCompleted();
+
+        progressMonitor.finished();
+    }
+
+    private boolean isUpgradeAllowed()
+    {
+        return config.get( GraphDatabaseSettings.allow_store_upgrade );
     }
 
     private void cleanupLegacyLeftOverDirsIn( File storeDir )
@@ -247,16 +219,13 @@ public class StoreUpgrader
         }
     }
 
-    private void migrateToIsolatedDirectory( File storeDir, File migrationDirectory,
-            SchemaIndexProvider schemaIndexProvider, LabelScanStoreProvider labelScanStoreProvider,
-            String versionToMigrateFrom )
+    private void migrateToIsolatedDirectory( File storeDir, File migrationDirectory, String versionToMigrateFrom )
     {
         try
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.migrate( storeDir, migrationDirectory, schemaIndexProvider, labelScanStoreProvider,
-                        versionToMigrateFrom );
+                participant.migrate( storeDir, migrationDirectory, progressMonitor, versionToMigrateFrom );
             }
         }
         catch ( IOException e )

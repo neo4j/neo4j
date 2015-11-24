@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,6 +39,10 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -52,7 +56,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrator.readLastTxLogPosition;
+import static org.neo4j.kernel.impl.storemigration.participant.StoreMigrator.readLastTxLogPosition;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 
@@ -105,15 +109,14 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // THEN starting the new store should be successful
@@ -137,16 +140,15 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         migrator.rebuildCounts( storeDirectory, versionToMigrateFrom );
 
         // THEN starting the new store should be successful
@@ -170,13 +172,12 @@ public class StoreMigratorTest
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, new Config(), logService );
+        StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
 
         // WHEN migrating
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -46,7 +46,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -66,6 +65,10 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.kernel.impl.storemigration.StoreMigratorCheckPointer;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
@@ -124,38 +127,34 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator implements StoreMigrationParticipant
+public class StoreMigrator extends BaseStoreMigrationParticipant
 {
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
     // complete upgrades in a reasonable time period.
 
-    private final MigrationProgressMonitor progressMonitor;
     private final Config config;
     private final LogService logService;
     private final LegacyLogs legacyLogs;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
+    private final SchemaIndexProvider schemaIndexProvider;
 
-    // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
-
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-            PageCache pageCache, Config config, LogService logService )
+    public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
+            LogService logService, SchemaIndexProvider schemaIndexProvider )
     {
-        this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
         this.logService = logService;
+        this.schemaIndexProvider = schemaIndexProvider;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider, String versionToMigrateFrom ) throws IOException
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+            String versionToMigrateFrom ) throws IOException
     {
-        progressMonitor.started();
-
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
@@ -180,7 +179,7 @@ public class StoreMigrator implements StoreMigrationParticipant
             // migrate stores
             migrateWithBatchImporter( storeDir, migrationDir,
                     lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
-                    pageCache, versionToMigrateFrom );
+                    pageCache, progressMonitor, versionToMigrateFrom );
             // don't create counters from scratch, since the batch importer just did
             break;
         default:
@@ -191,9 +190,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         // contents of it, and since the record format has changed there would be a mismatch between the
         // commands in the log and the contents in the store. If log migration is to be performed there
         // must be a proper translation happening while doing so.
-
-
-        progressMonitor.finished();
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
@@ -352,7 +348,8 @@ public class StoreMigrator implements StoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
-            long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache, String versionToUpgradeFrom )
+            long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache,
+            MigrationProgressMonitor progressMonitor, String versionToUpgradeFrom )
             throws IOException
     {
         prepareBatchImportMigration( storeDir, migrationDir );
@@ -374,9 +371,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         AdditionalInitialIds additionalInitialIds =
                 readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
-                importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
-                legacyStore ), importConfig ),
-                additionalInitialIds );
+                importConfig, logService,
+                withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor ),
+                        importConfig ), additionalInitialIds );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
@@ -490,7 +487,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
     }
 
-    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore )
+    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore,
+            MigrationProgressMonitor progressMonitor )
     {
         return new CoarseBoundedProgressExecutionMonitor(
                 legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )

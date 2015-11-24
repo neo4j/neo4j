@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -53,7 +53,7 @@ class StoreSourceTraceability implements SourceTraceability
     @Override
     public long position()
     {
-        return id*recordSize;
+        return id * recordSize;
     }
 
     public void atId( long id )

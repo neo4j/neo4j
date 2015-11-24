@@ -66,9 +66,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -163,14 +160,6 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        StoreUpgrader storeMigrationProcess = new StoreUpgrader( editionModule.upgradeConfiguration, fileSystem,
-                platformModule.monitors.newMonitor( StoreUpgrader.Monitor.class ), logging.getInternalLogProvider() );
-
-        VisibleMigrationProgressMonitor progressMonitor =
-                new VisibleMigrationProgressMonitor( logging.getInternalLog( StoreMigrator.class ) );
-
-        StoreMigrator storeMigrator = new StoreMigrator( progressMonitor, fileSystem, pageCache, config, logging );
-
         Guard guard = config.get( execution_guard_enabled ) ?
                       deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
                       null;
@@ -184,13 +173,13 @@ public class DataSourceModule
                 logging.getInternalLog( DatabaseHealth.class ) ) );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
-                editionModule.idGeneratorFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
+                editionModule.idGeneratorFactory, logging, platformModule.jobScheduler,
                 new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
                         editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
                 editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
-                storeMigrationProcess, storeMigrator, platformModule.transactionMonitor, databaseHealth,
+                platformModule.transactionMonitor, databaseHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,

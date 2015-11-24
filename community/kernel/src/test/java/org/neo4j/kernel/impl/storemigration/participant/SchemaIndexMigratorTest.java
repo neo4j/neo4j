@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.participant;
 
 import org.junit.Test;
 
@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
-
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,13 +37,14 @@ import static org.mockito.Mockito.when;
 public class SchemaIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
     private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
     private final LabelScanStoreProvider labelScanStoreProvider = mock( LabelScanStoreProvider.class );
     private final File storeDir = new File( "store" );
     private final File migrationDir = new File( "migrationDir" );
 
 
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
 
     @Test
     public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
@@ -51,8 +52,7 @@ public class SchemaIndexMigratorTest
         when( schemaIndexProvider.getProviderDescriptor() )
                 .thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, labelScanStoreProvider,
-                Legacy23Store.LEGACY_VERSION );
+        migrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
 
         migrator.moveMigratedFiles( migrationDir, storeDir, Legacy23Store.LEGACY_VERSION );
 

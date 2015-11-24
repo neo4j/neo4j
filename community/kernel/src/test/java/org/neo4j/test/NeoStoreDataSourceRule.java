@@ -47,8 +47,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -82,12 +81,11 @@ public class NeoStoreDataSourceRule extends ExternalResource
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         dataSource = new NeoStoreDataSource( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                NullLogProvider.getInstance(),
-                mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
+                NullLogService.getInstance(), mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
-                fs, mock( StoreUpgrader.class ), mock( StoreMigrator.class), mock( TransactionMonitor.class ), databaseHealth,
+                fs, mock( TransactionMonitor.class ), databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,
