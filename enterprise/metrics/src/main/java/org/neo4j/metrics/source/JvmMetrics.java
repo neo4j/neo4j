@@ -31,11 +31,17 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Java Virtual Machine Metrics ++\n" +
+             "These are environment dependent and they may vary on different hardware and with JVM configurations.\n" +
+             "Typically these metrics will show information about garbage collections " +
+             "(e.g., number of events and time spent collecting), memory pools and buffers, and " +
+             "finally the number of active threads running." )
 public class JvmMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "vm";
