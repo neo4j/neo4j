@@ -63,7 +63,7 @@ public class ReplayRaftLog
             if ( content instanceof ReplicatedTransaction )
             {
                 ReplicatedTransaction tx = (ReplicatedTransaction) content;
-                ReplicatedTransactionFactory.extractTransactionRepresentation( tx ).accept(
+                ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept(
                         new Visitor<Command, IOException>()
                         {
                             @Override

@@ -39,8 +39,6 @@ import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.locks.CoreServiceManager;
-import org.neo4j.coreedge.raft.locks.CoreServiceRegistry;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
@@ -59,7 +57,6 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
@@ -95,6 +92,7 @@ import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -197,10 +195,8 @@ public class EnterpriseCoreEditionModule
                 new RaftOutbound( loggingOutbound ) );
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, sessionTracker,
-                dependencies, SYSTEM_CLOCK );
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, dependencies, SYSTEM_CLOCK );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself );
         replicator.subscribe( idAllocationStateMachine );
@@ -213,24 +209,24 @@ public class EnterpriseCoreEditionModule
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
-                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout );
-
-        CoreServiceRegistry coreServices = new CoreServiceRegistry( SYSTEM_CLOCK );
-
-        raft.registerLeadershipChangeListener(
-                new CoreServiceManager( replicator, coreServices, myself, logProvider ) );
+                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout*4, logProvider );
 
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
 
         this.idGeneratorFactory = dependencies.satisfyDependency( replicatedIdGeneratorFactory );
 
-        this.relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new
-                ReplicatedRelationshipTypeTokenHolder( replicator, this.idGeneratorFactory, dependencies ) ) );
-        this.propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new ReplicatedPropertyKeyTokenHolder(
-                replicator, this.idGeneratorFactory, dependencies ) ) );
-        this.labelTokenHolder = life.add( dependencies.satisfyDependency( new ReplicatedLabelTokenHolder( replicator,
-                this.idGeneratorFactory, dependencies ) ) );
+        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
+                new ReplicatedRelationshipTypeTokenHolder( replicator, this.idGeneratorFactory, dependencies );
+        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
+                new ReplicatedPropertyKeyTokenHolder( replicator, this.idGeneratorFactory, dependencies );
+        ReplicatedLabelTokenHolder labelTokenHolder =
+                new ReplicatedLabelTokenHolder( replicator, this.idGeneratorFactory, dependencies );
+
+        LifeSupport tokenLife = new LifeSupport();
+        this.relationshipTypeTokenHolder = tokenLife.add( relationshipTypeTokenHolder );
+        this.propertyKeyTokenHolder = tokenLife.add( propertyKeyTokenHolder );
+        this.labelTokenHolder = tokenLife.add( labelTokenHolder );
 
         dependencies.satisfyDependency( createKernelData( fileSystem, platformModule.pageCache, storeDir,
                 config, graphDatabaseFacade, life ) );
@@ -274,11 +270,13 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftServer,
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( raftLog, logProvider ), raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ),
-                new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog )
-        ) );
+                new RecoverTransactionLogState( dependencies, logProvider,
+                        relationshipTypeTokenHolder, propertyKeyTokenHolder, labelTokenHolder ),
+                tokenLife
+        ));
     }
 
     public boolean isLeader()
@@ -304,7 +302,6 @@ public class EnterpriseCoreEditionModule
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
                                                                    final LocalSessionPool localSessionPool,
-                                                                   final GlobalSessionTracker sessionTracker,
                                                                    final Dependencies dependencies,
                                                                    final Clock clock )
     {
@@ -313,10 +310,15 @@ public class EnterpriseCoreEditionModule
                     new TransactionRepresentationCommitProcess( appender, applier, indexUpdatesValidator );
             dependencies.satisfyDependencies( localCommit );
 
-            ReplicatedTransactionStateMachine replicatedTxListener = new ReplicatedTransactionStateMachine(
-                    localCommit, sessionTracker, localSessionPool.getGlobalSession() );
+            ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
+                    localCommit, localSessionPool.getGlobalSession(), dependencies );
 
-            return new ReplicatedTransactionCommitProcess( replicator, localSessionPool, replicatedTxListener, clock,
+            dependencies.satisfyDependencies( replicatedTxStateMachine );
+
+            replicator.subscribe( replicatedTxStateMachine );
+
+            return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
+                    replicatedTxStateMachine, clock,
                     config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
                     config.get( CoreEdgeClusterSettings.tx_replication_timeout ) );
         };
@@ -420,7 +422,7 @@ public class EnterpriseCoreEditionModule
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
-        return TransactionHeaderInformationFactory.DEFAULT;
+        return () -> new TransactionHeaderInformation( -1, -1, new byte[0] );
     }
 
     protected void registerRecovery( final String editionName, LifeSupport life,

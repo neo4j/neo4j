@@ -21,8 +21,7 @@ package org.neo4j.coreedge.raft.net;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignmentSerializer;
+import org.neo4j.coreedge.raft.locks.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetSerializer;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
@@ -44,7 +43,7 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
     private static final byte ID_RANGE_REQUEST_TYPE = 2;
     private static final byte SEED_STORE_ID_TYPE = 3;
     private static final byte TOKEN_REQUEST_TYPE = 4;
-    private static final byte SERVICE_ASSIGNMENT_TYPE = 5;
+    private static final byte NEW_LEADER_BARRIER_TYPE = 5;
 
     @Override
     public void serialize( ReplicatedContent content, ByteBuf buffer ) throws MarshallingException
@@ -74,10 +73,9 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
             buffer.writeByte( TOKEN_REQUEST_TYPE );
             ReplicatedTokenRequestSerializer.serialize( (ReplicatedTokenRequest) content, buffer );
         }
-        else if ( content instanceof CoreServiceAssignment )
+        else if ( content instanceof NewLeaderBarrier )
         {
-            buffer.writeByte( SERVICE_ASSIGNMENT_TYPE );
-            CoreServiceAssignmentSerializer.serialize( (CoreServiceAssignment) content, buffer );
+            buffer.writeByte( NEW_LEADER_BARRIER_TYPE );
         }
         else
         {
@@ -112,8 +110,8 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
             case TOKEN_REQUEST_TYPE:
                 content = ReplicatedTokenRequestSerializer.deserialize( buffer );
                 break;
-            case SERVICE_ASSIGNMENT_TYPE:
-                content = (CoreServiceAssignment) CoreServiceAssignmentSerializer.deserialize( buffer );
+            case NEW_LEADER_BARRIER_TYPE:
+                content = new NewLeaderBarrier();
                 break;
             default:
                 throw new MarshallingException( String.format( "Unknown content type 0x%x", type ) );

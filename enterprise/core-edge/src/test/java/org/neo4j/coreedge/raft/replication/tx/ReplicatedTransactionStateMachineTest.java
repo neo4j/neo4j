@@ -30,9 +30,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
+import org.neo4j.coreedge.raft.locks.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -54,7 +53,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.raft.locks.CoreServiceRegistry.ServiceType.LOCK_MANAGER;
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class ReplicatedTransactionStateMachineTest
@@ -66,7 +64,6 @@ public class ReplicatedTransactionStateMachineTest
     public void shouldCommitTransaction() throws Exception
     {
         // given
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
         LocalOperationId localOperationId = new LocalOperationId( 0, 0 );
 
         ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
@@ -75,10 +72,10 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
-                localCommitProcess, sessionTracker, globalSession );
+                localCommitProcess, globalSession, null );
 
         // when
-        listener.onReplicated( tx );
+        listener.onReplicated( tx, 0 );
 
         // then
         verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ),
@@ -89,19 +86,17 @@ public class ReplicatedTransactionStateMachineTest
     public void shouldOnlyCommitSameTransactionOnce() throws Exception
     {
         // given
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
         LocalOperationId localOperationId = new LocalOperationId( 0, 0 );
 
         ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                 mock( PhysicalTransactionRepresentation.class ), globalSession, localOperationId );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
-                sessionTracker, globalSession );
+        ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess, globalSession, null );
 
         // when
-        listener.onReplicated( tx );
-        listener.onReplicated( tx );
+        listener.onReplicated( tx, 0 );
+        listener.onReplicated( tx, 0 );
 
         // then
         verify( localCommitProcess ).commit( any( TransactionToApply.class ),
@@ -109,21 +104,21 @@ public class ReplicatedTransactionStateMachineTest
     }
 
     @Test
-    public void shouldRejectTransactionCommittedUnderOldAssignmentOfLockManager() throws Exception
+    public void shouldRejectTransactionCommittedUnderOldLeader() throws Exception
     {
         // given
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
         LocalOperationId localOperationIdBefore = new LocalOperationId( 0, 0 );
         LocalOperationId localOperationIdAfter = new LocalOperationId( 0, 1 );
 
-        CoreMember newLockManager = new CoreMember( address( "new:1" ), address( "new:2" ) );
-
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        tx.setHeader( null, 0, 0, 1, 3, 0, 0 );
+        long timeBefore = 1001;
+        PhysicalTransactionRepresentation before = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        before.setHeader( null, 0, 0, timeBefore, 3, 0, 0 );
         ReplicatedTransaction txBefore = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
-                tx, globalSession, localOperationIdBefore );
-        PhysicalTransactionRepresentation after = mock( PhysicalTransactionRepresentation.class );
-        when( after.getLatestCommittedTxWhenStarted() ).thenReturn( 3L );
+                before, globalSession, localOperationIdBefore );
+
+        long timeAfter = 1002;
+        PhysicalTransactionRepresentation after = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        before.setHeader( null, 0, 0, timeAfter, 3, 0, 0 );
         ReplicatedTransaction txAfter = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                 after, globalSession, localOperationIdAfter );
 
@@ -131,41 +126,32 @@ public class ReplicatedTransactionStateMachineTest
         final AtomicReference<TransactionRepresentation> committedTxRepresentation = new AtomicReference<>();
         when( localCommitProcess.commit( any( TransactionToApply.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) ) )
-                .thenAnswer( new Answer<Long>()
-                {
-                    @Override
-                    public Long answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        committedTxRepresentation.set( invocation.getArgumentAt( 0,
-                                TransactionToApply.class ).transactionRepresentation() );
-                        return 4L;
-                    }
+                .thenAnswer( invocation -> {
+                    committedTxRepresentation.set( invocation.getArgumentAt( 0,
+                            TransactionToApply.class ).transactionRepresentation() );
+                    return 4L;
                 } );
         ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
-                sessionTracker, globalSession );
+                globalSession, null );
 
         // when
-        listener.onReplicated( txBefore ); // Just to get the Id
-        listener.onReplicated( new CoreServiceAssignment( LOCK_MANAGER, newLockManager, UUID.randomUUID() ) );
-        listener.onReplicated( txAfter );
+        listener.onReplicated( txBefore, 0 ); // Just to get the Id
+        listener.onReplicated( new NewLeaderBarrier(), 0 );
+        listener.onReplicated( txAfter, 0 );
 
         // then
         verify( localCommitProcess ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
                 eq( TransactionApplicationMode.EXTERNAL ) );
-        assertEquals( tx, committedTxRepresentation.get() );
+        assertEquals( timeBefore, committedTxRepresentation.get().getTimeStarted() );
         verifyNoMoreInteractions( localCommitProcess );
     }
 
-
     @Test
-    public void shouldFailFutureForTransactionCommittedUnderWrongLockManager() throws Exception
+    public void shouldFailFutureForTransactionCommittedUnderOldLeader() throws Exception
     {
         // given
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
         LocalOperationId localOperationIdBefore = new LocalOperationId( 0, 0 );
         LocalOperationId localOperationIdAfter = new LocalOperationId( 0, 1 );
-
-        CoreMember newLockManager = new CoreMember( address( "new:1" ), address( "new:2" ) );
 
         ReplicatedTransaction txBefore = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                  mock( PhysicalTransactionRepresentation.class ), globalSession, localOperationIdBefore
@@ -181,14 +167,14 @@ public class ReplicatedTransactionStateMachineTest
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) ) )
                 .thenReturn( 4L );
         ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
-                sessionTracker, globalSession );
+                globalSession, null );
 
         Future<Long> future = listener.getFutureTxId( localOperationIdAfter );
 
         // when
-        listener.onReplicated( txBefore ); // Just to get the Id
-        listener.onReplicated( new CoreServiceAssignment( LOCK_MANAGER, newLockManager, UUID.randomUUID() ) );
-        listener.onReplicated( txAfter );
+        listener.onReplicated( txBefore, 0 ); // Just to get the Id
+        listener.onReplicated( new NewLeaderBarrier(), 0 );
+        listener.onReplicated( txAfter, 0 );
 
         // then
         try
@@ -201,30 +187,4 @@ public class ReplicatedTransactionStateMachineTest
             assertThat( e.getCause().getMessage(), containsString( "different leader" ) );
         }
     }
-
-    @Test
-    public void shouldCommitTransactionWhichDoesNotNeedLockManager() throws Exception
-    {
-        // given
-        GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
-        LocalOperationId localOperationId = new LocalOperationId( 0, 0 );
-
-        CoreMember lockManager = new CoreMember( address( "old:1" ), address( "old:2" ) );
-
-        ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
-                mock( PhysicalTransactionRepresentation.class ), globalSession, localOperationId );
-
-        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
-                localCommitProcess, sessionTracker, globalSession );
-
-        // when
-        listener.onReplicated( new CoreServiceAssignment( LOCK_MANAGER, lockManager, UUID.randomUUID() ) );
-        listener.onReplicated( tx );
-
-        // then
-        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ),
-                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
-    }
-
 }

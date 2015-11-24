@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -100,7 +101,7 @@ public abstract class RaftLogContractTest
         assertThat( log.appendIndex(), is( -1L ) );
         assertThat( log.commitIndex(), is( -1L ) );
         assertThat( log.entryExists( 0 ), is( false ) );
-        verify( listener, never() ).onCommitted( any( ReplicatedContent.class ) );
+        verify( listener, never() ).onCommitted( any( ReplicatedContent.class ), anyLong() );
     }
 
     @Test
@@ -121,7 +122,7 @@ public abstract class RaftLogContractTest
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( 0L ) );
         assertThat( log.entryExists( 0 ), is( true ) );
-        verify( listener, times( 1 ) ).onCommitted( eq( logEntry.content() ) );
+        verify( listener, times( 1 ) ).onCommitted( eq( logEntry.content() ), anyLong() );
     }
 
     @Test

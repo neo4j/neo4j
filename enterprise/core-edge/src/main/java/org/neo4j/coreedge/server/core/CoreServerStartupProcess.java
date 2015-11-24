@@ -24,16 +24,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -44,17 +43,19 @@ public class CoreServerStartupProcess
 
     public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
                                                  ReplicatedIdGeneratorFactory idGeneratorFactory,
-                                                 RaftInstance<CoreMember> raft, RaftServer<CoreMember> raftServer,
+                                                 RaftInstance<CoreMember> raft, RaftLogReplay raftLogReplay, RaftServer<CoreMember> raftServer,
                                                  CatchupServer catchupServer,
                                                  DelayedRenewableTimeoutService raftTimeoutService,
                                                  MembershipWaiter<CoreMember> membershipWaiter,
-                                                 long joinCatchupTimeout, DeleteStoreOnStartUp deleteStoreOnStartUp,
-                                                 RaftLogReplay raftLogReplay )
+                                                 long joinCatchupTimeout,
+                                                 RecoverTransactionLogState recoverTransactionLogState,
+                                                 Lifecycle tokenLife )
     {
         LifeSupport services = new LifeSupport();
-        services.add( deleteStoreOnStartUp );
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
+        services.add( recoverTransactionLogState );
+        services.add( tokenLife );
         services.add( raftLogReplay );
         services.add( raftServer );
         services.add( catchupServer );

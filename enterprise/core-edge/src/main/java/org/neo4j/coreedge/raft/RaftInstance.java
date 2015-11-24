@@ -95,7 +95,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager<MEMBER> logShipping;
-    private Set<Listener<LeadershipChange<MEMBER>>> leadershipChangeListeners = new HashSet<>();
 
     public RaftInstance( MEMBER myself, TermStore termStore, VoteStore<MEMBER> voteStore, RaftLog entryLog,
                          long electionTimeout, long heartbeatInterval, RenewableTimeoutService renewableTimeoutService,
@@ -200,23 +199,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return state;
     }
 
-    /**
-     * These listeners will be notified from within the raft, so they should be short, efficient and
-     * not have dependencies on raft. Any substantial work must be scheduled on a some other thread.
-     */
-    public void registerLeadershipChangeListener( Listener<LeadershipChange<MEMBER>> listener )
-    {
-        leadershipChangeListeners.add( listener );
-    }
-
-    private void notifyListenersOnLeadershipChange( MEMBER newLeader )
-    {
-        for ( Listener<LeadershipChange<MEMBER>> listener : leadershipChangeListeners )
-        {
-            listener.receive( new LeadershipChange<>( newLeader ) );
-        }
-    }
-
     protected void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
         // Save interesting pre-state
@@ -241,12 +223,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         // Update state
         state.update( outcome );
-
-        // Act after updating state
-        if ( oldLeader != state.leader() )
-        {
-            notifyListenersOnLeadershipChange( state.leader() );
-        }
     }
 
     public synchronized void handle( Serializable incomingMessage )

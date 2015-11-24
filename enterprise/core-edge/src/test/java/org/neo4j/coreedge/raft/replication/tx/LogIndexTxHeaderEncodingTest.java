@@ -17,30 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.raft.replication.tx;
 
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
+import org.junit.Test;
 
-public class RaftLogReplay extends LifecycleAdapter
+import static org.junit.Assert.*;
+
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
+
+public class LogIndexTxHeaderEncodingTest
 {
-    private final RaftLog raftLog;
-    private final Log log;
-
-    public RaftLogReplay( RaftLog raftLog, LogProvider logProvider )
+    @Test
+    public void shouldEncodeIndexAsBytes() throws Exception
     {
-        this.raftLog = raftLog;
-        this.log = logProvider.getLog( getClass() );
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        long start = System.currentTimeMillis();
-        raftLog.replay();
-
-        log.info( "Replay done, took %d ms", System.currentTimeMillis() - start );
+        long index = 123_456_789_012_567L;
+        byte[] bytes = encodeLogIndexAsTxHeader( index );
+        assertEquals( index, decodeLogIndexFromTxHeader( bytes ) );
     }
 }

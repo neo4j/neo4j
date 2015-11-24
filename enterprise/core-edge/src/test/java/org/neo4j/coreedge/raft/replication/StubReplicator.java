@@ -31,7 +31,7 @@ public class StubReplicator implements Replicator
     {
         for ( ReplicatedContentListener listener : listeners )
         {
-            listener.onReplicated( content );
+            listener.onReplicated( content, 0 );
         }
     }
 

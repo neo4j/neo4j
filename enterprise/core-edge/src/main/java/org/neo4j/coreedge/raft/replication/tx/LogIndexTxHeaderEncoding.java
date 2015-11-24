@@ -17,30 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.raft.replication.tx;
 
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-
-public class RaftLogReplay extends LifecycleAdapter
+/**
+ * Log index is encoded in the header of transactions in the transaction log.
+ */
+public class LogIndexTxHeaderEncoding
 {
-    private final RaftLog raftLog;
-    private final Log log;
-
-    public RaftLogReplay( RaftLog raftLog, LogProvider logProvider )
+    public static byte[] encodeLogIndexAsTxHeader( long logIndex )
     {
-        this.raftLog = raftLog;
-        this.log = logProvider.getLog( getClass() );
+        byte[] b = new byte[Long.BYTES];
+        for ( int i = Long.BYTES - 1; i > 0; i-- )
+        {
+            b[i] = (byte) logIndex;
+            logIndex >>>= Byte.SIZE;
+        }
+        b[0] = (byte) logIndex;
+        return b;
     }
 
-    @Override
-    public void start() throws Throwable
+    public static long decodeLogIndexFromTxHeader( byte[] bytes )
     {
-        long start = System.currentTimeMillis();
-        raftLog.replay();
-
-        log.info( "Replay done, took %d ms", System.currentTimeMillis() - start );
+        long logIndex = 0;
+        for ( int i = 0; i < Long.BYTES; i++ )
+        {
+            logIndex <<= Byte.SIZE;
+            logIndex ^= bytes[i] & 0xFF;
+        }
+        return logIndex;
     }
 }

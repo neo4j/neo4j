@@ -146,19 +146,19 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public void replay() throws Throwable
     {
-        int i = 0;
-        for ( ; i <= commitIndex; i++ )
+        int index = 0;
+        for ( ; index <= commitIndex; index++ )
         {
-            ReplicatedContent content = readEntryContent( i );
+            ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
                 listener.onAppended( content );
-                listener.onCommitted( content );
+                listener.onCommitted( content, index );
             }
         }
-        for ( ; i <= appendIndex; i++ )
+        for ( ; index <= appendIndex; index++ )
         {
-            ReplicatedContent content = readEntryContent( i );
+            ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
                 listener.onAppended( content );
@@ -249,16 +249,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             actualNewCommitIndex = appendIndex;
         }
-
-        for ( long index = this.commitIndex + 1; index <= actualNewCommitIndex; index++ )
-        {
-            for ( Listener listener : listeners )
-            {
-                ReplicatedContent content = readEntryContent( index );
-                listener.onCommitted( content );
-            }
-            this.commitIndex = actualNewCommitIndex;
-        }
         // INVARIANT: If newCommitIndex was greater than appendIndex, commitIndex is equal to appendIndex
         try
         {
@@ -267,6 +257,16 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         catch ( IOException e )
         {
             throw new RaftStorageException( "Failed to commit", e );
+        }
+
+        while ( commitIndex < actualNewCommitIndex )
+        {
+            commitIndex++;
+            for ( Listener listener : listeners )
+            {
+                ReplicatedContent content = readEntryContent( commitIndex );
+                listener.onCommitted( content, commitIndex );
+            }
         }
     }
 

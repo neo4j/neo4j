@@ -39,19 +39,19 @@ public class InMemoryRaftLog implements RaftLog
     @Override
     public void replay() throws Throwable
     {
-        int i = 0;
-        for ( ; i <= commitIndex; i++ )
+        int index = 0;
+        for ( ; index <= commitIndex; index++ )
         {
-            ReplicatedContent content = readEntryContent( i );
+            ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
                 listener.onAppended( content );
-                listener.onCommitted( content );
+                listener.onCommitted( content, index );
             }
         }
-        for ( ; i <= appendIndex; i++ )
+        for ( ; index <= appendIndex; index++ )
         {
-            ReplicatedContent content = readEntryContent( i );
+            ReplicatedContent content = readEntryContent( index );
             for ( Listener listener : listeners )
             {
                 listener.onAppended( content );
@@ -101,7 +101,7 @@ public class InMemoryRaftLog implements RaftLog
             RaftLogEntry logEntry = raftLog.get( nextCommitIndex );
             for ( Listener listener : listeners )
             {
-                listener.onCommitted( logEntry.content() );
+                listener.onCommitted( logEntry.content(), nextCommitIndex );
             }
             this.commitIndex = nextCommitIndex;
         }

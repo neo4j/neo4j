@@ -21,16 +21,18 @@ package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
 import org.neo4j.concurrent.CompletableFuture;
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
+import org.neo4j.coreedge.raft.locks.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -38,23 +40,26 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.Dependencies;
 
 public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedContentListener
 {
-    private final TransactionCommitProcess localCommitProcess;
     private final GlobalSessionTracker sessionTracker;
     private final GlobalSession myGlobalSession;
-
+    private final Dependencies dependencies;
+    private final TransactionCommitProcess commitProcess;
     private final Map<LocalOperationId, FutureTxId> outstanding = new ConcurrentHashMap<>();
+    private long lastCommittedIndex = -1;
     private long lastCommittedTxId; // Maintains the last committed tx id, used to set the next field
-    private long lastTxIdForPreviousAssignment; // Maintains the last txid committed under the previous service assignment
+    private long lastTxIdForPreviousLeaderReign; // Maintains the last txid committed under the previous service assignment
 
-    public ReplicatedTransactionStateMachine( TransactionCommitProcess localCommitProcess, GlobalSessionTracker
-            sessionTracker, GlobalSession myGlobalSession )
+    public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
+                                              GlobalSession myGlobalSession, Dependencies dependencies )
     {
-        this.localCommitProcess = localCommitProcess;
-        this.sessionTracker = sessionTracker;
+        this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
+        this.dependencies = dependencies;
+        this.sessionTracker = new GlobalSessionTracker();
     }
 
     public Future<Long> getFutureTxId( LocalOperationId localOperationId )
@@ -65,65 +70,54 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     }
 
     @Override
-    public void onReplicated( ReplicatedContent content )
+    public synchronized void onReplicated( ReplicatedContent content, long logIndex )
     {
         if ( content instanceof ReplicatedTransaction )
         {
-            handleTransaction( (ReplicatedTransaction) content );
+            handleTransaction( (ReplicatedTransaction) content, logIndex );
         }
-        else if ( content instanceof CoreServiceAssignment )
+        if ( content instanceof NewLeaderBarrier )
         {
-            // This essentially signifies a leader switch. We should properly name the content class
-            lastTxIdForPreviousAssignment = lastCommittedTxId;
+            lastTxIdForPreviousLeaderReign = lastCommittedTxId;
         }
     }
 
-    private void handleTransaction( ReplicatedTransaction replicatedTransaction )
+    private void handleTransaction( ReplicatedTransaction replicatedTx, long logIndex )
     {
+        if ( !sessionTracker.validateAndTrackOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() )
+                || logIndex <= lastCommittedIndex )
+        {
+            return;
+        }
+
         try
         {
-            synchronized ( this )
+            byte[] extraHeader = LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader( logIndex );
+            TransactionRepresentation tx = ReplicatedTransactionFactory.extractTransactionRepresentation(
+                    replicatedTx, extraHeader );
+
+            // A missing future means the transaction does not belong to this instance
+            Optional<CompletableFuture<Long>> future = replicatedTx.globalSession().equals( myGlobalSession ) ?
+                    Optional.ofNullable( outstanding.remove( replicatedTx.localOperationId() ) ) :
+                    Optional.<CompletableFuture<Long>>empty();
+
+            if ( tx.getLatestCommittedTxWhenStarted() < lastTxIdForPreviousLeaderReign )
             {
+                future.ifPresent( txFuture -> txFuture.completeExceptionally( new TransientTransactionFailureException(
+                        "Attempt to commit transaction that was started on a different leader term. " +
+                                "Please retry the transaction." ) ) );
+                return;
+            }
 
-                if ( sessionTracker.validateAndTrackOperation( replicatedTransaction.globalSession(),
-                        replicatedTransaction.localOperationId() ) )
-                {
-                    TransactionRepresentation tx = ReplicatedTransactionFactory.extractTransactionRepresentation(
-                            replicatedTransaction );
-                    boolean shouldReject = false;
-                    if ( tx.getLatestCommittedTxWhenStarted() < lastTxIdForPreviousAssignment )
-                    {
-                        // This means the transaction started before the last transaction for the previous term. Reject.
-                        shouldReject = true;
-                    }
-
-                    long txId = -1;
-                    if ( !shouldReject )
-                    {
-                        txId = localCommitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
-                                TransactionApplicationMode.EXTERNAL );
-                        lastCommittedTxId = txId;
-                    }
-
-                    if ( replicatedTransaction.globalSession().equals( myGlobalSession ) )
-                    {
-                        CompletableFuture<Long> future = outstanding.remove( replicatedTransaction.localOperationId() );
-                        if ( future != null )
-                        {
-                            if ( shouldReject )
-                            {
-                                future.completeExceptionally( new TransientTransactionFailureException(
-                                        "Attempt to commit transaction that was started on a different leader term. " +
-                                                "Please retry the transaction." ) );
-                            }
-                            else
-                            {
-                                future.complete( txId );
-                            }
-                        }
-                    }
-                }
-
+            try
+            {
+               lastCommittedTxId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
+                        TransactionApplicationMode.EXTERNAL );
+                future.ifPresent( txFuture -> txFuture.complete( lastCommittedTxId ) );
+            }
+            catch ( TransientFailureException e )
+            {
+                future.ifPresent( txFuture -> txFuture.completeExceptionally( e ) );
             }
         }
         catch ( TransactionFailureException | IOException e )
@@ -132,6 +126,11 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                     "committed to the RAFT log. This server cannot process later transactions and needs to be " +
                     "restarted once the underlying cause has been addressed.", e );
         }
+    }
+
+    public void setLastCommittedIndex( long lastCommittedIndex )
+    {
+        this.lastCommittedIndex = lastCommittedIndex;
     }
 
     private class FutureTxId extends CompletableFuture<Long>
@@ -154,4 +153,5 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
             return true;
         }
     }
+
 }

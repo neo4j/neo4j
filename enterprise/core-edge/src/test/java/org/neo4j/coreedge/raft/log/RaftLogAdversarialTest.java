@@ -47,7 +47,7 @@ public class RaftLogAdversarialTest
     }
 
     @Test
-    public void shouldNotUpdateCommitIndexIfConsumerFails() throws Exception
+    public void shouldUpdateCommitIndexEvenIfConsumerFails() throws Exception
     {
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         RaftLog log = createRaftLog( fileSystem );
@@ -59,7 +59,7 @@ public class RaftLogAdversarialTest
             }
 
             @Override
-            public void onCommitted( ReplicatedContent raftableContent )
+            public void onCommitted( ReplicatedContent raftableContent, long index )
             {
                 throw new RuntimeException( "Fail to accept the content" );
             }
@@ -87,7 +87,7 @@ public class RaftLogAdversarialTest
             public void verifyLog( ReadableRaftLog log )
             {
                 assertThat( log.appendIndex(), is( 0L ) );
-                assertThat( log.commitIndex(), is( -1L ) );
+                assertThat( log.commitIndex(), is( 0L ) );
                 assertThat( log.entryExists( 0 ), is( true ) );
             }
         } );
