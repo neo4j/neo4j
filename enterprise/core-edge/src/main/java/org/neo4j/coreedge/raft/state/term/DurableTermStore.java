@@ -24,19 +24,23 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class DurableTermStore extends LifecycleAdapter implements TermStore
 {
     public static final int TERM_BYTES = 8;
 
     private final StoreChannel channel;
+    private final RaftTermMonitor termMonitor;
     private long term;
 
-    public DurableTermStore( FileSystemAbstraction fileSystem, File directory )
+    public DurableTermStore( FileSystemAbstraction fileSystem, File directory, Monitors monitors )
     {
+        this.termMonitor = monitors.newMonitor( RaftTermMonitor.class, getClass(), TermStore.TERM_TAG );
         try
         {
             channel = fileSystem.open( new File( directory, "term.state" ), "rw" );
@@ -77,6 +81,8 @@ public class DurableTermStore extends LifecycleAdapter implements TermStore
 
             channel.writeAll( buffer, 0 );
             channel.force( false );
+
+            termMonitor.term( newTerm );
         }
         catch ( IOException e )
         {

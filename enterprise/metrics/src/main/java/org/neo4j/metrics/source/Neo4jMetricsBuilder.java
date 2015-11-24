@@ -171,6 +171,13 @@ public class Neo4jMetricsBuilder
             result = true;
         }
 
+        if ( config.get( MetricsSettings.coreEdgeEnabled ) )
+        {
+            life.add( new CoreEdgeMetrics( deps.monitors(), registry ) );
+            result = true;
+        }
+
+
         return result;
     }
 

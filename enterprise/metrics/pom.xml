@@ -61,11 +61,13 @@
                   <arg value="org.neo4j.metrics.source.db.TransactionMetrics" />
                   <arg value="org.neo4j.metrics.source.db.CypherMetrics" />
                   <arg value="org.neo4j.metrics.source.db.LogRotationMetrics" />
-
                   <arg value="org.neo4j.metrics.source.cluster.NetworkMetrics" />
                   <arg value="org.neo4j.metrics.source.cluster.ClusterMetrics" />
+                  <arg value="org.neo4j.metrics.source.CoreEdgeMetrics" />
 
+                  <!-- keep this one last as it's a bit special compared to the others -->
                   <arg value="org.neo4j.metrics.source.jvm.JvmMetrics" />
+
                 </java>
               </target>
             </configuration>
@@ -90,6 +92,14 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-core-edge</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
 
     <dependency>
       <groupId>org.neo4j</groupId>

@@ -27,6 +27,7 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.state.term.DurableTermStore;
 import org.neo4j.coreedge.raft.state.term.TermStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,7 +37,7 @@ public class TermStoreDurabilityTest
     {
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
-        return new DurableTermStore( fileSystem, directory );
+        return new DurableTermStore( fileSystem, directory, new Monitors() );
     }
 
     @Test
