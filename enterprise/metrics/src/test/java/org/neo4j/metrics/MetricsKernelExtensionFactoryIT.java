@@ -35,7 +35,6 @@ import java.util.UUID;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.TargetDirectory;
@@ -60,10 +59,10 @@ public class MetricsKernelExtensionFactoryIT
     @Before
     public void setup() throws IOException
     {
-        String dbPath = folder.directory( "data" ).getAbsolutePath();
+        File dbPath = folder.directory( "data" );
         outputFile = folder.file( "metrics.csv" );
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbPath ).
-                setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).
+                setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).
                 setConfig( csvEnabled, Settings.TRUE ).
                 setConfig( csvFile, single.name() ).
                 setConfig( csvPath, outputFile.getAbsolutePath() ).newGraphDatabase();
