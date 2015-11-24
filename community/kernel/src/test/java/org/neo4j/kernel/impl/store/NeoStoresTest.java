@@ -518,7 +518,7 @@ public class NeoStoresTest
         neoStores = sf.openAllNeoStores();
 
         // then the value should have been stored
-        assertEquals( 10l, metaDataStore.getLatestConstraintIntroducingTx() );
+        assertEquals( 10l, neoStores.getMetaDataStore().getLatestConstraintIntroducingTx() );
         neoStores.close();
     }
 

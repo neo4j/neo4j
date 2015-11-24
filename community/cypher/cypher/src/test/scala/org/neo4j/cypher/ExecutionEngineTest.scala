@@ -32,7 +32,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.TopLevelTransaction
+import org.neo4j.kernel.{NeoStoreDataSource, TopLevelTransaction}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
 
 import scala.collection.JavaConverters._
@@ -1025,6 +1025,26 @@ order by a.COL1""")
     //THEN
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
+    ))
+  }
+
+  test("replanning should happen after data source restart") {
+    val planningListener = PlanningListener()
+    kernelMonitors.addMonitorListener(planningListener)
+
+    val result1 = eengine.execute("match (n) return n").toList
+    result1 shouldBe empty
+
+    val ds = graph.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
+    ds.stop()
+    ds.start()
+
+    val result2 = eengine.execute("match (n) return n").toList
+    result2 shouldBe empty
+
+    planningListener.planRequests.toSeq should equal(Seq(
+      s"match (n) return n",
+      s"match (n) return n"
     ))
   }
 

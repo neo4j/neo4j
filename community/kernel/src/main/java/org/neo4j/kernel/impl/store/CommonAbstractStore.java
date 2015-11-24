@@ -108,7 +108,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             {
                 try
                 {
-                    storeFile.close();
+                    closeStoreFile();
                 }
                 catch ( IOException failureToClose )
                 {
@@ -608,6 +608,19 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /**
+     * Checks if this store is closed and throws exception if it is.
+     *
+     * @throws IllegalStateException if the store is closed
+     */
+    protected void assertNotClosed()
+    {
+        if ( storeFile == null )
+        {
+            throw new IllegalStateException( this + " for file '" + storageFileName + "' is closed" );
+        }
+    }
+
+    /**
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
@@ -619,7 +632,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         {
             try
             {
-                storeFile.close();
+                closeStoreFile();
             }
             catch ( IOException e )
             {
@@ -629,17 +642,32 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         try
         {
+            closeStoreFile();
+        }
+        catch ( IOException | IllegalStateException e )
+        {
+            throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
+        }
+    }
+
+    private void closeStoreFile() throws IOException
+    {
+        try
+        {
             /*
              * Note: the closing ordering here is important!
              * It is the case since we wand to mark the id generator as closed cleanly ONLY IF
              * also the store file is cleanly shutdown.
              */
             storeFile.close();
-            idGenerator.close();
+            if ( idGenerator != null )
+            {
+                idGenerator.close();
+            }
         }
-        catch ( IOException | IllegalStateException e )
+        finally
         {
-            throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
+            storeFile = null;
         }
     }
 
@@ -703,7 +731,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * TODO this could, and probably should, replace all override-and-do-the-same-thing-to-all-my-managed-stores
      * methods like:
      * {@link #makeStoreOk()},
-     * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
+     * {@link #close()} (where that method could be deleted all together and do a visit in {@link #close()}),
      * {@link #logIdUsage(Logger)},
      * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
@@ -714,7 +742,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     }
 
     /**
-     * Called from the part of the code that starts the {@link NeoStore} and friends, together with any
+     * Called from the part of the code that starts the {@link MetaDataStore} and friends, together with any
      * existing transaction log, seeing that there are transactions to recover. Now, this shouldn't be
      * needed because the state of the id generator _should_ reflect this fact, but turns out that,
      * given HA and the nature of the .id files being like orphans to the rest of the store, we just

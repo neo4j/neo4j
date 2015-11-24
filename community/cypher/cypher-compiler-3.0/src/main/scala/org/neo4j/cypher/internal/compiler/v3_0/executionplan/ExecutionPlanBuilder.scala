@@ -118,7 +118,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
     new ExecutionPlan {
       val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
 
-      def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+      def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastCommittedTxId, statistics)
 
       def run(queryContext: QueryContext, kernelStatement: KernelStatement,
               executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {

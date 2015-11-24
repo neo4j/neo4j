@@ -44,7 +44,6 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
@@ -322,6 +321,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getUpgradeTime()
     {
+        assertNotClosed();
         checkInitialized( upgradeTimeField );
         return upgradeTimeField;
     }
@@ -342,6 +342,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getCreationTime()
     {
+        assertNotClosed();
         checkInitialized( creationTimeField );
         return creationTimeField;
     }
@@ -354,6 +355,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getRandomNumber()
     {
+        assertNotClosed();
         checkInitialized( randomNumberField );
         return randomNumberField;
     }
@@ -367,6 +369,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public long getCurrentLogVersion()
     {
+        assertNotClosed();
         checkInitialized( versionField );
         return versionField;
     }
@@ -413,6 +416,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getStoreVersion()
     {
+        assertNotClosed();
         checkInitialized( storeVersionField );
         return storeVersionField;
     }
@@ -425,6 +429,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getGraphNextProp()
     {
+        assertNotClosed();
         checkInitialized( graphNextPropField );
         return graphNextPropField;
     }
@@ -437,6 +442,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     public long getLatestConstraintIntroducingTx()
     {
+        assertNotClosed();
         checkInitialized( latestConstraintIntroducingTxField );
         return latestConstraintIntroducingTxField;
     }
@@ -626,6 +632,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public long nextCommittingTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastCommittingTxField.incrementAndGet();
     }
@@ -633,6 +640,8 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public void transactionCommitted( long transactionId, long checksum )
     {
+        assertNotClosed();
+        checkInitialized( lastCommittingTxField.get() );
         if ( highestCommittedTransaction.offer( transactionId, checksum ) )
         {
             // We need to synchronize here in order to guarantee that the two field are written consistently
@@ -656,6 +665,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public long getLastCommittedTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get().transactionId();
     }
@@ -663,6 +673,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public TransactionId getLastCommittedTransaction()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return highestCommittedTransaction.get();
     }
@@ -670,6 +681,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public TransactionId getUpgradeTransaction()
     {
+        assertNotClosed();
         checkInitialized( upgradeTxChecksumField );
         return new TransactionId( upgradeTxIdField, upgradeTxChecksumField );
     }
@@ -677,6 +689,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public long getLastClosedTransactionId()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastClosedTx.getHighestGapFreeNumber();
     }
@@ -684,11 +697,16 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public long[] getLastClosedTransaction()
     {
+        assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
         return lastClosedTx.get();
     }
 
-    // Ensures that all fields are read from the store, by checking the initial value of the field in question
+    /**
+     * Ensures that all fields are read from the store, by checking the initial value of the field in question
+     *
+     * @param field the value
+     */
     private void checkInitialized( long field )
     {
         if ( field == FIELD_NOT_INITIALIZED )
@@ -701,6 +719,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
     {
+        assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
         setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );

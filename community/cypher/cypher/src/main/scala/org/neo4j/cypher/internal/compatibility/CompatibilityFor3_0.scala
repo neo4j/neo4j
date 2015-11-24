@@ -198,8 +198,8 @@ trait CompatibilityFor3_0 {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastTxId: () => Long, statement: Statement) =
-      inner.isStale(lastTxId, TransactionBoundGraphStatistics(statement))
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement): Boolean =
+      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(statement))
   }
 }
 
