@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_0.CypherCompiler
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
-import org.neo4j.cypher.internal.compiler.v2_2.{ProfileMode, NormalMode, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0, TransactionBoundQueryContext => QueryContext_v2_0}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -74,6 +74,6 @@ case class CompatibilityFor2_0(graph: GraphDatabaseService, queryCacheSize: Int,
 
     def isPeriodicCommit = false
 
-    def isStale(lastTxId: () => Long, statement: Statement): Boolean = false
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement): Boolean = false
   }
 }

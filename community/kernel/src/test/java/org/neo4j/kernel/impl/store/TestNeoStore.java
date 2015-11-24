@@ -82,7 +82,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -1191,8 +1190,10 @@ public class TestNeoStore
             channel.write( ByteBuffer.wrap( trailer ) );
         }
 
+        neoStore = factory.newNeoStore( false );
         assertNotEquals( 10, neoStore.getUpgradeTransaction().transactionId() );
         assertNotEquals( 11, neoStore.getUpgradeTime() );
+        neoStore.close();
 
         NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_ID, 10 );
         NeoStore.setRecord( fileSystem, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11 );

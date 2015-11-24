@@ -21,17 +21,16 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
 
@@ -47,8 +46,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
-  private val lastTxId: () => Long =
-      graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
+  private val lastCommittedTxId = LastCommittedTxIdProvider(graphAPI)
   protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler(logger)
 
@@ -154,7 +152,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
             parsedQuery.plan(kernelStatement)
           })
         }.flatMap { case (candidatePlan, params) =>
-          if (!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
+          if (!touched && candidatePlan.isStale(lastCommittedTxId, kernelStatement)) {
             cacheAccessor.remove(cache)(cacheKey)
             None
           } else {

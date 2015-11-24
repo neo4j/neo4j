@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, HintException,  _}
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, HintException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -181,8 +181,8 @@ trait CompatibilityFor2_2 {
 
     def isPeriodicCommit = inner.isPeriodicCommit
 
-    def isStale(lastTxId: () => Long, statement: Statement) =
-      inner.isStale(lastTxId, TransactionBoundGraphStatistics(statement))
+    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement) =
+      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(statement))
   }
 }
 
