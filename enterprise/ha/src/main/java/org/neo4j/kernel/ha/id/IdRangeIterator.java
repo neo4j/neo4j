@@ -27,11 +27,11 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 
 public class IdRangeIterator
 {
-    static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
+    public static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
             new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
             {
                 @Override
-                long next()
+                public long next()
                 {
                     return VALUE_REPRESENTING_NULL;
                 }
@@ -50,7 +50,7 @@ public class IdRangeIterator
         this.length = idRange.getRangeLength();
     }
 
-    long next()
+    public long next()
     {
         try
         {

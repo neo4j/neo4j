@@ -38,6 +38,7 @@ Apache Software License, Version 2.0
   ExplorerCanvas
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
+  hazelcast-all
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
