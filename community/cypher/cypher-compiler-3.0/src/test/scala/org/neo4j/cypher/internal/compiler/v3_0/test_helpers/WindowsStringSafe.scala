@@ -25,7 +25,7 @@ import org.scalactic.Equality
 object WindowsStringSafe extends Equality[String] {
   override def areEqual(a: String, b: Any) = b match {
     case b: String =>
-      a.replaceAll("\n\r", "\n") equals b.replaceAll("\n\r", "\n")
+      a.replaceAll("\r\n", "\n") equals b.replaceAll("\r\n", "\n")
     case _ => false
   }
 }
