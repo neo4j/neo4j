@@ -19,18 +19,16 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.ExtendedExecutionResult
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.query.QuerySession
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
-final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+case class LastCommittedTxIdProvider(db: GraphDatabaseService) extends (() => Long) {
 
-trait ExecutionPlan {
-  def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
+  private val resolver = db.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
 
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, statement: Statement): Boolean
+  override def apply(): Long = {
+    val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])
+    txIdStore.getLastCommittedTransactionId
+  }
 }

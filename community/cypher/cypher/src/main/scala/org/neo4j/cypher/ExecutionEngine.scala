@@ -22,11 +22,9 @@ package org.neo4j.cypher
 import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.using
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
-import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.internal.tracing.{TimingCompilationTracer, CompilationTracer}
+import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
@@ -34,7 +32,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.{GraphDatabaseAPI, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
@@ -50,8 +47,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
-  private val lastTxId: () => Long =
-      graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
+  private val lastCommittedTxId = LastCommittedTxIdProvider(graphAPI)
   protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   private val compilationTracer: CompilationTracer = {
     if(optGraphSetting(graph, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
@@ -167,7 +163,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
               parsedQuery.plan(kernelStatement, phaseTracer)
             })
           }.flatMap { case (candidatePlan, params) =>
-            if (!touched && candidatePlan.isStale(lastTxId, kernelStatement)) {
+            if (!touched && candidatePlan.isStale(lastCommittedTxId, kernelStatement)) {
               cacheAccessor.remove(cache)(cacheKey)
               None
             } else {
