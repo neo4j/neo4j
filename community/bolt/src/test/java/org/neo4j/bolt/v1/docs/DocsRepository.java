@@ -55,7 +55,7 @@ public class DocsRepository
     }
 
     /**
-     * Read exerpts from the documentation and parse them into a specified representation.
+     * Read excerpts from the documentation and parse them into a specified representation.
      *
      * @param fileName is a file name relative to the 'docs' dir of the v1-docs module,
      * for instance 'dev/index.asciidoc'

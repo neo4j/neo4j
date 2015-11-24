@@ -29,7 +29,7 @@ The default port for WebSocket connections is *7688*.
 IMPORTANT: If TLS is enabled, and no certificate has been specified, Neo4j will automatically generate a self-signed
  TLS certificate. It is vital that your database driver not simply accept any certificate without validating it. If
  you do not verify the certificate it is very simple to bypass the encryption. You should either ensure you have a
- valid signed certificate installed with Neo4j or that your implements +trust on first use+.
+ valid signed certificate installed with Neo4j or that your application implements +trust on first use+.
 
 [[bolt-handshake]]
 === Handshake
@@ -78,8 +78,7 @@ Server: <disconnect>
 The transport protocol uses a framing layer to wrap messages.
 
 Each message is transferred as one or more `chunks` of data.
-Each chunk starts with a two-byte header, an unsigned big-endian 16-bit integer, representing the size of the chunk.
-The header is not counted towards this size.
+Each chunk starts with a two-byte header, an unsigned big-endian 16-bit integer, representing the size of the chunk not including the header.
 A message can be divided across multiple chunks, allowing client and server alike to transfer large messages without having to determine the length of the entire message in advance.
 
 Each message ends with two bytes with the value `00 00`, these are not counted towards the chunk length.

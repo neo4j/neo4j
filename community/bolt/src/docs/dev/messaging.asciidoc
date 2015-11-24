@@ -158,7 +158,7 @@ If an unacknowledged failure is pending from a previous exchange, the server wil
 ----
 Value: DISCARD_ALL
 
-B0 7E
+B0 2F
 ----
 
 ==== PULL_ALL

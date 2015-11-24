@@ -139,7 +139,7 @@ public class DocSerialization
 
                 if ( type.equals( "DISCARD_ALL" ) )
                 {
-                    writer.handleIgnoredMessage();
+                    writer.handleDiscardAllMessage();
                 }
                 else if ( type.equals( "PULL_ALL" ) )
                 {

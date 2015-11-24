@@ -444,7 +444,7 @@ Server: SUCCESS {
 === Accessing notifications
 When Neo4j executes a statement it may include notifications for the user.
 These notifications can be warnings about problematic statements or other valuable information for a client.
-Unlike failures or errors, notifications do not affect the execution of a statement.
+Notifications are only included when using `EXPLAIN`.
 
 .Notifications
 [source,bolt_exchange]
