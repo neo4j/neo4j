@@ -27,14 +27,13 @@ import org.junit.Test;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.SocketTransportHandler;
+import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -102,14 +101,7 @@ public class SocketTransportHandlerTest
     private SocketTransportHandler.ProtocolChooser protocolChooser( final Session session )
     {
         PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( BoltProtocolV1.VERSION, new Function<Channel,BoltProtocol>()
-        {
-            @Override
-            public BoltProtocol apply( Channel channel )
-            {
-                return new BoltProtocolV1( NullLogService.getInstance(), session, channel, new UsageData() );
-            }
-        } );
+        availableVersions.put( BoltProtocolV1.VERSION, channel -> new BoltProtocolV1( NullLogService.getInstance(), session, channel ) );
 
         return new SocketTransportHandler.ProtocolChooser( availableVersions );
     }
