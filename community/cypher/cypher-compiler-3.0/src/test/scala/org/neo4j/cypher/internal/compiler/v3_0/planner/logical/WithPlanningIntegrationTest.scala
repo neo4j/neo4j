@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, SignedDecimalIntegerLiteral, UnsignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{AllNodesScan, Projection, Limit}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{AllNodesScan, Limit, Projection}
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+  implicit val windowsSafe = WindowsStringSafe
+
   test("should build plans for simple WITH that adds a constant to the rows") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`").plan
     val expected =
