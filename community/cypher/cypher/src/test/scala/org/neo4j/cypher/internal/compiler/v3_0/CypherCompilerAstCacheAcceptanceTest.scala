@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
@@ -77,7 +78,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     }
   }
 
-  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.cypher_min_replan_interval.name() -> "0")
+  override def databaseConfig(): Map[Setting[_],String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   test("should monitor cache misses") {
     val counter = new CacheCounter()

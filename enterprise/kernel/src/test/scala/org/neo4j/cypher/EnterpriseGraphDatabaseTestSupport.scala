@@ -27,22 +27,12 @@ import org.neo4j.graphdb.EnterpriseGraphDatabase
 import org.neo4j.graphdb.factory.{GraphDatabaseFactoryState, GraphDatabaseSettings}
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 trait EnterpriseGraphDatabaseTestSupport extends GraphDatabaseTestSupport {
   self: CypherFunSuite =>
 
-  var dir: Path = null
-
-  override protected def createGraphDatabase(): GraphDatabaseAPI with Snitch = {
-    val config = new util.HashMap[String, String]()
-    config.put(GraphDatabaseSettings.pagecache_memory.name, "8M")
-    dir = Files.createTempDirectory(getClass.getSimpleName)
-    val state = new GraphDatabaseFactoryState()
-    new EnterpriseGraphDatabase(dir.toFile, config, state.databaseDependencies()) with Snitch
-  }
-
-  override protected def stopTest() {
-    super.stopTest()
-    FileUtils.deletePathRecursively(dir)
+  override protected def createGraphDatabase(): GraphDatabaseAPI = {
+    new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 }

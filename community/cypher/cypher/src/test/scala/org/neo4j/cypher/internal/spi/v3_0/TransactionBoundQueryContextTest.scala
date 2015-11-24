@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
+import java.lang.Boolean
 import java.net.URL
 
 import org.mockito.Mockito._
@@ -26,23 +27,25 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
 
 import scala.collection.JavaConverters._
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
-  var graph: ImpermanentGraphDatabase = null
+  var graph: GraphDatabaseAPI = null
   var outerTx: Transaction = null
   var statement: Statement = null
 
   override def beforeEach() {
     super.beforeEach()
-    graph = new ImpermanentGraphDatabase
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabase().asInstanceOf[GraphDatabaseAPI]
     outerTx = mock[Transaction]
     statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null)
   }
@@ -114,13 +117,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal (Left("loading resources via protocol 'jar' is not permitted"))
 
     tx.success()
-    tx.finish()
+    tx.close()
   }
 
   test ("should deny file URLs when not allowed by config") {
     // GIVEN
     graph.shutdown()
-    graph = new ImpermanentGraphDatabase(Map(GraphDatabaseSettings.allow_file_urls.name() -> "false").asJava)
+    val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava).asInstanceOf[GraphDatabaseAPI]
     val tx = graph.beginTx()
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
@@ -130,7 +134,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'allow_file_urls' is false"))
 
     tx.success()
-    tx.finish()
+    tx.close()
   }
 
   private def createMiniGraph(relTypeName: String): Node = {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
 import org.neo4j.logging.AssertableLogProvider
@@ -49,7 +50,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     }
   }
 
-  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.cypher_min_replan_interval.name() -> "0")
+  override def databaseConfig(): Map[Setting[_],String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   test("should monitor cache miss") {
     // given

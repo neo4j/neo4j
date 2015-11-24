@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, Cyp
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
 import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
@@ -37,19 +38,18 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseAPI with Snitch = null
+  var graph: GraphDatabaseAPI = null
   var nodes: List[Node] = null
 
-  def databaseConfig(): Map[String,String] = Map()
+  def databaseConfig(): Map[Setting[_],String] = Map()
 
   override protected def initTest() {
     super.initTest()
     graph = createGraphDatabase()
   }
 
-  protected def createGraphDatabase(): GraphDatabaseAPI with Snitch = {
-    val config: Map[String, String] = databaseConfig() + (GraphDatabaseSettings.pagecache_memory.name -> "8M")
-    new ImpermanentGraphDatabase(config.asJava) with Snitch
+  protected def createGraphDatabase(): GraphDatabaseAPI = {
+    new TestGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava).asInstanceOf[GraphDatabaseAPI]
   }
 
   override protected def stopTest() {
@@ -225,14 +225,4 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
-}
-
-trait Snitch extends GraphDatabaseAPI {
-  val createdNodes = collection.mutable.Queue[Node]()
-
-  abstract override def createNode(): Node = {
-    val n = super.createNode()
-    createdNodes.enqueue(n)
-    n
-  }
 }

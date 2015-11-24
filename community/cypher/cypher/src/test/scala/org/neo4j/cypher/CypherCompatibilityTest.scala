@@ -21,8 +21,10 @@ package org.neo4j.cypher
 
 import java.util
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
 
 import scala.collection.JavaConverters._
 
@@ -47,14 +49,14 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   test("should_be_able_to_override_config") {
-    runWithConfig("cypher_parser_version" -> "2.3") {
+    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
       engine =>
         engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
   }
 
   test("should_be_able_to_override_config2") {
-    runWithConfig("cypher_parser_version" -> "2.3") {
+    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
       engine =>
         engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
     }
@@ -102,7 +104,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
   private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
 
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         engine.execute(queryThatCannotRunWithCostPlanner)
         engine.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
@@ -111,14 +113,14 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   test("should fail if asked to execute query with COST instead of falling back to RULE if hint errors turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"))
     }
   }
 
   test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning if hint errors turned off") {
-    runWithConfig("dbms.cypher.hints.error" -> "false") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
         shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
     }
@@ -132,7 +134,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   test("should not fail if asked to execute query with runtime=compiled on simple query") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         engine.execute("MATCH (n:Movie) RETURN n")
         engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
@@ -141,14 +143,14 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   test("should fail if asked to execute query with runtime=compiled instead of falling back to interpreted if hint errors turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"))
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
-    runWithConfig("dbms.cypher.hints.error" -> "false") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
         shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
     }
@@ -184,28 +186,28 @@ class CypherCompatibilityTest extends CypherFunSuite {
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
-    runWithConfig("dbms.cypher.hints.error" -> "false") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
         shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
     }
   }
 
   test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         intercept[IndexHintException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         intercept[IndexHintException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
         engine.execute("CREATE INDEX ON :Person(email)")
         intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
@@ -267,10 +269,9 @@ class CypherCompatibilityTest extends CypherFunSuite {
     assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
   }
 
-  private def runWithConfig(m: (String, String)*)(run: ExecutionEngine => Unit) = {
-    val config: util.Map[String, String] = m.toMap.asJava
-
-    val graph = new ImpermanentGraphDatabase(config) with Snitch
+  private def runWithConfig(m: (Setting[_], String)*)(run: ExecutionEngine => Unit) = {
+    val config: util.Map[Setting[_], String] = m.toMap.asJava
+    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config)
     try {
       val engine = new ExecutionEngine(graph)
       run(engine)
