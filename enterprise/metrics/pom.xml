@@ -33,13 +33,31 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-source-based-documentation</id>
+            <id>generate-source-based-settings-documentation</id>
             <phase>${generate-config-docs-phase}</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.test.classpath" failonerror="true">
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                      classpathref="maven.test.classpath" failonerror="true">
                   <arg value="org.neo4j.metrics.MetricsSettings" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
+                </java>
+              </target>
+            </configuration>
+            <goals><goal>run</goal></goals>
+          </execution>
+          <execution>
+            <id>generate-source-based-metrics-documentation</id>
+            <phase>${generate-config-docs-phase}</phase>
+            <configuration>
+              <target>
+                <java classname="org.neo4j.metrics.docs.GenerateMetricsDocumentation"
+                      classpathref="maven.test.classpath" failonerror="true">
+                  <arg value="--output=${project.build.directory}/docs/ops/available-metrics.asciidoc" />
+                  <arg value="org.neo4j.metrics.source.DBMetrics" />
+                  <arg value="org.neo4j.metrics.source.NetworkMetrics" />
+                  <arg value="org.neo4j.metrics.source.ClusterMetrics" />
+                  <arg value="org.neo4j.metrics.source.JvmMetrics" />
                 </java>
               </target>
             </configuration>
