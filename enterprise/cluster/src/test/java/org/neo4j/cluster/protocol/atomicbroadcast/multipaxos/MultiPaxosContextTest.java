@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.concurrent.Executor;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
@@ -31,13 +32,12 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class MultiPaxosContextTest
 {
@@ -49,7 +49,7 @@ public class MultiPaxosContextTest
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
-                NullLogService.getInstance(), new ObjectStreamFactory(),
+                NullLogProvider.getInstance(), new ObjectStreamFactory(),
                 new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
 
@@ -79,11 +79,11 @@ public class MultiPaxosContextTest
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 clusterConfig, executor,
-                NullLogService.getInstance(), objStream,
+                NullLogProvider.getInstance(), objStream,
                 objStream, acceptorInstances, timeouts, electionCredentials );
 
         // When
-        MultiPaxosContext snapshot = ctx.snapshot( NullLogService.getInstance(), timeouts, executor, acceptorInstances, objStream, objStream,
+        MultiPaxosContext snapshot = ctx.snapshot( NullLogProvider.getInstance(), timeouts, executor, acceptorInstances, objStream, objStream,
                 electionCredentials );
 
         // Then

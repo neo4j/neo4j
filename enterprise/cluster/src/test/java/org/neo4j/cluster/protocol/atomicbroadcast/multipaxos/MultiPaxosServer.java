@@ -27,8 +27,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.logging.NullLogService;
-
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -92,7 +90,7 @@ public class MultiPaxosServer
             Monitors monitors = new Monitors();
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance() ),
-                            NullLogService.getInstance(), monitors.newMonitor( StateMachines.Monitor.class ) ),
+                            NullLogProvider.getInstance(), monitors.newMonitor( StateMachines.Monitor.class ) ),
                     timeoutStrategy, NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ),
                     monitors.newMonitor( NetworkSender.Monitor.class ),

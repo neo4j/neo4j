@@ -19,16 +19,21 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
+import java.net.URI;
+import java.util.concurrent.Executor;
+
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
-import java.net.URI;
-import java.util.concurrent.Executor;
-
+import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageSender;
+import org.neo4j.cluster.com.message.MessageSource;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -37,20 +42,22 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosC
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
-import org.neo4j.cluster.protocol.MessageArgumentMatcher;
+import org.neo4j.cluster.statemachine.StateMachine;
+import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class HeartbeatStateTest
 {
@@ -67,7 +74,7 @@ public class HeartbeatStateTest
 
         MultiPaxosContext context = new MultiPaxosContext( instanceId, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ), NullLogService.getInstance(),
+                        Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );
@@ -98,7 +105,7 @@ public class HeartbeatStateTest
 
         MultiPaxosContext context = new MultiPaxosContext( myId, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ),  NullLogService.getInstance(),
+                        Mockito.mock( Executor.class ),  NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );
@@ -128,15 +135,12 @@ public class HeartbeatStateTest
         InstanceId otherInstance = new InstanceId( 2 );
         configuration.joined( otherInstance, URI.create("cluster://2" ));
 
-        LogService logging = mock( LogService.class );
-        when( logging.getInternalLog( Matchers.<Class>any() ) ).thenReturn( mock( Log.class ) );
-
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId,
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 Mockito.mock( Executor.class ),
-                logging,
+                NullLogProvider.getInstance(),
                 Mockito.mock( ObjectInputStreamFactory.class),
                 Mockito.mock( ObjectOutputStreamFactory.class),
                 Mockito.mock( AcceptorInstanceStore.class),
@@ -161,5 +165,81 @@ public class HeartbeatStateTest
         // Then
         verify( holder, times( 1 ) ).offer( Matchers.argThat( new MessageArgumentMatcher<LearnerMessage>()
                 .onMessageType( LearnerMessage.catchUp ).withHeader( Message.INSTANCE_ID, "2" ) ) );
+    }
+
+    @Test
+    public void shouldLogFirstHeartbeatAfterTimeout() throws Throwable
+    {
+        // given
+        InstanceId instanceId = new InstanceId( 1 ), otherInstance = new InstanceId( 2 );
+        ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
+                "cluster://1", "cluster://2" );
+        configuration.getMembers().put( otherInstance, URI.create( "cluster://2" ) );
+        AssertableLogProvider internalLog = new AssertableLogProvider( true );
+        TimeoutStrategy timeoutStrategy = mock( TimeoutStrategy.class );
+        Timeouts timeouts = new Timeouts( timeoutStrategy );
+
+        MultiPaxosContext context = new MultiPaxosContext(
+                instanceId,
+                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                configuration,
+                mock( Executor.class ),
+                internalLog,
+                mock( ObjectInputStreamFactory.class ),
+                mock( ObjectOutputStreamFactory.class ),
+                mock( AcceptorInstanceStore.class ),
+                timeouts,
+                mock( ElectionCredentialsProvider.class ) );
+
+        StateMachines stateMachines = new StateMachines(
+                internalLog,
+                mock( StateMachines.Monitor.class ),
+                mock( MessageSource.class ),
+                mock( MessageSender.class ),
+                timeouts,
+                mock( DelayedDirectExecutor.class ),
+                new Executor()
+                {
+                    @Override
+                    public void execute( Runnable command )
+                    {
+                        command.run();
+                    }
+                },
+                instanceId );
+        stateMachines.addStateMachine(
+                new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
+                        internalLog ) );
+
+        timeouts.tick( 0 );
+        when( timeoutStrategy.timeoutFor( any( Message.class ) ) ).thenReturn( 5l );
+
+        // when
+        stateMachines.process( Message.internal( HeartbeatMessage.join ) );
+        stateMachines.process(
+                Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( otherInstance ) )
+                        .setHeader( Message.CREATED_BY, otherInstance.toString() ) );
+        for ( int i = 1; i <= 15; i++ )
+        {
+            timeouts.tick( i );
+        }
+
+        // then
+        verify( timeoutStrategy, times( 3 ) ).timeoutTriggered( argThat( new MessageArgumentMatcher<>()
+                .onMessageType( HeartbeatMessage.timed_out ) ) );
+        internalLog.assertExactly(
+                inLog( HeartbeatState.class ).debug( "Received timed out for server 2" ),
+                inLog( HeartbeatContext.class ).info( "1(me) is now suspecting 2" ),
+                inLog( HeartbeatState.class ).debug( "Received timed out for server 2" ),
+                inLog( HeartbeatState.class ).debug( "Received timed out for server 2" ) );
+        internalLog.clear();
+
+        // when
+        stateMachines.process(
+                Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( otherInstance ) )
+                        .setHeader( Message.CREATED_BY, otherInstance.toString() ) );
+
+        // then
+        internalLog.assertExactly( inLog( HeartbeatState.class ).debug( "Received i_am_alive[2] after missing 3 (15ms)" ) );
     }
 }

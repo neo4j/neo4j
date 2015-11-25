@@ -41,7 +41,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
@@ -74,13 +74,13 @@ class ClusterContextImpl
     private long electorVersion;
     private InstanceId lastElector;
 
-    ClusterContextImpl( InstanceId me, CommonContextState commonState, LogService logService,
+    ClusterContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging,
                         Timeouts timeouts, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory,
                         LearnerContext learnerContext, HeartbeatContext heartbeatContext )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.executor = executor;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.objectInputStreamFactory = objectInputStreamFactory;
@@ -112,14 +112,14 @@ class ClusterContextImpl
         }
     }
 
-    private ClusterContextImpl( InstanceId me, CommonContextState commonState, LogService logService, Timeouts timeouts,
+    private ClusterContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                         Iterable<URI> joiningInstances, ClusterMessage.ConfigurationResponseState
             joinDeniedConfigurationResponseState, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory, LearnerContext learnerContext,
                         HeartbeatContext heartbeatContext )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.joiningInstances = joiningInstances;
         this.joinDeniedConfigurationResponseState = joinDeniedConfigurationResponseState;
         this.executor = executor;
@@ -171,7 +171,7 @@ class ClusterContextImpl
     @Override
     public void created( String name )
     {
-        commonState.setConfiguration( new ClusterConfiguration( name, logService.getInternalLogProvider(),
+        commonState.setConfiguration( new ClusterConfiguration( name, logProvider,
                 Collections.singleton( commonState.boundAt() ) ) );
         joined();
     }
@@ -274,7 +274,7 @@ class ClusterContextImpl
         {
             if ( electorId.equals( getMyId() ) )
             {
-                getInternalLog( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                getLog( getClass() ).debug( "I elected instance " + instanceId + " for role "
                         + roleName + " at version " + version );
                 if ( version < electorVersion )
                 {
@@ -283,14 +283,14 @@ class ClusterContextImpl
             }
             else if ( electorId.equals( lastElector ) && ( version < electorVersion && version > 1 ) )
             {
-                getInternalLog( getClass() ).warn( "Election result for role " + roleName +
+                getLog( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
                         ". I had version " + electorVersion + " for elector " + lastElector );
                 return;
             }
             else
             {
-                getInternalLog( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+                getLog( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
             }
 
             this.electorVersion = version;
@@ -462,13 +462,13 @@ class ClusterContextImpl
         return learnerContext.getLastDeliveredInstanceId();
     }
 
-    public ClusterContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public ClusterContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                         Executor executor, ObjectOutputStreamFactory objectOutputStreamFactory,
                                         ObjectInputStreamFactory objectInputStreamFactory,
                                         LearnerContextImpl snapshotLearnerContext,
                                         HeartbeatContextImpl snapshotHeartbeatContext )
     {
-        return new ClusterContextImpl( me, commonStateSnapshot, logService, timeouts,
+        return new ClusterContextImpl( me, commonStateSnapshot, logging, timeouts,
                 joiningInstances == null ? null : new ArrayList<>(toList(joiningInstances)),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,

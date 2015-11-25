@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.packageFlag;
+
 /**
  * The default PageCacheTracer implementation, that just increments counters.
  */
@@ -41,8 +43,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         try
         {
             // A hidden setting to have pin/unpin monitoring enabled from the start by default.
-            boolean alwaysEnabled = Boolean.getBoolean(
-                    "org.neo4j.io.pagecache.tracing.tracePinUnpin" );
+            boolean alwaysEnabled = packageFlag( DefaultPageCacheTracer.class, "tracePinUnpin", false );
 
             MethodType type = MethodType.methodType( PinEvent.class );
             MethodHandles.Lookup lookup = MethodHandles.lookup();

@@ -19,11 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
-import org.neo4j.function.Consumer;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +26,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.StringDescription;
+
+import org.neo4j.function.Consumer;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -315,7 +316,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
         public LogMatcher debug( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return debug( equalTo( format ), arguments );
+        }
+
+        public LogMatcher debug( Matcher<String> format, Object... arguments )
+        {
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher info( String message )
@@ -335,7 +341,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
         public LogMatcher info( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return info( equalTo( format ), arguments );
+        }
+
+        public LogMatcher info( Matcher<String> format, Object... arguments )
+        {
+            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher warn( String message )
@@ -355,7 +366,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
         public LogMatcher warn( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return warn( equalTo( format ), arguments );
+        }
+
+        public LogMatcher warn( Matcher<String> format, Object... arguments )
+        {
+            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher error( String message )
@@ -375,7 +391,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
         public LogMatcher error( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+            return error( equalTo( format ), arguments );
+        }
+
+        public LogMatcher error( Matcher<String> format, Object... arguments )
+        {
+            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         @SuppressWarnings( "unchecked" )
