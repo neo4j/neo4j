@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -589,12 +590,15 @@ public class ShortestPath implements PathFinder<Path>
 
     private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap )
     {
-        Collection<Path> paths = new ArrayList<Path>();
+        LinkedHashMap<String,Path> paths = new LinkedHashMap<String,Path>();
         for ( Hit hit : depthHits )
         {
-            paths.addAll( hitToPaths( hit, start, end, stopAsap ) );
+            for ( Path path : hitToPaths( hit, start, end, stopAsap ) )
+            {
+                paths.put( path.toString(), path );
+            }
         }
-        return paths;
+        return paths.values();
     }
 
     private static Collection<Path> hitToPaths( Hit hit, Node start, Node end, boolean stopAsap )
