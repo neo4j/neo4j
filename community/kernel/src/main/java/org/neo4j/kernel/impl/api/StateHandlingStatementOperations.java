@@ -504,7 +504,8 @@ public class StateHandlingStatementOperations implements
         try
         {
             IndexDescriptor index = new IndexDescriptor( labelId, propertyKeyId );
-            if ( state.txState().constraintIndexDoUnRemove( index ) ) // ..., DROP, *CREATE*
+            if ( state.hasTxStateWithChanges() &&
+                 state.txState().constraintIndexDoUnRemove( index ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
