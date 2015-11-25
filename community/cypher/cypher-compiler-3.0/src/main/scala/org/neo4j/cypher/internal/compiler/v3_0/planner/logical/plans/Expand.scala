@@ -63,17 +63,27 @@ case class VarExpand(left: LogicalPlan,
                      relName: IdName,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
-                     predicates: Seq[(Variable, Expression)] = Seq.empty)
+                     predicates: Seq[(Variable, Expression)] = Seq.empty,
+                     patternName: Option[IdName] = None)
                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None
 
-  def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
+  // TODO: Rewrite patternName conditions, not using if
+
+  def availableSymbols: Set[IdName] =
+    if (patternName.isDefined)
+      left.availableSymbols + relName + to + patternName.get
+    else
+      left.availableSymbols + relName + to
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(predicates = predicates.map {
       case tuple @ (ident, expr) =>
-        (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
+        if (patternName.isDefined)
+          (ident, f(left.availableSymbols + relName + IdName(ident.name) + patternName.get, expr))
+        else
+          (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
     })(solved)
 }

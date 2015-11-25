@@ -238,7 +238,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
       OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
-    case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
+    case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates, patternName) =>
       val (keys, exprs) = predicates.unzip
       val commands = exprs.map(buildPredicate)
       val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
@@ -254,8 +254,14 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
         case ExpandAll => false
         case ExpandInto => true
       }
+
+      val pathName = patternName match {
+        case Some(IdName(name)) => Some(name)
+        case _ => None
+      }
+
       VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-        LazyTypes(types), min, max, nodeInScope, predicate)()
+        LazyTypes(types), min, max, nodeInScope, predicate, pathName)()
 
     case Optional(inner) =>
       OptionalPipe(inner.availableSymbols.map(_.name), source)()

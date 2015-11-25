@@ -115,9 +115,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                     allPredicates: Seq[Expression],
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext) = pattern.length match {
     case l: VarPatternLength =>
-      val projectedDir = if (dir == SemanticDirection.BOTH) {
-        if (from == pattern.left) SemanticDirection.OUTGOING else SemanticDirection.INCOMING
-      } else pattern.dir
+      val projectedDir = projectedDirection(pattern, from, dir)
 
       val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
@@ -402,11 +400,91 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planSkip(sortedLimit, skip)
   }
 
-  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
+  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
+                        variables: Set[IdName])
                        (implicit context: LogicalPlanningContext) = {
-    // TODO: Tell the planner that the shortestPath predicates are solved in shortestPath
-    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths))
-    FindShortestPaths(inner, shortestPaths, predicates)(solved)
+    def doesNotDependOnFullPath(predicate: Expression): Boolean = {
+      (predicate.dependencies.map(IdName.fromVariable(_)) intersect variables).isEmpty
+    }
+
+    val (safePredicates, needFallbackPredicates) = predicates.partition {
+      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
+      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
+      case _ => false
+    }
+
+    // TODO: Remove debug prints
+    println("Path variables: " + variables)
+    println("Safe predicates: " + safePredicates)
+    println("Unsafe predicates: " + needFallbackPredicates)
+
+    // We always solve all predicates
+    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
+
+    if (needFallbackPredicates.nonEmpty) {
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, solved)
+    }
+    else {
+      FindShortestPaths(inner, shortestPaths, predicates)(solved)
+    }
+  }
+
+  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPaths: ShortestPathPattern,
+                                            predicates: Seq[Expression],
+                                            solved: PlannerQuery with CardinalityEstimation)
+                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+    // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
+    // the graph algorithm does not find anything (left-hand-side)
+    val lhsArgument = planArgumentRowFrom(inner)
+    val lhsSp = FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
+    val lhsOption = Optional(lhsSp)(solved)
+    val lhs = Apply(inner, lhsOption)(solved)
+
+    val pattern = shortestPaths.rel
+
+    val patternLength: VarPatternLength = pattern.length match {
+      case l: VarPatternLength => l
+      case _ => throw new InternalException("Expected a varlength path to be here")
+    }
+
+    // TODO: Decide from and to based on degree
+    val from = pattern.left
+    val to = pattern.right
+    val dir = pattern.dir
+    val projectedDir = projectedDirection(pattern, from, dir)
+
+    // TODO: Fix this hack. Maybe we always have an auto-generated identifier for the path?
+    val pathName = shortestPaths.name match {
+      case Some(IdName(name)) => name
+      case _ => ""
+    }
+
+    // Plan a fallback branch using VarExpand(Into) (right-hand-side)
+    val rhsArgument = planArgumentRowFrom(lhs)
+    val rhsVarExpand =
+      VarExpand(rhsArgument, from, dir, projectedDir,
+                pattern.types, to, pattern.name, patternLength,
+                ExpandInto, Seq.empty, shortestPaths.name)(solved)
+
+    // TODO: TBD Should we produce the path variable by projection afterwards instead of internally in VarExpand?
+    //val rhsProjected = planRegularProjection(rhsExpand, ???)
+    //      val projectionsMap = (Set(IdName(pathName)) ++ rhsExpand.availableSymbols) map { a =>
+    //      }
+    //val rhsProjected = projection(rhsVarExpand, projectionsMap)
+
+    // Filter using predicates
+    val rhsFiltered = planSelection(predicates, rhsVarExpand)
+
+    // Plan SortedLimit
+    // TODO: Get function name from object instead of string "length"
+    // TODO: Fix hard coded limit, make it work for allShortestPaths
+    val rhsSortedLimit = SortedLimit(rhsFiltered, SignedDecimalIntegerLiteral("1")(null),
+                                     Seq(AscSortItem(FunctionInvocation(FunctionName("length")(null),
+                                                                        Variable(pathName)(null))(null))(null)))(solved)
+
+    val rhs = rhsSortedLimit
+
+    planAntiConditionalApply(lhs, rhs, shortestPaths.name.getOrElse(???)) // TODO: Else what?
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
@@ -569,5 +647,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     CardinalityEstimation.lift(plannerQuery, cardinality)
+  }
+
+  private def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {
+    if (dir == SemanticDirection.BOTH) {
+      if (from == pattern.left)
+        SemanticDirection.OUTGOING
+      else
+        SemanticDirection.INCOMING
+    }
+    else
+      pattern.dir
   }
 }
