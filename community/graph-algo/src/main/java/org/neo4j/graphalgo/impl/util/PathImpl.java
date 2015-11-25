@@ -110,6 +110,13 @@ public final class PathImpl implements Path
     private final Relationship[] path;
     private final Node end;
 
+    public PathImpl( Node start, Relationship[] path, Node end )
+    {
+        this.start = start;
+        this.path = path;
+        this.end = end;
+    }
+
     private PathImpl( Builder left, Builder right )
     {
         Node endNode = null;

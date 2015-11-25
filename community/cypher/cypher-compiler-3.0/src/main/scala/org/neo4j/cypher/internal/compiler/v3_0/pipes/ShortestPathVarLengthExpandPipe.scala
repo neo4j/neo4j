@@ -24,11 +24,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllN
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection}
+import org.neo4j.graphalgo.impl.util.PathImpl
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable
 
-case class VarLengthExpandPipe(source: Pipe,
+case class ShortestPathVarLengthExpandPipe(source: Pipe,
+                               pathName: String,
                                fromName: String,
                                relName: String,
                                toName: String,
@@ -37,11 +39,14 @@ case class VarLengthExpandPipe(source: Pipe,
                                types: LazyTypes,
                                min: Int,
                                max: Option[Int],
-                               nodeInScope: Boolean,
-                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
+                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true
+                               )
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
+  // TODO: This code is copied from VarLengthExpandPipe, but should be changed to do
+  // Breadth first search, preferably bi-directional (or iterative depth first search)
+  // Then remember to remove SORT from the plan since BFS already sorts!!!
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
     val stack = new mutable.Stack[(Node, Seq[Relationship])]
@@ -78,30 +83,27 @@ case class VarLengthExpandPipe(source: Pipe,
 
     input.flatMap {
       row => {
-        fetchFromContext(row, fromName) match {
-          case n: Node =>
-            val paths = varLengthExpand(n, state, max, row)
+        (fetchFromContext(row, fromName),fetchFromContext(row, toName)) match {
+          case (fromNode: Node, toNode: Node) =>
+            val paths = varLengthExpand(fromNode, state, max, row)
             paths.collect {
-              case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
-                row.newWith2(relName, rels, toName, node)
+              case (node, rels) if rels.length >= min && node == toNode =>
+                val path = new PathImpl(fromNode, rels.toArray, toNode)
+                row.newWith2(relName, rels, pathName, path)
             }
-
-          case null => Iterator(row.newWith2(relName, null, toName, null))
-
-          case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+          case (null, _) => Iterator(row.newWith2(relName, null, pathName, null))
+          case (_, null) => Iterator(row.newWith2(relName, null, pathName, null))
+          case (v1, v2)  => throw new InternalException(s"Expected to find nodes at $fromName and $toName but found $v1 and $v2 instead")
         }
       }
     }
   }
 
-  private def isToNodeValid(row: ExecutionContext, node: Any): Boolean =
-    !nodeInScope || fetchFromContext(row, toName) == node
-
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
   def planDescriptionWithoutCardinality = source.planDescription.
-    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", variables, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
+    andThen(this.id, s"ShortestPathVarLengthExpand", variables, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTCollection(CTRelationship))
 
