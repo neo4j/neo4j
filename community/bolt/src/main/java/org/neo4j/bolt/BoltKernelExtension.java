@@ -135,7 +135,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 @Override
                 public BoltProtocol apply( Channel channel )
                 {
-                    return new BoltProtocolV1( logging, sessions.newSession(), channel, dependencies.usageData() );
+                    return new BoltProtocolV1( logging, sessions.newSession(), channel );
                 }
             } );
 
