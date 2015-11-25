@@ -97,6 +97,7 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         TransactionState txState = mock( TransactionState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
+        when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
