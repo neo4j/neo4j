@@ -31,17 +31,7 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    //input.filter(ctx => predicate.isTrue(ctx)(state))
-    // TODO: Remove debug print
-    input.filter(ctx => {
-                   val t = predicate.isTrue(ctx)(state)
-                   try {
-                     println(t + ":\t p = " + ctx.get("p"))
-                   } catch {
-                     case e: org.neo4j.graphdb.NotFoundException => println(t + ":\t Invalid path: " + e)
-                   }
-                   t
-    })
+    input.filter(ctx => predicate.isTrue(ctx)(state))
   }
 
   def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Filter", variables, LegacyExpression(predicate))

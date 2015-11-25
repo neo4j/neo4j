@@ -413,15 +413,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       case _ => false
     }
 
-    // TODO: Remove debug prints
-    println("Path variables: " + variables)
-    println("Safe predicates: " + safePredicates)
-    println("Unsafe predicates: " + needFallbackPredicates)
-
     // We always solve all predicates
     val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
 
-    if (needFallbackPredicates.nonEmpty) {
+    // Only support fallback for shortestPath (not allShortestPaths, yet)
+    if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
       planShortestPathsWithFallback(inner, shortestPaths, predicates, solved)
     }
     else {
@@ -453,18 +449,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     val dir = pattern.dir
     val projectedDir = projectedDirection(pattern, from, dir)
 
-    // TODO: Fix this hack. Maybe we always have an auto-generated identifier for the path?
-    val pathName = shortestPaths.name match {
-      case Some(IdName(name)) => name
-      case _ => ""
-    }
+    val pathName = shortestPaths.name.get.name
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsArgument = planArgumentRowFrom(lhs)
     val rhsVarExpand =
-      VarExpand(rhsArgument, from, dir, projectedDir,
+      ShortestPathVarExpand(rhsArgument, shortestPaths.name.get, from, dir, projectedDir,
                 pattern.types, to, pattern.name, patternLength,
-                ExpandInto, Seq.empty, shortestPaths.name)(solved)
+                ExpandInto, Seq.empty)(solved)
 
     // TODO: TBD Should we produce the path variable by projection afterwards instead of internally in VarExpand?
     //val rhsProjected = planRegularProjection(rhsExpand, ???)
@@ -484,7 +476,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val rhs = rhsSortedLimit
 
-    planAntiConditionalApply(lhs, rhs, shortestPaths.name.getOrElse(???)) // TODO: Else what?
+    planAntiConditionalApply(lhs, rhs, shortestPaths.name.get)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
