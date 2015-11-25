@@ -74,9 +74,9 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should handle unique index lookups for multiple values") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = exactUniqueIndexFor(
-        "hello" -> Some(node),
-        "world" -> Some(node2)
+      query = exactIndexFor(
+        "hello" -> Iterator(node),
+        "world" -> Iterator(node2)
       )
     )
 
@@ -110,8 +110,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should handle unique index lookups for multiple values when some are null") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = exactUniqueIndexFor(
-        "hello" -> Some(node)
+      query = exactIndexFor(
+        "hello" -> Iterator(node)
       )
     )
 
@@ -194,7 +194,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState =  QueryStateHelper.emptyWith( query = exactUniqueIndexFor("hello"->Some(node)) )
+    val queryState =  QueryStateHelper.emptyWith( query = exactIndexFor("hello"->Iterator(node)) )
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), unique = true)()
@@ -217,18 +217,6 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // then
     result.map(_("n")).toList should equal(List(node))
-  }
-
-
-  private def exactUniqueIndexFor(values : (Any, Option[Node])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.exactUniqueIndexSearch(any(), any())).thenReturn(None)
-
-    values.foreach {
-      case (searchTerm, result) => when(query.exactUniqueIndexSearch(descriptor, searchTerm)).thenReturn(result)
-    }
-
-    query
   }
 
   private def exactIndexFor(values : (Any, Iterator[Node])*): QueryContext = {

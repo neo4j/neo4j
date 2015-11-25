@@ -41,9 +41,6 @@ case class NodeIndexSeekPipe(ident: String,
   val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   val indexFactory: (QueryState) => (Any) => Iterator[Node] =
-    if (unique)
-      (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
-    else
       (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
