@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{PathValueBuilder, PathImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -37,8 +38,9 @@ case class VarLengthExpandPipe(source: Pipe,
                                types: LazyTypes,
                                min: Int,
                                max: Option[Int],
-                               nodeInScope: Boolean,
-                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
+                               nodeInScope: Boolean, // True if the to-node is already resolved (i.e. ExpandInto)
+                               filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true,
+                               pathName: Option[String] = None)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -83,7 +85,7 @@ case class VarLengthExpandPipe(source: Pipe,
             val paths = varLengthExpand(n, state, max, row)
             paths.collect {
               case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
-                row.newWith2(relName, rels, toName, node)
+                rowProducer(state, row, node, rels)
             }
 
           case null => Iterator(row.newWith2(relName, null, toName, null))
@@ -93,6 +95,32 @@ case class VarLengthExpandPipe(source: Pipe,
       }
     }
   }
+
+  private val rowProducer: (QueryState, ExecutionContext, Node, Seq[Relationship]) => ExecutionContext =
+    if (pathName.isDefined) {
+      // This function produces a row that includes the path
+      (state, row, node, rels) => {
+        val builder = state.clearPathValueBuilder
+        builder.addNode(node)
+        builder.addUndirectedRelationships(rels)
+        val path = builder.result()
+        // To-node should already be in scope so we do not need to add it to the ExecutionContext
+        assert(nodeInScope)
+        //row.newWith3(relName, rels, toName, node,
+        //             pathName.get, path)
+        row.newWith2(relName, rels, pathName.get, path)
+
+        // TODO: To mimic ShortestPathPipe, then relName -> path.relationships().asScala.toSeq. Verify rels is ok (it should be)
+      }
+    }
+    else if (nodeInScope)
+      // This function produces a row with only rels
+      (state, row, node, rels) =>
+        row.newWith1(relName, rels)
+    else
+      // This function produces a row with to-node and rels
+      (state, row, node, rels) =>
+        row.newWith2(relName, rels, toName, node)
 
   private def isToNodeValid(row: ExecutionContext, node: Any): Boolean =
     !nodeInScope || fetchFromContext(row, toName) == node

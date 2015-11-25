@@ -39,10 +39,13 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates)
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    val inputList = input.toList
-    inputList.iterator.flatMap(ctx => {
-      val result: Stream[Path] = shortestPathExpression(ctx)(state)
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) =
+    input.flatMap(ctx => {
+      val result: Stream[Path] = shortestPathExpression(ctx)(state) match {
+        case in: Stream[_] => CastSupport.castOrFail[Stream[Path]](in)
+        case null          => Stream()
+        case path: Path    => Stream(path)
+      }
 
       shortestPathCommand.relIterator match {
         case Some(relName) =>
@@ -51,7 +54,6 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
           result.map { (path: Path) => ctx.newWith1(pathName, path) }
       }
     })
-  }
 
   val symbols = {
     val withPath = source.symbols.add(pathName, CTPath)
