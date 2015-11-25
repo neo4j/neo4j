@@ -615,6 +615,15 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "HAS is no longer supported in Cypher, please use EXISTS instead (line 1, column 17 (offset: 16))")
   )
 
+  test("give a nice error message when creating a pattern with no relationship type") {
+    executeAndEnsureError("CREATE ()-->()", "A single relationship type must be specified for CREATE (line 1, column 10 (offset: 9))")
+  }
+
+  test("give a nice error message when trying to create multiple relationship types") {
+    executeAndEnsureError("CREATE ()-[:A|:B]->()",
+      "A single relationship type must be specified for CREATE (line 1, column 10 (offset: 9))")
+  }
+
   def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
     import scala.collection.JavaConverters._

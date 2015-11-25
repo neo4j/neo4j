@@ -213,7 +213,15 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   def name = "CREATE"
 
-  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
+  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
+
+  //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
+  private def checkRelTypes: SemanticCheck  =
+    pattern.patternParts.foldSemanticCheck {
+      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+        SemanticError("A single relationship type must be specified for CREATE", rel.position)
+      case _ => SemanticCheckResult.success
+    }
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
