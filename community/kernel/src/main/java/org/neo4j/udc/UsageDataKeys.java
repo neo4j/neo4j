@@ -58,12 +58,13 @@ public class UsageDataKeys
 
     public enum OperationalMode
     {
-        // Note, these are sent verbatum via UDC if UDC is enabled
+        // Note, these are sent verbatim via UDC if UDC is enabled
         unknown,
         single,
-        ha
+        ha,
+        core,
+        edge
     }
-
     public enum Edition
     {
         // Note, these are sent verbatum via UDC if UDC is enabled

@@ -7,8 +7,10 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
+  hazelcast-all
   Lucene Core
   Metrics Core
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala

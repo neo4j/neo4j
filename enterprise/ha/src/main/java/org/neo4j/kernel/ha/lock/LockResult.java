@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import java.util.Objects;
+
 public class LockResult
 {
     private final LockStatus status;
@@ -50,5 +52,27 @@ public class LockResult
     public String toString()
     {
         return "LockResult[" + status + ", " + message + "]";
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        LockResult that = (LockResult) o;
+        return Objects.equals( status, that.status ) &&
+                Objects.equals( message, that.message );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( status, message );
     }
 }

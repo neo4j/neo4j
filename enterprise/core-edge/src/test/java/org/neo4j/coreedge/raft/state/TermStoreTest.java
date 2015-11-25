@@ -1,0 +1,61 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.coreedge.raft.state;
+
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+
+public abstract class TermStoreTest
+{
+    public abstract TermStore createTermStore();
+
+    @Test
+    public void shouldStoreCurrentTerm() throws Exception
+    {
+        // given
+        TermStore termStore = createTermStore();
+
+        // when
+        termStore.update( 21 );
+
+        // then
+        assertEquals( 21, termStore.currentTerm() );
+    }
+
+    @Test
+    public void rejectLowerTerm() throws Exception
+    {
+        // given
+        TermStore termStore = createTermStore();
+        termStore.update( 21 );
+
+        // when
+        try
+        {
+            termStore.update( 20 );
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+    }
+}

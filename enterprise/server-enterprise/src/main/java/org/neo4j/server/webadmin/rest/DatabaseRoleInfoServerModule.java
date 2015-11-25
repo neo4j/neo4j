@@ -31,13 +31,13 @@ import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
 
-public class MasterInfoServerModule implements ServerModule
+public class DatabaseRoleInfoServerModule implements ServerModule
 {
     private final WebServer server;
     private final Config config;
     private final Log log;
 
-    public MasterInfoServerModule( WebServer server, Config config, LogProvider logProvider )
+    public DatabaseRoleInfoServerModule( WebServer server, Config config, LogProvider logProvider )
     {
         this.server = server;
         this.config = config;
@@ -62,7 +62,7 @@ public class MasterInfoServerModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return asList( MasterInfoService.class.getName() );
+        return asList( MasterInfoService.class.getName(), CoreDatabaseAvailabilityService.class.getName() );
     }
 
     private URI managementApiUri()
