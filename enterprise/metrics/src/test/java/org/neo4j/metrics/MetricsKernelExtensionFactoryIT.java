@@ -68,6 +68,7 @@ public class MetricsKernelExtensionFactoryIT
     {
         outputFile = folder.file( "metrics.csv" );
         Map<String,String> config = new HashMap<>();
+        config.put( MetricsSettings.neoEnabled.name(), Settings.TRUE );
         config.put( csvEnabled.name(), Settings.TRUE );
         config.put( cypher_min_replan_interval.name(), "0" );
         config.put( csvFile.name(), single.name() );

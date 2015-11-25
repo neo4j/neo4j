@@ -53,7 +53,7 @@ public class MetricsSettings
     @Description( "The default enablement value for all the supported metrics. Set this to `false` to turn off all " +
                   "metrics by default. The individual settings can then be used to selectively re-enable specific " +
                   "metrics." )
-    public static Setting<Boolean> metricsEnabled = setting( "metrics.enabled", Settings.BOOLEAN, Settings.TRUE );
+    public static Setting<Boolean> metricsEnabled = setting( "metrics.enabled", Settings.BOOLEAN, Settings.FALSE );
 
     @Description( "The default enablement value for all Neo4j specific support metrics. Set this to `false` to turn " +
                   "off all Neo4j specific metrics by default. The individual `metrics.neo4j.*` metrics can then be " +
