@@ -110,7 +110,7 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
                 }
               }
           }
-          result.toIterator.map(_._2)
+          result.iterator.map(_._2)
         }
       }
     }

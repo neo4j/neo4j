@@ -104,7 +104,7 @@ final case class VariableLengthStepTrail(next: Trail,
       }
     }
 
-    result.toIterator
+    result.iterator
   }
 
   def pathDescription = next.pathDescription ++ Seq(path, end) ++ relIterator

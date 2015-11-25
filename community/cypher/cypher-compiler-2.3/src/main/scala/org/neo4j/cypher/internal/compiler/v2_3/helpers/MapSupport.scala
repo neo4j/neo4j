@@ -60,8 +60,7 @@ trait MapSupport {
 
     def iterator: Iterator[(String, Any)] =
       ops.propertyKeyIds(id(n)).
-        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId)).
-        toIterator
+        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId))
 
     override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(id(n), _))
 

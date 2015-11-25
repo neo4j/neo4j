@@ -89,7 +89,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     } else {
       result.map {
         case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx)
-      }.toIterator
+      }.iterator
     }
   }
 
