@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -50,6 +51,7 @@ public class MetricsExtension implements Lifecycle
     private final CheckPointerMonitor checkPointerMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogRotationMonitor logRotationMonitor;
+    private final DataSourceManager dataSourceManager;
     private final DependencyResolver dependencyResolver;
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
@@ -58,6 +60,7 @@ public class MetricsExtension implements Lifecycle
         logService = dependencies.logService();
         configuration = dependencies.configuration();
         monitors = dependencies.monitors();
+        dataSourceManager = dependencies.dataSourceManager();
         transactionCounters = dependencies.transactionCounters();
         pageCacheCounters = dependencies.pageCacheCounters();
         checkPointerMonitor = dependencies.checkPointerCounters();
@@ -84,9 +87,9 @@ public class MetricsExtension implements Lifecycle
         life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
 
         // Setup metric gathering
-        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors,
+        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors, dataSourceManager,
                 transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
-                dependencyResolver, logService);
+                dependencyResolver, logService) ;
         life.add( factory.newInstance() );
 
         life.init();

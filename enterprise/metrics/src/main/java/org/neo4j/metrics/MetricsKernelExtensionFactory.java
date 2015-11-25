@@ -28,11 +28,11 @@ import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class MetricsKernelExtensionFactory
-        extends KernelExtensionFactory<MetricsKernelExtensionFactory.Dependencies>
+public class MetricsKernelExtensionFactory extends KernelExtensionFactory<MetricsKernelExtensionFactory.Dependencies>
 {
     public interface Dependencies
     {
@@ -40,7 +40,8 @@ public class MetricsKernelExtensionFactory
 
         LogService logService();
 
-        // Things to get metrics from
+        DataSourceManager dataSourceManager();
+
         TransactionCounters transactionCounters();
 
         PageCacheMonitor pageCacheCounters();

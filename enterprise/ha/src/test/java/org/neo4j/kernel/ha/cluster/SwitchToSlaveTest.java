@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.TransactionId;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -298,7 +298,7 @@ public class SwitchToSlaveTest
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
         when( dataSource.getStoreId() ).thenReturn( storeId );
 
-        TransactionCounters transactionCounters = mock( TransactionCounters.class );
+        TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
 
         Response<HandshakeResult> response = mock( Response.class );

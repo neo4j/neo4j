@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -41,6 +42,7 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final MetricRegistry registry;
     private final Config config;
     private final Monitors monitors;
+    private final DataSourceManager dataSourceManager;
     private final TransactionCounters transactionCounters;
     private final PageCacheMonitor pageCacheCounters;
     private final CheckPointerMonitor checkPointerMonitor;
@@ -50,13 +52,15 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     private final LogService logService;
 
     public Neo4jMetricsFactory( MetricRegistry registry, Config config, Monitors monitors,
-            TransactionCounters transactionCounters, PageCacheMonitor pageCacheCounters,
-            CheckPointerMonitor checkPointerMonitor, LogRotationMonitor logRotationMonitor,
-            IdGeneratorFactory idGeneratorFactory, DependencyResolver dependencyResolver, LogService logService )
+            DataSourceManager dataSourceManager, TransactionCounters transactionCounters,
+            PageCacheMonitor pageCacheCounters, CheckPointerMonitor checkPointerMonitor,
+            LogRotationMonitor logRotationMonitor, IdGeneratorFactory idGeneratorFactory,
+            DependencyResolver dependencyResolver, LogService logService )
     {
         this.registry = registry;
         this.config = config;
         this.monitors = monitors;
+        this.dataSourceManager = dataSourceManager;
         this.transactionCounters = transactionCounters;
         this.pageCacheCounters = pageCacheCounters;
         this.checkPointerMonitor = checkPointerMonitor;
@@ -69,8 +73,13 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
     @Override
     public Lifecycle newInstance()
     {
-        final DBMetrics dbMetrics = new DBMetrics( registry, config,
-                transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory );
+        final TransactionMetrics transactionMetrics =
+                new TransactionMetrics( registry, config, dataSourceManager, transactionCounters );
+        final PageCacheMetrics pageCacheMetrics = new PageCacheMetrics( registry, config, pageCacheCounters );
+        final CheckPointingMetrics checkPointingMetrics =
+                new CheckPointingMetrics( registry, config, checkPointerMonitor, logRotationMonitor );
+        final EntityCountMetrics entityCountMetrics = new EntityCountMetrics( registry, config, idGeneratorFactory );
+
         final NetworkMetrics networkMetrics = new NetworkMetrics( config, monitors, registry );
         final ClusterMetrics clusterMetrics = new ClusterMetrics( config, monitors, registry, dependencyResolver,
                 logService );
@@ -81,7 +90,10 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
             @Override
             public void start() throws Throwable
             {
-                dbMetrics.start();
+                transactionMetrics.start();
+                pageCacheMetrics.start();
+                checkPointingMetrics.start();
+                entityCountMetrics.start();
                 networkMetrics.start();
                 clusterMetrics.start();
                 jvmMetrics.start();
@@ -91,7 +103,10 @@ public class Neo4jMetricsFactory implements Factory<Lifecycle>
             @Override
             public void stop() throws IOException
             {
-                dbMetrics.stop();
+                transactionMetrics.stop();
+                pageCacheMetrics.stop();
+                checkPointingMetrics.stop();
+                entityCountMetrics.stop();
                 networkMetrics.stop();
                 clusterMetrics.stop();
                 jvmMetrics.stop();

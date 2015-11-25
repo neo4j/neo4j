@@ -26,7 +26,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.transaction.TransactionCounters
+import org.neo4j.kernel.impl.transaction.TransactionStats
 
 import scala.collection.JavaConverters._
 
@@ -97,9 +97,9 @@ trait GraphIcing {
       }
     }
 
-    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
+    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
 
-    private def txMonitor: TransactionCounters = graph.getDependencyResolver.resolveDependency(classOf[TransactionCounters])
+    private def txMonitor: TransactionStats = graph.getDependencyResolver.resolveDependency(classOf[TransactionStats])
 
     private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }

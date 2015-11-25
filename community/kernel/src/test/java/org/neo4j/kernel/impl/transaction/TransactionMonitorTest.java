@@ -20,33 +20,62 @@
 package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.neo4j.function.Consumers;
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-
+@RunWith( Parameterized.class )
 public class TransactionMonitorTest
 {
+
+    @Parameterized.Parameter( 0 )
+    public ThrowingConsumer<GraphDatabaseService,Exception> dbConsumer;
+
+    @Parameterized.Parameter( 1 )
+    public boolean isWriteTx;
+
+    @Parameterized.Parameter( 2 )
+    public String ignored; // to make JUnit happy...
+
+    @Parameterized.Parameters( name = "{2}" )
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(
+                new Object[]{Consumers.<GraphDatabaseService,Exception>throwingNoop(), false, "read"},
+                new Object[]{new ThrowingConsumer<GraphDatabaseService,Exception>()
+                {
+                    @Override
+                    public void accept( GraphDatabaseService db ) throws Exception
+                    {
+                        db.createNode();
+                    }
+                }, true, "write"}
+        );
+    }
+
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
-            TransactionCounters monitor = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
-            long startedBefore = monitor.getNumberOfStartedTransactions();
-            long committedBefore = monitor.getNumberOfCommittedTransactions();
-            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
+            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode();
+                dbConsumer.accept( db );
                 tx.success();
             }
-            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
-            assertEquals( committedBefore+1, monitor.getNumberOfCommittedTransactions() );
-            assertEquals( rolledBackBefore, monitor.getNumberOfRolledbackTransactions() );
+            checker.verifyCommitted( isWriteTx, counts );
         }
         finally
         {
@@ -55,23 +84,40 @@ public class TransactionMonitorTest
     }
 
     @Test
-    public void shouldNotCountRolledBackTransactions() throws Exception
+    public void shoulCountRolledBackTransactions() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
-            TransactionCounters monitor = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
-            long startedBefore = monitor.getNumberOfStartedTransactions();
-            long committedBefore = monitor.getNumberOfCommittedTransactions();
-            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
+            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
             try ( Transaction tx = db.beginTx() )
             {
-                db.createNode();
+                dbConsumer.accept( db );
                 tx.failure();
             }
-            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
-            assertEquals( committedBefore, monitor.getNumberOfCommittedTransactions() );
-            assertEquals( rolledBackBefore+1, monitor.getNumberOfRolledbackTransactions() );
+            checker.verifyRolledBacked( isWriteTx, counts );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldCountTerminatedTransactions() throws Exception
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            TransactionCounters counts = db.getDependencyResolver().resolveDependency( TransactionCounters.class );
+            TransactionCountersChecker checker = new TransactionCountersChecker( counts );
+            try ( Transaction tx = db.beginTx() )
+            {
+                dbConsumer.accept( db );
+                tx.terminate();
+            }
+            checker.verifyTerminated( isWriteTx, counts );
         }
         finally
         {

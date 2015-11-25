@@ -21,7 +21,7 @@ package org.neo4j.kernel;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -40,15 +40,15 @@ public class DatabaseAvailability implements Lifecycle
 {
     private static final AvailabilityRequirement AVAILABILITY_REQUIREMENT = availabilityRequirement( "Database available" );
     private final AvailabilityGuard availabilityGuard;
-    private final TransactionCounters transactionMonitor;
+    private final TransactionStats transactionMonitor;
     private final long awaitActiveTransactionDeadlineMillis;
 
-    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionMonitor )
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionStats transactionMonitor )
     {
         this( availabilityGuard, transactionMonitor, TimeUnit.SECONDS.toMillis( 10 ) );
     }
 
-    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionMonitor,
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionStats transactionMonitor,
             long awaitActiveTransactionDeadlineMillis )
     {
         this.availabilityGuard = availabilityGuard;
