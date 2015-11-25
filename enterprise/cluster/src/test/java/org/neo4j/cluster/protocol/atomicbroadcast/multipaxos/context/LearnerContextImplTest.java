@@ -28,11 +28,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.logging.AbstractLogService;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
@@ -45,22 +41,8 @@ public class LearnerContextImplTest
     {
         // Given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
-        LogService logService = new AbstractLogService()
-        {
-            @Override
-            public LogProvider getUserLogProvider()
-            {
-                return NullLogProvider.getInstance();
-            }
-
-            @Override
-            public LogProvider getInternalLogProvider()
-            {
-                return logProvider;
-            }
-        };
         LearnerContextImpl ctx = new LearnerContextImpl( new InstanceId( 1 ), mock( CommonContextState.class ),
-                logService, mock( Timeouts.class ), mock( PaxosInstanceStore.class ), mock( AcceptorInstanceStore.class ),
+                logProvider, mock( Timeouts.class ), mock( PaxosInstanceStore.class ), mock( AcceptorInstanceStore.class ),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( HeartbeatContextImpl.class ) );
 

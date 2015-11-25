@@ -26,6 +26,9 @@ import org.neo4j.cluster.com.message.Message;
  */
 public interface TimeoutStrategy
 {
+    /**
+     * @return the timeout (in milliseconds) for the given message.
+     */
     long timeoutFor( Message message );
 
     void timeoutTriggered( Message timeoutMessage );

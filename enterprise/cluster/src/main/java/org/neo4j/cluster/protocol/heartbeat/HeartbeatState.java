@@ -24,6 +24,7 @@ import java.net.URI;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
 
@@ -122,11 +123,7 @@ public enum HeartbeatState
                                 }
                             }
 
-                            context.cancelTimeout( HeartbeatMessage.i_am_alive + "-" +
-                                    state.getServer() );
-                            context.setTimeout( HeartbeatMessage.i_am_alive + "-" +
-                                    state.getServer(), timeout( HeartbeatMessage.timed_out, message, state
-                                    .getServer() ) );
+                            resetTimeout( context, message, state );
 
                             // Check if this server knows something that we don't
                             if ( message.hasHeader( "last-learned" ) )
@@ -156,7 +153,7 @@ public enum HeartbeatState
                         {
 
                             InstanceId server = message.getPayload();
-                            context.getInternalLog( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
                             if ( context.getMembers().containsKey( server ) )
@@ -230,7 +227,7 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getInternalLog( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
                             InstanceId fromId = new InstanceId(Integer.parseInt(message.getHeader( Message.INSTANCE_ID )));
@@ -248,7 +245,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getInternalLog( HeartbeatState.class ).debug( "Received leave" );
+                            context.getLog( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 
@@ -266,6 +263,25 @@ public enum HeartbeatState
                     }
 
                     return this;
+                }
+
+                private void resetTimeout( HeartbeatContext context, Message<HeartbeatMessage> message,
+                        HeartbeatMessage.IAmAliveState state )
+                {
+                    String key = HeartbeatMessage.i_am_alive + "-" + state.getServer();
+                    Message<? extends MessageType> oldTimeout = context.cancelTimeout( key );
+                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.TIMEOUT_COUNT ) )
+                    {
+                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.TIMEOUT_COUNT ) );
+                        if ( timeoutCount > 0 )
+                        {
+                            long timeout = context.getTimeoutFor( oldTimeout );
+                            context.getLog( HeartbeatState.class ).debug(
+                                    "Received " + state + " after missing " + timeoutCount +
+                                    " (" + timeout * timeoutCount + "ms)" );
+                        }
+                    }
+                    context.setTimeout( key, timeout( HeartbeatMessage.timed_out, message, state.getServer() ) );
                 }
             }
 }

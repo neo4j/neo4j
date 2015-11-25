@@ -43,7 +43,6 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -92,7 +91,7 @@ public class HeartbeatContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), config,
-                        Mockito.mock( Executor.class ), NullLogService.getInstance(),
+                        Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
                         Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
                         mock( ElectionCredentialsProvider.class) );

@@ -90,7 +90,7 @@ public class NetworkMock
 
     protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ), logService, monitors.newMonitor( StateMachines.Monitor.class ) );
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ), logService.getInternalLogProvider(), monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );

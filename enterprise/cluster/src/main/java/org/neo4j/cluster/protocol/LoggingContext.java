@@ -17,22 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
+package org.neo4j.cluster.protocol;
 
-import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
-import org.neo4j.cluster.protocol.TimeoutsContext;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.logging.Log;
 
-/**
- * Context for AtomicBroadcast statemachine.
- */
-public interface AtomicBroadcastContext
-    extends TimeoutsContext, ConfigurationContext, LoggingContext
+public interface LoggingContext
 {
-    void addAtomicBroadcastListener( AtomicBroadcastListener listener );
-    void removeAtomicBroadcastListener( AtomicBroadcastListener listener );
-    void receive( final Payload value );
-    boolean hasQuorum();
+    Log getLog( Class<?> loggingClass );
 }

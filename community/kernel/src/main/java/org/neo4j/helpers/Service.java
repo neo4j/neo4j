@@ -35,6 +35,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 /**
  * A utility for locating services. This implements the same functionality as <a
  * href="http://java.sun.com/javase/6/docs/api/java/util/ServiceLoader.html">
@@ -117,7 +119,7 @@ public abstract class Service
      * Enabling this is useful for debugging why services aren't loaded where you would expect them to.
      */
     private static final boolean printServiceLoaderStackTraces =
-            Boolean.getBoolean( "org.neo4j.helpers.Service.printServiceLoaderStackTraces" );
+            flag( Service.class, "printServiceLoaderStackTraces", false );
 
     /**
      * Designates that a class implements the specified service and should be

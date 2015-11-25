@@ -37,7 +37,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 
@@ -56,18 +56,18 @@ class HeartbeatContextImpl
     private ClusterContext clusterContext;
     private LearnerContext learnerContext;
 
-    HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogService logService,
+    HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging,
                           Timeouts timeouts, Executor executor )
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.executor = executor;
     }
 
-    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogService logService, Timeouts timeouts,
+    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                           Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
                           Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
     {
-        super( me, commonState, logService, timeouts );
+        super( me, commonState, logging, timeouts );
         this.failed = failed;
         this.nodeSuspicions = nodeSuspicions;
         this.heartBeatListeners = heartBeatListeners;
@@ -97,7 +97,7 @@ class HeartbeatContextImpl
 
         if ( !isFailed( node ) && failed.remove( node ) )
         {
-            getInternalLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
+            getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
             Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
                 @Override
@@ -120,12 +120,12 @@ class HeartbeatContextImpl
         {
             serverSuspicions.add( node );
 
-            getInternalLog( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
+            getLog( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
         }
 
         if ( isFailed( node ) && !failed.contains( node ) )
         {
-            getInternalLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
+            getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
             Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
             {
@@ -144,7 +144,7 @@ class HeartbeatContextImpl
         // A failed instance might suspect instances which are alive so ignore it
         if ( isFailed( from ) )
         {
-            getInternalLog( HeartbeatContext.class ).info(
+            getLog( HeartbeatContext.class ).info(
                     "Ignoring suspicions from failed instance " + from + ": " + Iterables.toString( suspicions, "," ) );
             return;
         }
@@ -158,7 +158,7 @@ class HeartbeatContextImpl
             InstanceId currentSuspicion = suspicionsIterator.next();
             if ( !suspicions.contains( currentSuspicion ) )
             {
-                getInternalLog( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
+                getLog( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
                 suspicionsIterator.remove();
             }
         }
@@ -168,7 +168,7 @@ class HeartbeatContextImpl
         {
             if ( !serverSuspicions.contains( suspicion ) )
             {
-                getInternalLog( HeartbeatContext.class ).info( from + " is now suspecting " + suspicion );
+                getLog( HeartbeatContext.class ).info( from + " is now suspecting " + suspicion );
                 serverSuspicions.add( suspicion );
             }
         }
@@ -317,10 +317,10 @@ class HeartbeatContextImpl
         return learnerContext.getLastLearnedInstanceId();
     }
 
-    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService, Timeouts timeouts,
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                           Executor executor )
     {
-        return new HeartbeatContextImpl( me, commonStateSnapshot, logService, timeouts, new HashSet<>(failed),
+        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
                 new HashMap<>(nodeSuspicions), new ArrayList<>(toList(heartBeatListeners)), executor );
     }
 

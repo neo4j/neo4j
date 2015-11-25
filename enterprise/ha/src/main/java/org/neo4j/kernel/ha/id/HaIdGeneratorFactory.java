@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.ha.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory

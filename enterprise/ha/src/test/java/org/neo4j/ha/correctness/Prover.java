@@ -30,12 +30,10 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -83,11 +81,11 @@ public class Prover
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( instance1 ), new Monitors(), config,
-                                NullLogService.getInstance() ),
+                                NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( instance2 ), new Monitors(), config,
-                                NullLogService.getInstance() ),
+                                NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), new Monitors(), config,
-                                NullLogService.getInstance() ) ),
+                                NullLogProvider.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 
