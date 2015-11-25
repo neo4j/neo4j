@@ -252,6 +252,7 @@ stopit() {
 
       x=$[$x+1]
     done
+    echo " done"
     [ -e "$PID_FILE" ] && rm  "$PID_FILE"
   fi
 }
