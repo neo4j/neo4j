@@ -27,17 +27,24 @@ import java.io.IOException;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Database Data Metrics" )
 public class EntityCountMetrics extends LifecycleAdapter
 {
     private static final String COUNTS_PREFIX = "neo4j.ids_in_use";
+
+    @Documented( "The total number of different relationship types stored in the database" )
     private static final String COUNTS_RELATIONSHIP_TYPE = name( COUNTS_PREFIX, "relationship_type" );
+    @Documented( "The total number of different property names used in the database" )
     private static final String COUNTS_PROPERTY = name( COUNTS_PREFIX, "property" );
+    @Documented( "The total number of relationships stored in the database" )
     private static final String COUNTS_RELATIONSHIP = name( COUNTS_PREFIX, "relationship" );
+    @Documented( "The total number of nodes stored in the database" )
     private static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
     private final MetricRegistry registry;

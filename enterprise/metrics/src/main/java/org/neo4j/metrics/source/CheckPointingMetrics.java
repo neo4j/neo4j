@@ -25,6 +25,7 @@ import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -32,14 +33,20 @@ import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Database CheckPointing Metrics" )
 public class CheckPointingMetrics extends LifecycleAdapter
 {
     private static final String CHECK_POINT_PREFIX = "neo4j.check_point";
+    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
+
+    @Documented( "The total number of check point events executed so far" )
     private static final String CHECK_POINT_EVENTS = name( CHECK_POINT_PREFIX, "events" );
+    @Documented( "The total time spent in check pointing so far" )
     private static final String CHECK_POINT_TOTAL_TIME = name( CHECK_POINT_PREFIX, "total_time" );
 
-    private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";
+    @Documented( "The total number of transaction log rotations executed so far" )
     private static final String LOG_ROTATION_EVENTS = name( LOG_ROTATION_PREFIX, "events" );
+    @Documented( "The total time spent in rotating transaction logs so far" )
     private static final String LOG_ROTATION_TOTAL_TIME = name( LOG_ROTATION_PREFIX, "total_time" );
 
     private final MetricRegistry registry;

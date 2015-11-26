@@ -26,15 +26,19 @@ import java.io.IOException;
 
 import org.neo4j.cypher.PlanCacheMetricsMonitor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Cypher Metrics" )
 public class CypherMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.cypher";
+
+    @Documented( "The total number of times Cypher has decided to re-plan a query" )
     public static final String REPLAN_EVENTS = name( NAME_PREFIX, "replan_events" );
 
     private final Config config;

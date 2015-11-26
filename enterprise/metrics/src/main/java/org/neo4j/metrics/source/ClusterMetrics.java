@@ -30,6 +30,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -40,13 +41,18 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 
+@Documented( ".Cluster Metrics" )
 public class ClusterMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.cluster";
-    private static final String SLAVE_PULL_UPDATES = name( NAME_PREFIX, "slave_pull_updates" );
-    private static final String SLAVE_PULL_UPDATE_UP_TO_TX = name( NAME_PREFIX, "slave_pull_update_up_to_tx" );
-    static final String IS_MASTER = name( NAME_PREFIX, "is_master" );
-    static final String IS_AVAILABLE = name( NAME_PREFIX, "is_available" );
+    @Documented( "The total number of update pulls executed by this instance" )
+    public static final String SLAVE_PULL_UPDATES = name( NAME_PREFIX, "slave_pull_updates" );
+    @Documented( "The highest transaction id that has been pulled in the last pull updates by this instance" )
+    public static final String SLAVE_PULL_UPDATE_UP_TO_TX = name( NAME_PREFIX, "slave_pull_update_up_to_tx" );
+    @Documented( "Whether or not this instance is the master in the cluster" )
+    public static final String IS_MASTER = name( NAME_PREFIX, "is_master" );
+    @Documented( "Whether or not this instance is available in the cluster" )
+    public static final String IS_AVAILABLE = name( NAME_PREFIX, "is_available" );
 
     private final Config config;
     private final Monitors monitors;

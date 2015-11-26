@@ -26,19 +26,28 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Database PageCache Metrics" )
 public class PageCacheMetrics extends LifecycleAdapter
 {
     private static final String PAGE_CACHE_PREFIX = "neo4j.page_cache";
+
+    @Documented( "The total number of exceptions seen during the eviction process in the page cache" )
     private static final String PC_EVICTION_EXCEPTIONS = name( PAGE_CACHE_PREFIX, "eviction_exceptions" );
+    @Documented( "The total number of flushes executed by the page cache" )
     private static final String PC_FLUSHES = name( PAGE_CACHE_PREFIX, "flushes" );
+    @Documented( "The total number of page unpins executed by the page cache" )
     private static final String PC_UNPINS = name( PAGE_CACHE_PREFIX, "unpins" );
+    @Documented( "The total number of page pins executed by the page cache" )
     private static final String PC_PINS = name( PAGE_CACHE_PREFIX, "pins" );
+    @Documented( "The total number of page evictions executed by the page cache" )
     private static final String PC_EVICTIONS = name( PAGE_CACHE_PREFIX, "evictions" );
+    @Documented( "The total number of page faults happened in the page cache" )
     private static final String PC_PAGE_FAULTS = name( PAGE_CACHE_PREFIX, "page_faults" );
 
     private final MetricRegistry registry;
