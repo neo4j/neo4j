@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -56,7 +56,6 @@ object helpersv3_0 {
 }
 
 object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
-  import helpersv3_0._
   def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
 
   def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
@@ -140,7 +139,6 @@ case class WrappedMonitors3_0(kernelMonitors: KernelMonitors) extends Monitors {
 }
 
 trait CompatibilityFor3_0 {
-  import org.neo4j.cypher.internal.compatibility.helpersv3_0._
   val graph: GraphDatabaseService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
@@ -309,8 +307,6 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos, variables) =>
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
-    case LegacyPlannerNotification =>
-      NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
     case PlannerUnsupportedNotification =>

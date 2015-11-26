@@ -28,11 +28,4 @@ class EagerStrategyAcceptanceTest  extends ExecutionEngineFunSuite {
   test("should use eagerness when option is provided ") {
     execute("CYPHER strategy=eager MATCH () CREATE ()") should use("Eager")
   }
-
-  test("should not introduce eagerness in merge") {
-    val result = execute("CYPHER strategy=eager MERGE ()")
-
-    result shouldNot use("EagerApply")
-    result shouldNot use("Eager")
-  }
 }

@@ -91,9 +91,8 @@ class CypherCompiler(graph: GraphDatabaseService,
   def preParseQuery(queryText: String): PreParsedQuery = {
     val logger = new RecordingNotificationLogger
     val preParsedStatement = CypherPreParser(queryText)
-    val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode, notifications) = CypherStatementWithOptions(
-      preParsedStatement)
-    notifications.foreach( logger += _ )
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =
+      CypherStatementWithOptions(preParsedStatement)
 
     val cypherVersion = version.getOrElse(configuredVersion)
     val pickedExecutionMode = mode.getOrElse(CypherExecutionMode.default)

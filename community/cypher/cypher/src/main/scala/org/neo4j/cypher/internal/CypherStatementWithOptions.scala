@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, LegacyPlannerNotification}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy, CypherVersion, InvalidArgumentException}
 
 import scala.annotation.tailrec
 
 object CypherStatementWithOptions {
   def apply(input: PreParsedStatement): CypherStatementWithOptions = {
-    val notifications = input.options.collectFirst { case _: PlannerPreParserOption => LegacyPlannerNotification }.toSeq
 
     @tailrec
     def recurse(options: List[PreParserOption], version: Option[CypherVersion],
@@ -35,7 +34,7 @@ object CypherStatementWithOptions {
                 updateStrategy: Option[CypherUpdateStrategy],
                 executionMode: Option[CypherExecutionMode]): CypherStatementWithOptions = options match {
       case Nil => CypherStatementWithOptions(input.statement, input.offset,
-                                             version, planner, runtime, updateStrategy, executionMode, notifications)
+                                             version, planner, runtime, updateStrategy, executionMode)
       case option :: tail =>
         option match {
           case e: ExecutionModePreParserOption  =>
@@ -73,5 +72,4 @@ case class CypherStatementWithOptions(statement: String, offset: InputPosition,
                                       planner: Option[CypherPlanner],
                                       runtime: Option[CypherRuntime],
                                       updateStrategy: Option[CypherUpdateStrategy],
-                                      executionMode: Option[CypherExecutionMode],
-                                      notifications: Seq[InternalNotification])
+                                      executionMode: Option[CypherExecutionMode])
