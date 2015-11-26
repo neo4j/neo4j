@@ -51,6 +51,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -859,6 +861,34 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
                                                                                "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
         assertThat( begin, hasErrors( Status.Request.Schema.NoSuchIndex ) );
+    }
+
+    @Test
+    public void transaction_not_in_response_on_failure() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // execute valid statement
+        Response valid =
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETURN 42' } ] }" ) );
+        assertThat( valid.status(), equalTo( 200 ) );
+        assertThat( valid.get( "transaction"), notNullValue() );
+
+        // execute invalid statement
+        Response invalid =
+                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'RETRUN 42' } ] }" ) );
+        assertThat( invalid.status(), equalTo( 200 ) );
+        //transaction has been closed and rolled back
+        assertThat( invalid.get( "transaction"), nullValue() );
+
+        // commit
+        Response commit = http.POST( commitResource );
+
+        //no transaction open anymore, we have failed
+        assertThat( commit.status(), equalTo( 404 ) );
     }
 
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
