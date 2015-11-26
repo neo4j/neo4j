@@ -38,6 +38,13 @@ import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
+/**
+  * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
+  * operation so please make sure this will be constructed only once and properly reused.
+  *
+  * @deprecated use { @link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
+  */
+@Deprecated
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
   require(graph != null, "Can't work with a null graph database")

@@ -23,6 +23,11 @@ import java.io.PrintWriter
 
 import org.neo4j.graphdb.ResourceIterator
 
+/**
+  * @deprecated See { @link org.neo4j.graphdb.Result}, and use
+  * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
+  */
+@Deprecated
 trait ExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
   def javaColumns: java.util.List[String]
