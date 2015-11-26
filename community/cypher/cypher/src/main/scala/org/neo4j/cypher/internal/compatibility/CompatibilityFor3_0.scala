@@ -420,7 +420,8 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
                                    kernelAPI: KernelAPI,
                                    log: Log,
                                    planner: CypherPlanner,
-                                   runtime: CypherRuntime) extends CompatibilityFor3_0 {
+                                   runtime: CypherRuntime,
+                                   strategy: CypherUpdateStrategy) extends CompatibilityFor3_0 {
 
   protected val compiler = {
     val plannerName = planner match {
@@ -436,10 +437,14 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
+    val updateStrategy = strategy match {
+      case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
+      case _ => None
+    }
 
     CypherCompilerFactory.costBasedCompiler(
       graph, config, clock, GeneratedQueryStructure, new WrappedMonitors3_0( kernelMonitors ),
-      new StringInfoLogger3_0( log ), rewriterSequencer, plannerName, runtimeName)
+      new StringInfoLogger3_0( log ), rewriterSequencer, plannerName, runtimeName, updateStrategy)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

@@ -37,13 +37,14 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
+    val alwaysEager = context.config.updateStrategy.alwaysEager
     val planWithEffect =
-      if (conflicts(partPlan, in))
+      if (alwaysEager || conflicts(partPlan, in))
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
     val planWithUpdatesAndEffects =
-      if (in.updateGraph.mergeNodeDeleteOverlap)
+      if (alwaysEager || in.updateGraph.mergeNodeDeleteOverlap)
         context.logicalPlanProducer.planEager(planWithUpdates)
       else planWithUpdates
 

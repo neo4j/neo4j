@@ -41,7 +41,7 @@ case object CypherPreParser extends Parser with Base {
   def Cypher = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | StrategyOption, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -57,13 +57,8 @@ case object CypherPreParser extends Parser with Base {
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
   )
 
-  @deprecated
-  def PlannerDeprecated = rule("PLANNER") (
-      keyword("PLANNER COST") ~ push(CostPlannerOption)
-    | keyword("PLANNER GREEDY") ~ push(GreedyPlannerOption)
-    | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
-    | keyword("PLANNER DP") ~ push(DPPlannerOption)
-    | keyword("PLANNER RULE") ~ push(RulePlannerOption)
+  def StrategyOption = rule("strategy option")(
+    option("strategy", "eager") ~ push(EagerOption)
   )
 
   def VersionNumber = rule("Version") {

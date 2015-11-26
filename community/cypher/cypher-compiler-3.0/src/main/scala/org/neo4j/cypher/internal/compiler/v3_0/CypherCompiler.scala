@@ -72,7 +72,8 @@ object CypherCompilerFactory {
                         logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
-                        runtimeName: Option[RuntimeName]): CypherCompiler = {
+                        runtimeName: Option[RuntimeName],
+                        updateStrategy: Option[UpdateStrategy]): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
@@ -94,7 +95,8 @@ object CypherCompilerFactory {
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
       semanticChecker = checker,
-      useErrorsOverWarnings = config.useErrorsOverWarnings
+      useErrorsOverWarnings = config.useErrorsOverWarnings,
+      updateStrategy = updateStrategy
     )
     val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
 

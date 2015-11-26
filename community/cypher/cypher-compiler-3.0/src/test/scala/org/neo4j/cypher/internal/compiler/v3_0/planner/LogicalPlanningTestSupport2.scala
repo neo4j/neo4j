@@ -157,6 +157,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def planFor(queryString: String): SemanticPlan = {
+
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
@@ -164,7 +165,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, mkException)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, rewriterSequencer, semanticChecker, postConditions, mock[AstRewritingMonitor]) match {
+      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree,
+        semanticTable, rewriterSequencer, semanticChecker, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = toUnionQuery(ast, semanticTable)

@@ -66,7 +66,8 @@ class RuleExecutablePlanBuilderTest
     plannerName = None,
     runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
-    useErrorsOverWarnings = false
+    useErrorsOverWarnings = false,
+    updateStrategy = None
   )
 
   class FakePreparedQuery(q: AbstractQuery)
