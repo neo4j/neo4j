@@ -246,8 +246,10 @@ public class ShortestPath implements PathFinder<Path>
                 Hit hit = new Hit( startSideData, endSideData, nextNode );
                 Node start = startSide.startNode;
                 Node end = (startSide == directionData) ? otherSide.startNode : directionData.startNode;
-                monitorData( startSide, (otherSide == startSide) ? directionData : otherSide);
-                if ( filterPaths( hitToPaths( hit, start, end, stopAsap ) ).size() > 0 )
+                monitorData( startSide, (otherSide == startSide) ? directionData : otherSide, nextNode );
+                // NOTE: Applying the filter-condition could give the wrong results with allShortestPaths,
+                // so only use it for singleShortestPath
+                if ( !stopAsap || filterPaths( hitToPaths( hit, start, end, stopAsap ) ).size() > 0 )
                 {
                     if ( hits.add( hit, depth ) >= maxResultCount )
                     {
@@ -274,13 +276,13 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    private void monitorData( DirectionData directionData, DirectionData otherSide )
+    private void monitorData( DirectionData directionData, DirectionData otherSide, Node connectingNode )
     {
         resolveMonitor( directionData.startNode );
         if ( dataMonitor != null )
         {
             dataMonitor.monitorData( directionData.visitedNodes, directionData.nextNodes, otherSide.visitedNodes,
-                    otherSide.nextNodes );
+                    otherSide.nextNodes, connectingNode );
         }
     }
 
@@ -307,7 +309,7 @@ public class ShortestPath implements PathFinder<Path>
     public interface DataMonitor
     {
         void monitorData( Map<Node,LevelData> theseVisitedNodes, Collection<Node> theseNextNodes,
-                Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes );
+                Map<Node,LevelData> thoseVisitedNodes, Collection<Node> thoseNextNodes, Node connectingNode );
     }
 
     // Two long-lived instances
