@@ -54,7 +54,7 @@ import static java.lang.Boolean.getBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.SuppressOutput.suppress;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 

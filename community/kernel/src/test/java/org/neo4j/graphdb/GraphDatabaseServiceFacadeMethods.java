@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**

@@ -34,8 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,8 +57,8 @@ import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 public class BigStoreIT implements RelationshipType
 {
-    private static final RelationshipType OTHER_TYPE = DynamicRelationshipType.withName( "OTHER" );
-    
+    private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
+
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
     @Rule
@@ -172,22 +170,22 @@ public class BigStoreIT implements RelationshipType
         try ( Transaction transaction = db.beginTx() )
         {
             refNode = db.getNodeById( refNode.getId() );
-	        for ( Relationship rel : refNode.getRelationships( Direction.OUTGOING ) )
-	        {
-	            Node node = rel.getEndNode();
-	            assertProperties( properties, node );
-	            assertProperties( properties, rel );
-	            Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
-	            assertProperties( properties, highNode );
-	            verified++;
-	        }
-	        transaction.success();
+            for ( Relationship rel : refNode.getRelationships( Direction.OUTGOING ) )
+            {
+                Node node = rel.getEndNode();
+                assertProperties( properties, node );
+                assertProperties( properties, rel );
+                Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
+                assertProperties( properties, highNode );
+                verified++;
+            }
+            transaction.success();
         }
         assertEquals( count, verified );
     }
 
-    private static final Label REFERENCE = DynamicLabel.label( "Reference" );
-    
+    private static final Label REFERENCE = Label.label( "Reference" );
+
     private Node createReferenceNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )

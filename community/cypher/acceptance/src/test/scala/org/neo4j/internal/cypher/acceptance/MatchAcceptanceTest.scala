@@ -1491,8 +1491,8 @@ return b
   test("MATCH (a1:X:Y)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:Y)-[r]->(b2) RETURN a1, r, b2") {
     val node1 = graph.inTx({
       val node = createNode()
-      node.addLabel(DynamicLabel.label("X"))
-      node.addLabel(DynamicLabel.label("Y"))
+      node.addLabel(Label.label("X"))
+      node.addLabel(Label.label("Y"))
       node
     })
     val node2 = createNode()

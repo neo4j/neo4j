@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -60,7 +59,7 @@ public class CircularGraphTest extends TraversalTestBase
 
         try ( Transaction tx2 = beginTx() )
         {
-            final RelationshipType type = DynamicRelationshipType.withName( "TO" );
+            final RelationshipType type = RelationshipType.withName( "TO" );
             Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
                     {
                         public boolean isStopNode( TraversalPosition position )

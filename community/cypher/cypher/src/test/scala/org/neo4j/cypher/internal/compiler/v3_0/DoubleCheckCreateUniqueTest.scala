@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import java.lang.Iterable
 import java.net.URL
 import java.util
+
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{CreateUniqueAction, UniqueLink}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
@@ -31,10 +32,10 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import org.neo4j.graphdb.index.IndexManager
 import org.neo4j.graphdb.schema.Schema
-import org.neo4j.graphdb.traversal.{TraversalDescription, BidirectionalTraversalDescription}
+import org.neo4j.graphdb.traversal.{BidirectionalTraversalDescription, TraversalDescription}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.store.StoreId
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 
@@ -92,7 +93,7 @@ class DoubleCheckCreateUniqueTest extends CypherFunSuite {
     if (!done) {
       done = true
       val x = db.createNode()
-      node.createRelationshipTo(x, DynamicRelationshipType.withName("X"))
+      node.createRelationshipTo(x, RelationshipType.withName("X"))
     }
   }
 }

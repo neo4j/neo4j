@@ -24,8 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -49,7 +49,7 @@ public class JUnitDocTest
                 {
                     try (Transaction tx = graphDatabaseService.beginTx())
                     {
-                        graphDatabaseService.createNode( DynamicLabel.label( "Admin" ));
+                        graphDatabaseService.createNode( Label.label( "Admin" ) );
                         tx.success();
                     }
                     return null;
@@ -71,7 +71,7 @@ public class JUnitDocTest
         // and we have access to underlying GraphDatabaseService
         try (Transaction tx = neo4j.getGraphDatabaseService().beginTx()) {
             assertEquals( 2, IteratorUtil.count(
-                    neo4j.getGraphDatabaseService().findNodes( DynamicLabel.label( "Admin" ) )
+                    neo4j.getGraphDatabaseService().findNodes( Label.label( "Admin" ) )
             ));
             tx.success();
         }

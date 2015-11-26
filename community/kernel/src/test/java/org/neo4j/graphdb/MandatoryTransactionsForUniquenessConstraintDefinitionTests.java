@@ -45,7 +45,7 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
     {
         return graphDatabaseService
                 .schema()
-                .constraintFor( DynamicLabel.label( "Label" ) )
+                .constraintFor( Label.label( "Label" ) )
                 .assertPropertyIsUnique( "property" )
                 .create();
     }

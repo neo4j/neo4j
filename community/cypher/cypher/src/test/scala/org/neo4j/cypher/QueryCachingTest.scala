@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -30,7 +30,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
-    graph.inTx { graph.createNode(DynamicLabel.label("Person")) }
+    graph.inTx { graph.createNode(Label.label("Person")) }
 
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)

@@ -51,10 +51,9 @@ package org.neo4j.graphdb;
  * </code>
  * 
  * For labels that your application don't know up front you can make use of
- * {@link DynamicLabel#label(String)}, or your own implementation of this interface,
+ * {@link #label(String)}, or your own implementation of this interface,
  * as it's just the name that matters.
  *
- * @see DynamicLabel
  * @see Node
  */
 public interface Label
@@ -68,4 +67,53 @@ public interface Label
      * @return the name of the label
      */
     String name();
+
+    /**
+     * Instantiates a new {@linkplain Label} with the given name.
+     *
+     * @param name the name of the label
+     * @return a {@link Label} instance for the given name
+     * @throws IllegalArgumentException if name is {@code null}
+     */
+    static Label label( String name )
+    {
+        if ( name == null )
+        {
+            throw new IllegalArgumentException( "A label cannot have a null name" );
+        }
+        return new Label()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String toString()
+            {
+                return name;
+            }
+
+            @Override
+            public boolean equals( Object that )
+            {
+                if ( this == that )
+                {
+                    return true;
+                }
+                if ( that == null || that.getClass() != getClass() )
+                {
+                    return false;
+                }
+                return name.equals( ((Label) that).name() );
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return name.hashCode();
+            }
+        };
+    }
 }

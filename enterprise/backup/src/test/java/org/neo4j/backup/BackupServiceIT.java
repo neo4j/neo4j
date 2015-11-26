@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -214,7 +213,7 @@ public class BackupServiceIT
     {
         defaultBackupPortHostParams();
         GraphDatabaseAPI graphDatabase = dbRule.getGraphDatabaseAPI();
-        Label markerLabel = DynamicLabel.label( "marker" );
+        Label markerLabel = Label.label( "marker" );
 
         try ( Transaction transaction = graphDatabase.beginTx() )
         {

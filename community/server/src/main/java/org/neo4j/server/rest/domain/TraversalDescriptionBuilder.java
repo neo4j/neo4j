@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Traverser.Order;
@@ -134,7 +133,7 @@ public class TraversalDescriptionBuilder
             {
                 Map map = (Map) pairDescription;
                 String name = (String) map.get( "type" );
-                RelationshipType type = DynamicRelationshipType.withName( name );
+                RelationshipType type = RelationshipType.withName( name );
                 String directionName = (String) map.get( "direction" );
                 expander = directionName == null ? expander.add( type ) :
                         expander.add( type, stringToEnum( directionName,

@@ -41,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -73,8 +72,8 @@ public class RollingUpgradeIT
 {
     private static final int CLUSTER_SIZE = 3;
 
-    public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
-    public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
+    public static final RelationshipType type1 = RelationshipType.withName( "type1" );
+    public static final RelationshipType type2 = RelationshipType.withName( "type2" );
 
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );

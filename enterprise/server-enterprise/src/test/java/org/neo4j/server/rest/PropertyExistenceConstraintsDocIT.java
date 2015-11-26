@@ -52,7 +52,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;

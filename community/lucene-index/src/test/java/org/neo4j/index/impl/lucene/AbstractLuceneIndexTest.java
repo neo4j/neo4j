@@ -28,7 +28,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -105,7 +104,7 @@ public abstract class AbstractLuceneIndexTest
     }
 
     private static final RelationshipType TEST_TYPE =
-            DynamicRelationshipType.withName( "TEST_TYPE" );
+            RelationshipType.withName( "TEST_TYPE" );
     protected static final EntityCreator<Node> NODE_CREATOR = new EntityCreator<Node>()
     {
         public Node create( Object... properties )

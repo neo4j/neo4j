@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.stresstests.mutation;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,7 +36,7 @@ class LabelMutation implements Mutation
     public void perform( long nodeId, String value )
     {
         Node node = db.getNodeById( nodeId );
-        Label label = DynamicLabel.label( value );
+        Label label = Label.label( value );
         if ( node.hasLabel( label ) )
         {
             node.removeLabel( label );

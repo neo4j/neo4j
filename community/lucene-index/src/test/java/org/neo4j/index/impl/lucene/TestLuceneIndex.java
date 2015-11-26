@@ -40,7 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -71,7 +70,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -209,7 +208,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Relationship> index = relationshipIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node a = graphDb.createNode();
         Node b = graphDb.createNode();
-        Relationship rel = a.createRelationshipTo( b, DynamicRelationshipType.withName( "REL" ) );
+        Relationship rel = a.createRelationshipTo( b, withName( "REL" ) );
         rel.setProperty( "poke", 1 );
         index.add( rel, "key", "value" );
         commitTx();
@@ -601,7 +600,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         RelationshipIndex index = relationshipIndex(
                 LuceneIndexImplementation.EXACT_CONFIG );
 
-        RelationshipType type = DynamicRelationshipType.withName( "YO" );
+        RelationshipType type = withName( "YO" );
         Node startNode = graphDb.createNode();
         Node endNode1 = graphDb.createNode();
         Node endNode2 = graphDb.createNode();
@@ -1014,7 +1013,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         Node n1 = graphDb.createNode();
         Node n2 = graphDb.createNode();
-        Relationship r = n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "foo" ) );
+        Relationship r = n1.createRelationshipTo( n2, withName( "foo" ) );
         RelationshipIndex index = graphDb.index().forRelationships( "rel-index" );
         String key = "bar";
         index.remove( r, key, "value" );
@@ -1722,7 +1721,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         final Node root = graphDb.createNode();
         final Index<Relationship> index = relationshipIndex( LuceneIndexImplementation.EXACT_CONFIG );
-        final DynamicRelationshipType type = DynamicRelationshipType.withName( "SINGLE" );
+        final RelationshipType type = withName( "SINGLE" );
         UniqueFactory<Relationship> factory = new UniqueFactory.UniqueRelationshipFactory( index )
         {
             @Override

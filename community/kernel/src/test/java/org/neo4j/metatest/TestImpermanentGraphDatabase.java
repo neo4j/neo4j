@@ -23,9 +23,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -77,7 +77,7 @@ public class TestImpermanentGraphDatabase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            DynamicRelationshipType relationshipType = DynamicRelationshipType.withName("R");
+            RelationshipType relationshipType = RelationshipType.withName( "R" );
 
             Node n1 = db.createNode();
             Node n2 = db.createNode();

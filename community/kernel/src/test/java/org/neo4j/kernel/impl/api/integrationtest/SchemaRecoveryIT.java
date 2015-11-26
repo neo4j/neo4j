@@ -33,7 +33,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class SchemaRecoveryIT

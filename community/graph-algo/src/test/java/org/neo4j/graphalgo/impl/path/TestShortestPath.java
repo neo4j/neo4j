@@ -33,8 +33,6 @@ import org.neo4j.function.Predicate;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -71,13 +69,13 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     @Test
     public void shouldAbortAsSoonAsPossible()
     {
-        final Label A = DynamicLabel.label( "A" );
-        final Label B = DynamicLabel.label( "B" );
-        final Label C = DynamicLabel.label( "C" );
-        final Label D = DynamicLabel.label( "D" );
-        final Label E = DynamicLabel.label( "E" );
-        final Label F = DynamicLabel.label( "F" );
-        final RelationshipType relType = DynamicRelationshipType.withName( "TO" );
+        final Label A = Label.label( "A" );
+        final Label B = Label.label( "B" );
+        final Label C = Label.label( "C" );
+        final Label D = Label.label( "D" );
+        final Label E = Label.label( "E" );
+        final Label F = Label.label( "F" );
+        final RelationshipType relType = RelationshipType.withName( "TO" );
         recursiveSnowFlake( null, 0, 4, 5, new Label[] { A, B, C, D, E }, relType );
         final Node a = graphDb.findNodes( A ).next();
         final ResourceIterator<Node> allE = graphDb.findNodes( E );

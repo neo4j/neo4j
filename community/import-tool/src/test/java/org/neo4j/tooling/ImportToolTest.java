@@ -38,7 +38,6 @@ import java.util.UUID;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.function.IntPredicate;
 import org.neo4j.function.Predicate;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -73,8 +72,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.function.IntPredicates.alwaysTrue;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -250,9 +249,9 @@ public class ImportToolTest
             assertEquals( 4097, nodeCount );
 
             tx.success();
-            ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
+            ResourceIterator<Node> nodes = dbRule.findNodes( label( "FIRST 4096" ) );
             assertEquals (1, IteratorUtil.asList(nodes).size() );
-            nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
+            nodes = dbRule.findNodes( label( "SECOND 4096" ) );
             assertEquals( 1, IteratorUtil.asList( nodes ).size() );
         }
     }
@@ -633,8 +632,8 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        final Label label1 = DynamicLabel.label( "My First Label" );
-        final Label label2 = DynamicLabel.label( "My Other Label" );
+        final Label label1 = label( "My First Label" );
+        final Label label2 = label( "My Other Label" );
 
         // WHEN
         importTool(

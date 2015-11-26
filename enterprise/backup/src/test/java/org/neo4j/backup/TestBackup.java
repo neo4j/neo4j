@@ -31,10 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -599,7 +599,7 @@ public class TestBackup
             Node node = db.createNode();
             node.setProperty( "backup", "Is great" );
             db.createNode().createRelationshipTo( node,
-                    DynamicRelationshipType.withName( "LOVES" ) );
+                    RelationshipType.withName( "LOVES" ) );
             tx.success();
         }
         finally
@@ -669,12 +669,11 @@ public class TestBackup
         // 4 transactions: THE transaction, "mykey" property key, "db-index" index, "KNOWS" rel type.
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( DynamicLabel.label( "Me" ) );
+            Node node = db.createNode( Label.label( "Me" ) );
             node.setProperty( "myKey", "myValue" );
             Index<Node> nodeIndex = db.index().forNodes( "db-index" );
             nodeIndex.add( node, "myKey", "myValue" );
-            db.createNode().createRelationshipTo( node,
-                    DynamicRelationshipType.withName( "KNOWS" ) );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
     }

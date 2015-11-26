@@ -27,9 +27,9 @@ import java.io.IOException;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -83,7 +83,7 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
         try ( Transaction transaction = node.getGraphDatabase().beginTx() )
         {
             relationship = node.getSingleRelationship(
-                    DynamicRelationshipType.withName( "know" ),
+                    RelationshipType.withName( "know" ),
                     Direction.OUTGOING );
         }
         String response = gen().expectedStatus(

@@ -45,6 +45,6 @@ public class MandatoryTransactionsForConstraintCreatorTests
     {
         return graphDatabaseService
                .schema()
-               .constraintFor( DynamicLabel.label( "Label" ) );
+               .constraintFor( Label.label( "Label" ) );
     }
 }

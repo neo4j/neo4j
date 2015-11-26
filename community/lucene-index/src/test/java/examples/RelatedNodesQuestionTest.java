@@ -21,10 +21,10 @@ package examples;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -50,7 +50,7 @@ public class RelatedNodesQuestionTest
             Node node1 = service.createNode();
             Node node2 = service.createNode();
             String a_uuid = "xyz";
-            Relationship relationship = node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "related" ) );
+            Relationship relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "related" ) );
             index.add( relationship, "uuid", a_uuid );
             // query
             IndexHits<Relationship> hits = index.get( "uuid", a_uuid, node1, node2 );

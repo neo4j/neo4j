@@ -64,7 +64,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasNoLabels;
@@ -187,7 +187,7 @@ public class LabelsAcceptanceTest
         // And When I set a null label
         try ( Transaction tx2 = graphDatabase.beginTx() )
         {
-            graphDatabase.createNode().addLabel( label( null ) );
+            graphDatabase.createNode().addLabel( () -> null );
             fail( "Should have thrown exception" );
         }
         catch ( ConstraintViolationException ex )
@@ -445,7 +445,7 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        final Label label = DynamicLabel.label( "A" );
+        final Label label = label( "A" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -477,8 +477,8 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label1 = DynamicLabel.label( "A" );
-        Label label2 = DynamicLabel.label( "B" );
+        Label label1 = label( "A" );
+        Label label2 = label( "B" );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -527,7 +527,7 @@ public class LabelsAcceptanceTest
             node = db.createNode();
             for ( int i = 0; i < TOTAL_NUMBER_OF_LABELS; i++ )
             {
-                node.addLabel( DynamicLabel.label( "label:" + i ) );
+                node.addLabel( label( "label:" + i ) );
             }
 
             tx.success();
@@ -538,7 +538,7 @@ public class LabelsAcceptanceTest
         {
             for ( int i = NUMBER_OF_PRESERVED_LABELS; i < TOTAL_NUMBER_OF_LABELS; i++ )
             {
-                node.removeLabel( DynamicLabel.label( "label:" + i ) );
+                node.removeLabel( label( "label:" + i ) );
             }
 
             tx.success();
@@ -569,7 +569,7 @@ public class LabelsAcceptanceTest
             node.setProperty( "foo", "bar" );
             for ( int i = 0; i < 20; i++ )
             {
-                node.addLabel( DynamicLabel.label( "label:" + i ) );
+                node.addLabel( label( "label:" + i ) );
             }
 
             tx.success();

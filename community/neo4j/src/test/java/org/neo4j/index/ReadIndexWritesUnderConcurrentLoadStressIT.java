@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -52,7 +51,7 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
     public static final int THREAD_COUNT = 8;
     public static final DecimalFormat COUNT_FORMAT = new DecimalFormat( "###,###,###,###,##0" );
     public static final DecimalFormat THROUGHPUT_FORMAT = new DecimalFormat( "###,###,###,###,##0.00" );
-    public static final Label LABEL = DynamicLabel.label( "Label" );
+    public static final Label LABEL = Label.label( "Label" );
     public static final String PROPERTY_KEY = "key";
 
     @Test

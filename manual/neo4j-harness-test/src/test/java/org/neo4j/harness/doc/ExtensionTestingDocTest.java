@@ -26,8 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
@@ -83,7 +83,7 @@ public class ExtensionTestingDocTest
                     {
                         try ( Transaction tx = graphDatabaseService.beginTx() )
                         {
-                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
+                            graphDatabaseService.createNode( Label.label( "User" ) );
                             tx.success();
                         }
                         return null;

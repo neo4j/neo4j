@@ -58,8 +58,8 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.test.Assert.assertEventually;

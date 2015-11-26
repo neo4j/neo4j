@@ -107,8 +107,8 @@ import static org.junit.Assert.assertTrue;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -60,7 +59,7 @@ public class ValueUnboundRelationship
 
         Map<String, Object> props = unpacker.unpackMap();
 
-        RelationshipType relType = DynamicRelationshipType.withName( relTypeName );
+        RelationshipType relType = RelationshipType.withName( relTypeName );
 
         return new ValueUnboundRelationship( relId, relType, props );
     }

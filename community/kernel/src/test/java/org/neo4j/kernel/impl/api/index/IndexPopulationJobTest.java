@@ -34,7 +34,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -588,8 +587,8 @@ public class IndexPopulationJobTest
 
     private GraphDatabaseAPI db;
 
-    private final Label FIRST = DynamicLabel.label( "FIRST" );
-    private final Label SECOND = DynamicLabel.label( "SECOND" );
+    private final Label FIRST = Label.label( "FIRST" );
+    private final Label SECOND = Label.label( "SECOND" );
     private final String name = "name";
     private final String age = "age";
 

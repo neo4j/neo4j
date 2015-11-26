@@ -37,13 +37,12 @@ import java.util.Map;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -80,7 +79,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -91,7 +90,7 @@ import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class DatabaseActionsTest
 {
-    private static final Label LABEL = DynamicLabel.label( "Label" );
+    private static final Label LABEL = label( "Label" );
     private static GraphDbHelper graphdbHelper;
     private static Database database;
     private static GraphDatabaseAPI graph;
@@ -442,7 +441,7 @@ public class DatabaseActionsTest
             Node startNode = database.getGraph().createNode();
             Node endNode = database.getGraph().createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
-                    DynamicRelationshipType.withName( "knows" ) );
+                    RelationshipType.withName( "knows" ) );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 relationship.setProperty( entry.getKey(), entry.getValue() );

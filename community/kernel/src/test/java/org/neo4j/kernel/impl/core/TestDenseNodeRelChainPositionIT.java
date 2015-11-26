@@ -25,10 +25,10 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -66,7 +66,7 @@ public class TestDenseNodeRelChainPositionIT
 
             for ( int i = 0; i < denseNodeThreshold; i++ )
             {
-                node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "FOO" ) );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "FOO" ) );
             }
             tx.success();
         }

@@ -27,7 +27,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -77,7 +77,7 @@ public class TestTimeline
 
     private EntityCreator<PropertyContainer> relationshipCreator = new EntityCreator<PropertyContainer>()
     {
-        private final RelationshipType type = DynamicRelationshipType.withName( "whatever" );
+        private final RelationshipType type = RelationshipType.withName( "whatever" );
 
         @Override
         public Relationship create()

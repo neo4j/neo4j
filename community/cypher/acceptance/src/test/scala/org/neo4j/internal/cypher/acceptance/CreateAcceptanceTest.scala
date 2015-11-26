@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
-import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node, Relationship}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.graphdb.{Direction, Relationship, RelationshipType}
 
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -141,8 +141,8 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, relationshipsCreated = 1)
     graph.inTx {
-      start.getRelationships(DynamicRelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
-      end.getRelationships(DynamicRelationshipType.withName(typ), Direction.INCOMING).asScala should have size 1
+      start.getRelationships(RelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
+      end.getRelationships(RelationshipType.withName(typ), Direction.INCOMING).asScala should have size 1
     }
   }
 
@@ -155,7 +155,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 1, labelsAdded = 1, relationshipsCreated = 1)
     graph.inTx {
-      start.getRelationships(DynamicRelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
+      start.getRelationships(RelationshipType.withName(typ), Direction.OUTGOING).asScala should have size 1
     }
   }
 

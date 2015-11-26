@@ -35,8 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
@@ -571,7 +571,7 @@ public class ImportToolDocIT
         // THEN
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx();
-              ResourceIterator<Node> nodes = db.findNodes( DynamicLabel.label( "Actor" ) ) )
+              ResourceIterator<Node> nodes = db.findNodes( Label.label( "Actor" ) ) )
         {
             assertEquals( asSet( "Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss" ), namesOf( nodes ) );
             tx.success();
@@ -664,7 +664,7 @@ public class ImportToolDocIT
                 relationshipCount++;
             }
             assertEquals( RELATIONSHIP_COUNT, relationshipCount );
-            ResourceIterator<Node> movieSequels = db.findNodes( DynamicLabel.label( "Sequel" ) );
+            ResourceIterator<Node> movieSequels = db.findNodes( Label.label( "Sequel" ) );
             while ( movieSequels.hasNext() )
             {
                 Node sequel = movieSequels.next();
@@ -673,7 +673,7 @@ public class ImportToolDocIT
             }
             assertEquals( SEQUEL_COUNT, sequelCount );
             tx.success();
-            Object year = db.findNode( DynamicLabel.label( "Movie" ), "title", "The Matrix" ).getProperty( "year" );
+            Object year = db.findNode( Label.label( "Movie" ), "title", "The Matrix" ).getProperty( "year" );
             assertEquals( year, 1999 );
         }
         finally

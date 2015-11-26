@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.Propert
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.DynamicRelationshipType.withName
+import org.neo4j.graphdb.RelationshipType.withName
 
 class TrailBuilderTest extends CypherFunSuite {
   val A = withName("A")

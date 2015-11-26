@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -77,7 +76,7 @@ public class RecoveryIT
     public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.graphDbDir() );
-        Label testLabel = DynamicLabel.label( "testLabel" );
+        Label testLabel = Label.label( "testLabel" );
         final String propertyToDelete = "propertyToDelete";
         final String validPropertyName = "validProperty";
 

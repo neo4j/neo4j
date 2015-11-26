@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -47,7 +46,7 @@ import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class HaCountsIT
 {
-    private static final Label LABEL = DynamicLabel.label( "label" );
+    private static final Label LABEL = Label.label( "label" );
     private static final String PROPERTY_NAME = "prop";
     private static final String PROPERTY_VALUE = "value";
 

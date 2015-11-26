@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
@@ -635,7 +635,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     {
         Relationship rel = getGraphDb().createNode()
                                        .createRelationshipTo( getGraphDb().createNode(),
-                                                              DynamicRelationshipType.withName( "INVALIDATES" ) );
+                                               RelationshipType.withName( "INVALIDATES" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
@@ -680,7 +680,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     private void testYoyoArrayBase( boolean withNewTx )
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(),
-                                                                           DynamicRelationshipType.withName( "LOCKS" ) );
+                RelationshipType.withName( "LOCKS" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
         long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
@@ -715,7 +715,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     public void testRemoveZigZag()
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(),
-                                                                           DynamicRelationshipType.withName( "LOCKS" ) );
+                RelationshipType.withName( "LOCKS" ) );
 
         long recordsInUseAtStart = propertyRecordsInUse();
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.helpers
 
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.graphdb.DynamicLabel._
+import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
@@ -46,19 +46,19 @@ trait GraphIcing {
   implicit class RichGraphDatabaseAPI(graph: GraphDatabaseAPI) {
 
     def indexPropsForLabel(label: String): List[List[String]] = {
-      val indexDefs = graph.schema.getIndexes(DynamicLabel.label(label)).asScala.toList
+      val indexDefs = graph.schema.getIndexes(Label.label(label)).asScala.toList
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
     def createConstraint(label:String, property: String) = {
       inTx {
-        graph.schema().constraintFor(DynamicLabel.label(label)).assertPropertyIsUnique(property).create()
+        graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       }
     }
 
     def createIndex(label: String, property: String) = {
       val indexDef = inTx {
-        graph.schema().indexFor(DynamicLabel.label(label)).on(property).create()
+        graph.schema().indexFor(Label.label(label)).on(property).create()
       }
 
       inTx {

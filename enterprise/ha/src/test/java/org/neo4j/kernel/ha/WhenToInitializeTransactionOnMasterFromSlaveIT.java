@@ -23,12 +23,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -63,9 +63,9 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
         // Create some basic data
         try ( Transaction tx = slave.beginTx() )
         {
-            Node node = slave.createNode( DynamicLabel.label( "Person" ) );
+            Node node = slave.createNode( Label.label( "Person" ) );
             node.setProperty( "name", "Bob" );
-            node.createRelationshipTo( slave.createNode(), DynamicRelationshipType.withName( "KNOWS" ));
+            node.createRelationshipTo( slave.createNode(), RelationshipType.withName( "KNOWS" ) );
 
             tx.success();
         }

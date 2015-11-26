@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.DynamicRelationshipType.withName
+import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.{Node, Relationship}
 
 class MergeIntoPipeTest extends CypherFunSuite {

@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -48,7 +47,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 
 public class IndexConstraintsTest
 {
-    private static final Label LABEL = DynamicLabel.label( "Label" );
+    private static final Label LABEL = Label.label( "Label" );
     private static final String PROPERTY_KEY = "x";
 
     private GraphDatabaseService graphDb;

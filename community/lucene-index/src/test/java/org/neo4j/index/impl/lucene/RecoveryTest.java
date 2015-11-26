@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -46,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests.
@@ -215,7 +214,7 @@ public class RecoveryTest
                 Index<Relationship> index = db.index().forRelationships( "myIndex" );
                 Node node = db.createNode();
                 Relationship relationship = db.createNode().createRelationshipTo( node,
-                        DynamicRelationshipType.withName( "KNOWS" ) );
+                        withName( "KNOWS" ) );
 
                 index.add( relationship, "key", "value" );
                 tx.success();

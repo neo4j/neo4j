@@ -40,7 +40,6 @@ import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -104,7 +103,7 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
@@ -554,7 +553,7 @@ public class DatabaseActions
         }
 
         Relationship rel = start.createRelationshipTo( end,
-                DynamicRelationshipType.withName( type ) );
+                RelationshipType.withName( type ) );
 
         propertySetter.setProperties( rel, properties );
 
@@ -589,7 +588,7 @@ public class DatabaseActions
             for ( String type : types )
             {
                 expander = expander.add(
-                        DynamicRelationshipType.withName( type ),
+                        RelationshipType.withName( type ),
                         direction.internal );
             }
         }
@@ -612,7 +611,7 @@ public class DatabaseActions
             int sum = 0;
             for ( String type : types )
             {
-                sum += node.getDegree( DynamicRelationshipType.withName( type ), direction.internal );
+                sum += node.getDegree( RelationshipType.withName( type ), direction.internal );
             }
             return PropertiesRepresentation.value( sum );
         }
@@ -969,7 +968,7 @@ public class DatabaseActions
             super( graphDb, index );
             this.start = start;
             this.end = end;
-            this.type = DynamicRelationshipType.withName( type );
+            this.type = RelationshipType.withName( type );
             this.properties = properties;
         }
 
@@ -1648,7 +1647,7 @@ public class DatabaseActions
     private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName,
             Predicate<ConstraintDefinition> filter )
     {
-        DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+        RelationshipType type = RelationshipType.withName( typeName );
         Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( type );
         return filter( filter, constraints );
     }
@@ -1674,7 +1673,7 @@ public class DatabaseActions
             {
                 return item.isConstraintType( type );
             }
-        }, graphDb.schema().getConstraints( DynamicRelationshipType.withName( typeName ) ) );
+        }, graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )

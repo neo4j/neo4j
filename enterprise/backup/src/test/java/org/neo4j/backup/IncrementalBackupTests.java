@@ -27,10 +27,10 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
@@ -114,7 +114,7 @@ public class IncrementalBackupTests
             Node daisy = db.createNode();
             daisy.setProperty( "name", "Daisy" );
             Relationship knows = donald.createRelationshipTo( daisy,
-                    DynamicRelationshipType.withName( "LOVES" ) );
+                    RelationshipType.withName( "LOVES" ) );
             knows.setProperty( "since", 1940 );
             tx.success();
         }
@@ -132,7 +132,7 @@ public class IncrementalBackupTests
             Node gladstone = db.createNode();
             gladstone.setProperty( "name", "Gladstone" );
             Relationship hates = donald.createRelationshipTo( gladstone,
-                    DynamicRelationshipType.withName( "HATES" ) );
+                    RelationshipType.withName( "HATES" ) );
             hates.setProperty( "since", 1948 );
             tx.success();
         }

@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
@@ -50,7 +50,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -129,7 +129,7 @@ public class MessageFormatTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        assertSerializesNeoValue( new ValueRelationship( 12l, 1l, 2l, DynamicRelationshipType.withName( "KNOWS" ),
+        assertSerializesNeoValue( new ValueRelationship( 12l, 1l, 2l, RelationshipType.withName( "KNOWS" ),
                 map( "name", "Bob", "age", 14 ) ) );
     }
 

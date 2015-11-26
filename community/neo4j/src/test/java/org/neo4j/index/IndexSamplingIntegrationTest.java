@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -50,7 +49,7 @@ public class IndexSamplingIntegrationTest
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    private final Label label = DynamicLabel.label( "Person" );
+    private final Label label = Label.label( "Person" );
     private final String property = "name";
     private final int nodes = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};

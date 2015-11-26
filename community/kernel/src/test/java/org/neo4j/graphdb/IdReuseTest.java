@@ -75,7 +75,7 @@ public class IdReuseTest
 
         try (Transaction tx = db.beginTx())
         {
-            node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "LIKE" ) );
+            node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
             tx.failure();
         }
@@ -88,7 +88,7 @@ public class IdReuseTest
         {
             node1 = db.getNodeById(node1.getId());
             node2 = db.getNodeById(node2.getId());
-            relationship = node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "LIKE" ) );
+            relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "LIKE" ) );
 
             tx.success();
         }

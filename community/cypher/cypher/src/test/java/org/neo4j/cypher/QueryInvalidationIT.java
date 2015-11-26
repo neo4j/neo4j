@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cypher.internal.compiler.v3_0.CypherCacheHitMonitor;
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Query;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -115,7 +115,7 @@ public class QueryInvalidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( DynamicLabel.label( "User" ) ).on( "userId" ).create();
+            db.schema().indexFor( Label.label( "User" ) ).on( "userId" ).create();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )

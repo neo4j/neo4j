@@ -26,7 +26,6 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -72,8 +71,8 @@ public class IndexLookupTest
         String notUsedIndexPropKey = "notUsed";
         String usedIndexPropKey = "used";
 
-        Label usedLabel = DynamicLabel.label( "UsedLabel" );
-        Label notUsedLabel = DynamicLabel.label( "NotUsedLabel" );
+        Label usedLabel = Label.label( "UsedLabel" );
+        Label notUsedLabel = Label.label( "NotUsedLabel" );
 
         try ( Transaction transaction = api.beginTx() )
         {

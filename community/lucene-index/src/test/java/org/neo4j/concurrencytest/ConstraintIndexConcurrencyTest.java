@@ -38,7 +38,7 @@ import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.properties.Property.property;
 
 public class ConstraintIndexConcurrencyTest

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{DynamicRelationshipType, Node, Relationship}
+import org.neo4j.graphdb.{Node, Relationship, RelationshipType}
 
 class PathValueBuilderTest extends CypherFunSuite {
 
@@ -245,7 +245,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     Mockito.when(rel.getId).thenReturn(id)
     Mockito.when(rel.getStartNode).thenReturn(start)
     Mockito.when(rel.getEndNode).thenReturn(end)
-    Mockito.when(rel.getType).thenReturn(DynamicRelationshipType.withName("X"))
+    Mockito.when(rel.getType).thenReturn(RelationshipType.withName("X"))
     Mockito.when(rel.getOtherNode(start)).thenReturn(end)
     Mockito.when(rel.getOtherNode(end)).thenReturn(start)
 

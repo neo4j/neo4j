@@ -42,8 +42,8 @@ import org.neo4j.test.NamedFunction;
 import org.neo4j.test.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipCountsTest
 {

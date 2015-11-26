@@ -24,9 +24,9 @@ import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.function.IntFunction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Settings;
@@ -130,7 +130,7 @@ public class ReadOnlySlaveTest
 
 
             // Then
-            slaveNode.addLabel( DynamicLabel.label( "FOO" ) );
+            slaveNode.addLabel( Label.label( "FOO" ) );
             tx.success();
         }
         catch ( TransactionFailureException ex )
@@ -165,7 +165,7 @@ public class ReadOnlySlaveTest
 
 
             // Then
-            slaveNode.createRelationshipTo( slaveNode2, DynamicRelationshipType.withName( "KNOWS" ) );
+            slaveNode.createRelationshipTo( slaveNode2, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
         catch ( TransactionFailureException ex )

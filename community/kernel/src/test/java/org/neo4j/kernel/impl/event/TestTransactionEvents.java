@@ -32,8 +32,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -62,8 +60,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
@@ -675,7 +673,7 @@ public class TestTransactionEvents
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        Label label = DynamicLabel.label( "Label" );
+        Label label = label( "Label" );
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
@@ -721,7 +719,7 @@ public class TestTransactionEvents
     {
         // Given we have a schema index...
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
-        final Label label = DynamicLabel.label( "Label" );
+        final Label label = label( "Label" );
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
@@ -933,17 +931,17 @@ public class TestTransactionEvents
         // create a rel type so the next type id is non zero
         try( Transaction tx = db.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "TYPE" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "TYPE" ) );
         }
 
-        RelationshipType livesIn = DynamicRelationshipType.withName( "LIVES_IN" );
+        RelationshipType livesIn = withName( "LIVES_IN" );
         long relId;
 
         try ( Transaction tx = db.beginTx() )
         {
-            Node person = db.createNode( DynamicLabel.label( "Person" ) );
+            Node person = db.createNode( label( "Person" ) );
 
-            Node city = db.createNode( DynamicLabel.label( "City" ) );
+            Node city = db.createNode( label( "City" ) );
 
             Relationship rel = person.createRelationshipTo( city, livesIn );
             rel.setProperty( "since", 2009 );
@@ -1170,13 +1168,13 @@ public class TestTransactionEvents
 
         public void add( Node node, String label )
         {
-            node.addLabel( DynamicLabel.label( label ) );
+            node.addLabel( label( label ) );
             put( added, node, label );
         }
 
         public void remove( Node node, String label )
         {
-            node.removeLabel(DynamicLabel.label(label));
+            node.removeLabel( label( label ) );
             put( removed, node, label );
         }
 

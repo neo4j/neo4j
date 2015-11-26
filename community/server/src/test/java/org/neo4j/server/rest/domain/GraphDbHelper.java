@@ -26,12 +26,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Predicate;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
@@ -50,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.database.Database;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -141,7 +140,7 @@ public class GraphDbHelper
             Node startNode = database.getGraph().getNodeById( startNodeId );
             Node endNode = database.getGraph().getNodeById( endNodeId );
             Relationship relationship = startNode.createRelationshipTo( endNode,
-                    DynamicRelationshipType.withName( type ) );
+                    RelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
         }
@@ -154,7 +153,7 @@ public class GraphDbHelper
             Node startNode = database.getGraph().createNode();
             Node endNode = database.getGraph().createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
-                    DynamicRelationshipType.withName( type ) );
+                    RelationshipType.withName( type ) );
             tx.success();
             return relationship.getId();
         }
@@ -407,7 +406,7 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getGraph().beginTx() )
         {
-            DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+            RelationshipType type = RelationshipType.withName( typeName );
             Iterable<ConstraintDefinition> definitions = filterByConstraintTypeAndPropertyKey(
                     database.getGraph().schema().getConstraints( type ),
                     ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE, propertyKey );
@@ -437,7 +436,7 @@ public class GraphDbHelper
         database.getGraph().execute( query );
         awaitIndexes();
         return new NodePropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
-                DynamicLabel.label( labelName ), propertyKey );
+                label( labelName ), propertyKey );
     }
 
     public ConstraintDefinition createRelationshipPropertyExistenceConstraint( String typeName, String propertyKey )
@@ -446,7 +445,7 @@ public class GraphDbHelper
         database.getGraph().execute( query );
         awaitIndexes();
         return new RelationshipPropertyExistenceConstraintDefinition( mock( InternalSchemaActions.class ),
-                DynamicRelationshipType.withName( typeName ), propertyKey );
+                RelationshipType.withName( typeName ), propertyKey );
     }
 
     public long getLabelCount( long nodeId )

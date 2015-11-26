@@ -22,8 +22,8 @@ package org.neo4j.ha;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -49,7 +49,7 @@ public class ConstraintsInHAIT
         try
         {
             ConstraintCreator constraintCreator = slave.schema()
-                    .constraintFor( DynamicLabel.label( "LabelName" ) ).assertPropertyIsUnique( "PropertyName" );
+                    .constraintFor( Label.label( "LabelName" ) ).assertPropertyIsUnique( "PropertyName" );
 
             // when
             constraintCreator.create();

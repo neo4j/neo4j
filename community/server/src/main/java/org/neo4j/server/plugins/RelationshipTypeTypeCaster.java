@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -31,7 +30,7 @@ class RelationshipTypeTypeCaster extends TypeCaster
     {
         String typeName = parameters.getString( name );
         if ( typeName == null ) return null;
-        return DynamicRelationshipType.withName( typeName );
+        return RelationshipType.withName( typeName );
     }
 
     @Override
@@ -42,7 +41,7 @@ class RelationshipTypeTypeCaster extends TypeCaster
         RelationshipType[] result = new RelationshipType[strings.length];
         for ( int i = 0; i < result.length; i++ )
         {
-            result[i] = DynamicRelationshipType.withName( strings[i] );
+            result[i] = RelationshipType.withName( strings[i] );
         }
         return result;
     }

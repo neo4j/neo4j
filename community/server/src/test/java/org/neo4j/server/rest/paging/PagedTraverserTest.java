@@ -26,10 +26,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
@@ -64,7 +64,7 @@ public class PagedTraverserTest
 
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( current, DynamicRelationshipType.withName( "NEXT" ) );
+                    previous.createRelationshipTo( current, RelationshipType.withName( "NEXT" ) );
                 }
                 else
                 {
@@ -121,7 +121,7 @@ public class PagedTraverserTest
     private Traverser simpleListTraverser()
     {
         return Traversal.description()
-                .expand( Traversal.expanderForTypes( DynamicRelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
+                .expand( Traversal.expanderForTypes( RelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
                 .depthFirst()
                 .uniqueness( Uniqueness.NODE_GLOBAL )
                 .traverse( startNode );

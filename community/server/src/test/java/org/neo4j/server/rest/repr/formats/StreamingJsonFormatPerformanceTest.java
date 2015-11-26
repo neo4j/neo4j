@@ -32,9 +32,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServer;
@@ -100,7 +100,7 @@ public class StreamingJsonFormatPerformanceTest {
     private void createData() {
         try ( Transaction tx = gdb.beginTx() )
         {
-            final DynamicRelationshipType TYPE = DynamicRelationshipType.withName("TYPE");
+            final RelationshipType TYPE = RelationshipType.withName( "TYPE" );
             Node last = gdb.createNode();
             last.setProperty("id", 0);
             for (int i = 1; i < 10000; i++) {

@@ -22,14 +22,12 @@ package org.neo4j.shell;
 import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class TestPECListing extends AbstractShellTest
 {
@@ -56,7 +54,7 @@ public class TestPECListing extends AbstractShellTest
     public void canListRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
         // WHEN / THEN
@@ -78,7 +76,7 @@ public class TestPECListing extends AbstractShellTest
     public void canListRelationshipPropertyExistenceConstraintsByType() throws Exception
     {
         // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
         // WHEN / THEN
@@ -89,7 +87,7 @@ public class TestPECListing extends AbstractShellTest
     public void canListRelationshipPropertyExistenceConstraintsByTypeAndProperty() throws Exception
     {
         // GIVEN
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
         SchemaHelper.createRelPropertyExistenceConstraint( db, relType, "since" );
 
         // WHEN / THEN
@@ -101,8 +99,8 @@ public class TestPECListing extends AbstractShellTest
     public void canListBothNodeAndRelationshipPropertyExistenceConstraints() throws Exception
     {
         // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        Label label = label( "Person" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
 
         // WHEN
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, "name" );
@@ -118,8 +116,8 @@ public class TestPECListing extends AbstractShellTest
     public void canListBothNodeAndRelationshipPropertyExistenceConstraintsByLabelAndType() throws Exception
     {
         // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        Label label = label( "Person" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
 
         // WHEN
         SchemaHelper.createNodePropertyExistenceConstraint( db, label, "name" );
@@ -135,8 +133,8 @@ public class TestPECListing extends AbstractShellTest
     public void shouldHaveCorrectIndentationsInSchemaListing() throws Exception
     {
         // GIVEN
-        Label label = DynamicLabel.label( "Person" );
-        RelationshipType relType = DynamicRelationshipType.withName( "KNOWS" );
+        Label label = label( "Person" );
+        RelationshipType relType = RelationshipType.withName( "KNOWS" );
 
         // WHEN
         SchemaHelper.createUniquenessConstraint( db, label, "name" );

@@ -38,7 +38,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -1977,8 +1977,8 @@ public class RestfulGraphDatabaseTest
     public void shouldReturnAllLabelsPresentInTheDatabase() throws JsonParseException
     {
         // given
-        helper.createNode( DynamicLabel.label( "ALIVE" ) );
-        long nodeId = helper.createNode( DynamicLabel.label( "DEAD" ) );
+        helper.createNode( Label.label( "ALIVE" ) );
+        long nodeId = helper.createNode( Label.label( "DEAD" ) );
         helper.deleteNode( nodeId );
 
         // when
@@ -1995,8 +1995,8 @@ public class RestfulGraphDatabaseTest
     public void shouldReturnAllLabelsInUseInTheDatabase() throws JsonParseException
     {
         // given
-        helper.createNode( DynamicLabel.label( "ALIVE" ) );
-        long nodeId = helper.createNode( DynamicLabel.label( "DEAD" ) );
+        helper.createNode( Label.label( "ALIVE" ) );
+        long nodeId = helper.createNode( Label.label( "DEAD" ) );
         helper.deleteNode( nodeId );
 
         // when

@@ -33,8 +33,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -67,7 +65,7 @@ public class BatchInsertDocTest
             inserter = BatchInserters.inserter(
                     new File( "target/batchinserter-example" ).getAbsolutePath() );
 
-            Label personLabel = DynamicLabel.label( "Person" );
+            Label personLabel = Label.label( "Person" );
             inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
 
             Map<String, Object> properties = new HashMap<>();
@@ -78,7 +76,7 @@ public class BatchInsertDocTest
             properties.put( "name", "Chris" );
             long chrisNode = inserter.createNode( properties, personLabel );
 
-            RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
+            RelationshipType knows = RelationshipType.withName( "KNOWS" );
             inserter.createRelationship( mattiasNode, chrisNode, knows, null );
         }
         finally
@@ -100,9 +98,9 @@ public class BatchInsertDocTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            Label personLabelForTesting = DynamicLabel.label( "Person" );
+            Label personLabelForTesting = Label.label( "Person" );
             Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
-            Node cNode = mNode.getSingleRelationship( DynamicRelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
+            Node cNode = mNode.getSingleRelationship( RelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
             assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
             assertThat( db.schema()
                     .getIndexes( personLabelForTesting )

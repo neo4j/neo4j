@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -52,7 +51,7 @@ public class TerminateTransactions
         // END SNIPPET: startDb
 
         // START SNIPPET: mkTree
-        RelationshipType relType = DynamicRelationshipType.withName( "CHILD" );
+        RelationshipType relType = RelationshipType.withName( "CHILD" );
         Queue<Node> nodes = new LinkedList<>();
         int depth = 1;
 

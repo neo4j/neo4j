@@ -58,8 +58,8 @@ import static org.junit.Assert.assertThat;
 
 import static java.lang.String.format;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**

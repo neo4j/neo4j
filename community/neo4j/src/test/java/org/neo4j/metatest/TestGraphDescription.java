@@ -30,10 +30,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class TestGraphDescription implements GraphHolder
 {
@@ -84,7 +84,7 @@ public class TestGraphDescription implements GraphHolder
             try(Transaction ignored = graphdb.beginTx())
             {
                 n = n.getSingleRelationship(
-                        DynamicRelationshipType.withName( "TO" ),
+                        RelationshipType.withName( "TO" ),
                         Direction.OUTGOING ).getEndNode();
             }
         }

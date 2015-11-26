@@ -42,7 +42,7 @@ import org.neo4j.test.LogTestUtils.CountingLogHook;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 

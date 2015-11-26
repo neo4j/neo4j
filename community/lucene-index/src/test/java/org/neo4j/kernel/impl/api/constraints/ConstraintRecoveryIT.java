@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -48,7 +47,7 @@ import static org.junit.Assert.fail;
 
 public class ConstraintRecoveryIT
 {
-    private static final Label LABEL = DynamicLabel.label( "label1" );
+    private static final Label LABEL = Label.label( "label1" );
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private GraphDatabaseAPI db;

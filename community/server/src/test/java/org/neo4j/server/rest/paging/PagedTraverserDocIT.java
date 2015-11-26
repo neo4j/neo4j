@@ -33,8 +33,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -485,7 +485,7 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( current, DynamicRelationshipType.withName( "NEXT" ) );
+                    previous.createRelationshipTo( current, RelationshipType.withName( "NEXT" ) );
                 }
                 else
                 {

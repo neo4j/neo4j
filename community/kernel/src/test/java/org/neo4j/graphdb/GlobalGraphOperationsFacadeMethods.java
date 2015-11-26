@@ -72,7 +72,7 @@ public class GlobalGraphOperationsFacadeMethods
             @Override
             public void call( GlobalGraphOperations self )
             {
-                self.getAllNodesWithLabel( DynamicLabel.label( "Label" ) );
+                self.getAllNodesWithLabel( Label.label( "Label" ) );
             }
         };
 

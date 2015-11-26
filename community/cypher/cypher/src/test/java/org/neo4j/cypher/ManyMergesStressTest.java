@@ -28,7 +28,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -54,7 +53,7 @@ public class ManyMergesStressTest
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
 
-        Label person = DynamicLabel.label( "Person" );
+        Label person = Label.label( "Person" );
 
         try ( Transaction tx = db.beginTx() )
         {

@@ -28,11 +28,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -69,7 +69,7 @@ public class ConcurrentChangesOnEntitiesTest
             @Override
             public void accept( Node node )
             {
-                node.addLabel( DynamicLabel.label( "A" ) );
+                node.addLabel( Label.label( "A" ) );
             }
         } );
 
@@ -78,7 +78,7 @@ public class ConcurrentChangesOnEntitiesTest
             @Override
             public void accept( Node node )
             {
-                node.addLabel( DynamicLabel.label( "A" ) );
+                node.addLabel( Label.label( "A" ) );
             }
         } );
 
@@ -167,7 +167,7 @@ public class ConcurrentChangesOnEntitiesTest
         {
             Node node = db.createNode();
             node.setProperty( "a", "prop" );
-            Relationship rel = node.createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "T" ) );
+            Relationship rel = node.createRelationshipTo( db.createNode(), RelationshipType.withName( "T" ) );
             long id = rel.getId();
             tx.success();
             return id;

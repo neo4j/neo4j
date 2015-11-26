@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -56,7 +56,7 @@ public class CreateRelationshipDocTest extends AbstractRestFunctionalDocTestBase
                 getNodeUri( i ) + "/relationships" );
         try ( Transaction tx = graphdb().beginTx() )
         {
-            assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+            assertTrue( i.hasRelationship( RelationshipType.withName( "LOVES" ) ) );
         }
     }
 
@@ -78,7 +78,7 @@ public class CreateRelationshipDocTest extends AbstractRestFunctionalDocTestBase
                 .post( getNodeUri( i ) + "/relationships" ).entity();
         try ( Transaction tx = graphdb().beginTx() )
         {
-            assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+            assertTrue( i.hasRelationship( RelationshipType.withName( "LOVES" ) ) );
         }
         assertProperRelationshipRepresentation( JsonHelper.jsonToMap( entity ) );
     }

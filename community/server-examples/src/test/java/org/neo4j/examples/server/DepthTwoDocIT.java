@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.examples.server.plugins.DepthTwo;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -51,7 +51,7 @@ public class DepthTwoDocIT extends AbstractPluginTestBase
     @Test
     public void canFindExtension() throws Exception
     {
-        long nodeId = helper.createNode( DynamicLabel.label( "test" ) );
+        long nodeId = helper.createNode( Label.label( "test" ) );
         Map<String, Object> map = getNodeLevelPluginMetadata( DepthTwo.class, nodeId );
         assertTrue( map.keySet().size() > 0 );
     }

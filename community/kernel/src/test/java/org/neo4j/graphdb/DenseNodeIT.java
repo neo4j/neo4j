@@ -60,10 +60,10 @@ public class DenseNodeIT
             assertEquals( 100, root.getDegree() );
             assertEquals( 100, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
             tx.success();
         }
 
@@ -72,10 +72,10 @@ public class DenseNodeIT
             assertEquals( 100, root.getDegree() );
             assertEquals( 100, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, root.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
             tx.success();
         }
     }
@@ -170,18 +170,18 @@ public class DenseNodeIT
             assertEquals( 100, source.getDegree() );
             assertEquals( 100, source.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, source.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type3" ) ) );
 
             assertEquals( 100, sink.getDegree() );
             assertEquals( 0, sink.getDegree( Direction.OUTGOING ) );
             assertEquals( 100, sink.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
             tx.success();
         }
 
@@ -190,18 +190,18 @@ public class DenseNodeIT
             assertEquals( 100, source.getDegree() );
             assertEquals( 100, source.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, source.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, source.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, source.getDegree( RelationshipType.withName( "Type3" ) ) );
 
             assertEquals( 100, sink.getDegree() );
             assertEquals( 0, sink.getDegree( Direction.OUTGOING ) );
             assertEquals( 100, sink.getDegree( Direction.INCOMING ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type0" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type1" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type2" ) ) );
-            assertEquals( 25, sink.getDegree( DynamicRelationshipType.withName( "Type3" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type0" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
+            assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
             tx.success();
         }
     }
@@ -263,7 +263,7 @@ public class DenseNodeIT
     {
         for ( int i = 0; i < numberOfRelationships; i++ )
         {
-            root.createRelationshipTo( db.createNode(), DynamicRelationshipType.withName( "Type" + (i % 4) ) )
+            root.createRelationshipTo( db.createNode(), RelationshipType.withName( "Type" + (i % 4) ) )
                     .setProperty( "" + i, i );
 
         }
@@ -274,7 +274,7 @@ public class DenseNodeIT
     {
         for ( int i = 0; i < numberOfRelationships; i++ )
         {
-            source.createRelationshipTo( sink, DynamicRelationshipType.withName( "Type" + (i % 4) ) )
+            source.createRelationshipTo( sink, RelationshipType.withName( "Type" + (i % 4) ) )
                     .setProperty( "" + i, i );
 
         }

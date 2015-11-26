@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.test.DatabaseFunctions.addLabel;
 import static org.neo4j.test.DatabaseFunctions.awaitIndexesOnline;

@@ -45,7 +45,7 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 @Ignore("in progress")
 public class RecoveryIT
