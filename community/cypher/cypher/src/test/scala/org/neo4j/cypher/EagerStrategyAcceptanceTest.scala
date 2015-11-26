@@ -22,16 +22,17 @@ package org.neo4j.cypher
 class EagerStrategyAcceptanceTest  extends ExecutionEngineFunSuite {
 
   test("should not use eagerness when option not provided ") {
-
-    val result = execute("MATCH () CREATE ()")
-
-    result shouldNot use("Eager")
+    execute("MATCH () CREATE ()") shouldNot use("Eager")
   }
 
   test("should use eagerness when option is provided ") {
+    execute("CYPHER strategy=eager MATCH () CREATE ()") should use("Eager")
+  }
 
-    val result = execute("CYPHER strategy=eager MATCH () CREATE ()")
+  test("should not introduce eagerness in merge") {
+    val result = execute("CYPHER strategy=eager MERGE ()")
 
-    result should use("Eager")
+    result shouldNot use("EagerApply")
+    result shouldNot use("Eager")
   }
 }

@@ -69,8 +69,8 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
       case Some(query) =>
         val lhsContext = context.recurse(lhs)
         val partPlan = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
-
-        val alwaysEager = context.config.updateStrategy.alwaysEager
+        //we cannot force eagerness for merge queries
+        val alwaysEager = context.config.updateStrategy.alwaysEager && !query.updateGraph.containsMerge
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
           if (alwaysEager || (query.updateGraph overlaps query.queryGraph))

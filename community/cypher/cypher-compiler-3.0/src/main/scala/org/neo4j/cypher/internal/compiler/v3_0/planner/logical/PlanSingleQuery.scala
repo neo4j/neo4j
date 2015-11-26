@@ -37,7 +37,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val partPlan = countStorePlanner(in).getOrElse(planPart(in, context, None))
 
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    //we cannot force eagerness for merge queries
+    val alwaysEager = context.config.updateStrategy.alwaysEager && !in.updateGraph.containsMerge
     val planWithEffect =
       if (alwaysEager || conflicts(partPlan, in))
         context.logicalPlanProducer.planEager(partPlan)
