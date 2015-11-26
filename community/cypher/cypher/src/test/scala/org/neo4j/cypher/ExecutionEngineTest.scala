@@ -728,7 +728,7 @@ order by a.COL1""")
 
     // THEN
     graph.inTx {
-      val indexDefinitions = graph.schema().getIndexes(DynamicLabel.label(labelName)).asScala.toSet
+      val indexDefinitions = graph.schema().getIndexes(Label.label(labelName)).asScala.toSet
       indexDefinitions should have size 1
 
       val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq

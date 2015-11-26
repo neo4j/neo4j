@@ -27,8 +27,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.ReturnableEvaluator.ALL;
 import static org.neo4j.graphdb.StopEvaluator.DEPTH_ONE;
 import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
@@ -36,9 +36,9 @@ import static org.neo4j.graphdb.Traverser.Order.BREADTH_FIRST;
 @SuppressWarnings("UnusedDeclaration")
 public class NodeFacadeMethods
 {
-    private static final DynamicRelationshipType FOO = withName( "foo" );
-    private static final DynamicRelationshipType BAR = withName( "bar" );
-    private static final DynamicRelationshipType BAZ = withName( "baz" );
+    private static final RelationshipType FOO = withName( "foo" );
+    private static final RelationshipType BAR = withName( "bar" );
+    private static final RelationshipType BAZ = withName( "baz" );
     private static final Label QUUX = label( "quux" );
 
     private static final FacadeMethod<Node> HAS_PROPERTY = new FacadeMethod<Node>( "boolean hasProperty( " +

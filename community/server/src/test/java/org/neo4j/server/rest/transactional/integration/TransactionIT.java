@@ -34,7 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -870,7 +869,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Set<Label> givenLabels = new HashSet<>( labels.length );
         for ( String label : labels )
         {
-            givenLabels.add( DynamicLabel.label( label ) );
+            givenLabels.add( Label.label( label ) );
         }
 
         try ( Transaction transaction = graphdb().beginTx() )

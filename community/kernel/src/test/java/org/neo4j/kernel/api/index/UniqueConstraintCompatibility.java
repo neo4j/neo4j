@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -689,7 +688,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private static final long COLLISION_Y = 4611686018427387907L;
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    private Label label = DynamicLabel.label( "Cybermen" );
+    private Label label = Label.label( "Cybermen" );
     private String property = "name";
     private Node a;
     private Node b;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
@@ -59,7 +59,7 @@ public class RelationshipPropertyExistenceConstraint extends RelationshipPropert
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
         return new RelationshipPropertyExistenceConstraintDefinition( schemaActions,
-                DynamicRelationshipType.withName( lookup.relationshipTypeGetName( relationshipTypeId ) ),
+                RelationshipType.withName( lookup.relationshipTypeGetName( relationshipTypeId ) ),
                 lookup.propertyKeyGetName( propertyKeyId ) );
     }
 

@@ -21,9 +21,10 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -57,7 +58,7 @@ public class TestTransactionEventDeadlocks
         try ( Transaction tx = graphdb.beginTx() )
         {
             node.setProperty( "state", "not broken yet" );
-            node.createRelationshipTo( graphdb.createNode(), DynamicRelationshipType.withName( "TEST" ) );
+            node.createRelationshipTo( graphdb.createNode(), RelationshipType.withName( "TEST" ) );
             node.removeProperty( "state" );
             tx.success();
         }

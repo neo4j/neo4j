@@ -36,7 +36,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 public class LabelCountsTest
 {

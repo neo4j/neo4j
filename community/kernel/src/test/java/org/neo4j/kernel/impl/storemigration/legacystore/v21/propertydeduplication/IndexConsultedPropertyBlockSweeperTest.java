@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -77,7 +76,7 @@ public class IndexConsultedPropertyBlockSweeperTest
         nonIndexedPropKey = "notIndexed";
         indexedPropKey = "indexed";
 
-        Label usedLabel = DynamicLabel.label( "UsedLabel" );
+        Label usedLabel = Label.label( "UsedLabel" );
 
         try ( Transaction transaction = api.beginTx() )
         {

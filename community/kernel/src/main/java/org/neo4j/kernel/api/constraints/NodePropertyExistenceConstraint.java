@@ -20,7 +20,7 @@
 
 package org.neo4j.kernel.api.constraints;
 
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.ReadOperations;
@@ -54,7 +54,7 @@ public class NodePropertyExistenceConstraint extends NodePropertyConstraint
     {
         StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
         return new NodePropertyExistenceConstraintDefinition( schemaActions,
-                DynamicLabel.label( lookup.labelGetName( labelId ) ),
+                Label.label( lookup.labelGetName( labelId ) ),
                 lookup.propertyKeyGetName( propertyKeyId ) );
     }
 

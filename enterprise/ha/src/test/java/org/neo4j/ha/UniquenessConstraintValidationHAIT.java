@@ -38,7 +38,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.OtherThreadRule.isWaiting;

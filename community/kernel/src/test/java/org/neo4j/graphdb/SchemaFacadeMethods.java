@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 
 public class SchemaFacadeMethods
 {
-    private static final Label LABEL = DynamicLabel.label( "Label" );
+    private static final Label LABEL = Label.label( "Label" );
 
     private static final IndexDefinition INDEX_DEFINITION = mock( IndexDefinition.class );
 

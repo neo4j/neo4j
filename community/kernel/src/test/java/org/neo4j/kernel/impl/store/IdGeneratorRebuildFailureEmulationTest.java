@@ -32,11 +32,11 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -178,8 +178,8 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             Node first = properties( graphdb.createNode() );
             Node other = properties( graphdb.createNode() );
-            properties( first.createRelationshipTo( other, DynamicRelationshipType.withName( "KNOWS" ) ) );
-            properties( other.createRelationshipTo( first, DynamicRelationshipType.withName( "DISTRUSTS" ) ) );
+            properties( first.createRelationshipTo( other, RelationshipType.withName( "KNOWS" ) ) );
+            properties( other.createRelationshipTo( first, RelationshipType.withName( "DISTRUSTS" ) ) );
 
             tx.success();
         }

@@ -42,7 +42,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.fail;
@@ -51,7 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 /** This tests that Neo4j value mappings described in the documentation work the way we say they do. */
@@ -175,7 +175,7 @@ public class BoltValueDocTest
         }
         else if ( type.equalsIgnoreCase( "relationship" ) )
         {
-            return new ValueRelationship( 12, 1, 2, DynamicRelationshipType.withName( "KNOWS" ), map() );
+            return new ValueRelationship( 12, 1, 2, RelationshipType.withName( "KNOWS" ), map() );
         }
         else if ( type.equalsIgnoreCase( "path" ) )
         {

@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -88,7 +87,7 @@ public class ValueNode
             labels = new ArrayList<>( numLabels );
             for ( int i = 0; i < numLabels; i++ )
             {
-                labels.add( DynamicLabel.label( unpacker.unpackString() ) );
+                labels.add( Label.label( unpacker.unpackString() ) );
             }
         }
         else

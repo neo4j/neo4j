@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.BooleanSupplier;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -324,13 +322,13 @@ public class BackupServiceStressTestingBuilder
 
         private static Label randomLabel()
         {
-            return DynamicLabel.label( "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_LABELS ) );
+            return Label.label( "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_LABELS ) );
         }
 
         private static RelationshipType randomRelationshipType()
         {
             String name = "" + ThreadLocalRandom.current().nextInt( NUMBER_OF_RELATIONSHIP_TYPES );
-            return DynamicRelationshipType.withName( name );
+            return RelationshipType.withName( name );
         }
     }
 }

@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -50,8 +49,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -86,8 +85,8 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canSetPropertiesAndLsWithFilters() throws Exception
     {
-        RelationshipType type1 = DynamicRelationshipType.withName( "KNOWS" );
-        RelationshipType type2 = DynamicRelationshipType.withName( "LOVES" );
+        RelationshipType type1 = withName( "KNOWS" );
+        RelationshipType type2 = withName( "LOVES" );
         Relationship[] relationships = createRelationshipChain( type1, 2 );
         Node node = getEndNode( relationships[0] );
         createRelationshipChain( node, type2, 1 );
@@ -625,7 +624,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canDumpSubgraphWithCypher() throws Exception
     {
-        final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
+        final RelationshipType type = withName( "KNOWS" );
         beginTx();
         createRelationshipChain( db.createNode(), type, 1 );
         finishTx();
@@ -640,7 +639,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canDumpGraph() throws Exception
     {
-        final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
+        final RelationshipType type = withName( "KNOWS" );
         beginTx();
         final Relationship rel = createRelationshipChain( db.createNode(), type, 1 )[0];
         rel.getStartNode().setProperty( "f o o", "bar" );

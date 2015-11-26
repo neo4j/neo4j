@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -128,10 +127,10 @@ public class BigLabelStoreGenerator
 
     private static Label[] createLabels( int numLabels )
     {
-        Label[] labels = new DynamicLabel[numLabels];
+        Label[] labels = new Label[numLabels];
         for ( int i = 0; i < numLabels; i++ )
         {
-            labels[i] = DynamicLabel.label( format( "LABEL_%d", i ) );
+            labels[i] = Label.label( format( "LABEL_%d", i ) );
         }
         return labels;
     }

@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;

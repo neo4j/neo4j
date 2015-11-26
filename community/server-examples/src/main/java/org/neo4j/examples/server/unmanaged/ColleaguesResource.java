@@ -34,12 +34,11 @@ import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
@@ -53,8 +52,8 @@ public class ColleaguesResource
     private GraphDatabaseService graphDb;
     private final ObjectMapper objectMapper;
 
-    private static final DynamicRelationshipType ACTED_IN = DynamicRelationshipType.withName( "ACTED_IN" );
-    private static final Label PERSON = DynamicLabel.label( "Person" );
+    private static final RelationshipType ACTED_IN = RelationshipType.withName( "ACTED_IN" );
+    private static final Label PERSON = Label.label( "Person" );
 
     public ColleaguesResource( @Context GraphDatabaseService graphDb )
     {

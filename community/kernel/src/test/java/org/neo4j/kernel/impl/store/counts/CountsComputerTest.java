@@ -26,10 +26,10 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -86,9 +86,9 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( DynamicLabel.label( "A" ) );
-            db.createNode( DynamicLabel.label( "C" ) );
-            db.createNode( DynamicLabel.label( "D" ) );
+            db.createNode( Label.label( "A" ) );
+            db.createNode( Label.label( "C" ) );
+            db.createNode( Label.label( "D" ) );
             db.createNode();
             tx.success();
         }
@@ -117,9 +117,9 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( DynamicLabel.label( "A" ) );
-            db.createNode( DynamicLabel.label( "C" ) );
-            Node node = db.createNode( DynamicLabel.label( "D" ) );
+            db.createNode( Label.label( "A" ) );
+            db.createNode( Label.label( "C" ) );
+            Node node = db.createNode( Label.label( "D" ) );
             db.createNode();
             node.delete();
             tx.success();
@@ -149,10 +149,10 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Relationship rel = nodeA.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE1" ) );
-            nodeC.createRelationshipTo( nodeA, DynamicRelationshipType.withName( "TYPE2" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Relationship rel = nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE1" ) );
+            nodeC.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE2" ) );
             rel.delete();
             tx.success();
         }
@@ -183,12 +183,12 @@ public class CountsComputerTest
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Node nodeD = db.createNode( DynamicLabel.label( "D" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Node nodeD = db.createNode( Label.label( "D" ) );
             Node node = db.createNode();
-            nodeA.createRelationshipTo( nodeD, DynamicRelationshipType.withName( "TYPE" ) );
-            node.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
+            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE" ) );
+            node.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -223,13 +223,13 @@ public class CountsComputerTest
                 setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = db.createNode( DynamicLabel.label( "A" ) );
-            Node nodeC = db.createNode( DynamicLabel.label( "C" ) );
-            Node nodeD = db.createNode( DynamicLabel.label( "D" ) );
-            nodeA.createRelationshipTo( nodeA, DynamicRelationshipType.withName( "TYPE1" ) );
-            nodeA.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
-            nodeA.createRelationshipTo( nodeD, DynamicRelationshipType.withName( "TYPE3" ) );
-            nodeD.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE4" ) );
+            Node nodeA = db.createNode( Label.label( "A" ) );
+            Node nodeC = db.createNode( Label.label( "C" ) );
+            Node nodeD = db.createNode( Label.label( "D" ) );
+            nodeA.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE1" ) );
+            nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
+            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE3" ) );
+            nodeD.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE4" ) );
             tx.success();
         }
         long lastCommittedTransactionId = getLastTxId( db );

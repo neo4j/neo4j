@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -72,12 +71,12 @@ public class SchemaImplTest
     @Test
     public void testGetIndexPopulationProgress() throws Exception
     {
-        assertFalse( indexExists( DynamicLabel.label( "User" ) ) );
+        assertFalse( indexExists( Label.label( "User" ) ) );
 
         // Create some nodes
         try ( Transaction tx = db.beginTx() )
         {
-            Label label = DynamicLabel.label( "User" );
+            Label label = Label.label( "User" );
 
             // Create a huge bunch of users so the index takes a while to build
             for ( int id = 0; id < 100000; id++ )
@@ -93,7 +92,7 @@ public class SchemaImplTest
         try ( Transaction tx = db.beginTx() )
         {
             Schema schema = db.schema();
-            indexDefinition = schema.indexFor( DynamicLabel.label( "User" ) )
+            indexDefinition = schema.indexFor( Label.label( "User" ) )
                     .on( "username" )
                     .create();
             tx.success();

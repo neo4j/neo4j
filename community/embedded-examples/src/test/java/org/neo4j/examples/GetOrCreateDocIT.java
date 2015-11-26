@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -279,7 +278,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
             userNode = usersIndex.get( "name", username ).getSingle();
             if ( userNode == null )
             {
-                userNode = graphDb.createNode( DynamicLabel.label( "User" ) );
+                userNode = graphDb.createNode( Label.label( "User" ) );
                 usersIndex.add( userNode, "name", username );
                 userNode.setProperty( "name", username );
             }
@@ -311,7 +310,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
                 @Override
                 protected void initialize( Node created, Map<String, Object> properties )
                 {
-                    created.addLabel( DynamicLabel.label( "User" ) );
+                    created.addLabel( Label.label( "User" ) );
                     created.setProperty( "name", properties.get( "name" ) );
                 }
             };
@@ -370,7 +369,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
         try ( Transaction tx = graphdb.beginTx() )
         {
             graphdb.schema()
-                    .constraintFor( DynamicLabel.label( "User" ) )
+                    .constraintFor( Label.label( "User" ) )
                     .assertPropertyIsUnique( "name" )
                     .create();
             tx.success();
@@ -390,7 +389,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 
     private static void assertUserExistsUniquelyInGraphDb( GraphDatabaseService graph, Transaction tx, String username )
     {
-        Label label = DynamicLabel.label( "User" );
+        Label label = Label.label( "User" );
         Node result = graph.findNode( label, "name", username );
         assertNotNull( format( "User '%s' not created.", username ), result );
         tx.success();

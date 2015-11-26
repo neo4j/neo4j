@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.SuppressOutput;
@@ -204,7 +204,7 @@ public class FixturesTest
                     {
                         try ( Transaction tx = graphDatabaseService.beginTx() )
                         {
-                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
+                            graphDatabaseService.createNode( Label.label( "User" ) );
                             tx.success();
                         }
                         return null;

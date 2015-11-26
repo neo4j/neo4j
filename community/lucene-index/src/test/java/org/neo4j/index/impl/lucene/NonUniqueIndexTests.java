@@ -56,7 +56,7 @@ import static org.junit.Assert.assertThat;
 
 import static java.util.Collections.singletonList;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NonUniqueIndexTests

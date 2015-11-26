@@ -33,13 +33,12 @@ import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphalgo.impl.util.PathImpl;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -168,7 +167,7 @@ public class ExportTest
     public void testEscapingOfRelationshipStringPropertyValue() throws Exception
     {
         Node n = gdb.createNode();
-        final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
+        final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", "Brutus \"Brutal\" Howell" );
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
@@ -180,7 +179,7 @@ public class ExportTest
     public void testEscapingOfRelationshipStringArrayPropertyValue() throws Exception
     {
         Node n = gdb.createNode();
-        final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
+        final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         rel.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
@@ -226,8 +225,8 @@ public class ExportTest
     public void testSingleNodeLabels() throws Exception
     {
         Node n = gdb.createNode();
-        n.addLabel( DynamicLabel.label( "Foo" ) );
-        n.addLabel( DynamicLabel.label( "Bar" ) );
+        n.addLabel( Label.label( "Foo" ) );
+        n.addLabel( Label.label( "Bar" ) );
         final ExecutionResult result = result( "node", n );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ":`Foo`:`Bar`)" + lineSeparator(), doExportGraph( graph ) );
@@ -236,21 +235,21 @@ public class ExportTest
     @Test
     public void testExportIndex() throws Exception
     {
-        gdb.schema().indexFor( DynamicLabel.label( "Foo" ) ).on( "bar" ).create();
+        gdb.schema().indexFor( Label.label( "Foo" ) ).on( "bar" ).create();
         assertEquals( "create index on :`Foo`(`bar`)" + lineSeparator() , doExportGraph( gdb ) );
     }
 
     @Test
     public void testExportUniquenessConstraint() throws Exception
     {
-        gdb.schema().constraintFor( DynamicLabel.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
+        gdb.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
         assertEquals( "create constraint on (n:`Foo`) assert n.`bar` is unique" + lineSeparator(), doExportGraph( gdb ) );
     }
 
     @Test
     public void testExportIndexesViaCypherResult() throws Exception
     {
-        final Label label = DynamicLabel.label( "Foo" );
+        final Label label = Label.label( "Foo" );
         gdb.schema().indexFor( label ).on( "bar" ).create();
         gdb.schema().indexFor( label ).on( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
@@ -265,7 +264,7 @@ public class ExportTest
     @Test
     public void testExportConstraintsViaCypherResult() throws Exception
     {
-        final Label label = DynamicLabel.label( "Foo" );
+        final Label label = Label.label( "Foo" );
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar" ).create();
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar2" ).create();
         commitAndStartNewTransactionAfterSchemaChanges();
@@ -288,7 +287,7 @@ public class ExportTest
     public void testFromRelCypherResult() throws Exception
     {
         Node n = gdb.createNode();
-        final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
+        final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
@@ -300,7 +299,7 @@ public class ExportTest
     {
         Node n1 = gdb.createNode();
         Node n2 = gdb.createNode();
-        final Relationship rel = n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "REL" ) );
+        final Relationship rel = n1.createRelationshipTo( n2, RelationshipType.withName( "REL" ) );
         final Path path = new PathImpl.Builder( n1 ).push( rel ).build();
         final ExecutionResult result = result( "path", path );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
@@ -369,7 +368,7 @@ public class ExportTest
 
         final Node n1 = gdb.createNode();
         n1.setProperty( "name", "Node1" );
-        final Relationship relationship = n0.createRelationshipTo( n1, DynamicRelationshipType.withName( "REL" ) );
+        final Relationship relationship = n0.createRelationshipTo( n1, RelationshipType.withName( "REL" ) );
         relationship.setProperty( "related", true );
         final SubGraph graph = DatabaseSubGraph.from( gdb );
         assertEquals( "create (_" + n0.getId() + ")" + lineSeparator() +

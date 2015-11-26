@@ -32,9 +32,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.proc.ProcessUtil;
@@ -74,7 +74,7 @@ public class BackupEmbeddedIT
         {
             Node node = db.createNode();
             node.setProperty( "name", "Neo" );
-            db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
+            db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
             tx.success();
         }
         return DbRepresentation.of( db );

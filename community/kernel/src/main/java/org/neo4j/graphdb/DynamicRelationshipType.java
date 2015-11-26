@@ -50,7 +50,9 @@ package org.neo4j.graphdb;
  * }
  * </code>
  * </pre>
+ * @deprecated use {@link RelationshipType#withName(String)} instead
  */
+@Deprecated
 public final class DynamicRelationshipType implements RelationshipType
 {
     private final String name;
@@ -69,11 +71,13 @@ public final class DynamicRelationshipType implements RelationshipType
      * Instantiates a new DynamicRelationshipType with the given name.
      * There's more information regarding relationship types over at
      * {@link RelationshipType}.
-     * 
+     *
      * @param name the name of the dynamic relationship type
      * @return a DynamicRelationshipType with the given name
      * @throws IllegalArgumentException if name is <code>null</code>
+     * @deprecated use {@link RelationshipType#withName(String)} instead
      */
+    @Deprecated
     public static DynamicRelationshipType withName( final String name )
     {
         return new DynamicRelationshipType( name );

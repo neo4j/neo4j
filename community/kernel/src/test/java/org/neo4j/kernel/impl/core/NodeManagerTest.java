@@ -26,9 +26,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.PlaceboTransaction;
@@ -220,7 +220,7 @@ public class NodeManagerTest
     {
         Node a = db.createNode();
         Node b = db.createNode();
-        Relationship relationship = a.createRelationshipTo( b, DynamicRelationshipType.withName( "FOO" ) );
+        Relationship relationship = a.createRelationshipTo( b, RelationshipType.withName( "FOO" ) );
         relationship.setProperty( key, value );
         return relationship;
     }

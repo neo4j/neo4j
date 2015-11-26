@@ -26,9 +26,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
@@ -189,9 +189,9 @@ public class TestAutoIndexing
         Node node3 = graphDb.createNode();
 
         Relationship rel12 = node1.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
         Relationship rel23 = node2.createRelationshipTo( node3,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
 
         rel12.setProperty( propNameToIndex, "rel12" );
         rel23.setProperty( propNameToIndex, "rel23" );
@@ -257,11 +257,11 @@ public class TestAutoIndexing
         Node node3 = graphDb.createNode();
 
         Relationship rel12 = node1.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
         Relationship rel23 = node2.createRelationshipTo( node3,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
         Relationship rel31 = node3.createRelationshipTo( node1,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
 
         // Nodes
         node1.setProperty( "nodeProp1", "node1Value1" );
@@ -418,7 +418,7 @@ public class TestAutoIndexing
         node2.setProperty( "propName_", "node2" );
 
         Relationship rel = node1.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "DYNAMIC" ) );
+                RelationshipType.withName( "DYNAMIC" ) );
         rel.setProperty( "propName", "rel1" );
 
         newTransaction();
@@ -514,7 +514,7 @@ public class TestAutoIndexing
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
         Relationship rel = node1.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "FOO" ) );
+                RelationshipType.withName( "FOO" ) );
         node1.setProperty( "nodeProp", "nodePropValue" );
         rel.setProperty( "relProp", "relPropValue" );
 
@@ -593,7 +593,7 @@ public class TestAutoIndexing
 
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
-        Relationship rel = node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "foo" ) );
+        Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "foo" ) );
         rel.setProperty( "foo", "bar" );
 
         newTransaction();

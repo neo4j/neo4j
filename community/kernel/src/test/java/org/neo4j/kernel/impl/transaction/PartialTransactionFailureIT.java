@@ -31,9 +31,9 @@ import java.util.concurrent.CountDownLatch;
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -182,7 +182,7 @@ public class PartialTransactionFailureIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    x.createRelationshipTo( y, DynamicRelationshipType.withName( "r" ) );
+                    x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
                     tx.success();
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();

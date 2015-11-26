@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
@@ -341,7 +340,7 @@ public class TransactionConstraintsIT
         for ( HighlyAvailableGraphDatabase instance : cluster.getAllMembers() )
         {
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( instance.getStoreDir() );
-            Label label = DynamicLabel.label( LABEL );
+            Label label = Label.label( LABEL );
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( label );
@@ -407,7 +406,7 @@ public class TransactionConstraintsIT
             Node node = db.createNode();
             for ( String label : labels )
             {
-                node.addLabel( DynamicLabel.label( label ) );
+                node.addLabel( Label.label( label ) );
             }
             node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
             tx.success();
@@ -419,7 +418,7 @@ public class TransactionConstraintsIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( DynamicLabel.label( label ) ).assertPropertyIsUnique( propertyName ).create();
+            db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( propertyName ).create();
             tx.success();
         }
     }

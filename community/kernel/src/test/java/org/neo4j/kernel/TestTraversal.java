@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class TestTraversal
 {

@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNotNull;
 
 import static java.lang.String.format;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 /**
  * Tests a specific case of cache poisoning that involves the relationship chain of a node, the index the node has on it

@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
+import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
@@ -115,7 +114,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
     graph.inTx {
       labels.foreach {
-        name => n.addLabel(DynamicLabel.label(name))
+        name => n.addLabel(Label.label(name))
       }
 
       props.foreach {
@@ -153,7 +152,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def nodeIds = nodes.map(_.getId).toArray
 
-  val REL = DynamicRelationshipType.withName("REL")
+  val REL = RelationshipType.withName("REL")
 
   def relate(a: Node, b: Node): Relationship = relate(a, b, "REL")
 
@@ -169,7 +168,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = graph.inTx {
-    val r = n1.createRelationshipTo(n2, DynamicRelationshipType.withName(relType))
+    val r = n1.createRelationshipTo(n2, RelationshipType.withName(relType))
 
     props.foreach((kv) => r.setProperty(kv._1, kv._2))
     r
@@ -180,7 +179,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       case ((from, relType), to) => {
         val f = node(from)
         val t = node(to)
-        f.createRelationshipTo(t, DynamicRelationshipType.withName(relType))
+        f.createRelationshipTo(t, RelationshipType.withName(relType))
       }
     }
   }

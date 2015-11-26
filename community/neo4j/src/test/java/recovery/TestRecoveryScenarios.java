@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -54,7 +53,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -125,7 +124,7 @@ public class TestRecoveryScenarios
         Label[] labels = new Label[16];
         for (int i = 0; i < labels.length; i++ )
         {
-            labels[i] = DynamicLabel.label( "Label" + Integer.toHexString( i ) );
+            labels[i] = label( "Label" + Integer.toHexString( i ) );
         }
         Node node;
         try ( Transaction tx = db.beginTx() )

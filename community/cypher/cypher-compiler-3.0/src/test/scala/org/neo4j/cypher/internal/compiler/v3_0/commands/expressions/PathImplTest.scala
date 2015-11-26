@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 
 class PathImplTest extends CypherFunSuite {
 
-  val typ = DynamicRelationshipType.withName("a")
+  val typ = RelationshipType.withName("a")
 
   test("singleNodeTests") {
     val node = new FakeNode

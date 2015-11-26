@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
+import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb._
 import org.neo4j.kernel.Traversal
 
@@ -136,7 +137,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     Traversal.expanderForAllTypes(toGraphDb(shortestPathPattern.dir))
   } else {
     shortestPathPattern.relTypes.foldLeft(Traversal.emptyExpander()) {
-      case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(shortestPathPattern.dir))
+      case (e, t) => e.add(withName(t), toGraphDb(shortestPathPattern.dir))
     }
   }
 

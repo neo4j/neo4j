@@ -29,11 +29,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.DatabaseRule;
@@ -61,7 +61,7 @@ public class NodeTest
         // Given
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "KNOWS" ) );
+        node1.createRelationshipTo( node2, RelationshipType.withName( "KNOWS" ) );
 
         tx.success();
 
@@ -438,7 +438,7 @@ public class NodeTest
         Node node = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         testLockProblem( node.createRelationshipTo( node2,
-                DynamicRelationshipType.withName( "lock-rel" ) ) );
+                RelationshipType.withName( "lock-rel" ) ) );
     }
     
     private void testLockProblem( final PropertyContainer entity ) throws InterruptedException

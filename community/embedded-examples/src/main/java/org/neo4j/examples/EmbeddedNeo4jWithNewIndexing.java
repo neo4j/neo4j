@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -55,7 +54,7 @@ public class EmbeddedNeo4jWithNewIndexing
             try ( Transaction tx = graphDb.beginTx() )
             {
                 Schema schema = graphDb.schema();
-                indexDefinition = schema.indexFor( DynamicLabel.label( "User" ) )
+                indexDefinition = schema.indexFor( Label.label( "User" ) )
                         .on( "username" )
                         .create();
                 tx.success();
@@ -82,7 +81,7 @@ public class EmbeddedNeo4jWithNewIndexing
             // START SNIPPET: addUsers
             try ( Transaction tx = graphDb.beginTx() )
             {
-                Label label = DynamicLabel.label( "User" );
+                Label label = Label.label( "User" );
 
                 // Create some users
                 for ( int id = 0; id < 100; id++ )
@@ -98,7 +97,7 @@ public class EmbeddedNeo4jWithNewIndexing
 
         {
             // START SNIPPET: findUsers
-            Label label = DynamicLabel.label( "User" );
+            Label label = Label.label( "User" );
             int idToFind = 45;
             String nameToFind = "user" + idToFind + "@neo4j.org";
             try ( Transaction tx = graphDb.beginTx() )
@@ -124,7 +123,7 @@ public class EmbeddedNeo4jWithNewIndexing
 
         {
             // START SNIPPET: resourceIterator
-            Label label = DynamicLabel.label( "User" );
+            Label label = Label.label( "User" );
             int idToFind = 45;
             String nameToFind = "user" + idToFind + "@neo4j.org";
             try ( Transaction tx = graphDb.beginTx();
@@ -144,7 +143,7 @@ public class EmbeddedNeo4jWithNewIndexing
             // START SNIPPET: updateUsers
             try ( Transaction tx = graphDb.beginTx() )
             {
-                Label label = DynamicLabel.label( "User" );
+                Label label = Label.label( "User" );
                 int idToFind = 45;
                 String nameToFind = "user" + idToFind + "@neo4j.org";
 
@@ -161,7 +160,7 @@ public class EmbeddedNeo4jWithNewIndexing
             // START SNIPPET: deleteUsers
             try ( Transaction tx = graphDb.beginTx() )
             {
-                Label label = DynamicLabel.label( "User" );
+                Label label = Label.label( "User" );
                 int idToFind = 46;
                 String nameToFind = "user" + idToFind + "@neo4j.org";
 
@@ -178,7 +177,7 @@ public class EmbeddedNeo4jWithNewIndexing
             // START SNIPPET: dropIndex
             try ( Transaction tx = graphDb.beginTx() )
             {
-                Label label = DynamicLabel.label( "User" );
+                Label label = Label.label( "User" );
                 for ( IndexDefinition indexDefinition : graphDb.schema()
                         .getIndexes( label ) )
                 {

@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -79,7 +78,7 @@ public class DuplicatePropertyRemoverTest
         GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
         api = (GraphDatabaseAPI) db;
 
-        Label nodeLabel = DynamicLabel.label( "Label" );
+        Label nodeLabel = Label.label( "Label" );
         propertyNames = new ArrayList<>();
 
         try ( Transaction transaction = db.beginTx() )

@@ -23,7 +23,6 @@ import java.io.File;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -38,7 +37,7 @@ public class CalculateShortestPath
 {
     private static final String DB_PATH = "target/neo4j-shortest-path";
     private static final String NAME_KEY = "name";
-    private static RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
+    private static RelationshipType KNOWS = RelationshipType.withName( "KNOWS" );
 
     private static GraphDatabaseService graphDb;
     private static Index<Node> indexService;

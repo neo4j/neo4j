@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -41,8 +41,8 @@ import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 public class ProveFiveBillionIT
 {
     private static final String PATH = "target/var/5b";
-    private static final RelationshipType TYPE = DynamicRelationshipType.withName( "CHAIN" );
-    
+    private static final RelationshipType TYPE = RelationshipType.withName( "CHAIN" );
+
     @Test
     public void proveIt() throws Exception
     {

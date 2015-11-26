@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicLabel;
+
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.OtherThreadExecutor;
@@ -51,8 +52,8 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         // Given
         try( Transaction tx = graphdb().beginTx() )
         {
-            graphdb().createNode( DynamicLabel.label( "First" ));
-            graphdb().createNode( DynamicLabel.label( "Second" ));
+            graphdb().createNode( Label.label( "First" ) );
+            graphdb().createNode( Label.label( "Second" ) );
             tx.success();
         }
 

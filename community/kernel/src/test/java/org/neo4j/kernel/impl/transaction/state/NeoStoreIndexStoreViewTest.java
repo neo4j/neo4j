@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -67,7 +66,7 @@ public class NeoStoreIndexStoreViewTest
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
-    Label label = DynamicLabel.label( "Person" );
+    Label label = Label.label( "Person" );
 
     GraphDatabaseAPI graphDb;
     NeoStoreIndexStoreView storeView;

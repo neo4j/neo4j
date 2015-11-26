@@ -32,8 +32,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -83,7 +81,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             Label[] labels = new Label[values.length];
             for ( int i = 0; i < values.length; i++ )
             {
-                labels[i] = DynamicLabel.label( values[i] );
+                labels[i] = Label.label( values[i] );
             }
             return labels;
         }
@@ -97,7 +95,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             RelationshipType[] types = new RelationshipType[values.length];
             for ( int i = 0; i < values.length; i++ )
             {
-                types[i] = DynamicRelationshipType.withName( values[i] );
+                types[i] = RelationshipType.withName( values[i] );
             }
             return types;
         }
@@ -185,7 +183,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected static RelationshipType getRelationshipType( String name )
     {
-        return DynamicRelationshipType.withName( name );
+        return RelationshipType.withName( name );
     }
 
     protected static Direction getDirection( String direction ) throws ShellException
@@ -786,7 +784,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            expander = expander.add( RelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
         return (PathExpander) expander;
@@ -801,7 +799,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         Expander expander = new OrderedByTypeExpander();
         for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+            expander = expander.add( RelationshipType.withName( entry.getKey() ),
                     entry.getValue() );
         }
         return (PathExpander) expander;

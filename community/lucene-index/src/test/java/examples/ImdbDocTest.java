@@ -40,10 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -136,7 +136,7 @@ public class ImdbDocTest
 
             // START SNIPPET: createRelationships
             // we need a relationship type
-            DynamicRelationshipType ACTS_IN = DynamicRelationshipType.withName( "ACTS_IN" );
+            RelationshipType ACTS_IN = RelationshipType.withName( "ACTS_IN" );
             // create relationships
             Relationship role1 = reeves.createRelationshipTo( theMatrix, ACTS_IN );
             role1.setProperty( "name", "Neo" );

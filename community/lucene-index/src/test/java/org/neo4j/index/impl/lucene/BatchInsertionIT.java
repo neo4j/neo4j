@@ -41,7 +41,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 import static java.lang.System.currentTimeMillis;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;

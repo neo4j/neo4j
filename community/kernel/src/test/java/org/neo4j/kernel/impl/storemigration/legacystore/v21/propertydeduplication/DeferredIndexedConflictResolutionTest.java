@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -103,7 +102,7 @@ public class DeferredIndexedConflictResolutionTest
         db = factory.newEmbeddedDatabase( storePath.absolutePath() );
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
 
-        Label nodeLabel = DynamicLabel.label( "Label" );
+        Label nodeLabel = Label.label( "Label" );
         String propertyKey = "someProp";
         long nodeId;
 

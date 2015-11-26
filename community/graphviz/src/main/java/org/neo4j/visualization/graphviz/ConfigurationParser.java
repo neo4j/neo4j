@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -177,7 +176,7 @@ public class ConfigurationParser
         RelationshipType[] types = new RelationshipType[typeNames.length];
         for ( int i = 0; i < typeNames.length; i++ )
         {
-            types[i] = DynamicRelationshipType.withName( typeNames[i] );
+            types[i] = RelationshipType.withName( typeNames[i] );
         }
         styles.add( new StyleParameter.ReverseOrderRelationshipTypes( types ) );
     }

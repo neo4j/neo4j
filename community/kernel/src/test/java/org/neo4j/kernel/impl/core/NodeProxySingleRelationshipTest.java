@@ -24,7 +24,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.when;
 public class NodeProxySingleRelationshipTest
 {
     private static final long REL_ID = 1;
-    private static final RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
+    private static final RelationshipType loves = RelationshipType.withName( "LOVES" );
 
     /**
      * This behaviour is a workaround until we have proper concurrency support in the kernel.

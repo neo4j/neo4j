@@ -47,7 +47,7 @@ import org.neo4j.kernel.Uniqueness;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;

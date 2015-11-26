@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -72,8 +70,8 @@ public class GlobalGraphOperationsIT
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Label dead = DynamicLabel.label( "dead" );
-        Label alive = DynamicLabel.label( "alive" );
+        Label dead = Label.label( "dead" );
+        Label alive = Label.label( "alive" );
         try( Transaction tx = db.beginTx() )
         {
             db.createNode( alive );
@@ -102,8 +100,8 @@ public class GlobalGraphOperationsIT
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Label dead = DynamicLabel.label( "dead" );
-        Label alive = DynamicLabel.label( "alive" );
+        Label dead = Label.label( "dead" );
+        Label alive = Label.label( "alive" );
         try( Transaction tx = db.beginTx() )
         {
             db.createNode( alive );
@@ -132,8 +130,8 @@ public class GlobalGraphOperationsIT
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        RelationshipType dead = DynamicRelationshipType.withName( "DEAD" );
-        RelationshipType alive = DynamicRelationshipType.withName( "ALIVE" );
+        RelationshipType dead = RelationshipType.withName( "DEAD" );
+        RelationshipType alive = RelationshipType.withName( "ALIVE" );
         long deadId;
         try( Transaction tx = db.beginTx() )
         {
@@ -170,8 +168,8 @@ public class GlobalGraphOperationsIT
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        RelationshipType dead = DynamicRelationshipType.withName( "DEAD" );
-        RelationshipType alive = DynamicRelationshipType.withName( "ALIVE" );
+        RelationshipType dead = RelationshipType.withName( "DEAD" );
+        RelationshipType alive = RelationshipType.withName( "ALIVE" );
         long deadId;
         try( Transaction tx = db.beginTx() )
         {

@@ -26,7 +26,6 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -492,7 +491,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         public LabelEntryView( long nodeId, String labelName )
         {
             this.nodeId = nodeId;
-            this.label = DynamicLabel.label( labelName );
+            this.label = Label.label( labelName );
         }
 
         @Override

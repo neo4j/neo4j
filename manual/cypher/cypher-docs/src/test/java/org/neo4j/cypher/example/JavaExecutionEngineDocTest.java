@@ -37,9 +37,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -496,7 +496,7 @@ public class JavaExecutionEngineDocTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            a.createRelationshipTo( b, DynamicRelationshipType.withName( "friend" ) );
+            a.createRelationshipTo( b, RelationshipType.withName( "friend" ) );
             tx.success();
         }
     }

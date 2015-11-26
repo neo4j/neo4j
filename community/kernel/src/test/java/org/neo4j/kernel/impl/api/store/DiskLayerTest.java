@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -53,7 +52,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -64,8 +63,8 @@ public class DiskLayerTest
     protected GraphDatabaseAPI db;
     protected final Label label1 = label( "FirstLabel" );
     protected final Label label2 = label( "SecondLabel" );
-    protected final RelationshipType relType1 = DynamicRelationshipType.withName( "type1" );
-    protected final RelationshipType relType2 = DynamicRelationshipType.withName( "type2" );
+    protected final RelationshipType relType1 = RelationshipType.withName( "type1" );
+    protected final RelationshipType relType2 = RelationshipType.withName( "type2" );
     protected final String propertyKey = "name";
     protected final String otherPropertyKey = "age";
     protected KernelStatement state;

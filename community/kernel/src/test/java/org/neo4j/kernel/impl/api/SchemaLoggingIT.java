@@ -31,7 +31,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SchemaLoggingIT

@@ -23,12 +23,12 @@ import java.util.List;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PathExpanders;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Parameter;
@@ -62,7 +62,7 @@ public class ShortestPath extends ServerPlugin
             PathExpanderBuilder expanderBuilder = PathExpanderBuilder.empty();
             for ( int i = 0; i < types.length; i++ )
             {
-                expanderBuilder = expanderBuilder.add( DynamicRelationshipType.withName( types[i] ) );
+                expanderBuilder = expanderBuilder.add( RelationshipType.withName( types[i] ) );
             }
             expander = expanderBuilder.build();
         }

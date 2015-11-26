@@ -29,13 +29,17 @@ package org.neo4j.graphdb;
  * in {@link Label} documentation.
  *
  * @see Label
+ * @deprecated use {@link Label#label(String)} instead
  */
+@Deprecated
 public class DynamicLabel implements Label
 {
     /**
      * @param labelName the name of the label.
      * @return a {@link Label} instance for the given {@code labelName}.
+     * @deprecated use {@link Label#label(String)} instead
      */
+    @Deprecated
     public static Label label( String labelName )
     {
         return new DynamicLabel( labelName );

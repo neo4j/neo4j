@@ -28,11 +28,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -129,7 +128,7 @@ public class ConsistencyCheckServiceIntegrationTest
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
 
         String propertyKey = "itemId";
-        Label label = DynamicLabel.label( "Item" );
+        Label label = Label.label( "Item" );
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
@@ -207,7 +206,7 @@ public class ConsistencyCheckServiceIntegrationTest
             {
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }
         }

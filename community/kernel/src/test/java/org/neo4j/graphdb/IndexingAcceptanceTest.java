@@ -443,7 +443,7 @@ public class IndexingAcceptanceTest
 
         for ( int i = 0; i < indexesCount; i++ )
         {
-            Neo4jMatchers.createIndex( db, DynamicLabel.label( labelPrefix + i ), propertyKeyPrefix + i );
+            Neo4jMatchers.createIndex( db, Label.label( labelPrefix + i ), propertyKeyPrefix + i );
         }
 
         // When
@@ -459,7 +459,7 @@ public class IndexingAcceptanceTest
             Node node = db.getNodeById( nodeId );
             for ( int i = 0; i < indexesCount; i++ )
             {
-                node.addLabel( DynamicLabel.label( labelPrefix + i ) );
+                node.addLabel( Label.label( labelPrefix + i ) );
                 node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
             }
             tx.success();
@@ -470,7 +470,7 @@ public class IndexingAcceptanceTest
         {
             for ( int i = 0; i < indexesCount; i++ )
             {
-                Label label = DynamicLabel.label( labelPrefix + i );
+                Label label = Label.label( labelPrefix + i );
                 String key = propertyKeyPrefix + i;
                 String value = propertyValuePrefix + i;
 
@@ -662,9 +662,9 @@ public class IndexingAcceptanceTest
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
-    private Label LABEL1 = DynamicLabel.label( "LABEL1" );
-    private Label LABEL2 = DynamicLabel.label( "LABEL2" );
-    private Label LABEL3 = DynamicLabel.label( "LABEL3" );
+    private Label LABEL1 = Label.label( "LABEL1" );
+    private Label LABEL2 = Label.label( "LABEL2" );
+    private Label LABEL3 = Label.label( "LABEL3" );
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
     {

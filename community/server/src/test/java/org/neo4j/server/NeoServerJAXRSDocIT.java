@@ -26,8 +26,8 @@ import org.junit.Test;
 
 import java.net.URI;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -121,7 +121,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
                             continue;
                         }
 
-                        n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "REL" ) );
+                        n1.createRelationshipTo( n2, RelationshipType.withName( "REL" ) );
                     }
                 }
             }

@@ -31,7 +31,6 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -67,7 +66,7 @@ import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import static java.lang.String.format;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
@@ -812,7 +811,7 @@ public class NodeProxy
             {
                 try
                 {
-                    return DynamicRelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
+                    return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
                 }
                 catch ( RelationshipTypeIdNotFoundKernelException e )
                 {

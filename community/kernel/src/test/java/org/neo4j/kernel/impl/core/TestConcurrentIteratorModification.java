@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicLabel;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -44,7 +44,7 @@ public class TestConcurrentIteratorModification {
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseService();
-        Label label = DynamicLabel.label( "Bird" );
+        Label label = Label.label( "Bird" );
 
         Node node1, node2, node3;
         try ( Transaction tx = graph.beginTx() ) {

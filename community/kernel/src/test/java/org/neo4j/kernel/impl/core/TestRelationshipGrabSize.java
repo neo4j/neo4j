@@ -26,7 +26,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -86,8 +85,8 @@ public class TestRelationshipGrabSize
         Node node1 = db.createNode();
         Node node2 = db.createNode();
         Node node3 = db.createNode();
-        RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
-        RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
+        RelationshipType type1 = RelationshipType.withName( "type1" );
+        RelationshipType type2 = RelationshipType.withName( "type2" );
         // This will the last relationship in the chain
         node1.createRelationshipTo( node3, type1 );
         Collection<Relationship> type2Relationships = new HashSet<>();
@@ -136,7 +135,7 @@ public class TestRelationshipGrabSize
         beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();
-        RelationshipType type = DynamicRelationshipType.withName( "type" );
+        RelationshipType type = RelationshipType.withName( "type" );
         for ( int i = 0; i < GRAB_SIZE + 2; i++ )
         {
             node1.createRelationshipTo( node2, type );
@@ -200,8 +199,8 @@ public class TestRelationshipGrabSize
         Node node2 = db.createNode();
 
         int count = 0;
-        RelationshipType type1 = DynamicRelationshipType.withName( "type" );
-        RelationshipType type2 = DynamicRelationshipType.withName( "bar" );
+        RelationshipType type1 = RelationshipType.withName( "type" );
+        RelationshipType type2 = RelationshipType.withName( "bar" );
         // Create more than one grab size
         for ( int i = 0; i < 12; i++ )
         {

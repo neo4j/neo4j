@@ -22,9 +22,9 @@ package org.neo4j.kernel;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -53,7 +53,7 @@ public class HACountsPropagationTest
         try ( Transaction tx = master.beginTx() )
         {
             master.createNode();
-            master.createNode( DynamicLabel.label( "A" ) );
+            master.createNode( Label.label( "A" ) );
             tx.success();
         }
 
@@ -75,8 +75,8 @@ public class HACountsPropagationTest
         try ( Transaction tx = master.beginTx() )
         {
             Node left = master.createNode();
-            Node right = master.createNode( DynamicLabel.label( "A" ) );
-            left.createRelationshipTo( right, DynamicRelationshipType.withName( "Type" ) );
+            Node right = master.createNode( Label.label( "A" ) );
+            left.createRelationshipTo( right, RelationshipType.withName( "Type" ) );
             tx.success();
         }
 

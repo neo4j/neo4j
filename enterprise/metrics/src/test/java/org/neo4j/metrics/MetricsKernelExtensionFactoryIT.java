@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Settings;
@@ -155,7 +155,7 @@ public class MetricsKernelExtensionFactoryIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( DynamicLabel.label( "Label" ) );
+                Node node = db.createNode( Label.label( "Label" ) );
                 node.setProperty( "name", UUID.randomUUID().toString() );
                 tx.success();
             }

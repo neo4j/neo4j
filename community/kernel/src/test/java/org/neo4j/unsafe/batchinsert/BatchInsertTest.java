@@ -42,8 +42,6 @@ import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -114,7 +112,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -370,7 +368,7 @@ public class BatchInsertTest
         long from = inserter.createNode( Collections.<String,Object>emptyMap() );
         long to = inserter.createNode( Collections.<String,Object>emptyMap() );
         long theRel = inserter.createRelationship( from, to,
-                DynamicRelationshipType.withName( "TestingPropsHere" ),
+                RelationshipType.withName( "TestingPropsHere" ),
                 MapUtil.map( "foo", "bar" ) );
         inserter.setRelationshipProperty( theRel, "foo2", "bar2" );
         Map<String, Object> props = inserter.getRelationshipProperties( theRel );
@@ -415,7 +413,7 @@ public class BatchInsertTest
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
-                DynamicRelationshipType.withName( "foo" ), properties );
+                RelationshipType.withName( "foo" ), properties );
         for ( String key : properties.keySet() )
         {
             assertTrue( inserter.nodeHasProperty( theNode, key ) );
@@ -435,7 +433,7 @@ public class BatchInsertTest
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.<String,Object>emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
-                DynamicRelationshipType.withName( "foo" ), properties );
+                RelationshipType.withName( "foo" ), properties );
 
         inserter.removeNodeProperty( theNode, "key0" );
         inserter.removeRelationshipProperty( relationship, "key1" );
@@ -1365,8 +1363,8 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "itemId", 1000l ), DynamicLabel.label( "Item" ),
-                DynamicLabel.label( "Item" ) );
+        long nodeId = inserter.createNode( map( "itemId", 1000l ), label( "Item" ),
+                label( "Item" ) );
 
         // THEN
         NeoStores neoStores = switchToNeoStores( inserter );
@@ -1390,10 +1388,10 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "Item", 123456789123l ), DynamicLabel.label( "AA" ),
-                DynamicLabel.label( "BB" ), DynamicLabel.label( "CC" ), DynamicLabel.label( "DD" ) );
-        inserter.setNodeLabels( nodeId, DynamicLabel.label( "CC" ), DynamicLabel.label( "AA" ),
-                DynamicLabel.label( "DD" ), DynamicLabel.label( "EE" ), DynamicLabel.label( "FF" ) );
+        long nodeId = inserter.createNode( map( "Item", 123456789123l ), label( "AA" ),
+                label( "BB" ), label( "CC" ), label( "DD" ) );
+        inserter.setNodeLabels( nodeId, label( "CC" ), label( "AA" ),
+                label( "DD" ), label( "EE" ), label( "FF" ) );
 
         // THEN
         try ( NeoStores neoStores = switchToNeoStores( inserter ) )
@@ -1533,7 +1531,7 @@ public class BatchInsertTest
     public void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated() throws Exception
     {
         // Given
-        Label label = DynamicLabel.label( "Foo" );
+        Label label = label( "Foo" );
         String property = "Bar";
         String value = "Baz";
 

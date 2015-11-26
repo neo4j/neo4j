@@ -51,7 +51,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
   private val N = 100000
   private val STEPS = 100
-  private val LABEL = DynamicLabel.label("L")
+  private val LABEL = Label.label("L")
   private val PROPERTY = "prop"
   private val RELATIONSHIP = "REL"
 
@@ -243,7 +243,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       for (i <- 1 to chunkSize) {
         val node = graph.createNode(LABEL)
         node.createRelationshipTo(graph.createNode(),
-          DynamicRelationshipType.withName(RELATIONSHIP))
+          RelationshipType.withName(RELATIONSHIP))
         node.setProperty(PROPERTY, 42)
       }
     }
@@ -261,7 +261,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
         val label = labels(i)
         val size = sizes(i)
         for (c <- 1 to size) {
-          graph.createNode(DynamicLabel.label(label))
+          graph.createNode(Label.label(label))
         }
       }
     }

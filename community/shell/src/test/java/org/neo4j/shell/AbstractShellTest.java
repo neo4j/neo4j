@@ -46,7 +46,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;

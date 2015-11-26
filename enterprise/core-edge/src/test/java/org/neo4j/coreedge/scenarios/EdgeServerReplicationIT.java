@@ -29,8 +29,8 @@ import org.junit.Test;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.Supplier;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -80,7 +80,7 @@ public class EdgeServerReplicationIT
         {
             Node node = edgeDB.createNode();
             node.setProperty( "foobar", "baz_bat" );
-            node.addLabel( DynamicLabel.label( "Foo" ) );
+            node.addLabel( Label.label( "Foo" ) );
             tx.success();
         }
         catch ( TransactionFailureException e )

@@ -29,7 +29,7 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertNotNull;
 
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 /**

@@ -26,10 +26,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -49,7 +49,7 @@ public class NeoStoresIT
         }
     };
 
-    private static final DynamicRelationshipType FRIEND = DynamicRelationshipType.withName( "FRIEND" );
+    private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 
     private static final String LONG_STRING_VALUE =
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA"

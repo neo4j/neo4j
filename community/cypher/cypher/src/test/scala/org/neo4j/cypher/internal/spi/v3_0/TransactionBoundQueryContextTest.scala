@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
-import java.lang.Boolean
 import java.net.URL
 
 import org.mockito.Mockito._
@@ -33,7 +32,7 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 
@@ -138,7 +137,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   }
 
   private def createMiniGraph(relTypeName: String): Node = {
-    val relType: DynamicRelationshipType = DynamicRelationshipType.withName(relTypeName)
+    val relType = RelationshipType.withName(relTypeName)
     val tx = graph.beginTx()
     try {
       val node = graph.createNode()

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
@@ -34,13 +33,13 @@ import static org.neo4j.bolt.v1.messaging.example.Nodes.DAVE;
 public class Relationships
 {
     // Relationship types
-    public static final RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
-    public static final RelationshipType LIKES = DynamicRelationshipType.withName( "LIKES" );
-    public static final RelationshipType DISLIKES = DynamicRelationshipType.withName( "DISLIKES" );
+    public static final RelationshipType KNOWS = RelationshipType.withName( "KNOWS" );
+    public static final RelationshipType LIKES = RelationshipType.withName( "LIKES" );
+    public static final RelationshipType DISLIKES = RelationshipType.withName( "DISLIKES" );
     public static final RelationshipType MARRIED_TO =
-            DynamicRelationshipType.withName( "MARRIED_TO" );
+            RelationshipType.withName( "MARRIED_TO" );
     public static final RelationshipType WORKS_FOR =
-            DynamicRelationshipType.withName( "WORKS_FOR" );
+            RelationshipType.withName( "WORKS_FOR" );
 
     // Relationships
     public static final Relationship ALICE_KNOWS_BOB =

@@ -23,10 +23,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
@@ -50,8 +51,8 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         {
             n1 = getGraphDb().createNode();
             n2 = getGraphDb().createNode();
-            r1 = n1.createRelationshipTo( n2, 
-                DynamicRelationshipType.withName( "TEST" ) );
+            r1 = n1.createRelationshipTo( n2,
+                    RelationshipType.withName( "TEST" ) );
             tx.success();
         }
 
@@ -81,8 +82,8 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
                 {
                     node1.setProperty( "key", "new" );
                     rel1.setProperty( "key", "new" );
-                    node1.createRelationshipTo( node2, 
-                        DynamicRelationshipType.withName( "TEST" ) );
+                    node1.createRelationshipTo( node2,
+                            RelationshipType.withName( "TEST" ) );
                     assertPropertyEqual( node1, "key", "new" );
                     assertPropertyEqual( rel1, "key", "new" );
                     assertRelationshipCount( node1, 2 );

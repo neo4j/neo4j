@@ -43,7 +43,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class CountsStoreRecoveryTest

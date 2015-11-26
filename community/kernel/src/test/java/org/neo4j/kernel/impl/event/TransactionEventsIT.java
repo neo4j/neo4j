@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -320,12 +318,12 @@ public class TransactionEventsIT
 
         Label randomLabel()
         {
-            return DynamicLabel.label( randomToken() );
+            return Label.label( randomToken() );
         }
 
         RelationshipType randomRelationshipType()
         {
-            return DynamicRelationshipType.withName( randomToken() );
+            return RelationshipType.withName( randomToken() );
         }
 
         String randomPropertyKey()

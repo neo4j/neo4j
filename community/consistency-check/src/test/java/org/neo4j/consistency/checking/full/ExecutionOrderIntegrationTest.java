@@ -49,9 +49,9 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -93,7 +93,7 @@ public class ExecutionOrderIntegrationTest
             {
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }
         }

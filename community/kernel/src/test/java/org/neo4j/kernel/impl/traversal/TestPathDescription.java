@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
@@ -31,10 +31,10 @@ import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 
 public class TestPathDescription extends TraversalTestBase
 {
-    private static final RelationshipType A = DynamicRelationshipType.withName( "A" );
-    private static final RelationshipType B = DynamicRelationshipType.withName( "B" );
-    private static final RelationshipType C = DynamicRelationshipType.withName( "C" );
-    private static final RelationshipType D = DynamicRelationshipType.withName( "D" );
+    private static final RelationshipType A = RelationshipType.withName( "A" );
+    private static final RelationshipType B = RelationshipType.withName( "B" );
+    private static final RelationshipType C = RelationshipType.withName( "C" );
+    private static final RelationshipType D = RelationshipType.withName( "D" );
 
     @Test
     public void specificPath() throws Exception

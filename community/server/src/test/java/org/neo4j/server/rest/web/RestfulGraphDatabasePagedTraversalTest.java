@@ -28,7 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
@@ -180,7 +180,7 @@ public class RestfulGraphDatabasePagedTraversalTest
                 long currentNodeId = helper.createNode( MapUtil.map( "name", String.valueOf( i ) ) );
                 database.getGraph().getNodeById( previousNodeId )
                         .createRelationshipTo( database.getGraph().getNodeById( currentNodeId ),
-                                DynamicRelationshipType.withName( "PRECEDES" ) );
+                                RelationshipType.withName( "PRECEDES" ) );
                 previousNodeId = currentNodeId;
             }
 

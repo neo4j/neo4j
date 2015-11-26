@@ -34,7 +34,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
 {

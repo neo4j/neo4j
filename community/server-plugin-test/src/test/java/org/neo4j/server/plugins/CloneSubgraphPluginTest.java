@@ -32,7 +32,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -54,8 +53,8 @@ import static org.junit.Assert.assertTrue;
 
 public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 {
-    private static final RelationshipType KNOWS = DynamicRelationshipType.withName( "knows" );
-    private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName( "worked_for" );
+    private static final RelationshipType KNOWS = RelationshipType.withName( "knows" );
+    private static final RelationshipType WORKED_FOR = RelationshipType.withName( "worked_for" );
 
     private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;

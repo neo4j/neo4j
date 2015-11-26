@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIter
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
-import org.neo4j.graphdb.DynamicRelationshipType._
+import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -507,7 +507,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     } else {
       val emptyExpander = Traversal.emptyExpander()
       val expander = relTypes.foldLeft(emptyExpander) {
-        case (e, t) => e.add(DynamicRelationshipType.withName(t), toGraphDb(direction))
+        case (e, t) => e.add(RelationshipType.withName(t), toGraphDb(direction))
       }
       baseTraversalDescription.expand(expander)
     }

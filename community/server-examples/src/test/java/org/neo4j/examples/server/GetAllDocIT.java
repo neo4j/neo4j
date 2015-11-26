@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.examples.server.plugins.GetAll;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -56,7 +56,7 @@ public class GetAllDocIT extends AbstractPluginTestBase
     public void shouldReturnAllNodesOnPost() throws JsonParseException
     {
         int numberOfNodes = helper.getNumberOfNodes();
-        helper.createNode( DynamicLabel.label( "test" ) );
+        helper.createNode( Label.label( "test" ) );
 
         String uri = (String) getDatabaseLevelPluginMetadata( GetAll.class ).get( GET_ALL_NODES );
 

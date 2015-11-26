@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
+import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseAPI
 
 class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
@@ -84,8 +84,8 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
 
   def createTwoPersonNodesWithNames(db: GraphDatabaseAPI) = {
     db.inTx {
-      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node A")
-      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node B")
+      db.createNode(Label.label("Person")).setProperty("name", "Node A")
+      db.createNode(Label.label("Person")).setProperty("name", "Node B")
     }
   }
 

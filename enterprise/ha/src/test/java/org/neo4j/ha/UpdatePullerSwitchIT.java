@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
@@ -155,14 +155,14 @@ public class UpdatePullerSwitchIT
         try ( Transaction transaction = master.beginTx() )
         {
             Node masterNode = master.createNode();
-            masterNode.addLabel( DynamicLabel.label( label ) );
+            masterNode.addLabel( Label.label( label ) );
             transaction.success();
         }
     }
 
     private void checkNodeWithLabelExists( HighlyAvailableGraphDatabase database, String label  )
     {
-        ResourceIterator<Node> slaveNodes = database.findNodes( DynamicLabel.label( label ) );
+        ResourceIterator<Node> slaveNodes = database.findNodes( Label.label( label ) );
         assertEquals( 1, Iterables.toList( slaveNodes ).size() );
     }
 }

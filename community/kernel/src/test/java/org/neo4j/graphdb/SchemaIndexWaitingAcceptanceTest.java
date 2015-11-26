@@ -66,7 +66,7 @@ public class SchemaIndexWaitingAcceptanceTest
         IndexDefinition index;
         try ( Transaction tx = db.beginTx() )
         {
-            index = db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+            index = db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.success();
         }
 
@@ -100,7 +100,7 @@ public class SchemaIndexWaitingAcceptanceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().indexFor( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+            db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
             tx.success();
         }
 

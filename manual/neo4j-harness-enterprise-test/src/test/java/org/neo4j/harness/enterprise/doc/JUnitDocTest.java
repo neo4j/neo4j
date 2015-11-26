@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.net.URI;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -55,7 +55,7 @@ public class JUnitDocTest
                 {
                     try ( Transaction tx = graphDatabaseService.beginTx() )
                     {
-                        graphDatabaseService.createNode( DynamicLabel.label( "Admin" ) );
+                        graphDatabaseService.createNode( Label.label( "Admin" ) );
                         tx.success();
                     }
                     return null;
@@ -78,7 +78,7 @@ public class JUnitDocTest
         try ( Transaction tx = neo4j.getGraphDatabaseService().beginTx() )
         {
             assertEquals( 2,
-                    IteratorUtil.count( neo4j.getGraphDatabaseService().findNodes( DynamicLabel.label( "Admin" ) ) ) );
+                    IteratorUtil.count( neo4j.getGraphDatabaseService().findNodes( Label.label( "Admin" ) ) ) );
             tx.success();
         }
     }
@@ -106,7 +106,7 @@ public class JUnitDocTest
             ConstraintDefinition constraint = single( db.schema().getConstraints() );
 
             assertTrue( constraint.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) );
-            assertEquals( DynamicLabel.label( "User" ), constraint.getLabel() );
+            assertEquals( Label.label( "User" ), constraint.getLabel() );
             assertEquals( "name", single( constraint.getPropertyKeys() ) );
 
             tx.success();

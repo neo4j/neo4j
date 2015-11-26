@@ -24,8 +24,8 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.{WrappedMonitors2_3, WrappedMonitors3_0}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, Literal}
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType.{Label, PropertyKey}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ReturnItem, _}
@@ -41,9 +41,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, InternalException, Scope, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewriter, Scope, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
-import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
 
@@ -126,7 +126,7 @@ class RuleExecutablePlanBuilderTest
     // given
     val tx = graph.beginTx()
     try {
-      val node = graph.createNode(DynamicLabel.label("Person"))
+      val node = graph.createNode(label("Person"))
 
       val q = Query
         .start(NodeById("x", node.getId))

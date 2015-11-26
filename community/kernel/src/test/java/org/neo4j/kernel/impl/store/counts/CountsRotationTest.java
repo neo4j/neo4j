@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -188,9 +187,9 @@ public class CountsRotationTest
         db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 
-    private final Label A = DynamicLabel.label( "A" );
-    private final Label B = DynamicLabel.label( "B" );
-    private final Label C = DynamicLabel.label( "C" );
+    private final Label A = Label.label( "A" );
+    private final Label B = Label.label( "B" );
+    private final Label C = Label.label( "C" );
 
     @Rule
     public PageCacheRule pcRule = new PageCacheRule();

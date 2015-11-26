@@ -32,11 +32,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -44,7 +44,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
 
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.GraphDescription.PropType.ERROR;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
 
@@ -238,7 +238,7 @@ public class GraphDescription implements GraphDefinition
             for ( REL def : rels )
             {
                 init( result.get( def.start() ).createRelationshipTo( result.get( def.end() ),
-                        DynamicRelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
+                                RelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
                         def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexRelationships );
             }
             tx.success();
