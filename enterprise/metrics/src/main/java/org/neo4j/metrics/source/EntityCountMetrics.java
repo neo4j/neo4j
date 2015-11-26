@@ -39,13 +39,13 @@ public class EntityCountMetrics extends LifecycleAdapter
     private static final String COUNTS_PREFIX = "neo4j.ids_in_use";
 
     @Documented( "The total number of different relationship types stored in the database" )
-    private static final String COUNTS_RELATIONSHIP_TYPE = name( COUNTS_PREFIX, "relationship_type" );
+    public static final String COUNTS_RELATIONSHIP_TYPE = name( COUNTS_PREFIX, "relationship_type" );
     @Documented( "The total number of different property names used in the database" )
-    private static final String COUNTS_PROPERTY = name( COUNTS_PREFIX, "property" );
+    public static final String COUNTS_PROPERTY = name( COUNTS_PREFIX, "property" );
     @Documented( "The total number of relationships stored in the database" )
-    private static final String COUNTS_RELATIONSHIP = name( COUNTS_PREFIX, "relationship" );
+    public static final String COUNTS_RELATIONSHIP = name( COUNTS_PREFIX, "relationship" );
     @Documented( "The total number of nodes stored in the database" )
-    private static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
+    public static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
     private final MetricRegistry registry;
     private final Config config;

@@ -39,42 +39,42 @@ public class TransactionMetrics extends LifecycleAdapter
     private static final String TRANSACTION_PREFIX = "neo4j.transaction";
 
     @Documented( "The total number of started transactions" )
-    private static final String TX_STARTED = name( TRANSACTION_PREFIX, "started" );
+    public static final String TX_STARTED = name( TRANSACTION_PREFIX, "started" );
     @Documented( "The highest peak of concurrent transactions ever seen on this machine" )
-    private static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
+    public static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
 
     @Documented( "The number of currently active transactions" )
-    private static final String TX_ACTIVE = name( TRANSACTION_PREFIX, "active" );
+    public static final String TX_ACTIVE = name( TRANSACTION_PREFIX, "active" );
     @Documented( "The number of currently active read transactions" )
-    private static final String READ_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_read" );
+    public static final String READ_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_read" );
     @Documented( "The number of currently active write transactions" )
-    private static final String WRITE_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_write" );
+    public static final String WRITE_TX_ACTIVE = name( TRANSACTION_PREFIX, "active_write" );
 
     @Documented( "The total number of committed transactions" )
-    private static final String TX_COMMITTED = name( TRANSACTION_PREFIX, "committed" );
+    public static final String TX_COMMITTED = name( TRANSACTION_PREFIX, "committed" );
     @Documented( "The total number of committed read transactions" )
-    private static final String READ_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_read" );
+    public static final String READ_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_read" );
     @Documented( "The total number of committed write transactions" )
-    private static final String WRITE_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_write" );
+    public static final String WRITE_TX_COMMITTED = name( TRANSACTION_PREFIX, "committed_write" );
 
     @Documented( "The total number of rolled back transactions" )
-    private static final String TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks" );
+    public static final String TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks" );
     @Documented( "The total number of rolled back read transactions" )
-    private static final String READ_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_read" );
+    public static final String READ_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_read" );
     @Documented( "The total number of rolled back write transactions" )
-    private static final String WRITE_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_write" );
+    public static final String WRITE_TX_ROLLBACKS = name( TRANSACTION_PREFIX, "rollbacks_write" );
 
     @Documented( "The total number of terminated transactions" )
-    private static final String TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated" );
+    public static final String TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated" );
     @Documented( "The total number of terminated read transactions" )
-    private static final String READ_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_read" );
+    public static final String READ_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_read" );
     @Documented( "The total number of terminated write transactions" )
-    private static final String WRITE_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_write" );
+    public static final String WRITE_TX_TERMINATED = name( TRANSACTION_PREFIX, "terminated_write" );
 
     @Documented( "The ID of the last committed transaction" )
-    private static final String LAST_COMMITTED_TX_ID = name( TRANSACTION_PREFIX, "last_committed_tx_id" );
+    public static final String LAST_COMMITTED_TX_ID = name( TRANSACTION_PREFIX, "last_committed_tx_id" );
     @Documented( "The ID of the last closed transaction" )
-    private static final String LAST_CLOSED_TX_ID = name( TRANSACTION_PREFIX, "last_closed_tx_id" );
+    public static final String LAST_CLOSED_TX_ID = name( TRANSACTION_PREFIX, "last_closed_tx_id" );
 
     private final MetricRegistry registry;
     private final Config config;
