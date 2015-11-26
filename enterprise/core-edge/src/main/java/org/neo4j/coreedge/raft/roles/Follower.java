@@ -41,26 +41,23 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
 public class Follower implements RaftMessageHandler
 {
-    private static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, AppendEntries
-            .Request<MEMBER> req ) throws RaftStorageException
-    {
-        // note that the entry term for a non existing log index is defined as -1.
-        // Therefore, the history for a non existing log entry never matches.
-        return req.prevLogIndex() == -1 || ctx.entryLog().readEntryTerm( req.prevLogIndex() ) == req.prevLogTerm();
-    }
-
-    private static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, Heartbeat<MEMBER> req )
+    private static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, long prevLogIndex, long prevLogTerm )
             throws RaftStorageException
     {
-        return req.commitIndex() == -1 || ctx.entryLog().readEntryTerm( req.commitIndex() ) == req.commitIndexTerm();
+        // NOTE: A previous log index of -1 means no history,
+        //       so it always matches.
+
+        // NOTE: The entry term for a non existing log index is defined as -1,
+        //       so the history for a non existing log entry never matches.
+        return prevLogIndex == -1 || ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
     }
 
-    private static <MEMBER> boolean generateCommitIfNecessary( ReadableRaftState<MEMBER> ctx, AppendEntries
-            .Request<MEMBER> req, Outcome<MEMBER> outcome )
+    private static <MEMBER> boolean commitToLogOnUpdate( ReadableRaftState<MEMBER> ctx, long indexOfLastNewEntry,
+            long leaderCommit, Outcome<MEMBER> outcome )
     {
-        long localCommit = ctx.entryLog().commitIndex();
-        long newCommitIndex = min( req.leaderCommit(), req.prevLogIndex() + req.entries().length );
-        if ( newCommitIndex > localCommit )
+        long newCommitIndex = min( leaderCommit, indexOfLastNewEntry );
+
+        if ( newCommitIndex > ctx.entryLog().commitIndex() )
         {
             outcome.addLogCommand( new CommitCommand( newCommitIndex ) );
             return true;
@@ -85,12 +82,17 @@ public class Follower implements RaftMessageHandler
                     break;
                 }
 
-                if ( logHistoryMatches( ctx, req ) )
+                outcome.renewElectionTimeout();
+                outcome.setNextTerm( req.leaderTerm() );
+                outcome.setLeader( req.from() );
+                outcome.setLeaderCommit( req.commitIndex() );
+
+                if ( !logHistoryMatches( ctx, req.commitIndex(), req.commitIndexTerm() ) )
                 {
-                    outcome.addLogCommand( new CommitCommand( req.commitIndex() ) );
+                    break;
                 }
 
-                outcome.renewElectionTimeout();
+                commitToLogOnUpdate( ctx, req.commitIndex(), req.commitIndex(), outcome );
                 break;
             }
 
@@ -112,7 +114,7 @@ public class Follower implements RaftMessageHandler
                 outcome.setLeader( req.from() );
                 outcome.setLeaderCommit( req.leaderCommit() );
 
-                if ( !logHistoryMatches( ctx, req ) )
+                if ( !logHistoryMatches( ctx, req.prevLogIndex(), req.prevLogTerm() ) )
                 {
                     assert req.prevLogIndex() > -1 && req.prevLogTerm() > -1;
                     Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), false, -1 );
@@ -144,7 +146,8 @@ public class Follower implements RaftMessageHandler
                 {
                     outcome.addLogCommand( new BatchAppendLogEntries( baseIndex, offset, req.entries() ) );
                 }
-                generateCommitIfNecessary( ctx, req, outcome );
+
+                commitToLogOnUpdate( ctx, req.prevLogIndex() + req.entries().length, req.leaderCommit(), outcome );
 
                 long endMatchIndex = req.prevLogIndex() + req.entries().length; // this is the index of the last incoming entry
                 if ( endMatchIndex >= 0 )

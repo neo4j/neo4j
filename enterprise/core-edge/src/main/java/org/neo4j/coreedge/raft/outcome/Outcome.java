@@ -30,6 +30,14 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
+/**
+ * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
+ * and responds to RAFT messages in the context of a supplied state. The outcome is later consumed
+ * to update the state and do operations embedded as commands within the outcome.
+ *
+ * A state update could be to change role, change term, etc.
+ * A command could be to append to the RAFT log, tell the log shipper that there was a mismatch, etc.
+ */
 public class Outcome<MEMBER> implements Serializable
 {
     /* Common */

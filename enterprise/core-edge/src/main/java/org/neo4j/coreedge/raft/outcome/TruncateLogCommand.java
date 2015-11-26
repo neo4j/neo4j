@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
+import java.util.Objects;
+
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 
@@ -35,6 +37,23 @@ public class TruncateLogCommand implements LogCommand
     public void applyTo( RaftLog raftLog ) throws RaftStorageException
     {
         raftLog.truncate( fromIndex );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        TruncateLogCommand that = (TruncateLogCommand) o;
+        return fromIndex == that.fromIndex;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( fromIndex );
     }
 
     @Override
