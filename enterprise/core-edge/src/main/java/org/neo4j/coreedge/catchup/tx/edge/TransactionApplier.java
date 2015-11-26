@@ -19,34 +19,27 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import java.io.IOException;
-
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 
 /**
  * Receives and unpacks {@link Response responses}.
  * Transaction obligations are handled by {@link TransactionObligationFulfiller} and
- * {@link TransactionStream transaction streams} are {@link TransactionRepresentationStoreApplier applied to the
- * store},
+ * {@link TransactionStream transaction streams} are {@link TransactionCommitProcess committed to the store},
  * in batches.
  * <p/>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
@@ -54,61 +47,19 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  */
 public class TransactionApplier
 {
-    private final TransactionAppender appender;
-    private final TransactionRepresentationStoreApplier storeApplier;
-    private final IndexUpdatesValidator indexUpdatesValidator;
-    private final LogFile logFile;
-    private final LogRotation logRotation;
-    private final KernelHealth kernelHealth;
+    private final TransactionRepresentationCommitProcess commitProcess;
 
     public TransactionApplier( DependencyResolver resolver )
     {
-        this.appender = resolver.resolveDependency( TransactionAppender.class );
-        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
-        this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
-        this.logFile = resolver.resolveDependency( LogFile.class );
-        this.logRotation = resolver.resolveDependency( LogRotation.class );
-        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        commitProcess = new TransactionRepresentationCommitProcess(
+                resolver.resolveDependency( TransactionAppender.class ),
+                resolver.resolveDependency( StorageEngine.class ),
+                resolver.resolveDependency( IndexUpdatesValidator.class ) );
     }
 
-    public void appendToLogAndApplyToStore( CommittedTransactionRepresentation tx ) throws IOException
+    public void appendToLogAndApplyToStore( CommittedTransactionRepresentation tx ) throws TransactionFailureException
     {
-        // Synchronize to guard for concurrent shutdown
-        synchronized ( logFile )
-        {
-            // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-
-            try
-            {
-                LogEntryCommit commitEntry = tx.getCommitEntry();
-
-                Commitment commitment = appender.append( tx.getTransactionRepresentation(), commitEntry.getTxId() );
-
-                appender.force();
-
-                long transactionId = commitEntry.getTxId();
-                TransactionRepresentation representation = tx.getTransactionRepresentation();
-                try
-                {
-                    commitment.publishAsCommitted();
-                    try ( LockGroup locks = new LockGroup();
-                          ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation) )
-                    {
-                        storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
-                    }
-                }
-                finally
-                {
-                    commitment.publishAsApplied();
-                }
-            }
-            catch ( IOException e )
-            {
-                // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
-                kernelHealth.panic( e );
-                throw e;
-            }
-        }
+        commitProcess.commit( new TransactionToApply( tx.getTransactionRepresentation(),
+                tx.getCommitEntry().getTxId() ), NULL, EXTERNAL );
     }
 }
