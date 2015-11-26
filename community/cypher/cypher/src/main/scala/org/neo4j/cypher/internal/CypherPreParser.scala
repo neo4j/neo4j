@@ -34,7 +34,7 @@ case object CypherPreParser extends Parser with Base {
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile | PlannerDeprecated
+  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
