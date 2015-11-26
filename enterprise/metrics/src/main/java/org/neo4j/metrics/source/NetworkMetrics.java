@@ -28,18 +28,25 @@ import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Network Metrics" )
 public class NetworkMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.network";
-    private static final String SLAVE_NETWORK_TX_WRITES = name( NAME_PREFIX, "slave_network_tx_writes" );
-    private static final String MASTER_NETWORK_STORE_WRITES = name( NAME_PREFIX, "master_network_store_writes" );
-    private static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
+    @Documented( "The amount of bytes transmitted on the network containing the transaction data from a slave " +
+                 "to the master in order to be committed" )
+    public static final String SLAVE_NETWORK_TX_WRITES = name( NAME_PREFIX, "slave_network_tx_writes" );
+    @Documented( "The amount of bytes transmitted on the network while copying stores from a machines to another" )
+    public static final String MASTER_NETWORK_STORE_WRITES = name( NAME_PREFIX, "master_network_store_writes" );
+    @Documented( "The amount of bytes transmitted on the network containing the transaction data from a master " +
+                 "to the slaves in order to propagate committed transactions" )
+    public static final String MASTER_NETWORK_TX_WRITES = name( NAME_PREFIX, "master_network_tx_writes" );
 
     private Config config;
     private Monitors monitors;
@@ -65,9 +72,6 @@ public class NetworkMetrics extends LifecycleAdapter
              *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
              *
              * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
-             *
-             * KERNEL: "logdeserializer"  -> Bytes read from network (read - updates for slaves, commits from slaves
-             * for master)
              */
             monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
             monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),

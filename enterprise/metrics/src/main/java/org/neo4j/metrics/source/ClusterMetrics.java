@@ -27,17 +27,21 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
+@Documented( ".Cluster Metrics" )
 public class ClusterMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.cluster";
-    private static final String SLAVE_PULL_UPDATES = name( NAME_PREFIX, "slave_pull_updates" );
-    private static final String SLAVE_PULL_UPDATE_UP_TO_TX = name( NAME_PREFIX, "slave_pull_update_up_to_tx" );
+    @Documented( "The total number of update pulls executed by this instance" )
+    public static final String SLAVE_PULL_UPDATES = name( NAME_PREFIX, "slave_pull_updates" );
+    @Documented( "The highest transaction id that has been pulled in the last pull updates by this instance" )
+    public static final String SLAVE_PULL_UPDATE_UP_TO_TX = name( NAME_PREFIX, "slave_pull_update_up_to_tx" );
 
     private final Config config;
     private final Monitors monitors;
