@@ -19,7 +19,13 @@
  */
 package org.neo4j.cypher
 
-/** this class contains extra information about identifiers */
+/**
+  * this class contains extra information about identifiers
+  *
+  * @deprecated See { @link org.neo4j.graphdb.ExecutionPlanDescription}, and use
+  * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
+  */
+@Deprecated
 trait ExtendedPlanDescription extends PlanDescription {
   def identifiers: Set[String]
   def extendedChildren: Seq[ExtendedPlanDescription]
