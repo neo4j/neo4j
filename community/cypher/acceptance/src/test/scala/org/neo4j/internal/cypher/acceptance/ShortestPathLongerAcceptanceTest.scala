@@ -22,11 +22,14 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Rows
 import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.{Path, Node}
 import org.neo4j.kernel.monitoring.Monitors
+import org.scalatest.matchers.{MatchResult, Matcher}
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import java.util
@@ -40,27 +43,34 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
         | WHERE ANY(n in nodes(p) WHERE n:$topRight)
         |RETURN nodes(p) AS nodes""".stripMargin)
 
-    val result = results.columnAs[List[Node]]("nodes").toList
+    println(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
     println(results.executionPlanDescription())
 
-    result.length should equal(1)
-    println(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
+    val result = results.columnAs[List[Node]]("nodes").toList
     debugResults(result(0).asJava.asScala.toList)
+
+    // Then
+    result.length should equal(1)
     result(0).toSet should equal(row(0) ++ row(1))
+    results should use("ShortestPathVarLengthExpand")
   }
 
   test("Shortest path from first to last node via top right") {
     val start = System.currentTimeMillis
-    val result = executeWithAllPlanners(
+    val results = executeWithAllPlanners(
       s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
         | WHERE ANY(n in nodes(p) WHERE n:$topRight)
         |RETURN nodes(p) AS nodes""".stripMargin)
-      .columnAs[List[Node]]("nodes").toList
 
-    result.length should equal(1)
     println(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
+
+    val result = results.columnAs[List[Node]]("nodes").toList
     debugResults(result(0))
+
+    // Then
+    result.length should equal(1)
     result(0).toSet should equal(row(0) ++ col(dMax))
+    results should use("ShortestPathVarLengthExpand")
   }
 
   test("Shortest path from first to last node via bottom left") {
@@ -71,9 +81,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
         |RETURN nodes(p) AS nodes""".stripMargin)
       .columnAs[List[Node]]("nodes").toList
 
-    result.length should equal(1)
     println(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
     debugResults(result(0))
+
+    // Then
+    result.length should equal(1)
     result(0).toSet should equal(col(0) ++ row(dMax))
   }
 
@@ -163,15 +175,13 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     evaluateAllShortestPathResults(result, "p", start, 1, Set(row(0) ++ col(dMax)))
   }
 
-  // TODO: allShortestPath finds most, but not all results. Fails with dim=4
-  ignore("All shortest paths from first to last node via middle") {
+  test("All shortest paths from first to last node via middle") {
     val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(
       s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          | WHERE ANY(n in nodes(p) WHERE n:$middle)
          | RETURN p""".stripMargin)
 
-    // TODO: These results will increase when we fix with fallback (for example 4->12)
     val expectedLength = Map(3 -> 4, 4 -> 12, 5 -> 36)
     evaluateAllShortestPathResults(result, "p", start, expectedLength(dim), Set(
       row(0, min = 0, max = dMax / 2) ++ col(dMax / 2) ++ row(dMax, min = dMax / 2, max = dMax),
@@ -187,12 +197,12 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          | WHERE ANY(n in nodes(p) WHERE n:$topRight) AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          | RETURN p""".stripMargin)
 
-    // TODO: These results will increase when we fix with fallback (for example 4->12)
     val expectedLength = Map(3 -> 2, 4 -> 8, 5 -> 30)
     evaluateAllShortestPathResults(result, "p", start, expectedLength(dim), Set(
       row(0, min = 0, max = dMax / 2) ++ col(dMax / 2) ++ row(dMax, min = dMax / 2, max = dMax),
       col(0, min = 0, max = dMax / 2) ++ row(dMax / 2) ++ col(dMax, min = dMax / 2, max = dMax)
     ))
+    result should useShortestPathVarLengthWithAtLeast(rows = 1)
   }
 
   test("Exhaustive All shortest paths from first to last node") {
@@ -268,6 +278,129 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     ))
   }
 
+  //---------------------------------------------------------------------------
+  // Negative tests
+  test("Shortest path from first to last node without predicate") {
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          |RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).length should equal (2 * dim - 1)
+    results shouldNot use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with ALL predicate") {
+    addDiagonal()
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE ALL(r in rels(p) WHERE type(r) = 'DIAG')
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).toSet should equal (diag())
+    results shouldNot use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with NONE predicate") {
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE NONE(r in rels(p) WHERE exists(r.blocked))
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).length should equal (2 * dim - 1)
+    results shouldNot use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with NONE predicate with a composite predicate") {
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE NONE(r in rels(p) WHERE exists(r.blocked) AND src:$bottomLeft) AND src:$topLeft
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).length should equal (2 * dim - 1)
+    results shouldNot use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with path length predicate") {
+    addDiagonal()
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      // This predicate dictates that we cannot use the entire diagonal, we need to make one side-step
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE length(p) >= $dim
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    debugResults(result(0))
+    println(results.executionPlanDescription())
+    result(0).length should equal (dim + 1)
+    results should use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with ALL node predicate") {
+    addDiagonal()
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE ALL(n in nodes(p) WHERE n.row = 0 OR n.col = $dMax)
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).toSet should equal (row(0) ++ col(dMax))
+    // TODO: Stop using fallback once node predicates are supported in expander
+    results should use("ShortestPathVarLengthExpand")
+  }
+
+  test("Shortest path from first to last node with NONE node predicate") {
+    addDiagonal()
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
+          | WHERE NONE(n in nodes(p) WHERE n.row > 0 AND n.col < $dMax)
+          | RETURN nodes(p) AS nodes""".stripMargin)
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    result.length should equal(1)
+    result(0).toSet should equal (row(0) ++ col(dMax))
+    // TODO: Stop using fallback once node predicates are supported in expander
+    results should use("ShortestPathVarLengthExpand")
+  }
+
+  def useShortestPathVarLengthWithAtLeast(rows: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      val operators = plan.find("ShortestPathVarLengthExpand")
+      if (operators.isEmpty) {
+        MatchResult(
+          matches = false,
+          rawFailureMessage = "Plan should use ShortestPathVarLengthExpand",
+          rawNegatedFailureMessage = "Plan should use ShortestPathVarLengthExpand")
+      } else {
+        val rowCount: Seq[Long] = operators.flatMap(o => o.arguments.collect {
+          case Rows(r) => r
+        })
+        MatchResult(
+          matches = rowCount.exists(r => r >= rows),
+          rawFailureMessage = s"Plan should use ShortestPathVarLengthExpand with at least ${rows} row(s):\n$plan",
+          rawNegatedFailureMessage = s"Plan should use ShortestPathVarLengthExpand with less than ${rows} row(s):\n$plan")
+      }
+    }
+  }
+
+
   /*
    * This test class builds a complex but very regular model that can be easily debugged and visualized.
    * It is an n*n square latice with nodes in every cell position with both labels and properties that
@@ -315,7 +448,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
    *    ..      ..    ..
    *
    */
-  val dim = 3
+  val dim = 4
   val dMax = dim - 1
   val topLeft = "CELL00"
   val topRight = s"CELL0${dMax}"
@@ -362,6 +495,13 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   private def col(col: Int, min: Int = 0, max: Int = dMax): Set[Node] = {
     val nodes = min to max map { row: Int =>
       nodesByName(s"$row$col")
+    }
+    nodes.toSet
+  }
+
+  private def diag(min: Int = 0, max: Int = dMax): Set[Node] = {
+    val nodes = min to max map { row: Int =>
+      nodesByName(s"$row$row")
     }
     nodes.toSet
   }
@@ -458,10 +598,11 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   private class DebugDataMonitor extends DataMonitor {
 
     def monitorData(theseVisitedNodes: util.Map[Node, ShortestPath.LevelData], theseNextNodes: util.Collection[Node],
-                    thoseVisitedNodes: util.Map[Node, ShortestPath.LevelData], thoseNextNodes: util.Collection[Node]) {
+                    thoseVisitedNodes: util.Map[Node, ShortestPath.LevelData], thoseNextNodes: util.Collection[Node],
+                    connectingNode: Node) {
       println("------------------------------------------------------------")
-      debug(dim, theseVisitedNodes, theseNextNodes)
-      debug(dim, thoseVisitedNodes, thoseNextNodes)
+      debug(dim, theseVisitedNodes, theseNextNodes, connectingNode)
+      debug(dim, thoseVisitedNodes, thoseNextNodes, connectingNode)
       println
     }
 
@@ -476,15 +617,15 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     }
 
     def debug(dim: Int, visitedNodes: util.Map[Node, ShortestPath.LevelData],
-              nextNodes: util.Collection[Node]) {
+              nextNodes: util.Collection[Node], connectingNode: Node) {
       import scala.collection.JavaConversions._
       val matrix: mutable.Map[String, String] = mutable.Map[String, String]()
       var cellSize: Int = 0
       for (entry <- visitedNodes.entrySet) {
-        cellSize = debugNode(dim, matrix, cellSize, entry.getKey, "[" + entry.getValue.depth + "]")
+        cellSize = debugNode(dim, matrix, cellSize, entry.getKey, entry.getKey.getId.toString + "[" + entry.getValue.depth + "]")
       }
       for (node <- nextNodes) {
-        cellSize = debugNode(dim, matrix, cellSize, node, "(*)")
+        cellSize = debugNode(dim, matrix, cellSize, node, if (node == connectingNode) "(@)" else "(*)")
       }
       0 until dim foreach { row =>
         print(s"$row:")

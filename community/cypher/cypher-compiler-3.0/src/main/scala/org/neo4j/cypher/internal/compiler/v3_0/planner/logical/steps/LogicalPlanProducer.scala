@@ -408,6 +408,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     }
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
+      // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
+      case NoneIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
+      case AllIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false
@@ -458,18 +461,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                 pattern.types, to, pattern.name, patternLength,
                 ExpandInto, Seq.empty)(solved)
 
-    // TODO: TBD Should we produce the path variable by projection afterwards instead of internally in VarExpand?
-    //val rhsProjected = planRegularProjection(rhsExpand, ???)
-    //      val projectionsMap = (Set(IdName(pathName)) ++ rhsExpand.availableSymbols) map { a =>
-    //      }
-    //val rhsProjected = projection(rhsVarExpand, projectionsMap)
-
     // Filter using predicates
     val rhsFiltered = planSelection(predicates, rhsVarExpand)
 
     // Plan SortedLimit
     // TODO: Get function name from object instead of string "length"
-    // TODO: Fix hard coded limit, make it work for allShortestPaths
+    // TODO: Nake it work for allShortestPaths (i.e. group by the shortest length)
     val rhsSortedLimit = SortedLimit(rhsFiltered, SignedDecimalIntegerLiteral("1")(null),
                                      Seq(AscSortItem(FunctionInvocation(FunctionName("length")(null),
                                                                         Variable(pathName)(null))(null))(null)))(solved)
