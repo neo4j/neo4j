@@ -20,7 +20,10 @@
 package org.neo4j.cypher
 /**
  * Abstract description of an execution plan
+ * @deprecated See { @link org.neo4j.graphdb.ExecutionPlanDescription}, and use
+ * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
  */
+@Deprecated
 trait PlanDescription {
   self =>
 
