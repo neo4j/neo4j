@@ -96,7 +96,7 @@ object LogicalPlanConverter {
       val produceResultOpName = context.registerOperator(produceResults)
       val projections = (produceResults.lhs.get match {
         // if lhs is projection than we can simply load things that it projected
-        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c).name))
+        case _: plans.Projection => produceResults.columns.map(c => c -> LoadVariable(context.getVariable(c)))
         // else we have to evaluate all expressions ourselves
         case _ => produceResults.columns.map(c => c -> ExpressionConverter.createExpressionForVariable(c)(context))
       }).toMap
@@ -151,13 +151,14 @@ object LogicalPlanConverter {
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.Collection) =>
             val expression = ToSet(ExpressionConverter.createExpression(e)(context))
-            val expressionVar = context.namer.newVarName()
+            val expressionVar = Variable(context.namer.newVarName(), symbols.CTAny, nullable = false)
+
             ForEachExpression(expressionVar, expression,
               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
-            val expressionVar = context.namer.newVarName()
+            val expressionVar = Variable(context.namer.newVarName(), symbols.CTAny, nullable = false)
             ForEachExpression(expressionVar, expression,
               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
@@ -170,7 +171,6 @@ object LogicalPlanConverter {
         (methodHandle, Seq(indexSeekInstruction))
       }
     }
-
 
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: NodeIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,

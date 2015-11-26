@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Variable, CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 
-case class ForEachExpression(varName: String, expression: CodeGenExpression, body: Instruction) extends Instruction {
+case class ForEachExpression(varName: Variable, expression: CodeGenExpression, body: Instruction) extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
@@ -32,7 +32,7 @@ case class ForEachExpression(varName: String, expression: CodeGenExpression, bod
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
 
-    generator.forEach(varName, symbols.CTAny, expression.generateExpression(generator)) { forBody =>
+    generator.forEach(varName.name, varName.cypherType, expression.generateExpression(generator)) { forBody =>
       body.body(forBody)
     }
 

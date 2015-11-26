@@ -155,8 +155,26 @@ object ExpressionConverter {
 
       case ast.Not(inner) => Not(callback(inner))
 
+      case f: ast.FunctionInvocation => functionConverter(f, callback)
+
       case other => throw new CantCompileQueryException(s"Expression of $other not yet supported")
     }
+  }
+
+  private def functionConverter(fcn: ast.FunctionInvocation, callback: ast.Expression => CodeGenExpression)(implicit context: CodeGenContext): CodeGenExpression = fcn match {
+
+    case f: ast.FunctionInvocation if f.function contains ast.functions.Id =>
+      assert(f.args.size == 1)
+      val arg = callback(f.args(0))
+      arg match {
+        case n: NodeExpression => LoadVariable(n.nodeIdVar)
+        case n: NodeProjection => LoadVariable(n.nodeIdVar)
+        case r: RelationshipExpression => LoadVariable(r.relId)
+        case r: RelationshipProjection => LoadVariable(r.relId)
+        case e => throw new InternalException(s"id function only accepts nodes or relationships not $e")
+      }
+
+    case other => throw new CantCompileQueryException(s"Function $other not yet supported")
   }
 
 
