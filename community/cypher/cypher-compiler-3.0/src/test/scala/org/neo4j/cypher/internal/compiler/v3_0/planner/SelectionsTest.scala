@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, HasLabels, Variable, LabelName, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, HasLabels, Variable, _}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
-class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   val aIsPerson: HasLabels = identHasLabel("a", "Person")
   val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")
@@ -116,14 +116,67 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(Selections(Set(Predicate(idNames("a"), covering))))
   }
 
+  test("should recognize value joins") {
+    // given WHERE x.id = z.id
+    val lhs = prop("x", "id")
+    val rhs = prop("z", "id")
+    val equalityComparison = Equals(lhs, rhs)(pos)
+    val selections = Selections.from(equalityComparison)
+
+    // when
+    val result = selections.valueJoins
+
+    // then
+    result should equal(Set(equalityComparison))
+  }
+
+  test("if one side is a literal, it's not a value join") {
+    // given WHERE x.id = 42
+    val selections = Selections.from(propEquality("x","id", 42))
+
+    // when
+    val result = selections.valueJoins
+
+    // then
+    result should be(empty)
+  }
+
+  test("if both lhs and rhs come from the same variable, it's not a value join") {
+    // given WHERE x.id1 = x.id2
+    val lhs = prop("x", "id1")
+    val rhs = prop("x", "id2")
+    val equalityComparison = Equals(lhs, rhs)(pos)
+    val selections = Selections.from(equalityComparison)
+
+    // when
+    val result = selections.valueJoins
+
+    // then
+    result should be(empty)
+  }
+
+  test("combination of predicates is not a problem") {
+    // given WHERE x.id1 = z.id AND x.id1 = x.id2 AND x.id2 = 42
+    val x_id1 = prop("x", "id1")
+    val x_id2 = prop("x", "id2")
+    val z_id = prop("z", "id")
+    val lit = literalInt(42)
+
+    val pred1 = Equals(x_id1, x_id2)(pos)
+    val pred2 = Equals(x_id1, z_id)(pos)
+    val pred3 = Equals(x_id2, lit)(pos)
+
+    val selections = Selections.from(pred1, pred2, pred3)
+
+    // when
+    val result = selections.valueJoins
+
+    // then
+    result should be(Set(pred2))
+  }
+
   private def idNames(names: String*) = names.map(IdName(_)).toSet
 
-  private def compareBothSides(left: String, right: String): Equals = {
-    val l: Variable = Variable(left)_
-    val r: Variable = Variable(right)_
-    val propName1 = PropertyKeyName("prop1")_
-    val leftProp = Property(l, propName1)_
-    val rightProp = Property(r, propName1)_
-    Equals(leftProp, rightProp)_
-  }
+  private def compareBothSides(left: String, right: String) =
+    Equals(prop(left, "prop1"), prop(right, "prop1"))(pos)
 }
