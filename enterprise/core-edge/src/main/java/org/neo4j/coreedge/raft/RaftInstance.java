@@ -216,7 +216,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         if( outcome.leader != null && outcome.leader.equals( myself ) )
         {
-            LeaderContext leaderContext = new LeaderContext( outcome.newTerm, outcome.leaderCommit );
+            LeaderContext leaderContext = new LeaderContext( outcome.term, outcome.leaderCommit );
 
             if ( oldLeader == null || !oldLeader.equals( myself ) )
             {

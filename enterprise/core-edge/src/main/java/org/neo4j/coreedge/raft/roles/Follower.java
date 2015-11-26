@@ -19,13 +19,8 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
@@ -34,10 +29,8 @@ import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.state.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
@@ -63,13 +56,13 @@ public class Follower implements RaftMessageHandler
     }
 
     private static <MEMBER> boolean generateCommitIfNecessary( ReadableRaftState<MEMBER> ctx, AppendEntries
-            .Request<MEMBER> req, List<LogCommand> commands )
+            .Request<MEMBER> req, Outcome<MEMBER> outcome )
     {
         long localCommit = ctx.entryLog().commitIndex();
         long newCommitIndex = min( req.leaderCommit(), req.prevLogIndex() + req.entries().length );
         if ( newCommitIndex > localCommit )
         {
-            commands.add( new CommitCommand( newCommitIndex ) );
+            outcome.addLogCommand( new CommitCommand( newCommitIndex ) );
             return true;
         }
         return false;
@@ -79,15 +72,7 @@ public class Follower implements RaftMessageHandler
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
             throws RaftStorageException
     {
-        Role nextRole = FOLLOWER;
-        MEMBER leader = ctx.leader();
-        long leaderCommit = ctx.leaderCommit();
-        Collection<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
-        List<LogCommand> logCommands = new ArrayList<>();
-        ArrayList<ShipCommand> shipCommands = new ArrayList<>();
-        MEMBER votedFor = ctx.votedFor();
-        long newTerm = ctx.term();
-        boolean renewElectionTimeout = false;
+        Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
 
         switch ( message.type() )
         {
@@ -102,10 +87,10 @@ public class Follower implements RaftMessageHandler
 
                 if ( logHistoryMatches( ctx, req ) )
                 {
-                    logCommands.add( new CommitCommand( req.commitIndex() ) );
+                    outcome.addLogCommand( new CommitCommand( req.commitIndex() ) );
                 }
 
-                renewElectionTimeout = true;
+                outcome.renewElectionTimeout();
                 break;
             }
 
@@ -117,20 +102,21 @@ public class Follower implements RaftMessageHandler
                 {
                     Response<MEMBER> appendResponse =
                             new Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex() );
-                    outgoingMessages.add( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
                 }
 
-                renewElectionTimeout = true;
-                newTerm = req.leaderTerm();
-                leader = req.from();
-                leaderCommit = req.leaderCommit();
+                outcome.renewElectionTimeout();
+                outcome.setNextTerm( req.leaderTerm() );
+                outcome.setLeader( req.from() );
+                outcome.setLeaderCommit( req.leaderCommit() );
 
                 if ( !logHistoryMatches( ctx, req ) )
                 {
                     assert req.prevLogIndex() > -1 && req.prevLogTerm() > -1;
-                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), newTerm, false, -1 );
-                    outgoingMessages.add( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), false, -1 );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
                 }
 
@@ -149,22 +135,22 @@ public class Follower implements RaftMessageHandler
                     }
                     else if ( logTerm != req.entries()[offset].term() )
                     {
-                        logCommands.add( new TruncateLogCommand( baseIndex + offset ) );
+                        outcome.addLogCommand( new TruncateLogCommand( baseIndex + offset ) );
                         break;
                     }
                 }
 
                 if( offset < req.entries().length )
                 {
-                    logCommands.add( new BatchAppendLogEntries( baseIndex, offset, req.entries() ) );
+                    outcome.addLogCommand( new BatchAppendLogEntries( baseIndex, offset, req.entries() ) );
                 }
-                generateCommitIfNecessary( ctx, req, logCommands );
+                generateCommitIfNecessary( ctx, req, outcome );
 
                 long endMatchIndex = req.prevLogIndex() + req.entries().length; // this is the index of the last incoming entry
                 if ( endMatchIndex >= 0 )
                 {
-                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), newTerm, true, endMatchIndex );
-                    outgoingMessages.add( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), true, endMatchIndex );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                 }
                 break;
             }
@@ -175,23 +161,23 @@ public class Follower implements RaftMessageHandler
 
                 if ( req.term() > ctx.term() )
                 {
-                    newTerm = req.term();
-                    votedFor = null;
+                    outcome.setNextTerm( req.term() );
+                    outcome.setVotedFor( null );
                 }
 
-                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), req.term(), newTerm, ctx
+                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), req.term(), outcome.term, ctx
                                 .entryLog().appendIndex(),
                         req.lastLogIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ),
-                        req.lastLogTerm(), votedFor );
+                        req.lastLogTerm(), outcome.votedFor );
 
                 if ( willVoteForCandidate )
                 {
-                    votedFor = req.from();
-                    renewElectionTimeout = true;
+                    outcome.setVotedFor( req.from() );
+                    outcome.renewElectionTimeout();
                 }
 
-                outgoingMessages.add( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>(
-                        ctx.myself(), newTerm,
+                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>(
+                        ctx.myself(), outcome.term,
                         willVoteForCandidate ) ) );
                 break;
             }
@@ -204,27 +190,26 @@ public class Follower implements RaftMessageHandler
                     break;
                 }
 
-                newTerm++;
+                outcome.setNextTerm( ctx.term() + 1 );
 
                 RaftMessages.Vote.Request<MEMBER> voteForMe =
-                        new RaftMessages.Vote.Request<>( ctx.myself(), newTerm, ctx.myself(), ctx.entryLog()
+                        new RaftMessages.Vote.Request<>( ctx.myself(), outcome.term, ctx.myself(), ctx.entryLog()
                                 .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
 
                 for ( MEMBER member : currentMembers )
                 {
                     if ( !member.equals( ctx.myself() ) )
                     {
-                        outgoingMessages.add( new RaftMessages.Directed<>( member, voteForMe ) );
+                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) );
                     }
                 }
 
-                votedFor = ctx.myself();
-                nextRole = CANDIDATE;
+                outcome.setVotedFor( ctx.myself() );
+                outcome.setNextRole( CANDIDATE );
                 break;
             }
         }
 
-        return new Outcome<>( nextRole, newTerm, leader, leaderCommit, votedFor, Collections.<MEMBER>emptySet(), -1,
-                new FollowerStates<>(), renewElectionTimeout, logCommands, outgoingMessages, shipCommands );
+        return outcome;
     }
 }

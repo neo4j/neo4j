@@ -95,7 +95,7 @@ public class FollowerTest
                 .build(), state, log() );
 
         // Then
-        assertEquals( HIGHEST_TERM, outcome.newTerm );
+        assertEquals( HIGHEST_TERM, outcome.term );
     }
 
     @Test
