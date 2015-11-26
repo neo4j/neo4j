@@ -159,11 +159,16 @@ object ClauseConverters {
       val leftIdName = IdName.fromVariable(leftNode.variable.get)
       val rightIdName = IdName.fromVariable(rightNode.variable.get)
 
+
+      //Semantic checking enforces types.size == 1
+      val relType = rel.types.headOption.getOrElse(
+        throw new InternalException("Expected single relationship type"))
+
       (Vector(
         CreateNodePattern(leftIdName, leftNode.labels, leftNode.properties),
         CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties)
       ), Vector(CreateRelationshipPattern(IdName.fromVariable(rel.variable.get),
-        leftIdName, rel.types.head, rightIdName, rel.properties, rel.direction)))
+        leftIdName, relType, rightIdName, rel.properties, rel.direction)))
 
     //CREATE ()->[:R]->()-[:R]->...->()
     case RelationshipChain(left, rel, rightNode) =>
