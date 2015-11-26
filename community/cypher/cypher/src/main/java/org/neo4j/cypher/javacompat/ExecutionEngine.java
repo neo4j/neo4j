@@ -30,6 +30,9 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 /**
  * To run a Cypher query, use this class.
  *
+ * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
+ * operation so please make sure this will be constructed only once and properly reused.
+ *
  * @deprecated use {@link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
  */
 @Deprecated

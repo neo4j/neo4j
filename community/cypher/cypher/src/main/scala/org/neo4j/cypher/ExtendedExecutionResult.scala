@@ -21,6 +21,11 @@ package org.neo4j.cypher
 
 import org.neo4j.graphdb.QueryExecutionType
 
+/**
+  * @deprecated See { @link org.neo4j.graphdb.Result}, and use
+  * { @link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)} instead.
+  */
+@Deprecated
 trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
