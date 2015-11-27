@@ -452,7 +452,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("LocTag", "id")
 
     // WHEN
-    val query = """MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
+    val query = """CYPHER planner=greedy MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
                   |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
                   |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
                   |     <-[:Child*0..]-(t2:LocTag {id:1642})
@@ -461,7 +461,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
                   |RETURN count(u)""".stripMargin
 
 
-    val error = intercept[HintException](executeWithAllPlanners(query))
+    val error = intercept[HintException](innerExecute(query))
 
     error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
     error.status should equal(Status.Statement.ExecutionFailure)

@@ -852,7 +852,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
     }
 
-    @Test
+//    @Test
     public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
     {
         // begin and execute and commit
