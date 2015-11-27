@@ -39,9 +39,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
    //always use eager if configured to do so
     val alwaysEager = context.config.updateStrategy.alwaysEager
 
-    ///we cannot force eagerness here for MERGE since it must be able to read it own writes
     val planWithEffect =
-      if ((alwaysEager && !in.updateGraph.containsMerge) ||conflicts(partPlan, in))
+      if (alwaysEager ||conflicts(partPlan, in))
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
