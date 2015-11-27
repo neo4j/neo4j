@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 /**
  * Closeable Iterator with associated resources.
@@ -42,4 +43,28 @@ public interface ResourceIterator<T> extends Iterator<T>, Resource
      */
     @Override
     void close();
+
+    default <R> ResourceIterator<R> map( Function<T,R> map )
+    {
+        return new ResourceIterator<R>()
+        {
+            @Override
+            public void close()
+            {
+                ResourceIterator.this.close();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return ResourceIterator.this.hasNext();
+            }
+
+            @Override
+            public R next()
+            {
+                return map.apply( ResourceIterator.this.next() );
+            }
+        };
+    }
 }

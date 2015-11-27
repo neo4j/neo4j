@@ -24,7 +24,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * @author mh
@@ -47,15 +46,13 @@ public class DatabaseSubGraph implements SubGraph
     @Override
     public Iterable<Node> getNodes()
     {
-        final GlobalGraphOperations operations = GlobalGraphOperations.at( gdb );
-        return operations.getAllNodes();
+        return gdb.getAllNodes();
     }
 
     @Override
     public Iterable<Relationship> getRelationships()
     {
-        final GlobalGraphOperations operations = GlobalGraphOperations.at( gdb );
-        return operations.getAllRelationships();
+        return gdb.getAllRelationships();
     }
 
     @Override

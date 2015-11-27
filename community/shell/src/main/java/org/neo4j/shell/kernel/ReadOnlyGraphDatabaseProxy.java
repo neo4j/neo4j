@@ -57,6 +57,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -133,7 +134,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Iterable<Node> getAllNodes()
+    public ResourceIterable<Node> getAllNodes()
     {
         return nodes( actual.getAllNodes() );
     }
@@ -151,9 +152,48 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
     {
-        return actual.getRelationshipTypes();
+        return actual.getAllRelationshipTypes();
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getAllRelationships()
+    {
+        return new ResourceIterable<Relationship>()
+        {
+            @Override
+            public ResourceIterator<Relationship> iterator()
+            {
+                final ResourceIterator<Relationship> iterator = actual.getAllRelationships().iterator();
+                return new PrefetchingResourceIterator<Relationship>()
+                {
+                    @Override
+                    protected Relationship fetchNextOrNull()
+                    {
+                        return new ReadOnlyRelationshipProxy( iterator.next() );
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        iterator.close();
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllLabels()
+    {
+        return actual.getAllLabels();
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return actual.getAllPropertyKeys();
     }
 
     @Override
@@ -580,16 +620,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
     }
 
-    public Iterable<Node> nodes( Iterable<Node> nodes )
+    public ResourceIterable<Node> nodes( ResourceIterable<Node> nodes )
     {
-        return new IterableWrapper<Node, Node>( nodes )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Node node )
-            {
-                return new ReadOnlyNodeProxy( node );
-            }
-        };
+        return () -> nodes.iterator().map( ReadOnlyNodeProxy::new );
     }
 
     public Iterable<Relationship> relationships( Iterable<Relationship> relationships )

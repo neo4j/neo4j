@@ -21,18 +21,23 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.File;
 
+import org.junit.Rule;
+
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
 
 public class DurableVoteStoreTest extends VoteStoreTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Override
     public VoteStore<CoreMember> createVoteStore()
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        File directory = testDirectory.directory( "raft-log" );
         return new DurableVoteStore( fileSystem, directory );
     }
 }

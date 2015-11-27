@@ -50,7 +50,6 @@ import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -542,7 +541,7 @@ public class PropertyConstraintsStressIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+                for ( Relationship relationship : db.getAllRelationships() )
                 {
                     if ( relationship.getType().name().equals( type ) )
                     {

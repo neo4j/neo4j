@@ -35,6 +35,7 @@ import java.util.Set;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicate;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
@@ -617,14 +618,18 @@ public final class Iterables
         return list.toArray( (T[]) Array.newInstance( componentType, list.size() ) );
     }
 
-    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> labels )
+    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> iterable )
     {
+        if ( iterable instanceof ResourceIterable<?> )
+        {
+            return (ResourceIterable<T>) iterable;
+        }
         return new ResourceIterable<T>()
         {
             @Override
             public ResourceIterator<T> iterator()
             {
-                return asResourceIterator( labels.iterator() );
+                return asResourceIterator( iterable.iterator() );
             }
         };
     }

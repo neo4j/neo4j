@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -132,7 +131,7 @@ public class ForeignStoreIdIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
                 if ( name.equals( node.getProperty( "name", null ) ) )
                     return node.getId();
             fail( "Didn't find node '" + name + "' in " + db );

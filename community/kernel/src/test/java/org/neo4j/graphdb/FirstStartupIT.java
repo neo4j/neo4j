@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -44,13 +43,11 @@ public class FirstStartupIT
         // Then
         try(Transaction ignore = db.beginTx())
         {
-            GlobalGraphOperations global = GlobalGraphOperations.at( db );
-
-            assertEquals(0, count( global.getAllNodes() ));
-            assertEquals(0, count( global.getAllRelationships() ));
-            assertEquals(0, count( global.getAllRelationshipTypes() ));
-            assertEquals(0, count( global.getAllLabels() ));
-            assertEquals(0, count( global.getAllPropertyKeys() ));
+            assertEquals(0, count( db.getAllNodes() ));
+            assertEquals(0, count( db.getAllRelationships() ));
+            assertEquals(0, count( db.getAllRelationshipTypes() ));
+            assertEquals(0, count( db.getAllLabels() ));
+            assertEquals(0, count( db.getAllPropertyKeys() ));
         }
 
         db.shutdown();

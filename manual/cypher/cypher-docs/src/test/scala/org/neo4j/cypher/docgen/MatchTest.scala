@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.graphdb.{Relationship, Path, Node}
-import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
 
@@ -297,7 +296,7 @@ class MatchTest extends DocumentingTest {
   private def assertAllNodesReturned = ResultAndDbAssertions((p, db) => {
     val tx = db.beginTx()
     try {
-      val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+      val allNodes: List[Node] = db.getAllNodes.asScala.toList
       allNodes should equal(p.columnAs[Node]("n").toList)
     } finally tx.close()
   })

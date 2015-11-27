@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -89,11 +88,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def countNodes() = graph.inTx {
-    GlobalGraphOperations.at(graph).getAllNodes.asScala.size
+    graph.getAllNodes.asScala.size
   }
 
   def countRelationships() = graph.inTx {
-    GlobalGraphOperations.at(graph).getAllRelationships.asScala.size
+    graph.getAllRelationships.asScala.size
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
@@ -130,13 +129,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def deleteAllEntities() = graph.inTx {
-    val relIterator = GlobalGraphOperations.at(graph).getAllRelationships.iterator()
+    val relIterator = graph.getAllRelationships.iterator()
 
     while (relIterator.hasNext) {
       relIterator.next().delete()
     }
 
-    val nodeIterator = GlobalGraphOperations.at(graph).getAllNodes.iterator()
+    val nodeIterator = graph.getAllNodes.iterator()
     while (nodeIterator.hasNext) {
       nodeIterator.next().delete()
     }
@@ -188,7 +187,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     nodes.find(_.getProperty("name") == name).get
   }
 
-  def relType(name: String): RelationshipType = GlobalGraphOperations.at(graph).getAllRelationshipTypes.asScala.find(_.name() == name).get
+  def relType(name: String): RelationshipType = graph.getAllRelationshipTypes.asScala.find(_.name() == name).get
 
   def createNodes(names: String*): List[Node] = {
     nodes = names.map(x => createNode(Map("name" -> x))).toList

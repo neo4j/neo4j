@@ -236,7 +236,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
         case (name, node) => name -> node.getId
       }.toMap
 
-      GlobalGraphOperations.at(db).getAllNodes.asScala.foreach((n) => {
+      db.getAllNodes.asScala.foreach((n) => {
         indexProperties(n, nodeIndex)
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })

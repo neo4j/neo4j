@@ -55,6 +55,9 @@ public interface KeyReadOperations
     /** Returns the labels currently stored in the database **/
     Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
 
+    /** Returns the relationship types currently stored in the database */
+    Iterator<Token> relationshipTypesGetAllTokens( Statement state );
+
     int relationshipTypeGetForName( Statement state, String relationshipTypeName );
 
     String relationshipTypeGetName( Statement state, int relationshipTypeId )

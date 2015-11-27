@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
@@ -261,7 +260,7 @@ public class CsvInputBatchImportIT
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
@@ -270,7 +269,7 @@ public class CsvInputBatchImportIT
             assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
                 Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );

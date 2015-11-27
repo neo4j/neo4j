@@ -24,10 +24,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class GraphDatabaseServiceExecuteTest
@@ -40,7 +38,7 @@ public class GraphDatabaseServiceExecuteTest
         final int before, after;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            before = count( GlobalGraphOperations.at( graphDb ).getAllNodes() );
+            before = count( graphDb.getAllNodes() );
             tx.success();
         }
 
@@ -50,7 +48,7 @@ public class GraphDatabaseServiceExecuteTest
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            after = count( GlobalGraphOperations.at( graphDb ).getAllNodes() );
+            after = count( graphDb.getAllNodes() );
             tx.success();
         }
         assertEquals( before + 1, after );
