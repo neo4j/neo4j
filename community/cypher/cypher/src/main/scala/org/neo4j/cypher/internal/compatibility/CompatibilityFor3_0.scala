@@ -158,7 +158,12 @@ trait CompatibilityFor3_0 {
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
-    val preparedQueryForV_3_0 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, preParsedQuery.notificationLogger, Some(preParsedQuery.offset), tracer))
+    val preparedQueryForV_3_0 =
+      Try(compiler.prepareQuery(preParsedQuery.statement,
+        preParsedQuery.rawStatement,
+        preParsedQuery.notificationLogger,
+        preParsedQuery.planner.name,
+        Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_3_0.map(_.isPeriodicCommit).getOrElse(false)
 

@@ -115,6 +115,8 @@ abstract class LogicalPlan
   private def indent(in: String) = {
     in.split("\n").map("  " + _).mkString("\n")
   }
+
+  def debugId: String = f"0x${hashCode()}%08x"
 }
 
 trait LogicalPlanWithoutExpressions {

@@ -158,7 +158,12 @@ trait CompatibilityFor2_3 {
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
     import org.neo4j.cypher.internal.helpers.wrappersFor2_3._
 
-    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, as2_3(preParsedQuery.notificationLogger), Some(as2_3(preParsedQuery.offset)), tracer))
+    val preparedQueryForV_2_3 =
+      Try(compiler.prepareQuery(preParsedQuery.statement,
+                                preParsedQuery.rawStatement,
+                                as2_3(preParsedQuery.notificationLogger),
+//                                preParsedQuery.planner.name,
+                                Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 

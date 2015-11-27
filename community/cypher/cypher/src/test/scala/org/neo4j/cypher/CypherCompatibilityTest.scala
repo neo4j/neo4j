@@ -19,16 +19,10 @@
  */
 package org.neo4j.cypher
 
-import java.util
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
 
-import scala.collection.JavaConverters._
-
-class CypherCompatibilityTest extends CypherFunSuite {
+class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport {
 
   val QUERY = "MATCH (n:Label) RETURN n"
 
@@ -87,20 +81,9 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  private def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
-    val resultCodes = result.notifications.map(_.getCode)
-    statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
-  }
-
-  private def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
-    shouldHaveWarnings(result, List(notification))
-  }
-
-  private def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
-    shouldHaveWarnings(result, List())
-  }
 
   private val queryThatCannotRunWithCostPlanner = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
+
   private val querySupportedByCostButNotCompiledRuntime = "MATCH (n:Movie)--(b), (a:A)--(c:C)--(d:D) RETURN count(*)"
 
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
@@ -170,82 +153,7 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
-  test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
-    runWithConfig() {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
-    }
-  }
-
-  test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
-    }
-  }
-
-  test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[IndexHintException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[IndexHintException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(email)")
-        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(email)")
-        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING SCAN'") {
-    runWithConfig() {
-      engine =>
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should succeed if executing a query using both 'USING SCAN' and 'USING INDEX' if index exists") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        intercept[SyntaxException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
-    }
-  }
-
-  test("should not support old 1.9 - 2.2 compilers") {
+  test("should not support old 2.0 and 2.1 compilers") {
     runWithConfig() {
       engine =>
         intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH (n) RETURN n"))
@@ -267,16 +175,5 @@ class CypherCompatibilityTest extends CypherFunSuite {
     val ignored = result.toList
     assert(!result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
     assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
-  }
-
-  private def runWithConfig(m: (Setting[_], String)*)(run: ExecutionEngine => Unit) = {
-    val config: util.Map[Setting[_], String] = m.toMap.asJava
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase(config)
-    try {
-      val engine = new ExecutionEngine(graph)
-      run(engine)
-    } finally {
-      graph.shutdown()
-    }
   }
 }

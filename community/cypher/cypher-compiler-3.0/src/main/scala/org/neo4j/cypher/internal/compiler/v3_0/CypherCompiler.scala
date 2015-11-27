@@ -143,11 +143,13 @@ case class CypherCompiler(parser: CypherParser,
                           monitors: Monitors) {
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
+                plannerName: String = "",
                 offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger), context, CompilationPhaseTracer.NO_TRACING)
+    planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger, plannerName), context, CompilationPhaseTracer.NO_TRACING)
 
 
   def prepareQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
+                   plannerName: String = "",
                    offset: Option[InputPosition] = None,
                    tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
 
@@ -174,7 +176,7 @@ case class CypherCompiler(parser: CypherParser,
     }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext,
