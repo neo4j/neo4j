@@ -29,6 +29,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.graphdb.Neo4jMatchers.Deferred;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.CleanupRule;
@@ -37,10 +39,52 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
 
 public class GraphDatabaseServiceTest
 {
+    @Test
+    public void terminationAfterCloseDoesNotMatter() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        Label testLabel = DynamicLabel.label( "TestLabel" );
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( testLabel );
+            tx.success();
+        }
+
+        Transaction toTerminate = db.beginTx();
+        db.createNode( testLabel );
+        toTerminate.close();
+        toTerminate.terminate();
+
+        // Then next transactions should be fine to open with the same backing KernelTransaction
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( testLabel );
+            tx.success();
+        }
+
+        Deferred<Node> createdNodes = new Deferred<Node>( db )
+        {
+            @Override
+            protected Iterable<Node> manifest()
+            {
+                return IteratorUtil.asIterable( db.findNodes( testLabel ) );
+            }
+        };
+
+        // Two nodes created - everything is OK.
+        assertThat( createdNodes, hasSize( 2 ) );
+
+    }
+
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
     {
