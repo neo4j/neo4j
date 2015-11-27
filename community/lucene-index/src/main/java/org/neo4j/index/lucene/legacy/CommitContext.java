@@ -21,10 +21,12 @@ package org.neo4j.index.lucene.legacy;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -85,6 +87,12 @@ class CommitContext implements Closeable
     private void applyDocuments( IndexWriter writer, IndexType type,
             Map<Long, DocumentContext> documents ) throws IOException
     {
+        // Collect changes in linked lists for batching effects.
+        // We use LinkedList because we only need linear iteration, and they are very small to allocate if we end up
+        // not needing them.
+        LinkedList<Term> documentsToDelete = new LinkedList<>();
+        LinkedList<Document> documentsToAdd = new LinkedList<>();
+
         for ( Map.Entry<Long, DocumentContext> entry : documents.entrySet() )
         {
             DocumentContext context = entry.getValue();
@@ -92,18 +100,33 @@ class CommitContext implements Closeable
             {
                 if ( LuceneDataSource.documentIsEmpty( context.document ) )
                 {
-                    writer.deleteDocuments( type.idTerm( context.entityId ) );
+//                    writer.deleteDocuments( type.idTerm( context.entityId ) );
+                    documentsToDelete.add( type.idTerm( context.entityId ) );
                 }
                 else
                 {
-                    writer.updateDocument( type.idTerm( context.entityId ), context.document );
+//                    writer.updateDocument( type.idTerm( context.entityId ), context.document );
+                    documentsToDelete.add( type.idTerm( context.entityId ) );
+                    documentsToAdd.add( context.document );
                 }
             }
             else
             {
-                writer.addDocument( context.document );
+//                writer.addDocument( context.document );
+                documentsToAdd.add( context.document );
             }
         }
+
+        if ( !documentsToDelete.isEmpty() )
+        {
+            Term[] terms = new Term[documentsToDelete.size()];
+            writer.deleteDocuments( documentsToDelete.toArray( terms ) );
+        }
+        if ( !documentsToAdd.isEmpty() )
+        {
+            writer.addDocuments( documentsToAdd );
+        }
+        System.out.printf( "Added %s documents to %s%n", documentsToAdd.size(), identifier );
     }
 
     @Override

@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.lucene.legacy;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -118,6 +120,33 @@ public class TestAutoIndexing
         assertEquals(
                 node2,
                 autoIndexer.getAutoIndex().get( "test_uuid", "node2" ).getSingle() );
+    }
+
+    @Rule
+    public RepeatRule repeatRule = new RepeatRule();
+
+    @RepeatRule.Repeat(times = 1000)
+    @Test
+    public void testNodeAutoIndexBigTransaction()
+    {
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        autoIndexer.startAutoIndexingProperty( "test_uuid" );
+        autoIndexer.setEnabled( true );
+        assertEquals( 1, autoIndexer.getAutoIndexedProperties().size() );
+        assertTrue( autoIndexer.getAutoIndexedProperties().contains(
+                "test_uuid" ) );
+        newTransaction();
+
+        for ( int i = 0; i < 10000; i++ )
+        {
+            Node n = graphDb.createNode();
+            n.setProperty( "test_uuid", i );
+        }
+        newTransaction();
+
+        assertEquals(
+                1,
+                autoIndexer.getAutoIndex().get( "test_uuid", 999 ).size() );
     }
 
     @Test
