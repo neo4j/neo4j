@@ -208,6 +208,25 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return storeFile.pageSize() / getRecordSize();
     }
 
+    public byte[] getRawRecordData( long id ) throws IOException
+    {
+        byte[] data = new byte[getRecordSize()];
+        try ( PageCursor pageCursor = storeFile.io( id / getRecordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
+        {
+            if ( pageCursor.next() )
+            {
+                do
+                {
+                    pageCursor.setOffset( (int) (id % getRecordsPerPage() * getRecordSize()) );
+                    pageCursor.getBytes( data );
+                }
+                while ( pageCursor.shouldRetry() );
+            }
+        }
+        return data;
+    }
+
+
     /**
      * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
      * operate on the store files directly. This method is called by constructors.

@@ -17,18 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.tools.rebuild;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
+import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -69,13 +74,15 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
+/**
+ * Tool to rebuild store based on available transaction logs.
+ */
 class RebuildFromLogs
 {
     private static final String UP_TO_TX_ID = "tx";
@@ -117,7 +124,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( new BackupService().directoryContainsDb( target.getAbsoluteFile() ) )
+                if ( directoryContainsDb( target.toPath() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
@@ -134,6 +141,11 @@ class RebuildFromLogs
         }
 
         new RebuildFromLogs( new DefaultFileSystemAbstraction() ).rebuild( source, target, txId );
+    }
+
+    private static boolean directoryContainsDb( Path path )
+    {
+        return Files.exists( path.resolve( MetaDataStore.DEFAULT_NAME ) );
     }
 
     public void rebuild( File source, File target, long txId ) throws Exception
@@ -220,7 +232,7 @@ class RebuildFromLogs
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
-            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.neoStores = resolver.resolveDependency( NeoStores.class );
             this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
@@ -279,7 +291,7 @@ class RebuildFromLogs
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )
         {
-            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
+            this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
             this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
@@ -301,5 +313,12 @@ class RebuildFromLogs
         {
             graphdb.shutdown();
         }
+    }
+
+    static GraphDatabaseAPI startTemporaryDb( File targetDirectory, PageCache pageCache, Map<String,String> config )
+    {
+        GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config )
+                .newGraphDatabase();
     }
 }

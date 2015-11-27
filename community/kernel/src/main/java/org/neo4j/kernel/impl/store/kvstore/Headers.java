@@ -29,7 +29,7 @@ public abstract class Headers
 
     public static Builder headersBuilder()
     {
-        return new Builder( new HashMap<HeaderField<?>, Object>() );
+        return new Builder( new HashMap<>() );
     }
 
     public static class Builder
@@ -64,7 +64,7 @@ public abstract class Headers
         field.write( get( field ), target );
     }
 
-    abstract Set<HeaderField<?>> fields();
+    public abstract Set<HeaderField<?>> fields();
 
     private Headers()
     {
@@ -148,7 +148,7 @@ public abstract class Headers
         }
 
         @Override
-        Set<HeaderField<?>> fields()
+        public Set<HeaderField<?>> fields()
         {
             return indexes.keySet();
         }
@@ -171,7 +171,7 @@ public abstract class Headers
         }
 
         @Override
-        Set<HeaderField<?>> fields()
+        public Set<HeaderField<?>> fields()
         {
             return headers.keySet();
         }
