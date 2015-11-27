@@ -35,7 +35,6 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
-import org.neo4j.udc.UsageData;
 
 import static org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback.publishError;
 
@@ -50,49 +49,23 @@ public class BoltProtocolV1 implements BoltProtocol
     public static final int VERSION = 1;
     public static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    private final ChunkedInput input;
     private final ChunkedOutput output;
-
-    private final MessageFormat.Reader unpacker;
     private final MessageFormat.Writer packer;
+    private final BoltV1Dechunker dechunker;
 
-    private final TransportBridge bridge;
     private final Session session;
 
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    // Remembering that the actual work processing is done in threads separate from the IO threads, this callback gets invoked for each
-    // completed request on the worker thread. We use it to ensure that we flush outbound buffers when all in-flight messages for a session have been handled.
-    private final Runnable onEachCompletedMessage = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            onMessageDone();
-        }
-    };
-
-    public enum State
-    {
-        AWAITING_CHUNK,
-        IN_CHUNK,
-        IN_HEADER,
-        CLOSED
-    }
-
-    private State state = State.AWAITING_CHUNK;
-    private int chunkSize = 0;
-
-    public BoltProtocolV1( final LogService logging, Session session, Channel channel, UsageData usageData )
+    public BoltProtocolV1( final LogService logging, Session session, Channel channel )
     {
         this.log = logging.getInternalLog( getClass() );
         this.session = session;
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
-        this.input = new ChunkedInput();
         this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
-        this.unpacker = new PackStreamMessageFormatV1.Reader( new Neo4jPack.Unpacker( input ) );
-        this.bridge = new TransportBridge( log ).reset( session, packer, onEachCompletedMessage );
+
+        this.dechunker = new BoltV1Dechunker( new TransportBridge( log ).reset( session, packer, this::onMessageDone ), this::onMessageStarted );
     }
 
     /**
@@ -102,68 +75,15 @@ public class BoltProtocolV1 implements BoltProtocol
      * deserialization, see the Netty HTTP parser for an example.
      */
     @Override
-    public void handle( ChannelHandlerContext channelContext, ByteBuf data )
+    public void handle( ChannelHandlerContext channelContext, ByteBuf data ) throws IOException
     {
         try
         {
-            while ( data.readableBytes() > 0 )
-            {
-                switch ( state )
-                {
-                case AWAITING_CHUNK:
-                {
-                    if ( data.readableBytes() >= 2 )
-                    {
-                        // Whole header available, read that
-                        chunkSize = data.readUnsignedShort();
-                        handleHeader( channelContext );
-                    }
-                    else
-                    {
-                        // Only one byte available, read that and wait for the second byte
-                        chunkSize = data.readByte() << 8;
-                        state = State.IN_HEADER;
-                    }
-                    break;
-                }
-                case IN_HEADER:
-                {
-                    // First header byte read, now we read the next one
-                    chunkSize = (chunkSize | data.readByte()) & 0xFFFF;
-                    handleHeader( channelContext );
-                    break;
-                }
-                case IN_CHUNK:
-                {
-                    if ( chunkSize < data.readableBytes() )
-                    {
-                        // Current packet is larger than current chunk, slice of the chunk
-                        input.append( data.readSlice( chunkSize ) );
-                        state = State.AWAITING_CHUNK;
-                    }
-                    else if ( chunkSize == data.readableBytes() )
-                    {
-                        // Current packet perfectly maps to current chunk
-                        input.append( data );
-                        state = State.AWAITING_CHUNK;
-                        return;
-                    }
-                    else
-                    {
-                        // Current packet is smaller than the chunk we're reading, split the current chunk itself up
-                        chunkSize -= data.readableBytes();
-                        input.append( data );
-                        return;
-                    }
-                    break;
-                }
-                case CLOSED:
-                {
-                    // No-op
-                    return;
-                }
-                }
-            }
+            dechunker.handle( data );
+        }
+        catch ( Throwable e )
+        {
+            handleUnexpectedError( channelContext, e );
         }
         finally
         {
@@ -180,50 +100,9 @@ public class BoltProtocolV1 implements BoltProtocol
     @Override
     public synchronized void close()
     {
-        if( state != State.CLOSED )
-        {
-            state = State.CLOSED;
-            input.close();
-            session.close();
-            output.close();
-        }
-    }
-
-    public State state()
-    {
-        return state;
-    }
-
-    private void handleHeader( ChannelHandlerContext channelContext )
-    {
-        if(chunkSize == 0)
-        {
-            // Message boundary
-            processCollectedMessage( channelContext );
-            state = State.AWAITING_CHUNK;
-        }
-        else
-        {
-            state = State.IN_CHUNK;
-        }
-    }
-
-    private void processCollectedMessage( final ChannelHandlerContext channelContext )
-    {
-        try
-        {
-            onMessageStarted();
-            unpacker.read( bridge );
-            // onMessageDone() called via onEachCompletedMessage
-        }
-        catch ( Throwable e )
-        {
-            handleUnexpectedError( channelContext, e );
-        }
-        finally
-        {
-            input.clear();
-        }
+        dechunker.close();
+        session.close();
+        output.close();
     }
 
     private void handleUnexpectedError( ChannelHandlerContext channelContext, Throwable e )
@@ -266,7 +145,9 @@ public class BoltProtocolV1 implements BoltProtocol
     private void onMessageDone()
     {
         // If this is the last in-flight message, and we're not in the middle of reading another message over the wire
-        if ( inFlight.decrementAndGet() == 0 && state == State.AWAITING_CHUNK )
+        // If we are in the middle of a message, we assume there's no need for us to flush partial outbound buffers, we simply
+        // wait for more stuff to do to fill the buffers up in order to use network buffers maximally.
+        if ( inFlight.decrementAndGet() == 0 && !dechunker.isInMiddleOfAMessage() )
         {
             try
             {

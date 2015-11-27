@@ -130,14 +130,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             }
 
             PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
-            availableVersions.put( BoltProtocolV1.VERSION, new Function<Channel,BoltProtocol>()
-            {
-                @Override
-                public BoltProtocol apply( Channel channel )
-                {
-                    return new BoltProtocolV1( logging, sessions.newSession(), channel, dependencies.usageData() );
-                }
-            } );
+
+            availableVersions.put( BoltProtocolV1.VERSION, channel -> new BoltProtocolV1( logging, sessions.newSession(), channel ) );
 
             // Start services
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), asList(

@@ -29,19 +29,17 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
+import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
+import org.neo4j.bolt.v1.messaging.message.Message;
+import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
-import org.neo4j.bolt.v1.messaging.message.Message;
-import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.udc.UsageData;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -49,7 +47,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
-import static org.neo4j.bolt.v1.transport.BoltProtocolV1.State.AWAITING_CHUNK;
 
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
@@ -94,7 +91,7 @@ public class FragmentedMessageDeliveryTest
         }
     }
 
-    private void testPermutation( byte[] unfragmented, int... sizes )
+    private void testPermutation( byte[] unfragmented, int... sizes ) throws IOException
     {
         int pos = 0;
         ByteBuf[] fragments = new ByteBuf[sizes.length];
@@ -106,7 +103,7 @@ public class FragmentedMessageDeliveryTest
         testPermutation( unfragmented, fragments );
     }
 
-    private void testPermutation( byte[] unfragmented, ByteBuf[] fragments )
+    private void testPermutation( byte[] unfragmented, ByteBuf[] fragments ) throws IOException
     {
         // Given
         // System.out.println( "Testing fragmentation:" + describeFragments( fragments ) );
@@ -118,7 +115,7 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess, ch, new UsageData() );
+        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess, ch );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
@@ -130,7 +127,6 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            assertEquals( AWAITING_CHUNK, protocol.state() );
             verify( sess ).run( eq( "Mjölnir" ), any( Map.class ), any(), any( Session.Callback.class ) );
         }
         catch ( AssertionError e )
