@@ -160,13 +160,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       indexOn("Person", "age")
       cost = {
-        case (_: AllNodesScan, _) => 1000.0
-        case (_: NodeByLabelScan, _) => 50.0
-        case (_: NodeIndexScan, _) => 10.0
-        case (plan: NodeIndexSeek, _) if plan.label.name == "name" => 1.0
-        case (plan: NodeIndexSeek, _) if plan.label.name == "age" => 5.0
-        case (Selection(_, plan), input) => 30.0
-        case _ => Double.MaxValue
+        case (plan: LogicalPlan, _) => plan.leaves.foldLeft(0.0) {
+          case (acc, _: AllNodesScan) => acc + 1000.0
+          case (acc, _: NodeByLabelScan) => acc + 50.0
+          case (acc, _: NodeIndexScan) => acc + 10.0
+          case (acc, plan: NodeIndexSeek) if plan.propertyKey.name == "name" => acc + 1.0
+          case (acc, plan: NodeIndexSeek) if plan.propertyKey.name == "age" => acc + 5.0
+          case _ => 2000000
+        }
       }
     } planFor "MATCH (a:Person) WHERE a.age > 40 AND a.name >= 'Cinderella' RETURN a").plan should equal(
       Selection(
@@ -263,7 +264,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan unique index scan for exists(n.prop)") {
+  test("should plan index scan for exists(n.prop) when unique constraint") {
     implicit val plan = new given {
       uniqueIndexOn("Awesome", "prop")
       cost = nodeIndexScanCost
@@ -310,14 +311,23 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
-  test("should plan unique index seek when there is an unique index on the property") {
+  test("should not plan unique index seek when read only query even though there is an unique index on the property") {
     implicit val plan = new given {
       uniqueIndexOn("Awesome", "prop")
+      queryPlannerConfiguration = QueryPlannerConfiguration.readOnly
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
+  }
+
+  test("should plan unique index for merge queries if there is an unique index on the property") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MERGE (n:Awesome {prop: 42}) RETURN n"
+
+    plan.plan shouldBe using[NodeUniqueIndexSeek]
   }
 
   test("should plan node by ID lookup instead of label scan when the node by ID lookup is cheaper") {
@@ -397,7 +407,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       cost =  {
         case (_: AllNodesScan, _)    => 10000.0
         case (_: NodeByLabelScan, _) =>  1000.0
-        case (_: NodeByIdSeek, _)    =>     2.0
+        case (_: NodeUniqueIndexSeek, _)    =>     2.0
         case _                       => Double.MaxValue
       }
       uniqueIndexOn("Awesome", "prop")
@@ -531,8 +541,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = (new given {
       indexOn("Crew", "name")
       cost = {
-        case (_: NodeByIdSeek, _) => 1.0
-        case _ => 100.0
+        case (top, _) => top.leaves.foldLeft(0.0) {
+          case (acc, _: NodeIndexSeek) => acc + 1.0
+          case (acc, _) => acc + 100.0
+        }
       }
     } planFor "MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n").plan
 
