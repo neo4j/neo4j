@@ -97,12 +97,12 @@ class UnknownLabelException(labelName: String, cause: Throwable) extends CypherE
 
 class HintException(message: String, cause: Throwable)
   extends CypherException(message, cause) {
-  val status = Status.Schema.NoSuchIndex
+  val status = Status.Statement.ExecutionFailure
 }
 
 class IndexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Schema.NoSuchIndex
 }
 
 class JoinHintException(identifier: String, message: String, cause: Throwable)

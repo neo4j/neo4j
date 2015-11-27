@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.NodeHashJoi
 import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, IDPPlannerName}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.kernel.api.exceptions.Status
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -229,25 +230,6 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     // WHEN
     intercept[SyntaxException](
       executeWithAllPlanners("MATCH n-->() USING SCAN n:Person return n"))
-  }
-
-  test("when failing to support all hints we should provide an understandable error message") {
-    // GIVEN
-    graph.createIndex("LocTag", "id")
-
-    // WHEN
-    val query = """CYPHER planner=greedy MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
-                  |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
-                  |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
-                  |     <-[:Child*0..]-(t2:LocTag {id:1642})
-                  |USING INDEX t1:LocTag(id)
-                  |USING INDEX t2:LocTag(id)
-                  |RETURN count(u)""".stripMargin
-
-
-    val error = intercept[HintException](innerExecute(query))
-
-    error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
   }
 
   val plannersThatSupportJoinHints = Seq(GreedyPlannerName, IDPPlannerName)
@@ -465,4 +447,38 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       s"$hashJoinStr on node '$nodeIdentifier' ${if (negated) "" else "not"}found in plan description\n $result"
   }
 
+  test("when failing to support all hints we should provide an understandable error message") {
+    // GIVEN
+    graph.createIndex("LocTag", "id")
+
+    // WHEN
+    val query = """MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
+                  |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
+                  |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
+                  |     <-[:Child*0..]-(t2:LocTag {id:1642})
+                  |USING INDEX t1:LocTag(id)
+                  |USING INDEX t2:LocTag(id)
+                  |RETURN count(u)""".stripMargin
+
+
+    val error = intercept[HintException](executeWithAllPlanners(query))
+
+    error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
+    error.status should equal(Status.Statement.ExecutionFailure)
+  }
+
+  test("correct status code when no index") {
+
+    // GIVEN
+    val query = """MATCH (n:Test)
+                  |USING INDEX n:Test(foo)
+                  |WHERE n.foo = {foo}
+                  |RETURN n""".stripMargin
+
+    // WHEN
+    val error = intercept[IndexHintException](executeWithAllPlanners(query))
+
+    // THEN
+    error.status should equal(Status.Schema.NoSuchIndex)
+  }
 }
