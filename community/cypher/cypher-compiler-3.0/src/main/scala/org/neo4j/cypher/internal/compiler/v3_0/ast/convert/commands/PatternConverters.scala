@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => commande
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, SyntaxException, ast}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 
 object PatternConverters {
   implicit class PatternConverter(val pattern: ast.Pattern) extends AnyVal {
@@ -273,10 +274,10 @@ object PatternConverters {
         // Direction.{OUTGOING|BOTH}
         case _                  => (fromEnd, toEnd)
       }
-      val typeName = relationship.types match {
-        case Seq(i) => i.name
-        case _ => throw new SyntaxException(s"A single relationship type must be specified for CREATE (${relationship.position})")
-      }
+      //Semantic checking enforces types.size == 1
+      val typeName = relationship.types.headOption.map(_.name).getOrElse(
+        throw new InternalException("Expected single relationship type"))
+
       mutation.CreateRelationship(relationship.legacyName, from, to, typeName, legacyProperties)
     }
 
