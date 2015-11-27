@@ -851,6 +851,15 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
     }
 
+//    @Test
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
+    {
+        // begin and execute and commit
+        Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
+                                                                               "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
+        assertThat( begin, hasErrors( Status.Request.Schema.NoSuchIndex ) );
+    }
+
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
     {
         assertTrue( "Expected a uri matching '" + scheme + "://" + hostname + ":\\d+/db/data" + path + "', " +
