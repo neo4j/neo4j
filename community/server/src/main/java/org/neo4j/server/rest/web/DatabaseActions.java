@@ -246,7 +246,7 @@ public class DatabaseActions
             {
                 return ValueRepresentation.string( key );
             }
-        }, GlobalGraphOperations.at( graphDb ).getAllPropertyKeys() ) );
+        }, graphDb.getAllPropertyKeys() ) );
 
         return new ListRepresentation( RepresentationType.STRING, propKeys );
     }
@@ -1459,8 +1459,7 @@ public class DatabaseActions
 
     public ListRepresentation getAllLabels( boolean inUse )
     {
-        GlobalGraphOperations operations = GlobalGraphOperations.at( graphDb );
-        ResourceIterable<Label> labels = inUse ? operations.getAllLabelsInUse() : operations.getAllLabels();
+        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabels() : GlobalGraphOperations.at( graphDb ).getAllLabels();
         Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override

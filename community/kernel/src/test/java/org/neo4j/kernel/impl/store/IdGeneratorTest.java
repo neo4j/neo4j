@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -676,7 +675,7 @@ public class IdGeneratorTest
 
         // Verify by loading everything from scratch
         tx = db.beginTx();
-        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        for ( Node node : db.getAllNodes() )
         {
             lastOrNull( node.getRelationships() );
         }

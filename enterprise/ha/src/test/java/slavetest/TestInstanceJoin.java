@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
@@ -143,7 +142,7 @@ public class TestInstanceJoin
         try ( Transaction tx = slave.beginTx() )
         {
             int count = 0;
-            for ( Node node : GlobalGraphOperations.at( slave ).getAllNodes() )
+            for ( Node node : slave.getAllNodes() )
             {
                 if ( value.equals( node.getProperty( key, null ) ) )
                 {

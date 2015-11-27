@@ -175,7 +175,7 @@ public class ServerHelper
 
         private void deleteAllNodesAndRelationships()
         {
-            Iterable<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes();
+            Iterable<Node> allNodes = db.getAllNodes();
             for ( Node n : allNodes )
             {
                 Iterable<Relationship> relationships = n.getRelationships();

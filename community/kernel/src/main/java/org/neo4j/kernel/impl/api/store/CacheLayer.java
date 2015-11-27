@@ -399,6 +399,12 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
+    public Iterator<Token> relationshipTypeGetAllTokens()
+    {
+        return diskLayer.relationshipTypeGetAllTokens();
+    }
+
+    @Override
     public int relationshipTypeGetForName( String relationshipTypeName )
     {
         return diskLayer.relationshipTypeGetForName( relationshipTypeName );

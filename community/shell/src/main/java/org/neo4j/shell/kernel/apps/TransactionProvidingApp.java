@@ -60,7 +60,6 @@ import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
@@ -742,7 +741,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             boolean looseFilters ) throws ShellException
     {
         Map<String, Direction> matches = new TreeMap<String, Direction>();
-        for ( RelationshipType type : GlobalGraphOperations.at( db ).getAllRelationshipTypes() )
+        for ( RelationshipType type : db.getAllRelationshipTypes() )
         {
             Direction direction = null;
             if ( filterMap == null || filterMap.isEmpty() )

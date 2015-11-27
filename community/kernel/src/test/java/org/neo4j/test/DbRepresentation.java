@@ -39,7 +39,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class DbRepresentation implements Serializable
 {
@@ -57,7 +56,7 @@ public class DbRepresentation implements Serializable
         try ( Transaction ignore = db.beginTx() )
         {
             DbRepresentation result = new DbRepresentation();
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
                 result.nodes.put( node.getId(), nodeRep );

@@ -357,7 +357,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -397,7 +397,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
@@ -503,7 +503,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterator<Node> nodes = at( db ).getAllNodes().iterator();
+            Iterator<Node> nodes = db.getAllNodes().iterator();
             Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
             while ( expectedIds.hasNext() )
             {
@@ -716,7 +716,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
-            Iterable<Node> allNodes = at( db ).getAllNodes();
+            Iterable<Node> allNodes = db.getAllNodes();
             int anonymousCount = 0;
             for ( final String id : nodeIds )
             {
@@ -818,7 +818,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> allNodes = at( db ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
             Node node = IteratorUtil.single( allNodes );
             allNodes.close();
 
@@ -842,7 +842,7 @@ public class ImportToolTest
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
-            ResourceIterator<Node> allNodes = at( graphDatabaseService ).getAllNodes().iterator();
+            ResourceIterator<Node> allNodes = graphDatabaseService.getAllNodes().iterator();
             assertFalse( "Expected database to be empty", allNodes.hasNext() );
             tx.success();
         }
@@ -866,7 +866,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( at( db ).getAllNodes() );
+            Node node = single( db.getAllNodes() );
             assertEquals( "three", single( node.getPropertyKeys() ) );
             tx.success();
         }
@@ -944,14 +944,14 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0;
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeAdditionalValidation.validate( node );
                 nodeCount++;
             }
             assertEquals( NODE_COUNT, nodeCount );
-            for ( Relationship relationship : at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "created" ) );
                 relationshipAdditionalValidation.validate( relationship );
@@ -1000,7 +1000,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             Map<String,Node> nodes = new HashMap<>();
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 nodes.put( idOf( node ), node );
             }

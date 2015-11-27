@@ -33,7 +33,6 @@ import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -263,11 +262,10 @@ public class ShellDocTest
 
         try (Transaction tx = db.beginTx())
         {
-            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllRelationships() ) );
-            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+            assertEquals( 7, Iterables.count( db.getAllRelationships() ) );
+            assertEquals( 7, Iterables.count( db.getAllNodes() ) );
             boolean foundRootAndNeoRelationship = false;
-            for ( Relationship relationship : GlobalGraphOperations.at( db )
-                    .getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 if ( relationship.getType().name().equals( "ROOT" ) )
                 {

@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
@@ -64,7 +63,7 @@ public class DatabaseContentVerifier
         try ( Transaction tx = database.beginTx() )
         {
             int traversalCount = 0;
-            for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
+            for ( Relationship rel : database.getAllRelationships() )
             {
                 traversalCount++;
                 verifyProperties( rel );
@@ -79,7 +78,7 @@ public class DatabaseContentVerifier
         int nodeCount = 0;
         try ( Transaction tx = database.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
+            for ( Node node : database.getAllNodes() )
             {
                 nodeCount++;
                 if ( node.getId() >= numberOfUnrelatedNodes )

@@ -72,7 +72,6 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -443,7 +442,7 @@ public class StoreUpgradeIntegrationTest
         try ( Transaction ignored = db.beginTx() )
         {
             HashMap<Label,Long> counts = new HashMap<>();
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 for ( Label label : node.getLabels() )
                 {
@@ -491,7 +490,7 @@ public class StoreUpgradeIntegrationTest
         try ( Transaction ignored = db.beginTx() )
         {
             // count nodes
-            long nodeCount = count( GlobalGraphOperations.at( db ).getAllNodes() );
+            long nodeCount = count( db.getAllNodes() );
             assertThat( nodeCount, is( store.expectedNodeCount ) );
 
             // count indexes

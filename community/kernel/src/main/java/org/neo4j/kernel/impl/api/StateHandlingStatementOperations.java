@@ -1308,6 +1308,12 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public Iterator<Token> relationshipTypesGetAllTokens( Statement state )
+    {
+        return storeLayer.relationshipTypeGetAllTokens();
+    }
+
+    @Override
     public int relationshipTypeGetForName( Statement state, String relationshipTypeName )
     {
         return storeLayer.relationshipTypeGetForName( relationshipTypeName );

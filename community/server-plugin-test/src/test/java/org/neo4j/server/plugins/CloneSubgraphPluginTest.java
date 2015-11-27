@@ -44,7 +44,6 @@ import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -191,8 +190,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         try ( Transaction tx = server.getDatabase().getGraph().beginTx() )
         {
             int count = 0;
-            for ( @SuppressWarnings("unused") Node node : GlobalGraphOperations.at( server.getDatabase().getGraph() )
-                                                                               .getAllNodes() )
+            for ( @SuppressWarnings("unused") Node node : server.getDatabase().getGraph().getAllNodes() )
             {
                 count++;
             }

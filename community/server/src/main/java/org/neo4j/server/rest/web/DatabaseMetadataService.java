@@ -28,6 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
@@ -50,10 +51,10 @@ public class DatabaseMetadataService
     {
         try
         {
-            GlobalGraphOperations operations = GlobalGraphOperations.at( database.getGraph() );
+            GraphDatabaseService db = database.getGraph();
             Iterable<RelationshipType> relationshipTypes = inUse
-                                                           ? operations.getAllRelationshipTypesInUse()
-                                                           : operations.getAllRelationshipTypes();
+                                                           ? db.getAllRelationshipTypes()
+                                                           : GlobalGraphOperations.at( db ).getAllRelationshipTypes();
             return Response.ok()
                     .type( MediaType.APPLICATION_JSON )
                     .entity( generateJsonRepresentation( relationshipTypes ) )

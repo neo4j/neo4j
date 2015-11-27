@@ -23,7 +23,6 @@ import java.util
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.tooling.GlobalGraphOperations
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
@@ -31,24 +30,24 @@ import scala.collection.JavaConverters._
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("create a single node") {
-    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = updateWithBothPlanners("create (a)")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala should have size before + 1
+      graph.getAllNodes.asScala should have size before + 1
     }
   }
 
   test("create a single node with props and return it") {
-    val before = graph.inTx(GlobalGraphOperations.at(graph).getAllNodes.asScala.size)
+    val before = graph.inTx(graph.getAllNodes.asScala.size)
 
     val result = updateWithBothPlanners("create (a {name : 'Andres'}) return a.name")
 
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala should have size before + 1
+      graph.getAllNodes.asScala should have size before + 1
     }
 
     result.toList should equal(List(Map("a.name" -> "Andres")))
@@ -271,7 +270,7 @@ return distinct center""")
     executeWithRulePlanner("""start n=node(*) optional match (n)-[r]-() delete n,r""")
 
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
+      graph.getAllNodes.asScala shouldBe empty
     }
   }
 
@@ -283,7 +282,7 @@ return distinct center""")
     updateWithBothPlanners("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
-      GlobalGraphOperations.at(graph).getAllNodes.asScala shouldBe empty
+      graph.getAllNodes.asScala shouldBe empty
     }
   }
 

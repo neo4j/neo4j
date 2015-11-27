@@ -31,7 +31,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -59,7 +58,7 @@ public class LuceneRecoveryIT
         {
             assertTrue( db.index().existsForNodes( "myIndex" ) );
             Index<Node> index = db.index().forNodes( "myIndex" );
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 for ( String key : node.getPropertyKeys() )
                 {

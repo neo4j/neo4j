@@ -34,7 +34,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -128,7 +127,7 @@ public class NodeManagerTest
 
         // WHEN iterator is started
         Transaction transaction = db.beginTx();
-        Iterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+        Iterator<Node> allNodes = db.getAllNodes().iterator();
         allNodes.next();
 
         // and WHEN another node is then added
@@ -165,7 +164,7 @@ public class NodeManagerTest
 
         // WHEN
         tx = db.beginTx();
-        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
+        Iterator<Relationship> allRelationships = db.getAllRelationships().iterator();
 
         Thread thread = new Thread( new Runnable()
         {

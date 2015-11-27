@@ -120,7 +120,7 @@ class Wrapper(delegate: GraphDatabaseAPI) extends GraphDatabaseAPI
   override def unregisterTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] =
     delegate.unregisterTransactionEventHandler(handler)
 
-  override def getAllNodes: Iterable[Node] = delegate.getAllNodes
+  override def getAllNodes: ResourceIterable[Node] = delegate.getAllNodes
 
   override def getRelationshipById(id: Long): Relationship = delegate.getRelationshipById(id)
 
@@ -137,7 +137,13 @@ class Wrapper(delegate: GraphDatabaseAPI) extends GraphDatabaseAPI
   override def registerTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] =
     delegate.registerTransactionEventHandler(handler)
 
-  override def getRelationshipTypes: Iterable[RelationshipType] = delegate.getRelationshipTypes
+  override def getAllRelationshipTypes: ResourceIterable[RelationshipType] = delegate.getAllRelationshipTypes
+
+  override def getAllRelationships: ResourceIterable[Relationship] = delegate.getAllRelationships
+
+  override def getAllPropertyKeys: ResourceIterable[String] = delegate.getAllPropertyKeys
+
+  override def getAllLabels: ResourceIterable[Label] = delegate.getAllLabels
 
   override def traversalDescription(): TraversalDescription = delegate.traversalDescription()
 

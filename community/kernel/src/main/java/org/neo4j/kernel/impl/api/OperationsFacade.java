@@ -770,6 +770,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public Iterator<Token> relationshipTypesGetAllTokens()
+    {
+        statement.assertOpen();
+        return tokenRead().relationshipTypesGetAllTokens( statement );
+    }
+
+    @Override
     public int relationshipTypeGetForName( String relationshipTypeName )
     {
         statement.assertOpen();

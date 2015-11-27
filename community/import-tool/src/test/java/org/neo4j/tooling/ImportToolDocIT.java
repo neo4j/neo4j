@@ -55,7 +55,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolDocIT
@@ -619,10 +618,10 @@ public class ImportToolDocIT
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0;
+            int nodeCount = count( db.getAllNodes() ), relationshipCount = 0;
             assertEquals( 2, nodeCount );
 
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "roles" ) );
 
@@ -656,9 +655,9 @@ public class ImportToolDocIT
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0, sequelCount = 0;
+            int nodeCount = count( db.getAllNodes() ), relationshipCount = 0, sequelCount = 0;
             assertEquals( NODE_COUNT, nodeCount );
-            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            for ( Relationship relationship : db.getAllRelationships() )
             {
                 assertTrue( relationship.hasProperty( "role" ) );
                 relationshipCount++;

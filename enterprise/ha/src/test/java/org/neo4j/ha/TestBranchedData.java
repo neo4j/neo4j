@@ -49,7 +49,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -231,7 +230,7 @@ public class TestBranchedData
     {
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 if ( nodeName.equals( node.getProperty( "name", null ) ) )
                 {

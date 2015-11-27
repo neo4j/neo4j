@@ -1050,6 +1050,10 @@ public abstract class IteratorUtil
 
     public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
     {
+        if ( iterator instanceof ResourceIterator<?> )
+        {
+            return (ResourceIterator<T>) iterator;
+        }
         return new WrappingResourceIterator<>( iterator );
     }
 

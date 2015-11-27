@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
@@ -57,16 +56,14 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     };
 
-    private final GraphDatabaseAPI db;
+    private final GraphDatabaseService db;
     private final ThreadToStatementContextBridge bridge;
-    private final GlobalGraphOperations glops;
 
     public GraphDbStructureGuide( GraphDatabaseService graph )
     {
-        this.db = (GraphDatabaseAPI) graph;
-        DependencyResolver dependencyResolver = db.getDependencyResolver();
-        this.bridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-        this.glops = GlobalGraphOperations.at( db );
+        this.db = graph;
+        DependencyResolver dependencies = ((GraphDatabaseAPI) graph).getDependencyResolver();
+        this.bridge = dependencies.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     public void accept( DbStructureVisitor visitor )
@@ -106,7 +103,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showLabels( ReadOperations read, DbStructureVisitor visitor )
     {
-        for ( Label label : glops.getAllLabels() )
+        for ( Label label : db.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
             visitor.visitLabel( labelId, label.name() );
@@ -115,7 +112,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showPropertyKeys( ReadOperations read, DbStructureVisitor visitor )
     {
-        for ( String propertyKeyName : glops.getAllPropertyKeys() )
+        for ( String propertyKeyName : db.getAllPropertyKeys() )
         {
             int propertyKeyId = read.propertyKeyGetForName( propertyKeyName );
             visitor.visitPropertyKey( propertyKeyId, propertyKeyName );
@@ -124,7 +121,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showRelTypes( ReadOperations read, DbStructureVisitor visitor )
     {
-        for ( RelationshipType relType : glops.getAllRelationshipTypes() )
+        for ( RelationshipType relType : db.getAllRelationshipTypes() )
         {
             int relTypeId = read.relationshipTypeGetForName( relType.name() );
             visitor.visitRelationshipType( relTypeId, relType.name() );
@@ -206,7 +203,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     private void showNodeCounts( ReadOperations read, DbStructureVisitor visitor )
     {
         visitor.visitAllNodesCount( read.countsForNode( ANY_LABEL ) );
-        for ( Label label : glops.getAllLabels() )
+        for ( Label label : db.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
             visitor.visitNodeCount( labelId, label.name(), read.countsForNode( labelId ) );
@@ -218,7 +215,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         noSide( read, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
 
         // one label only
-        for ( Label label : glops.getAllLabels() )
+        for ( Label label : db.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
 
@@ -227,12 +224,12 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
 
         // fixed rel type
-        for ( RelationshipType relType : glops.getAllRelationshipTypes() )
+        for ( RelationshipType relType : db.getAllRelationshipTypes() )
         {
             int relTypeId = read.relationshipTypeGetForName( relType.name() );
             noSide( read, visitor, relType, relTypeId );
 
-            for ( Label label : glops.getAllLabels() )
+            for ( Label label : db.getAllLabels() )
             {
                 int labelId = read.labelGetForName( label.name() );
 

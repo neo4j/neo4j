@@ -469,7 +469,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
       setupQueries.foreach(engine.execute)
 
-      GlobalGraphOperations.at(db).getAllNodes.asScala.foreach((n) => {
+      db.getAllNodes.asScala.foreach((n) => {
         indexProperties(n, nodeIndex)
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })

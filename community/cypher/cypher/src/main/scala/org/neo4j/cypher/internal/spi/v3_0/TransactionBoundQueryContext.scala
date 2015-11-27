@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBr
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
-import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -330,7 +329,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
 
-    def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
+    def all: Iterator[Node] = graph.getAllNodes.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
       graph.index.forNodes(name).get(key, value).iterator().asScala
@@ -376,8 +375,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    def all: Iterator[Relationship] =
-      GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
+    def all: Iterator[Relationship] = graph.getAllRelationships.iterator().asScala
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
       graph.index.forRelationships(name).get(key, value).iterator().asScala
