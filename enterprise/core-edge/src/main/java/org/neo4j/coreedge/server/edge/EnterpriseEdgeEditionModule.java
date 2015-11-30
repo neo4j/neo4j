@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -126,8 +125,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         };
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
-
-        upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
         constraintSemantics = new StandardConstraintSemantics();
 
