@@ -26,4 +26,5 @@ package org.neo4j.bolt.v1.runtime;
 public interface StatementMetadata
 {
     String[] fieldNames();
+    String queryType();
 }

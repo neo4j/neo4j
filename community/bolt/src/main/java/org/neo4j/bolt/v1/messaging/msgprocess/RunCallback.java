@@ -38,6 +38,10 @@ public class RunCallback extends MessageProcessingCallback<StatementMetadata>
     public void result( StatementMetadata result, Void none ) throws Exception
     {
         successMetadata.put( "fields", result.fieldNames() );
+        if ( !result.queryType().isEmpty() )
+        {
+            successMetadata.put( "type", result.queryType() );
+        }
     }
 
     @Override

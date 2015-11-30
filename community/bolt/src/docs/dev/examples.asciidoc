@@ -28,10 +28,10 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 16 b1 70  a2 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 84 74 79  70 65 81 72  00 00
 
 Client: PULL_ALL
 
@@ -90,10 +90,10 @@ Client: PULL_ALL
   00 02 B0 3F  00 00
 
 # Server responses
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 16 b1 70  a2 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 84 74 79  70 65 81 72  00 00
 
 Server: RECORD [1]
 
@@ -103,10 +103,10 @@ Server: SUCCESS { "type": "r" }
 
   00 0A B1 70  A1 84 74 79  70 65 81 72  00 00
 
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 16 b1 70  a2 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 84 74 79  70 65 81 72  00 00
 
 Server: RECORD [1]
 
@@ -192,10 +192,10 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 b2 10  8f 52 45 54  55 52 4e 20  31 20 41 53
   20 6e 75 6d  a0 00 00
 
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+ 00 16 B1 70  A2 86 66 69  65 6C 64 73  91 83 6E 75
+ 6D 84 74 79  70 65 81 72  00 00
 ----
 
 === Accessing basic result metadata
@@ -225,10 +225,10 @@ Client: RUN "RETURN 1 AS num" {}
   00 13 B2 10  8F 52 45 54  55 52 4E 20  31 20 41 53
   20 6E 75 6D  A0 00 00
 
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  A1 86 66 69  65 6C 64 73  91 83 6E 75
-  6d 00 00
+  00 16 b1 70  a2 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 84 74 79  70 65 81 72  00 00
 
 Client: PULL_ALL
 
@@ -250,9 +250,10 @@ Client: RUN "CREATE ()" {}
   00 0D B2 10  89 43 52 45  41 54 45 20  28 29 A0 00
   00
 
-Server: SUCCESS { "fields": [] }
+Server: SUCCESS { "fields": [], "type": "w" }
 
-  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+  00 12 B1 70  A2 86 66 69  65 6C 64 73  90 84 74 79
+  70 65 81 77  00 00
 
 Client: PULL_ALL
 
@@ -297,9 +298,10 @@ Client: RUN "EXPLAIN RETURN 1 AS num" {}
   00 1C B2 10  D0 17 45 58  50 4C 41 49  4E 20 52 45
   54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
 
-Server: SUCCESS { "fields": [] }
+Server: SUCCESS { "fields": [], "type": "r" }
 
-  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+  00 12 B1 70  A2 86 66 69  65 6C 64 73  90 84 74 79
+  70 65 81 72  00 00
 
 Client: PULL_ALL
 
@@ -359,10 +361,10 @@ Client: RUN "PROFILE RETURN 1 AS num" {}
   00 1C B2 10  D0 17 50 52  4F 46 49 4C  45 20 52 45
   54 55 52 4E  20 31 20 41  53 20 6E 75  6D A0 00 00
 
-Server: SUCCESS { "fields": ["num"] }
+Server: SUCCESS { "fields": ["num"], "type": "r" }
 
-  00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
-  6d 00 00
+  00 16 b1 70  a2 86 66 69  65 6c 64 73  91 83 6e 75
+  6d 84 74 79  70 65 81 72  00 00
 
 Client: PULL_ALL
 
@@ -438,7 +440,7 @@ Server: SUCCESS {
 ----
 === Accessing notifications
 When Neo4j executes a statement it may include notifications for the user.
-These notifications can be warnings about problematic statements or other valuable information for a client. 
+These notifications can be warnings about problematic statements or other valuable information for a client.
 Unlike failures or errors, notifications do not affect the execution of a statement.
 
 .Notifications
@@ -463,9 +465,10 @@ Client: RUN "EXPLAIN MATCH (n), (m) RETURN n, m" {}
   54 43 48 20  28 6E 29 2C  20 28 6D 29  20 52 45 54
   55 52 4E 20  6E 2C 20 6D  A0 00 00
 
-Server: SUCCESS { "fields": [] }
+Server: SUCCESS { "fields": [], "type": "r" }
 
-  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+  00 12 B1 70  A2 86 66 69  65 6C 64 73  90 84 74 79
+  70 65 81 72  00 00
 
 Client: PULL_ALL
 

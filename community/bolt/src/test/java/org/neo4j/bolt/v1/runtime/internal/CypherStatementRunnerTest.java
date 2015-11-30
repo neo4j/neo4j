@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
@@ -44,7 +45,10 @@ public class CypherStatementRunnerTest
     public void shouldCreateImplicitTxIfNoneExists() throws Exception
     {
         // Given
-        when( db.execute( anyString(), anyMap() ) ).thenReturn( mock( Result.class ) );
+        Result result = mock( Result.class );
+        when( result.getQueryExecutionType() )
+                .thenReturn( QueryExecutionType.profiled( QueryExecutionType.QueryType.READ_ONLY ) );
+        when( db.execute( anyString(), anyMap() ) ).thenReturn( result );
         when( engine.isPeriodicCommit( anyString() ) ).thenReturn( false );
         when( ctx.hasTransaction() ).thenReturn( false );
 
@@ -66,10 +70,12 @@ public class CypherStatementRunnerTest
     public void shouldNotCreateImplicitTxIfUsingPeriodicCommit() throws Exception
     {
         // Given
-        when( db.execute( anyString(), anyMap() ) ).thenReturn( mock( Result.class ) );
+        Result result = mock( Result.class );
+        when( result.getQueryExecutionType() )
+                .thenReturn( QueryExecutionType.profiled( QueryExecutionType.QueryType.READ_ONLY ) );
+        when( db.execute( anyString(), anyMap() ) ).thenReturn( result );
         when( engine.isPeriodicCommit( anyString() ) ).thenReturn( true );
         when( ctx.hasTransaction() ).thenReturn( false );
-
         CypherStatementRunner cypherRunner = new CypherStatementRunner( db, engine );
 
         // When

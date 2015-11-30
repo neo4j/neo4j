@@ -37,6 +37,7 @@ public class CypherAdapterStream implements RecordStream
 {
     private final Result delegate;
     private final String[] fieldNames;
+    private final String queryType;
     private CypherAdapterRecord currentRecord;
 
     public CypherAdapterStream( Result delegate )
@@ -44,6 +45,7 @@ public class CypherAdapterStream implements RecordStream
         this.delegate = delegate;
         this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );
         this.currentRecord = new CypherAdapterRecord( fieldNames );
+        this.queryType = queryTypeCode( delegate.getQueryExecutionType().queryType() );
     }
 
     @Override
@@ -56,6 +58,12 @@ public class CypherAdapterStream implements RecordStream
     public String[] fieldNames()
     {
         return fieldNames;
+    }
+
+    @Override
+    public String queryType()
+    {
+        return queryType;
     }
 
     @Override
@@ -72,7 +80,7 @@ public class CypherAdapterStream implements RecordStream
         } );
 
         QueryExecutionType qt = delegate.getQueryExecutionType();
-        visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
+        visitor.addMetadata( "type", queryType );
 
         if ( delegate.getQueryStatistics().containsUpdates() )
         {

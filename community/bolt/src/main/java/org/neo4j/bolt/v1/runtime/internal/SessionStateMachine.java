@@ -396,6 +396,12 @@ public class SessionStateMachine implements Session, SessionState
         {
             return currentResult.fieldNames();
         }
+
+        @Override
+        public String queryType()
+        {
+            return currentResult.queryType();
+        }
     };
 
     /** The current session state */

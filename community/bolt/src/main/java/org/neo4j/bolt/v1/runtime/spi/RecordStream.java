@@ -30,6 +30,10 @@ public interface RecordStream extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
+    /** Query type one on r (read), w (write) or rw (read-write). */
+    String queryType();
+
+
     void accept( Visitor visitor ) throws Exception;
 
     @Override
@@ -48,6 +52,7 @@ public interface RecordStream extends AutoCloseable
     RecordStream EMPTY = new RecordStream()
     {
         private final String[] nothing = new String[0];
+        private final String emptySting = "";
 
         @Override
         public void close()
@@ -59,6 +64,12 @@ public interface RecordStream extends AutoCloseable
         public String[] fieldNames()
         {
             return nothing;
+        }
+
+        @Override
+        public String queryType()
+        {
+            return emptySting;
         }
 
         @Override

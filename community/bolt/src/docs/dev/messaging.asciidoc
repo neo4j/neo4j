@@ -120,9 +120,10 @@ If successful, the subsequent response will consist of a single `SUCCESS` messag
 A successful job will always produce a result stream which must then be explicitly consumed (via `PULL_ALL` or `DISCARD_ALL`), even if empty.
 
 Depending on the statement you are executing, additional metadata may be returned in both the `SUCCESS` message from the `RUN`, as well as in the final `SUCCESS` after the stream has been consumed.
-It is up to the statement you are running to determine what meta data to return.
-Notably, most queries will contain a 'fields' metadata section in the `SUCCESS` message for the `RUN` statement, which lists the result record field names.
-We list further examples of meta data in the <<bolt-examples,examples section>>.
+It is up to the statement you are running to determine what metadata to return.
+Notably, all queries will contain a `fields` and a `type` metadata section in the `SUCCESS` message for the `RUN` statement.
+The `fields` section lists the result record field names and `type` describes the type of query; `r` (`read`), `w` (`write`), or `rw` (`read/write`).
+We list further examples of metadata in the <<bolt-examples,examples section>>.
 
 In the case where a previous result stream has not yet been fully consumed, an attempt to `RUN` a new job will trigger a `FAILURE` response.
 
