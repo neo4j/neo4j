@@ -27,6 +27,8 @@ import java.io.PrintWriter;
 
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.CatchupServer;
+import org.neo4j.coreedge.raft.state.TermStore;
+import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
@@ -162,20 +164,20 @@ public class EnterpriseCoreEditionModule
         LoggingOutbound<AdvertisedSocketAddress> loggingOutbound = new LoggingOutbound<>(
                 senderService, myself.getRaftAddress(), messageLogger );
 
-        File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
-
-        RaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory, new RaftContentSerializer(),
-                platformModule.monitors );
-        dependencies.satisfyDependencies( raftLog );
-
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshall, raftListenAddress, logProvider );
 
         final ScheduledTimeoutService raftTimeoutService = new ScheduledTimeoutService();
 
-        raft = createRaft( life, loggingOutbound, discoveryService, config,
-                messageLogger, raftLog, myself, raftLogsDirectory, fileSystem, logProvider, raftServer,
-                raftTimeoutService );
+        File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
+        NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory, new RaftContentSerializer(),
+                platformModule.monitors );
+
+        DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
+        DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
+
+        raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
+                termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService );
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound ) );
@@ -308,9 +310,9 @@ public class EnterpriseCoreEditionModule
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
                                                         RaftLog raftLog,
+                                                        TermStore termStore,
+                                                        VoteStore voteStore,
                                                         CoreMember myself,
-                                                        File raftLogsDirectory,
-                                                        FileSystemAbstraction fileSystem,
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
                                                         ScheduledTimeoutService raftTimeoutService )
@@ -326,8 +328,6 @@ public class EnterpriseCoreEditionModule
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
 
-        DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
-        DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
 
         Replicator localReplicator = new LocalReplicator<>( myself, myself.getRaftAddress(), outbound );
 
