@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
+import scala.collection.GenTraversableOnce
+
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
     private def asProducer[T <: PropertyContainer](startItem: StartItem)
@@ -39,11 +41,19 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       def arguments: Seq[Argument] = startItem.arguments
     }
 
-  def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+  def readNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
     nodeById orElse
       nodeByIndex orElse
       nodeByIndexQuery orElse
-      nodeByIndexHint orElse
+      nodeByIndexHint(read = true) orElse
+      nodeByLabel orElse
+      nodesAll
+
+  def updateNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+    nodeById orElse
+      nodeByIndex orElse
+      nodeByIndexQuery orElse
+      nodeByIndexHint(read = false) orElse
       nodeByLabel orElse
       nodesAll
 
@@ -116,7 +126,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         state.query.relationshipOps.all }
   }
 
-  val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+  def nodeByIndexHint(read: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
 
       val indexGetter = planContext.getIndexRule(labelName, propertyName)
@@ -142,7 +152,12 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        indexQuery(expression, m, state, state.query.exactUniqueIndexSearch(index, _), labelName, propertyName)
+        val search: (Any) => GenTraversableOnce[Node] = if (read)
+          state.query.exactIndexSearch(index, _)
+        else
+          state.query.exactUniqueIndexSearch(index, _)
+
+        indexQuery(expression, m, state, search, labelName, propertyName)
       }
   }
 

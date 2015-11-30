@@ -55,7 +55,7 @@ class StartPointBuilder extends PlanBuilder {
   private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
     entityFactory.nodeByIndex orElse
       entityFactory.nodeByIndexQuery orElse
-      entityFactory.nodeByIndexHint orElse
+      entityFactory.nodeByIndexHint(read = true) orElse
       entityFactory.nodeById orElse
       entityFactory.nodesAll orElse
       entityFactory.nodeByLabel

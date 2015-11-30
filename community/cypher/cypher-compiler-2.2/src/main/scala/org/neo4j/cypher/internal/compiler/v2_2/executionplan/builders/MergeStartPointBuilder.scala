@@ -80,7 +80,7 @@ class MergeStartPointBuilder extends PlanBuilder {
           case other                                          => other
         }
 
-        val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))
+        val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.updateNodeStartItems((ctx, startItem.s)))
         val solvedPredicates = startItem.solvedPredicates
         val predicatesLeft = where.toSet -- solvedPredicates
 
@@ -98,7 +98,7 @@ class MergeStartPointBuilder extends PlanBuilder {
         }
 
         val nodeProducer = UniqueMergeNodeProducers(startItems.map {
-          case (label: KeyToken, propertyKey: KeyToken, item: RatedStartItem) => IndexNodeProducer(label, propertyKey, entityProducerFactory.nodeStartItems((ctx, item.s)))
+          case (label: KeyToken, propertyKey: KeyToken, item: RatedStartItem) => IndexNodeProducer(label, propertyKey, entityProducerFactory.updateNodeStartItems((ctx, item.s)))
         })
         val solvedPredicates = startItems.flatMap {
           case (_, _, item: RatedStartItem) => item.solvedPredicates

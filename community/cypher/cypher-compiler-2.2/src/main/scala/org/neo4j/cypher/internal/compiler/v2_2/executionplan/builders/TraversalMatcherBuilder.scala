@@ -122,7 +122,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   val entityFactory = new EntityProducerFactory
 
   private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
-    entityFactory.nodeStartItems
+    entityFactory.readNodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
     val (longest,_) = extractExpanderStepsFromQuery(plan)
