@@ -26,6 +26,6 @@ class EagerStrategyAcceptanceTest  extends ExecutionEngineFunSuite {
   }
 
   test("should use eagerness when option is provided ") {
-    execute("CYPHER strategy=eager MATCH () CREATE ()") should use("Eager")
+    execute("CYPHER updateStrategy=eager MATCH () CREATE ()") should use("Eager")
   }
 }

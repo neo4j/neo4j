@@ -40,7 +40,7 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
     val alwaysEager = context.config.updateStrategy.alwaysEager
 
     val planWithEffect =
-      if (alwaysEager ||conflicts(partPlan, in))
+      if (alwaysEager || conflicts(partPlan, in))
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)

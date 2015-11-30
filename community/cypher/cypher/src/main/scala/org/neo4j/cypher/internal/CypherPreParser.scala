@@ -58,7 +58,7 @@ case object CypherPreParser extends Parser with Base {
   )
 
   def StrategyOption = rule("strategy option")(
-    option("strategy", "eager") ~ push(EagerOption)
+    option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
   def VersionNumber = rule("Version") {

@@ -171,7 +171,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
    */
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = graph.rollback(innerExecute(s"CYPHER planner=rule $queryText", params: _*))
-    val eagerCostResult = graph.rollback(innerExecute(s"CYPHER strategy=eager $queryText", params: _*))
+    val eagerCostResult = graph.rollback(innerExecute(s"CYPHER updateStrategy=eager $queryText", params: _*))
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
     assertResultsAreSame(eagerCostResult, costResult, queryText,
