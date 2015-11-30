@@ -37,13 +37,16 @@ import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
  */
 public class PropertyRecord extends Abstract64BitRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
 {
+    private static final byte TYPE_NODE = 1;
+    private static final byte TYPE_REL = 2;
+
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
     private final PropertyBlock[] blockRecords =
             new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
     private int blockRecordsCursor;
     private long entityId = -1;
-    private Boolean nodeIdSet;
+    private byte entityType;
     private List<DynamicRecord> deletedRecords;
 
     // state for the Iterator aspect of this class.
@@ -64,24 +67,24 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public void setNodeId( long nodeId )
     {
-        nodeIdSet = true;
+        entityType = TYPE_NODE;
         entityId = nodeId;
     }
 
     public void setRelId( long relId )
     {
-        nodeIdSet = false;
+        entityType = TYPE_REL;
         entityId = relId;
     }
 
     public boolean isNodeSet()
     {
-        return Boolean.TRUE.equals( nodeIdSet );
+        return entityType == TYPE_NODE;
     }
 
     public boolean isRelSet()
     {
-        return Boolean.FALSE.equals( nodeIdSet );
+        return entityType == TYPE_REL;
     }
 
     public long getNodeId()
@@ -245,7 +248,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
                 prevProp ).append( ",next=" ).append( nextProp );
         if ( entityId != -1 )
         {
-            buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
+            buf.append( entityType == TYPE_NODE? ",node=" : ",rel=" ).append( entityId );
         }
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
@@ -285,7 +288,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
         result.nextProp = nextProp;
         result.prevProp = prevProp;
         result.entityId = entityId;
-        result.nodeIdSet = nodeIdSet;
+        result.entityType = entityType;
         for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             result.blockRecords[i] = blockRecords[i].clone();
