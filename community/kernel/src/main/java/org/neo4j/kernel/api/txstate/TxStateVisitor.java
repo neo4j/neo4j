@@ -94,256 +94,321 @@ public interface TxStateVisitor
 
     void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor );
 
+    /**
+     * Must be called Called after all visitor methods, i.e. all changes have been visited.
+     */
     void done();
 
     class Adapter implements TxStateVisitor
     {
-        private final TxStateVisitor next;
-
-        public Adapter( TxStateVisitor next )
-        {
-            this.next = next;
-        }
-
-        public Adapter()
-        {
-            this( null );
-        }
-
         @Override
         public void visitCreatedNode( long id )
         {
-            if ( next != null )
-            {
-                next.visitCreatedNode( id );
-            }
         }
 
         @Override
         public void visitDeletedNode( long id )
         {
-            if ( next != null )
-            {
-                next.visitDeletedNode( id );
-            }
         }
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                 throws ConstraintValidationKernelException
         {
-            if ( next != null )
-            {
-                next.visitCreatedRelationship( id, type, startNode, endNode );
-            }
         }
 
         @Override
         public void visitDeletedRelationship( long id )
         {
-            if ( next != null )
-            {
-                next.visitDeletedRelationship( id );
-            }
         }
 
         @Override
-        public void visitNodePropertyChanges( long id,
-                Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationKernelException
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                        throws ConstraintValidationKernelException
         {
-            if ( next != null )
-            {
-                next.visitNodePropertyChanges( id, added, changed, removed );
-            }
         }
 
         @Override
         public void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
                 RelationshipChangesForNode removed )
         {
-            if ( next != null )
-            {
-                next.visitNodeRelationshipChanges( id, added, removed );
-            }
         }
 
         @Override
-        public void visitRelPropertyChanges( long id,
-                Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationKernelException
-        {
-            if ( next != null )
-            {
-                next.visitRelPropertyChanges( id, added, changed, removed );
-            }
-        }
-
-        @Override
-        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added,
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
                 Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                        throws ConstraintValidationKernelException
         {
-            if ( next != null )
-            {
-                next.visitGraphPropertyChanges( added, changed, removed );
-            }
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed )
+        {
         }
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
                 throws ConstraintValidationKernelException
         {
-            if ( next != null )
-            {
-                next.visitNodeLabelChanges( id, added, removed );
-            }
         }
 
         @Override
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            if ( next != null )
-            {
-                next.visitAddedIndex( element, isConstraintIndex );
-            }
         }
 
         @Override
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
-            if ( next != null )
-            {
-                next.visitRemovedIndex( element, isConstraintIndex );
-            }
         }
 
         @Override
         public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
         {
-            if ( next != null )
-            {
-                next.visitAddedUniquePropertyConstraint( element );
-            }
         }
 
         @Override
         public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
         {
-            if ( next != null )
-            {
-                next.visitRemovedUniquePropertyConstraint( element );
-            }
         }
 
         @Override
         public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
                 throws CreateConstraintFailureException
         {
-            if ( next != null )
-            {
-                next.visitAddedNodePropertyExistenceConstraint( element );
-            }
         }
 
         @Override
         public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
         {
-            if ( next != null )
-            {
-                next.visitRemovedNodePropertyExistenceConstraint( element );
-            }
         }
 
         @Override
         public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
                 throws CreateConstraintFailureException
         {
-            if ( next != null )
-            {
-                next.visitAddedRelationshipPropertyExistenceConstraint( element );
-            }
         }
 
         @Override
-        public void visitRemovedRelationshipPropertyExistenceConstraint(
-                RelationshipPropertyExistenceConstraint element )
+        public void
+                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
         {
-            if ( next != null )
-            {
-                next.visitRemovedRelationshipPropertyExistenceConstraint( element );
-            }
         }
 
         @Override
         public void visitCreatedLabelToken( String name, int id )
         {
-            if ( next != null )
-            {
-                next.visitCreatedLabelToken( name, id );
-            }
         }
 
         @Override
         public void visitCreatedPropertyKeyToken( String name, int id )
         {
-            if ( next != null )
-            {
-                next.visitCreatedPropertyKeyToken( name, id );
-            }
         }
 
         @Override
         public void visitCreatedRelationshipTypeToken( String name, int id )
         {
-            if ( next != null )
-            {
-                next.visitCreatedRelationshipTypeToken( name, id );
-            }
         }
 
         @Override
         public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
         {
-            if ( next != null )
-            {
-                next.visitCreatedNodeLegacyIndex( name, config );
-            }
         }
 
         @Override
         public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
         {
-            if ( next != null )
-            {
-                next.visitCreatedRelationshipLegacyIndex( name, config );
-            }
         }
 
         @Override
         public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
         {
-            if( next != null )
-            {
-                next.visitCreatedProcedure( procedureDescriptor );
-            }
         }
 
         @Override
         public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
         {
-            if( next != null )
-            {
-                next.visitDroppedProcedure( procedureDescriptor );
-            }
         }
 
         @Override
         public void done()
         {
-            if ( next != null )
-            {
-                next.done();
-            }
+        }
+    }
+
+    TxStateVisitor EMPTY = new Adapter();
+
+    class Delegator implements TxStateVisitor
+    {
+        private final TxStateVisitor actual;
+
+        public Delegator( TxStateVisitor actual )
+        {
+            assert actual != null;
+            this.actual = actual;
+        }
+
+        @Override
+        public void visitCreatedNode( long id )
+        {
+            actual.visitCreatedNode( id );
+        }
+
+        @Override
+        public void visitDeletedNode( long id )
+        {
+            actual.visitDeletedNode( id );
+        }
+
+        @Override
+        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                throws ConstraintValidationKernelException
+        {
+            actual.visitCreatedRelationship( id, type, startNode, endNode );
+        }
+
+        @Override
+        public void visitDeletedRelationship( long id )
+        {
+            actual.visitDeletedRelationship( id );
+        }
+
+        @Override
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                        throws ConstraintValidationKernelException
+        {
+            actual.visitNodePropertyChanges( id, added, changed, removed );
+        }
+
+        @Override
+        public void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
+                RelationshipChangesForNode removed )
+        {
+            actual.visitNodeRelationshipChanges( id, added, removed );
+        }
+
+        @Override
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                        throws ConstraintValidationKernelException
+        {
+            actual.visitRelPropertyChanges( id, added, changed, removed );
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed )
+        {
+            actual.visitGraphPropertyChanges( added, changed, removed );
+        }
+
+        @Override
+        public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+                throws ConstraintValidationKernelException
+        {
+            actual.visitNodeLabelChanges( id, added, removed );
+        }
+
+        @Override
+        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {
+            actual.visitAddedIndex( element, isConstraintIndex );
+        }
+
+        @Override
+        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {
+            actual.visitRemovedIndex( element, isConstraintIndex );
+        }
+
+        @Override
+        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
+        {
+            actual.visitAddedUniquePropertyConstraint( element );
+        }
+
+        @Override
+        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
+        {
+            actual.visitRemovedUniquePropertyConstraint( element );
+        }
+
+        @Override
+        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
+        {
+            actual.visitAddedNodePropertyExistenceConstraint( element );
+        }
+
+        @Override
+        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
+        {
+            actual.visitRemovedNodePropertyExistenceConstraint( element );
+        }
+
+        @Override
+        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
+        {
+            actual.visitAddedRelationshipPropertyExistenceConstraint( element );
+        }
+
+        @Override
+        public void
+                visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+        {
+            actual.visitRemovedRelationshipPropertyExistenceConstraint( element );
+        }
+
+        @Override
+        public void visitCreatedLabelToken( String name, int id )
+        {
+            actual.visitCreatedLabelToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedPropertyKeyToken( String name, int id )
+        {
+            actual.visitCreatedPropertyKeyToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedRelationshipTypeToken( String name, int id )
+        {
+            actual.visitCreatedRelationshipTypeToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
+        {
+            actual.visitCreatedNodeLegacyIndex( name, config );
+        }
+
+        @Override
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
+        {
+            actual.visitCreatedRelationshipLegacyIndex( name, config );
+        }
+
+        @Override
+        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            actual.visitCreatedProcedure( procedureDescriptor );
+        }
+
+        @Override
+        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            actual.visitDroppedProcedure( procedureDescriptor );
+        }
+
+        @Override
+        public void done()
+        {
+            actual.done();
         }
     }
 }

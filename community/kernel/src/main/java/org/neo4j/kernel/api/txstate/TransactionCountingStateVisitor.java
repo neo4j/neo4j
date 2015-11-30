@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.api.CountsRead.ANY_RELATIONSHIP_TYPE;
 
-public class TransactionCountingStateVisitor extends TxStateVisitor.Adapter
+public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
     private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
     private final CountsRecordState counts;
