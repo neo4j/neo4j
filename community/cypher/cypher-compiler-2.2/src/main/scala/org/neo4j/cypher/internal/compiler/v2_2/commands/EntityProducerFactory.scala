@@ -155,7 +155,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         val search: (Any) => GenTraversableOnce[Node] = if (read)
           state.query.exactIndexSearch(index, _)
         else
-          state.query.exactUniqueIndexSearch(index, _)
+          state.query.lockingIndexSearch(index, _)
 
         indexQuery(expression, m, state, search, labelName, propertyName)
       }
