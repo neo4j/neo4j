@@ -134,7 +134,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
     mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
+  def lockingIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
