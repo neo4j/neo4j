@@ -19,22 +19,62 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.File;
-import java.io.IOException;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import java.io.File;
+import java.nio.ByteBuffer;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class NaiveDurableRaftLogTest extends RaftLogTest
+public class NaiveDurableRaftLogTest
 {
-    @Override
-    public RaftLog createRaftLog() throws IOException
+    @Test
+    public void shouldCallWriteAllWhenStoringEntries() throws Exception
     {
-        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
-        fileSystem.mkdir( directory );
+        // Given
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+        StoreFileChannel entriesChannel = mock( StoreFileChannel.class );
+        StoreFileChannel contentChannel = mock( StoreFileChannel.class );
+        StoreFileChannel commitChannel = mock( StoreFileChannel.class );
 
-        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(), new Monitors() );
+        File directory = new File(".");
+
+        File entriesFile = new File( directory, "entries.log");
+        File contentFile = new File( directory, "content.log");
+        File commitFile = new File( directory, "commit.log");
+
+        when( fsa.open( Matchers.eq( entriesFile ), anyString() ) ).thenReturn( entriesChannel );
+        when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
+        when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
+
+        NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(), new Monitors() );
+
+        // When
+        log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
+
+        // Then
+        verify( entriesChannel ).writeAll( any( ByteBuffer.class ), anyInt()  );
+        verify( entriesChannel ).force( anyBoolean() );
+        verify( contentChannel, times( 2 ) ).writeAll( any( ByteBuffer.class ), anyInt()  );
+        verify( contentChannel ).force( anyBoolean() );
+
+        // When
+        log.commit( 2 );
+
+        // Then
+        verify( commitChannel ).writeAll( any( ByteBuffer.class ), anyInt()  );
+        verify( commitChannel ).force( anyBoolean() );
     }
 }

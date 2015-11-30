@@ -17,14 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.log;
 
-import org.neo4j.coreedge.server.CoreMember;
+import java.io.File;
+import java.io.IOException;
 
-public class InMemoryVoteStoreTest extends VoteStoreTest
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
+
+public class NaiveDurableRaftLogContractTest extends RaftLogContractTest
 {
-    @Override public VoteStore<CoreMember> createVoteStore()
+    @Override
+    public RaftLog createRaftLog() throws IOException
     {
-        return new InMemoryVoteStore<>();
+        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File directory = new File( "raft-log" );
+        fileSystem.mkdir( directory );
+
+        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(), new Monitors() );
     }
 }

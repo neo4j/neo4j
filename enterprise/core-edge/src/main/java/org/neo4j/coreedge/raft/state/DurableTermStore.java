@@ -67,7 +67,7 @@ public class DurableTermStore implements TermStore
             buffer.putLong( newTerm );
             buffer.flip();
 
-            channel.write( buffer, 0 );
+            channel.writeAll( buffer, 0 );
             channel.force( false );
         }
         catch ( IOException e )

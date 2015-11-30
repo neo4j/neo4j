@@ -71,7 +71,7 @@ public class DurableVoteStore implements VoteStore<CoreMember>
                 CoreMemberMarshal.serialize( votedFor, byteBuf );
                 ByteBuffer buffer = byteBuf.nioBuffer();
 
-                channel.write( buffer, 0 );
+                channel.writeAll( buffer, 0 );
             }
             channel.force( false );
         }
