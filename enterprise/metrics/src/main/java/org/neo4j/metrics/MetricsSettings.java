@@ -23,12 +23,10 @@ import java.io.File;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Obsoleted;
 
-import static org.neo4j.helpers.Settings.basePath;
 import static org.neo4j.helpers.Settings.setting;
 
 /**
@@ -103,8 +101,8 @@ public class MetricsSettings
                   "the path to an individual CSV file, that have each of the reported metrics fields as columns, or " +
                   "it is a path to a directory wherein a CSV file per reported field will be written. Relative paths " +
                   "will be intepreted relative to the configured Neo4j store directory." )
-    public static Setting<File> csvPath = setting(
-            "metrics.csv.path", Settings.PATH, "metrics.csv" , basePath( GraphDatabaseSettings.store_dir ) );
+    public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, Settings.NO_DEFAULT );
+
     @Deprecated
     @Obsoleted( "This setting will be removed in the next major release." )
     @Description( "Write to a single CSV file or to multiple files. " +

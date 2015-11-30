@@ -29,10 +29,12 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.metrics.MetricsSettings;
 
+import static org.neo4j.kernel.configuration.Config.absoluteFileOrRelativeTo;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvInterval;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
@@ -42,14 +44,16 @@ public class CsvOutput extends LifecycleAdapter
     private final Config config;
     private final MetricRegistry registry;
     private final Log logger;
+    private final KernelContext kernelContext;
     private ScheduledReporter csvReporter;
     private File outputFile;
 
-    public CsvOutput( Config config, MetricRegistry registry, Log logger )
+    public CsvOutput( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext )
     {
         this.config = config;
         this.registry = registry;
         this.logger = logger;
+        this.kernelContext = kernelContext;
     }
 
     @Override
@@ -58,7 +62,13 @@ public class CsvOutput extends LifecycleAdapter
         if ( config.get( csvEnabled ) )
         {
             // Setup CSV reporting
-            outputFile = config.get( csvPath );
+            File configuredPath = config.get( csvPath );
+            if ( configuredPath == null )
+            {
+                throw new IllegalArgumentException( csvPath.name() + " configuration is required since " +
+                        csvEnabled.name() + " is enabled" );
+            }
+            outputFile = absoluteFileOrRelativeTo( kernelContext.storeDir(), configuredPath );
             MetricsSettings.CsvFile csvFile = config.get( MetricsSettings.csvFile );
             switch ( csvFile )
             {
@@ -111,6 +121,7 @@ public class CsvOutput extends LifecycleAdapter
         }
     }
 
+    @Override
     public void stop() throws IOException
     {
         if ( csvReporter != null )
