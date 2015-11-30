@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.tools.dump;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -26,11 +26,18 @@ import java.nio.ByteBuffer;
 import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -42,6 +49,11 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
+/**
+ * Tool to dump content of specified store into readable format for further analysis.
+ * @param <RECORD> type of record to dump
+ * @param <STORE> type of store to dump
+ */
 public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAbstractStore & RecordStore<RECORD>>
 {
 
@@ -56,7 +68,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            Function<File, StoreFactory> createStoreFactory = new Function<File,StoreFactory>()
+            Function<File,StoreFactory> createStoreFactory = new Function<File,StoreFactory>()
             {
                 @Override
                 public StoreFactory apply( File file )
@@ -298,20 +310,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         else
         {
             out.print( record );
-            byte[] data = new byte[size];
-            try ( PageCursor pageCursor = store.storeFile.io( id / store.getRecordsPerPage(), PagedFile.PF_SHARED_LOCK ) )
-            {
-                if ( pageCursor.next() )
-                {
-                    do
-                    {
-                        pageCursor.setOffset( (int) (id % store.getRecordsPerPage() * size) );
-                        pageCursor.getBytes( data );
-                    }
-                    while ( pageCursor.shouldRetry() );
-                }
-            }
-            dumpHex( record, ByteBuffer.wrap( data ), id, size );
+            byte[] rawRecord = store.getRawRecordData( id );
+            dumpHex( record, ByteBuffer.wrap( rawRecord ), id, size );
         }
         return record.inUse();
     }

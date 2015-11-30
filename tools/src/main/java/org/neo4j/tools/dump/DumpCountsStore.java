@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
+package org.neo4j.tools.dump;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,15 +36,21 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
+/**
+ * Tool that will dump content of count store content into a simple string representation for further analysis.
+ */
 public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownKey.Visitor
 {
     public static void main( String... args ) throws IOException
@@ -71,7 +77,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             }
             else
             {
-                CountsTracker tracker = new CountsTracker(
+                VisitableCountsTracker tracker = new VisitableCountsTracker(
                         NullLogProvider.getInstance(), fs, pages, new Config(), path );
                 if ( fs.fileExists( path ) )
                 {
@@ -114,12 +120,13 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     }
 
     @Override
-    public void visitMetadata( File path, Headers headers, int entryCount )
+    public void visitMetadata( File file, Headers headers, int entryCount )
     {
-        FileVersion versionData = headers.get( FileVersion.FILE_VERSION );
-        out.printf( "Counts Store:\t%s%n", path );
-        out.printf( "\ttxId:\t%d%n", versionData.txId );
-        out.printf( "\tminor version:\t%d%n", versionData.minorVersion );
+        out.printf( "Counts Store:\t%s%n", file );
+        for ( HeaderField<?> headerField : headers.fields() )
+        {
+            out.printf( "%s:\t%s%n", headerField.toString(), headers.get( headerField ) );
+        }
         out.printf( "\tentries:\t%d%n", entryCount );
         out.println( "Entries:" );
     }
@@ -219,6 +226,22 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         try ( TokenStore<?, TOKEN> tokens = store )
         {
             return tokens.getTokens( Integer.MAX_VALUE );
+        }
+    }
+
+    private static class VisitableCountsTracker extends CountsTracker
+    {
+
+        public VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
+                PageCache pages, Config config, File baseFile )
+        {
+            super( logProvider, fs, pages, config, baseFile );
+        }
+
+        @Override
+        public void visitFile( File path, CountsVisitor visitor ) throws IOException
+        {
+            super.visitFile( path, visitor );
         }
     }
 }

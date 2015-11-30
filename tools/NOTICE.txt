@@ -32,6 +32,7 @@ Apache Software License, Version 2.0
   opencsv
   parboiled-core
   parboiled-scala
+  The Netty Project
 
 BSD - Scala License
   Scala Library
