@@ -181,8 +181,9 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> store_interval_log_rotation_wait_time =
             setting( "store.interval.log.rotation", DURATION, "10m" );
 
-    @Description( "Minimum time (in seconds) after last rotation of the internal log before it may be rotated again." )
-    public static final Setting<Integer> store_internal_log_rotation_delay = setting("store.internal_log.rotation_threshold", INTEGER, "300", min(0), max( Integer.MAX_VALUE ) );
+    @Description( "Minimum time interval after last rotation of the internal log before it may be rotated again." )
+    public static final Setting<Long> store_internal_log_rotation_delay =
+            setting("store.internal_log.rotation_delay", DURATION, "300s" );
 
     @Description( "Maximum number of history files for the internal log." )
     public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
