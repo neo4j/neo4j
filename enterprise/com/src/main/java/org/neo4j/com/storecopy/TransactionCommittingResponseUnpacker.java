@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.Access;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
@@ -161,7 +162,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             return supplier.get();
         }
-        catch ( IllegalArgumentException e )
+        catch ( UnsatisfiedDependencyException e )
         {
             return new TransactionObligationFulfiller()
             {

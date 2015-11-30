@@ -27,6 +27,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -49,7 +50,7 @@ public class MetricsExtension implements Lifecycle
     private final CheckPointerMonitor checkPointerMonitor;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogRotationMonitor logRotationMonitor;
-
+    private final KernelContext kernelContext;
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
@@ -62,6 +63,7 @@ public class MetricsExtension implements Lifecycle
         checkPointerMonitor = dependencies.checkPointerCounters();
         logRotationMonitor = dependencies.logRotationCounters();
         idGeneratorFactory = dependencies.idGeneratorFactory();
+        kernelContext = dependencies.kernelContext();
     }
 
     @Override
@@ -77,7 +79,7 @@ public class MetricsExtension implements Lifecycle
         // Setup output
         String prefix = computePrefix( configuration );
 
-        life.add( new CsvOutput( configuration, registry, logger ) );
+        life.add( new CsvOutput( configuration, registry, logger, kernelContext ) );
         life.add( new GraphiteOutput( configuration, registry, logger, prefix ) );
         life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
 
