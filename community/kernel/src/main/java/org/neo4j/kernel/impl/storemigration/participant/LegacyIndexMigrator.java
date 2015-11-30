@@ -73,8 +73,8 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
             case Legacy21Store.LEGACY_VERSION:
             case Legacy20Store.LEGACY_VERSION:
             case Legacy19Store.LEGACY_VERSION:
-                originalLegacyIndexesRoot = indexImplementation.getStoreDirectory( storeDir );
-                migrationLegacyIndexesRoot = indexImplementation.getStoreDirectory( migrationDir );
+                originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
+                migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
                 migrateLegacyIndexes();
                 legacyIndexMigrated = true;
                 break;

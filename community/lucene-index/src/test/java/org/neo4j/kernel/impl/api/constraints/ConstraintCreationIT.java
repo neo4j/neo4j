@@ -77,7 +77,7 @@ public class ConstraintCreationIT
 
         SchemaIndexProvider schemaIndexProvider =
                 db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
-        File schemaStorePath = schemaIndexProvider.getStoreDirectory( new File( db.getStoreDir() ) );
+        File schemaStorePath = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
 
         String indexId = "1";
         File[] files = new File(schemaStorePath, indexId ).listFiles();

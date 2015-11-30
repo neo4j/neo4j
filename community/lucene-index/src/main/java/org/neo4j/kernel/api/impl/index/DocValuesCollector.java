@@ -54,7 +54,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.lucene.legacy.AbstractIndexHits;
+import org.neo4j.index.impl.lucene.legacy.AbstractIndexHits;
+import org.neo4j.index.impl.lucene.legacy.EmptyIndexHits;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every
@@ -66,6 +67,7 @@ import org.neo4j.index.lucene.legacy.AbstractIndexHits;
  */
 public class DocValuesCollector extends SimpleCollector
 {
+    private static final EmptyIndexHits<Document> EMPTY_INDEX_HITS = new EmptyIndexHits<>();
 
     private LeafReaderContext context;
     private int segmentHits;
@@ -137,26 +139,7 @@ public class DocValuesCollector extends SimpleCollector
         int size = getTotalHits();
         if ( size == 0 )
         {
-            return new AbstractIndexHits<Document>()
-            {
-                @Override
-                public int size()
-                {
-                    return 0;
-                }
-
-                @Override
-                public float currentScore()
-                {
-                    return Float.NaN;
-                }
-
-                @Override
-                protected Document fetchNextOrNull()
-                {
-                    return null;
-                }
-            };
+            return EMPTY_INDEX_HITS;
         }
 
         if ( sort == null || sort == Sort.INDEXORDER )
@@ -313,18 +296,18 @@ public class DocValuesCollector extends SimpleCollector
         {
             LeafCollector leafCollector = collector.getLeafCollector( docs.context );
             Scorer scorer;
-            DocIdSetIterator disi = docs.docIdSet.iterator();
+            DocIdSetIterator idIterator = docs.docIdSet.iterator();
             if ( isKeepScores() )
             {
                 scorer = new ReplayingScorer( docs.scores );
             }
             else
             {
-                scorer = new ConstantScoreScorer( null, Float.NaN, disi );
+                scorer = new ConstantScoreScorer( null, Float.NaN, idIterator );
             }
             leafCollector.setScorer( scorer );
             int doc;
-            while ( (doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS )
+            while ( (doc = idIterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS )
             {
                 leafCollector.collect( doc );
             }
@@ -347,7 +330,7 @@ public class DocValuesCollector extends SimpleCollector
         private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
         private final String field;
         private final int size;
-        private DocIdSetIterator currentDisi;
+        private DocIdSetIterator currentIdIterator;
         private NumericDocValues currentDocValues;
         private DocValuesCollector.MatchingDocs currentDocs;
         private final Map<String,NumericDocValues> docValuesCache;
@@ -388,13 +371,13 @@ public class DocValuesCollector extends SimpleCollector
             {
                 if ( docValuesCache.containsKey( field ) )
                 {
-                    return docValuesCache.get( field ).get( currentDisi.docID() );
+                    return docValuesCache.get( field ).get( currentIdIterator.docID() );
                 }
 
                 NumericDocValues docValues = currentDocs.readDocValues( field );
                 docValuesCache.put( field, docValues );
 
-                return docValues.get( currentDisi.docID() );
+                return docValues.get( currentIdIterator.docID() );
             }
             else
             {
@@ -412,7 +395,7 @@ public class DocValuesCollector extends SimpleCollector
             {
                 if ( ensureValidDisi() )
                 {
-                    int nextDoc = currentDisi.nextDoc();
+                    int nextDoc = currentIdIterator.nextDoc();
                     if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
                     {
                         index++;
@@ -420,7 +403,7 @@ public class DocValuesCollector extends SimpleCollector
                     }
                     else
                     {
-                        currentDisi = null;
+                        currentIdIterator = null;
                         return fetchNext();
                     }
                 }
@@ -440,13 +423,13 @@ public class DocValuesCollector extends SimpleCollector
         {
             try
             {
-                while ( currentDisi == null )
+                while ( currentIdIterator == null )
                 {
                     if ( matchingDocs.hasNext() )
                     {
                         currentDocs = matchingDocs.next();
-                        currentDisi = currentDocs.docIdSet.iterator();
-                        if ( currentDisi != null )
+                        currentIdIterator = currentDocs.docIdSet.iterator();
+                        if ( currentIdIterator != null )
                         {
                             docValuesCache.clear();
                             currentDocValues = currentDocs.readDocValues( field );
@@ -469,7 +452,7 @@ public class DocValuesCollector extends SimpleCollector
     /**
      * Holds the documents that were matched per segment.
      */
-    public static final class MatchingDocs
+    static final class MatchingDocs
     {
 
         /** The {@code LeafReaderContext} for this segment. */
@@ -606,7 +589,7 @@ public class DocValuesCollector extends SimpleCollector
         private final Iterator<MatchingDocs> docs;
         private final int size;
         private final boolean keepScores;
-        private DocIdSetIterator currentDisi;
+        private DocIdSetIterator currentIdIterator;
         private Scorer currentScorer;
         private LeafReader currentReader;
 
@@ -642,10 +625,10 @@ public class DocValuesCollector extends SimpleCollector
             {
                 try
                 {
-                    int doc = currentDisi.nextDoc();
+                    int doc = currentIdIterator.nextDoc();
                     if ( doc == DocIdSetIterator.NO_MORE_DOCS )
                     {
-                        currentDisi = null;
+                        currentIdIterator = null;
                         currentScorer = null;
                         currentReader = null;
                         return fetchNextOrNull();
@@ -665,19 +648,19 @@ public class DocValuesCollector extends SimpleCollector
 
         private boolean ensureValidDisi()
         {
-            while ( currentDisi == null && docs.hasNext() )
+            while ( currentIdIterator == null && docs.hasNext() )
             {
                 MatchingDocs matchingDocs = docs.next();
                 try
                 {
-                    currentDisi = matchingDocs.docIdSet.iterator();
+                    currentIdIterator = matchingDocs.docIdSet.iterator();
                     if ( keepScores )
                     {
                         currentScorer = new ReplayingScorer( matchingDocs.scores );
                     }
                     else
                     {
-                        currentScorer = new ConstantScoreScorer( null, Float.NaN, currentDisi );
+                        currentScorer = new ConstantScoreScorer( null, Float.NaN, currentIdIterator );
                     }
                     currentReader = matchingDocs.context.reader();
                 }
@@ -686,7 +669,7 @@ public class DocValuesCollector extends SimpleCollector
                     throw new RuntimeException( e );
                 }
             }
-            return currentDisi != null;
+            return currentIdIterator != null;
         }
     }
 

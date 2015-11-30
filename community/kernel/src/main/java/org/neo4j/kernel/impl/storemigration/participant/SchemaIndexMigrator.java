@@ -66,7 +66,7 @@ public class SchemaIndexMigrator extends BaseStoreMigrationParticipant
         case Legacy21Store.LEGACY_VERSION:
         case Legacy22Store.LEGACY_VERSION:
         case Legacy23Store.LEGACY_VERSION:
-            schemaIndexDirectory = schemaIndexProvider.getStoreDirectory( storeDir );
+            schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
             labelIndexDirectory = labelScanStoreProvider.getStoreDirectory( storeDir );
             deleteObsoleteIndexes = true;
             break;

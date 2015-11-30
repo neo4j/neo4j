@@ -22,21 +22,21 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 
-import org.neo4j.helpers.Settings;
-import org.neo4j.index.lucene.legacy.LuceneDataSource;
-import org.neo4j.index.lucene.legacy.MultipleBackupDeletionPolicy;
+import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.impl.lucene.legacy.MultipleBackupDeletionPolicy;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 public final class IndexWriterFactories
 {
 
     private static final int MAX_BUFFERED_DOCS =
-            Integer.getInteger( "org.neo4j.lucene.writer.max_buffered_docs", 100000 );
+            FeatureToggles.getInteger( IndexWriterFactories.class, "max_buffered_docs", 100000 );
     private static final int MERGE_POLICY_MERGE_FACTOR =
-            Integer.getInteger( "org.neo4j.lucene.merge.policy.factor", 2 );
+            FeatureToggles.getInteger( IndexWriterFactories.class, "merge.factor", 2 );
     private static final double MERGE_POLICY_NO_CFS_RATIO =
-            Settings.getDouble( "org.neo4j.lucene.merge.policy.nocfs.ratio.", 1.0 );
+            FeatureToggles.getDouble( IndexWriterFactories.class, "nocfs.ratio.", 1.0 );
     private static final double MERGE_POLICY_MIN_MERGE_MB =
-            Settings.getDouble( "org.neo4j.lucene.merge.policy.min.merge", 0.1 );
+            FeatureToggles.getDouble( IndexWriterFactories.class, "min.merge", 0.1 );
 
     private IndexWriterFactories()
     {

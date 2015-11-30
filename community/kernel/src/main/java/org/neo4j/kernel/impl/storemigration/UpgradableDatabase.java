@@ -112,7 +112,7 @@ public class UpgradableDatabase
             throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
                     getPathToStoreFile( storeDirectory, result ), Legacy23Store.LEGACY_VERSION, result.actualVersion );
         case storeNotCleanlyShutDown:
-            throw new StoreUpgrader.DatabaseNotCleanlyShutDown();
+            throw new StoreUpgrader.DatabaseNotCleanlyShutDownException();
         default:
             throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }

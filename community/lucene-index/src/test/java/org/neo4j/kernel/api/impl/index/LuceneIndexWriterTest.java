@@ -33,7 +33,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
+import static org.neo4j.index.impl.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class LuceneIndexWriterTest
 {

@@ -832,23 +832,6 @@ public final class Settings
         };
     }
 
-    public static double getDouble(String propertyName, double defaultValue)
-    {
-        try
-        {
-            String property = System.getProperty( propertyName );
-            if ( StringUtils.isNotEmpty( property ) )
-            {
-                return Double.parseDouble( property );
-            }
-        }
-        catch ( Exception e )
-        {
-        }
-        return defaultValue;
-    }
-
-
     private Settings()
     {
     }

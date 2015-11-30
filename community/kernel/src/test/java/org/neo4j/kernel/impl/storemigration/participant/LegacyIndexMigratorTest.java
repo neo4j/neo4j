@@ -29,8 +29,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.Log;
@@ -113,8 +111,8 @@ public class LegacyIndexMigratorTest
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
         indexProviders.put( "lucene", indexImplementation );
 
-        when( indexImplementation.getStoreDirectory( storeDir ) ).thenReturn( originalIndexStore );
-        when( indexImplementation.getStoreDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
+        when( indexImplementation.getIndexImplementationDirectory( storeDir ) ).thenReturn( originalIndexStore );
+        when( indexImplementation.getIndexImplementationDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
         return indexProviders;
     }
 

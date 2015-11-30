@@ -331,8 +331,5 @@ public class MigrationTestUtils
         LogPosition logPosition = latestCheckPoint.checkPoint.getLogPosition();
         File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
         fileSystem.truncate( logFile, logPosition.getByteOffset() );
-//
-//        // do it again in case there are multiple checkpoints at the end of the tx log
-//        removeCheckPointFromTxLog( fileSystem, workingDirectory );
     }
 }

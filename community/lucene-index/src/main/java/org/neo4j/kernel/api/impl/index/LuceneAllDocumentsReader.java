@@ -63,14 +63,14 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
     {
         return new PrefetchingIterator<Document>()
         {
-            private DocIdSetIterator disi = iterateAllDocs();
+            private DocIdSetIterator idIterator = iterateAllDocs();
 
             @Override
             protected Document fetchNextOrNull()
             {
                 try
                 {
-                    int doc = disi.nextDoc();
+                    int doc = idIterator.nextDoc();
                     if ( doc == DocIdSetIterator.NO_MORE_DOCS )
                     {
                         return null;

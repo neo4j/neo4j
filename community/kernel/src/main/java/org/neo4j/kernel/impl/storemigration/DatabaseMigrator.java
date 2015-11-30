@@ -44,14 +44,14 @@ import org.neo4j.logging.LogProvider;
  */
 public class DatabaseMigrator
 {
-    private MigrationProgressMonitor progressMonitor;
-    private FileSystemAbstraction fs;
-    private Config config;
-    private LogService logService;
-    private SchemaIndexProvider schemaIndexProvider;
-    private LabelScanStoreProvider labelScanStoreProvider;
-    private Map<String,IndexImplementation> indexProviders;
-    private PageCache pageCache;
+    private final MigrationProgressMonitor progressMonitor;
+    private final FileSystemAbstraction fs;
+    private final Config config;
+    private final LogService logService;
+    private final SchemaIndexProvider schemaIndexProvider;
+    private final LabelScanStoreProvider labelScanStoreProvider;
+    private final Map<String,IndexImplementation> indexProviders;
+    private final PageCache pageCache;
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,

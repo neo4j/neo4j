@@ -56,7 +56,7 @@ public class SchemaIndexMigratorTest
 
         migrator.moveMigratedFiles( migrationDir, storeDir, Legacy23Store.LEGACY_VERSION );
 
-        verify( fs ).deleteRecursively( schemaIndexProvider.getStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
         verify( fs ).deleteRecursively( labelScanStoreProvider.getStoreDirectory( storeDir ) );
     }
 }

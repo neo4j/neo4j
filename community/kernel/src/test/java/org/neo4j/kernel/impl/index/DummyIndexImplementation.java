@@ -189,7 +189,7 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     }
 
     @Override
-    public File getStoreDirectory( File storeDir )
+    public File getIndexImplementationDirectory( File storeDir )
     {
         return storeDir;
     }

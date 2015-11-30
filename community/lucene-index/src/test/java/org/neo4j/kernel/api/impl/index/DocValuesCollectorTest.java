@@ -75,12 +75,12 @@ public final class DocValuesCollectorTest
         DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.get( 0 );
         assertSame( readerStub.getContext(), matchingDocs.context );
         assertEquals( 4, matchingDocs.totalHits );
-        DocIdSetIterator disi = matchingDocs.docIdSet.iterator();
-        assertEquals( 1, disi.nextDoc() );
-        assertEquals( 3, disi.nextDoc() );
-        assertEquals( 5, disi.nextDoc() );
-        assertEquals( 9, disi.nextDoc() );
-        assertEquals( DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc() );
+        DocIdSetIterator idIterator = matchingDocs.docIdSet.iterator();
+        assertEquals( 1, idIterator.nextDoc() );
+        assertEquals( 3, idIterator.nextDoc() );
+        assertEquals( 5, idIterator.nextDoc() );
+        assertEquals( 9, idIterator.nextDoc() );
+        assertEquals( DocIdSetIterator.NO_MORE_DOCS, idIterator.nextDoc() );
     }
 
     @Test
@@ -106,18 +106,18 @@ public final class DocValuesCollectorTest
         DocValuesCollector.MatchingDocs matchingDocs = allMatchingDocs.get( 0 );
         assertSame( readerStub.getContext(), matchingDocs.context );
         assertEquals( 2, matchingDocs.totalHits );
-        DocIdSetIterator disi = matchingDocs.docIdSet.iterator();
-        assertEquals( 1, disi.nextDoc() );
-        assertEquals( 3, disi.nextDoc() );
-        assertEquals( DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc() );
+        DocIdSetIterator idIterator = matchingDocs.docIdSet.iterator();
+        assertEquals( 1, idIterator.nextDoc() );
+        assertEquals( 3, idIterator.nextDoc() );
+        assertEquals( DocIdSetIterator.NO_MORE_DOCS, idIterator.nextDoc() );
 
         matchingDocs = allMatchingDocs.get( 1 );
         assertSame( readerStub.getContext(), matchingDocs.context );
         assertEquals( 2, matchingDocs.totalHits );
-        disi = matchingDocs.docIdSet.iterator();
-        assertEquals( 5, disi.nextDoc() );
-        assertEquals( 9, disi.nextDoc() );
-        assertEquals( DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc() );
+        idIterator = matchingDocs.docIdSet.iterator();
+        assertEquals( 5, idIterator.nextDoc() );
+        assertEquals( 9, idIterator.nextDoc() );
+        assertEquals( DocIdSetIterator.NO_MORE_DOCS, idIterator.nextDoc() );
     }
 
     @Test

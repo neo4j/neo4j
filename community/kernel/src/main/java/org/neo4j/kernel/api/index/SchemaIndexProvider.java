@@ -210,7 +210,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return result;
     }
 
-    public File getStoreDirectory( File storeDir )
+    /**
+     * Get schema index store root directory in specified store.
+     * @param storeDir store root directory
+     * @return shema index store root directory
+     */
+    public File getSchemaIndexStoreDirectory( File storeDir )
     {
         return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }

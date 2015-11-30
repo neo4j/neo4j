@@ -57,7 +57,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        File rootDirectory = getStoreDirectory( storeDir );
+        File rootDirectory = getSchemaIndexStoreDirectory( storeDir );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }
