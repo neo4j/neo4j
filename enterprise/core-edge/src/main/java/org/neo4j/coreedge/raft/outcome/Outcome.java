@@ -20,54 +20,144 @@
 package org.neo4j.coreedge.raft.outcome;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.FollowerStates;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
+/**
+ * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
+ * and responds to RAFT messages in the context of a supplied state. The outcome is later consumed
+ * to update the state and do operations embedded as commands within the outcome.
+ *
+ * A state update could be to change role, change term, etc.
+ * A command could be to append to the RAFT log, tell the log shipper that there was a mismatch, etc.
+ */
 public class Outcome<MEMBER> implements Serializable
 {
-    public final Role newRole;
-    public final long newTerm;
-    public final MEMBER leader;
-    public final long leaderCommit;
-    public final MEMBER votedFor;
-    public final Set<MEMBER> votesForMe;
-    public final long lastLogIndexBeforeWeBecameLeader;
-    public final FollowerStates<MEMBER> followerStates;
-    public final boolean renewElectionTimeout;
-    public final Iterable<LogCommand> logCommands;
-    public final Iterable<ShipCommand> shipCommands;
-    public final Collection<RaftMessages.Directed<MEMBER>> outgoingMessages;
+    /* Common */
+    public Role newRole;
 
-    public Outcome(Role newRole, long newTerm, MEMBER leader, long leaderCommit, MEMBER votedFor,
-                   Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
-                   FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
-                   Iterable<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
-                   Iterable<ShipCommand> shipCommands )
+    public long term;
+    public MEMBER leader;
+
+    public long leaderCommit;
+
+    public ArrayList<LogCommand> logCommands = new ArrayList<>();
+    public ArrayList<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
+
+    /* Follower */
+    public MEMBER votedFor;
+    public boolean renewElectionTimeout;
+
+    /* Candidate */
+    public HashSet<MEMBER> votesForMe;
+    public long lastLogIndexBeforeWeBecameLeader;
+
+    /* Leader */
+    public FollowerStates<MEMBER> followerStates;
+    public ArrayList<ShipCommand> shipCommands = new ArrayList<>();
+
+    public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
+    {
+        defaults( currentRole, ctx );
+    }
+
+    public Outcome( Role newRole, long term, MEMBER leader, long leaderCommit, MEMBER votedFor,
+            Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
+            FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
+            Collection<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
+            Collection<ShipCommand> shipCommands )
     {
         this.newRole = newRole;
-        this.newTerm = newTerm;
+        this.term = term;
         this.leader = leader;
         this.leaderCommit = leaderCommit;
         this.votedFor = votedFor;
-        this.votesForMe = votesForMe;
+        this.votesForMe = new HashSet<>( votesForMe );
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
         this.followerStates = followerStates;
         this.renewElectionTimeout = renewElectionTimeout;
-        this.logCommands = logCommands;
-        this.outgoingMessages = outgoingMessages;
-        this.shipCommands = shipCommands;
+
+        this.logCommands.addAll( logCommands );
+        this.outgoingMessages.addAll( outgoingMessages );
+        this.shipCommands.addAll( shipCommands );
+    }
+
+    private void defaults( Role currentRole, ReadableRaftState<MEMBER> ctx )
+    {
+        newRole = currentRole;
+
+        term = ctx.term();
+        leader = ctx.leader();
+
+        leaderCommit = ctx.leaderCommit();
+
+        votedFor = ctx.votedFor();
+        renewElectionTimeout = false;
+
+        votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
+
+        lastLogIndexBeforeWeBecameLeader = (currentRole == Role.LEADER) ? ctx.lastLogIndexBeforeWeBecameLeader() : -1;
+        followerStates = (currentRole == Role.LEADER) ? ctx.followerStates() : new FollowerStates<>();
+    }
+
+    public void setNextRole( Role nextRole )
+    {
+        this.newRole = nextRole;
+    }
+
+    public void setNextTerm( long nextTerm )
+    {
+        this.term = nextTerm;
+    }
+
+    public void setLeader( MEMBER leader )
+    {
+        this.leader = leader;
+    }
+
+    public void setLeaderCommit( long leaderCommit )
+    {
+        this.leaderCommit = leaderCommit;
+    }
+
+    public void addLogCommand( LogCommand logCommand )
+    {
+        this.logCommands.add( logCommand );
+    }
+
+    public void addOutgoingMessage( RaftMessages.Directed<MEMBER> message )
+    {
+        this.outgoingMessages.add( message );
+    }
+
+    public void setVotedFor( MEMBER votedFor )
+    {
+        this.votedFor = votedFor;
+    }
+
+    public void renewElectionTimeout()
+    {
+        this.renewElectionTimeout = true;
+    }
+
+    public void addVoteForMe( MEMBER voteFrom )
+    {
+        this.votesForMe.add( voteFrom );
     }
 
     @Override
     public String toString()
     {
         return "Outcome{" +
-               "newRole=" + newRole +
-               ", newTerm=" + newTerm +
+               "nextRole=" + newRole +
+               ", newTerm=" + term +
                ", leader=" + leader +
                ", leaderCommit=" + leaderCommit +
                ", logCommands=" + logCommands +
@@ -79,5 +169,15 @@ public class Outcome<MEMBER> implements Serializable
                ", renewElectionTimeout=" + renewElectionTimeout +
                ", outgoingMessages=" + outgoingMessages +
                '}';
+    }
+
+    public void setLastLogIndexBeforeWeBecameLeader( long lastLogIndexBeforeWeBecameLeader )
+    {
+        this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
+    }
+
+    public void addShipCommand( ShipCommand shipCommand )
+    {
+        shipCommands.add( shipCommand );
     }
 }

@@ -132,7 +132,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
 
     public void update( Outcome<RaftTestMember> outcome ) throws RaftStorageException
     {
-        term = outcome.newTerm;
+        term = outcome.term;
         votedFor = outcome.votedFor;
         leader = outcome.leader;
         votesForMe = outcome.votesForMe;

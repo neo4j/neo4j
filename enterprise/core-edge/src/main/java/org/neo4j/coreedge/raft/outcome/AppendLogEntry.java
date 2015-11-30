@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
+import java.util.Objects;
+
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
@@ -43,6 +45,24 @@ public class AppendLogEntry implements LogCommand
         }
 
         raftLog.append( entry );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        AppendLogEntry that = (AppendLogEntry) o;
+        return index == that.index &&
+               Objects.equals( entry, that.entry );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( index, entry );
     }
 
     @Override

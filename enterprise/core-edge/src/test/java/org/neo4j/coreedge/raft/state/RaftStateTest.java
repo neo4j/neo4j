@@ -40,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
 public class RaftStateTest
 {
@@ -72,9 +71,9 @@ public class RaftStateTest
         return new FollowerStates<>( new FollowerStates<>(), new RaftTestMember( 1 ), new FollowerState() );
     }
 
-    private Iterable<LogCommand> emptyLogCommands()
+    private Collection<LogCommand> emptyLogCommands()
     {
-        return asIterable( Collections.<LogCommand>emptyIterator() );
+        return Collections.emptyList();
     }
 
     private class FakeMembership implements RaftMembership<RaftTestMember>

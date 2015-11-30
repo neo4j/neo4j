@@ -79,7 +79,7 @@ public class CandidateTest
 
         // then
         assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( HIGHEST_TERM, outcome.newTerm );
+        assertEquals( HIGHEST_TERM, outcome.term );
     }
 
     @Test

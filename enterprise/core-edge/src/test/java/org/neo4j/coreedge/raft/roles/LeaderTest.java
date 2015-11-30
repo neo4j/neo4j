@@ -101,7 +101,7 @@ public class LeaderTest
 
         // then
         assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( HIGHEST_TERM, outcome.newTerm );
+        assertEquals( HIGHEST_TERM, outcome.term );
     }
 
     @Test
@@ -125,7 +125,7 @@ public class LeaderTest
         assertEquals( message, messageFor( outcome, myself ) );
         assertEquals( FOLLOWER, outcome.newRole );
         assertEquals( 0, count( outcome.logCommands ) );
-        assertEquals( state.term() + 1, outcome.newTerm );
+        assertEquals( state.term() + 1, outcome.term );
     }
 
     @Test
@@ -389,7 +389,7 @@ public class LeaderTest
         assertEquals( 0, count( outcome.outgoingMessages ) );
         assertEquals( FOLLOWER, outcome.newRole );
         assertEquals( 0, count( outcome.logCommands ) );
-        assertEquals( state.term() + 1, outcome.newTerm );
+        assertEquals( state.term() + 1, outcome.term );
     }
 
     // TODO: test that shows we don't commit for previous terms
