@@ -85,4 +85,23 @@ public class DurableTermStoreTest
         // Then
         assertEquals( 0, store.currentTerm() );
     }
+
+    @Test
+    public void shouldForceAndCloseOnShutdown() throws Throwable
+    {
+        // Given
+        StoreFileChannel channel = mock( StoreFileChannel.class );
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+
+        DurableTermStore store = new DurableTermStore( fsa, new File("") );
+
+        // When
+        // We shut it down
+        store.shutdown();
+
+        // Then
+        verify( channel ).force( false );
+        verify( channel ).close();
+    }
 }

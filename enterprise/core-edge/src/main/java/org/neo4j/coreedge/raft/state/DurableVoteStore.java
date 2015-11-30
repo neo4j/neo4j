@@ -31,8 +31,9 @@ import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class DurableVoteStore implements VoteStore<CoreMember>
+public class DurableVoteStore extends LifecycleAdapter implements VoteStore<CoreMember>
 {
     private final StoreChannel channel;
     private CoreMember votedFor;
@@ -48,6 +49,13 @@ public class DurableVoteStore implements VoteStore<CoreMember>
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        channel.force( false );
+        channel.close();
     }
 
     @Override

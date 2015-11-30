@@ -32,6 +32,7 @@ import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.Serializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -62,7 +63,7 @@ import org.neo4j.kernel.monitoring.Monitors;
  * │record length         8 bytes│
  * └─────────────────────────────┘
  */
-public class NaiveDurableRaftLog implements RaftLog
+public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 {
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
@@ -103,7 +104,43 @@ public class NaiveDurableRaftLog implements RaftLog
         {
             throw new RuntimeException( e );
         }
+    }
 
+    @Override
+    public void shutdown() throws Throwable
+    {
+        Exception container = new Exception("Exception happened during shutdown of RaftLog. See suppressed exceptions for details");
+        boolean shouldThrow = false;
+        shouldThrow = forceAndCloseChannel( entriesChannel, container ) || shouldThrow;
+        shouldThrow = forceAndCloseChannel( contentChannel, container ) || shouldThrow;
+        shouldThrow = forceAndCloseChannel( commitChannel, container ) || shouldThrow;
+        if ( shouldThrow )
+        {
+            throw container;
+        }
+    }
+
+    /**
+     * This method will try to force and close a store channel. If any of these two operations fails, the exception
+     * will be added as suppressed in the provided container. In such a case, true will be returned.
+     * @param channel The channel to close
+     * @param container The container to add supressed exceptions in the case of failure
+     * @return True iff an exception was thrown by either force() or close()
+     */
+    private boolean forceAndCloseChannel( StoreChannel channel, Exception container )
+    {
+        boolean exceptionHappened = false;
+        try
+        {
+            channel.force( false );
+            channel.close();
+        }
+        catch( Exception e )
+        {
+            exceptionHappened = true;
+            container.addSuppressed( e );
+        }
+        return exceptionHappened;
     }
 
     @Override

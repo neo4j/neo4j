@@ -176,6 +176,10 @@ public class EnterpriseCoreEditionModule
         DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
         DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
 
+        life.add( raftLog );
+        life.add( termStore );
+        life.add( voteStore );
+
         raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                 termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService );
 

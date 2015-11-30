@@ -108,4 +108,23 @@ public class DurableVoteStoreTest
         // The stored member should not be updated
         assertEquals( firstMember, store.votedFor() );
     }
+
+    @Test
+    public void shouldForceAndCloseOnShutdown() throws Throwable
+    {
+        // Given
+        StoreFileChannel channel = mock( StoreFileChannel.class );
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+        when( fsa.open( any( File.class ), anyString() ) ).thenReturn( channel );
+
+        DurableVoteStore store = new DurableVoteStore( fsa, new File("") );
+
+        // When
+        // We shut it down
+        store.shutdown();
+
+        // Then
+        verify( channel ).force( false );
+        verify( channel ).close();
+    }
 }

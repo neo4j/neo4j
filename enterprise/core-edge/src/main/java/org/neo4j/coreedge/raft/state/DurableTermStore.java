@@ -26,8 +26,9 @@ import java.nio.ByteBuffer;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class DurableTermStore implements TermStore
+public class DurableTermStore extends LifecycleAdapter implements TermStore
 {
     public static final int TERM_BYTES = 8;
 
@@ -45,6 +46,13 @@ public class DurableTermStore implements TermStore
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        channel.force( false );
+        channel.close();
     }
 
     @Override
