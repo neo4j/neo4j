@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestFileUtils
+public class FileUtilsTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
@@ -69,6 +69,19 @@ public class TestFileUtils
         assertTrue( newLocationOfFile.exists() );
         assertFalse( file.exists() );
         assertEquals( newLocationOfFile, targetDir.listFiles()[0] );
+    }
+
+    @Test
+    public void testEmptyDirectory() throws IOException
+    {
+        File emptyDir = directory( "emptyDir" );
+
+        File nonEmptyDir = directory( "nonEmptyDir" );
+        File directoryContent = new File( nonEmptyDir, "somefile" );
+        assert directoryContent.createNewFile();
+
+        assertTrue( FileUtils.isEmptyDirectory( emptyDir ) );
+        assertFalse( FileUtils.isEmptyDirectory( nonEmptyDir ) );
     }
 
     private File directory( String name ) throws IOException

@@ -46,6 +46,7 @@ import org.neo4j.upgrade.loader.JarLoaderSupplier;
 public class LuceneLegacyIndexUpgrader
 {
     private static final String LIBRARY_DIRECTORY = "lib";
+    private static final String RESOURCE_SEPARATOR = "/";
     private static final String LUCENE4_CORE_JAR_NAME = "lucene-core-4.10.4.jar";
     private static final String LUCENE5_CORE_JAR_NAME = "lucene-core-5.3.1.jar";
     private static final String LUCENE5_BACKWARD_CODECS_NAME = "lucene-backward-codecs-5.3.1.jar";
@@ -127,7 +128,7 @@ public class LuceneLegacyIndexUpgrader
 
     private static String getJarPath( String library )
     {
-        return LIBRARY_DIRECTORY + File.separator + library;
+        return LIBRARY_DIRECTORY + RESOURCE_SEPARATOR + library;
     }
 
     private static Predicate<Path> getIndexPathFilter()

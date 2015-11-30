@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -40,6 +41,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,6 +56,27 @@ public class LegacyIndexMigratorTest
     private File migrationDir = mock( File.class );
     private File originalIndexStore = mock( File.class );
     private File migratedIndexStore = new File( "." );
+
+    @Before
+    public void setUp()
+    {
+        when( fs.isDirectory( originalIndexStore ) ).thenReturn( true );
+        when( fs.listFiles( originalIndexStore ) ).thenReturn( new File[]{mock( File.class )} );
+    }
+
+    @Test
+    public void skipEmptyIndexStorageMigration() throws IOException
+    {
+        when( fs.listFiles( originalIndexStore ) ).thenReturn( null );
+
+        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
+
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+
+        verify( fs, never() ).deleteRecursively( originalIndexStore );
+        verify( fs, never() ).copyRecursively( migratedIndexStore, originalIndexStore );
+    }
 
     @Test
     public void transferOriginalDataToMigrationDirectory() throws IOException
@@ -102,7 +125,19 @@ public class LegacyIndexMigratorTest
 
         verify( log ).error( eq( "Migration of legacy indexes failed. Index: testIndex can't be migrated." ),
                 any( Throwable.class ) );
+    }
 
+    @Test
+    public void cleanupMigrationDirectory() throws IOException
+    {
+        when( fs.fileExists( migratedIndexStore ) ).thenReturn( true );
+
+        HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
+        LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
+        indexMigrator.cleanup( migrationDir );
+
+        verify( fs ).deleteRecursively( migratedIndexStore );
     }
 
     private HashMap<String,IndexImplementation> getIndexProviders()
@@ -113,6 +148,7 @@ public class LegacyIndexMigratorTest
 
         when( indexImplementation.getIndexImplementationDirectory( storeDir ) ).thenReturn( originalIndexStore );
         when( indexImplementation.getIndexImplementationDirectory( migrationDir ) ).thenReturn( migratedIndexStore );
+
         return indexProviders;
     }
 

@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicati
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -202,18 +200,7 @@ public class PropertyDeduplicator
     private boolean isIndexStorageEmpty( File storeDir ) throws IOException
     {
         File storageDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
-        return isEmptyDirectory( storageDirectory );
+        return FileUtils.isEmptyDirectory( storageDirectory );
     }
 
-    private Boolean isEmptyDirectory( File directory ) throws IOException
-    {
-        if ( directory.exists() )
-        {
-            try ( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( directory.toPath() ) )
-            {
-                return !directoryStream.iterator().hasNext();
-            }
-        }
-        return true;
-    }
 }

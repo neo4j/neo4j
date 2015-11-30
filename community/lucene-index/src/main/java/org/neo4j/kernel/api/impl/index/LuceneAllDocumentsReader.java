@@ -48,7 +48,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new LuceneIndexSearcherAcquisitionException( "Can't acquire lucene index searcher.", e );
         }
     }
 
@@ -79,7 +79,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
                 }
                 catch ( IOException e )
                 {
-                    throw new RuntimeException( e );
+                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
                 }
             }
         };
@@ -94,7 +94,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new LuceneIndexSearcherReleaseException( "Can't release index searcher: " + searcher + ".", e );
         }
     }
 
@@ -106,7 +106,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new LuceneDocumentRetrievalException("Can't retrieve document with id: " + docId + ".", docId, e );
         }
     }
 

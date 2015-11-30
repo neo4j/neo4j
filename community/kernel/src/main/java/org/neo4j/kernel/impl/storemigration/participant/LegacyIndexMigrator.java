@@ -75,8 +75,11 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
             case Legacy19Store.LEGACY_VERSION:
                 originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
                 migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
-                migrateLegacyIndexes();
-                legacyIndexMigrated = true;
+                if ( isNotEmptyDirectory( originalLegacyIndexesRoot ) )
+                {
+                    migrateLegacyIndexes();
+                    legacyIndexMigrated = true;
+                }
                 break;
             default:
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
@@ -99,6 +102,20 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
         }
     }
 
+    @Override
+    public void cleanup( File migrationDir ) throws IOException
+    {
+        if ( isIndexMigrationDirectoryExists() )
+        {
+            fileSystem.deleteRecursively( migrationLegacyIndexesRoot );
+        }
+    }
+
+    private boolean isIndexMigrationDirectoryExists()
+    {
+        return migrationLegacyIndexesRoot != null && fileSystem.fileExists( migrationLegacyIndexesRoot );
+    }
+
     private void migrateLegacyIndexes() throws IOException
     {
         try
@@ -114,6 +131,16 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
                        "migrated.", lime );
             throw new IOException( "Legacy index migration failed.", lime );
         }
+    }
+
+    private boolean isNotEmptyDirectory(File file)
+    {
+        if (fileSystem.isDirectory( file ))
+        {
+            File[] files = fileSystem.listFiles( file );
+            return files != null && files.length > 0;
+        }
+        return false;
     }
 
     LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath )

@@ -218,7 +218,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new LuceneIndexSearcherReleaseException("Can't release index searcher: " + searcherManager, e);
         }
     }
 
