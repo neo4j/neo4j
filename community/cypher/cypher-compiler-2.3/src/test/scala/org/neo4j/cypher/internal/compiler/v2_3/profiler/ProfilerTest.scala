@@ -204,7 +204,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size
     (0 until dbAccess).foreach(x => state.query.createNode())
-    (0 until rows).map(x => ExecutionContext.empty).toIterator
+    (0 until rows).map(x => ExecutionContext.empty).iterator
   }
 
   def localEffects: Effects = Effects(WritesAnyNode)

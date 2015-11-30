@@ -78,7 +78,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
       val maps = makeTraversable(singleMapExpression(context)(state))
 
-      maps.toIterator.map {
+      maps.iterator.map {
         case untyped: Map[_, _] => {
           //We want to use the same code to actually create nodes and properties as a normal expression would, so we
           //encode the incoming Map[String,Any] to a Map[String, Literal] wrapping the values.

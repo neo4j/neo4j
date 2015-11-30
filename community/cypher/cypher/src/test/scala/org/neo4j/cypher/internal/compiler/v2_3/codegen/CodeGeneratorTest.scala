@@ -1018,7 +1018,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def primitiveIterator(longs: Seq[Long]) = new PrimitiveLongIterator {
-    val inner = longs.toIterator
+    val inner = longs.iterator
 
     override def next(): Long = inner.next()
 
@@ -1033,7 +1033,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       false
     }
 
-    val inner = longs.toIterator
+    val inner = longs.iterator
 
     override def next(): Long = inner.next()
 

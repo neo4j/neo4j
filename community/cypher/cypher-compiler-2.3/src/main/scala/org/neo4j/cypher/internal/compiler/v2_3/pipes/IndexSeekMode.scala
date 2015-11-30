@@ -48,7 +48,7 @@ case object IndexSeek extends IndexSeekMode {
 case object UniqueIndexSeek extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
-    (state: QueryState) => (x: Any) => state.query.uniqueIndexSeek(descriptor, x).toIterator
+    (state: QueryState) => (x: Any) => state.query.uniqueIndexSeek(descriptor, x).iterator
 
   override def name: String = "NodeUniqueIndexSeek"
 }
