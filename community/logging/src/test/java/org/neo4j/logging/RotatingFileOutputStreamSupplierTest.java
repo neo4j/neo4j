@@ -169,7 +169,8 @@ public class RotatingFileOutputStreamSupplierTest
     public void shouldNotRotatesLogWhenSizeExceededByNotDelay() throws Exception
     {
         UpdatableLongSupplier clock = new UpdatableLongSupplier( System.currentTimeMillis() );
-        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( clock, fileSystem, logFile, 10, 60, 10, DIRECT_EXECUTOR, new RotationListener() );
+        RotatingFileOutputStreamSupplier supplier = new RotatingFileOutputStreamSupplier( clock, fileSystem, logFile,
+                10, SECONDS.toMillis( 60 ), 10, DIRECT_EXECUTOR, new RotationListener() );
         OutputStream outputStream = supplier.get();
         assertThat( fileSystem.fileExists( logFile ), is( true ) );
         assertThat( fileSystem.fileExists( archiveLogFile1 ), is( false ) );
