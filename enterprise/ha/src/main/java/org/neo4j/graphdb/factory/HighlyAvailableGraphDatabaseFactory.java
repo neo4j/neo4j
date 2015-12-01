@@ -61,6 +61,12 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
         };
     }
 
+    @Override
+    public String getEdition()
+    {
+        return "Enterprise";
+    }
+
     /**
      * @deprecated By using
      *             {@link HighlyAvailableGraphDatabaseFactory#newEmbeddedDatabase(String)}

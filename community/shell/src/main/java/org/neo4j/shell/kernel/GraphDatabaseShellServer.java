@@ -63,7 +63,14 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )
             throws RemoteException
     {
-        this( instantiateGraphDb( path, readOnly, configFileOrNull ), readOnly );
+        this( instantiateGraphDb( new GraphDatabaseFactory(), path, readOnly, configFileOrNull ), readOnly );
+        this.graphDbCreatedHere = true;
+    }
+
+    public GraphDatabaseShellServer( GraphDatabaseFactory factory, String path, boolean readOnly, String configFileOrNull )
+            throws RemoteException
+    {
+        this( instantiateGraphDb(  factory, path, readOnly, configFileOrNull ), readOnly );
         this.graphDbCreatedHere = true;
     }
 
@@ -190,10 +197,10 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    private static GraphDatabaseAPI instantiateGraphDb( String path, boolean readOnly,
-                                                        String configFileOrNull )
+    private static GraphDatabaseAPI instantiateGraphDb( GraphDatabaseFactory factory, String path, boolean readOnly,
+            String configFileOrNull )
     {
-        GraphDatabaseBuilder builder = new GraphDatabaseFactory().
+        GraphDatabaseBuilder builder = factory.
                 newEmbeddedDatabaseBuilder( path ).
                 setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
         if ( configFileOrNull != null )
