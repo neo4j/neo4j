@@ -45,7 +45,7 @@ case class ShortestPathVarLengthExpandPipe(source: Pipe,
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   // TODO: This code is copied from VarLengthExpandPipe, but should be changed to do
-  // Breadth first search, preferably bi-directional (or iterative depth first search)
+  // Breadth first search, preferably bi-directional (or iterative deepening depth first search)
   // Then remember to remove SORT from the plan since BFS already sorts!!!
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
