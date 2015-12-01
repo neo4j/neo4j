@@ -19,35 +19,28 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.coreedge.catchup.CatchupServer;
-import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.discovery.CoreDiscoveryService;
+import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.ScheduledTimeoutService;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CoreServerStartupProcess
 {
-
     public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
                                                  ReplicatedIdGeneratorFactory idGeneratorFactory,
-                                                 RaftInstance<CoreMember> raft, RaftServer<CoreMember> raftServer,
+                                                 RaftServer<CoreMember> raftServer,
                                                  CatchupServer catchupServer,
                                                  ScheduledTimeoutService raftTimeoutService,
-                                                 MembershipWaiter<CoreMember> membershipWaiter,
-                                                 long joinCatchupTimeout, DeleteStoreOnStartUp deleteStoreOnStartUp,
-                                                 RaftLogReplay raftLogReplay )
+                                                 CoreDiscoveryService coreDiscoveryService,
+                                                 RaftDiscoveryServiceConnector discoveryServiceConnector,
+                                                 DeleteStoreOnStartUp deleteStoreOnStartUp,
+                                                 RaftLogReplay raftLogReplay,
+                                                 WaitToCatchUp<CoreMember> waitToCatchup )
     {
         LifeSupport services = new LifeSupport();
         services.add( deleteStoreOnStartUp );
@@ -56,44 +49,12 @@ public class CoreServerStartupProcess
         services.add( raftLogReplay );
         services.add( raftServer );
         services.add( catchupServer );
+        services.add( coreDiscoveryService );
+        services.add( discoveryServiceConnector );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle<>(membershipWaiter, joinCatchupTimeout, raft ) );
+        services.add( waitToCatchup );
 
         return services;
-    }
-
-    private static class MembershipWaiterLifecycle<MEMBER> extends LifecycleAdapter
-    {
-        private final MembershipWaiter<MEMBER> membershipWaiter;
-        private final Long joinCatchupTimeout;
-        private final RaftInstance<MEMBER> raft;
-
-        private MembershipWaiterLifecycle( MembershipWaiter<MEMBER> membershipWaiter, Long joinCatchupTimeout, RaftInstance<MEMBER> raft )
-        {
-            this.membershipWaiter = membershipWaiter;
-            this.joinCatchupTimeout = joinCatchupTimeout;
-            this.raft = raft;
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-            CompletableFuture<Boolean> caughtUp = membershipWaiter.waitUntilCaughtUpMember( raft.state() );
-
-            try
-            {
-                caughtUp.get( joinCatchupTimeout, MILLISECONDS );
-            }
-            catch ( InterruptedException | ExecutionException | TimeoutException e )
-            {
-                throw new RuntimeException( format( "Server failed to join cluster within catchup time limit [%d ms]",
-                        joinCatchupTimeout ), e );
-            }
-            finally
-            {
-                caughtUp.cancel( true );
-            }
-        }
     }
 
 }

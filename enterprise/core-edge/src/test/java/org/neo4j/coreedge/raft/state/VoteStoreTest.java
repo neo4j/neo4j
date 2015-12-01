@@ -36,7 +36,7 @@ public abstract class VoteStoreTest
     {
         // given
         VoteStore<CoreMember> voteStore = createVoteStore();
-        CoreMember member = new CoreMember( address( "host1:1001" ), address( "host1:2001" ) );
+        CoreMember member = new CoreMember( address( "host1:0001" ), address( "host1:1001" ), address( "host1:2001" ) );
 
         // when
         voteStore.update( member );
@@ -60,8 +60,8 @@ public abstract class VoteStoreTest
     {
         // given
         VoteStore<CoreMember> voteStore = createVoteStore();
-        CoreMember member1 = new CoreMember( address( "host1:1001" ), address( "host1:2001" ) );
-        CoreMember member2 = new CoreMember( address( "host2:1001" ), address( "host2:2001" ) );
+        CoreMember member1 = new CoreMember( address( "host1:0001" ), address( "host1:1001" ), address( "host1:2001" ) );
+        CoreMember member2 = new CoreMember( address( "host2:0001" ), address( "host2:1001" ), address( "host2:2001" ) );
 
         // when
         voteStore.update( member1 );
@@ -76,7 +76,7 @@ public abstract class VoteStoreTest
     {
         // given
         VoteStore<CoreMember> voteStore = createVoteStore();
-        CoreMember member = new CoreMember( address( "host1:1001" ), address( "host1:2001" ) );
+        CoreMember member = new CoreMember( address( "host1:0001" ), address( "host1:1001" ), address( "host1:2001" ) );
         voteStore.update( member );
 
         // when

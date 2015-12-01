@@ -19,20 +19,18 @@
  */
 package org.neo4j.coreedge.raft.net.codecs;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.AdvertisedSocketAddressDecoder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
@@ -58,11 +56,11 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
         RaftMessages.Type[] values = RaftMessages.Type.values();
         RaftMessages.Type messageType = values[messageTypeWire];
 
-        CoreMember from = retrieveMember( buffer );
+        CoreMember from = CoreMemberMarshal.deserialize( buffer );
 
         if ( messageType.equals( VOTE_REQUEST ) )
         {
-            CoreMember candidate = retrieveMember( buffer );
+            CoreMember candidate = CoreMemberMarshal.deserialize( buffer );
 
             long term = buffer.readLong();
             long lastLogIndex = buffer.readLong();
@@ -130,14 +128,6 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
         {
             throw new IllegalArgumentException( "Unknown message type" );
         }
-    }
-
-    private CoreMember retrieveMember( ByteBuf buffer ) throws UnsupportedEncodingException
-    {
-        AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
-        AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
-        AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
-        return new CoreMember( coreAddress, raftAddress );
     }
 
     @Override

@@ -89,7 +89,7 @@ public class HazelcastClientLifeCycleIT
     private ListenSocketAddress hostnamePort( CoreGraphDatabase aCoreServer )
     {
         return aCoreServer.getDependencyResolver()
-                .resolveDependency( Config.class ).get( CoreEdgeClusterSettings.cluster_listen_address );
+                .resolveDependency( Config.class ).get( CoreEdgeClusterSettings.discovery_listen_address );
     }
 
     @Test

@@ -25,18 +25,24 @@ import static java.lang.String.format;
 
 public class CoreMember
 {
+    private final AdvertisedSocketAddress discoveryAddress;
     private final AdvertisedSocketAddress coreAddress;
     private final AdvertisedSocketAddress raftAddress;
 
-    public CoreMember( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress raftAddress )
+    public CoreMember( AdvertisedSocketAddress discoveryAddress,
+                       AdvertisedSocketAddress coreAddress,
+                       AdvertisedSocketAddress raftAddress )
     {
+        this.discoveryAddress = discoveryAddress;
         this.coreAddress = coreAddress;
         this.raftAddress = raftAddress;
     }
 
-    @Override public String toString()
+    @Override
+    public String toString()
     {
-        return format( "CoreMember{coreAddress=%s, raftAddress=%s}", coreAddress, raftAddress );
+        return format( "CoreMember{discoveryAddress=%s, coreAddress=%s, raftAddress=%s}",
+                discoveryAddress, coreAddress, raftAddress );
     }
 
     @Override
@@ -51,14 +57,20 @@ public class CoreMember
             return false;
         }
         CoreMember that = (CoreMember) o;
-        return Objects.equals( coreAddress, that.coreAddress ) &&
+        return Objects.equals( discoveryAddress, that.discoveryAddress ) &&
+                Objects.equals( coreAddress, that.coreAddress ) &&
                 Objects.equals( raftAddress, that.raftAddress );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( coreAddress, raftAddress );
+        return Objects.hash( discoveryAddress, coreAddress, raftAddress );
+    }
+
+    public AdvertisedSocketAddress getDiscoveryAddress()
+    {
+        return discoveryAddress;
     }
 
     public AdvertisedSocketAddress getCoreAddress()

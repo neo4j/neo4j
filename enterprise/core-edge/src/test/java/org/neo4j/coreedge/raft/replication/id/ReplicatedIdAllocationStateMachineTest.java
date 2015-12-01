@@ -30,8 +30,8 @@ import static junit.framework.TestCase.assertEquals;
 
 public class ReplicatedIdAllocationStateMachineTest
 {
-    CoreMember me = new CoreMember( address( "a:1" ), address( "a:2" ) );
-    CoreMember someoneElse = new CoreMember( address( "b:1" ), address( "b:2" ) );
+    CoreMember me = new CoreMember( address( "a:0" ), address( "a:1" ), address( "a:2" ) );
+    CoreMember someoneElse = new CoreMember( address( "b:0" ), address( "b:1" ), address( "b:2" ) );
 
     IdType someType = IdType.NODE;
     IdType someOtherType = IdType.RELATIONSHIP;

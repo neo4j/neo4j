@@ -29,8 +29,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
@@ -56,7 +54,7 @@ public class CoreReplicatedContentMarshalTest
 {
     private ReplicatedContentMarshal<ByteBuf> marshal = new CoreReplicatedContentMarshal();
 
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
@@ -93,8 +91,8 @@ public class CoreReplicatedContentMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( address( "host_a:1" ), address( "host_a:2" ) ),
-                new CoreMember( address( "host_b:101" ), address( "host_b:102" ) )
+                new CoreMember( address( "host_a:0" ), address( "host_a:1" ), address( "host_a:2" ) ),
+                new CoreMember( address( "host_b:100" ), address( "host_b:101" ), address( "host_b:102" ) )
         ) );
 
         // when
@@ -110,7 +108,7 @@ public class CoreReplicatedContentMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
-                new CoreMember( address( "host_a:1" ), address( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
+                new CoreMember( address( "host_a:0" ), address( "host_a:1" ), address( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
 
         // when
         marshal.serialize( message, buffer );

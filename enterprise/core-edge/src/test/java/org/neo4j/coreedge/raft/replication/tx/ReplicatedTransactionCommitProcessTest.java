@@ -46,7 +46,7 @@ import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 @SuppressWarnings("unchecked")
 public class ReplicatedTransactionCommitProcessTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
 
     @Test
     public void shouldReplicateOnlyOnceIfFirstAttemptSuccessful() throws Exception

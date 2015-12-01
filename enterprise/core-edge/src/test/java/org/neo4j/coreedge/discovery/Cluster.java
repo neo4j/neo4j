@@ -169,7 +169,8 @@ public class Cluster
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         final Map<String, String> params = serverParams( "CORE", serverId, initialHosts );
-        params.put( CoreEdgeClusterSettings.cluster_listen_address.name(), "localhost:" + clusterPort );
+        params.put( CoreEdgeClusterSettings.discovery_advertised_address.name(), "localhost:" + clusterPort );
+        params.put( CoreEdgeClusterSettings.discovery_listen_address.name(), "127.0.0.1:" + clusterPort );
 
         params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
         params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );

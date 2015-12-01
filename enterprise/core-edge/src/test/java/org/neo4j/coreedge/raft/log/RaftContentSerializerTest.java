@@ -50,7 +50,7 @@ import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class RaftContentSerializerTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
@@ -59,8 +59,8 @@ public class RaftContentSerializerTest
         // given
         RaftContentSerializer serializer = new RaftContentSerializer();
         CoreMemberSet in = new CoreMemberSet( asSet(
-                new CoreMember( address( "host1:1001" ), address( "host1:1002" ) ),
-                new CoreMember( address( "host2:1002" ), address( "host2:1002" ) )
+                new CoreMember( address( "host1:0001" ), address( "host1:1001" ), address( "host1:1002" ) ),
+                new CoreMember( address( "host1:0002" ), address( "host2:1002" ), address( "host2:1002" ) )
         ) );
 
         // when

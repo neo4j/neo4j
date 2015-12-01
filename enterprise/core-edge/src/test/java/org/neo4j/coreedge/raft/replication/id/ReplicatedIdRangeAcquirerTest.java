@@ -33,8 +33,8 @@ import org.neo4j.logging.NullLogProvider;
 
 public class ReplicatedIdRangeAcquirerTest
 {
-    private final CoreMember one = new CoreMember( address( "a:1" ), address( "a:2" ) );
-    private final CoreMember two = new CoreMember( address( "b:1" ), address( "b:2" ) );
+    private final CoreMember one = new CoreMember( address( "a:0" ), address( "a:1" ), address( "a:2" ) );
+    private final CoreMember two = new CoreMember( address( "b:0" ), address( "b:1" ), address( "b:2" ) );
     private final StubReplicator replicator = new StubReplicator();
 
     @Test

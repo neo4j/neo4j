@@ -19,14 +19,17 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import org.neo4j.coreedge.raft.membership.RaftMembership;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
-    @Override
-    public CoreDiscoveryService coreDiscoveryService( Config config )
+    public CoreDiscoveryService coreDiscoveryService( Config config, LogProvider logProvider,
+                                                      RaftMembership<CoreMember> membership )
     {
-        return new HazelcastServerLifecycle( config );
+        return new HazelcastServerLifecycle( config, logProvider, membership );
     }
 
     @Override

@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import org.neo4j.coreedge.raft.membership.CoreMemberMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -48,12 +49,12 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
         ByteBuf buf = ctx.alloc().buffer();
 
         buf.writeInt( message.type().ordinal() );
-        writeMember( message.from(), buf );
+        CoreMemberMarshal.serialize( message.from(), buf );
 
         if ( message instanceof RaftMessages.Vote.Request )
         {
             RaftMessages.Vote.Request<CoreMember> voteRequest = (RaftMessages.Vote.Request<CoreMember>) message;
-            writeMember( voteRequest.candidate(), buf );
+            CoreMemberMarshal.serialize( voteRequest.candidate(), buf );
             buf.writeLong( voteRequest.term() );
             buf.writeLong( voteRequest.lastLogIndex() );
             buf.writeLong( voteRequest.lastLogTerm() );
@@ -110,12 +111,5 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
         }
 
         list.add( buf );
-    }
-
-    private void writeMember( CoreMember member, ByteBuf buffer ) throws UnsupportedEncodingException
-    {
-        AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
-        encoder.encode( member.getCoreAddress(), buffer );
-        encoder.encode( member.getRaftAddress(), buffer );
     }
 }

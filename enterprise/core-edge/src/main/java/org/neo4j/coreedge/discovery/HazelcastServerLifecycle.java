@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,30 +39,38 @@ import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDiscoveryService
 {
-    public static final String CLUSTER_SERVER = "cluster_server";
+    public static final String DISCOVERY_SERVER = "discovery_server";
     public static final String TRANSACTION_SERVER = "transaction_server";
     public static final String SERVER_ID = "server_id";
     public static final String RAFT_SERVER = "raft_server";
 
-    private Config config;
+    private final Config config;
+    private final RaftMembership<CoreMember> membership;
+    private final Log log;
     private HazelcastInstance hazelcastInstance;
 
     private List<StartupListener> startupListeners = new ArrayList<>();
     private List<MembershipListener> membershipListeners = new ArrayList<>();
     private Map<MembershipListener, String> membershipRegistrationId = new ConcurrentHashMap<>();
 
-    public HazelcastServerLifecycle( Config config )
+    public HazelcastServerLifecycle( Config config, LogProvider logProvider, RaftMembership<CoreMember> membership )
     {
         this.config = config;
+        this.membership = membership;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -132,13 +141,20 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
+        for ( CoreMember member : membership.replicationMembers() )
+        {
+            InetSocketAddress coreAddress = member.getCoreAddress().socketAddress();
+            tcpIpConfig.addMember( String.format( "%s:%d", coreAddress.getHostName(), coreAddress.getPort() + 6000 ) );
+        }
+
         for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
         {
             tcpIpConfig.addMember( address.toString() );
         }
+        log.info( "Hazelcast join config: %s", tcpIpConfig );
 
         NetworkConfig networkConfig = new NetworkConfig();
-        ListenSocketAddress address = config.get( CoreEdgeClusterSettings.cluster_listen_address );
+        ListenSocketAddress address = config.get( CoreEdgeClusterSettings.discovery_listen_address );
         networkConfig.setPort( address.socketAddress().getPort() );
         networkConfig.setJoin( joinConfig );
         String instanceName = String.valueOf( config.get( ClusterSettings.server_id ).toIntegerIndex() );
@@ -153,8 +169,8 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
 
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
         memberAttributeConfig.setIntAttribute( SERVER_ID, config.get( ClusterSettings.server_id ).toIntegerIndex() );
-
-        memberAttributeConfig.setStringAttribute( CLUSTER_SERVER, address.toString() );
+        AdvertisedSocketAddress discoveryAddress = config.get( CoreEdgeClusterSettings.discovery_advertised_address );
+        memberAttributeConfig.setStringAttribute( DISCOVERY_SERVER, discoveryAddress.toString() );
 
         AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings.transaction_advertised_address );
         memberAttributeConfig.setStringAttribute( TRANSACTION_SERVER, transactionSource.toString() );
