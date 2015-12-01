@@ -28,8 +28,8 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 
@@ -62,7 +62,7 @@ public class CommitProcessSwitcher extends AbstractComponentSwitcher<Transaction
     {
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
                 dependencyResolver.resolveDependency( TransactionAppender.class ),
-                dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+                dependencyResolver.resolveDependency( StorageEngine.class ),
                 dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
 
         return new MasterTransactionCommitProcess(

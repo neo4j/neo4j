@@ -19,17 +19,17 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import org.junit.Test;
+
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Test;
-
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 import static org.mockito.Matchers.any;
@@ -60,7 +60,7 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ), transactionStateMachine )
-                .commit( tx(), new LockGroup(), NULL, INTERNAL );
+                .commit( tx(), NULL, INTERNAL );
 
         // then
         verify( replicator, times( 1 ) ).replicate( any( ReplicatedTransaction.class ) );
@@ -78,16 +78,16 @@ public class ReplicatedTransactionCommitProcessTest
 
         // when
         new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ), transactionStateMachine )
-                .commit( tx(), new LockGroup(), NULL, INTERNAL );
+                .commit( tx(), NULL, INTERNAL );
 
         // then
         verify( replicator, times( 2 ) ).replicate( any( ReplicatedTransaction.class ) );
     }
 
-    private TransactionRepresentation tx()
+    private TransactionToApply tx()
     {
         TransactionRepresentation tx = mock( TransactionRepresentation.class );
         when( tx.additionalHeader() ).thenReturn( new byte[]{} );
-        return tx;
+        return new TransactionToApply( tx );
     }
 }

@@ -99,7 +99,7 @@ public class ApplyRecoveredTransactionsTest
     private void applyExternalTransaction( long transactionId, Command...commands ) throws IOException
     {
         NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup(), transactionId );
+                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup() );
         CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
                 mock( CommandHandler.class ), mock( CommandHandler.class ), mock( CommandHandler.class ) );
         new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );

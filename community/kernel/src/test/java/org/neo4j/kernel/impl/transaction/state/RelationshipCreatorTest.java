@@ -69,11 +69,11 @@ public class RelationshipCreatorTest
 
         Tracker tracker = new Tracker( neoStores );
         RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
-        RelationshipCreator relationshipCreator = new RelationshipCreator( tracker, groupGetter, 5 );
+        RelationshipCreator relationshipCreator = new RelationshipCreator( groupGetter, 5 );
 
         // WHEN
         relationshipCreator.relationshipCreate( idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId(), 0,
-                nodeId, nodeId, tracker );
+                nodeId, nodeId, tracker, tracker );
 
         // THEN
         assertEquals( tracker.relationshipLocksAcquired.size(), tracker.changedRelationships.size() );

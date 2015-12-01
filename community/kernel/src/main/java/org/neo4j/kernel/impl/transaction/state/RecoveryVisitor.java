@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.IOException;
-
 import org.neo4j.helpers.collection.CloseableVisitor;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.TransactionQueue;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -33,8 +31,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
-public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,IOException>
+public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,Exception>
 {
     public interface Monitor
     {
@@ -42,36 +41,32 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
     }
 
     private final TransactionIdStore store;
-    private final TransactionRepresentationStoreApplier storeApplier;
+    private final StorageEngine storageEngine;
     private final IndexUpdatesValidator indexUpdatesValidator;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
     private long lastTransactionChecksum;
     private LogPosition lastTransactionLogPosition;
+    private final TransactionQueue queue = new TransactionQueue( 10_000, this::applyQueue );
 
     public RecoveryVisitor( TransactionIdStore store,
-                            TransactionRepresentationStoreApplier storeApplier,
-                            IndexUpdatesValidator indexUpdatesValidator,
+                            StorageEngine storageEngine,
                             Monitor monitor )
     {
         this.store = store;
-        this.storeApplier = storeApplier;
-        this.indexUpdatesValidator = indexUpdatesValidator;
+        this.storageEngine = storageEngine;
+        this.indexUpdatesValidator = storageEngine.indexUpdatesValidatorForRecovery();
         this.monitor = monitor;
     }
 
     @Override
-    public boolean visit( RecoverableTransaction transaction ) throws IOException
+    public boolean visit( RecoverableTransaction transaction ) throws Exception
     {
         CommittedTransactionRepresentation representation = transaction.representation();
         long txId = representation.getCommitEntry().getTxId();
         TransactionRepresentation txRepresentation = representation.getTransactionRepresentation();
 
-        try ( LockGroup locks = new LockGroup();
-              ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
-        {
-            storeApplier.apply( txRepresentation, indexUpdates, locks, txId, RECOVERY );
-        }
+        queue( txRepresentation, txId );
 
         lastTransactionIdApplied = txId;
         lastTransactionChecksum = LogEntryStart.checksum( representation.getStartEntry() );
@@ -80,25 +75,34 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         return false;
     }
 
-    @Override
-    public void close() throws IOException
+    private void queue( TransactionRepresentation txRepresentation, long txId ) throws Exception
     {
+        TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
+
+        // Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
+        // appear in write ahead log.
+        // This step is still needed though, because it is not only about validation of index sizes but also about
+        // inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
+        // grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
+        tx.validatedIndexUpdates( indexUpdatesValidator.validate( txRepresentation ) );
+        tx.commitment( NO_COMMITMENT, txId );
+
+        queue.queue( tx );
+    }
+
+    private void applyQueue( TransactionToApply batch ) throws Exception
+    {
+        storageEngine.apply( batch, RECOVERY );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        queue.empty();
         if ( lastTransactionIdApplied != -1 )
         {
             store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum,
                     lastTransactionLogPosition.getLogVersion(), lastTransactionLogPosition.getByteOffset() );
         }
-    }
-
-    /**
-     * Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
-     * appear in write ahead log.
-     * This step is still needed though, because it is not only about validation of index sizes but also about
-     * inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
-     * grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
-     */
-    private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
-    {
-        return indexUpdatesValidator.validate( txRepresentation );
     }
 }

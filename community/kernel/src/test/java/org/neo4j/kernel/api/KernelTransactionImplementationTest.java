@@ -23,9 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -35,6 +34,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -42,11 +42,11 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -55,22 +55,22 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest
@@ -376,17 +376,15 @@ public class KernelTransactionImplementationTest
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
-        when( recordState.hasChanges() ).thenReturn( true );
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                Collection<Command> commands = (Collection<Command>) invocationOnMock.getArguments()[0];
-                commands.add( new Command.NodeCommand() );
-                return null;
-            }
-        } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
+        when( legacyIndexState.hasChanges() ).thenReturn( true );
+        when( storageEngine.createCommands(
+                any( TransactionState.class ),
+                any( LegacyIndexTransactionState.class ),
+                any( Locks.Client.class ),
+                any( StatementOperationParts.class ),
+                any( StoreStatement.class ),
+                anyLong() ) ).thenReturn( sillyCommandList() );
+
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
             transaction.initialize( 5L );
@@ -432,7 +430,6 @@ public class KernelTransactionImplementationTest
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final StoreReadLayer readLayer = mock( StoreReadLayer.class );
     private final TransactionHooks hooks = new TransactionHooks();
-    private final TransactionRecordState recordState = mock( TransactionRecordState.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
@@ -459,10 +456,8 @@ public class KernelTransactionImplementationTest
     {
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                mock( StatementOperationParts.class ), null, null, recordState, new NoOpClient(),
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexState,
-                pool, mock( ConstraintSemantics.class ), clock, TransactionTracer.NULL,
-                storageEngine );
+                null, null, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
+                legacyIndexState, pool, clock, TransactionTracer.NULL, storageEngine );
         transaction.initialize( 0 );
         return transaction;
     }
@@ -473,12 +468,21 @@ public class KernelTransactionImplementationTest
         private TransactionRepresentation transaction;
 
         @Override
-        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
-                TransactionApplicationMode mode ) throws TransactionFailureException
+        public long commit( TransactionToApply batch, CommitEvent commitEvent,
+                            TransactionApplicationMode mode ) throws TransactionFailureException
         {
             assert transaction == null : "Designed to only allow one transaction";
-            transaction = representation;
+            assert batch.next() == null : "Designed to only allow one transaction";
+            transaction = batch.transactionRepresentation();
             return txId++;
         }
+    }
+
+    private static Collection<Command> sillyCommandList()
+    {
+        Collection<Command> commands = new ArrayList<>();
+        Command command = mock( Command.class );
+        commands.add( command );
+        return commands;
     }
 }

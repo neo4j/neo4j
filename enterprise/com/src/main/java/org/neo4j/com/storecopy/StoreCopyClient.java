@@ -58,6 +58,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.Math.max;
+
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -181,7 +182,7 @@ public class StoreCopyClient
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
-            throws IOException
+            throws Exception
     {
         // Clear up the current temp directory if there
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
@@ -218,7 +219,7 @@ public class StoreCopyClient
         }
     }
 
-    private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws IOException
+    private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         try
@@ -251,9 +252,9 @@ public class StoreCopyClient
                 }
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation,IOException> transactions()
+                public Visitor<CommittedTransactionRepresentation,Exception> transactions()
                 {
-                    return new Visitor<CommittedTransactionRepresentation,IOException>()
+                    return new Visitor<CommittedTransactionRepresentation,Exception>()
                     {
                         @Override
                         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
@@ -298,7 +299,7 @@ public class StoreCopyClient
                         pageCache,
                         neoStore,
                         MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                        (long) LOG_HEADER_SIZE );
+                        LOG_HEADER_SIZE );
             }
         }
         finally

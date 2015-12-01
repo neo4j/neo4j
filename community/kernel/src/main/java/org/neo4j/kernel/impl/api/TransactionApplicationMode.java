@@ -55,21 +55,21 @@ public enum TransactionApplicationMode
                    // may have been applied previously
             );
 
-    private final boolean needsIdTracking;
+    private final boolean needsHighIdTracking;
     private final boolean needsCacheInvalidation;
     private final boolean needsIdempotencyChecks;
 
-    TransactionApplicationMode( boolean needsIdTracking, boolean needsCacheInvalidation,
+    TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation,
             boolean ensureIdempotency )
     {
-        this.needsIdTracking = needsIdTracking;
+        this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
         this.needsIdempotencyChecks = ensureIdempotency;
     }
 
-    public boolean needsIdTracking()
+    public boolean needsHighIdTracking()
     {
-        return needsIdTracking;
+        return needsHighIdTracking;
     }
 
     public boolean needsCacheInvalidationOnUpdates()

@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
@@ -67,6 +67,8 @@ import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -104,7 +106,7 @@ public class NeoTransactionStoreApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
-    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Before
@@ -151,12 +153,13 @@ public class NeoTransactionStoreApplierTest
     private CommandHandler newApplier( boolean recovery )
     {
         CommandHandler applier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService,
-                new LockGroup(), transactionId );
+                new LockGroup() );
         if ( recovery )
         {
             applier = new HighIdTransactionApplier( applier, neoStores );
             applier = new CacheInvalidationTransactionApplier( applier, neoStores, cacheAccess );
         }
+        // TODO begin?
         return applier;
     }
 
@@ -549,7 +552,7 @@ public class NeoTransactionStoreApplierTest
         // given
         final CommandHandler applier = newApplier( false );
         final CommandHandler indexApplier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
+                labelScanStoreSynchronizer );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -736,11 +739,11 @@ public class NeoTransactionStoreApplierTest
 
     private CommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
+        return new IndexTransactionApplier( indexingService, labelScanStoreSynchronizer );
     }
 
     @Test
-    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws IOException
+    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final CommandHandler applier = newApplier( false );
@@ -753,7 +756,7 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        final boolean result = applier.visitSchemaRuleCommand( command );
+        final boolean result = visitSchemaRuleCommand( applier, command );
 
         // then
         assertFalse( result );
@@ -763,8 +766,19 @@ public class NeoTransactionStoreApplierTest
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 
+    private boolean visitSchemaRuleCommand( CommandHandler applier, SchemaRuleCommand command ) throws Exception
+    {
+        applier.begin( new TransactionToApply( new PhysicalTransactionRepresentation(
+                Arrays.<Command>asList( command ) ), transactionId ) );
+        boolean result = applier.visitSchemaRuleCommand( command );
+        applier.end();
+        applier.apply();
+        applier.close();
+        return result;
+    }
+
     @Test
-    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws IOException
+    public void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final CommandHandler applier = newApplier( true );
@@ -777,8 +791,7 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applyAndClose( applier );
+        final boolean result = visitSchemaRuleCommand( applier, command );
 
         // then
         assertFalse( result );
@@ -790,7 +803,7 @@ public class NeoTransactionStoreApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws IOException
+    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
         final CommandHandler applier = newApplier( false );
@@ -802,7 +815,7 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        final boolean result = applier.visitSchemaRuleCommand( command );
+        final boolean result = visitSchemaRuleCommand( applier, command );
 
         // then
         assertFalse( result );
@@ -813,7 +826,7 @@ public class NeoTransactionStoreApplierTest
     }
 
     @Test
-    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws IOException
+    public void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
         final CommandHandler applier = newApplier( true );
@@ -825,8 +838,7 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applyAndClose( applier );
+        final boolean result = visitSchemaRuleCommand( applier, command );
 
         // then
         assertFalse( result );

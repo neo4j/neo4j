@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -114,8 +115,9 @@ public class RecoveryTest
 
         // NB: AddDeleteQuit will start and shutdown the db
         final Process process = Runtime.getRuntime().exec( new String[]{
-                "java",
-                "-cp", System.getProperty( "java.class.path" ),
+                ProcessUtil.getJavaExecutable().toString(),
+                "-cp",
+                ProcessUtil.getClassPath(),
                 AddDeleteQuit.class.getName(),
                 storeDir
         } );
@@ -139,9 +141,13 @@ public class RecoveryTest
 
         // NB: AddRelToIndex will start and shutdown the db
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
-                System.getProperty( "java.class.path" ),
-                AddRelToIndex.class.getName(), storeDir
+                ProcessUtil.getJavaExecutable().toString(),
+                "-Xdebug",
+                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
+                "-cp",
+                ProcessUtil.getClassPath(),
+                AddRelToIndex.class.getName(),
+                storeDir
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
@@ -167,8 +173,9 @@ public class RecoveryTest
 
         // NB: AddThenDeleteInAnotherTxAndQuit will start and shutdown the db
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java",
-                "-cp", System.getProperty( "java.class.path" ),
+                ProcessUtil.getJavaExecutable().toString(),
+                "-cp",
+                ProcessUtil.getClassPath(),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(),
                 storeDir
         } );

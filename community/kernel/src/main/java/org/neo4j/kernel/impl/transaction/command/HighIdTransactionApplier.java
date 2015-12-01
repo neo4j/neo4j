@@ -25,12 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -42,27 +36,23 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
 
-public class HighIdTransactionApplier implements CommandHandler
+public class HighIdTransactionApplier extends CommandHandler.Delegator
 {
-    private final CommandHandler delegate;
     private final NeoStores neoStores;
     private final Map<CommonAbstractStore,HighId> highIds = new HashMap<>();
 
     public HighIdTransactionApplier( CommandHandler delegate, NeoStores neoStores )
     {
-        this.delegate = delegate;
+        super( delegate );
         this.neoStores = neoStores;
     }
 
@@ -72,14 +62,14 @@ public class HighIdTransactionApplier implements CommandHandler
         NodeStore nodeStore = neoStores.getNodeStore();
         track( nodeStore, command );
         track( nodeStore.getDynamicLabelStore(), command.getAfter().getDynamicLabelRecords() );
-        return delegate.visitNodeCommand( command );
+        return super.visitNodeCommand( command );
     }
 
     @Override
     public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
         track( neoStores.getRelationshipStore(), command );
-        return delegate.visitRelationshipCommand( command );
+        return super.visitRelationshipCommand( command );
     }
 
     @Override
@@ -102,35 +92,35 @@ public class HighIdTransactionApplier implements CommandHandler
                 break;
             }
         }
-        return delegate.visitPropertyCommand( command );
+        return super.visitPropertyCommand( command );
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
     {
         track( neoStores.getRelationshipGroupStore(), command );
-        return delegate.visitRelationshipGroupCommand( command );
+        return super.visitRelationshipGroupCommand( command );
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getRelationshipTypeTokenStore(), command );
-        return delegate.visitRelationshipTypeTokenCommand( command );
+        return super.visitRelationshipTypeTokenCommand( command );
     }
 
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getLabelTokenStore(), command );
-        return delegate.visitLabelTokenCommand( command );
+        return super.visitLabelTokenCommand( command );
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getPropertyKeyTokenStore(), command );
-        return delegate.visitPropertyKeyTokenCommand( command );
+        return super.visitPropertyKeyTokenCommand( command );
     }
 
     @Override
@@ -141,80 +131,19 @@ public class HighIdTransactionApplier implements CommandHandler
         {
             track( schemaStore, record.getId() );
         }
-        return delegate.visitSchemaRuleCommand( command );
-    }
-
-    @Override
-    public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
-    {
-        delegate.visitNeoStoreCommand( command );
-        return false;
-    }
-
-    @Override
-    public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
-    {
-        return delegate.visitIndexAddNodeCommand( command );
-    }
-
-    @Override
-    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
-    {
-        return delegate.visitIndexAddRelationshipCommand( command );
-    }
-
-    @Override
-    public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
-    {
-        return delegate.visitIndexRemoveCommand( command );
-    }
-
-    @Override
-    public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
-    {
-        return delegate.visitIndexDeleteCommand( command );
-    }
-
-    @Override
-    public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
-    {
-        return delegate.visitIndexCreateCommand( command );
-    }
-
-    @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-    {
-        return delegate.visitIndexDefineCommand( command );
-    }
-
-    @Override
-    public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
-    {
-        return delegate.visitNodeCountsCommand( command );
-    }
-
-    @Override
-    public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
-    {
-        return delegate.visitRelationshipCountsCommand( command );
+        return super.visitSchemaRuleCommand( command );
     }
 
     @Override
     public void apply()
     {
-        delegate.apply();
+        super.apply();
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
         for ( Map.Entry<CommonAbstractStore,HighId> highId : highIds.entrySet() )
         {
             highId.getKey().setHighestPossibleIdInUse( highId.getValue().id );
         }
-    }
-
-    @Override
-    public void close()
-    {
-        delegate.close();
     }
 
     private void track( CommonAbstractStore store, long id )
