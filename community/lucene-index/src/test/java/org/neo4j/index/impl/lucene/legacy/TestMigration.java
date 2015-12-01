@@ -43,7 +43,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
