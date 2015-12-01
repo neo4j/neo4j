@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedI
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -45,7 +46,7 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         initialStatement: Statement)
+                                         initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
@@ -131,10 +132,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     case Some(typeIds) => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
   }
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any) =
+  def exactIndexSearch(index: IndexDescriptor, value: Any) = {
+    indexSearchMonitor.exactIndexSearch(index, value)
     mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
+  }
 
-  def lockingIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
+  def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
+    indexSearchMonitor.lockingIndexSearch(index, value)
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -319,5 +323,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     tx = graph.beginTx()
     statement = txBridge.instance()
+  }
+}
+
+object TransactionBoundQueryContext {
+  trait IndexSearchMonitor {
+    def exactIndexSearch(index: IndexDescriptor, value: Any): Unit
+
+    def lockingIndexSearch(index: IndexDescriptor, value: Any): Unit
   }
 }

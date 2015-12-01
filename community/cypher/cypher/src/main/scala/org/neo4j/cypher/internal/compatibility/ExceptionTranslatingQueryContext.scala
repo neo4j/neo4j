@@ -129,8 +129,8 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def lockingIndexSearch(index: IndexDescriptor, value: Any) =
-    translateException(super.lockingIndexSearch(index, value))
+  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
+    translateException(super.lockingExactUniqueIndexSearch(index, value))
 
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())

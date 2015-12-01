@@ -145,7 +145,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  def lockingIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
+  def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
 
   def commitAndRestartTx() { ??? }
 

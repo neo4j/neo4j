@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.kernel.api.index.IndexDescriptor
+
 class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should be able to use indexes") {
     given()
@@ -29,6 +32,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     result should have size 1
+    assertNoLockingHappened
   }
 
   test("should not forget predicates") {
@@ -40,6 +44,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     // Then
     result shouldBe empty
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
+    assertNoLockingHappened
   }
 
   test("should use index when there are multiple labels on the node") {
@@ -51,6 +56,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     result should have size 1
+    assertNoLockingHappened
   }
 
   test("should be able to use value coming from UNWIND for index seek") {
@@ -67,6 +73,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     // Then
     result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
+    assertNoLockingHappened
   }
 
   test("should handle nulls in index lookup") {
@@ -92,6 +99,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
 
     // Then
     result.toList should equal(List(Map("p" -> null, "placeName" -> null)))
+    assertNoLockingHappened
   }
 
   test("should not use indexes when RHS of property comparison depends on the node searched for (equality)") {
@@ -117,6 +125,23 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
       Map("m" -> n3)
     ))
     result.executionPlanDescription().toString shouldNot include("Index")
+    assertNoLockingHappened
+  }
+
+  var lockingIndexSearchCalled = false
+
+  override protected def initTest(): Unit = {
+    super.initTest()
+    lockingIndexSearchCalled = false
+
+    val assertReadOnlyMonitorListener = new IndexSearchMonitor {
+      override def exactIndexSearch(index: IndexDescriptor, value: Any): Unit = {}
+
+      override def lockingIndexSearch(index: IndexDescriptor, value: Any): Unit = {
+        lockingIndexSearchCalled = true
+      }
+    }
+    kernelMonitors.addMonitorListener(assertReadOnlyMonitorListener)
   }
 
   private def given() {
@@ -139,6 +164,10 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     for (i <- 1 to 10) createLabeledNode(Map("name" -> ("Smith" + i)), "Matrix")
 
     graph.createConstraint("Crew", "name")
+  }
+
+  private def assertNoLockingHappened: Unit = {
+    withClue("Should not lock indexes: ") { lockingIndexSearchCalled should equal(false) }
   }
 
 }
