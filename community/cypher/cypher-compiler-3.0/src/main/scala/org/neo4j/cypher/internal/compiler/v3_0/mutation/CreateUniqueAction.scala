@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{PatternException, UniquePathNotUniqueException}
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Node, PropertyContainer}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
@@ -50,11 +50,10 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
         val lockingContext = state.query.upgradeToLockingQueryContext
 
-        try {
-          executionContext = tryAgain(linksToDo, executionContext, state.withQueryContext(lockingContext))
-        } finally {
-          lockingContext.releaseLocks()
-        }
+        val nodesToLock = extractNodesToLock(results, incomingExecContext)
+        lockingContext.lockNodes(nodesToLock)
+
+        executionContext = tryAgain(linksToDo, executionContext, state.withQueryContext(lockingContext))
       } else {
         throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
       }
@@ -149,6 +148,17 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
     context
   }
+
+  private def extractNodesToLock(results: scala.Seq[(UniqueLink, CreateUniqueResult)], ctx: ExecutionContext): Seq[Node] =
+    results.flatMap {
+      case (UniqueLink(start, end, _, _, _), _) => Seq(start.name, end.name)
+      case _ => Seq.empty
+    }.collect {
+      case name if ctx.contains(name) => ctx(name) match {
+        case n: Node => Some(n)
+        case _ => None
+      }
+    }.flatten
 
   private def extractUpdateCommands(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[Update] =
     results.flatMap {

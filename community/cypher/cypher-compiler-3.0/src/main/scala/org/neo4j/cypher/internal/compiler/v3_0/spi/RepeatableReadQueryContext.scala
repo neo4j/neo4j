@@ -119,6 +119,10 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
       locker.acquireLock(item)
       item
   }
+
+  override def lockNodes(nodes: Seq[Node]) = {
+    nodes.sortWith((a, b) => a.getId < b.getId).foreach(locker.acquireLock(_))
+  }
 }
 
 

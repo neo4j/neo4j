@@ -146,6 +146,8 @@ trait QueryContext extends TokenContext {
 
 trait LockingQueryContext extends QueryContext {
   def releaseLocks()
+
+  def lockNodes(nodes: Seq[Node])
 }
 
 trait Operations[T <: PropertyContainer] {
