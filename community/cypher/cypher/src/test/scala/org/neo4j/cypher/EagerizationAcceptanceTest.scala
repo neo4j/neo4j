@@ -263,7 +263,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN k.prop, l.prop, m.prop, n.prop"
 
     val result = updateWithBothPlanners(query)
-    result should use("RepeatableRead", "EagerApply")
+    result should use("RepeatableRead", "Eager")
     assertStats(result, nodesCreated = 10, propertiesSet = 10)
     assertNumberOfEagerness(query, 2)
   }
@@ -789,6 +789,18 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertStats(result, labelsAdded = 1)
     assertNumberOfEagerness(query, 1)
     result.toList should equal(List(Map("c" -> 36)))
+  }
+
+  test("on match set label on unstable iterator should be eager and work when creating new nodes") {
+    createLabeledNode("Two")
+    createLabeledNode("Two")
+    createNode()
+    val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q:Three) ON MATCH SET q:Two RETURN count(*) AS c"
+
+    val result: InternalExecutionResult = updateWithBothPlanners(query)
+    assertStats(result, labelsAdded = 2, nodesCreated = 1)
+    assertNumberOfEagerness(query, 1)
+    result.toList should equal(List(Map("c" -> 12)))
   }
 
   test("on match set label on unstable iterator should not be eager if no overlap") {

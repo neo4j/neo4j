@@ -34,14 +34,14 @@ case object CypherPreParser extends Parser with Base {
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile | PlannerDeprecated
+  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
   def Cypher = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption | RuntimeOption, WS) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption | StrategyOption, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
@@ -57,13 +57,8 @@ case object CypherPreParser extends Parser with Base {
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
   )
 
-  @deprecated
-  def PlannerDeprecated = rule("PLANNER") (
-      keyword("PLANNER COST") ~ push(CostPlannerOption)
-    | keyword("PLANNER GREEDY") ~ push(GreedyPlannerOption)
-    | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
-    | keyword("PLANNER DP") ~ push(DPPlannerOption)
-    | keyword("PLANNER RULE") ~ push(RulePlannerOption)
+  def StrategyOption = rule("strategy option")(
+    option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
   def VersionNumber = rule("Version") {

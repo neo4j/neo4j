@@ -367,12 +367,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case OuterHashJoin(nodes, l, r) =>
       NodeOuterHashJoinPipe(nodes.map(_.name), lhs, rhs, (r.availableSymbols -- l.availableSymbols).map(_.name))()
 
-    case Apply(_, _) =>
-      lhs match {
-        case EagerPipe(inner) =>
-          EagerApplyPipe(inner, rhs)()
-        case _ => ApplyPipe(lhs, rhs)()
-      }
+    case Apply(_, _) => ApplyPipe(lhs, rhs)()
 
     case AssertSameNode(node, _, _) =>
       AssertSameNodePipe(lhs, rhs, node.name)()

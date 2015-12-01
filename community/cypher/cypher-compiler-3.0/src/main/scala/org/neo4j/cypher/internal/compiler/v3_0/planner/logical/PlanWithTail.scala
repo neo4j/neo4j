@@ -69,10 +69,11 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
       case Some(query) =>
         val lhsContext = context.recurse(lhs)
         val partPlan = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
-
+        ///use eager if configured to do so
+        val alwaysEager = context.config.updateStrategy.alwaysEager
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
-          if (query.updateGraph overlaps query.queryGraph)
+          if (alwaysEager || (query.updateGraph overlaps query.queryGraph))
             context.logicalPlanProducer.planRepeatableRead(partPlan)
           else partPlan
 
@@ -81,7 +82,8 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         //If previous update interferes with any of the reads here or in tail, make it an EagerApply
         val applyPlan = {
           val lastPlannerQuery = lhs.solved.last
-          val newLhs = if (!lastPlannerQuery.writeOnly && query.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps))
+          val newLhs = if (alwaysEager ||
+            (!lastPlannerQuery.writeOnly && query.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps)))
               context.logicalPlanProducer.planEager(lhs)
           else lhs
 

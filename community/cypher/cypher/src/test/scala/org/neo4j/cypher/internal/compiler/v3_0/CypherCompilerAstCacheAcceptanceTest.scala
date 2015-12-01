@@ -53,6 +53,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       new StringInfoLogger3_0(log),
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
+      updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating
      )
 
