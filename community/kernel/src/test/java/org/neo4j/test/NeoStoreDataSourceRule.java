@@ -28,7 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -67,7 +67,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     private NeoStoreDataSource dataSource;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-                                             PageCache pageCache, Map<String, String> additionalConfig, KernelHealth kernelHealth )
+                                             PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth )
     {
         if ( dataSource != null )
         {
@@ -86,7 +86,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
-                fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
+                fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,
@@ -98,9 +98,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
                                              PageCache pageCache, Map<String, String> additionalConfig )
     {
-        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                NullLogProvider.getInstance().getLog( KernelHealth.class ) );
-        return getDataSource( storeDir, fs, pageCache, additionalConfig, kernelHealth );
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+        return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
     }
 
     private DependencyResolver dependencyResolverForNoIndexProvider()

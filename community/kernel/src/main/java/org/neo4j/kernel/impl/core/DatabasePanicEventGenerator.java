@@ -25,11 +25,11 @@ import java.util.concurrent.Executors;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.kernel.KernelEventHandlers;
 
-public class KernelPanicEventGenerator
+public class DatabasePanicEventGenerator
 {
     private final KernelEventHandlers kernelEventHandlers;
 
-    public KernelPanicEventGenerator( KernelEventHandlers kernelEventHandlers )
+    public DatabasePanicEventGenerator( KernelEventHandlers kernelEventHandlers )
     {
         this.kernelEventHandlers = kernelEventHandlers;
     }

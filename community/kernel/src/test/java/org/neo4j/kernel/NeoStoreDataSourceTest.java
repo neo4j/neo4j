@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import java.io.IOException;
+
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
@@ -57,22 +58,22 @@ public class NeoStoreDataSourceTest
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
-    public void kernelHealthShouldBeHealedOnStart() throws Throwable
+    public void databaseHealthShouldBeHealedOnStart() throws Throwable
     {
         NeoStoreDataSource theDataSource = null;
         try
         {
-            KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                    NullLogProvider.getInstance().getLog( KernelHealth.class ) );
+            DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                    NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
 
             theDataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
-                    stringMap(), kernelHealth );
+                    stringMap(), databaseHealth );
 
-            kernelHealth.panic( new Throwable() );
+            databaseHealth.panic( new Throwable() );
 
             theDataSource.start();
 
-            kernelHealth.assertHealthy( Throwable.class );
+            databaseHealth.assertHealthy( Throwable.class );
         }
         finally
         {
