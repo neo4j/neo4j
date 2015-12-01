@@ -160,7 +160,7 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     @Override
     public void stop() throws Throwable
     {
-        jobHandle.cancel( true );
+        jobHandle.cancel( false );
         scheduler.shutdown();
     }
 
