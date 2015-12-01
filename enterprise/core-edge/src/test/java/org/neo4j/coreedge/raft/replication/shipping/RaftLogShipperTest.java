@@ -52,6 +52,8 @@ public class RaftLogShipperTest
     long leaderTerm;
     long leaderCommit;
     long retryTimeMillis;
+    int catchupBatchSize = 64;
+    int maxAllowedShippingLag = 256;
 
     RaftLogShipper<RaftTestMember> logShipper;
 
@@ -87,7 +89,8 @@ public class RaftLogShipperTest
     public void startLogShipper()
     {
         logShipper = new RaftLogShipper<>( outbound, NullLogProvider.getInstance(), raftLog,
-                clock, leader, follower, leaderTerm, leaderCommit, retryTimeMillis );
+                clock, leader, follower, leaderTerm, leaderCommit, retryTimeMillis,
+                catchupBatchSize, maxAllowedShippingLag );
         logShipper.start();
     }
 
@@ -222,7 +225,7 @@ public class RaftLogShipperTest
     public void shouldSendAllEntriesAndCatchupCompletely() throws Throwable
     {
         // given
-        final int ENTRY_COUNT = RaftLogShipper.MAX_BATCH_SIZE * 10;
+        final int ENTRY_COUNT = catchupBatchSize * 10;
         Collection<RaftLogEntry> entries = new ArrayList<>();
         for ( int i = 0; i < ENTRY_COUNT; i++ )
         {
