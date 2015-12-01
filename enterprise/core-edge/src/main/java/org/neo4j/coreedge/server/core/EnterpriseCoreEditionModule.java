@@ -258,10 +258,12 @@ public class EnterpriseCoreEditionModule
                 new CheckpointerSupplier( platformModule.dependencies ),
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
-        life.add( new CoreServerStartupProcess( localDatabase,
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftLog, raftServer,
+        life.add( CoreServerStartupProcess.createLifeSupport(
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
-                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ) );
+                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ,
+                new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog )
+        ));
     }
 
     public boolean isLeader()
