@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.test.TargetDirectory;
 
@@ -54,7 +53,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveEdgeServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 3, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 3);
 
         // when
         cluster.removeEdgeServerWithServerId( 0 );
@@ -75,7 +74,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 0);
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -101,7 +100,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
         // when
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 0);
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
