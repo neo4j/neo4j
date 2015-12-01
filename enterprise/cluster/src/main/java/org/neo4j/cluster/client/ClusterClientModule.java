@@ -80,8 +80,7 @@ import static org.neo4j.helpers.NamedThreadFactory.daemon;
  */
 public class ClusterClientModule
 {
-    public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",
-            Settings.DURATION, "0s" );
+    public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout", Settings.DURATION, "0s" );
 
     public final ClusterClient clusterClient;
     private final ProtocolServer server;
