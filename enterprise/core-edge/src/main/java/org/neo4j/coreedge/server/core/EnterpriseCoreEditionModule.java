@@ -80,6 +80,7 @@ import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.coreedge.raft.ScheduledTimeoutService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -183,7 +184,7 @@ public class EnterpriseCoreEditionModule
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
         GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, sessionTracker, dependencies );
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, sessionTracker, dependencies, SYSTEM_CLOCK );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself );
         replicator.subscribe( idAllocationStateMachine );
@@ -288,9 +289,10 @@ public class EnterpriseCoreEditionModule
     }
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
-                                                                   final LocalSessionPool localSessionPool, final
-                                                                   GlobalSessionTracker sessionTracker, final
-                                                                   Dependencies dependencies )
+                                                                   final LocalSessionPool localSessionPool,
+                                                                   final GlobalSessionTracker sessionTracker,
+                                                                   final Dependencies dependencies,
+                                                                   final Clock clock )
     {
         return ( appender, applier, indexUpdatesValidator, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -300,7 +302,9 @@ public class EnterpriseCoreEditionModule
             ReplicatedTransactionStateMachine replicatedTxListener = new ReplicatedTransactionStateMachine(
                     localCommit, sessionTracker, localSessionPool.getGlobalSession() );
 
-            return new ReplicatedTransactionCommitProcess( replicator, localSessionPool, replicatedTxListener );
+            return new ReplicatedTransactionCommitProcess( replicator, localSessionPool, replicatedTxListener, clock,
+                    config.get( CoreEdgeClusterSettings.tx_replication_retry_interval ),
+                    config.get( CoreEdgeClusterSettings.tx_replication_timeout ) );
         };
     }
 

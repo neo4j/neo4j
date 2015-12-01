@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.Replicator.ReplicationFailedException;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.session.OperationContext;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -42,15 +43,21 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
 {
     private final Replicator replicator;
     private final ReplicatedTransactionStateMachine replicatedTxListener;
+    private final Clock clock;
+    private final long retryIntervalMillis;
+    private final long maxRetryTimeMillis;
     private final LocalSessionPool sessionPool;
 
-    public ReplicatedTransactionCommitProcess( Replicator replicator,
-                                               LocalSessionPool sessionPool,
-                                               ReplicatedTransactionStateMachine replicatedTxListener )
+    public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
+            ReplicatedTransactionStateMachine replicatedTxListener, Clock clock,
+            long retryIntervalMillis, long maxRetryTimeMillis )
     {
         this.sessionPool = sessionPool;
         this.replicatedTxListener = replicatedTxListener;
         this.replicator = replicator;
+        this.clock = clock;
+        this.retryIntervalMillis = retryIntervalMillis;
+        this.maxRetryTimeMillis = maxRetryTimeMillis;
         replicator.subscribe( this.replicatedTxListener );
     }
 
@@ -72,6 +79,8 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
             throw new TransactionFailureException( "Could not create immutable object for replication", e );
         }
 
+        boolean lastRound = false;
+        long startTime = clock.currentTimeMillis();
         while ( true )
         {
             final Future<Long> futureTxId = replicatedTxListener.getFutureTxId( operationContext.localOperationId() );
@@ -79,7 +88,11 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
             {
                 replicator.replicate( transaction );
 
-                Long txId = futureTxId.get( 60, TimeUnit.SECONDS );
+                /* The last round should wait for a longer time to keep issues arising from false negatives very rare
+                *  (e.g. local actor thinks commit failed, while it was committed in the cluster). */
+                long responseWaitTime = lastRound ? retryIntervalMillis : maxRetryTimeMillis/2;
+                Long txId = futureTxId.get( responseWaitTime, TimeUnit.MILLISECONDS );
+
                 sessionPool.releaseSession( operationContext );
 
                 return txId;
@@ -87,14 +100,22 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
             catch ( InterruptedException | TimeoutException  e )
             {
                 futureTxId.cancel( false );
+
+                if ( lastRound )
+                {
+                    throw new TransactionFailureException( "Failed to commit transaction within time bound", e );
+                }
+                else if ( (clock.currentTimeMillis() - startTime) >= maxRetryTimeMillis/2 )
+                {
+                    lastRound = true;
+                }
             }
             catch ( ReplicationFailedException | ExecutionException e )
             {
-                throw new TransactionFailureException( "Failed to commit transaction", e );
+                throw new TransactionFailureException( "Failed to replicate transaction", e );
             }
             System.out.println( "Retrying replication" );
         }
-
     }
 
     @Override
