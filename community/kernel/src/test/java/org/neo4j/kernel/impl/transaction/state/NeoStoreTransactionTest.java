@@ -49,7 +49,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -1475,8 +1475,8 @@ public class NeoStoreTransactionTest
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws IOException
     {
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        return commitProcess( indexing, new OnlineIndexUpdatesValidator( neoStores, kernelHealth,
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        return commitProcess( indexing, new OnlineIndexUpdatesValidator( neoStores, databaseHealth,
                 new PropertyLoader( neoStores ), indexing, IndexUpdateMode.ONLINE ) );
     }
 

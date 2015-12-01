@@ -62,17 +62,17 @@ public class NeoStoreDataSourceTest
         NeoStoreDataSource theDataSource = null;
         try
         {
-            KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                    NullLogProvider.getInstance().getLog( KernelHealth.class ) );
+            DatabaseHealth databaseHealth = new DatabaseHealth( mock( KernelPanicEventGenerator.class ),
+                    NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
 
             theDataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
-                    stringMap(), kernelHealth );
+                    stringMap(), databaseHealth );
 
-            kernelHealth.panic( new Throwable() );
+            databaseHealth.panic( new Throwable() );
 
             theDataSource.start();
 
-            kernelHealth.assertHealthy( Throwable.class );
+            databaseHealth.assertHealthy( Throwable.class );
         }
         finally
         {

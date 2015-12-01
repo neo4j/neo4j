@@ -42,7 +42,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -154,7 +154,7 @@ public class MasterClientTest
                 .thenReturn( ValidatedIndexUpdates.NONE );
 
         final Dependencies deps = new Dependencies();
-        KernelHealth health = mock( KernelHealth.class );
+        DatabaseHealth health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( true );
         deps.satisfyDependencies(
                 mock( LogicalTransactionStore.class ),

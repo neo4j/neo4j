@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -35,20 +35,20 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class KernelHealthTest
+public class DatabaseHealthTest
 {
     @Test
     public void shouldGenerateKernelPanicEvents() throws Exception
     {
         // GIVEN
         KernelPanicEventGenerator generator = mock( KernelPanicEventGenerator.class );
-        KernelHealth kernelHealth = new KernelHealth( generator, NullLogProvider.getInstance().getLog( KernelHealth.class ) );
-        kernelHealth.healed();
+        DatabaseHealth databaseHealth = new DatabaseHealth( generator, NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+        databaseHealth.healed();
 
         // WHEN
         Exception cause = new Exception( "My own fault" );
-        kernelHealth.panic( cause );
-        kernelHealth.panic( cause );
+        databaseHealth.panic( cause );
+        databaseHealth.panic( cause );
 
         // THEN
         verify( generator, times( 1 ) ).generateEvent( TX_MANAGER_NOT_OK, cause );
@@ -59,17 +59,17 @@ public class KernelHealthTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logProvider.getLog( KernelHealth.class ) );
-        kernelHealth.healed();
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( KernelPanicEventGenerator.class ), logProvider.getLog( DatabaseHealth.class ) );
+        databaseHealth.healed();
 
         // WHEN
         String message = "Listen everybody... panic!";
         Exception exception = new Exception( message );
-        kernelHealth.panic( exception );
+        databaseHealth.panic( exception );
 
         // THEN
         logProvider.assertAtLeastOnce(
-                inLog( KernelHealth.class ).error(
+                inLog( DatabaseHealth.class ).error(
                         is("setting TM not OK. Kernel has encountered some problem, please perform necessary action (tx recovery/restart)" ),
                         sameInstance( exception )
                 )

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.RecoveryLabelScanWriterProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -38,7 +38,7 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
 {
     private final RecoveryLabelScanWriterProvider labelScanWriterProvider;
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
-    private final KernelHealth health;
+    private final DatabaseHealth health;
     private final IndexingService indexingService;
 
     public BatchingTransactionRepresentationStoreApplier(

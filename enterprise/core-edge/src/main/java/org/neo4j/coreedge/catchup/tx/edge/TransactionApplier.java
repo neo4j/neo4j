@@ -26,7 +26,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -59,7 +59,7 @@ public class TransactionApplier
     private final IndexUpdatesValidator indexUpdatesValidator;
     private final LogFile logFile;
     private final LogRotation logRotation;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
 
     public TransactionApplier( DependencyResolver resolver )
     {
@@ -68,7 +68,7 @@ public class TransactionApplier
         this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
         this.logFile = resolver.resolveDependency( LogFile.class );
         this.logRotation = resolver.resolveDependency( LogRotation.class );
-        this.kernelHealth = resolver.resolveDependency( KernelHealth.class );
+        this.databaseHealth = resolver.resolveDependency( DatabaseHealth.class );
     }
 
     public void appendToLogAndApplyToStore( CommittedTransactionRepresentation tx ) throws IOException
@@ -106,7 +106,7 @@ public class TransactionApplier
             catch ( IOException e )
             {
                 // Kernel panic is done on this level, i.e. append and apply doesn't do that themselves.
-                kernelHealth.panic( e );
+                databaseHealth.panic( e );
                 throw e;
             }
         }

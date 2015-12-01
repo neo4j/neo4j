@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -75,7 +75,7 @@ public class TransactionRepresentationStoreApplierTest
             mock( LegacyIndexApplierLookup.class );
     private final IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
     private final IdOrderingQueue queue = mock( IdOrderingQueue.class );
-    private final KernelHealth kernelHealth = mock( KernelHealth.class );
+    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     private final int transactionId = 12;
 
@@ -89,7 +89,7 @@ public class TransactionRepresentationStoreApplierTest
         when( storageEngine.cacheAccess() ).thenReturn( cacheAccess );
         when( storageEngine.legacyIndexApplierLookup() ).thenReturn( legacyIndexProviderLookup );
         when( storageEngine.neoStores() ).thenReturn( neoStores );
-        when( storageEngine.kernelHealth() ).thenReturn( kernelHealth );
+        when( storageEngine.kernelHealth() ).thenReturn( databaseHealth );
     }
 
     @Test
@@ -173,7 +173,7 @@ public class TransactionRepresentationStoreApplierTest
         {
             // THEN
             assertSame( ioex, ex );
-            verify( kernelHealth, times( 1 ) ).panic( ioex );
+            verify( databaseHealth, times( 1 ) ).panic( ioex );
         }
     }
 
