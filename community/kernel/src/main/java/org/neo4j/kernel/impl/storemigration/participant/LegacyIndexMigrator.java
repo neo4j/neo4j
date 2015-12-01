@@ -98,7 +98,7 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
         if ( legacyIndexMigrated )
         {
             fileSystem.deleteRecursively( originalLegacyIndexesRoot );
-            fileSystem.copyRecursively( migrationLegacyIndexesRoot, originalLegacyIndexesRoot );
+            fileSystem.moveToDirectory( migrationLegacyIndexesRoot, originalLegacyIndexesRoot.getParentFile() );
         }
     }
 

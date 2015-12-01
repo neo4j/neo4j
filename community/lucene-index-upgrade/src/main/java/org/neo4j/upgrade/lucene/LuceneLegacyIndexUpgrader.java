@@ -147,10 +147,13 @@ public class LuceneLegacyIndexUpgrader
 
     private static boolean isIndexDirectory( Path path ) throws IOException
     {
-        return Files.list( path )
-                .filter( child -> child.getFileName().toString().startsWith( SEGMENTS_FILE_NAME_PREFIX ) )
-                .findAny()
-                .isPresent();
+        try (Stream<Path> pathStream = Files.list( path ))
+        {
+            return  pathStream
+                    .filter( child -> child.getFileName().toString().startsWith( SEGMENTS_FILE_NAME_PREFIX ) )
+                    .findAny()
+                    .isPresent();
+        }
     }
 
 }

@@ -60,6 +60,7 @@ public class LegacyIndexMigratorTest
     @Before
     public void setUp()
     {
+        when( originalIndexStore.getParentFile() ).thenReturn( storeDir );
         when( fs.isDirectory( originalIndexStore ) ).thenReturn( true );
         when( fs.listFiles( originalIndexStore ) ).thenReturn( new File[]{mock( File.class )} );
     }
@@ -75,7 +76,7 @@ public class LegacyIndexMigratorTest
         indexMigrator.migrate( storeDir, migrationDir, progressMonitor, Legacy23Store.LEGACY_VERSION );
 
         verify( fs, never() ).deleteRecursively( originalIndexStore );
-        verify( fs, never() ).copyRecursively( migratedIndexStore, originalIndexStore );
+        verify( fs, never() ).moveToDirectory( migratedIndexStore, storeDir );
     }
 
     @Test
@@ -101,7 +102,7 @@ public class LegacyIndexMigratorTest
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any" );
 
         verify( fs ).deleteRecursively( originalIndexStore );
-        verify( fs ).copyRecursively( migratedIndexStore, originalIndexStore );
+        verify( fs ).moveToDirectory( migratedIndexStore, storeDir );
     }
 
     @Test
