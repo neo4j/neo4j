@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -42,7 +42,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final CheckPointThreshold threshold;
     private final StoreFlusher storeFlusher;
     private final LogPruning logPruning;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
     private final Log msgLog;
     private final CheckPointTracer tracer;
     private final Lock lock;
@@ -50,15 +50,15 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private long lastCheckPointedTx;
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
+            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
             LogProvider logProvider, CheckPointTracer tracer )
     {
-        this( transactionIdStore, threshold, storeFlusher, logPruning, appender, kernelHealth, logProvider, tracer,
+        this( transactionIdStore, threshold, storeFlusher, logPruning, appender, databaseHealth, logProvider, tracer,
                 new ReentrantLock() );
     }
 
     public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, KernelHealth kernelHealth,
+            StoreFlusher storeFlusher, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
             LogProvider logProvider, CheckPointTracer tracer, Lock lock )
     {
         this.appender = appender;
@@ -66,7 +66,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.threshold = threshold;
         this.storeFlusher = storeFlusher;
         this.logPruning = logPruning;
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
         this.lock = lock;
@@ -157,7 +157,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * getting into a scenario where we would await a condition that would potentially never
          * happen.
          */
-        kernelHealth.assertHealthy( IOException.class );
+        databaseHealth.assertHealthy( IOException.class );
 
         /*
          * First we flush the store. If we fail now or during the flush, on recovery we'll find the
@@ -172,7 +172,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * will be aborted, which is the safest alternative so that the next recovery will have a chance to
          * repair the damages.
          */
-        kernelHealth.assertHealthy( IOException.class );
+        databaseHealth.assertHealthy( IOException.class );
 
         msgLog.info( prefix + " Starting appending check point entry into the tx log..." );
         appender.checkPoint( logPosition, logCheckPointEvent );

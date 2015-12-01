@@ -36,7 +36,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -71,7 +71,7 @@ import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {
-    private static final KernelHealth kernelHealth = mock( KernelHealth.class );
+    private static final DatabaseHealth DATABASE_HEALTH = mock( DatabaseHealth.class );
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
@@ -98,7 +98,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
-                kernelHealth ) );
+                DATABASE_HEALTH ) );
 
         try
         {
@@ -145,7 +145,7 @@ public class PhysicalLogicalTransactionStoreTest
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, DATABASE_HEALTH ) );
 
         life.add( new Recovery( new Recovery.SPI()
         {
@@ -356,7 +356,7 @@ public class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, DATABASE_HEALTH ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

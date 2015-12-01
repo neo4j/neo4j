@@ -49,6 +49,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tools.console.input.ArgsCommand;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
