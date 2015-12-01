@@ -41,7 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -238,9 +238,9 @@ class RebuildFromLogs
             this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
             this.indexingService = resolver.resolveDependency( IndexingService.class );
-            KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
+            DatabaseHealth databaseHealth = resolver.resolveDependency( DatabaseHealth.class );
             this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
-                    neoStores, resolver.resolveDependency( KernelHealth.class ), new PropertyLoader( neoStores ),
+                    neoStores, resolver.resolveDependency( DatabaseHealth.class ), new PropertyLoader( neoStores ),
                     indexingService, IndexUpdateMode.BATCHED );
         }
 

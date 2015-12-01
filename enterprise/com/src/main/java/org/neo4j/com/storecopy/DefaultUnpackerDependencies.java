@@ -21,7 +21,7 @@ package org.neo4j.com.storecopy;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -67,8 +67,8 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     public IndexUpdatesValidator indexUpdatesValidator()
     {
         NeoStores neoStore = resolver.resolveDependency( NeoStoresSupplier.class ).get();
-        KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
-        return new OnlineIndexUpdatesValidator( neoStore, kernelHealth, new PropertyLoader( neoStore ),
+        DatabaseHealth databaseHealth = resolver.resolveDependency( DatabaseHealth.class );
+        return new OnlineIndexUpdatesValidator( neoStore, databaseHealth, new PropertyLoader( neoStore ),
                 resolver.resolveDependency( IndexingService.class ), IndexUpdateMode.BATCHED );
     }
 
@@ -85,9 +85,9 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     }
 
     @Override
-    public KernelHealth kernelHealth()
+    public DatabaseHealth kernelHealth()
     {
-        return resolver.resolveDependency( KernelHealth.class );
+        return resolver.resolveDependency( DatabaseHealth.class );
     }
 
     @Override

@@ -38,7 +38,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -122,7 +122,7 @@ public class TransactionCommittingResponseUnpackerTest
         final BatchingTransactionRepresentationStoreApplier applier =
                 mock( BatchingTransactionRepresentationStoreApplier.class );
         final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking();
-        final KernelHealth kernelHealth = newKernelHealth();
+        final DatabaseHealth databaseHealth = newKernelHealth();
 
           /*
            * The tx handler is called on every transaction applied after setting its id to committing
@@ -132,7 +132,7 @@ public class TransactionCommittingResponseUnpackerTest
         StoppingTxHandler stoppingTxHandler = new StoppingTxHandler();
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( logFile, logRotation,
-                indexUpdatesValidator, applier, appender, mock( TransactionObligationFulfiller.class ), kernelHealth );
+                indexUpdatesValidator, applier, appender, mock( TransactionObligationFulfiller.class ), databaseHealth );
         when( appender.append( any( TransactionRepresentation.class ), eq( committingTransactionId ) ) )
                 .thenReturn( new FakeCommitment( committingTransactionId, txIdStore ) );
 
@@ -192,11 +192,11 @@ public class TransactionCommittingResponseUnpackerTest
         final IndexUpdatesValidator indexUpdatesValidator = setUpIndexUpdatesValidatorMocking(  );
         final LogFile logFile = mock( LogFile.class );
         final LogRotation logRotation = mock( LogRotation.class );
-        final KernelHealth kernelHealth = newKernelHealth();
+        final DatabaseHealth databaseHealth = newKernelHealth();
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( logFile,
                 logRotation, indexUpdatesValidator, applier, appender,
-                mock( TransactionObligationFulfiller.class ), kernelHealth );
+                mock( TransactionObligationFulfiller.class ), databaseHealth );
 
         int maxBatchSize = 3;
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps, maxBatchSize );
@@ -224,7 +224,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         TransactionCommittingResponseUnpacker.Dependencies deps = buildDependencies( mock( LogFile.class ),
                 mock( LogRotation.class ), mock( IndexUpdatesValidator.class ), applier, appender, fulfiller,
-                mock( KernelHealth.class ) );
+                mock( DatabaseHealth.class ) );
 
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
@@ -268,10 +268,10 @@ public class TransactionCommittingResponseUnpackerTest
         }
     }
 
-    private KernelHealth newKernelHealth()
+    private DatabaseHealth newKernelHealth()
     {
         Log log = logging.getInternalLog( getClass() );
-        return new KernelHealth( new KernelPanicEventGenerator( new KernelEventHandlers( log ) ), log );
+        return new DatabaseHealth( new KernelPanicEventGenerator( new KernelEventHandlers( log ) ), log );
     }
 
     @Test
@@ -286,14 +286,14 @@ public class TransactionCommittingResponseUnpackerTest
 
         TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
         LogFile logFile = mock( LogFile.class );
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        when( kernelHealth.isHealthy() ).thenReturn( true );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        when( databaseHealth.isHealthy() ).thenReturn( true );
         LogRotation logRotation = mock( LogRotation.class );
         BatchingTransactionRepresentationStoreApplier applier =
                 mock( BatchingTransactionRepresentationStoreApplier.class );
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 buildDependencies( logFile, logRotation, mock( IndexUpdatesValidator.class ), applier,
-                        appender, obligationFulfiller, kernelHealth ) );
+                        appender, obligationFulfiller, databaseHealth ) );
         unpacker.start();
 
         // WHEN failing to append one or more transactions from a transaction stream response
@@ -326,10 +326,10 @@ public class TransactionCommittingResponseUnpackerTest
 
         TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
         LogFile logFile = mock( LogFile.class );
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        when( kernelHealth.isHealthy() ).thenReturn( false );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        when( databaseHealth.isHealthy() ).thenReturn( false );
         Throwable causeOfPanic = new Throwable( "BOOM!" );
-        when( kernelHealth.getCauseOfPanic() ).thenReturn( causeOfPanic );
+        when( databaseHealth.getCauseOfPanic() ).thenReturn( causeOfPanic );
         LogRotation logRotation = mock( LogRotation.class );
         Function<DependencyResolver,IndexUpdatesValidator> indexUpdatesValidatorFunction =
                 Functions.constant( mock( IndexUpdatesValidator.class ) );
@@ -340,7 +340,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 buildDependencies( logFile, logRotation, mock( IndexUpdatesValidator.class ), applier,
-                        appender, obligationFulfiller, kernelHealth ) );
+                        appender, obligationFulfiller, databaseHealth ) );
         unpacker.start();
 
         try
@@ -422,7 +422,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
         final LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1_000, transactionIdStore,
                 logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
-        final KernelHealth health = mock( KernelHealth.class );
+        final DatabaseHealth health = mock( DatabaseHealth.class );
         final LogRotation logRotation = LogRotation.NO_ROTATION;
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ) ) )
@@ -463,7 +463,7 @@ public class TransactionCommittingResponseUnpackerTest
             final IndexUpdatesValidator indexUpdatesValidator,
             final BatchingTransactionRepresentationStoreApplier storeApplier,
             final TransactionAppender appender, final TransactionObligationFulfiller obligationFulfiller,
-            final KernelHealth kernelHealth )
+            final DatabaseHealth databaseHealth )
     {
         return new TransactionCommittingResponseUnpacker.Dependencies()
         {
@@ -504,9 +504,9 @@ public class TransactionCommittingResponseUnpackerTest
             }
 
             @Override
-            public KernelHealth kernelHealth()
+            public DatabaseHealth kernelHealth()
             {
-                return kernelHealth;
+                return databaseHealth;
             }
 
             @Override

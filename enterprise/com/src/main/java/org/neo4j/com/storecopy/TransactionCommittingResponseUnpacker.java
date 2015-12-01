@@ -27,7 +27,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -71,7 +71,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
         LogRotation logRotation();
 
-        KernelHealth kernelHealth();
+        DatabaseHealth kernelHealth();
 
         // Components that change during role switches
 
@@ -140,7 +140,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
     private LogRotation logRotation;
-    private KernelHealth kernelHealth;
+    private DatabaseHealth databaseHealth;
     private Log log;
     private volatile boolean stopped;
 
@@ -205,9 +205,9 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
 
             // Check kernel health after log rotation
-            if ( !kernelHealth.isHealthy() )
+            if ( !databaseHealth.isHealthy() )
             {
-                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
+                Throwable causeOfPanic = databaseHealth.getCauseOfPanic();
                 log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
                 throw new IOException( msg, causeOfPanic );
             }
@@ -264,7 +264,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.obligationFulfiller = resolveTransactionObligationFulfiller( dependencies.transactionObligationFulfiller() );
         this.logFile = dependencies.logFile();
         this.logRotation = dependencies.logRotation();
-        this.kernelHealth = dependencies.kernelHealth();
+        this.databaseHealth = dependencies.kernelHealth();
         this.log = dependencies.logService().getInternalLogProvider().getLog( getClass() );
         this.stopped = false;
     }

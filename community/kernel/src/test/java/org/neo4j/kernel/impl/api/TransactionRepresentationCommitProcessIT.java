@@ -49,7 +49,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -173,15 +173,15 @@ public class TransactionRepresentationCommitProcessIT
                 10000, metaDataStore, metaDataStore, new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                 transactionMetadataCache );
 
-        KernelHealth kernelHealth = mock( KernelHealth.class );
+        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
 
         final TransactionRepresentationStoreApplier storeApplier = createStoreApplier(
-                indexStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering, kernelHealth );
+                indexStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering, databaseHealth );
 
         final BatchingTransactionAppender appender = createTransactionAppender( metaDataStore, transactionMetadataCache,
-                        legacyIndexTransactionOrdering, logFile, kernelHealth );
+                        legacyIndexTransactionOrdering, logFile, databaseHealth );
 
-        final CheckPointerImpl checkPointer = createCheckPointer( metaDataStore, kernelHealth, appender );
+        final CheckPointerImpl checkPointer = createCheckPointer( metaDataStore, databaseHealth, appender );
 
         lifeRule.add( logFile );
         lifeRule.add( indexStore );
@@ -241,21 +241,21 @@ public class TransactionRepresentationCommitProcessIT
 
     private BatchingTransactionAppender createTransactionAppender( MetaDataStore metaDataStore,
             TransactionMetadataCache transactionMetadataCache, IdOrderingQueue legacyIndexTransactionOrdering,
-            PhysicalLogFile logFile, KernelHealth kernelHealth )
+            PhysicalLogFile logFile, DatabaseHealth databaseHealth )
     {
         return new BatchingTransactionAppender( logFile, mock( LogRotation.class ),
-                transactionMetadataCache, metaDataStore, legacyIndexTransactionOrdering, kernelHealth );
+                transactionMetadataCache, metaDataStore, legacyIndexTransactionOrdering, databaseHealth );
     }
 
     private TransactionRepresentationStoreApplier createStoreApplier(
             IndexConfigStore indexStore,
             LegacyIndexApplierLookup legacyIndexApplierLookup,
             IdOrderingQueue legacyIndexTransactionOrdering,
-            KernelHealth kernelHealth )
+            DatabaseHealth databaseHealth )
     {
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.neoStores() ).thenReturn( neoStores );
-        when( storageEngine.kernelHealth() ).thenReturn( kernelHealth );
+        when( storageEngine.kernelHealth() ).thenReturn( databaseHealth );
         when( storageEngine.legacyIndexApplierLookup() ).thenReturn( legacyIndexApplierLookup );
         when( storageEngine.cacheAccess() ).thenReturn( mock( CacheAccessBackDoor.class ) );
         return new TransactionRepresentationStoreApplier(
@@ -263,7 +263,7 @@ public class TransactionRepresentationCommitProcessIT
                 indexStore, legacyIndexTransactionOrdering, storageEngine );
     }
 
-    private CheckPointerImpl createCheckPointer( MetaDataStore metaDataStore, KernelHealth kernelHealth,
+    private CheckPointerImpl createCheckPointer( MetaDataStore metaDataStore, DatabaseHealth databaseHealth,
             TransactionAppender appender )
     {
         CountCommittedTransactionThreshold committedTransactionThreshold =
@@ -278,7 +278,7 @@ public class TransactionRepresentationCommitProcessIT
         when( logProvider.getLog( any( Class.class ) ) ).thenReturn( mock( Log.class ) );
         return new CheckPointerImpl( metaDataStore, committedTransactionThreshold, storeFlusher,
                 mock( LogPruning.class ),
-                appender, kernelHealth, logProvider, mock( CheckPointTracer.class ) );
+                appender, databaseHealth, logProvider, mock( CheckPointTracer.class ) );
     }
 
     private static class InsaneCheckPointer implements Callable<Void>

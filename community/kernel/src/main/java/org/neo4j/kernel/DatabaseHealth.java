@@ -25,18 +25,17 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
-public class KernelHealth
+public class DatabaseHealth
 {
-    private static final String panicMessage = "Kernel has encountered some problem, "
-            + "please perform necessary action (tx recovery/restart)";
+    private static final String panicMessage = "Database has panicked, please perform restart and recover";
 
     // Keep that cozy name for legacy purposes
-    private volatile boolean tmOk = true; // TODO rather skip volatile if possible here.
+    private volatile boolean dbOK = true; // TODO rather skip volatile if possible here.
     private final KernelPanicEventGenerator kpe;
     private final Log log;
     private Throwable causeOfPanic;
 
-    public KernelHealth( KernelPanicEventGenerator kpe, Log log )
+    public DatabaseHealth( KernelPanicEventGenerator kpe, Log log )
     {
         this.kpe = kpe;
         this.log = log;
@@ -51,7 +50,7 @@ public class KernelHealth
      */
     public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
     {
-        if ( !tmOk )
+        if ( !dbOK )
         {
             EXCEPTION exception;
             try
@@ -78,40 +77,40 @@ public class KernelHealth
 
     public void panic( Throwable cause )
     {
-        if ( !tmOk )
+        if ( !dbOK )
         {
             return;
         }
 
         if ( cause == null )
         {
-            throw new IllegalArgumentException( "Must provide a cause for the kernel panic" );
+            throw new IllegalArgumentException( "Must provide a cause for the database panic" );
         }
         this.causeOfPanic = cause;
-        this.tmOk = false;
-        // Keeps the "setting TM not OK string for grep:ability
-        log.error( "setting TM not OK. " + panicMessage, cause );
+        this.dbOK = false;
+        // The "DB panic" string used for grep:ability
+        log.error( "DB panic: . " + panicMessage, cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
     }
 
     public boolean isHealthy()
     {
-        return tmOk;
+        return dbOK;
     }
 
     public Throwable getCauseOfPanic()
     {
-        if ( tmOk )
+        if ( dbOK )
         {
-            throw new IllegalStateException( "Kernel is healthy, no panic cause found" );
+            throw new IllegalStateException( "Database is healthy, no cause of panic found" );
         }
         return causeOfPanic;
     }
 
     public void healed()
     {
-        tmOk = true;
+        dbOK = true;
         causeOfPanic = null;
-        log.info( "Kernel health set to OK" );
+        log.info( "Database health set to OK" );
     }
 }

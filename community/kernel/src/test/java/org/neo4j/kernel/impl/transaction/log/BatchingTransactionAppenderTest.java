@@ -38,7 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -91,7 +91,7 @@ public class BatchingTransactionAppenderTest
 
     private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
-    private final KernelHealth kernelHealth = mock( KernelHealth.class );
+    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final LogFile logFile = mock( LogFile.class );
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
@@ -104,7 +104,7 @@ public class BatchingTransactionAppenderTest
         long txId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, databaseHealth ) );
 
         life.start();
 
@@ -143,7 +143,7 @@ public class BatchingTransactionAppenderTest
         long nextTxId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -186,7 +186,7 @@ public class BatchingTransactionAppenderTest
         InMemoryLogChannel channel = new InMemoryLogChannel();
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, databaseHealth ) );
 
         life.start();
 
@@ -229,9 +229,9 @@ public class BatchingTransactionAppenderTest
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        Mockito.reset( kernelHealth );
+        Mockito.reset( databaseHealth );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth ) );
+                transactionIdStore, BYPASS, databaseHealth ) );
 
         life.start();
 
@@ -249,7 +249,7 @@ public class BatchingTransactionAppenderTest
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
             verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
-            verify( kernelHealth ).panic( failure );
+            verify( databaseHealth ).panic( failure );
         }
     }
 
@@ -277,9 +277,9 @@ public class BatchingTransactionAppenderTest
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        Mockito.reset( kernelHealth );
+        Mockito.reset( databaseHealth );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS, kernelHealth ) );
+                metadataCache, transactionIdStore, BYPASS, databaseHealth ) );
 
         life.start();
 
@@ -297,7 +297,7 @@ public class BatchingTransactionAppenderTest
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
             verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
-            verify( kernelHealth ).panic( failure );
+            verify( databaseHealth ).panic( failure );
         }
     }
 
@@ -311,7 +311,7 @@ public class BatchingTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, legacyIndexOrdering, kernelHealth ) );
+                transactionIdStore, legacyIndexOrdering, databaseHealth ) );
 
         life.start();
 
@@ -374,7 +374,7 @@ public class BatchingTransactionAppenderTest
         IdOrderingQueue idOrderingQueue = mock( IdOrderingQueue.class );
         doThrow( new RuntimeException( failureMessage ) ).when( idOrderingQueue ).waitFor( anyLong() );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, idOrderingQueue, kernelHealth ) );
+                transactionIdStore, idOrderingQueue, databaseHealth ) );
 
         life.start();
 
@@ -401,7 +401,7 @@ public class BatchingTransactionAppenderTest
     {
         // Given
         BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth );
+                transactionIdStore, BYPASS, databaseHealth );
 
         WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
         Flushable flushable = mock( Flushable.class );
@@ -419,7 +419,7 @@ public class BatchingTransactionAppenderTest
         verify( channel, times( 1 ) ).putLong( 2l );
         verify( channel, times( 1 ) ).emptyBufferIntoChannelAndClearIt();
         verify( flushable, times( 1 ) ).flush();
-        verifyZeroInteractions( kernelHealth );
+        verifyZeroInteractions( databaseHealth );
     }
 
     @Test
@@ -427,7 +427,7 @@ public class BatchingTransactionAppenderTest
     {
         // Given
         BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, kernelHealth );
+                transactionIdStore, BYPASS, databaseHealth );
 
         IOException ioex = new IOException( "boom!" );
         WritableLogChannel channel = mock( WritableLogChannel.class, RETURNS_MOCKS );
@@ -448,7 +448,7 @@ public class BatchingTransactionAppenderTest
         }
 
         // Then
-        verify( kernelHealth, times( 1 ) ).panic( ioex );
+        verify( databaseHealth, times( 1 ) ).panic( ioex );
     }
 
     private TransactionRepresentation transactionWithLegacyIndexCommand()
