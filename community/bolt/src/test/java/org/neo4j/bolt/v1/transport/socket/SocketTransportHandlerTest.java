@@ -25,12 +25,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;

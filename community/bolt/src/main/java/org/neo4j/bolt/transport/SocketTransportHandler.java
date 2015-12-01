@@ -26,9 +26,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

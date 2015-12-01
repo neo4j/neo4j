@@ -28,8 +28,9 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 
+import java.util.function.Function;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
 

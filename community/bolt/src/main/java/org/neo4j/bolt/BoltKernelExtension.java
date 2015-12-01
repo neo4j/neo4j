@@ -24,6 +24,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 
+import java.util.function.Function;
+
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
@@ -33,7 +35,6 @@ import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;

@@ -23,10 +23,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.junit.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
