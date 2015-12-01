@@ -335,7 +335,8 @@ public class EnterpriseCoreEditionModule
                 logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) );
 
         RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ), logProvider, raftLog,
-                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout );
+                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout, config.get( CoreEdgeClusterSettings.catchup_batch_size ),
+                config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
