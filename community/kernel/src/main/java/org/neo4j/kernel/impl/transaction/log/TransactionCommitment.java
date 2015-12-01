@@ -46,7 +46,7 @@ class TransactionCommitment implements Commitment
     }
 
     @Override
-    public void publishAsApplied()
+    public void publishAsClosed()
     {
         transactionIdStore.transactionClosed( transactionId,
                 logPosition.getLogVersion(), logPosition.getByteOffset() );

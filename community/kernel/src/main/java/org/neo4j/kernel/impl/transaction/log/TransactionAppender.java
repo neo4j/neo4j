@@ -39,7 +39,7 @@ public interface TransactionAppender
      *
      * Any failure happening inside this method will cause a {@link KernelHealth#panic(Throwable) kernel panic}.
      * Callers must make sure that successfully appended
-     * transactions exiting this method are {@link Commitment#publishAsApplied()}}.
+     * transactions exiting this method are {@link Commitment#publishAsClosed()}}.
      *
      * @param batch transactions to append to the log. These transaction instances provide both input arguments
      * as well as a place to provide output data, namely {@link TransactionToApply#commitment()} and
@@ -47,7 +47,7 @@ public interface TransactionAppender
      * @param logAppendEvent A trace event for the given log append operation.
      * @return last committed transaction in this batch. The appended (i.e. committed) transactions
      * will have had their {@link TransactionToApply#commitment()} available and caller is expected to
-     * {@link Commitment#publishAsApplied() mark them as applied} after they have been applied to storage.
+     * {@link Commitment#publishAsClosed() mark them as applied} after they have been applied to storage.
      * Note that {@link Commitment commitments} must be {@link Commitment#publishAsCommitted() marked as committed}
      * by this method.
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for

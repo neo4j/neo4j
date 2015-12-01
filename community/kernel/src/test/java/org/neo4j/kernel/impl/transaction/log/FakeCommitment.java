@@ -46,7 +46,7 @@ public class FakeCommitment implements Commitment
     }
 
     @Override
-    public void publishAsApplied()
+    public void publishAsClosed()
     {
         transactionIdStore.transactionClosed( id, 1, 2 );
     }

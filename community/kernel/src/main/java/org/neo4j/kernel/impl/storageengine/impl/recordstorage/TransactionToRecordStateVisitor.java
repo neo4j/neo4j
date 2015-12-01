@@ -72,7 +72,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void done()
+    public void close()
     {
         try
         {

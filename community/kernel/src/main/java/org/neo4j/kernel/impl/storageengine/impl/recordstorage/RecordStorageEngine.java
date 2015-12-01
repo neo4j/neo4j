@@ -230,6 +230,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         return storeLayer;
     }
 
+    @SuppressWarnings( "resource" )
     @Override
     public Collection<Command> createCommands(
             TransactionState txState,
@@ -267,8 +268,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 txStateVisitor );
         txStateVisitor = new TransactionCountingStateVisitor(
                 txStateVisitor, storeLayer, txState, countsRecordState );
-        txState.accept( txStateVisitor );
-        txStateVisitor.done();
+        try ( TxStateVisitor visitor = txStateVisitor )
+        {
+            txState.accept( txStateVisitor );
+        }
 
         // Convert record state into commands
         recordState.extractCommands( commands );

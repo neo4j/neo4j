@@ -148,7 +148,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             if ( batch.commitment().markedAsCommitted() )
             {
-                batch.commitment().publishAsApplied();
+                batch.commitment().publishAsClosed();
             }
             batch = batch.next();
         }

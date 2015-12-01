@@ -104,7 +104,7 @@ public interface StorageEngine
     /**
      * Apply a batch of transactions to this storage. Transactions are applied to storage after being committed,
      * i.e. appended to a log by {@link TransactionAppender}. Implementations should NOT
-     * {@link Commitment#publishAsApplied() mark transactions as applied}, instead caller is expected to do that.
+     * {@link Commitment#publishAsClosed() mark transactions as applied}, instead caller is expected to do that.
      * Caller is typically {@link TransactionCommitProcess}.
      *
      * @param batch batch of transactions to apply to storage.

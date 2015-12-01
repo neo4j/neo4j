@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 /**
  * A visitor for visiting the changes that have been made in a transaction.
  */
-public interface TxStateVisitor
+public interface TxStateVisitor extends AutoCloseable
 {
     void visitCreatedNode( long id );
 
@@ -94,10 +94,8 @@ public interface TxStateVisitor
 
     void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor );
 
-    /**
-     * Must be called Called after all visitor methods, i.e. all changes have been visited.
-     */
-    void done();
+    @Override
+    void close();
 
     class Adapter implements TxStateVisitor
     {
@@ -233,7 +231,7 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void done()
+        public void close()
         {
         }
     }
@@ -406,9 +404,9 @@ public interface TxStateVisitor
         }
 
         @Override
-        public void done()
+        public void close()
         {
-            actual.done();
+            actual.close();
         }
     }
 }

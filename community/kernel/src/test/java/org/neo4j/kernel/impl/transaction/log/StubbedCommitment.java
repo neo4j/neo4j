@@ -36,7 +36,7 @@ public class StubbedCommitment implements Commitment
     }
 
     @Override
-    public void publishAsApplied()
+    public void publishAsClosed()
     {
     }
 
