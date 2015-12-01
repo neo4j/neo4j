@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.util.function.Optionals;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -43,7 +43,7 @@ public class CountsStoreApplierTest
         // GIVEN
         final CountsTracker tracker = mock( CountsTracker.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
-        when( tracker.apply( anyLong() ) ).thenReturn( Optionals.some( updater ) );
+        when( tracker.apply( anyLong() ) ).thenReturn( Optional.of( updater ) );
         final CountsStoreApplier applier = new CountsStoreApplier( tracker, TransactionApplicationMode.INTERNAL );
 
         // WHEN

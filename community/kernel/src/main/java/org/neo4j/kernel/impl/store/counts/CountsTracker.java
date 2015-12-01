@@ -43,7 +43,8 @@ import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.RotationTimerFactory;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.impl.util.function.Optional;
+import java.util.Optional;
+
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
