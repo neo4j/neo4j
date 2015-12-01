@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, Intern
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, HintException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
@@ -150,6 +151,7 @@ trait CompatibilityFor2_2 {
   protected val compiler: v2_2.CypherCompiler
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  implicit val indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
   def produceParsedQuery(statementAsText: String, rawStatement: String, offset: InputPosition) = new ParsedQuery {
     val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, rawStatement, Some(offset)))

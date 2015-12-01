@@ -522,7 +522,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     lazy val _statistics: GraphStatistics = {
       val db = gdb.asInstanceOf[GraphDatabaseAPI]
-      val queryCtx = new TransactionBoundQueryContext(db, null, true, db.statement)
+      val queryCtx = new TransactionBoundQueryContext(db, null, true, db.statement)(indexSearchMonitor)
       new QueriedGraphStatistics(gdb, queryCtx)
     }
 
@@ -538,7 +538,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     db.withTx {
       tx =>
-        val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)
+        val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)
     }
