@@ -69,7 +69,7 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
  */
 public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler
 {
-    public enum Timeouts implements TimeoutService.TimeoutName
+    public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
         ELECTION, HEARTBEAT
     }
@@ -78,9 +78,9 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private final MEMBER myself;
     private final RaftLog entryLog;
 
-    private final TimeoutService timeoutService;
+    private final RenewableTimeoutService renewableTimeoutService;
     private final long heartbeatInterval;
-    private TimeoutService.Timeout electionTimer;
+    private RenewableTimeoutService.Timeout electionTimer;
     private RaftMembershipManager<MEMBER> membershipManager;
 
     private final long electionTimeout;
@@ -88,23 +88,23 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private final Outbound<MEMBER> outbound;
     private final Log log;
-    volatile boolean handlingMessage = false;
+    private volatile boolean handlingMessage = false;
     private Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager<MEMBER> logShipping;
     private Set<Listener<LeadershipChange<MEMBER>>> leadershipChangeListeners = new HashSet<>();
 
     public RaftInstance( MEMBER myself, TermStore termStore, VoteStore<MEMBER> voteStore, RaftLog entryLog, long electionTimeout,
-            long heartbeatInterval, TimeoutService timeoutService, final Inbound inbound, final Outbound<MEMBER> outbound,
-            long leaderWaitTimeout, LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
-            RaftLogShippingManager<MEMBER> logShipping )
+                         long heartbeatInterval, RenewableTimeoutService renewableTimeoutService, final Inbound inbound, final Outbound<MEMBER> outbound,
+                         long leaderWaitTimeout, LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
+                         RaftLogShippingManager<MEMBER> logShipping )
     {
         this.myself = myself;
         this.entryLog = entryLog;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
-        this.timeoutService = timeoutService;
+        this.renewableTimeoutService = renewableTimeoutService;
 
         this.leaderWaitTimeout = leaderWaitTimeout;
         this.outbound = outbound;
@@ -122,12 +122,12 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private void initTimers()
     {
-        electionTimer = timeoutService.create(
+        electionTimer = renewableTimeoutService.create(
                 Timeouts.ELECTION, electionTimeout, randomTimeoutRange(), timeout -> {
                     handle( new RaftMessages.Timeout.Election<>( myself ) );
                     timeout.renew();
                 } );
-        timeoutService.create(
+        renewableTimeoutService.create(
                 Timeouts.HEARTBEAT, heartbeatInterval, 0, timeout -> {
                     handle( new RaftMessages.Timeout.Heartbeat<>( myself ) );
                     timeout.renew();

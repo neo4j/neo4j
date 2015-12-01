@@ -38,8 +38,11 @@ import static java.lang.System.nanoTime;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
-public class ScheduledTimeoutService extends LifecycleAdapter implements Runnable, TimeoutService
+public class DelayedRenewableTimeoutService extends LifecycleAdapter implements Runnable, RenewableTimeoutService
 {
+    public static final int TIMER_RESOLUTION = 1;
+    public static final TimeUnit TIMER_RESOLUTION_UNIT = TimeUnit.MILLISECONDS;
+
     /**
      * Sorted by next-to-trigger.
      */
@@ -50,9 +53,14 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     private final JobScheduler scheduler;
     private JobScheduler.JobHandle jobHandle;
 
-    public ScheduledTimeoutService()
+    public DelayedRenewableTimeoutService()
     {
-        this.clock = Clock.SYSTEM_CLOCK;
+        this( Clock.SYSTEM_CLOCK );
+    }
+
+    public DelayedRenewableTimeoutService( Clock clock )
+    {
+        this.clock = clock;
         this.random = new Random( nanoTime() );
         this.scheduler = new Neo4jJobScheduler();
     }
@@ -60,18 +68,18 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     /**
      * Set up a new timeout. The attachment is optional data to pass along to the trigger, and can be set to Object
      * and null if you don't care about it.
-     * <p/>
-     * The randomRange attribute allows you to introduce a bit of arbitrariness in when the timeout is triggered, which
+     * <p>
+     * The randomRangeInMillis attribute allows you to introduce a bit of arbitrariness in when the timeout is triggered, which
      * is a useful way to avoid "thundering herds" when multiple timeouts are likely to trigger at the same time.
-     * <p/>
-     * If you don't want randomness, set randomRange to 0.
+     * <p>
+     * If you don't want randomness, set randomRangeInMillis to 0.
      */
     @Override
-    public Timeout create( TimeoutName name, long milliseconds, long randomRange, TimeoutHandler handler )
+    public Timeout create( TimeoutName name, long delayInMillis, long randomRangeInMillis, TimeoutHandler handler )
     {
         ScheduledTimeout timeout = new ScheduledTimeout(
-                calcTimeoutTimestamp( milliseconds, randomRange ),
-                milliseconds, randomRange, handler, this );
+                calcTimeoutTimestamp( delayInMillis, randomRangeInMillis ),
+                delayInMillis, randomRangeInMillis, handler, this );
 
         synchronized ( timeouts )
         {
@@ -153,14 +161,15 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     @Override
     public void start() throws Throwable
     {
-        jobHandle = scheduler.scheduleRecurring( new JobScheduler.Group( "Scheduler", POOLED ), this, 1,
-                TimeUnit.MILLISECONDS );
+        jobHandle = scheduler.scheduleRecurring( new JobScheduler.Group( "Scheduler", POOLED ), this, TIMER_RESOLUTION,
+                TIMER_RESOLUTION_UNIT );
     }
 
     @Override
     public void stop() throws Throwable
     {
         jobHandle.cancel( false );
+        scheduler.stop();
         scheduler.shutdown();
     }
 
@@ -171,11 +180,11 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
         private final long timeoutLength;
         private final long randomRange;
         private final TimeoutHandler handler;
-        private final ScheduledTimeoutService timeouts;
+        private final DelayedRenewableTimeoutService timeouts;
         private long timeoutTimestampMillis;
 
         public ScheduledTimeout( long timeoutTimestampMillis, long timeoutLength, long randomRange, TimeoutHandler
-                handler, ScheduledTimeoutService timeouts )
+                handler, DelayedRenewableTimeoutService timeouts )
         {
             this.timeoutTimestampMillis = timeoutTimestampMillis;
             this.timeoutLength = timeoutLength;

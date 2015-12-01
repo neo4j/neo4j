@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -50,7 +50,7 @@ public class CoreServerStartupProcess implements Lifecycle
                                      ReplicatedIdGeneratorFactory idGeneratorFactory,
                                      RaftInstance<CoreMember> raft, RaftLog raftLog, RaftServer<CoreMember> raftServer,
                                      CatchupServer catchupServer,
-                                     ScheduledTimeoutService raftTimeoutService,
+                                     DelayedRenewableTimeoutService raftTimeoutService,
                                      MembershipWaiter<CoreMember> membershipWaiter,
                                      long joinCatchupTimeout )
     {

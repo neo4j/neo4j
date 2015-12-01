@@ -79,7 +79,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -167,7 +167,7 @@ public class EnterpriseCoreEditionModule
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshall, raftListenAddress, logProvider );
 
-        final ScheduledTimeoutService raftTimeoutService = new ScheduledTimeoutService();
+        final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService();
 
         File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
         NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory, new RaftContentSerializer(),
@@ -319,7 +319,7 @@ public class EnterpriseCoreEditionModule
                                                         CoreMember myself,
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
-                                                        ScheduledTimeoutService raftTimeoutService )
+                                                        DelayedRenewableTimeoutService raftTimeoutService )
     {
         LoggingInbound loggingRaftInbound = new LoggingInbound( raftServer, messageLogger, myself.getRaftAddress() );
 

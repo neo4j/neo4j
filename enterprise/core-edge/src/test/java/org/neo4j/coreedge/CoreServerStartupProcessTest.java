@@ -33,7 +33,7 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CoreServerStartupProcess;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
 import static org.mockito.Matchers.any;
@@ -53,7 +53,7 @@ public class CoreServerStartupProcessTest
         RaftLog raftLog = mock( RaftLog.class );
         RaftServer<CoreMember> raftServer = mock( RaftServer.class );
         CatchupServer catchupServer = mock( CatchupServer.class );
-        ScheduledTimeoutService timeoutService = mock( ScheduledTimeoutService.class );
+        DelayedRenewableTimeoutService timeoutService = mock( DelayedRenewableTimeoutService.class );
         MembershipWaiter<CoreMember> membershipWaiter = mock( MembershipWaiter.class );
         when(membershipWaiter.waitUntilCaughtUpMember( any(ReadableRaftState.class) ))
                 .thenReturn( mock( CompletableFuture.class ) );
@@ -81,7 +81,7 @@ public class CoreServerStartupProcessTest
         RaftLog raftLog = mock( RaftLog.class );
         RaftServer<CoreMember> raftServer = mock( RaftServer.class );
         CatchupServer catchupServer = mock( CatchupServer.class );
-        ScheduledTimeoutService timeoutService = mock( ScheduledTimeoutService.class );
+        DelayedRenewableTimeoutService timeoutService = mock( DelayedRenewableTimeoutService.class );
         MembershipWaiter<CoreMember> membershipListener = mock( MembershipWaiter.class );
         when(membershipListener.waitUntilCaughtUpMember( any(ReadableRaftState.class) )).thenReturn( mock(CompletableFuture.class) );
 

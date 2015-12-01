@@ -19,7 +19,10 @@
  */
 package org.neo4j.coreedge.raft;
 
-public interface TimeoutService
+/**
+ * A service for creating {@link RenewableTimeoutService.Timeout} instances.
+ */
+public interface RenewableTimeoutService
 {
     Timeout create( TimeoutName timeoutName, long milliseconds, long randomRange, TimeoutHandler handler );
 

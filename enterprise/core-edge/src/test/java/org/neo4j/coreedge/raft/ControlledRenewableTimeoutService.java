@@ -26,7 +26,7 @@ import org.neo4j.helpers.Pair;
 
 import static org.mockito.Mockito.mock;
 
-public class ControlledTimeoutService implements TimeoutService
+public class ControlledRenewableTimeoutService implements RenewableTimeoutService
 {
     private Map<TimeoutName, Pair<TimeoutHandler, Timeout>> handlers = new HashMap<>();
 
