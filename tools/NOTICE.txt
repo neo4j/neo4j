@@ -25,5 +25,12 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  airline
   Apache Commons Lang
+  Guava: Google Core Libraries for Java
+  javax.inject
+  Lucene Core
+
+GNU Lesser General Public License, Version 2.1
+  FindBugs-Annotations
 
