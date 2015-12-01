@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier,
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{UnresolvedLabel, UnresolvedProperty}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{Equals, HasLabel, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, ast}
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -60,7 +61,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
     graph.withTx { tx =>
       val resources: ExternalResource = mock[ExternalResource]
-      val queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)
+      val indexSearchMonitor = mock[IndexSearchMonitor]
+      val queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)(indexSearchMonitor)
       val state = QueryState(graph, queryContext, resources, params = Map.empty, decorator = NullPipeDecorator)
 
       for (x <- 0 to 30) {

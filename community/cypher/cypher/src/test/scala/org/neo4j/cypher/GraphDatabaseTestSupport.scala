@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
@@ -221,6 +222,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+
+  def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 }
 
 trait Snitch extends GraphDatabaseAPI {

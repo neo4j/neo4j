@@ -206,7 +206,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
         case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
           val source = new SingleRowPipe()
-          val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
+          val ep = entityProducerFactory.readNodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
           NodeStartPipe(source, id.name, ep)()
 
         case x =>

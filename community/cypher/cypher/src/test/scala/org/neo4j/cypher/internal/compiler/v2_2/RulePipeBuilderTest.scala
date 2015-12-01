@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
@@ -97,7 +98,7 @@ class RulePipeBuilderTest
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors(kernelMonitors), RewriterStepSequencer.newValidating _)
-      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
 
@@ -123,7 +124,7 @@ class RulePipeBuilderTest
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val execPlanBuilder = new LegacyPipeBuilder(new WrappedMonitors(kernelMonitors), RewriterStepSequencer.newValidating _)
-      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)
 

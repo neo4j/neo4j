@@ -123,7 +123,7 @@ class QueriedGraphStatisticsTest extends CypherFunSuite with GraphDatabaseTestSu
   def withGraphStatistics[T](f: (TokenContext, GraphStatistics) => T): T = {
     val tx = graph.beginTx()
     try {
-      val queryContext = new TransactionBoundQueryContext(graph, tx, true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, true, statement)(indexSearchMonitor)
       val stats = new QueriedGraphStatistics(graph, queryContext)
       val result = f(queryContext, stats)
       tx.success()
