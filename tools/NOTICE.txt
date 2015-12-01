@@ -25,8 +25,11 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  airline
   Apache Commons Lang
   ConcurrentLinkedHashMap
+  Guava: Google Core Libraries for Java
+  javax.inject
   Lucene Core
   Netty/All-in-One
   opencsv
@@ -40,4 +43,7 @@ BSD - Scala License
 BSD License
   ASM Core
   Scala Compiler
+
+GNU Lesser General Public License, Version 2.1
+  FindBugs-Annotations
 

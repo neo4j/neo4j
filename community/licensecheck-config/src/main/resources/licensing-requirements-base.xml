@@ -77,6 +77,9 @@
     <artifact id="org.jboss.xnio:xnio-api:jar:3.3.0.Final">
       <license>ASL2.0</license><!-- https://github.com/dmlloyd/xnio/blob/3.x/LICENSE.txt -->
     </artifact>
+    <artifact id="com.google.code.findbugs:annotations:jar:2.0.3">
+      <license>LGPL2.1</license>
+    </artifact>
   </override-licenses>
   <coalesced-licenses>
     <license name="Academic Free License version 3.0">
