@@ -36,12 +36,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -119,7 +119,7 @@ public class TestMigrateToDenseNodeSupport
     @Before
     public void before() throws Exception
     {
-        dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.1-db.zip" );
+        dir = Unzip.unzip( getClass(), "0.A.1-db.zip", testDir.graphDbDir() );
     }
 
     @Test

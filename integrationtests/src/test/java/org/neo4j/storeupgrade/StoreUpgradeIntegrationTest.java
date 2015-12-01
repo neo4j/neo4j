@@ -72,6 +72,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.Unzip;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -283,7 +284,7 @@ public class StoreUpgradeIntegrationTest
         public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.3-to-be-recovered.zip" );
+            File dir = Unzip.unzip( getClass(), "0.A.3-to-be-recovered.zip", testDir.graphDbDir() );
             new File( dir, "messages.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
@@ -378,7 +379,7 @@ public class StoreUpgradeIntegrationTest
 
         public File prepareDirectory( File targetDir ) throws IOException
         {
-            AbstractNeo4jTestCase.unzip( targetDir, StoreUpgradeIntegrationTest.class, resourceName );
+            Unzip.unzip( getClass(), resourceName, targetDir );
             new File( targetDir, "messages.log" ).delete(); // clear the log
             return targetDir;
         }
