@@ -249,29 +249,57 @@ public class Args
         return value != null ? TimeUtil.parseTimeMillis.apply(value) : defaultValueInMillis;
     }
 
-    public Boolean getBoolean( String key, Boolean defaultValue )
+    /**
+     * Like calling {@link #getBoolean(String, Boolean)} with {@code false} for default value.
+     * This is the most common case, i.e. returns {@code true} if boolean argument was specified as:
+     * <ul>
+     * <li>--myboolean</li>
+     * <li>--myboolean=true</li>
+     * </ul>
+     * Otherwise {@code false.
+     * }
+     * @param key argument key.
+     * @return {@code true} if argument was specified w/o value, or w/ value {@code true}, otherwise {@code false}.
+     */
+    public boolean getBoolean( String key )
     {
-        String value = getSingleOptionOrNull( key );
-
-        // Apparently this condition must be split like this, instead of as an elvis operator,
-        // because defaultValue will, in that case, be evaluated as a primitive boolean and
-        // a NullPointerException will insue. Odd.
-        if ( value != null )
-        {
-            return Boolean.parseBoolean( value );
-        }
-        return defaultValue;
+        return getBoolean( key, false );
     }
 
-    public Boolean getBoolean( String key, Boolean defaultValueIfNotFound,
-            Boolean defaultValueIfNoValue )
+    /**
+     * Like calling {@link #getBoolean(String, Boolean, Boolean)} with {@code true} for
+     * {@code defaultValueIfNoValue}, i.e. specifying {@code --myarg} will interpret it as {@code true}.
+     */
+    public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified )
+    {
+        return getBoolean( key, defaultValueIfNotSpecified, Boolean.TRUE );
+    }
+
+    /**
+     * Parses a {@code boolean} argument. There are a couple of cases:
+     * <ul>
+     * <li>The argument isn't specified. In this case the value of {@code defaultValueIfNotSpecified}
+     * will be returned.</li>
+     * <li>The argument is specified without value, for example <pre>--myboolean</pre>. In this case
+     * the value of {@code defaultValueIfNotSpecified} will be returned.</li>
+     * <li>The argument is specified with value, for example <pre>--myboolean=true</pre>.
+     * In this case the actual value will be returned.</li>
+     * </ul>
+     *
+     * @param key argument key.
+     * @param defaultValueIfNotSpecified used if argument not specified.
+     * @param defaultValueIfSpecifiedButNoValue used if argument specified w/o value.
+     * @return argument boolean value depending on what was specified, see above.
+     */
+    public Boolean getBoolean( String key, Boolean defaultValueIfNotSpecified,
+            Boolean defaultValueIfSpecifiedButNoValue )
     {
         String value = getSingleOptionOrNull( key );
         if ( value != null )
         {
             return Boolean.parseBoolean( value );
         }
-        return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+        return this.map.containsKey( key ) ? defaultValueIfSpecifiedButNoValue : defaultValueIfNotSpecified;
     }
 
     public <T extends Enum<T>> T getEnum( Class<T> enumClass, String key, T defaultValue )
@@ -295,6 +323,11 @@ public class Args
     public List<String> orphans()
     {
         return new ArrayList<>( this.orphans );
+    }
+
+    public String[] orphansAsArray()
+    {
+        return orphans.toArray( new String[orphans.size()] );
     }
 
     public String[] asArgs()

@@ -60,7 +60,7 @@ public class CheckTxLogs
     public static void main( String[] args ) throws Exception
     {
         Args arguments = Args.withFlags( HELP_FLAG ).parse( args );
-        if ( arguments.getBoolean( HELP_FLAG, false ) )
+        if ( arguments.getBoolean( HELP_FLAG ) )
         {
             printUsageAndExit();
         }
