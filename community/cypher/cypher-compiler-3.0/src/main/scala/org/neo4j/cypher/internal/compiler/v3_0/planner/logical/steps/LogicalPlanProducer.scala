@@ -31,6 +31,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
 
+
+/*
+ * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
+ * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
+ * much testing
+ */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
     plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
@@ -125,6 +131,28 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       VarExpand(left, from, dir, projectedDir, pattern.types, to, pattern.name, l, mode, predicates)(solved)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
+  }
+
+  def planShortestPathVarExpand(left: LogicalPlan,
+                                pathName: IdName,
+                                from: IdName,
+                                dir: SemanticDirection,
+                                to: IdName,
+                                pattern: PatternRelationship)
+  (implicit context: LogicalPlanningContext) = {
+
+    val patternLength: VarPatternLength = pattern.length match {
+      case l: VarPatternLength => l
+      case _ => throw new InternalException("Expected a varlength path to be here")
+    }
+
+    val projectedDir = projectedDirection(pattern, from, dir)
+
+    val solved = left.solved.amendQueryGraph(_.addPatternRelationship(pattern))
+
+    ShortestPathVarExpand(left, pathName, from, dir, projectedDir,
+                          pattern.types, to, pattern.name, patternLength,
+                          ExpandInto, Seq.empty)(solved)
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan)(implicit context: LogicalPlanningContext) = {
@@ -401,80 +429,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planSkip(sortedLimit, skip)
   }
 
-  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
-                        variables: Set[IdName])
-                       (implicit context: LogicalPlanningContext) = {
-    def doesNotDependOnFullPath(predicate: Expression): Boolean = {
-      (predicate.dependencies.map(IdName.fromVariable(_)) intersect variables).isEmpty
-    }
-
-    val (safePredicates, needFallbackPredicates) = predicates.partition {
-      // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
-      case AllIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
-      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
-      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
-      case _ => false
-    }
-
-    // We always solve all predicates
+  def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
+                      (implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
-
-    // Only support fallback for shortestPath (not allShortestPaths, yet)
-    if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, solved)
-    }
-    else {
-      FindShortestPaths(inner, shortestPaths, predicates)(solved)
-    }
-  }
-
-  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPaths: ShortestPathPattern,
-                                            predicates: Seq[Expression],
-                                            solved: PlannerQuery with CardinalityEstimation)
-                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
-    // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
-    // the graph algorithm does not find anything (left-hand-side)
-    val lhsArgument = planArgumentRowFrom(inner)
-    val lhsSp = FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
-    val lhsOption = Optional(lhsSp)(solved)
-    val lhs = Apply(inner, lhsOption)(solved)
-
-    val pattern = shortestPaths.rel
-
-    val patternLength: VarPatternLength = pattern.length match {
-      case l: VarPatternLength => l
-      case _ => throw new InternalException("Expected a varlength path to be here")
-    }
-
-    // TODO: Decide the best from and to based on degree
-    val from = pattern.left
-    val to = pattern.right
-    val dir = pattern.dir
-    val projectedDir = projectedDirection(pattern, from, dir)
-
-    // We assume there is always a path name (either explicit or auto-generated)
-    val pathName = shortestPaths.name.get
-
-    // Plan a fallback branch using VarExpand(Into) (right-hand-side)
-    val rhsArgument = planArgumentRowFrom(lhs)
-    val rhsVarExpand =
-      ShortestPathVarExpand(rhsArgument, pathName, from, dir, projectedDir,
-                pattern.types, to, pattern.name, patternLength,
-                ExpandInto, Seq.empty)(solved)
-
-    // Filter using predicates
-    val rhsFiltered = planSelection(predicates, rhsVarExpand)
-
-    // Plan SortedLimit
-    // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
-    val rhsSortedLimit = SortedLimit(rhsFiltered, SignedDecimalIntegerLiteral("1")(null),
-                                     Seq(AscSortItem(FunctionInvocation(FunctionName(Length.name)(null),
-                                                                        Variable(pathName.name)(null))(null))(null)))(solved)
-
-    val rhs = rhsSortedLimit
-
-    planAntiConditionalApply(lhs, rhs, shortestPaths.name.get)
+    FindShortestPaths(inner, shortestPaths, predicates)(solved)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
@@ -639,7 +597,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     CardinalityEstimation.lift(plannerQuery, cardinality)
   }
 
-  private def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {
+  def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {
     if (dir == SemanticDirection.BOTH) {
       if (from == pattern.left)
         SemanticDirection.OUTGOING

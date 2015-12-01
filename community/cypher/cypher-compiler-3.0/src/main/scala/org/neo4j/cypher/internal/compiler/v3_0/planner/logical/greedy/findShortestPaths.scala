@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CandidateGenerator, LogicalPlanningContext}
@@ -29,11 +30,7 @@ object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
     qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
       input.plans.collect {
         case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          val pathVariables = Set(shortestPath.name, Some(shortestPath.rel.name)).flatten
-          val pathPredicates = qg.selections.predicates.collect {
-            case Predicate(dependencies, expr: Expression) if (dependencies intersect pathVariables).nonEmpty => expr
-          }.toSeq
-          context.logicalPlanProducer.planShortestPaths(plan, shortestPath, pathPredicates, pathVariables)
+          planShortestPaths(plan, qg, shortestPath)
       }
     }.toSeq
 }
