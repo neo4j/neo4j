@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
 
@@ -446,18 +447,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       case _ => throw new InternalException("Expected a varlength path to be here")
     }
 
-    // TODO: Decide from and to based on degree
+    // TODO: Decide the best from and to based on degree
     val from = pattern.left
     val to = pattern.right
     val dir = pattern.dir
     val projectedDir = projectedDirection(pattern, from, dir)
 
-    val pathName = shortestPaths.name.get.name
+    // We assume there is always a path name (either explicit or auto-generated)
+    val pathName = shortestPaths.name.get
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsArgument = planArgumentRowFrom(lhs)
     val rhsVarExpand =
-      ShortestPathVarExpand(rhsArgument, shortestPaths.name.get, from, dir, projectedDir,
+      ShortestPathVarExpand(rhsArgument, pathName, from, dir, projectedDir,
                 pattern.types, to, pattern.name, patternLength,
                 ExpandInto, Seq.empty)(solved)
 
@@ -465,11 +467,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     val rhsFiltered = planSelection(predicates, rhsVarExpand)
 
     // Plan SortedLimit
-    // TODO: Get function name from object instead of string "length"
-    // TODO: Nake it work for allShortestPaths (i.e. group by the shortest length)
+    // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
     val rhsSortedLimit = SortedLimit(rhsFiltered, SignedDecimalIntegerLiteral("1")(null),
-                                     Seq(AscSortItem(FunctionInvocation(FunctionName("length")(null),
-                                                                        Variable(pathName)(null))(null))(null)))(solved)
+                                     Seq(AscSortItem(FunctionInvocation(FunctionName(Length.name)(null),
+                                                                        Variable(pathName.name)(null))(null))(null)))(solved)
 
     val rhs = rhsSortedLimit
 
