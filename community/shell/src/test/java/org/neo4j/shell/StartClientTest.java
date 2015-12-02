@@ -175,6 +175,25 @@ public class StartClientTest
     }
 
     @Test
+    public void shouldReportEditionThroughDbInfoApp() throws Exception
+    {
+        // given
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
+        StartClient client = new StartClient(
+                new PrintStream( out ), new PrintStream( err ) );
+
+        // when
+        client.start( new String[]{"-path", db.getGraphDatabaseAPI().getStoreDir(),
+                "-c", "dbinfo -g Configuration edition"}, ctrlCHandler );
+
+        // then
+        assertEquals( 0, err.size() );
+        assertThat( out.toString(), containsString( "\"edition\": \"Community\"" ) );
+    }
+
+    @Test
     public void shouldPrintVersionAndExit() throws Exception
     {
         // given

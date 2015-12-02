@@ -41,6 +41,7 @@ import org.neo4j.kernel.Version;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.SimpleAppServer;
+import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
@@ -299,7 +300,8 @@ public class StartClient
         {
             out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         }
-        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ), signalHandler );
+        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ),
+                new SystemOutput( out ), signalHandler );
         grabPromptOrJustExecuteCommand( client, args );
 
         shutdownIfNecessary( server );
