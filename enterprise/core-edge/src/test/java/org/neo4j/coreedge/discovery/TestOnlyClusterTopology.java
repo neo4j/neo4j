@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
@@ -69,7 +68,8 @@ public class TestOnlyClusterTopology implements ClusterTopology
     @Override
     public boolean bootstrappable()
     {
-        return canBeBootstrapped;
+        // Can only bootstrap for a cluster with multiple instances
+        return canBeBootstrapped && coreMembers.size() > 1;
     }
 
     @Override
