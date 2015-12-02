@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.planShortestPaths
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
   def apply(input: GreedyPlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] =

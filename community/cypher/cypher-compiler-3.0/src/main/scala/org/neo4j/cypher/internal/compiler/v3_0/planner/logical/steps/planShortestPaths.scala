@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{QueryGraph, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{ExpandInto, IdName, LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
+import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 
 case object planShortestPaths {
 
@@ -36,7 +39,7 @@ case object planShortestPaths {
     }.toSeq
 
     def doesNotDependOnFullPath(predicate: Expression): Boolean = {
-      (predicate.dependencies.map(IdName.fromVariable(_)) intersect variables).isEmpty
+      (predicate.dependencies.map(IdName.fromVariable) intersect variables).isEmpty
     }
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
@@ -50,45 +53,55 @@ case object planShortestPaths {
 
     // Only support fallback for shortestPath (not allShortestPaths, yet)
     if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates)
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
     }
     else {
       context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates)
     }
   }
 
-  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPaths: ShortestPathPattern,
+  private def createPathExpression(pattern: PatternElement): PathExpression = {
+    val pos = pattern.position
+    val path = EveryPath(pattern)
+    val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
+    PathExpression(step)(pos)
+  }
+
+  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPath: ShortestPathPattern,
                                             predicates: Seq[Expression],
                                             safePredicates: Seq[Expression],
-                                            unsafePredicates: Seq[Expression])
+                                            unsafePredicates: Seq[Expression],
+                                            queryGraph: QueryGraph)
                                            (implicit context: LogicalPlanningContext): LogicalPlan = {
     val lpp = context.logicalPlanProducer
 
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentRowFrom(inner)
-    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPaths, predicates)  //FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
+    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates)  //FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty) //Optional(lhsSp)(solved)
     val lhs = lpp.planApply(inner, lhsOption) //Apply(inner, lhsOption)(solved)
 
-    val pattern = shortestPaths.rel
+    val pattern = shortestPath.rel
 
-    // TODO: Decide the best from and to based on degree
+    // TODO: Decide the best from and to based on degree (generate two alternative plans and let planner decide)
+    // (or do bidirectional var length expand)
     val from = pattern.left
-    val to = pattern.right
-    val dir = pattern.dir
 
     // We assume there is always a path name (either explicit or auto-generated)
-    val pathName = shortestPaths.name.get
+    val pathName = shortestPath.name.get
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsArgument = lpp.planArgumentRowFrom(lhs)
-    // TODO: Plan projection with path and use regular planVarExpand instead
-    //val rhsVarExpand = lpp.planVarExpand(rhsArgument, from, dir, to, pattern, predicates, Seq.empty, ExpandInto)
-    val rhsVarExpand = lpp.planShortestPathVarExpand(rhsArgument, pathName, from, dir, to, pattern)
+    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from)
+                                       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
+
+    // Projection with path
+    val map = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map)
 
     // Filter using predicates
-    val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsVarExpand)
+    val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsProjection)
 
     // Plan SortedLimit
     // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
@@ -102,10 +115,9 @@ case object planShortestPaths {
     val rhs = rhsSortedLimit
 
     // We have to force the plan to solve what we actually solve
-    // TODO: Find a nicer way than force-updating solved
-    val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths)
+    val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)
                                                                          .addPredicates(predicates: _*)))
 
-    lpp.planAntiConditionalApply(rhs, lhs, shortestPaths.name.get).updateSolved(solved)
+    lpp.planAntiConditionalApply(lhs, rhs, shortestPath.name.get).updateSolved(solved)
   }
 }

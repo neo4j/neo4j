@@ -77,30 +77,3 @@ case class VarExpand(left: LogicalPlan,
         (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
     })(solved)
 }
-
-case class ShortestPathVarExpand(left: LogicalPlan,
-                                 pathName: IdName,
-                                 from: IdName,
-                                 dir: SemanticDirection,
-                                 projectedDir: SemanticDirection,
-                                 types: Seq[RelTypeName],
-                                 to: IdName,
-                                 relName: IdName,
-                                 length: VarPatternLength,
-                                 mode: ExpansionMode = ExpandAll,
-                                 predicates: Seq[(Variable, Expression)] = Seq.empty)
-                                (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-
-  val lhs = Some(left)
-
-  def rhs = None
-
-  def availableSymbols: Set[IdName] =
-    left.availableSymbols + relName + to + pathName
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(predicates = predicates.map {
-      case tuple@(ident, expr) =>
-          (ident, f(left.availableSymbols + relName + IdName(ident.name) + pathName, expr))
-    })(solved)
-}

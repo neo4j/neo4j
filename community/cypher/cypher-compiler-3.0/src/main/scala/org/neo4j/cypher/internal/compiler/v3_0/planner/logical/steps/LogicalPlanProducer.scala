@@ -133,28 +133,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
 
-  def planShortestPathVarExpand(left: LogicalPlan,
-                                pathName: IdName,
-                                from: IdName,
-                                dir: SemanticDirection,
-                                to: IdName,
-                                pattern: PatternRelationship)
-  (implicit context: LogicalPlanningContext) = {
-
-    val patternLength: VarPatternLength = pattern.length match {
-      case l: VarPatternLength => l
-      case _ => throw new InternalException("Expected a varlength path to be here")
-    }
-
-    val projectedDir = projectedDirection(pattern, from, dir)
-
-    val solved = left.solved.amendQueryGraph(_.addPatternRelationship(pattern))
-
-    ShortestPathVarExpand(left, pathName, from, dir, projectedDir,
-                          pattern.types, to, pattern.name, patternLength,
-                          ExpandInto, Seq.empty)(solved)
-  }
-
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     Selection(predicates, left)(left.solved)
   }
