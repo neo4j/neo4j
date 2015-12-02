@@ -205,14 +205,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void markForTermination()
     {
-        if ( !terminated )
+        if ( !terminated && !closed )
         {
             failure = true;
             terminated = true;
-            if ( !closed )
-            {
-                transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
-            }
+            transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
         }
     }
 

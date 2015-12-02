@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -99,6 +100,25 @@ public class KernelTransactionImplementationTest
                     }
                 }, true, "write"}
         );
+    }
+
+    @Test
+    public void terminationAfterCloseShouldNotAffectState() throws Exception
+    {
+        // GIVEN
+        KernelTransaction transaction = newTransaction();
+
+        // WHEN
+        transactionConsumer.accept( transaction );
+        transaction.success();
+        transaction.close();
+        transaction.markForTermination();
+
+        // THEN
+        assertFalse(transaction.shouldBeTerminated());
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
+        verify( transactionMonitor, times( 0 ) ).transactionTerminated( isWriteTx );
+        verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
     @Test
