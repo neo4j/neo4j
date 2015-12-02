@@ -30,6 +30,7 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -57,8 +58,9 @@ public class NeoTransactionIndexApplierTest
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>(
-            labelScanStore );
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
     @Before
@@ -93,8 +95,8 @@ public class NeoTransactionIndexApplierTest
     private IndexBatchTransactionApplier newIndexTransactionApplier()
     {
         return new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer, mock( NodeStore.class ), mock( PropertyStore.class ), mock(
-                PropertyLoader.class ) );
+                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ), mock(
+                PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
     }
 
     @Test

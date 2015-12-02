@@ -404,7 +404,7 @@ public class IndexRecoveryIT
                             regularUpdates.addAll( updates );
                             break;
 
-                        case BATCHED:
+                        case RECOVERY:
                             batchedUpdates.addAll( updates );
                             break;
 

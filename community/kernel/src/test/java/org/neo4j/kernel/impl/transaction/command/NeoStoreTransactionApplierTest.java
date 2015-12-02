@@ -81,6 +81,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
 public class NeoStoreTransactionApplierTest
@@ -110,6 +111,7 @@ public class NeoStoreTransactionApplierTest
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
 
     @Before
     public void setup()
@@ -900,6 +902,6 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                nodeStore, propertyStore, new PropertyLoader( neoStores ) );
+                indexUpdatesSync, nodeStore, propertyStore, new PropertyLoader( neoStores ), INTERNAL );
     }
 }

@@ -103,7 +103,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
                 };
 
-            case BATCHED:
+            case RECOVERY:
                 return super.newUpdater( mode );
 
             default:

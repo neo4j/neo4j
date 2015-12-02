@@ -24,38 +24,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
-import static org.neo4j.collection.primitive.Primitive.longSet;
 
 /**
- * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage, cutting corners knowing
- * that this is for recovery. See {@link RecoveryIndexingUpdatesValidator} for more details.
+ * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
+ * Gathers node/property commands by node id, preparing for extraction of {@link NodePropertyUpdate updates}.
  */
 public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
-    final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
-    final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
+    private final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
+    private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
 
     @Override
     public TransactionApplier startTx( TransactionToApply transaction )
     {
-        nodeCommandsById.clear();
-        propertyCommandsByNodeIds.clear();
-
         return this;
     }
 
@@ -68,7 +60,8 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     @Override
     public void close() throws Exception
     {
-        // Nothing to close
+        nodeCommandsById.clear();
+        propertyCommandsByNodeIds.clear();
     }
 
     @Override
@@ -98,16 +91,6 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     public boolean containsAnyNodeOrPropertyUpdate()
     {
         return !nodeCommandsById.isEmpty() || !propertyCommandsByNodeIds.isEmpty();
-    }
-
-    public void visitUpdatedNodeIds( PrimitiveLongVisitor<RuntimeException> updatedNodeVisitor )
-    {
-        try ( PrimitiveLongSet uniqueIds = longSet( nodeCommandsById.size() + propertyCommandsByNodeIds.size() ) )
-        {
-            uniqueIds.addAll( nodeCommandsById.iterator() );
-            uniqueIds.addAll( propertyCommandsByNodeIds.iterator() );
-            uniqueIds.visitKeys( updatedNodeVisitor );
-        }
     }
 
     public PrimitiveLongObjectMap<NodeCommand> nodeCommandsById()

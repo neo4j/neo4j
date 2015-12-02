@@ -28,14 +28,15 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -61,6 +62,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -108,7 +111,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.BATCHED;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
@@ -527,7 +530,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.applyUpdates( updates( asSet( add( 1, "foo" ) ) ), new HashSet<>(), IndexUpdateMode.ONLINE );
+            indexingService.apply( updates( asSet( add( 1, "foo" ) ) ) );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -554,9 +557,7 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
-        Set<IndexDescriptor> affectedIndexes = new HashSet<>();
-        indexing.applyUpdates( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ), new HashSet<>(), IndexUpdateMode.ONLINE );
-        assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), affectedIndexes );
+        indexing.apply( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ) );
 
         // Then
         InOrder inOrder = inOrder( updater );
@@ -599,10 +600,9 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ).times( 2 ) ).close( true );
 
         // When
-        indexing.applyUpdates( updates( asList(
+        indexing.apply( updates( asList(
                 NodePropertyUpdate.add( 1, propertyKeyId, "foo", new long[]{labelId1} ),
-                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ) ),
-                new HashSet<>(), IndexUpdateMode.ONLINE );
+                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ) ) );
 
         // Then
         verify( updater1 ).close();
@@ -651,8 +651,9 @@ public class IndexingServiceTest
         when( storeView.nodeAsUpdates( nodeId2 ) ).thenReturn( asSet( nodeUpdate2 ) );
 
         // When
+        life.init();
         IndexUpdates updates = nodeIdsAsIndexUpdates( nodeIds );
-        indexing.applyUpdates( updates, new HashSet<>(), BATCHED );
+        indexing.apply( updates );
         life.start();
 
         // Then
@@ -674,6 +675,13 @@ public class IndexingServiceTest
             public void collectUpdatedNodeIds( final PrimitiveLongSet target )
             {
                 target.addAll( nodeIds.iterator() );
+            }
+
+            @Override
+            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }
@@ -706,8 +714,8 @@ public class IndexingServiceTest
         IndexRule otherIndex = indexRule( otherIndexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         indexing.createIndex( otherIndex );
         indexing.dropIndex( otherIndex );
-        indexing.applyUpdates( nodeIdsAsIndexUpdates( PrimitiveLongCollections.asSet(
-                PrimitiveLongCollections.iterator( nodeId ) ) ), new HashSet<>(), IndexUpdateMode.BATCHED );
+        indexing.apply( nodeIdsAsIndexUpdates( PrimitiveLongCollections.asSet(
+                PrimitiveLongCollections.iterator( nodeId ) ) ) );
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndex( index );
         reset( accessor );
@@ -716,7 +724,7 @@ public class IndexingServiceTest
 
         // THEN our index should still have been recovered properly
         // apparently we create updaters two times during recovery, get over it
-        verify( accessor, times( 2 ) ).newUpdater( BATCHED );
+        verify( accessor, times( 2 ) ).newUpdater( RECOVERY );
     }
 
     @Test

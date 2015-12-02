@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.List;
+
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
  * Set of updates ({@link NodePropertyUpdate}) to apply to indexes.
@@ -28,9 +33,20 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 public interface IndexUpdates extends Iterable<NodePropertyUpdate>
 {
     /**
+     * Feeds updates raw material in the form of node/property commands, to create updates from.
+     *
+     * @param propCommands {@link PropertyCommand} grouped by node id.
+     * @param nodeCommands {@link NodeCommand} by node id.
+     */
+    void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands );
+
+    /**
      * Exposed since we infer index updates from physical commands AND contents in store.
      * This means that we cannot get to this information during recovery and so we merely need a way
-     * to jot down which nodes needs to be reindexed after recovery.
+     * to jot down which nodes needs to be re-indexed after recovery.
+     *
+     * @param target to receive these node ids.
      */
     void collectUpdatedNodeIds( PrimitiveLongSet target );
 }

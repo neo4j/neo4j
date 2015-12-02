@@ -137,9 +137,4 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             }
         };
     }
-
-    public void noteAffectedIndexes( Set<IndexDescriptor> affectedIndexes )
-    {
-        affectedIndexes.addAll( updaterMap.keySet() );
-    }
 }

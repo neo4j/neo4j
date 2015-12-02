@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -50,65 +50,63 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
- * Calculates the actual updates as late as possible, when {@link #iterator() requesting} them.
+ * Derives logical index updates from physical records, provided by {@link NodeCommand node commands} and
+ * {@link PropertyCommand property commands}. For some types of updates state from store is also needed,
+ * for example if adding a label to a node which already has properties matching existing and online indexes;
+ * in that case the properties for that node needs to be read from store since the commands in that transaction
+ * cannot itself provide enough information.
+ *
+ * One instance can be {@link #feed(PrimitiveLongObjectMap, PrimitiveLongObjectMap) fed} data about
+ * multiple transactions, to be {@link #iterator() accessed} later.
  */
-public class LazyIndexUpdates implements IndexUpdates
+public class OnlineIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
-    private final PrimitiveLongObjectMap<List<PropertyCommand>> propCommands;
-    private final PrimitiveLongObjectMap<NodeCommand> nodeCommands;
-    private Collection<NodePropertyUpdate> updates;
+    private final Collection<NodePropertyUpdate> updates = new ArrayList<>();
 
-    public LazyIndexUpdates( NodeStore nodeStore,
+    public OnlineIndexUpdates( NodeStore nodeStore,
                              PropertyStore propertyStore,
-                             PropertyLoader propertyLoader,
-                             PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-                             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+                             PropertyLoader propertyLoader )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.propertyLoader = propertyLoader;
-        this.propCommands = propCommands;
-        this.nodeCommands = nodeCommands;
     }
 
     @Override
     public Iterator<NodePropertyUpdate> iterator()
     {
-        if ( updates == null )
-        {
-            updates = gatherPropertyAndLabelUpdates();
-        }
         return updates.iterator();
     }
 
     @Override
     public void collectUpdatedNodeIds( PrimitiveLongSet target )
     {
-        target.addAll( nodeCommands.iterator() );
-        target.addAll( propCommands.iterator() );
+        throw new UnsupportedOperationException();
     }
 
-    private Collection<NodePropertyUpdate> gatherPropertyAndLabelUpdates()
+    @Override
+    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        Collection<NodePropertyUpdate> propertyUpdates = new HashSet<>();
-        Map<Pair<Long, Integer>, NodePropertyUpdate> propertyChanges = new HashMap<>();
-        gatherUpdatesFromPropertyCommands( propertyUpdates, propertyChanges );
-        gatherUpdatesFromNodeCommands( propertyUpdates, propertyChanges );
-        return propertyUpdates;
+        Map<Pair<Long,Integer>,NodePropertyUpdate> propertyChanges = new HashMap<>();
+        gatherUpdatesFromPropertyCommands( nodeCommands, propertyCommands, propertyChanges );
+        gatherUpdatesFromNodeCommands( nodeCommands, propertyCommands, propertyChanges );
     }
 
-    private void gatherUpdatesFromPropertyCommands( final Collection<NodePropertyUpdate> updates,
-                                                    final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
+    private void gatherUpdatesFromPropertyCommands(
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+            final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
     {
         propCommands.visitEntries( new PrimitiveLongObjectVisitor<List<PropertyCommand>,RuntimeException>()
         {
             @Override
             public boolean visited( long nodeId, List<PropertyCommand> propertyCommands )
             {
-                gatherUpdatesFromPropertyCommandsForNode( nodeId, propertyCommands, updates );
+                gatherUpdatesFromPropertyCommandsForNode( nodeId, nodeCommands, propertyCommands );
                 return false;
             }
         } );
@@ -123,8 +121,8 @@ public class LazyIndexUpdates implements IndexUpdates
     }
 
     private void gatherUpdatesFromPropertyCommandsForNode( long nodeId,
-                                                           List<PropertyCommand> propertyCommandsForNode,
-                                                           Collection<NodePropertyUpdate> updates )
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            List<PropertyCommand> propertyCommandsForNode )
     {
         long[] nodeLabelsBefore, nodeLabelsAfter;
         NodeCommand nodeChanges = nodeCommands.get( nodeId );
@@ -159,23 +157,26 @@ public class LazyIndexUpdates implements IndexUpdates
                 nodeLabelsBefore, nodeLabelsAfter );
     }
 
-    private void gatherUpdatesFromNodeCommands( final Collection<NodePropertyUpdate> propertyUpdates,
-                                                final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
+    private void gatherUpdatesFromNodeCommands(
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
+            final Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
     {
         nodeCommands.visitEntries( new PrimitiveLongObjectVisitor<NodeCommand,RuntimeException>()
         {
             @Override
             public boolean visited( long key, NodeCommand nodeCommand )
             {
-                gatherUpdatesFromNodeCommand( nodeCommand, propertyUpdates, propertyLookup );
+                gatherUpdatesFromNodeCommand( nodeCommand, nodeCommands, propertyCommands, propertyLookup );
                 return false;
             }
         } );
     }
 
     private void gatherUpdatesFromNodeCommand( NodeCommand nodeCommand,
-                                               Collection<NodePropertyUpdate> propertyUpdates,
-                                               Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
+            Map<Pair<Long,Integer>,NodePropertyUpdate> propertyLookup )
     {
         long nodeId = nodeCommand.getKey();
         long[] labelsBefore = parseLabelsField( nodeCommand.getBefore() ).get( nodeStore );
@@ -194,7 +195,7 @@ public class LazyIndexUpdates implements IndexUpdates
             return;
         }
 
-        Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
+        Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId, nodeCommands, propertyCommands );
         while ( properties.hasNext() )
         {
             DefinedProperty property = properties.next();
@@ -202,31 +203,34 @@ public class LazyIndexUpdates implements IndexUpdates
             if ( summary.hasAddedLabels() )
             {
                 Object value = property.value();
-                propertyUpdates.add( add( nodeId, propertyKeyId, value, summary.getAddedLabels() ) );
+                updates.add( add( nodeId, propertyKeyId, value, summary.getAddedLabels() ) );
             }
             if ( summary.hasRemovedLabels() )
             {
                 NodePropertyUpdate propertyChange = propertyLookup.get( Pair.of( nodeId, propertyKeyId ) );
                 Object value = propertyChange == null ? property.value() : propertyChange.getValueBefore();
-                propertyUpdates.add( remove( nodeId, propertyKeyId, value, summary.getRemovedLabels() ) );
+                updates.add( remove( nodeId, propertyKeyId, value, summary.getRemovedLabels() ) );
             }
         }
     }
 
-    private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
+    private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId,
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands )
     {
         NodeCommand nodeCommand = nodeCommands.get( nodeId );
         NodeRecord nodeRecord = (nodeCommand == null) ? nodeStore.getRecord( nodeId ) : nodeCommand.getAfter();
 
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        PrimitiveLongObjectMap<PropertyRecord> propertiesById = propertiesFromCommandsForNode( nodeRecord.getId() );
+        PrimitiveLongObjectMap<PropertyRecord> propertiesById =
+                propertiesFromCommandsForNode( propertyCommands.get( nodeId ) );
         propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
         return receiver;
     }
 
-    private PrimitiveLongObjectMap<PropertyRecord> propertiesFromCommandsForNode( long nodeId )
+    private PrimitiveLongObjectMap<PropertyRecord> propertiesFromCommandsForNode(
+            List<PropertyCommand> propertyCommands )
     {
-        List<PropertyCommand> propertyCommands = propCommands.get( nodeId );
         if ( propertyCommands == null )
         {
             return PrimitiveLongCollections.emptyObjectMap();
@@ -240,60 +244,6 @@ public class LazyIndexUpdates implements IndexUpdates
                 result.put( after.getId(), after );
             }
         }
-        return result;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        LazyIndexUpdates that = (LazyIndexUpdates) o;
-
-        if ( nodeCommands != null ? !nodeCommands.equals( that.nodeCommands ) : that.nodeCommands != null )
-        {
-            return false;
-        }
-        if ( nodeStore != null ? !nodeStore.equals( that.nodeStore ) : that.nodeStore != null )
-        {
-            return false;
-        }
-        if ( propCommands != null ? !propCommands.equals( that.propCommands ) : that.propCommands != null )
-        {
-            return false;
-        }
-        if ( propertyLoader != null ? !propertyLoader.equals( that.propertyLoader ) : that.propertyLoader != null )
-        {
-            return false;
-        }
-        if ( propertyStore != null ? !propertyStore.equals( that.propertyStore ) : that.propertyStore != null )
-        {
-            return false;
-        }
-        if ( updates != null ? !updates.equals( that.updates ) : that.updates != null )
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = nodeStore != null ? nodeStore.hashCode() : 0;
-        result = 31 * result + (propertyStore != null ? propertyStore.hashCode() : 0);
-        result = 31 * result + (propCommands != null ? propCommands.hashCode() : 0);
-        result = 31 * result + (nodeCommands != null ? nodeCommands.hashCode() : 0);
-        result = 31 * result + (updates != null ? updates.hashCode() : 0);
-        result = 31 * result + (propertyLoader != null ? propertyLoader.hashCode() : 0);
         return result;
     }
 }

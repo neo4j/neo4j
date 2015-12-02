@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -29,33 +30,31 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
- * Provides direct access to updates.
+ * Used during recovery to collect node ids to refresh from scratch after recovery is completed.
+ * The reason for this is that index updates from transaction commands may need to read from store
+ * and the store needs to be in a recovered state before reading from it.
  */
-public class DirectIndexUpdates implements IndexUpdates
+public class RecoveryIndexUpdates implements IndexUpdates
 {
-    private final Iterable<NodePropertyUpdate> updates;
-
-    public DirectIndexUpdates( Iterable<NodePropertyUpdate> updates )
-    {
-        this.updates = updates;
-    }
+    private final PrimitiveLongSet ids = Primitive.longSet();
 
     @Override
     public Iterator<NodePropertyUpdate> iterator()
     {
-        return updates.iterator();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void collectUpdatedNodeIds( PrimitiveLongSet target )
     {
-        throw new UnsupportedOperationException();
+        target.addAll( ids.iterator() );
     }
 
     @Override
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        throw new UnsupportedOperationException();
+        ids.addAll( propCommands.iterator() );
+        ids.addAll( nodeCommands.iterator() );
     }
 }

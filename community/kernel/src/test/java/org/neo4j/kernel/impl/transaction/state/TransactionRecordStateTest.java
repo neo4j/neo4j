@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -195,9 +196,11 @@ public class TransactionRecordStateTest
         // THEN
         // -- later recovering that tx, there should be only one update
         assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
-        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-        extractor.visitUpdatedNodeIds( visitor );
-        verify( visitor, times( 1 ) ).visited( nodeId );
+        PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
+        assertEquals( 1, recoveredNodeIds.size() );
+        assertEquals( nodeId, recoveredNodeIds.iterator().next() );
     }
 
     @Test
@@ -1166,9 +1169,9 @@ public class TransactionRecordStateTest
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
         transaction.accept( extractor );
 
-        LazyIndexUpdates lazyIndexUpdates = new LazyIndexUpdates( neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), new PropertyLoader( neoStores ), extractor.propertyCommandsByNodeIds(),
-                extractor.nodeCommandsById() );
+        OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
+                neoStores.getPropertyStore(), new PropertyLoader( neoStores ) );
+        lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;
     }
 

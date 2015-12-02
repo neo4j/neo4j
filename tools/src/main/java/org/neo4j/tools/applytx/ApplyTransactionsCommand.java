@@ -50,7 +50,7 @@ import org.neo4j.tools.console.input.ArgsCommand;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 
 public class ApplyTransactionsCommand extends ArgsCommand
@@ -125,7 +125,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
                             transaction.getTransactionRepresentation();
                     try
                     {
-                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, RECOVERY );
+                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, EXTERNAL );
                         progress.add( 1 );
                     }
                     catch ( final Throwable e )

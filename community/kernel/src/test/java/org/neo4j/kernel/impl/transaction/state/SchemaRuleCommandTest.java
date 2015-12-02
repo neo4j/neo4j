@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
@@ -63,6 +65,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
@@ -225,9 +228,10 @@ public class SchemaRuleCommandTest
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
-            labelScanStoreSynchronizer, mock( NodeStore.class ), mock( PropertyStore.class ),
-            mock( PropertyLoader.class ) );
+            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ),
+            mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

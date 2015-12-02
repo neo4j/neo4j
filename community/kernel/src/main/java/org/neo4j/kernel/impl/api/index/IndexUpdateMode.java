@@ -21,6 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 public enum IndexUpdateMode
 {
+    /**
+     * Used when the db is online
+     */
     ONLINE,
-    BATCHED
+
+    /**
+     * Used when the db is recoverying
+     */
+    RECOVERY
 }

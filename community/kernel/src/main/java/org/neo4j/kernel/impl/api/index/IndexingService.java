@@ -392,9 +392,21 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    public void applyUpdates( IndexUpdates updates, Set<IndexDescriptor> affectedIndexes,
-            IndexUpdateMode updateMode )
-            throws IOException, IndexEntryConflictException
+    /**
+     * Applies updates from the given {@link IndexUpdates}, which may contain updates for one or more indexes.
+     * As long as index updates are derived from physical commands and store state there's special treatment
+     * during recovery since we cannot read from an unrecovered store, so in that case the nodes ids are simply
+     * noted and reindexed after recovery of the store has completed. That is also why {@link IndexUpdates}
+     * has one additional accessor method for getting the node ids.
+     *
+     * As far as {@link IndexingService} is concerned recovery happens between calls to {@link #init()} and
+     * {@link #start()}.
+     *
+     * @param updates {@link IndexUpdates} to apply.
+     * @throws IOException potentially thrown from index updating.
+     * @throws IndexEntryConflictException potentially thrown from index updating.
+     */
+    public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
     {
         if ( state == State.NOT_STARTED )
         {
@@ -404,65 +416,70 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( state == State.RUNNING || state == State.STARTING )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
-            {
-                // TODO Sort the updates by index so that we don't have to create an IndexDescriptor object per update
-                for ( NodePropertyUpdate update : updates )
-                {
-                    int propertyKeyId = update.getPropertyKeyId();
-                    switch ( update.getUpdateMode() )
-                    {
-                    case ADDED:
-                        for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
-                        {
-                            processUpdate( update, updaterMap, update.getLabelAfter( i ), propertyKeyId );
-                        }
-                        break;
-
-                    case REMOVED:
-                        for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
-                        {
-                            processUpdate( update, updaterMap, update.getLabelBefore( i ), propertyKeyId );
-                        }
-                        break;
-
-                    case CHANGED:
-                        int lenBefore = update.getNumberOfLabelsBefore();
-                        int lenAfter = update.getNumberOfLabelsAfter();
-
-                        for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
-                        {
-                            int labelBefore = update.getLabelBefore( i );
-                            int labelAfter = update.getLabelAfter( j );
-
-                            if ( labelBefore == labelAfter )
-                            {
-                                processUpdate( update, updaterMap, labelAfter, propertyKeyId );
-                                i++;
-                                j++;
-                            }
-                            else
-                            {
-                                if ( labelBefore < labelAfter )
-                                {
-                                    i++;
-                                }
-                                else /* labelBefore > labelAfter */
-                                {
-                                    j++;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-                updaterMap.noteAffectedIndexes( affectedIndexes );
-            }
+            apply( updates, IndexUpdateMode.ONLINE );
         }
         else
         {
             throw new IllegalStateException(
                     "Can't apply index updates " + toList( updates ) + " while indexing service is " + state );
+        }
+    }
+
+    private void apply( IndexUpdates updates, IndexUpdateMode updateMode )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
+        {
+            // TODO Sort the updates by index so that we don't have to create an IndexDescriptor object per update
+            for ( NodePropertyUpdate update : updates )
+            {
+                int propertyKeyId = update.getPropertyKeyId();
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                    for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelAfter( i ), propertyKeyId );
+                    }
+                    break;
+
+                case REMOVED:
+                    for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelBefore( i ), propertyKeyId );
+                    }
+                    break;
+
+                case CHANGED:
+                    int lenBefore = update.getNumberOfLabelsBefore();
+                    int lenAfter = update.getNumberOfLabelsAfter();
+
+                    for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
+                    {
+                        int labelBefore = update.getLabelBefore( i );
+                        int labelAfter = update.getLabelAfter( j );
+
+                        if ( labelBefore == labelAfter )
+                        {
+                            processUpdate( update, updaterMap, labelAfter, propertyKeyId );
+                            i++;
+                            j++;
+                        }
+                        else
+                        {
+                            if ( labelBefore < labelAfter )
+                            {
+                                i++;
+                            }
+                            else /* labelBefore > labelAfter */
+                            {
+                                j++;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -543,7 +560,7 @@ public class IndexingService extends LifecycleAdapter
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.BATCHED ) )
+            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
@@ -551,7 +568,7 @@ public class IndexingService extends LifecycleAdapter
                 }
 
                 IndexUpdates updates = readRecoveredUpdatesFromStore();
-                applyUpdates( updates, new HashSet<>(), IndexUpdateMode.BATCHED );
+                apply( updates, IndexUpdateMode.RECOVERY );
                 monitor.appliedRecoveredData( updates );
             }
         }
@@ -689,25 +706,6 @@ public class IndexingService extends LifecycleAdapter
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException( "Unable to force " + index, e );
-            }
-        }
-    }
-
-    public void flushAll( Set<IndexDescriptor> affectedIndexes )
-    {
-        for ( IndexDescriptor indexDescriptor : affectedIndexes )
-        {
-            try
-            {
-                indexMapRef.getIndexProxy( indexDescriptor ).flush();
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                // This is really weird, although this index might just now have been concurrently deleted.
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Unable to force " + indexDescriptor, e );
             }
         }
     }

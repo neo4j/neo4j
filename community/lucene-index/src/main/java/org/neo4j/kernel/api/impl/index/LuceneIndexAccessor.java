@@ -145,7 +145,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         case ONLINE:
             return new LuceneIndexUpdater( false );
 
-        case BATCHED:
+        case RECOVERY:
             return new LuceneIndexUpdater( true );
 
         default:
@@ -268,11 +268,11 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     private class LuceneIndexUpdater implements IndexUpdater
     {
-        private final boolean isBatched;
+        private final boolean isRecovery;
 
-        private LuceneIndexUpdater( boolean inBatched )
+        private LuceneIndexUpdater( boolean isRecovery )
         {
-            this.isBatched = inBatched;
+            this.isRecovery = isRecovery;
         }
 
         @Override
@@ -281,7 +281,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             switch ( update.getUpdateMode() )
             {
             case ADDED:
-                if ( isBatched )
+                if ( isRecovery )
                 {
                     addRecovered( update.getNodeId(), update.getValueAfter() );
                 }
@@ -304,10 +304,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            if ( !isBatched )
-            {
-                refreshSearcherManager();
-            }
+            refreshSearcherManager();
         }
 
         @Override

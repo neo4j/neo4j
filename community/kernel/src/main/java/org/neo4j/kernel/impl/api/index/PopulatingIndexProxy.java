@@ -87,7 +87,7 @@ public class PopulatingIndexProxy implements IndexProxy
         switch ( mode )
         {
             case ONLINE:
-            case BATCHED:
+            case RECOVERY:
                 return new PopulatingIndexUpdater()
                 {
                     @Override

@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransacti
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -141,6 +142,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
 
     public RecordStorageEngine(
             File storeDir,
@@ -203,6 +205,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
             this.commandReaderFactory = new RecordStorageCommandReaderFactory();
+            indexUpdatesSync = new WorkSync<>( indexingService );
         }
         catch ( Throwable failure )
         {
@@ -331,8 +334,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
 
         // Schema index application
-        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync,
-                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ) ) );
+        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
+                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ), mode ) );
 
         // Legacy index application
         appliers.add(

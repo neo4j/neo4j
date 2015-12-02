@@ -28,6 +28,7 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -56,9 +57,11 @@ public class IndexBatchTransactionApplierTest
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 spy( new WorkSync<>( singletonProvider( writer ) ) );
+        WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
         TransactionToApply tx = mock( TransactionToApply.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
-                mock( NodeStore.class ), mock( PropertyStore.class ), mock( PropertyLoader.class ) ) )
+                indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ),
+                mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {
