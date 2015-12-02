@@ -357,7 +357,42 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
 
-  test("shortest path should work with multiple expressions and predicates") {
+  test("shortest path should work with predicates that can be applied to node expanders") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE NOT exists(n.blocked))
+                  |RETURN nodes(p) as nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
+  }
+
+  test("shortest path should work with predicates that can be applied to both relationship and node expanders") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE exists(n.name) OR exists(n.age))
+                  |AND ALL(r in rels(p) WHERE r.likesLevel > 10)
+                  |RETURN nodes(p) as nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(
+      Map("nodes" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy"))),
+      Map("nodes" -> List(nodes("Mickey"), nodes("Minnie"), nodes("Daisy"))),
+      Map("nodes" -> List(nodes("Minnie"), nodes("Daisy")))
+    ))
+  }
+
+  test("shortest path should work with multiple expressions and predicates - relationship expander") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
@@ -371,10 +406,45 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = executeWithCostPlannerOnly(query)
 
     result.toList should equal(List(Map("nodes1" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")),
-                                        "nodes2" -> List(nodes("source"), nodes("target")))))
+      "nodes2" -> List(nodes("source"), nodes("target")))))
   }
 
-  test("shortest path should work with predicates that depend on the path expression") {
+  test("shortest path should work with multiple expressions and predicates - node expander") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p1 = shortestPath((a)-[rs1:REL*]->(b))
+                  |MATCH p2 = shortestPath((a)-[rs2:REL*]->(b))
+                  |WHERE ALL(n in nodes(p2) WHERE exists(n.name) or n.age > 50)
+                  |RETURN nodes(p1) AS nodes1, nodes(p2) as nodes2
+                """.stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("nodes1" -> List(nodes("Donald"), nodes("Goofy"), nodes("Daisy")),
+      "nodes2" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
+  }
+
+  test("shortest path should work with multiple expressions and predicates - relationship and node expander") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p1 = shortestPath((a)-[rs1:REL*]->(b))
+                  |MATCH p2 = shortestPath((a)-[rs2:REL*]->(b))
+                  |WHERE ALL(n in nodes(p2) WHERE exists(n.name) or n.age > 50)
+                  |AND NONE(r in rels(p1) WHERE exists(r.blocked) OR NOT exists(r.likesLevel))
+                  |RETURN nodes(p1) AS nodes1, nodes(p2) as nodes2
+                """.stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("nodes1" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")),
+      "nodes2" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
+  }
+
+  test("shortest path should work with predicates that depend on the path expression (relationships)") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
@@ -389,19 +459,86 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
   }
 
+  test("shortest path should work with predicates that depend on the path expression (nodes)") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:A)
+                  |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE labels(n) = labels(nodes(p)[0]) AND exists(n.age))
+                  |RETURN nodes(p) as nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
+      Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
+      Map("nodes" -> List(nodes("Mickey"), nodes("Minnie")))))
+  }
+
+  test("shortest path should work with predicates that depend on the path expression (relationships and nodes)") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:A)
+                  |MATCH p = shortestPath((a)-[r:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE labels(n) = labels(nodes(p)[0]) AND exists(n.age))
+                  |AND ALL(r in rels(p) WHERE type(r) = type(rels(p)[0]) AND exists(r.likesLevel))
+                  |RETURN nodes(p) as nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Mickey"))),
+      Map("nodes" -> List(nodes("Donald"), nodes("Mickey"), nodes("Minnie"))),
+      Map("nodes" -> List(nodes("Mickey"), nodes("Minnie")))))
+  }
+
   test("shortest path should work with predicates that can be applied to relationship expanders and include dependencies on execution context") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
                   |MATCH (a:X), (b:Y)
                   |MATCH p = shortestPath((a)-[rs:REL*]->(b))
-                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT has(b.property)
+                  |WHERE ALL(r in rels(p) WHERE NOT exists(r.blocked) AND a:X) AND NOT exists(b.property)
                   |RETURN nodes(p) AS nodes
                 """.stripMargin
 
     val result = executeWithAllPlanners(query)
 
     result.toList should equal(List(Map("nodes" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")))))
+  }
+
+  test("shortest path should work with predicates that can be applied to node expanders and include dependencies on execution context") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE exists(n.name) AND a.name = 'Donald Duck') AND b.name = 'Daisy Duck'
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
+  }
+
+  test("shortest path should work with predicates that can be applied to relationship and node expanders and include dependencies on execution context") {
+    val nodes = largerShortestPathModel()
+
+    val query = """PROFILE CYPHER
+                  |MATCH (a:A), (b:D)
+                  |MATCH p = shortestPath((a)-[rs:REL*]->(b))
+                  |WHERE ALL(n in nodes(p) WHERE (exists(n.name) OR exists(n.age)) AND a.name = 'Donald Duck')
+                  |AND ALL(r in rels(p) WHERE r.likesLevel > 10)
+                  |AND b.name = 'Daisy Duck'
+                  |RETURN nodes(p) AS nodes
+                """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("nodes" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
   }
 
   test("shortest path should work with predicates that reference shortestPath relationship identifier") {
@@ -464,6 +601,33 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodes("node4"), nodes("target"))
     relate(nodes("node4"), nodes("node5"))
     relate(nodes("node5"), nodes("target"))
+
+    nodes
+  }
+
+  def largerShortestPathModel(): Map[String, Node] = {
+    val nodes = Map[String, Node](
+      "Donald" -> createLabeledNode(Map("id" -> "Donald", "name" -> "Donald Duck", "age" -> 15), "A"),
+      "Daisy" -> createLabeledNode(Map("id" -> "Daisy", "name" -> "Daisy Duck"), "D"),
+      "Huey" -> createLabeledNode(Map("id" -> "Huey", "name" -> "Huey Duck"), "B"),
+      "Dewey" -> createLabeledNode(Map("id" -> "Dewey", "name" -> "Dewey Duck"), "B"),
+      "Louie" -> createLabeledNode(Map("id" -> "Louie", "name" -> "Louie Duck"), "B"),
+      "Goofy" -> createLabeledNode(Map("id" -> "Goofy", "blocked" -> true), "C"),
+      "Mickey" -> createLabeledNode(Map("id" -> "Mickey", "age" -> 10), "A"),
+      "Minnie" -> createLabeledNode(Map("id" -> "Minnie", "age" -> 20, "blocked" -> true), "A"),
+      "Pluto" -> createLabeledNode(Map("id" -> "Pluto", "age" -> 2), "E"))
+
+    relate(nodes("Donald"), nodes("Goofy"), "REL", Map("blocked" -> true))
+    relate(nodes("Donald"), nodes("Huey"), "REL", Map("likesLevel" -> 20))
+    relate(nodes("Huey"), nodes("Dewey"), "REL", Map("likesLevel" -> 11))
+    relate(nodes("Dewey"), nodes("Louie"), "REL", Map("likesLevel" -> 13))
+    relate(nodes("Louie"), nodes("Daisy"), "REL", Map("likesLevel" -> 26))
+    relate(nodes("Goofy"), nodes("Daisy"), "REL", Map("likesLevel" -> 45))
+    relate(nodes("Donald"), nodes("Mickey"), "REL", Map("blocked" -> true, "likesLevel" -> 2))
+    relate(nodes("Mickey"), nodes("Minnie"), "REL", Map("likesLevel" -> 25))
+    relate(nodes("Minnie"), nodes("Daisy"), "REL", Map("likesLevel" -> 20))
+    relate(nodes("Donald"), nodes("Pluto"))
+    relate(nodes("Pluto"), nodes("Minnie"))
 
     nodes
   }
