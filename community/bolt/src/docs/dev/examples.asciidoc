@@ -12,6 +12,7 @@ This illustrates running a simple Cypher query without parameters, and retrievin
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
@@ -59,6 +60,7 @@ Note that these two statements are executed in two individual transactions, impl
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
@@ -128,6 +130,7 @@ This illustrates how the server behaves when a request fails, and the server ign
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
@@ -208,6 +211,7 @@ It will also always contain a description of the type of statement ran - `read` 
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
@@ -280,6 +284,7 @@ The resulting query plan is returned at the end of the result stream, with the p
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 
@@ -438,7 +443,7 @@ Server: SUCCESS {
 ----
 === Accessing notifications
 When Neo4j executes a statement it may include notifications for the user.
-These notifications can be warnings about problematic statements or other valuable information for a client. 
+These notifications can be warnings about problematic statements or other valuable information for a client.
 Unlike failures or errors, notifications do not affect the execution of a statement.
 
 .Notifications
@@ -446,6 +451,7 @@ Unlike failures or errors, notifications do not affect the execution of a statem
 ----
 # Handshake
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
 Server: 00 00 00 01
 

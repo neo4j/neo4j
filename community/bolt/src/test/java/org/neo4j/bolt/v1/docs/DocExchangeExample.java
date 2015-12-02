@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.util.Codecs;
 
 /**
  * Client: <connect>
+ * Client: 60 60 B0 17
  * Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
  * Version 1      None         None         None
  * <p/>

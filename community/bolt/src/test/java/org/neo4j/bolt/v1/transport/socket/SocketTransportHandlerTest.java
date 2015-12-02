@@ -110,6 +110,7 @@ public class SocketTransportHandlerTest
     private ByteBuf handshake()
     {
         ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.buffer();
+        buf.writeInt( 0x6060B017 );
         buf.writeInt( 1 );
         buf.writeInt( 0 );
         buf.writeInt( 0 );
