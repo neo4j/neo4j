@@ -94,10 +94,10 @@ public class Candidate implements RaftMessageHandler
                     outcome.addVoteForMe( res.from() );
                 }
 
-                if ( isQuorum( ctx.votingMembers().size(), outcome.votesForMe.size() ) )
+                if ( isQuorum( ctx.votingMembers().size(), outcome.getVotesForMe().size() ) )
                 {
                     log.info( "In term %d %s ELECTED AS LEADER voted for by %s%n",
-                            ctx.term(), ctx.myself(), outcome.votesForMe );
+                            ctx.term(), ctx.myself(), outcome.getVotesForMe() );
 
                     outcome.setLeader( ctx.myself() );
                     Leader.sendHeartbeats( ctx, outcome );
@@ -115,14 +115,14 @@ public class Candidate implements RaftMessageHandler
                 if ( req.term() > ctx.term() )
                 {
                     outcome.setNextTerm( req.term() );
-                    outcome.votesForMe.clear();
+                    outcome.getVotesForMe().clear();
 
                     outcome.setNextRole( FOLLOWER );
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), req ) );
                     break;
                 }
 
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>( ctx.myself(), outcome.term, false ) ) );
+                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>( ctx.myself(), outcome.getTerm(), false ) ) );
                 break;
             }
 

@@ -132,14 +132,14 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
 
     public void update( Outcome<RaftTestMember> outcome ) throws RaftStorageException
     {
-        term = outcome.term;
-        votedFor = outcome.votedFor;
-        leader = outcome.leader;
-        votesForMe = outcome.votesForMe;
-        lastLogIndexBeforeWeBecameLeader = outcome.lastLogIndexBeforeWeBecameLeader;
-        followerStates= outcome.followerStates;
+        term = outcome.getTerm();
+        votedFor = outcome.getVotedFor();
+        leader = outcome.getLeader();
+        votesForMe = outcome.getVotesForMe();
+        lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
+        followerStates= outcome.getFollowerStates();
 
-        for ( LogCommand logCommand : outcome.logCommands )
+        for ( LogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog );
         }

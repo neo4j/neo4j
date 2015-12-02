@@ -30,6 +30,6 @@ public class MessageUtils
     public static RaftMessages.Message<RaftTestMember> messageFor( Outcome<RaftTestMember> outcome, final RaftTestMember member )
     {
         Predicate<RaftMessages.Directed<RaftTestMember>> selectMember = message -> message.to() == member;
-        return IteratorUtil.single( new FilteringIterable<>( outcome.outgoingMessages, selectMember ) ).message();
+        return IteratorUtil.single( new FilteringIterable<>( outcome.getOutgoingMessages(), selectMember ) ).message();
     }
 }

@@ -56,7 +56,7 @@ public class ProcessMessage implements Action
         Outcome<RaftTestMember> outcome = previous.roles.get( member ).role.handle( message, memberState, log );
         newMemberState.update( outcome );
 
-        for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.outgoingMessages )
+        for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.getOutgoingMessages() )
         {
             LinkedList<RaftMessages.Message<RaftTestMember>> outboundQueue =
                     new LinkedList<>( newClusterState.queues.get( outgoingMessage.to() ) );
@@ -64,7 +64,7 @@ public class ProcessMessage implements Action
             newClusterState.queues.put( outgoingMessage.to(), outboundQueue );
         }
 
-        newClusterState.roles.put( member, outcome.newRole );
+        newClusterState.roles.put( member, outcome.getNewRole() );
         newClusterState.states.put( member, newMemberState );
         newClusterState.queues.put( member, inboundQueue );
         return newClusterState;

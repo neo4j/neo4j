@@ -168,10 +168,10 @@ public class Follower implements RaftMessageHandler
                     outcome.setVotedFor( null );
                 }
 
-                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), req.term(), outcome.term, ctx
+                boolean willVoteForCandidate = shouldVoteFor( req.candidate(), req.term(), outcome.getTerm(), ctx
                                 .entryLog().appendIndex(),
                         req.lastLogIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ),
-                        req.lastLogTerm(), outcome.votedFor );
+                        req.lastLogTerm(), outcome.getVotedFor() );
 
                 if ( willVoteForCandidate )
                 {
@@ -180,7 +180,7 @@ public class Follower implements RaftMessageHandler
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>(
-                        ctx.myself(), outcome.term,
+                        ctx.myself(), outcome.getTerm(),
                         willVoteForCandidate ) ) );
                 break;
             }
@@ -196,7 +196,7 @@ public class Follower implements RaftMessageHandler
                 outcome.setNextTerm( ctx.term() + 1 );
 
                 RaftMessages.Vote.Request<MEMBER> voteForMe =
-                        new RaftMessages.Vote.Request<>( ctx.myself(), outcome.term, ctx.myself(), ctx.entryLog()
+                        new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
                                 .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
 
                 for ( MEMBER member : currentMembers )

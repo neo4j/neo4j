@@ -120,15 +120,15 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
 
     public void update( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
-        termStore.update( outcome.term );
-        voteStore.update( outcome.votedFor );
-        leader = outcome.leader;
-        leaderCommit = outcome.leaderCommit;
-        votesForMe = outcome.votesForMe;
-        lastLogIndexBeforeWeBecameLeader = outcome.lastLogIndexBeforeWeBecameLeader;
-        followerStates = outcome.followerStates;
+        termStore.update( outcome.getTerm() );
+        voteStore.update( outcome.getVotedFor() );
+        leader = outcome.getLeader();
+        leaderCommit = outcome.getLeaderCommit();
+        votesForMe = outcome.getVotesForMe();
+        lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
+        followerStates = outcome.getFollowerStates();
 
-        for ( LogCommand logCommand : outcome.logCommands )
+        for ( LogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog );
         }
