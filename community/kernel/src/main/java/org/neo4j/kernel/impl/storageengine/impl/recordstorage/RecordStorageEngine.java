@@ -440,12 +440,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public DatabaseHealth kernelHealth()
-    {
-        return databaseHealth;
-    }
-
-    @Override
     public IdOrderingQueue legacyIndexTransactionOrdering()
     {
         return legacyIndexTransactionOrdering;

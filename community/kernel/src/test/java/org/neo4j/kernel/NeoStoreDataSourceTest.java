@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import java.io.IOException;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -57,7 +57,7 @@ public class NeoStoreDataSourceTest
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
-    public void kernelHealthShouldBeHealedOnStart() throws Throwable
+    public void databaseHealthShouldBeHealedOnStart() throws Throwable
     {
         NeoStoreDataSource theDataSource = null;
         try

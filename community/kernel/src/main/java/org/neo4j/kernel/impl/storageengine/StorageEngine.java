@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storageengine;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -160,9 +159,6 @@ public interface StorageEngine
 
     @Deprecated
     IndexConfigStore indexConfigStore();
-
-    @Deprecated
-    DatabaseHealth kernelHealth();
 
     @Deprecated
     IdOrderingQueue legacyIndexTransactionOrdering();
