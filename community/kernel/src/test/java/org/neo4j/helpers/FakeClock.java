@@ -21,13 +21,16 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 public class FakeClock implements Clock
 {
     private volatile long time;
 
     public FakeClock()
     {
-        this( 0, TimeUnit.MILLISECONDS );
+        this( 0, MILLISECONDS );
     }
 
     public FakeClock( long currentTime, TimeUnit timeUnit )
@@ -38,7 +41,7 @@ public class FakeClock implements Clock
     @Override
     public long currentTimeMillis()
     {
-        return TimeUnit.NANOSECONDS.toMillis( time );
+        return NANOSECONDS.toMillis( time );
     }
 
     @Override
@@ -47,8 +50,31 @@ public class FakeClock implements Clock
         return time;
     }
 
-    public void forward( long amount, TimeUnit timeUnit )
+    public synchronized void forward( long amount, TimeUnit timeUnit )
     {
         time = time + timeUnit.toNanos( amount );
+    }
+
+    public Progressor progressor( long time, TimeUnit unit )
+    {
+        return new Progressor( unit.toNanos( time ) );
+    }
+
+    /**
+     * Used to allow the clock to advance by the same number of ticks each time.
+     */
+    public class Progressor
+    {
+        private final long nanos;
+
+        private Progressor( long nanos )
+        {
+            this.nanos = nanos;
+        }
+
+        public void tick()
+        {
+            forward( nanos, NANOSECONDS );
+        }
     }
 }

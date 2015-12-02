@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Test;
+
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
-import org.neo4j.test.ArtificialClock;
+import org.neo4j.helpers.FakeClock;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TimedRepositoryTest
 {
@@ -61,7 +61,7 @@ public class TimedRepositoryTest
     };
 
     private final long timeout = 100;
-    private final ArtificialClock clock = new ArtificialClock();
+    private final FakeClock clock = new FakeClock();
     private final TimedRepository<Long, Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
 
     @Test
@@ -189,7 +189,7 @@ public class TimedRepositoryTest
         repo.release( 1l );
 
         // But When
-        clock.progress( timeout+1, MILLISECONDS );
+        clock.forward( timeout+1, MILLISECONDS );
         repo.run();
 
         // Then
