@@ -36,8 +36,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -81,7 +82,7 @@ public class ConcurrentLockingIT
 
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, coreServerCount, 0);
+        cluster = Cluster.start( dbDir, coreServerCount, 0, new TestOnlyDiscoveryServiceFactory() );
 
         ExecutorService executor = Executors.newFixedThreadPool( coreServerCount * workersPerCorServer );
 

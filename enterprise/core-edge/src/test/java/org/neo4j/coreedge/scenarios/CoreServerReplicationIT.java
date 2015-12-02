@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Supplier;
@@ -85,7 +86,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         GraphDatabaseService coreDB = cluster.findLeader( 5000 );
@@ -106,7 +107,8 @@ public class CoreServerReplicationIT
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
-                assertEventually( "node to appear on core server " + config.get( CoreEdgeClusterSettings.raft_advertised_address ), nodeCount,
+                assertEventually( "node to appear on core server " + config.get( CoreEdgeClusterSettings
+                        .raft_advertised_address ), nodeCount,
                         greaterThan( 0L ), 15, SECONDS );
 
                 for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
@@ -124,7 +126,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         cluster.addCoreServerWithServerId( 3, 4 );
 
@@ -175,7 +177,7 @@ public class CoreServerReplicationIT
     public void shouldReplicateTransactionAfterOneOriginalServerRemovedFromCluster() throws Exception
     {
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
         CoreGraphDatabase leader = cluster.findLeader( 5000 );
         try ( Transaction tx = leader.beginTx() )
         {
@@ -231,7 +233,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         for ( int i = 0; i < 15; i++ )
@@ -280,7 +282,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         Set<CoreGraphDatabase> coreServers = cluster.coreServers();
@@ -316,7 +318,7 @@ public class CoreServerReplicationIT
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
                 assertEventually( "node to appear on core server " +
-                        config.get( CoreEdgeClusterSettings.transaction_listen_address ), nodeCount,
+                                config.get( CoreEdgeClusterSettings.transaction_listen_address ), nodeCount,
                         is( (long) coreServers.size() ), 1, MINUTES );
                 tx.success();
             }
@@ -333,7 +335,7 @@ public class CoreServerReplicationIT
 
         final File dbDir = dir.directory();
 
-        cluster = Cluster.start( dbDir, NUMBER_OF_SERVERS, 0 );
+        cluster = Cluster.start( dbDir, NUMBER_OF_SERVERS, 0, new TestOnlyDiscoveryServiceFactory() );
         Set<CoreGraphDatabase> coreServers = cluster.coreServers();
 
         // when

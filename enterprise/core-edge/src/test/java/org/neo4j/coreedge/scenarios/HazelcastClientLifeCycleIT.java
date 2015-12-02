@@ -29,11 +29,11 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
 import org.neo4j.coreedge.discovery.HazelcastClientLifecycle;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
