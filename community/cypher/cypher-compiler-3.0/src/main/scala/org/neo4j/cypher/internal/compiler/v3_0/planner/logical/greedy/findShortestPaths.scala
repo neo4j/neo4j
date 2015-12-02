@@ -33,7 +33,7 @@ object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
           val pathPredicates = qg.selections.predicates.collect {
             case Predicate(dependencies, expr: Expression) if (dependencies intersect pathVariables).nonEmpty => expr
           }.toSeq
-          context.logicalPlanProducer.planShortestPaths(plan, shortestPath, pathPredicates)
+          context.logicalPlanProducer.planShortestPaths(plan, shortestPath, pathPredicates, pathVariables)
       }
     }.toSeq
 }

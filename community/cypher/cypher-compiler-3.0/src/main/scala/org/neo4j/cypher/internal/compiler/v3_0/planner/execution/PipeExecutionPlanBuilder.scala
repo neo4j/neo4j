@@ -239,23 +239,21 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
     case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
-      val (keys, exprs) = predicates.unzip
-      val commands = exprs.map(buildPredicate)
-      val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
-        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
-          context(variable.name) = rel
-          val result = expr.isTrue(context)(state)
-          context.remove(variable.name)
-          result
-        }
-      }
+      val predicate = relationshipPredicate(predicates)
 
       val nodeInScope = expansionMode match {
         case ExpandAll => false
         case ExpandInto => true
       }
+
       VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
         LazyTypes(types), min, max, nodeInScope, predicate)()
+
+    case ShortestPathVarExpand(_, IdName(pathName), IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
+      val predicate = relationshipPredicate(predicates)
+
+      ShortestPathVarLengthExpandPipe(source, pathName, fromName, relName, toName, dir, projectedDir,
+        LazyTypes(types), min, max, predicate)()
 
     case Optional(inner) =>
       OptionalPipe(inner.availableSymbols.map(_.name), source)()
@@ -355,6 +353,20 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
 
     case x =>
       throw new CantHandleQueryException(x.toString)
+  }
+
+  def relationshipPredicate(predicates: Seq[(Variable, Expression)]): (ExecutionContext, QueryState, Relationship) => Boolean = {
+    val (keys, exprs) = predicates.unzip
+    val commands = exprs.map(buildPredicate)
+    val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
+      keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
+        context(variable.name) = rel
+        val result = expr.isTrue(context)(state)
+        context.remove(variable.name)
+        result
+      }
+    }
+    predicate
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): RonjaPipe = plan match {

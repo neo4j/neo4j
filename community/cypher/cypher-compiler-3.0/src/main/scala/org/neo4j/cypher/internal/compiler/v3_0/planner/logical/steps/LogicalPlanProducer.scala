@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
 
@@ -115,9 +116,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                     allPredicates: Seq[Expression],
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext) = pattern.length match {
     case l: VarPatternLength =>
-      val projectedDir = if (dir == SemanticDirection.BOTH) {
-        if (from == pattern.left) SemanticDirection.OUTGOING else SemanticDirection.INCOMING
-      } else pattern.dir
+      val projectedDir = projectedDirection(pattern, from, dir)
 
       val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
@@ -402,11 +401,80 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planSkip(sortedLimit, skip)
   }
 
-  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
+  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],
+                        variables: Set[IdName])
                        (implicit context: LogicalPlanningContext) = {
-    // TODO: Tell the planner that the shortestPath predicates are solved in shortestPath
-    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths))
-    FindShortestPaths(inner, shortestPaths, predicates)(solved)
+    def doesNotDependOnFullPath(predicate: Expression): Boolean = {
+      (predicate.dependencies.map(IdName.fromVariable(_)) intersect variables).isEmpty
+    }
+
+    val (safePredicates, needFallbackPredicates) = predicates.partition {
+      // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
+      case NoneIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
+      case AllIterablePredicate(_, FunctionInvocation(FunctionName("nodes"),_,_)) => false
+      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
+      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
+      case _ => false
+    }
+
+    // We always solve all predicates
+    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
+
+    // Only support fallback for shortestPath (not allShortestPaths, yet)
+    if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, solved)
+    }
+    else {
+      FindShortestPaths(inner, shortestPaths, predicates)(solved)
+    }
+  }
+
+  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPaths: ShortestPathPattern,
+                                            predicates: Seq[Expression],
+                                            solved: PlannerQuery with CardinalityEstimation)
+                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+    // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
+    // the graph algorithm does not find anything (left-hand-side)
+    val lhsArgument = planArgumentRowFrom(inner)
+    val lhsSp = FindShortestPaths(lhsArgument, shortestPaths, predicates)(solved)
+    val lhsOption = Optional(lhsSp)(solved)
+    val lhs = Apply(inner, lhsOption)(solved)
+
+    val pattern = shortestPaths.rel
+
+    val patternLength: VarPatternLength = pattern.length match {
+      case l: VarPatternLength => l
+      case _ => throw new InternalException("Expected a varlength path to be here")
+    }
+
+    // TODO: Decide the best from and to based on degree
+    val from = pattern.left
+    val to = pattern.right
+    val dir = pattern.dir
+    val projectedDir = projectedDirection(pattern, from, dir)
+
+    // We assume there is always a path name (either explicit or auto-generated)
+    val pathName = shortestPaths.name.get
+
+    // Plan a fallback branch using VarExpand(Into) (right-hand-side)
+    val rhsArgument = planArgumentRowFrom(lhs)
+    val rhsVarExpand =
+      ShortestPathVarExpand(rhsArgument, pathName, from, dir, projectedDir,
+                pattern.types, to, pattern.name, patternLength,
+                ExpandInto, Seq.empty)(solved)
+
+    // Filter using predicates
+    val rhsFiltered = planSelection(predicates, rhsVarExpand)
+
+    // Plan SortedLimit
+    // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
+    val rhsSortedLimit = SortedLimit(rhsFiltered, SignedDecimalIntegerLiteral("1")(null),
+                                     Seq(AscSortItem(FunctionInvocation(FunctionName(Length.name)(null),
+                                                                        Variable(pathName.name)(null))(null))(null)))(solved)
+
+    val rhs = rhsSortedLimit
+
+    planAntiConditionalApply(lhs, rhs, shortestPaths.name.get)
   }
 
   def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship)
@@ -569,5 +637,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     CardinalityEstimation.lift(plannerQuery, cardinality)
+  }
+
+  private def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {
+    if (dir == SemanticDirection.BOTH) {
+      if (from == pattern.left)
+        SemanticDirection.OUTGOING
+      else
+        SemanticDirection.INCOMING
+    }
+    else
+      pattern.dir
   }
 }
