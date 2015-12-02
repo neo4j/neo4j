@@ -32,18 +32,22 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tools.console.input.ArgsCommand;
@@ -51,7 +55,6 @@ import org.neo4j.tools.console.input.ArgsCommand;
 import static java.lang.String.format;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
-import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 
 public class ApplyTransactionsCommand extends ArgsCommand
 {
@@ -99,10 +102,15 @@ public class ApplyTransactionsCommand extends ArgsCommand
             throws IOException, TransactionFailureException
     {
         DependencyResolver resolver = toDb.getDependencyResolver();
+        BatchingTransactionRepresentationStoreApplier applier = new BatchingTransactionRepresentationStoreApplier(
+                resolver.resolveDependency( LockService.class ),
+                resolver.resolveDependency( IndexConfigStore.class ),
+                resolver.resolveDependency( IdOrderingQueue.class ),
+                resolver.resolveDependency( StorageEngine.class ) );
         TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess(
                         resolver.resolveDependency( TransactionAppender.class ),
-                        resolver.resolveDependency( StorageEngine.class ),
+                        applier,
                         resolver.resolveDependency( IndexUpdatesValidator.class ) );
         LifeSupport life = new LifeSupport();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -122,11 +130,10 @@ public class ApplyTransactionsCommand extends ArgsCommand
                 while ( cursor.next() )
                 {
                     CommittedTransactionRepresentation transaction = cursor.get();
-                    TransactionRepresentation transactionRepresentation =
-                            transaction.getTransactionRepresentation();
-                    try
+                    try ( LockGroup locks = new LockGroup() )
                     {
-                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, RECOVERY );
+                        commitProcess.commit( transaction.getTransactionRepresentation(), locks,
+                                CommitEvent.NULL, RECOVERY );
                         progress.add( 1 );
                     }
                     catch ( final Throwable e )
@@ -141,6 +148,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
                     }
                 }
             }
+            applier.closeBatch();
             return lastAppliedTx;
         }
         finally
