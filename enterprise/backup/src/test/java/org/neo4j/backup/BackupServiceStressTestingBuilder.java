@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.BooleanSupplier;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
@@ -151,8 +149,6 @@ public class BackupServiceStressTestingBuilder
         private final File backupDir;
         private final File brokenDir;
 
-        private final Label indexLabel;
-
         private RunTest( BooleanSupplier until, File storeDir, File backupDir, String backupHostname, int backupPort )
         {
             this.until = until;
@@ -163,7 +159,6 @@ public class BackupServiceStressTestingBuilder
             fileSystem.mkdir( this.backupDir );
             this.brokenDir = new File( backupDir, "broken_stores" );
             fileSystem.mkdir( brokenDir );
-            indexLabel = randomLabel();
         }
 
         @Override
@@ -186,20 +181,20 @@ public class BackupServiceStressTestingBuilder
                 Dependencies dependencies = new Dependencies( db.getDependencyResolver() );
                 dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
 
-                LifeSupport life = new LifeSupport();
                 OnlineBackupKernelExtension backup;
                 try
                 {
-                    backup = life.add( (OnlineBackupKernelExtension)
-                            new OnlineBackupExtensionFactory().newKernelExtension(
-                                    DependenciesProxy.dependencies( dependencies,
-                                            OnlineBackupExtensionFactory.Dependencies.class ) ) );
+                    backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
+                            DependenciesProxy.dependencies( dependencies,
+                                    OnlineBackupExtensionFactory.Dependencies.class ) );
+
+                    backup.init();
+                    backup.start();
                 }
-                catch ( Throwable e )
+                catch ( Throwable t )
                 {
-                    throw new RuntimeException( e );
+                    throw new RuntimeException( t );
                 }
-                life.start();
 
                 ExecutorService executor = Executors.newFixedThreadPool( 2 );
                 executor.execute( new Runnable()
@@ -215,17 +210,17 @@ public class BackupServiceStressTestingBuilder
                 } );
 
                 final AtomicInteger inconsistentDbs = new AtomicInteger( 0 );
-                executor.submit( new Callable<Void>()
+                executor.execute( new Runnable()
                 {
                     private final BackupService backupService = new BackupService( fileSystem,
                             NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
-                    public Void call() throws IOException
+                    public void run()
                     {
                         while ( keepGoing.get() && until.getAsBoolean() )
                         {
-                            fileSystem.deleteRecursively( backupDir );
+                            cleanup( backupDir );
                             BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
                                     backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
                                     BackupClient.BIG_READ_TIMEOUT, false );
@@ -236,11 +231,35 @@ public class BackupServiceStressTestingBuilder
                                 int num = inconsistentDbs.incrementAndGet();
                                 File dir = new File( brokenDir, "" + num );
                                 fileSystem.mkdir( dir );
-                                fileSystem.copyRecursively( backupDir, dir );
+                                copyRecursively( backupDir, dir );
                             }
                         }
-                        return null;
                     }
+
+                    private void copyRecursively( File from, File to )
+                    {
+                        try
+                        {
+                            fileSystem.copyRecursively( from, to );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+
+                    private void cleanup( File dir )
+                    {
+                        try
+                        {
+                            fileSystem.deleteRecursively( dir );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+
                 } );
 
                 while ( keepGoing.get() && until.getAsBoolean() )
@@ -251,7 +270,15 @@ public class BackupServiceStressTestingBuilder
                 executor.shutdown();
                 assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
 
-                life.shutdown();
+                try
+                {
+                    backup.stop();
+                    backup.shutdown();
+                }
+                catch ( Throwable t )
+                {
+                    throw new RuntimeException( t );
+                }
 
                 return inconsistentDbs.get();
             }
@@ -265,7 +292,7 @@ public class BackupServiceStressTestingBuilder
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.schema().indexFor( indexLabel ).on( "name" ).create();
+                db.schema().indexFor( randomLabel() ).on( "name" ).create();
                 tx.success();
             }
         }
@@ -275,19 +302,14 @@ public class BackupServiceStressTestingBuilder
             Random random = ThreadLocalRandom.current();
             try ( Transaction tx = db.beginTx() )
             {
-                Node start = createLabeledNode( db, random );
-                Node end = createLabeledNode( db, random );
+                Node start = db.createNode( randomLabel() );
+                start.setProperty( "name", "name " + random.nextInt() );
+                Node end = db.createNode( randomLabel() );
+                end.setProperty( "name", "name " + random.nextInt() );
                 Relationship rel = start.createRelationshipTo( end, randomRelationshipType() );
                 rel.setProperty( "something", "some " + random.nextInt() );
                 tx.success();
             }
-        }
-
-        private Node createLabeledNode( GraphDatabaseService db, Random random )
-        {
-            Node node = db.createNode( randomLabel() );
-            node.setProperty( "name", "name'" + random.nextInt() );
-            return node;
         }
 
         private void rotateLogAndCheckPoint( GraphDatabaseAPI db ) throws IOException

@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers.collection;
 
-public interface CloseableVisitor<E, FAILURE extends Exception> extends Visitor<E, FAILURE>, AutoCloseable
+import java.io.Closeable;
+
+public interface CloseableVisitor<E, FAILURE extends Exception> extends Visitor<E, FAILURE>, Closeable
 {
 }

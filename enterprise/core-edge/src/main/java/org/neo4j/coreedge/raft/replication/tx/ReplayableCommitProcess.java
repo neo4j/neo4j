@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
 /**
@@ -44,14 +45,14 @@ public class ReplayableCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public long commit( TransactionToApply batch,
+    public long commit( TransactionRepresentation representation, LockGroup locks,
                         CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
         long txId = lastLocalTxId.incrementAndGet();
         if ( txId > transactionCounter.lastCommittedTransactionId() )
         {
-            return localCommitProcess.commit( batch, commitEvent, mode );
+            return localCommitProcess.commit( representation, locks, commitEvent, mode );
         }
         return txId;
     }

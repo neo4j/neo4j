@@ -19,19 +19,22 @@
  */
 package org.neo4j.com.storecopy;
 
+import java.io.IOException;
+
 import org.neo4j.com.Response;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 
 public interface ResponseUnpacker
 {
     /**
      * @param txHandler for getting an insight into which transactions gets applied.
      */
-    void unpackResponse( Response<?> response, TxHandler txHandler ) throws Exception;
+    void unpackResponse( Response<?> response, TxHandler txHandler ) throws IOException;
 
     public static final ResponseUnpacker NO_OP_RESPONSE_UNPACKER = new ResponseUnpacker()
     {
         @Override
-        public void unpackResponse( Response<?> response, TxHandler txHandler )
+        public void unpackResponse( Response<?> response, TxHandler txHandler ) throws IOException
         {
             txHandler.done();
         }
@@ -39,7 +42,7 @@ public interface ResponseUnpacker
 
     public interface TxHandler
     {
-        void accept( long transactionId );
+        void accept( CommittedTransactionRepresentation tx );
 
         void done();
     }
@@ -47,13 +50,13 @@ public interface ResponseUnpacker
     public static final TxHandler NO_OP_TX_HANDLER = new TxHandler()
     {
         @Override
-        public void accept( long transactionId )
-        { // Do nothing
+        public void accept( CommittedTransactionRepresentation tx )
+        {   // Do nothing
         }
 
         @Override
         public void done()
-        { // Do nothing
+        {   // Do nothing
         }
     };
 }

@@ -19,11 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
+import java.io.IOException;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.coreedge.catchup.tx.edge.ApplyPulledTransactions;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
+import org.neo4j.coreedge.catchup.tx.edge.TransactionApplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.logging.Log;
@@ -67,7 +71,7 @@ public class ApplyPulledTransactionsTest
         StoreId storeId = new StoreId( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
-        doThrow( TransactionFailureException.class ).when( transactionApplier ).appendToLogAndApplyToStore( any(
+        doThrow( IOException.class ).when( transactionApplier ).appendToLogAndApplyToStore( any(
                 CommittedTransactionRepresentation.class ) );
 
 
@@ -75,7 +79,8 @@ public class ApplyPulledTransactionsTest
         Log log = mock( Log.class );
         when( logProvider.getLog( ApplyPulledTransactions.class ) ).thenReturn( log );
 
-        ApplyPulledTransactions handler = new ApplyPulledTransactions( logProvider, singleton( transactionApplier ) );
+        ApplyPulledTransactions handler = new ApplyPulledTransactions( logProvider, singleton( transactionApplier )
+        );
 
         // when
         handler.onTxReceived( new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );

@@ -36,13 +36,13 @@ public class StubbedCommitment implements Commitment
     }
 
     @Override
-    public void publishAsClosed()
+    public void publishAsApplied()
     {
     }
 
     @Override
-    public boolean hasLegacyIndexChanges()
+    public long transactionId()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 }

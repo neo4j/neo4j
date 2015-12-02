@@ -51,17 +51,18 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
 
     private final IndexConfigStore indexConfigStore;
     private final IdOrderingQueue transactionOrdering;
+    private final long transactionId;
     private final TransactionApplicationMode mode;
     private IndexDefineCommand defineCommand;
-    private long activeTransactionId = -1;
-    private boolean isLastTransactionInBatch = false;
 
     public LegacyIndexApplier( IndexConfigStore indexConfigStore, LegacyIndexApplierLookup applierLookup,
-            IdOrderingQueue transactionOrdering, TransactionApplicationMode mode )
+                               IdOrderingQueue transactionOrdering, long transactionId,
+                               TransactionApplicationMode mode )
     {
         this.indexConfigStore = indexConfigStore;
         this.applierLookup = applierLookup;
         this.transactionOrdering = transactionOrdering;
+        this.transactionId = transactionId;
         this.mode = mode;
     }
 
@@ -131,40 +132,6 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void begin( TransactionToApply transaction ) throws IOException
-    {
-        if ( transaction.commitment().hasLegacyIndexChanges() )
-        {
-            activeTransactionId = transaction.transactionId();
-            try
-            {
-                transactionOrdering.waitFor( activeTransactionId );
-                // Need to know if this is the last transaction in this batch of legacy index changes in order to
-                // run apply before other batches are allowed to run, in order to preserve ordering.
-                if ( transaction.next() == null )
-                {
-                    isLastTransactionInBatch = true;
-                }
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IOException( "Interrupted while waiting for applying tx:" + activeTransactionId +
-                        " legacy index updates", e );
-            }
-        }
-    }
-
-    @Override
-    public void end()
-    {
-        if ( !isLastTransactionInBatch )
-        {
-            // Let other transactions in same batch run
-            notifyLegacyIndexOperationQueue();
-        }
-    }
-
-    @Override
     public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
     {
         return applier( command ).visitIndexAddNodeCommand( command );
@@ -200,18 +167,7 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
         this.defineCommand = command;
-        forward( command, applierByNodeIndex );
-        forward( command, applierByRelationshipIndex );
-        forward( command, applierByProvider );
         return false;
-    }
-
-    private void forward( IndexDefineCommand definitions, Map<String,CommandHandler> appliers ) throws IOException
-    {
-        for ( CommandHandler applier : appliers.values() )
-        {
-            applier.visitIndexDefineCommand( definitions );
-        }
     }
 
     @Override
@@ -226,23 +182,29 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     @Override
     public void close()
     {
-        for ( CommandHandler applier : applierByProvider.values() )
+        try
         {
-            applier.close();
+            for ( CommandHandler applier : applierByProvider.values() )
+            {
+                applier.close();
+            }
         }
-        if ( isLastTransactionInBatch )
+        finally
         {
-            // Let other batches run
-            notifyLegacyIndexOperationQueue();
+            if ( containsLegacyIndexCommands() )
+            {
+                notifyLegacyIndexOperationQueue();
+            }
         }
+    }
+
+    private boolean containsLegacyIndexCommands()
+    {
+        return defineCommand != null;
     }
 
     private void notifyLegacyIndexOperationQueue()
     {
-        if ( activeTransactionId != -1 )
-        {
-            transactionOrdering.removeChecked( activeTransactionId );
-            activeTransactionId = -1;
-        }
+        transactionOrdering.removeChecked( transactionId );
     }
 }

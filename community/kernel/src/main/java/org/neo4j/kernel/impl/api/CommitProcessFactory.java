@@ -21,11 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
 public interface CommitProcessFactory
 {
-    TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
+    TransactionCommitProcess create( TransactionAppender appender, TransactionRepresentationStoreApplier applier,
             IndexUpdatesValidator indexUpdatesValidator, Config config );
 }

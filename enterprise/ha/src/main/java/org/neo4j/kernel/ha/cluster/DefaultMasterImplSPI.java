@@ -39,10 +39,10 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -144,8 +144,11 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
             TransactionFailureException
     {
-        return transactionCommitProcess.commit( new TransactionToApply( preparedTransaction ), CommitEvent.NULL,
-                TransactionApplicationMode.EXTERNAL );
+        try ( LockGroup locks = new LockGroup() )
+        {
+            return transactionCommitProcess.commit( preparedTransaction, locks, CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
+        }
     }
 
     @Override

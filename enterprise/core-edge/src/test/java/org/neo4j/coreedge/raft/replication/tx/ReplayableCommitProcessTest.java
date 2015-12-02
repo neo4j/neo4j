@@ -24,7 +24,8 @@ import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
 import static org.mockito.Matchers.any;
@@ -43,43 +44,43 @@ public class ReplayableCommitProcessTest
     public void shouldCommitTransactions() throws Exception
     {
         // given
-        TransactionToApply newTx1 = mock( TransactionToApply.class );
-        TransactionToApply newTx2 = mock( TransactionToApply.class );
-        TransactionToApply newTx3 = mock( TransactionToApply.class );
+        TransactionRepresentation newTx1 = mock( TransactionRepresentation.class );
+        TransactionRepresentation newTx2 = mock( TransactionRepresentation.class );
+        TransactionRepresentation newTx3 = mock( TransactionRepresentation.class );
 
         StubLocalDatabase localDatabase = new StubLocalDatabase( 1 );
         final ReplayableCommitProcess txListener = new ReplayableCommitProcess(
                 localDatabase, localDatabase );
 
         // when
-        txListener.commit( newTx1, NULL, EXTERNAL );
-        txListener.commit( newTx2, NULL, EXTERNAL );
-        txListener.commit( newTx3, NULL, EXTERNAL );
+        txListener.commit( newTx1, new LockGroup(), NULL, EXTERNAL );
+        txListener.commit( newTx2, new LockGroup(), NULL, EXTERNAL );
+        txListener.commit( newTx3, new LockGroup(), NULL, EXTERNAL );
 
         // then
-        verify( localDatabase.commitProcess, times( 3 ) ).commit( any( TransactionToApply.class ),
-                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+        verify( localDatabase.commitProcess, times( 3 ) ).commit( any( TransactionRepresentation.class ),
+                any( LockGroup.class ), any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
     }
 
     @Test
     public void shouldNotCommitTransactionsThatAreAlreadyCommittedLocally() throws Exception
     {
         // given
-        TransactionToApply alreadyCommittedTx1 = mock( TransactionToApply.class );
-        TransactionToApply alreadyCommittedTx2 = mock( TransactionToApply.class );
-        TransactionToApply newTx = mock( TransactionToApply.class );
+        TransactionRepresentation alreadyCommittedTx1 = mock( TransactionRepresentation.class );
+        TransactionRepresentation alreadyCommittedTx2 = mock( TransactionRepresentation.class );
+        TransactionRepresentation newTx = mock( TransactionRepresentation.class );
 
         StubLocalDatabase localDatabase = new StubLocalDatabase( 3 );
         final ReplayableCommitProcess txListener = new ReplayableCommitProcess(
                 localDatabase, localDatabase );
 
         // when
-        txListener.commit( alreadyCommittedTx1, NULL, EXTERNAL );
-        txListener.commit( alreadyCommittedTx2, NULL, EXTERNAL );
-        txListener.commit( newTx, NULL, EXTERNAL );
+        txListener.commit( alreadyCommittedTx1, new LockGroup(), NULL, EXTERNAL );
+        txListener.commit( alreadyCommittedTx2, new LockGroup(), NULL, EXTERNAL );
+        txListener.commit( newTx, new LockGroup(), NULL, EXTERNAL );
 
         // then
-        verify( localDatabase.commitProcess, times( 1 ) ).commit( eq( newTx ),
+        verify( localDatabase.commitProcess, times( 1 ) ).commit( eq( newTx ), any( LockGroup.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
         verifyNoMoreInteractions( localDatabase.commitProcess );
     }
@@ -101,11 +102,11 @@ public class ReplayableCommitProcessTest
         }
 
         @Override
-        public long commit( TransactionToApply tx, CommitEvent commitEvent,
+        public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
                             TransactionApplicationMode mode ) throws TransactionFailureException
         {
             lastCommittedTransactionId++;
-            return commitProcess.commit( tx, commitEvent, mode );
+            return commitProcess.commit( representation, locks, commitEvent, mode );
         }
     }
 }

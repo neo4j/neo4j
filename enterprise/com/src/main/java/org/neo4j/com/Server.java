@@ -19,6 +19,17 @@
  */
 package org.neo4j.com;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -35,17 +46,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
@@ -110,7 +110,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     private final T requestTarget;
-    private final IdleChannelReaper connectedSlaveChannels;
+    private IdleChannelReaper connectedSlaveChannels;
     private final Log msgLog;
     private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
@@ -618,7 +618,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             targetBuffer.writeByte( 1 );
             return new CommittedTransactionSerializer( new NetworkWritableLogChannel(  targetBuffer ) );

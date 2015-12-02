@@ -42,9 +42,9 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -345,21 +345,20 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
-        try
+        try ( LockGroup locks = new LockGroup() )
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( StorageEngine.class ),
+                            dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
                             dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();
-            TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), nodes );
-            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
+            commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
+                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks, CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }
         finally

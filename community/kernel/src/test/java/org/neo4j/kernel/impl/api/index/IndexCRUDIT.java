@@ -63,8 +63,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -241,7 +240,10 @@ public class IndexCRUDIT
                 @Override
                 public void close() throws IOException, IndexEntryConflictException
                 {
-                    updatesCommitted.addAll( updates );
+                    if ( IndexUpdateMode.ONLINE == mode )
+                    {
+                        updatesCommitted.addAll( updates );
+                    }
                 }
 
                 @Override

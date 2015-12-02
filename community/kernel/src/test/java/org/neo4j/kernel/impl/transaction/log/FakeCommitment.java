@@ -24,18 +24,11 @@ public class FakeCommitment implements Commitment
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
-    private boolean hasLegacyIndexChanges = false;
 
     public FakeCommitment( long id, TransactionIdStore transactionIdStore )
     {
-        this( id, transactionIdStore, false );
-    }
-
-    public FakeCommitment( long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted )
-    {
         this.id = id;
         this.transactionIdStore = transactionIdStore;
-        this.committed = markedAsCommitted;
     }
 
     @Override
@@ -46,25 +39,20 @@ public class FakeCommitment implements Commitment
     }
 
     @Override
-    public void publishAsClosed()
+    public void publishAsApplied()
     {
         transactionIdStore.transactionClosed( id, 1, 2 );
+    }
+
+    @Override
+    public long transactionId()
+    {
+        return id;
     }
 
     @Override
     public boolean markedAsCommitted()
     {
         return committed;
-    }
-
-    public void setHasLegacyIndexChanges( boolean hasLegacyIndexChanges )
-    {
-        this.hasLegacyIndexChanges = hasLegacyIndexChanges;
-    }
-
-    @Override
-    public boolean hasLegacyIndexChanges()
-    {
-        return hasLegacyIndexChanges;
     }
 }

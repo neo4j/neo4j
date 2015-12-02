@@ -21,21 +21,21 @@ package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.edge.EdgeToCoreClient;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.tx.edge.ApplyPulledTransactions;
-import org.neo4j.coreedge.catchup.tx.edge.TransactionApplier;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.catchup.storecopy.edge.EdgeToCoreClient;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.server.Expiration;
+import org.neo4j.coreedge.catchup.tx.edge.ApplyPulledTransactions;
+import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
+import org.neo4j.coreedge.catchup.tx.edge.TransactionApplier;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
@@ -66,7 +67,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -202,11 +202,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         return new CommitProcessFactory()
         {
             @Override
-            public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-                    IndexUpdatesValidator indexUpdatesValidator, Config config )
+            public TransactionCommitProcess create( TransactionAppender appender, TransactionRepresentationStoreApplier applier, IndexUpdatesValidator indexUpdatesValidator, Config config )
             {
                 return new ReadOnlyTransactionCommitProcess();
             }
+
         };
     }
 

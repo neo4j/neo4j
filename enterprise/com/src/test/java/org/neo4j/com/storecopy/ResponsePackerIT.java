@@ -47,6 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
+
 public class ResponsePackerIT
 {
     @Rule
@@ -94,7 +95,7 @@ public class ResponsePackerIT
                 }
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+                public Visitor<CommittedTransactionRepresentation,IOException> transactions()
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

@@ -32,7 +32,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -270,41 +269,10 @@ public class MetaDataStoreTest
 
     private static MetaDataStore newMetaDataStore() throws IOException
     {
-        EphemeralFileSystemAbstraction fs = fsRule.get();
+        EphemeralFileSystemAbstraction fs = MetaDataStoreTest.fsRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File dir = new File( "store" );
         StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
-    }
-
-    @Test
-    public void testRecordTransactionClosed() throws Exception
-    {
-        // GIVEN
-        MetaDataStore metaDataStore = newMetaDataStore();
-        long[] originalClosedTransaction = metaDataStore.getLastClosedTransaction();
-        long transactionId = originalClosedTransaction[0] + 1;
-        long version = 1l;
-        long byteOffset = 777l;
-
-        // WHEN
-        metaDataStore.transactionClosed( transactionId, version, byteOffset );
-        // long[] with the highest offered gap-free number and its meta data.
-        long[] closedTransactionFlags = metaDataStore.getLastClosedTransaction();
-
-        //EXPECT
-        assertEquals( version, closedTransactionFlags[1] );
-        assertEquals( byteOffset, closedTransactionFlags[2] );
-
-        // WHEN
-        metaDataStore.close();
-        metaDataStore = newMetaDataStore();
-
-        // EXPECT
-        long[] lastClosedTransactionFlags = metaDataStore.getLastClosedTransaction();
-        assertEquals( version, lastClosedTransactionFlags[1] );
-        assertEquals( byteOffset, lastClosedTransactionFlags[2] );
-
-        metaDataStore.close();
     }
 }

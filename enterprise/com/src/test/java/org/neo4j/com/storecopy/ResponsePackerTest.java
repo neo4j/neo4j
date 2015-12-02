@@ -71,12 +71,12 @@ public class ResponsePackerTest
             }
 
             @Override
-            public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+            public Visitor<CommittedTransactionRepresentation, IOException> transactions()
             {
-                return new Visitor<CommittedTransactionRepresentation,Exception>()
+                return new Visitor<CommittedTransactionRepresentation, IOException>()
                 {
                     @Override
-                    public boolean visit( CommittedTransactionRepresentation element )
+                    public boolean visit( CommittedTransactionRepresentation element ) throws IOException
                     {
                         // THEN
                         long txId = element.getCommitEntry().getTxId();

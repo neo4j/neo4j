@@ -19,6 +19,8 @@
  */
 package org.neo4j.com.storecopy;
 
+import java.io.IOException;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -56,7 +58,7 @@ public class ResponsePacker
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
             {
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
@@ -87,13 +89,13 @@ public class ResponsePacker
                 ResourceReleaser.NO_OP );
     }
 
-    protected Visitor<CommittedTransactionRepresentation,Exception> filterVisitor(
-            final Visitor<CommittedTransactionRepresentation,Exception> delegate, final long txToEndAt )
+    protected Visitor<CommittedTransactionRepresentation,IOException> filterVisitor(
+            final Visitor<CommittedTransactionRepresentation,IOException> delegate, final long txToEndAt )
     {
-        return new Visitor<CommittedTransactionRepresentation,Exception>()
+        return new Visitor<CommittedTransactionRepresentation,IOException>()
         {
             @Override
-            public boolean visit( CommittedTransactionRepresentation element ) throws Exception
+            public boolean visit( CommittedTransactionRepresentation element ) throws IOException
             {
                 if ( element.getCommitEntry().getTxId() > txToEndAt )
                 {
@@ -105,8 +107,8 @@ public class ResponsePacker
     }
 
     protected void extractTransactions( long startingAtTransactionId,
-                                        Visitor<CommittedTransactionRepresentation,Exception> visitor )
-            throws Exception
+                                        Visitor<CommittedTransactionRepresentation,IOException> visitor )
+            throws IOException
     {
         try ( IOCursor<CommittedTransactionRepresentation> cursor = transactionStore
                 .getTransactions( startingAtTransactionId ) )

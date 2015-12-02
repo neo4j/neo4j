@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 
 /**
@@ -43,7 +41,7 @@ public interface ValidatedIndexUpdates extends AutoCloseable
     ValidatedIndexUpdates NONE = new ValidatedIndexUpdates()
     {
         @Override
-        public void flush( Set<IndexDescriptor> affectedIndexes )
+        public void flush()
         {
         }
 
@@ -66,13 +64,8 @@ public interface ValidatedIndexUpdates extends AutoCloseable
 
     /**
      * Flush all validated and prepared index updates to corresponding indexes.
-     *
-     * @param affectedIndexes adds the {@link IndexDescriptor} of the affected indexes to this {@link Set}.
-     * This is a temporary solution until {@link ValidatedIndexUpdates} is removed and index updates
-     * are done via proper commands... to achieve efficient batching of transactions.
      */
-    void flush( Set<IndexDescriptor> affectedIndexes )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
+    void flush() throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
     /**
      * Release all possible resources used by this batch of index updates. Such resources might include

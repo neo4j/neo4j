@@ -257,6 +257,7 @@ public class TransactionRecordState implements RecordState
      * Deletes a node by its id, returning its properties which are now removed.
      *
      * @param nodeId The id of the node to delete.
+     * @return The properties of the node that were removed during the delete.
      */
     public void nodeDelete( long nodeId )
     {
