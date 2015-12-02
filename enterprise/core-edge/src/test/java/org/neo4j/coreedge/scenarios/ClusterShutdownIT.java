@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -63,19 +64,22 @@ public class ClusterShutdownIT
         }
     }
 
-    private void shouldShutdownEvenThoughWaitingForLock0( int clusterSize, int victimId, int[] shutdownOrder ) throws Exception
+    private void shouldShutdownEvenThoughWaitingForLock0( int clusterSize, int victimId, int[] shutdownOrder ) throws
+            Exception
     {
         final int LONG_TIME = 60_000;
         final int LONGER_TIME = 2 * LONG_TIME;
         final int NUMBER_OF_LOCK_ACQUIRERS = 2;
 
-        final ExecutorService txExecutor = Executors.newCachedThreadPool(); // Blocking transactions are executed in parallel, not on the main thread.
-        final ExecutorService shutdownExecutor = Executors.newFixedThreadPool( 1 ); // Shutdowns are executed serially, not on the main thread.
+        final ExecutorService txExecutor = Executors.newCachedThreadPool(); // Blocking transactions are executed in
+        // parallel, not on the main thread.
+        final ExecutorService shutdownExecutor = Executors.newFixedThreadPool( 1 ); // Shutdowns are executed
+        // serially, not on the main thread.
 
         final File dbDir = dir.directory();
 
         // given - a cluster
-        final Cluster cluster = Cluster.start( dbDir, clusterSize, 0 );
+        final Cluster cluster = Cluster.start( dbDir, clusterSize, 0, new TestOnlyDiscoveryServiceFactory() );
 
         try
         {
@@ -106,7 +110,7 @@ public class ClusterShutdownIT
 
                             tx.success();
                         }
-                        catch( Exception e )
+                        catch ( Exception e )
                         {
                             /* Since we are shutting down, a plethora of possible exceptions are expected. */
                         }
