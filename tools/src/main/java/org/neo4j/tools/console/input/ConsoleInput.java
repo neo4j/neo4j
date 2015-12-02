@@ -66,7 +66,7 @@ public class ConsoleInput extends LifecycleAdapter
      * Add {@link Command} to be available and executed when input uses it.
      *
      * @param name command name, i.e the first word of the whole command line to listen for.
-     * @param command {@link Command} to {@link Command#run(String[]) run} as part of command line
+     * @param command {@link Command} to {@link Command#run(String[], PrintStream) run} as part of command line
      * starting with {@code name}-
      */
     public void add( String name, Command command )
