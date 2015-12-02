@@ -20,9 +20,14 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -30,15 +35,30 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CommandApplierFacade;
+import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.CountsStoreApplier;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -55,22 +75,36 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.TRUE;
@@ -103,6 +137,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final DefaultSchemaIndexProviderMap providerMap;
     private final ProcedureCache procedureCache;
     private final LegacyIndexApplierLookup legacyIndexApplierLookup;
+    private final Runnable schemaStateChangeCallback;
+    private final SchemaStorage schemaStorage;
+    private final ConstraintSemantics constraintSemantics;
+    private final RecoveryIndexingUpdatesValidator indexUpdatesValidatorForRecovery;
+    private final IdOrderingQueue legacyIndexTransactionOrdering;
+    private final LockService lockService;
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
 
     public RecordStorageEngine(
             File storeDir,
@@ -129,6 +170,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
+        this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.constraintSemantics = constraintSemantics;
+        this.lockService = lockService;
         this.kernelHealth = kernelHealth;
         this.indexConfigStore = indexConfigStore;
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
@@ -137,7 +181,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
-            SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+            schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
             indexingService = IndexingService.create(
@@ -149,7 +193,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             indexUpdatesValidator = new OnlineIndexUpdatesValidator(
                     neoStores, kernelHealth, new PropertyLoader( neoStores ),
-                    indexingService, IndexUpdateMode.ONLINE );
+                    indexingService, IndexUpdateMode.BATCHED );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
@@ -158,8 +202,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     neoStores, indexingService, storeStatementFactory( neoStores, config, lockService ) );
             procedureCache = new ProcedureCache();
             storeLayer = new CacheLayer( diskLayer, schemaCache, procedureCache );
-            this.labelScanStore = labelScanStoreProvider.getLabelScanStore();
+            labelScanStore = labelScanStoreProvider.getLabelScanStore();
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
+            legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+
+            indexUpdatesValidatorForRecovery = new RecoveryIndexingUpdatesValidator( indexingService );
+            labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
         }
         catch ( Throwable failure )
         {
@@ -180,6 +228,137 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @SuppressWarnings( "resource" )
+    @Override
+    public Collection<Command> createCommands(
+            TransactionState txState,
+            LegacyIndexTransactionState legacyIndexTransactionState,
+            Locks.Client locks,
+            StatementOperationParts operations,
+            StoreStatement storeStatement,
+            long lastTransactionIdWhenStarted )
+            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationKernelException
+    {
+        // Create objects to be populated with command-friendly changes
+        Collection<Command> commands = new ArrayList<>();
+
+        if ( txState == null )
+        {
+            // Bypass creating commands for record transaction state if we have no transaction state
+            legacyIndexTransactionState.extractCommands( commands );
+            return commands;
+        }
+
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
+        TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
+        recordState.initialize( lastTransactionIdWhenStarted );
+
+        // Visit transaction state and populate these record state objects
+        TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
+                schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap,
+                legacyIndexTransactionState, procedureCache );
+        CountsRecordState countsRecordState = new CountsRecordState();
+        txStateVisitor = constraintSemantics.decorateTxStateVisitor(
+                operations,
+                storeStatement,
+                storeLayer,
+                new DirectTxStateHolder( txState, legacyIndexTransactionState ),
+                txStateVisitor );
+        txStateVisitor = new TransactionCountingStateVisitor(
+                txStateVisitor, storeLayer, txState, countsRecordState );
+        try ( TxStateVisitor visitor = txStateVisitor )
+        {
+            txState.accept( txStateVisitor );
+        }
+
+        // Convert record state into commands
+        recordState.extractCommands( commands );
+        legacyIndexTransactionState.extractCommands( commands );
+        countsRecordState.extractCommands( commands );
+
+        return commands;
+    }
+
+    @Override
+    public void apply( TransactionToApply batch, TransactionApplicationMode mode ) throws Exception
+    {
+        try ( LockGroup locks = new LockGroup() )
+        {
+            // Have these command appliers as separate try-with-resource to have better control over
+            // point between closing this and the locks above
+            try ( CommandApplierFacade applier = applier( mode, locks ) )
+            {
+                TransactionToApply tx = batch;
+                while ( tx != null )
+                {
+                    ensureValidatedIndexUpdates( tx );
+                    applier.begin( tx );
+                    tx.transactionRepresentation().accept( applier );
+                    applier.end();
+                    tx = tx.next();
+                }
+            }
+        }
+        catch ( Throwable cause )
+        {
+            kernelHealth.panic( cause );
+            throw cause;
+        }
+    }
+
+    /**
+     * Creates a {@link CommandApplierFacade} that is to be used for all transactions in a batch.
+     * Before starting to apply contents of each transaction a call to {@link CommandHandler#begin(TransactionToApply)}
+     * is issued, otherwise the appliers all just gets visit-calls with contents from all transactions.
+     *
+     * After all transactions have been applied the appliers are closed (apply() then close()).
+     */
+    private CommandApplierFacade applier( TransactionApplicationMode mode, LockGroup locks )
+    {
+        // Graph store application. The order of the decorated store appliers is irrelevant
+        CommandHandler storeApplier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService, locks );
+        if ( mode.needsHighIdTracking() )
+        {
+            storeApplier = new HighIdTransactionApplier( storeApplier, neoStores );
+        }
+        if ( mode.needsCacheInvalidationOnUpdates() )
+        {
+            storeApplier = new CacheInvalidationTransactionApplier( storeApplier, neoStores, cacheAccess );
+        }
+
+        // Schema index application
+        CommandHandler indexApplier = new IndexTransactionApplier( indexingService, labelScanStoreSync );
+
+        // Legacy index application
+        CommandHandler legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
+                legacyIndexApplierLookup, legacyIndexTransactionOrdering, mode );
+
+        // Counts store application
+        CommandHandler countsStoreApplier = new CountsStoreApplier( neoStores.getCounts(), mode );
+
+        // Perform the application
+        return new CommandApplierFacade( storeApplier, indexApplier, legacyIndexApplier, countsStoreApplier );
+    }
+
+    private void ensureValidatedIndexUpdates( TransactionToApply tx ) throws IOException
+    {
+        // This method is a hack needed because
+        // - we derive logical index updates from physical record changes + reading from store.
+        //   In a batching scenario we must do this validation before each transaction gets applied,
+        //   because data might rely on data applied by the previous transaction.
+        // - we do index validation up front like this and will be removed once we bust the lucene limits.
+        if ( tx.validatedIndexUpdates() == null )
+        {
+            tx.validatedIndexUpdates( indexUpdatesValidator.validate( tx.transactionRepresentation() ) );
+        }
+    }
+
+    @Override
+    public IndexUpdatesValidator indexUpdatesValidatorForRecovery()
+    {
+        return indexUpdatesValidatorForRecovery;
     }
 
     @Override
@@ -264,6 +443,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public KernelHealth kernelHealth()
     {
         return kernelHealth;
+    }
+
+    @Override
+    public IdOrderingQueue legacyIndexTransactionOrdering()
+    {
+        return legacyIndexTransactionOrdering;
     }
 
     @Override

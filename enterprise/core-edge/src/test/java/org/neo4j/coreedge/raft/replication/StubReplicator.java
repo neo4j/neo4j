@@ -22,14 +22,9 @@ package org.neo4j.coreedge.raft.replication;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
-
-import static org.mockito.Mockito.mock;
-
 public class StubReplicator implements Replicator
 {
-    private Set<ReplicatedContentListener> listeners = new HashSet<>();
+    private final Set<ReplicatedContentListener> listeners = new HashSet<>();
 
     @Override
     public void replicate( ReplicatedContent content ) throws ReplicationFailedException

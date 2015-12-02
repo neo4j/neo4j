@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCo
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification => InternalNotification2_3}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, IndexLookupUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LegacyPlannerNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, UnboundedShortestPathNotification}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{CartesianProductNotification, EagerLoadCsvNotification, IndexHintUnfulfillableNotification, IndexLookupUnfulfillableNotification, InternalNotification, JoinHintUnfulfillableNotification, JoinHintUnsupportedNotification, LargeLabelWithLoadCsvNotification, LengthOnNonPathNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, UnboundedShortestPathNotification}
 import org.neo4j.cypher.internal.frontend.{v2_3 => frontend2_3}
 
 /**
@@ -82,8 +82,6 @@ object wrappersFor2_3 {
   def as2_3(notification: InternalNotification): InternalNotification2_3 = notification match {
     case CartesianProductNotification(pos, variables) =>
       frontend2_3.notification.CartesianProductNotification(as2_3(pos), variables)
-    case LegacyPlannerNotification =>
-      frontend2_3.notification.LegacyPlannerNotification
     case LengthOnNonPathNotification(pos) =>
       frontend2_3.notification.LengthOnNonPathNotification(as2_3(pos))
     case PlannerUnsupportedNotification =>
@@ -116,7 +114,7 @@ object wrappersFor2_3 {
     case frontend2_3.notification.CartesianProductNotification(pos, variables) =>
       CartesianProductNotification(as3_0(pos), variables)
     case frontend2_3.notification.LegacyPlannerNotification =>
-      LegacyPlannerNotification
+      throw new InternalException("Syntax PLANNER COST/RULE no longer supported")
     case frontend2_3.notification.LengthOnNonPathNotification(pos) =>
       LengthOnNonPathNotification(as3_0(pos))
     case  frontend2_3.notification.PlannerUnsupportedNotification =>

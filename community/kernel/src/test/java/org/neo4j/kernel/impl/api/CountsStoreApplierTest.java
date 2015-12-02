@@ -19,40 +19,45 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.transaction.command.Command;
+import java.io.IOException;
 
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.util.function.Optionals;
+
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.mockito.Mockito.when;
 
 public class CountsStoreApplierTest
 {
-    private final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
-
     @Test
     public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws IOException
     {
         // GIVEN
-        final CountsStoreApplier applier = new CountsStoreApplier( updater );
+        final CountsTracker tracker = mock( CountsTracker.class );
+        final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
+        when( tracker.apply( anyLong() ) ).thenReturn( Optionals.some( updater ) );
+        final CountsStoreApplier applier = new CountsStoreApplier( tracker, TransactionApplicationMode.INTERNAL );
 
         // WHEN
+        applier.begin( new TransactionToApply( null, 2L ) );
         applier.visitNodeCountsCommand( addNodeCommand() );
         applier.apply();
 
         // THEN
-        verify( updater, times( 1 ) ).incrementNodeCount( ANY_LABEL, 1 );
+        verify( updater, times( 1 ) ).incrementNodeCount( ReadOperations.ANY_LABEL, 1 );
     }
 
     private Command.NodeCountsCommand addNodeCommand()
     {
         final Command.NodeCountsCommand command = new Command.NodeCountsCommand();
-        command.init( ANY_LABEL, 1 );
+        command.init( ReadOperations.ANY_LABEL, 1 );
         return command;
     }
 }

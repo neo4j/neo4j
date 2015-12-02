@@ -19,9 +19,9 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
  * network}.
  * One serializer can be instantiated per response and is able to serialize one or many transactions.
  */
-public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,IOException>
+public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,Exception>
 {
     private final WritableLogChannel channel;
     private final LogEntryWriter writer;

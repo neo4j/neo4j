@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -90,7 +90,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,
-                mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
+                new StandardConstraintSemantics(), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
 
         return dataSource;
     }

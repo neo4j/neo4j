@@ -21,61 +21,43 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 
 /**
- * Writing groups of commands, in a way that is guaranteed to be recoverable, i.e. consistently readable,
- * in the event of failure.
+ * Writes batches of transactions, each containing groups of commands to a log that is guaranteed to be recoverable,
+ * i.e. consistently readable, in the event of failure.
  */
 public interface TransactionAppender
 {
     /**
-     * Appends a transaction to a log, effectively committing it. After this method have returned the
-     * returned transaction id should be visible in {@link TransactionIdStore#getLastCommittedTransactionId()}.
+     * Appends a batch of transactions to a log, effectively committing the transactions.
+     * After this method have returned the returned transaction id should be visible in
+     * {@link TransactionIdStore#getLastCommittedTransactionId()}.
      *
-     * Any failure happening inside this method will automatically
-     * {@link TransactionIdStore#transactionClosed(long, long, long) close} the transaction if the execution got past
-     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
-     * on exception thrown from this method. Although callers must make sure that successfully appended
-     * transactions exiting this method are {@link Commitment#publishAsApplied()}}.
+     * Any failure happening inside this method will cause a {@link KernelHealth#panic(Throwable) kernel panic}.
+     * Callers must make sure that successfully appended
+     * transactions exiting this method are {@link Commitment#publishAsClosed()}}.
      *
-     * @param transaction transaction representation to append.
+     * @param batch transactions to append to the log. These transaction instances provide both input arguments
+     * as well as a place to provide output data, namely {@link TransactionToApply#commitment()} and
+     * {@link TransactionToApply#transactionId()}.
      * @param logAppendEvent A trace event for the given log append operation.
-     * @return {@link Commitment} that should be marked as {@link Commitment#publishAsApplied()
-     * when the transaction has been applied to the store. Note that the {@link Commitment} has been already marked as
-     * {@link Commitment#publishAsApplied()}
-     * * @throws IOException if there was a problem appending the transaction. See method javadoc body for
+     * @return last committed transaction in this batch. The appended (i.e. committed) transactions
+     * will have had their {@link TransactionToApply#commitment()} available and caller is expected to
+     * {@link Commitment#publishAsClosed() mark them as applied} after they have been applied to storage.
+     * Note that {@link Commitment commitments} must be {@link Commitment#publishAsCommitted() marked as committed}
+     * by this method.
+     * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    Commitment append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException;
+    long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException;
 
     /**
-     * Appends a transaction to a log with an expected transaction id. The written data is not forced as
-     * part of this method call, instead that is controlled manually by {@link #force()}. It's assumed
-     * that only a single thread calls this method. The returned {@link Commitment} should be called
-     * after the manual {@link #force()} has taken place.
-     *
-     * Any failure happening inside this method will automatically
-     * {@link TransactionIdStore#transactionClosed(long, long, long) close} the transaction if the execution got past
-     * {@link TransactionIdStore#transactionCommitted(long, long)}, so callers should not close transactions
-     * on exception thrown from this method. Although callers must make sure that successfully appended
-     * transactions exiting this method are {@link Commitment#publishAsApplied()}.
-     *
-     * @param transaction transaction representation to append.
-     * @param transactionId the appended transaction is expected to have.
-     * @return {@link Commitment} that should be marked as {@link Commitment#publishAsCommitted() committed}
-     * after a point where the log has been manually {@link #force() forced} and later marked as
-     * {@link Commitment#publishAsApplied() when the transaction has been applied to the store.
-     * @throws IOException if there was a problem appending the transaction, or if the transaction id
-     * generated by this appender doesn't match.
-     */
-    Commitment append( TransactionRepresentation transaction, long transactionId ) throws IOException;
-
-    /**
-     * Appends a check point to a log marking as start recovery position the given log position.
-     * After this method have returned the check pointing should be flushed on disk.
+     * Appends a check point to a log which marks a starting point for recovery in the event of failure.
+     * After this method have returned the check point mark must have been flushed to disk.
      *
      * @param logPosition the log position contained in the written check point
      * @param logCheckPointEvent  a trace event for the given check point operation.
@@ -83,14 +65,4 @@ public interface TransactionAppender
      * how to handle exceptions in general thrown from this method.
      */
     void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException;
-
-    /**
-     * Forces all changes down to disk. Normally this should not be needing manual calls,
-     * {@link #append(org.neo4j.kernel.impl.transaction.TransactionRepresentation,
-     * org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent)} should do the right thing.
-     * But some implementations might choose to force at other points in time, for example for batching.
-     *
-     * @throws IOException if there was any problem forcing.
-     */
-    void force() throws IOException;
 }

@@ -65,6 +65,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -546,43 +547,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
     private static ValidatedIndexUpdates newValidatedIndexUpdates( final IndexUpdaterMap indexUpdaters,
             final Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex, final Reservation reservation )
     {
-        return new ValidatedIndexUpdates()
-        {
-            @Override
-            public void flush() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
-            {
-                for ( Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry : updatesByIndex.entrySet() )
-                {
-                    IndexDescriptor indexDescriptor = entry.getKey();
-                    List<NodePropertyUpdate> updates = entry.getValue();
-
-                    IndexUpdater updater = indexUpdaters.getUpdater( indexDescriptor );
-                    for ( NodePropertyUpdate update : updates )
-                    {
-                        updater.process( update );
-                    }
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                try
-                {
-                    reservation.release();
-                }
-                finally
-                {
-                    indexUpdaters.close();
-                }
-            }
-
-            @Override
-            public boolean hasChanges()
-            {
-                return !updatesByIndex.isEmpty();
-            }
-        };
+        return new OnlineValidatedIndexUpdates( reservation, updatesByIndex, indexUpdaters );
     }
 
     private void applyRecoveredUpdates() throws IOException
@@ -606,7 +571,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
 
             try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates, IndexUpdateMode.BATCHED ) )
             {
-                validatedUpdates.flush();
+                validatedUpdates.flush( new HashSet<>() );
                 monitor.appliedRecoveredData( recoveredUpdates );
             }
             catch ( IndexEntryConflictException | IndexCapacityExceededException e )
@@ -826,6 +791,25 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException( "Unable to force " + index, e );
+            }
+        }
+    }
+
+    public void flushAll( Set<IndexDescriptor> affectedIndexes )
+    {
+        for ( IndexDescriptor indexDescriptor : affectedIndexes )
+        {
+            try
+            {
+                indexMapRef.getIndexProxy( indexDescriptor ).flush();
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                // This is really weird, although this index might just now have been concurrently deleted.
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to force " + indexDescriptor, e );
             }
         }
     }

@@ -35,7 +35,8 @@ object CostBasedPipeBuilderFactory {
              tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
-             useErrorsOverWarnings: Boolean
+             useErrorsOverWarnings: Boolean,
+             updateStrategy: Option[UpdateStrategy]
     ) = {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
@@ -52,6 +53,10 @@ object CostBasedPipeBuilderFactory {
     }
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)
-    CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner, createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder, useErrorsOverWarnings)
+    val actualUpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
+      createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder,
+      actualUpdateStrategy,
+      useErrorsOverWarnings)
   }
 }

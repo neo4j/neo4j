@@ -101,6 +101,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.txstate.TxStateVisitor.EMPTY;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_NUMBERS;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -1179,8 +1180,8 @@ public class StateHandlingStatementOperations implements
             CountsRecordState counts = new CountsRecordState();
             try
             {
-                statement.txState().accept( new TransactionCountingStateVisitor( null, storeLayer, this,
-                        statement, counts ) );
+                statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
+                        statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1209,8 +1210,8 @@ public class StateHandlingStatementOperations implements
             CountsRecordState counts = new CountsRecordState();
             try
             {
-                statement.txState().accept( new TransactionCountingStateVisitor( null, storeLayer, this,
-                        statement, counts ) );
+                statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
+                        statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )

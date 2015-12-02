@@ -911,8 +911,9 @@ public class ClusterManager
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                insertInitialData( member.get(), name, member.get().getDependencyResolver().resolveDependency( Config
-                        .class ).get( ClusterSettings.server_id ) );
+                HighlyAvailableGraphDatabase graphDatabase = member.get();
+                Config config = graphDatabase.getDependencyResolver().resolveDependency( Config.class );
+                insertInitialData( graphDatabase, name, config.get( ClusterSettings.server_id ) );
             }
         }
 
@@ -1110,8 +1111,8 @@ public class ClusterManager
 
                 config( builder, name, serverId );
 
-                final HighlyAvailableGraphDatabaseProxy graphDatabase = new HighlyAvailableGraphDatabaseProxy(
-                        builder );
+                final HighlyAvailableGraphDatabaseProxy graphDatabase =
+                        new HighlyAvailableGraphDatabaseProxy( builder );
 
                 members.put( serverId, graphDatabase );
 

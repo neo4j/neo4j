@@ -54,6 +54,8 @@ import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -69,7 +71,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.NullLogProvider;
@@ -86,7 +87,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 
 public class NeoStoresTest
 {
@@ -107,10 +107,9 @@ public class NeoStoresTest
     private RelationshipTypeTokenStore rtStore;
     private NeoStoreDataSource ds;
     private KernelTransaction tx;
-    private TransactionRecordState transaction;
+    private TransactionState transaction;
     private StoreReadLayer storeLayer;
     private PropertyLoader propertyLoader;
-
 
     @Before
     public void setUpNeoStores() throws Exception
@@ -163,47 +162,35 @@ public class NeoStoresTest
         startTx();
         // setup test population
         long node1 = nextId( Node.class );
-        transaction.nodeCreate( node1 );
+        transaction.nodeDoCreate( node1 );
         long node2 = nextId( Node.class );
-        transaction.nodeCreate( node2 );
-        DefinedProperty n1prop1 = transaction.nodeAddProperty(
-                node1, index( "prop1" ), "string1" );
-        DefinedProperty n1prop2 = transaction.nodeAddProperty(
-                node1, index( "prop2" ), 1 );
-        DefinedProperty n1prop3 = transaction.nodeAddProperty(
-                node1, index( "prop3" ), true );
+        transaction.nodeDoCreate( node2 );
+        DefinedProperty n1prop1 = nodeAddProperty( node1, index( "prop1" ), "string1" );
+        DefinedProperty n1prop2 = nodeAddProperty( node1, index( "prop2" ), 1 );
+        DefinedProperty n1prop3 = nodeAddProperty( node1, index( "prop3" ), true );
 
-        DefinedProperty n2prop1 = transaction.nodeAddProperty(
-                node2, index( "prop1" ), "string2" );
-        DefinedProperty n2prop2 = transaction.nodeAddProperty(
-                node2, index( "prop2" ), 2 );
-        DefinedProperty n2prop3 = transaction.nodeAddProperty(
-                node2, index( "prop3" ), false );
+        DefinedProperty n2prop1 = nodeAddProperty( node2, index( "prop1" ), "string2" );
+        DefinedProperty n2prop2 = nodeAddProperty( node2, index( "prop2" ), 2 );
+        DefinedProperty n2prop3 = nodeAddProperty( node2, index( "prop3" ), false );
 
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName1 = "relationshiptype1";
-        transaction.createRelationshipTypeToken( typeName1, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName1, relType1 );
         int relType2 = (int) nextId( RelationshipType.class );
         String typeName2 = "relationshiptype2";
-        transaction.createRelationshipTypeToken( typeName2, relType2 );
+        transaction.relationshipTypeDoCreateForName( typeName2, relType2 );
         long rel1 = nextId( Relationship.class );
-        transaction.relCreate( rel1, relType1, node1, node2 );
+        transaction.relationshipDoCreate( rel1, relType1, node1, node2 );
         long rel2 = nextId( Relationship.class );
-        transaction.relCreate( rel2, relType2, node2, node1 );
+        transaction.relationshipDoCreate( rel2, relType2, node2, node1 );
 
-        DefinedProperty r1prop1 = transaction.relAddProperty(
-                rel1, index( "prop1" ), "string1" );
-        DefinedProperty r1prop2 = transaction.relAddProperty(
-                rel1, index( "prop2" ), 1 );
-        DefinedProperty r1prop3 = transaction.relAddProperty(
-                rel1, index( "prop3" ), true );
+        DefinedProperty r1prop1 = relAddProperty( rel1, index( "prop1" ), "string1" );
+        DefinedProperty r1prop2 = relAddProperty( rel1, index( "prop2" ), 1 );
+        DefinedProperty r1prop3 = relAddProperty( rel1, index( "prop3" ), true );
 
-        DefinedProperty r2prop1 = transaction.relAddProperty(
-                rel2, index( "prop1" ), "string2" );
-        DefinedProperty r2prop2 = transaction.relAddProperty(
-                rel2, index( "prop2" ), 2 );
-        DefinedProperty r2prop3 = transaction.relAddProperty(
-                rel2, index( "prop3" ), false );
+        DefinedProperty r2prop1 = relAddProperty( rel2, index( "prop1" ), "string2" );
+        DefinedProperty r2prop2 = relAddProperty( rel2, index( "prop2" ), 2 );
+        DefinedProperty r2prop3 = relAddProperty( rel2, index( "prop3" ), false );
         commitTx();
         ds.stop();
 
@@ -243,25 +230,63 @@ public class NeoStoresTest
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
-            transaction.nodeCreate( nodeIds[i] );
-            transaction.nodeAddProperty( nodeIds[i],
-                    index( "nisse" ), new Integer( 10 - i ) );
+            transaction.nodeDoCreate( nodeIds[i] );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
         {
             long id = nextId( Relationship.class );
-            transaction.relCreate( id, relType1, nodeIds[i], nodeIds[i + 1] );
-            transaction.relDelete( id );
+            transaction.relationshipDoCreate( id, relType1, nodeIds[i], nodeIds[i + 1] );
+            transaction.relationshipDoDelete( id, relType1, nodeIds[i], nodeIds[i + 1] );
         }
         for ( int i = 0; i < 3; i++ )
         {
-            transaction.nodeDelete( nodeIds[i] );
+            transaction.nodeDoDelete( nodeIds[i] );
         }
         commitTx();
         ds.stop();
     }
 
+    private DefinedProperty nodeAddProperty( long nodeId, int key, Object value )
+    {
+        DefinedProperty property = Property.property( key, value );
+        Property oldProperty = Property.noNodeProperty( nodeId, key );
+        try ( StoreStatement statement = storeLayer.acquireStatement();
+                Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId ) )
+        {
+            if ( cursor.next() )
+            {
+                Object oldValue = cursor.get().getProperty( key );
+                if ( oldValue != null )
+                {
+                    oldProperty = Property.property( key, oldValue );
+                }
+            }
+        }
 
+        transaction.nodeDoReplaceProperty( nodeId, oldProperty, property );
+        return property;
+    }
+
+    private DefinedProperty relAddProperty( long relationshipId, int key, Object value )
+    {
+        DefinedProperty property = Property.property( key, value );
+        Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
+        try ( StoreStatement statement = storeLayer.acquireStatement();
+                Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
+        {
+            if ( cursor.next() )
+            {
+                Object oldValue = cursor.get().getProperty( key );
+                if ( oldValue != null )
+                {
+                    oldProperty = Property.property( key, oldValue );
+                }
+            }
+        }
+        transaction.relationshipDoReplaceProperty( relationshipId, oldProperty, property );
+        return property;
+    }
 
     @Test
     public void testRels1() throws Exception
@@ -270,18 +295,17 @@ public class NeoStoresTest
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.createRelationshipTypeToken( typeName, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName, relType1 );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
-            transaction.nodeCreate( nodeIds[i] );
-            transaction.nodeAddProperty( nodeIds[i],
-                    index( "nisse" ), new Integer( 10 - i ) );
+            transaction.nodeDoCreate( nodeIds[i] );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
         {
-            transaction.relCreate( nextId( Relationship.class ),
+            transaction.relationshipDoCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i + 1] );
         }
         commitTx();
@@ -289,21 +313,36 @@ public class NeoStoresTest
         for ( int i = 0; i < 3; i += 2 )
         {
             try ( Cursor<NodeItem> nodeCursor = ((KernelStatement) tx.acquireStatement()).getStoreStatement()
-                    .acquireSingleNodeCursor(
-                            nodeIds[i] ) )
+                    .acquireSingleNodeCursor( nodeIds[i] ) )
             {
                 nodeCursor.next();
                 PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
                 while ( relationships.hasNext() )
                 {
-                    transaction.relDelete( relationships.next() );
+                    relDelete( relationships.next() );
                 }
             }
 
-            transaction.nodeDelete( nodeIds[i] );
+            transaction.nodeDoDelete( nodeIds[i] );
         }
         commitTx();
         ds.stop();
+    }
+
+    private void relDelete( long id ) throws Exception
+    {
+        RelationshipVisitor<RuntimeException> visitor = new RelationshipVisitor<RuntimeException>()
+        {
+            @Override
+            public void visit( long relId, int type, long startNode, long endNode )
+            {
+                transaction.relationshipDoDelete( relId, type, startNode, endNode );
+            }
+        };
+        if ( !transaction.relationshipVisit( id, visitor ) )
+        {
+            storeLayer.relationshipVisit( id, visitor );
+        }
     }
 
     @Test
@@ -314,21 +353,20 @@ public class NeoStoresTest
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.createRelationshipTypeToken( typeName, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName, relType1 );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
-            transaction.nodeCreate( nodeIds[i] );
-            transaction.nodeAddProperty( nodeIds[i],
-                    index( "nisse" ), new Integer( 10 - i ) );
+            transaction.nodeDoCreate( nodeIds[i] );
+            nodeAddProperty( nodeIds[i], index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
         {
-            transaction.relCreate( nextId( Relationship.class ),
+            transaction.relationshipDoCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i + 1] );
         }
-        transaction.relCreate( nextId( Relationship.class ),
+        transaction.relationshipDoCreate( nextId( Relationship.class ),
                 relType1, nodeIds[0], nodeIds[2] );
         commitTx();
         startTx();
@@ -342,11 +380,11 @@ public class NeoStoresTest
                 PrimitiveLongIterator relationships = nodeCursor.get().getRelationships( Direction.BOTH );
                 while ( relationships.hasNext() )
                 {
-                    transaction.relDelete( relationships.next() );
+                    relDelete( relationships.next() );
                 }
             }
 
-            transaction.nodeDelete( nodeIds[i] );
+            transaction.nodeDoDelete( nodeIds[i] );
         }
         commitTx();
         ds.stop();
@@ -359,41 +397,41 @@ public class NeoStoresTest
         initializeStores( storeDir, stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
-        transaction.createRelationshipTypeToken( "relationshiptype1", relType1 );
+        transaction.relationshipTypeDoCreateForName( "relationshiptype1", relType1 );
         long nodeIds[] = new long[8];
         for ( int i = 0; i < nodeIds.length; i++ )
         {
             nodeIds[i] = nextId( Node.class );
-            transaction.nodeCreate( nodeIds[i] );
+            transaction.nodeDoCreate( nodeIds[i] );
         }
         for ( int i = 0; i < nodeIds.length / 2; i++ )
         {
-            transaction.relCreate( nextId( Relationship.class ),
+            transaction.relationshipDoCreate( nextId( Relationship.class ),
                     relType1, nodeIds[i], nodeIds[i * 2] );
         }
         long rel5 = nextId( Relationship.class );
-        transaction.relCreate( rel5, relType1, nodeIds[0], nodeIds[5] );
+        transaction.relationshipDoCreate( rel5, relType1, nodeIds[0], nodeIds[5] );
         long rel2 = nextId( Relationship.class );
-        transaction.relCreate( rel2, relType1, nodeIds[1], nodeIds[2] );
+        transaction.relationshipDoCreate( rel2, relType1, nodeIds[1], nodeIds[2] );
         long rel3 = nextId( Relationship.class );
-        transaction.relCreate( rel3, relType1, nodeIds[1], nodeIds[3] );
+        transaction.relationshipDoCreate( rel3, relType1, nodeIds[1], nodeIds[3] );
         long rel6 = nextId( Relationship.class );
-        transaction.relCreate( rel6, relType1, nodeIds[1], nodeIds[6] );
+        transaction.relationshipDoCreate( rel6, relType1, nodeIds[1], nodeIds[6] );
         long rel1 = nextId( Relationship.class );
-        transaction.relCreate( rel1, relType1, nodeIds[0], nodeIds[1] );
+        transaction.relationshipDoCreate( rel1, relType1, nodeIds[0], nodeIds[1] );
         long rel4 = nextId( Relationship.class );
-        transaction.relCreate( rel4, relType1, nodeIds[0], nodeIds[4] );
+        transaction.relationshipDoCreate( rel4, relType1, nodeIds[0], nodeIds[4] );
         long rel7 = nextId( Relationship.class );
-        transaction.relCreate( rel7, relType1, nodeIds[0], nodeIds[7] );
+        transaction.relationshipDoCreate( rel7, relType1, nodeIds[0], nodeIds[7] );
         commitTx();
         startTx();
-        transaction.relDelete( rel7 );
-        transaction.relDelete( rel4 );
-        transaction.relDelete( rel1 );
-        transaction.relDelete( rel6 );
-        transaction.relDelete( rel3 );
-        transaction.relDelete( rel2 );
-        transaction.relDelete( rel5 );
+        relDelete( rel7 );
+        relDelete( rel4 );
+        relDelete( rel1 );
+        relDelete( rel6 );
+        relDelete( rel3 );
+        relDelete( rel2 );
+        relDelete( rel5 );
         commitTx();
         ds.stop();
     }
@@ -404,18 +442,16 @@ public class NeoStoresTest
         initializeStores( storeDir, stringMap() );
         startTx();
         long nodeId = nextId( Node.class );
-        transaction.nodeCreate( nodeId );
+        transaction.nodeDoCreate( nodeId );
         pStore.nextId();
-        DefinedProperty prop = transaction.nodeAddProperty(
-                nodeId, index( "nisse" ),
-                new Integer( 10 ) );
+        DefinedProperty prop = nodeAddProperty( nodeId, index( "nisse" ), new Integer( 10 ) );
         commitTx();
         ds.stop();
         initializeStores( storeDir, stringMap() );
         startTx();
-        transaction.nodeChangeProperty( nodeId, prop.propertyKeyId(), new Integer( 5 ) );
-        transaction.nodeRemoveProperty( nodeId, prop.propertyKeyId() );
-        transaction.nodeDelete( nodeId );
+        DefinedProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), new Integer( 5 ) );
+        transaction.nodeDoRemoveProperty( nodeId, prop2 );
+        transaction.nodeDoDelete( nodeId );
         commitTx();
         ds.stop();
     }
@@ -697,11 +733,10 @@ public class NeoStoresTest
         propertyLoader = new PropertyLoader( neoStores );
     }
 
-
     private void startTx() throws TransactionFailureException
     {
         tx = ds.getKernel().newTransaction();
-        transaction = ((KernelTransactionImplementation) tx).getTransactionRecordState();
+        transaction = ((KernelTransactionImplementation) tx).txState();
     }
 
     private void commitTx() throws TransactionFailureException
@@ -717,7 +752,7 @@ public class NeoStoresTest
         {
             int id = (int) nextId( PropertyKeyTokenRecord.class );
             createDummyIndex( id, key );
-            transaction.createPropertyKeyToken( key, id );
+            transaction.propertyKeyDoCreateForName( key, id );
             return id;
         }
         return itr.next().id();
@@ -765,21 +800,21 @@ public class NeoStoresTest
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( "string1", data.value() );
-                transaction.nodeChangeProperty( node, prop1.propertyKeyId(), "-string1" );
+                nodeAddProperty( node, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 1, data.value() );
-                transaction.nodeChangeProperty( node, prop2.propertyKeyId(), new Integer( -1 ) );
+                nodeAddProperty( node, prop2.propertyKeyId(), new Integer( -1 ) );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.nodeChangeProperty( node, prop3.propertyKeyId(), false );
+                nodeAddProperty( node, prop3.propertyKeyId(), false );
             }
             else
             {
@@ -838,7 +873,7 @@ public class NeoStoresTest
     private void validateNodeRel2( final long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3,
             long rel1, long rel2, final int relType1, final int relType2 )
-            throws IOException, EntityNotFoundException, RuntimeException
+            throws IOException, RuntimeException
     {
         assertTrue( nodeExists( node ) );
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -855,21 +890,21 @@ public class NeoStoresTest
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( "string2", data.value() );
-                transaction.nodeChangeProperty( node, prop1.propertyKeyId(), "-string2" );
+                nodeAddProperty( node, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 2, data.value() );
-                transaction.nodeChangeProperty( node, prop2.propertyKeyId(), new Integer( -2 ) );
+                nodeAddProperty( node, prop2.propertyKeyId(), new Integer( -2 ) );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.nodeChangeProperty( node, prop3.propertyKeyId(), true );
+                nodeAddProperty( node, prop3.propertyKeyId(), true );
             }
             else
             {
@@ -942,21 +977,21 @@ public class NeoStoresTest
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( "string1", data.value() );
-                transaction.relChangeProperty( rel, prop1.propertyKeyId(), "-string1" );
+                relAddProperty( rel, prop1.propertyKeyId(), "-string1" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 1, data.value() );
-                transaction.relChangeProperty( rel, prop2.propertyKeyId(), new Integer( -1 ) );
+                relAddProperty( rel, prop2.propertyKeyId(), new Integer( -1 ) );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.relChangeProperty( rel, prop3.propertyKeyId(), false );
+                relAddProperty( rel, prop3.propertyKeyId(), false );
             }
             else
             {
@@ -1008,21 +1043,21 @@ public class NeoStoresTest
                 assertEquals( "prop1", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( "string2", data.value() );
-                transaction.relChangeProperty( rel, prop1.propertyKeyId(), "-string2" );
+                relAddProperty( rel, prop1.propertyKeyId(), "-string2" );
             }
             else if ( data.propertyKeyId() == prop2.propertyKeyId() )
             {
                 assertEquals( "prop2", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( 2, data.value() );
-                transaction.relChangeProperty( rel, prop2.propertyKeyId(), new Integer( -2 ) );
+                relAddProperty( rel, prop2.propertyKeyId(), new Integer( -2 ) );
             }
             else if ( data.propertyKeyId() == prop3.propertyKeyId() )
             {
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.relChangeProperty( rel, prop3.propertyKeyId(), true );
+                relAddProperty( rel, prop3.propertyKeyId(), true );
             }
             else
             {
@@ -1066,7 +1101,7 @@ public class NeoStoresTest
 
     private void deleteRel1( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-            throws IOException
+            throws Exception
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -1094,7 +1129,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.relRemoveProperty( rel, prop3.propertyKeyId() );
+                transaction.relationshipDoRemoveProperty( rel, prop3 );
             }
             else
             {
@@ -1107,7 +1142,7 @@ public class NeoStoresTest
         propertyLoader.relLoadProperties( rel, propertyCounter );
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );
-        transaction.relDelete( rel );
+        relDelete( rel );
 
         assertHasRelationships( firstNode );
 
@@ -1127,7 +1162,7 @@ public class NeoStoresTest
 
     private void deleteRel2( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-            throws IOException
+            throws Exception
     {
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -1155,7 +1190,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.relRemoveProperty( rel, prop3.propertyKeyId() );
+                transaction.relationshipDoRemoveProperty( rel, prop3 );
             }
             else
             {
@@ -1168,7 +1203,7 @@ public class NeoStoresTest
         propertyLoader.relLoadProperties( rel, propertyCounter );
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );
-        transaction.relDelete( rel );
+        relDelete( rel );
 
         assertHasRelationships( firstNode );
 
@@ -1219,7 +1254,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value() );
-                transaction.nodeRemoveProperty( node, prop3.propertyKeyId() );
+                transaction.nodeDoRemoveProperty( node, prop3 );
             }
             else
             {
@@ -1232,7 +1267,7 @@ public class NeoStoresTest
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
         assertHasRelationships( node );
-        transaction.nodeDelete( node );
+        transaction.nodeDoDelete( node );
     }
 
     private void deleteNode2( long node, DefinedProperty prop1,
@@ -1265,7 +1300,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value() );
-                transaction.nodeRemoveProperty( node, prop3.propertyKeyId() );
+                transaction.nodeDoRemoveProperty( node, prop3 );
             }
             else
             {
@@ -1280,7 +1315,7 @@ public class NeoStoresTest
 
         assertHasRelationships( node );
 
-        transaction.nodeDelete( node );
+        transaction.nodeDoDelete( node );
     }
 
     private void testGetRels( long relIds[] )

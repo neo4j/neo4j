@@ -83,6 +83,14 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> leader_wait_timeout =
             setting( "core_edge.leader_wait_timeout", DURATION, "30s" );
 
+    @Description( "The maximum batch size when catching up (in unit of entries)" )
+    public static final Setting<Integer> catchup_batch_size =
+            setting( "core_edge.catchup_batch_size", INTEGER, "64" );
+
+    @Description( "The maximum lag allowed before log shipping pauses (in unit of entries)" )
+    public static final Setting<Integer> log_shipping_max_lag  =
+            setting( "core_edge.log_shipping_max_lag", INTEGER, "256" );
+
     @Description( "Expected size of core cluster" )
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );

@@ -23,81 +23,45 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.lifecycle.LifecycleException;
-
-import org.neo4j.coreedge.catchup.CatchupServer;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class CoreServerStartupProcess implements Lifecycle
+public class CoreServerStartupProcess
 {
-    private final LifeSupport services = new LifeSupport();
 
-    public CoreServerStartupProcess( LocalDatabase localDatabase, DataSourceManager dataSourceManager,
-                                     ReplicatedIdGeneratorFactory idGeneratorFactory,
-                                     RaftInstance<CoreMember> raft, RaftLog raftLog, RaftServer<CoreMember> raftServer,
-                                     CatchupServer catchupServer,
-                                     DelayedRenewableTimeoutService raftTimeoutService,
-                                     MembershipWaiter<CoreMember> membershipWaiter,
-                                     long joinCatchupTimeout )
+    public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
+                                                 ReplicatedIdGeneratorFactory idGeneratorFactory,
+                                                 RaftInstance<CoreMember> raft, RaftServer<CoreMember> raftServer,
+                                                 CatchupServer catchupServer,
+                                                 DelayedRenewableTimeoutService raftTimeoutService,
+                                                 MembershipWaiter<CoreMember> membershipWaiter,
+                                                 long joinCatchupTimeout, DeleteStoreOnStartUp deleteStoreOnStartUp,
+                                                 RaftLogReplay raftLogReplay )
     {
-        services.add( new LifecycleAdapter() {
-            @Override
-            public void start() throws Throwable
-            {
-                localDatabase.deleteStore();
-            }
-        });
+        LifeSupport services = new LifeSupport();
+        services.add( deleteStoreOnStartUp );
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
-        services.add( new LifecycleAdapter( ) {
-            @Override
-            public void start() throws Throwable
-            {
-                raftLog.replay();
-            }
-        } );
+        services.add( raftLogReplay );
         services.add( raftServer );
-        services.add( raftTimeoutService );
         services.add( catchupServer );
+        services.add( raftTimeoutService );
         services.add( new MembershipWaiterLifecycle<>(membershipWaiter, joinCatchupTimeout, raft ) );
-    }
 
-    @Override
-    public void init() throws LifecycleException
-    {
-        services.init();
-    }
-
-    @Override
-    public void start() throws LifecycleException
-    {
-        services.start();
-    }
-
-    @Override
-    public void stop() throws LifecycleException
-    {
-        services.stop();
-    }
-
-    @Override
-    public void shutdown() throws LifecycleException
-    {
-        services.shutdown();
+        return services;
     }
 
     private static class MembershipWaiterLifecycle<MEMBER> extends LifecycleAdapter
@@ -133,4 +97,5 @@ public class CoreServerStartupProcess implements Lifecycle
             }
         }
     }
+
 }

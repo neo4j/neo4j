@@ -23,7 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,9 +38,15 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.Race;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -48,7 +57,6 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class LegacyIndexApplierTest
@@ -68,7 +76,7 @@ public class LegacyIndexApplierTest
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
         when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
-        try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, BYPASS, BASE_TX_ID, INTERNAL ) )
+        try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
         {
             // WHEN
             IndexDefineCommand definitions = definitions( names, keys );
@@ -81,6 +89,52 @@ public class LegacyIndexApplierTest
 
         // THEN
         verify( applierLookup, times( 1 ) ).newApplier( eq( applierName ), anyBoolean() );
+    }
+
+    @Test
+    public void shouldOrderTransactionsMakingLegacyIndexChanges() throws Throwable
+    {
+        // GIVEN
+        Map<String,Integer> names = MapUtil.genericMap( "first", 0, "second", 1 );
+        Map<String,Integer> keys = MapUtil.genericMap( "key", 0 );
+        String applierName = "test-applier";
+        LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
+        IndexConfigStore config = newIndexConfigStore( names, applierName );
+
+        // WHEN multiple legacy index transactions are running, they should be done in order
+        SynchronizedArrayIdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 10 );
+        final AtomicLong lastAppliedTxId = new AtomicLong( -1 );
+        Race race = new Race();
+        for ( long i = 0; i < 100; i++ )
+        {
+            final long txId = i;
+            race.addContestant( () -> {
+                try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, queue, INTERNAL ) )
+                {
+                    TransactionToApply txToApply = new TransactionToApply(
+                            new PhysicalTransactionRepresentation( new ArrayList<>() ) );
+                    FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
+                    commitment.setHasLegacyIndexChanges( true );
+                    txToApply.commitment( commitment, txId );
+                    applier.begin( txToApply );
+                    applier.end();
+                    applier.apply();
+                    // Make sure threads are unordered
+                    Thread.sleep( ThreadLocalRandom.current().nextInt( 5 ) );
+                    // THEN
+                    assertTrue( lastAppliedTxId.compareAndSet( txId - 1, txId ) );
+                    applier.close();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            } );
+            queue.offer( txId );
+        }
+
+        race.go();
     }
 
     private static AddRelationshipCommand addRelationshipToIndex( IndexDefineCommand definitions, String indexName )

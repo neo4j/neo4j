@@ -169,7 +169,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       plannerName = None,
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors)),
       semanticChecker = semanticChecker,
-      useErrorsOverWarnings = false)
+      useErrorsOverWarnings = false,
+      updateStrategy = None)
   }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {

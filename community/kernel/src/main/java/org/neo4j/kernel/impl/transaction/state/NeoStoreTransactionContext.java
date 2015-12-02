@@ -47,10 +47,12 @@ public class NeoStoreTransactionContext
     private final PropertyDeleter propertyDeleter;
     private final RecordAccessSet recordChangeSet;
     private final NeoStores neoStores;
+    private final Client locks;
 
     public NeoStoreTransactionContext( NeoStores neoStores, Client locks )
     {
         this.neoStores = neoStores;
+        this.locks = locks;
 
         recordChangeSet = new RecordChangeSet( neoStores );
         RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
@@ -59,18 +61,18 @@ public class NeoStoreTransactionContext
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator(
-                locks, relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
-        relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
+                relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
+        relationshipDeleter = new RelationshipDeleter( relGroupGetter, propertyDeleter );
     }
 
     public void relationshipDelete( long relId )
     {
-        relationshipDeleter.relDelete( relId, recordChangeSet );
+        relationshipDeleter.relDelete( relId, recordChangeSet, locks );
     }
 
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
-        relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
+        relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet, locks );
     }
 
     public void getAndDeletePropertyChain( NodeRecord nodeRecord )

@@ -30,29 +30,25 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.api.CountsRead.ANY_RELATIONSHIP_TYPE;
 
-public class TransactionCountingStateVisitor extends TxStateVisitor.Adapter
+public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
     private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
     private final CountsRecordState counts;
     private final StoreReadLayer storeLayer;
-    private final EntityReadOperations operations;
-    private final TxStateHolder txStateHolder;
+    private final TransactionState txState;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StoreReadLayer storeLayer,
-            EntityReadOperations operations, TxStateHolder txStateHolder,
-            CountsRecordState counts )
+            TransactionState txState, CountsRecordState counts )
     {
         super( next );
         this.storeLayer = storeLayer;
-        this.operations = operations;
-        this.txStateHolder = txStateHolder;
+        this.txState = txState;
         this.counts = counts;
     }
 
@@ -209,7 +205,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Adapter
     {
         try ( StoreStatement statement = storeLayer.acquireStatement() )
         {
-            try ( Cursor<NodeItem> node = operations.nodeCursor( txStateHolder, statement, nodeId ) )
+            try ( Cursor<NodeItem> node = nodeCursor( statement, nodeId ) )
             {
                 if ( node.next() )
                 {
@@ -221,5 +217,11 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Adapter
                 }
             }
         }
+    }
+
+    private Cursor<NodeItem> nodeCursor( StoreStatement statement, long nodeId )
+    {
+        Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId );
+        return txState.augmentSingleNodeCursor( cursor, nodeId );
     }
 }

@@ -197,7 +197,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 
     public Optional<CountsAccessor.Updater> apply( long txId )
     {
-        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater.FACTORY );
+        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater::new );
     }
 
     public CountsAccessor.IndexStatsUpdater updateIndexCounts()
@@ -223,7 +223,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         }
     }
 
-    void visitFile( File path, CountsVisitor visitor ) throws IOException
+    protected void visitFile( File path, CountsVisitor visitor ) throws IOException
     {
         super.visitFile( path, new DelegatingVisitor( visitor ) );
     }

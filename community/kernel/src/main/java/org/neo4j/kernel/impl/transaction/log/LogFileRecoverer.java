@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
-
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -29,20 +27,20 @@ import org.neo4j.kernel.impl.transaction.state.RecoverableTransaction;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
-public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
+public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,Exception>
 {
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
-    private final CloseableVisitor<RecoverableTransaction,IOException> visitor;
+    private final CloseableVisitor<RecoverableTransaction,Exception> visitor;
 
     public LogFileRecoverer( LogEntryReader<ReadableLogChannel> logEntryReader,
-            CloseableVisitor<RecoverableTransaction,IOException> visitor )
+            CloseableVisitor<RecoverableTransaction,Exception> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
     }
 
     @Override
-    public boolean visit( LogVersionedStoreChannel channel ) throws IOException
+    public boolean visit( LogVersionedStoreChannel channel ) throws Exception
     {
         final ReadableVersionableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 

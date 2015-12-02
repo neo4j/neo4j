@@ -29,18 +29,18 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Collections.singleton;
+
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
@@ -52,16 +52,14 @@ public class NeoTransactionIndexApplierTest
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Supplier<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
-        when( indexUpdates.hasChanges() ).thenReturn( true );
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
                 labelScanStoreSynchronizer );
 
         final NodeRecord before = new NodeRecord( 11 );
@@ -78,23 +76,6 @@ public class NeoTransactionIndexApplierTest
 
         // then
         assertFalse( result );
-        verify( indexUpdates, times( 1 ) ).flush();
-    }
-
-    @Test
-    public void shouldAvoidCallingIndexUpdatesIfNoIndexChanges() throws Exception
-    {
-        // given
-        final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
-        when( indexUpdates.hasChanges() ).thenReturn( false );
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanStoreSynchronizer );
-
-        // when
-        applier.apply();
-
-        // then
-        verify( indexUpdates, times( 0 ) ).flush();
     }
 
     @Test
@@ -104,7 +85,7 @@ public class NeoTransactionIndexApplierTest
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
+                labelScanStoreSynchronizer );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
@@ -125,7 +106,7 @@ public class NeoTransactionIndexApplierTest
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer );
+                labelScanStoreSynchronizer );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );

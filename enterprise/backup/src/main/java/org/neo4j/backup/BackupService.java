@@ -30,7 +30,6 @@ import java.util.Map;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
@@ -41,6 +40,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -69,6 +68,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -172,9 +172,9 @@ class BackupService
             clearIdFiles( targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -292,7 +292,7 @@ class BackupService
 
         ProgressTxHandler handler = new ProgressTxHandler();
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                new DefaultUnpackerDependencies( resolver ) );
+                resolver, DEFAULT_BATCH_SIZE );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
@@ -399,10 +399,10 @@ class BackupService
         private long lastSeenTransactionId;
 
         @Override
-        public void accept( CommittedTransactionRepresentation tx )
+        public void accept( long transactionId )
         {
             progress.add( 1 );
-            lastSeenTransactionId = tx.getCommitEntry().getTxId();
+            lastSeenTransactionId = transactionId;
         }
 
         @Override

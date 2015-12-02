@@ -44,13 +44,17 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 
     private final RaftMembership<MEMBER> membership;
     private final long retryTimeMillis;
+    private final int catchupBatchSize;
+    private final int maxAllowedShippingLag;
+
     private Map<MEMBER,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
 
     private boolean running;
 
     public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
-            Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis )
+            Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
+            int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;
@@ -59,6 +63,8 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         this.myself = myself;
         this.membership = membership;
         this.retryTimeMillis = retryTimeMillis;
+        this.catchupBatchSize = catchupBatchSize;
+        this.maxAllowedShippingLag = maxAllowedShippingLag;
 
         membership.registerListener( this );
     }
@@ -89,7 +95,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         if ( logShipper == null && !member.equals( myself ) )
         {
             logShipper = new RaftLogShipper<>( outbound, logProvider, raftLog, clock, myself, member,
-                    leaderContext.term, leaderContext.commitIndex, retryTimeMillis );
+                    leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
             logShippers.put( member, logShipper );
 

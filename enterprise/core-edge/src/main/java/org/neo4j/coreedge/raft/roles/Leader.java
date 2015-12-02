@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-
-import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -32,18 +27,17 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.raft.outcome.ShipCommand;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.FollowerState;
 import org.neo4j.coreedge.raft.state.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
@@ -54,15 +48,14 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), (Predicate<MEMBER>) member -> !member.equals( ctx.myself() ) );
     }
 
-    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Collection<RaftMessages.Directed<MEMBER>>
-            outgoingMessages ) throws RaftStorageException
+    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws RaftStorageException
     {
         for ( MEMBER to : replicationTargets( ctx ) )
         {
             long commitIndex = ctx.leaderCommit();
             long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
             Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
-            outgoingMessages.add( new RaftMessages.Directed<>( to, heartbeat ) );
+            outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
         }
     }
 
@@ -70,13 +63,7 @@ public class Leader implements RaftMessageHandler
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message,
                                             ReadableRaftState<MEMBER> ctx, Log log ) throws RaftStorageException
     {
-        Role nextRole = LEADER;
-        long leaderCommit = ctx.entryLog().commitIndex();
-        Collection<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
-        ArrayList<LogCommand> logCommands = new ArrayList<>();
-        ArrayList<ShipCommand> shipCommands = new ArrayList<>();
-        long newTerm = ctx.term();
-        FollowerStates<MEMBER> updatedFollowerStates = ctx.followerStates();
+        Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
 
         switch ( message.type() )
         {
@@ -89,14 +76,14 @@ public class Leader implements RaftMessageHandler
                     break;
                 }
 
-                nextRole = FOLLOWER;
-                outgoingMessages.add( new RaftMessages.Directed<>( ctx.myself(), message ) );
+                outcome.setNextRole( FOLLOWER );
+                outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), message ) );
                 break;
             }
 
             case HEARTBEAT_TIMEOUT:
             {
-                sendHeartbeats( ctx, outgoingMessages );
+                sendHeartbeats( ctx, outcome );
                 break;
             }
 
@@ -109,7 +96,7 @@ public class Leader implements RaftMessageHandler
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
                             new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex() );
 
-                    outgoingMessages.add( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
                 }
                 else if ( req.leaderTerm() == ctx.term() )
@@ -119,8 +106,8 @@ public class Leader implements RaftMessageHandler
                 else
                 {
                     // There is a new leader in a later term, we should revert to follower. (§5.1)
-                    nextRole = FOLLOWER;
-                    outgoingMessages.add( new RaftMessages.Directed<>( ctx.myself(), message ) );
+                    outcome.setNextRole( FOLLOWER );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), message ) );
                     break;
                 }
             }
@@ -136,9 +123,9 @@ public class Leader implements RaftMessageHandler
                 }
                 else if ( res.term() > ctx.term() )
                 {
-                    newTerm = res.term();
-                    nextRole = FOLLOWER;
-                    updatedFollowerStates = new FollowerStates<>();
+                    outcome.setNextTerm( res.term() );
+                    outcome.setNextRole( FOLLOWER );
+                    outcome.followerStates = new FollowerStates<>();
                     break;
                 }
 
@@ -150,10 +137,10 @@ public class Leader implements RaftMessageHandler
 
                     boolean followerProgressed = res.matchIndex() > follower.getMatchIndex();
 
-                    updatedFollowerStates = updatedFollowerStates.onSuccessResponse( res.from(),
+                    outcome.followerStates = outcome.followerStates.onSuccessResponse( res.from(),
                             max( res.matchIndex(), follower.getMatchIndex() ) );
 
-                    shipCommands.add( new ShipCommand.Match( res.matchIndex(), res.from() ) );
+                    outcome.addShipCommand( new ShipCommand.Match( res.matchIndex(), res.from() ) );
 
                     /*
                      * Matches from older terms can in complicated leadership change / log truncation scenarios
@@ -171,19 +158,19 @@ public class Leader implements RaftMessageHandler
                     {
                         // TODO: Test that mismatch between voting and participating members affects commit outcome
 
-                        long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), updatedFollowerStates );
+                        long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), outcome.followerStates );
                         if ( quorumAppendIndex > ctx.entryLog().commitIndex() )
                         {
-                            leaderCommit = quorumAppendIndex;
+                            outcome.setLeaderCommit( quorumAppendIndex );
 
-                            logCommands.add( new CommitCommand( quorumAppendIndex ) );
-                            shipCommands.add( new ShipCommand.CommitUpdate() );
+                            outcome.addLogCommand( new CommitCommand( quorumAppendIndex ) );
+                            outcome.addShipCommand( new ShipCommand.CommitUpdate() );
                         }
                     }
                 }
                 else // Response indicated failure. Must go back a log entry and retry - this is where catchup happens
                 {
-                    shipCommands.add ( new ShipCommand.Mismatch( ctx.entryLog().appendIndex(), res.from() ) ); // TODO: Fix remote last appended parameter.
+                    outcome.addShipCommand( new ShipCommand.Mismatch( ctx.entryLog().appendIndex(), res.from() ) ); // TODO: Fix remote last appended parameter.
                 }
 
                 break;
@@ -195,14 +182,14 @@ public class Leader implements RaftMessageHandler
 
                 if ( req.term() > ctx.term() )
                 {
-                    newTerm = req.term();
+                    outcome.setNextTerm( req.term() );
 
-                    nextRole = FOLLOWER;
-                    outgoingMessages.add( new RaftMessages.Directed<>( ctx.myself(), req ) );
+                    outcome.setNextRole( FOLLOWER );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( ctx.myself(), req ) );
                     break;
                 }
 
-                outgoingMessages.add( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
+                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
                 break;
             }
 
@@ -219,14 +206,12 @@ public class Leader implements RaftMessageHandler
 
                 RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
 
-                shipCommands.add( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
-                logCommands.add( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
+                outcome.addShipCommand( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
+                outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
                 break;
             }
         }
 
-        return new Outcome<>( nextRole, newTerm, ctx.leader(), leaderCommit, null,
-                Collections.<MEMBER>emptySet(), ctx.lastLogIndexBeforeWeBecameLeader(), updatedFollowerStates, false,
-                logCommands, outgoingMessages, shipCommands );
+        return outcome;
     }
 }

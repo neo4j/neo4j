@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -43,6 +44,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -95,7 +97,7 @@ public class FollowerTest
                 .build(), state, log() );
 
         // Then
-        assertEquals( HIGHEST_TERM, outcome.newTerm );
+        assertEquals( HIGHEST_TERM, outcome.term );
     }
 
     @Test
@@ -550,7 +552,42 @@ public class FollowerTest
         assertFalse( outcome.renewElectionTimeout );
     }
 
-    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend, int
+    @Test
+    public void shouldNotCommitAheadOfMatchingHistory() throws Exception
+    {
+        // given
+        int LEADER_COMMIT = 10;
+        int LEADER1_TERM = 1;
+        int LEADER2_TERM = 2;
+
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
+
+        raftLog.append( new RaftLogEntry( LEADER1_TERM, ReplicatedString.valueOf( "gryffindor" ) ) ); // (0) we committed this far already
+        raftLog.commit( 0 );
+        raftLog.append( new RaftLogEntry( LEADER1_TERM, ReplicatedString.valueOf( "hufflepuff" ) ) ); // (1) we should only commit up to this, because this is how far we match
+        raftLog.append( new RaftLogEntry( LEADER1_TERM, ReplicatedString.valueOf( "ravenclaw" ) ) ); // (2) leader will have committed including this and more
+
+        RaftState<RaftTestMember> state = raftState()
+                .myself( myself )
+                .entryLog( raftLog )
+                .term( 1 )
+                .build();
+
+        Follower follower = new Follower();
+        Outcome<RaftTestMember> outcome;
+
+        // when - append request matching history and truncating
+        RaftLogEntry[] newEntries = {
+                new RaftLogEntry( LEADER2_TERM, new ReplicatedString( "slytherin" ) ), // (1 - overwrite and truncate)
+        };
+
+        outcome = follower.handle( new RaftMessages.AppendEntries.Request<>( myself, LEADER2_TERM, 0, LEADER1_TERM, newEntries, LEADER_COMMIT ), state, log() );
+
+        // then
+        assertThat( outcome.logCommands, hasItem( new CommitCommand( 1 ) ) );
+    }
+
+    private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend, int
             term ) throws RaftStorageException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )

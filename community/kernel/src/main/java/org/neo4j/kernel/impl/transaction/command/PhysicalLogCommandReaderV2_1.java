@@ -213,7 +213,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
         }
     }
 
-    private class PhysicalNeoCommandReader implements CommandHandler
+    private class PhysicalNeoCommandReader extends CommandHandler.Adapter
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException

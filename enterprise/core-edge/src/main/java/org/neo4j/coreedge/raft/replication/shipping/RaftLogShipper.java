@@ -42,8 +42,6 @@ import static org.neo4j.coreedge.raft.RenewableTimeoutService.*;
 // TODO: Maximum bound on size of batch in bytes, not just entry count.
 
 // Production ready
-// TODO: Make configuration configurable (batch size, outstanding, retry time).
-
 // TODO: Replace sender service with something more appropriate. No need for queue and multiplex capability, in fact is it bad to have?
 //  TODO Should we drop messages to unconnected channels instead? Use UDP? Because we are not allowed to go below a certain cluster size (safety)
 //  TODO then leader will keep trying to replicate to gone members, thus queuing things up is hurtful.
@@ -86,9 +84,6 @@ public class RaftLogShipper<MEMBER>
         PIPELINE
     }
 
-    public static final int MAX_BATCH_SIZE = 16;
-    public static final int MAX_OUTSTANDING = 64;
-
     private final Outbound<MEMBER> outbound;
     private final Log log;
     private final ReadableRaftLog raftLog;
@@ -100,6 +95,8 @@ public class RaftLogShipper<MEMBER>
     private DelayedRenewableTimeoutService timeoutService;
     private final TimeoutName timeoutName = () -> "RESEND";
     private final long retryTimeMillis;
+    private final int catchupBatchSize;
+    private final int maxAllowedShippingLag;
     private RenewableTimeout timeout;
 
     private long timeoutAbsoluteMillis;
@@ -112,9 +109,11 @@ public class RaftLogShipper<MEMBER>
     private Mode mode = Mode.MISMATCH;
 
     public RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock, MEMBER leader, MEMBER follower,
-                           long leaderTerm, long leaderCommit, long retryTimeMillis )
+                           long leaderTerm, long leaderCommit, long retryTimeMillis, int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
+        this.catchupBatchSize = catchupBatchSize;
+        this.maxAllowedShippingLag = maxAllowedShippingLag;
         this.log = logProvider.getLog( getClass() );
         this.raftLog = raftLog;
         this.clock = clock;
@@ -245,7 +244,7 @@ public class RaftLogShipper<MEMBER>
         case PIPELINE:
             while( lastSentIndex <= prevLogIndex )
             {
-                if ( prevLogIndex - matchIndex <= MAX_OUTSTANDING )
+                if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
                 {
                     sendNewEntry( prevLogIndex, prevLogTerm, newLogEntry, leaderContext ); // all sending functions update lastSentIndex
                 }
@@ -357,7 +356,7 @@ public class RaftLogShipper<MEMBER>
 
         if ( lastIndex > matchIndex )
         {
-            long endIndex = min( lastIndex, matchIndex + MAX_BATCH_SIZE );
+            long endIndex = min( lastIndex, matchIndex + catchupBatchSize );
 
             scheduleTimeout( retryTimeMillis );
             sendRange( matchIndex + 1, endIndex, leaderContext );

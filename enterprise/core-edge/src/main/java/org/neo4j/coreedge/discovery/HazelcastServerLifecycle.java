@@ -75,6 +75,7 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
             String registrationId = hazelcastInstance.getCluster().addMembershipListener( hazelcastListener );
             membershipRegistrationId.put( hazelcastListener, registrationId );
         }
+        listener.onTopologyChange( currentTopology() );
     }
 
     @Override

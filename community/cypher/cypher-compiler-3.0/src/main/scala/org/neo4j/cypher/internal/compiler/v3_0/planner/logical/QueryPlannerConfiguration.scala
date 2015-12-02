@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_0.{defaultUpdateStrategy, UpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.projectEndpoints
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
@@ -62,7 +63,8 @@ object QueryPlannerConfiguration {
 
       // Legacy indices
       legacyHintLeafPlanner
-    )
+    ),
+  updateStrategy = defaultUpdateStrategy
   )
 }
 
@@ -70,7 +72,8 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
                                      projectAllEndpoints: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
-                                     pickBestCandidate: LogicalPlanningFunction0[CandidateSelector]) {
+                                     pickBestCandidate: LogicalPlanningFunction0[CandidateSelector],
+                                     updateStrategy: UpdateStrategy) {
 
   def toKit()(implicit context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
@@ -80,6 +83,8 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
     )
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable) = copy(leafPlanners = leafPlanners)
+
+  def withUpdateStrategy(updateStrategy: UpdateStrategy) = copy(updateStrategy = updateStrategy)
 }
 
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,

@@ -94,6 +94,11 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
     mergeNodePatterns.nonEmpty || setLabelPatterns.nonEmpty || setNodePropertyPatterns.nonEmpty
 
   /*
+   * Does this UpdateGraph contains merges
+   */
+  def containsMerge: Boolean = mergeNodePatterns.nonEmpty
+
+  /*
    * Checks if there is overlap between what's being read in the query graph
    * and what is being written here
    */

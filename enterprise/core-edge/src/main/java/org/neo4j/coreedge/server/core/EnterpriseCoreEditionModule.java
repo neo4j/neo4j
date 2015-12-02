@@ -264,10 +264,12 @@ public class EnterpriseCoreEditionModule
                 new CheckpointerSupplier( platformModule.dependencies ),
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
-        life.add( new CoreServerStartupProcess( localDatabase,
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftLog, raftServer,
+        life.add( CoreServerStartupProcess.createLifeSupport(
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
-                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ) );
+                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ,
+                new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog )
+        ));
     }
 
     public boolean isLeader()
@@ -339,7 +341,8 @@ public class EnterpriseCoreEditionModule
                 logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) );
 
         RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ), logProvider, raftLog,
-                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout );
+                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout, config.get( CoreEdgeClusterSettings.catchup_batch_size ),
+                config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,

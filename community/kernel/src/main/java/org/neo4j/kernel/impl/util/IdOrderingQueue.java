@@ -26,8 +26,6 @@ package org.neo4j.kernel.impl.util;
  * Threads can wait for the minimal value to reach a specific value, upon which event they are woken up and can
  * act. This notification happens only when the current minimal value (head) is removed, so care should be taken
  * to remove it when done.
- *
- * @author Mattias Persson
  */
 public interface IdOrderingQueue
 {
@@ -42,7 +40,7 @@ public interface IdOrderingQueue
      * Waits for the argument to become the head of the queue. This is a blocking operation and as such it may
      * throw InterruptedException.
      * @param value The id to wait for to become the head of the queue
-     * @throws InterruptedException
+     * @throws InterruptedException if interrupted while waiting.
      */
     void waitFor( long value ) throws InterruptedException;
 

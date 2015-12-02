@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.outcome;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -52,6 +53,25 @@ public class BatchAppendLogEntries implements LogCommand
         {
             raftLog.append( entries[i] );
         }
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        BatchAppendLogEntries that = (BatchAppendLogEntries) o;
+        return baseIndex == that.baseIndex &&
+               offset == that.offset &&
+               Arrays.equals( entries, that.entries );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( baseIndex, offset, entries );
     }
 
     @Override

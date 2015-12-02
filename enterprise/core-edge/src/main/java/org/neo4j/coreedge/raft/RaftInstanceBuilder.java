@@ -58,6 +58,8 @@ public class RaftInstanceBuilder<MEMBER>
     private long leaderWaitTimeout = 10000;
     private long catchupTimeout = 30000;
     private long retryTimeMillis = electionTimeout/2;
+    private int catchupBatchSize = 64;
+    private int maxAllowedShippingLag = 256;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -70,7 +72,7 @@ public class RaftInstanceBuilder<MEMBER>
     {
         LocalReplicator<MEMBER,MEMBER> localReplicator = new LocalReplicator<>( member, member, outbound );
         RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( localReplicator, memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout );
-        RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager, retryTimeMillis );
+        RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
         return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping );

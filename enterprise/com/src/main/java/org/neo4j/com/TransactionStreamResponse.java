@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
 
@@ -42,7 +40,7 @@ public class TransactionStreamResponse<T> extends Response<T>
     }
 
     @Override
-    public void accept( Response.Handler handler ) throws IOException
+    public void accept( Response.Handler handler ) throws Exception
     {
         transactions.accept( handler.transactions() );
     }

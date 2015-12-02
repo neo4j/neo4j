@@ -40,18 +40,24 @@ object CypherCompiler {
 
 case class PreParsedQuery(statement: String, rawStatement: String, version: CypherVersion,
                           executionMode: CypherExecutionMode, planner: CypherPlanner, runtime: CypherRuntime,
+                          updateStrategy: CypherUpdateStrategy,
                           notificationLogger: InternalNotificationLogger)
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner = {
     val plannerInfo = planner match {
       case CypherPlanner.default => ""
-      case _ => s" planner=${planner.name}"
+      case _ => s"planner=${planner.name}"
     }
     val runtimeInfo = runtime match {
       case CypherRuntime.default => ""
-      case _ => s" runtime=${runtime.name}"
+      case _ => s"runtime=${runtime.name}"
     }
-    s"CYPHER ${version.name}$plannerInfo$runtimeInfo $statement"
+    val updateStrategyInfo = updateStrategy match {
+      case CypherUpdateStrategy.default => ""
+      case _ => s"strategy=${updateStrategy.name}"
+    }
+
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $statement".replaceAll("\\s+", " ")
   }
 }
 
@@ -85,19 +91,20 @@ class CypherCompiler(graph: GraphDatabaseService,
   def preParseQuery(queryText: String): PreParsedQuery = {
     val logger = new RecordingNotificationLogger
     val preParsedStatement = CypherPreParser(queryText)
-    val CypherStatementWithOptions(statement, offset, version, planner, runtime, mode, notifications) = CypherStatementWithOptions(
-      preParsedStatement)
-    notifications.foreach( logger += _ )
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode) =
+      CypherStatementWithOptions(preParsedStatement)
 
     val cypherVersion = version.getOrElse(configuredVersion)
     val pickedExecutionMode = mode.getOrElse(CypherExecutionMode.default)
 
     val pickedPlanner = pick(planner, CypherPlanner, if (cypherVersion == configuredVersion) Some(configuredPlanner) else None)
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
+    val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
     assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
-    PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime, logger)(offset)
+    PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
+      pickedPlanner, pickedRuntime, pickedUpdateStrategy, logger)(offset)
   }
 
   private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
@@ -118,8 +125,9 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
+    val updateStrategy = preParsedQuery.updateStrategy
     preParsedQuery.version match {
-      case CypherVersion.v3_0 => planners(PlannerSpec_v3_0(planner, runtime)).produceParsedQuery(preParsedQuery, tracer)
+      case CypherVersion.v3_0 => planners(PlannerSpec_v3_0(planner, runtime, updateStrategy)).produceParsedQuery(preParsedQuery, tracer)
       case CypherVersion.v2_3 => planners(PlannerSpec_v2_3(planner, runtime)).produceParsedQuery(preParsedQuery, as2_3(tracer))
     }
   }

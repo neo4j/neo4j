@@ -21,29 +21,27 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.store.NodeLabels;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -52,50 +50,58 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class IndexTransactionApplier extends CommandHandler.Adapter
 {
-    private final ValidatedIndexUpdates indexUpdates;
-    private List<NodeLabelUpdate> labelUpdates;
-
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
 
-    public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
+    private List<NodeLabelUpdate> labelUpdates;
+    private Set<IndexDescriptor> affectedIndexes;
+    private ValidatedIndexUpdates indexUpdates;
+
+    public IndexTransactionApplier( IndexingService indexingService,
                                     WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
     {
         this.indexingService = indexingService;
-        this.indexUpdates = indexUpdates;
         this.labelScanStoreSync = labelScanStoreSync;
+    }
+
+    @Override
+    public void begin( TransactionToApply transaction ) throws IOException
+    {
+        indexUpdates = transaction.validatedIndexUpdates();
+    }
+
+    @Override
+    public void end() throws Exception
+    {
+        if ( indexUpdates.hasChanges() )
+        {
+            // Lazily initialize set to hold which indexes has changed.
+            if ( affectedIndexes == null )
+            {
+                affectedIndexes = new HashSet<>();
+            }
+
+            // Write index updates. The setup should be that these updates doesn't do unnecessary
+            // work that could be done after the whole batch, like f.ex. refreshing index readers.
+            indexUpdates.flush( affectedIndexes );
+            indexUpdates.close();
+        }
     }
 
     @Override
     public void apply()
     {
-        try
+        // Apply all the label updates within this whole batch of transactions.
+        if ( labelUpdates != null )
         {
-            if ( labelUpdates != null )
-            {
-                updateLabelScanStore();
-            }
-
-            if ( indexUpdates.hasChanges() )
-            {
-                updateIndexes();
-            }
+            updateLabelScanStore();
         }
-        catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
 
-    private void updateIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
-    {
-        // We only allow a single writer at the time to update the schema index stores
-        // TODO we should probably do two things here:
-        //   - make the synchronized block more granular, over each index or something
-        //   - not even on each index, but make the decision up to the index implementation instead
-        synchronized ( indexingService )
+        if ( affectedIndexes != null )
         {
-            indexUpdates.flush();
+            // Since we have written changes to indexes w/o refreshing readers, then do so now
+            // at this point where all changes in this whole batch of transactions have been applied.
+            indexingService.flushAll( affectedIndexes );
         }
     }
 
@@ -103,42 +109,7 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
     {
         // Updates are sorted according to node id here, an artifact of node commands being sorted
         // by node id when extracting from TransactionRecordState.
-        labelScanStoreSync.apply(
-                new LabelUpdateWork( labelUpdates ) );
-    }
-
-    public static class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpdateWork>
-    {
-        private final List<NodeLabelUpdate> labelUpdates;
-
-        public LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
-        {
-            this.labelUpdates = labelUpdates;
-        }
-
-        @Override
-        public LabelUpdateWork combine( LabelUpdateWork work )
-        {
-            labelUpdates.addAll( work.labelUpdates );
-            return this;
-        }
-
-        @Override
-        public void apply( Supplier<LabelScanWriter> labelScanStore )
-        {
-            Collections.sort( labelUpdates, SORT_BY_NODE_ID );
-            try ( LabelScanWriter writer = labelScanStore.get() )
-            {
-                for ( NodeLabelUpdate update : labelUpdates )
-                {
-                    writer.write( update );
-                }
-            }
-            catch ( Exception e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
+        labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
     }
 
     @Override

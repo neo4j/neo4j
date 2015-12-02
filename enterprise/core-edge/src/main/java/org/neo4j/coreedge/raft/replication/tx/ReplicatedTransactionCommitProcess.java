@@ -25,15 +25,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.session.OperationContext;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.Replicator.ReplicationFailedException;
+import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.raft.replication.session.OperationContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -42,7 +41,7 @@ import static org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactor
 public class ReplicatedTransactionCommitProcess extends LifecycleAdapter implements TransactionCommitProcess
 {
     private final Replicator replicator;
-    private ReplicatedTransactionStateMachine replicatedTxListener;
+    private final ReplicatedTransactionStateMachine replicatedTxListener;
     private final LocalSessionPool sessionPool;
 
     public ReplicatedTransactionCommitProcess( Replicator replicator,
@@ -56,7 +55,7 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
     }
 
     @Override
-    public long commit( final TransactionRepresentation tx, final LockGroup locks,
+    public long commit( final TransactionToApply tx,
                         final CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
@@ -65,7 +64,8 @@ public class ReplicatedTransactionCommitProcess extends LifecycleAdapter impleme
         ReplicatedTransaction transaction;
         try
         {
-            transaction = createImmutableReplicatedTransaction( tx, operationContext.globalSession(), operationContext.localOperationId() );
+            transaction = createImmutableReplicatedTransaction( tx.transactionRepresentation(),
+                    operationContext.globalSession(), operationContext.localOperationId() );
         }
         catch ( IOException e )
         {

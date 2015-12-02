@@ -46,6 +46,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           semanticChecker: SemanticChecker,
                                           plannerName: CostBasedPlannerName,
                                           runtimeBuilder: RuntimeBuilder,
+                                          updateStrategy: UpdateStrategy,
                                           useErrorsOverWarnings: Boolean)
   extends ExecutablePlanBuilder {
 
@@ -83,7 +84,10 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val unionQuery = toUnionQuery(ast, semanticTable)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-    val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings, config = QueryPlannerConfiguration.default)
+
+    val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable,
+      queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
+      config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
     val plan = queryPlanner.plan(unionQuery)(context)
 
@@ -115,7 +119,6 @@ object CostBasedExecutablePlanBuilder {
       CNFNormalizer()(monitor)
     )
 
-//    val namespacedSemanticTable = namespacer.tableRewriter(semanticTable)
     val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
