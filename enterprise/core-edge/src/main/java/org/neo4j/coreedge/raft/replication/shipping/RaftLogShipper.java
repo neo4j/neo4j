@@ -100,7 +100,7 @@ public class RaftLogShipper<MEMBER>
     private DelayedRenewableTimeoutService timeoutService;
     private final TimeoutName timeoutName = () -> "RESEND";
     private final long retryTimeMillis;
-    private Timeout timeout;
+    private RenewableTimeout timeout;
 
     private long timeoutAbsoluteMillis;
     private long lastSentIndex;

@@ -19,21 +19,17 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.ArtificialClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.coreedge.raft.DelayedRenewableTimeoutServiceTest.Timeouts.FOOBAR;
 
 public class DelayedRenewableTimeoutServiceTest
 {
@@ -66,10 +62,10 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService();
 
-        timeoutService.create( FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
+        timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
         {
             @Override
-            public void onTimeout( RenewableTimeoutService.Timeout timeout )
+            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
             {
                 timeoutCount.incrementAndGet();
             }
@@ -95,10 +91,10 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService();
 
-        RenewableTimeoutService.Timeout timeout = timeoutService.create( FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
         {
             @Override
-            public void onTimeout( RenewableTimeoutService.Timeout timeout )
+            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
             {
                 timeoutCount.incrementAndGet();
             }
@@ -125,7 +121,7 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock );
 
-        RenewableTimeoutService.Timeout timeout1 = timeoutService.create( FOOBAR, 1000, 0, timeout -> timeoutCount
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, t -> timeoutCount
                 .incrementAndGet() );
 
         life.add( timeoutService );
@@ -138,7 +134,7 @@ public class DelayedRenewableTimeoutServiceTest
         timeoutService.stop();
         timeoutService.shutdown();
 
-        timeout1.renew();
+        timeout.renew();
         Thread.sleep( 5 );
         clock.progress( 1000, MILLISECONDS );
         Thread.sleep( 5 );

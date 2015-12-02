@@ -80,7 +80,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private final RenewableTimeoutService renewableTimeoutService;
     private final long heartbeatInterval;
-    private RenewableTimeoutService.Timeout electionTimer;
+    private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager<MEMBER> membershipManager;
 
     private final long electionTimeout;
