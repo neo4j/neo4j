@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
 
+import scala.collection.Iterator
 import scala.collection.JavaConverters._
-import scala.collection.{Iterator, mutable}
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
@@ -200,7 +200,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                 || indexSeekByStringRange(index, stringRange).isEmpty) {
               Iterator.empty
             } else {
-              throw throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
+              throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
             }
 
           case (None, None) =>
@@ -400,18 +400,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def getOrCreatePropertyKeyId(propertyKey: String) =
     statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
 
-  def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
-    private val locks = new mutable.ListBuffer[Lock]
-
-    def releaseAllLocks() {
-      locks.foreach(_.release())
-    }
-
-    def acquireLock(p: PropertyContainer) {
-      locks += tx.acquireWriteLock(p)
-    }
-  })
-
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
       new Iterator[Long] {
@@ -534,6 +522,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
   }
 
+  override def lockNodes(nodeIds: Long*) =
+    nodeIds.sorted.foreach(statement.readOperations().acquireExclusive(ResourceTypes.NODE, _))
+
+  override def lockRelationships(relIds: Long*) =
+    relIds.sorted.foreach(statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
 }
 
 object TransactionBoundQueryContext {

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
@@ -105,9 +104,6 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(super.getOrCreateFromSchemaState(key, creator))
-
-  override def upgrade(context: spi.QueryContext): LockingQueryContext =
-    translateException(super.upgrade(context))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     translateException(super.createUniqueConstraint(labelId, propertyKeyId))

@@ -93,8 +93,6 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getNodesByLabel(id: Int): Iterator[Node] = manyDbHits(inner.getNodesByLabel(id))
 
-  def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
-
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyId))
@@ -151,6 +149,9 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
     inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
 
+  override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds:_*)
+
+  override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds:_*)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

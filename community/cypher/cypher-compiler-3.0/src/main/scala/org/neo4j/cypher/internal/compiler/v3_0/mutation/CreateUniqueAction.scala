@@ -48,12 +48,10 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
         executionContext = traverseNextStep(traversals, executionContext) //We've found some way to move forward. Let's use it
       } else if (updateCommands.nonEmpty) {
 
-        val lockingContext = state.query.upgradeToLockingQueryContext
-
         val nodesToLock = extractNodesToLock(results, incomingExecContext)
-        lockingContext.lockNodes(nodesToLock)
+        state.query.lockNodes(nodesToLock.map(_.getId):_*)
 
-        executionContext = tryAgain(linksToDo, executionContext, state.withQueryContext(lockingContext))
+        executionContext = tryAgain(linksToDo, executionContext, state)
       } else {
         throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
       }

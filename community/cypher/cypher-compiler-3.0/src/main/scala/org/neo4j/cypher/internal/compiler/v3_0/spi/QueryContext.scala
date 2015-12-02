@@ -24,7 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.graphdb.{Path, PropertyContainer, Relationship, Node}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -91,10 +91,6 @@ trait QueryContext extends TokenContext {
 
   def getNodesByLabel(id: Int): Iterator[Node]
 
-  def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
-
-  def upgrade(context: QueryContext): LockingQueryContext
-
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint]
@@ -142,12 +138,10 @@ trait QueryContext extends TokenContext {
 
   def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long
 
-}
+  def lockNodes(nodeIds: Long*)
 
-trait LockingQueryContext extends QueryContext {
-  def releaseLocks()
+  def lockRelationships(relIds: Long*)
 
-  def lockNodes(nodes: Seq[Node])
 }
 
 trait Operations[T <: PropertyContainer] {

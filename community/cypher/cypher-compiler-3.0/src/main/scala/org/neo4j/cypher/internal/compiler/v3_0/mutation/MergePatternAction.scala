@@ -71,10 +71,11 @@ case class MergePatternAction(patterns: Seq[Pattern],
   private def doMatch(state: QueryState) = matchPipe.createResults(state)
 
   private def lockAndThenMatch(state: QueryState, ctx: ExecutionContext): Iterator[ExecutionContext] = {
-    val lockingQueryContext = state.query.upgradeToLockingQueryContext
     val patternVariables = variables.map(p => p._1)
-    ctx.collect { case (variable, node: Node) if patternVariables.contains(variable) => node.getId }.toSeq.sorted.
-      foreach( id => lockingQueryContext.getLabelsForNode(id) ) // TODO: This locks the nodes. Hack!
+    val nodeIds = ctx.collect {
+      case (variable, node: Node) if patternVariables.contains(variable) => node.getId
+    }.toSeq
+    state.query.lockNodes(nodeIds:_*)
     matchPipe.createResults(state)
   }
 
