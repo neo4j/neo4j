@@ -22,8 +22,6 @@ package org.neo4j.coreedge.server;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
@@ -90,6 +88,15 @@ public class CoreEdgeClusterSettings
     @Description( "The maximum lag allowed before log shipping pauses (in unit of entries)" )
     public static final Setting<Integer> log_shipping_max_lag  =
             setting( "core_edge.log_shipping_max_lag", INTEGER, "256" );
+
+    @Description( "The time between successive retries of replicating a transaction" )
+    public static final Setting<Long> tx_replication_retry_interval  =
+            setting( "core_edge.tx_replication_retry_interval", DURATION, "1s" );
+
+    @Description( "The maximum time for trying to replicate a transaction and receive a successful response. " +
+                  "Note that the transaction might still have been committed in the cluster." )
+    public static final Setting<Long> tx_replication_timeout  =
+            setting( "core_edge.tx_replication_timeout", DURATION, "30s" );
 
     @Description( "Expected size of core cluster" )
     public static final Setting<Integer> expected_core_cluster_size =

@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 import static org.mockito.Matchers.any;
@@ -59,7 +60,8 @@ public class ReplicatedTransactionCommitProcessTest
         when( transactionStateMachine.getFutureTxId( any( LocalOperationId.class ) ) ).thenReturn( future );
 
         // when
-        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ), transactionStateMachine )
+        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
+                transactionStateMachine, Clock.SYSTEM_CLOCK, 1, 30 )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
@@ -77,7 +79,8 @@ public class ReplicatedTransactionCommitProcessTest
         when( future.get( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class ).thenReturn( 23l );
 
         // when
-        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ), transactionStateMachine )
+        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
+                transactionStateMachine, Clock.SYSTEM_CLOCK, 1, 30 )
                 .commit( tx(), NULL, INTERNAL );
 
         // then
