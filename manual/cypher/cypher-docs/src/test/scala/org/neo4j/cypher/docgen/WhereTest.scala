@@ -36,6 +36,10 @@ class WhereTest extends DocumentingTestBase {
     "Peter"  -> Map[String, Any]("age" -> 34l, "email" -> "peter_n@example.com")
   )
 
+  override val setupQueries = List(
+    "MATCH (andres {name: 'Andres'})-[r:KNOWS]->(tobias {name: 'Tobias'}) SET r.since = 2012",
+    "MATCH (andres {name: 'Andres'})-[r:KNOWS]->(peter {name: 'Peter'}) SET r.since = 1999")
+
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
@@ -50,13 +54,22 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
-  @Test def filter_on_property() {
+  @Test def filter_on_node_property() {
     testQuery(
       title = "Filter on node property",
-      text = "To filter on a property, write your clause after the `WHERE` keyword. Filtering on relationship properties works just the same way.",
+      text = "To filter on a node property, write your clause after the `WHERE` keyword.",
       queryText = """match (n) where n.age < 30 return n""",
       optionalResultExplanation = """"+Tobias+" is returned because he is younger than 30.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def filter_on_relationship_property() {
+    testQuery(
+      title = "Filter on relationship property",
+      text = "To filter on a relationship property, write your clause after the `WHERE` keyword.",
+      queryText = """match (n)-[k:KNOWS]->(f) where k.since < 2000 return f""",
+      optionalResultExplanation = """"+Peter+" is returned because Andres knows him since before 2000.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("f").toList))
   }
 
   @Test def filter_on_dynamic_property() {
