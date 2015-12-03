@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -63,11 +63,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
-    private final KernelHealth health;
+    private final DatabaseHealth health;
     private final TransactionMonitor transactionMonitor;
 
     public Kernel( KernelTransactions transactionFactory,
-                   TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
+                   TransactionHooks hooks, DatabaseHealth health, TransactionMonitor transactionMonitor )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;

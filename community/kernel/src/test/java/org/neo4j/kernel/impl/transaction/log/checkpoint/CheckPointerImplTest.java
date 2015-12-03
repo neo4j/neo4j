@@ -28,7 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -63,7 +63,7 @@ public class CheckPointerImplTest
     private final StoreFlusher flusher = mock( StoreFlusher.class );
     private final LogPruning logPruning = mock( LogPruning.class );
     private final TransactionAppender appender = mock( TransactionAppender.class );
-    private final KernelHealth health = mock( KernelHealth.class );
+    private final DatabaseHealth health = mock( DatabaseHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
 
     private final long initialTransactionId = 2l;

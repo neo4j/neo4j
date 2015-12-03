@@ -33,7 +33,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -127,7 +127,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
     private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
@@ -162,7 +162,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LockService lockService,
             SchemaIndexProvider indexProvider,
             IndexingService.Monitor indexingServiceMonitor,
-            KernelHealth kernelHealth,
+            DatabaseHealth databaseHealth,
             LabelScanStoreProvider labelScanStoreProvider,
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore )
@@ -173,7 +173,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.constraintSemantics = constraintSemantics;
         this.lockService = lockService;
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
         this.indexConfigStore = indexConfigStore;
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
@@ -192,7 +192,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             indexUpdatesValidator = new OnlineIndexUpdatesValidator(
-                    neoStores, kernelHealth, new PropertyLoader( neoStores ),
+                    neoStores, databaseHealth, new PropertyLoader( neoStores ),
                     indexingService, IndexUpdateMode.BATCHED );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
@@ -303,7 +303,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
         catch ( Throwable cause )
         {
-            kernelHealth.panic( cause );
+            databaseHealth.panic( cause );
             throw cause;
         }
     }
@@ -437,12 +437,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public IndexConfigStore indexConfigStore()
     {
         return indexConfigStore;
-    }
-
-    @Override
-    public KernelHealth kernelHealth()
-    {
-        return kernelHealth;
     }
 
     @Override

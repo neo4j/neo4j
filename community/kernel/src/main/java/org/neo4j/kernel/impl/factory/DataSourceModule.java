@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -177,11 +177,11 @@ public class DataSourceModule
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
-        KernelPanicEventGenerator kernelPanicEventGenerator = deps.satisfyDependency(
-                new KernelPanicEventGenerator( kernelEventHandlers ) );
+        DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
+                new DatabasePanicEventGenerator( kernelEventHandlers ) );
 
-        KernelHealth kernelHealth = deps.satisfyDependency( new KernelHealth( kernelPanicEventGenerator,
-                logging.getInternalLog( KernelHealth.class ) ) );
+        DatabaseHealth databaseHealth = deps.satisfyDependency( new DatabaseHealth( databasePanicEventGenerator,
+                logging.getInternalLog( DatabaseHealth.class ) ) );
 
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
                 editionModule.idGeneratorFactory, logging.getInternalLogProvider(), platformModule.jobScheduler,
@@ -190,7 +190,7 @@ public class DataSourceModule
                 deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
                 editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
-                storeMigrationProcess, platformModule.transactionMonitor, kernelHealth,
+                storeMigrationProcess, platformModule.transactionMonitor, databaseHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,

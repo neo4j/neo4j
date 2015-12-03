@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
@@ -33,13 +33,13 @@ public class LogRotationImpl implements LogRotation
 {
     private final LogRotation.Monitor monitor;
     private final LogFile logFile;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
 
-    public LogRotationImpl( Monitor monitor, LogFile logFile, KernelHealth kernelHealth )
+    public LogRotationImpl( Monitor monitor, LogFile logFile, DatabaseHealth databaseHealth )
     {
         this.monitor = monitor;
         this.logFile = logFile;
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
     }
 
     @Override
@@ -83,7 +83,7 @@ public class LogRotationImpl implements LogRotation
          * In order to rotate the current log file safely we need to assert that the kernel is still
          * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
          */
-        kernelHealth.assertHealthy( IOException.class );
+        databaseHealth.assertHealthy( IOException.class );
         monitor.startedRotating( currentVersion );
         logFile.rotate();
         monitor.finishedRotating( currentVersion );
