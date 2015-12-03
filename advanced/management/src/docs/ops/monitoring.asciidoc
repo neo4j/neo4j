@@ -6,7 +6,7 @@ NOTE: Most of the monitoring features are only available in the Enterprise editi
 
 In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
 Most of these are exposed through http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX].
-Neo4j Enterprise also has the ability to automatically report _metrics_ to commonly used monitoring systems, like http://graphite.wikidot.com[Graphite] and http://ganglia.sourceforge.net[Ganglia].
+Neo4j Enterprise also has the ability to automatically report _metrics_ to commonly used monitoring systems, like http://graphite.wikidot.com[Graphite].
 
 
 [[jmx-remote]]

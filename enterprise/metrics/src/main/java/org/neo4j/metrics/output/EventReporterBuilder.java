@@ -30,9 +30,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.metrics.MetricsSettings;
 
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
-import static org.neo4j.metrics.MetricsSettings.gangliaEnabled;
-import static org.neo4j.metrics.MetricsSettings.gangliaInterval;
-import static org.neo4j.metrics.MetricsSettings.gangliaServer;
 import static org.neo4j.metrics.MetricsSettings.graphiteEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.graphiteServer;
@@ -73,15 +70,6 @@ public class EventReporterBuilder
             GraphiteOutput graphiteOutput = new GraphiteOutput( server, period, registry, logger, prefix );
             reporter.add( graphiteOutput );
             life.add( graphiteOutput );
-        }
-
-        if ( config.get( gangliaEnabled ) )
-        {
-            HostnamePort server = config.get( gangliaServer );
-            long period = config.get( gangliaInterval );
-            GangliaOutput gangliaOutput = new GangliaOutput( server, period, registry, logger, prefix );
-            reporter.add( gangliaOutput );
-            life.add( gangliaOutput );
         }
 
         return reporter;

@@ -25,7 +25,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.configuration.Obsoleted;
 
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -107,18 +106,4 @@ public class MetricsSettings
     public static Setting<HostnamePort> graphiteServer = setting( "metrics.graphite.server", Settings.HOSTNAME_PORT, ":2003" );
     @Description( "The reporting interval for Graphite. That is, how often to send updated metrics to Graphite." )
     public static Setting<Long> graphiteInterval = setting( "metrics.graphite.interval", Settings.DURATION, "3s" );
-
-    // Ganglia settings
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "Set to `true` to enable exporting metrics to Ganglia." )
-    public static Setting<Boolean> gangliaEnabled = setting( "metrics.ganglia.enabled", Settings.BOOLEAN, Settings.FALSE );
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "The hostname or IP address of the Ganglia server" )
-    public static Setting<HostnamePort> gangliaServer = setting( "metrics.ganglia.server", Settings.HOSTNAME_PORT, ":8469" );
-    @Deprecated
-    @Obsoleted( "Ganglia support is experimental, and not guaranteed to work. This built in support has been deprecated and will be removed from a subsequent version." )
-    @Description( "The reporting interval for Ganglia. That is, how often to send updated metrics to Ganglia." )
-    public static Setting<Long> gangliaInterval = setting( "metrics.ganglia.interval", Settings.DURATION, "3s" );
 }

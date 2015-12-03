@@ -36,7 +36,6 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
-  Ganglia Integration for Metrics
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
@@ -117,7 +116,6 @@ GNU Lesser General Public License, Version 2.1
   Logback Access Module
   Logback Classic Module
   Logback Core Module
-  Remote Tea Runtime
   Yet Another Java Service Wrapper
 
 MIT License
@@ -145,7 +143,6 @@ MIT License
   Date Format
   es5-shim
   FileSaver.js
-  gmetric4j
   JQuery
   jquery-ui
   jquery.colorhelpers.js
