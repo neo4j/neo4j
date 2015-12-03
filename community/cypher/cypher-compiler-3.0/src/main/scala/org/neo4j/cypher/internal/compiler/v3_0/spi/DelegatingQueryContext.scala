@@ -111,7 +111,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.uniqueIndexSeek(index, value))
+  def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.lockingUniqueIndexSeek(index, value))
 
   override def commitAndRestartTx() {
     inner.commitAndRestartTx()

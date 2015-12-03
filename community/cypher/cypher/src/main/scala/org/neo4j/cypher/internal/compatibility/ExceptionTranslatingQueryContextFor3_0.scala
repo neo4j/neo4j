@@ -142,8 +142,8 @@ class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends Delega
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def uniqueIndexSeek(index: IndexDescriptor, value: Any) =
-    translateException(super.uniqueIndexSeek(index, value))
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any) =
+    translateException(super.lockingUniqueIndexSeek(index, value))
 
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())
