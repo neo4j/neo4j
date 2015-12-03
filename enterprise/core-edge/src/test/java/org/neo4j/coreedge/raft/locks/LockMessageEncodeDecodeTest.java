@@ -50,7 +50,7 @@ public class LockMessageEncodeDecodeTest
 
         // given
         LockSession lockSession = new LockSession(
-                new CoreMember( address( "host1:1001" ), address( "host1:2001" ) ), 23 );
+                new CoreMember( address( "discovery:1" ), address( "host1:1001" ), address( "host1:2001" ) ), 23 );
         Request sent = Request.newLockSession( lockSession );
 
         // when
@@ -74,7 +74,7 @@ public class LockMessageEncodeDecodeTest
 
         // given
         LockSession lockSession = new LockSession(
-                new CoreMember( address( "host1:1001" ), address( "host1:2001" ) ), 23 );
+                new CoreMember( address( "host1:1001" ), address( "host1:2001" ), address( "host1:3001" ) ), 23 );
         Request sent = Request.acquireExclusiveLock( lockSession, ResourceTypes.NODE, 2001 );
 
         // when
@@ -98,7 +98,7 @@ public class LockMessageEncodeDecodeTest
 
         // given
         LockSession lockSession = new LockSession(
-                new CoreMember( address( "host1:1001" ), address( "host1:2001" ) ), 23 );
+                new CoreMember( address( "host1:1001" ), address( "host1:2001" ), address( "host1:3001" ) ), 23 );
         Request request = Request.acquireExclusiveLock( lockSession, ResourceTypes.NODE, 2001 );
         Response sent = new Response( request, new LockResult( LockStatus.OK_LOCKED ) );
 

@@ -59,7 +59,7 @@ import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class ReplicatedTransactionStateMachineTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
     GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
@@ -116,7 +116,7 @@ public class ReplicatedTransactionStateMachineTest
         LocalOperationId localOperationIdBefore = new LocalOperationId( 0, 0 );
         LocalOperationId localOperationIdAfter = new LocalOperationId( 0, 1 );
 
-        CoreMember newLockManager = new CoreMember( address( "new:1" ), address( "new:2" ) );
+        CoreMember newLockManager = new CoreMember( address( "new:0" ), address( "new:1" ), address( "new:2" ) );
 
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
         tx.setHeader( null, 0, 0, 1, 3, 0, 0 );
@@ -165,7 +165,7 @@ public class ReplicatedTransactionStateMachineTest
         LocalOperationId localOperationIdBefore = new LocalOperationId( 0, 0 );
         LocalOperationId localOperationIdAfter = new LocalOperationId( 0, 1 );
 
-        CoreMember newLockManager = new CoreMember( address( "new:1" ), address( "new:2" ) );
+        CoreMember newLockManager = new CoreMember( address( "new:0" ), address( "new:1" ), address( "new:2" ) );
 
         ReplicatedTransaction txBefore = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                  mock( PhysicalTransactionRepresentation.class ), globalSession, localOperationIdBefore
@@ -209,7 +209,7 @@ public class ReplicatedTransactionStateMachineTest
         GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
         LocalOperationId localOperationId = new LocalOperationId( 0, 0 );
 
-        CoreMember lockManager = new CoreMember( address( "old:1" ), address( "old:2" ) );
+        CoreMember lockManager = new CoreMember( address( "old:0" ), address( "old:1" ), address( "old:2" ) );
 
         ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
                 mock( PhysicalTransactionRepresentation.class ), globalSession, localOperationId );

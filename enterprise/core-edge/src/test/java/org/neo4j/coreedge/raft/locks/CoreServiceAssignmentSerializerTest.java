@@ -25,8 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
-import org.neo4j.coreedge.raft.locks.CoreServiceAssignmentSerializer;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +38,7 @@ public class CoreServiceAssignmentSerializerTest
     public void shouldSerializeCoreServiceAssignment() throws Exception
     {
         // given
-        CoreMember member = new CoreMember( address( "host1:20" ), address( "host1:30" ) );
+        CoreMember member = new CoreMember( address( "host1:10" ), address( "host1:20" ), address( "host1:30" ) );
         CoreServiceAssignment input = new CoreServiceAssignment( LOCK_MANAGER, member, UUID.randomUUID() );
         ByteBuf buffer = Unpooled.buffer();
 

@@ -39,7 +39,7 @@ public class LockMessageMarshallTest
     {
         ByteBuf buffer = Unpooled.buffer();
         // given
-        CoreMember owner = new CoreMember( address( "localhost:1000" ), address( "localhost:2000" ) );
+        CoreMember owner = new CoreMember( address( "localhost:0000" ), address( "localhost:1000" ), address( "localhost:2000" ) );
 
         // when
         LockMessage.Request original = LockMessage.Request.acquireExclusiveLock( new LockSession( owner, 0 ), ResourceTypes.NODE, 0 );
@@ -55,7 +55,7 @@ public class LockMessageMarshallTest
     {
         ByteBuf buffer = Unpooled.buffer();
         // given
-        CoreMember owner = new CoreMember( address( "localhost:1000" ), address( "localhost:2000" ) );
+        CoreMember owner = new CoreMember( address( "localhost:0000" ), address( "localhost:1000" ), address( "localhost:2000" ) );
 
         // when
         LockMessage.Request original = LockMessage.Request.acquireSharedLock( new LockSession( owner, 0 ), ResourceTypes.NODE, 0 );
@@ -71,7 +71,7 @@ public class LockMessageMarshallTest
     {
         ByteBuf buffer = Unpooled.buffer();
         // given
-        CoreMember owner = new CoreMember( address( "localhost:1000" ), address( "localhost:2000" ) );
+        CoreMember owner = new CoreMember( address( "localhost:0000" ), address( "localhost:1000" ), address( "localhost:2000" ) );
 
         // when
         LockMessage.Request original = LockMessage.Request.newLockSession( new LockSession( owner, 0 ) );
@@ -87,7 +87,7 @@ public class LockMessageMarshallTest
     {
         ByteBuf buffer = Unpooled.buffer();
         // given
-        CoreMember owner = new CoreMember( address( "localhost:1000" ), address( "localhost:2000" ) );
+        CoreMember owner = new CoreMember( address( "localhost:0000" ), address( "localhost:1000" ), address( "localhost:2000" ) );
 
         // when
         LockMessage.Request original = LockMessage.Request.endLockSession( new LockSession( owner, 0 ) );
@@ -103,7 +103,7 @@ public class LockMessageMarshallTest
     {
         ByteBuf buffer = Unpooled.buffer();
         // given
-        CoreMember owner = new CoreMember( address( "localhost:1000" ), address( "localhost:2000" ) );
+        CoreMember owner = new CoreMember( address( "localhost:0000" ), address( "localhost:1000" ), address( "localhost:2000" ) );
 
         // when
         LockMessage.Request request = LockMessage.Request.acquireExclusiveLock( new LockSession( owner, 0 ), ResourceTypes.NODE, 0 );

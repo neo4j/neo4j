@@ -115,9 +115,13 @@ public class CoreEdgeClusterSettings
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
 
-    @Description( "Host and port to bind the cluster management communication." )
-    public static final Setting<ListenSocketAddress> cluster_listen_address =
-            setting( "core_edge.cluster_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5001" );
+    @Description( "Host and port for the discovery service to listen on." )
+    public static final Setting<ListenSocketAddress> discovery_listen_address =
+            setting( "core_edge.discovery_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5001" );
+
+    @Description( "Hostname/IP address and port that other server can use to discover this server." )
+    public static final Setting<AdvertisedSocketAddress> discovery_advertised_address =
+            setting( "core_edge.discovery_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:5001" );
 
     @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =

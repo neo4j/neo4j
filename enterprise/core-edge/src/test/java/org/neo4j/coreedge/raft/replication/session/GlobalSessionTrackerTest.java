@@ -32,8 +32,8 @@ import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class GlobalSessionTrackerTest
 {
-    CoreMember coreA = new CoreMember( address( "core:1" ), address( "raft:1" ) );
-    CoreMember coreB = new CoreMember( address( "core:2" ), address( "raft:2" ) );
+    CoreMember coreA = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreB = new CoreMember( address( "discovery:2" ), address( "core:2" ), address( "raft:2" ) );
 
     GlobalSession sessionA = new GlobalSession( UUID.randomUUID(), coreA );
     GlobalSession sessionA2 = new GlobalSession( UUID.randomUUID(), coreA );

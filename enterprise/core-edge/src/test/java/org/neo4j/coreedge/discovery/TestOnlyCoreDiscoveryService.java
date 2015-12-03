@@ -52,6 +52,7 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     private CoreMember toCoreMember( Config config )
     {
         return new CoreMember(
+                config.get( CoreEdgeClusterSettings.discovery_advertised_address ),
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
     }

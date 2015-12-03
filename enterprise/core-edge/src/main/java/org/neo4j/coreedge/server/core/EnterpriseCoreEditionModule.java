@@ -113,6 +113,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.join_catch_up_timeout;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
@@ -142,10 +143,6 @@ public class EnterpriseCoreEditionModule
 
         LogProvider logProvider = logging.getInternalLogProvider();
 
-        CoreDiscoveryService discoveryService =
-                discoveryServiceFactory.coreDiscoveryService( config );
-        life.add( dependencies.satisfyDependency( discoveryService ) );
-
         final CoreReplicatedContentMarshal marshall = new CoreReplicatedContentMarshal();
         final SenderService senderService = new SenderService(
                 new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( SYSTEM_CLOCK ),
@@ -153,6 +150,7 @@ public class EnterpriseCoreEditionModule
         life.add( senderService );
 
         final CoreMember myself = new CoreMember(
+                config.get( CoreEdgeClusterSettings.discovery_advertised_address ),
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
 
@@ -172,6 +170,15 @@ public class EnterpriseCoreEditionModule
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshall, raftListenAddress, logProvider );
 
         final ScheduledTimeoutService raftTimeoutService = new ScheduledTimeoutService();
+
+        Long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
+
+        RaftMembershipManager<CoreMember> membershipManager = createMembershipManager( loggingOutbound, config, raftLog,
+                myself, logProvider, electionTimeout );
+
+        CoreDiscoveryService discoveryService =
+                discoveryServiceFactory.coreDiscoveryService( config, logProvider, membershipManager );
+        dependencies.satisfyDependency( discoveryService );
 
         raft = createRaft( life, loggingOutbound, discoveryService, config,
                 messageLogger, raftLog, myself, raftLogsDirectory, fileSystem, logProvider, raftServer,
@@ -194,7 +201,6 @@ public class EnterpriseCoreEditionModule
 
         raftLog.registerListener( replicator );
 
-        long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
                 new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout );
 
@@ -259,10 +265,11 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftServer,
-                catchupServer, raftTimeoutService, membershipWaiter,
-                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ,
-                new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog )
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raftServer,
+                catchupServer, raftTimeoutService, discoveryService,
+                new RaftDiscoveryServiceConnector( discoveryService, raft ),
+                new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog ),
+                new WaitToCatchUp<>( membershipWaiter, config.get( join_catch_up_timeout ), raft )
         ));
     }
 
@@ -334,21 +341,30 @@ public class EnterpriseCoreEditionModule
         Replicator localReplicator = new LocalReplicator<>( myself, myself.getRaftAddress(), outbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( localReplicator, memberSetBuilder, raftLog,
-                logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) );
+                logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( join_catch_up_timeout ) );
 
         RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ), logProvider, raftLog,
                 SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout, config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
-        RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
+        return new RaftInstance<>(
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
                 raftMembershipManager, logShipping );
+    }
 
-        life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
+    private static RaftMembershipManager<CoreMember> createMembershipManager( Outbound<AdvertisedSocketAddress> outbound, Config config, RaftLog raftLog, CoreMember myself, LogProvider logProvider, long electionTimeout )
+    {
+        Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
-        return raftInstance;
+        CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
+
+
+        Replicator localReplicator = new LocalReplicator<>( myself, myself.getRaftAddress(), outbound );
+
+        return new RaftMembershipManager<>( localReplicator, memberSetBuilder, raftLog,
+                logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( join_catch_up_timeout ) );
     }
 
     private static PrintWriter raftMessagesLog( File storeDir )

@@ -29,7 +29,7 @@ import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class LocalSessionPoolTest
 {
-    CoreMember coreMember = new CoreMember( address( "core:1" ), address( "raft:1" ) );
+    CoreMember coreMember = new CoreMember( address( "discovery:1" ), address( "core:1" ), address( "raft:1" ) );
 
     @Test
     public void poolsHaveUniqueGlobalIDs()

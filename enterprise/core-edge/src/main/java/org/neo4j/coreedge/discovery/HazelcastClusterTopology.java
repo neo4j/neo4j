@@ -28,64 +28,65 @@ import com.hazelcast.core.Member;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.DISCOVERY_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
+import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class HazelcastClusterTopology implements ClusterTopology
 {
     public static final String EDGE_SERVERS = "edge-servers";
-    private HazelcastInstance hazelcast;
+
+    private final boolean bootstrappable;
+    private final Set<CoreMember> coreMembers;
+    private final int edgeServerCount;
 
     public HazelcastClusterTopology( HazelcastInstance hazelcast )
     {
-        this.hazelcast = hazelcast;
-    }
+        Set<Member> hazelcastMembers = hazelcast.getCluster().getMembers();
+        this.bootstrappable = hazelcastMembers.iterator().next().localMember();
 
-    @Override
-    public boolean bootstrappable()
-    {
-        Member firstMember = hazelcast.getCluster().getMembers().iterator().next();
-        return firstMember.localMember();
-    }
-
-    @Override
-    public int getNumberOfCoreServers()
-    {
-        return hazelcast.getCluster().getMembers().size();
-    }
-
-    @Override
-    public Set<CoreMember> getMembers()
-    {
-        return toCoreMembers( hazelcast.getCluster().getMembers() );
-    }
-
-    private Set<CoreMember> toCoreMembers( Set<Member> members )
-    {
-        HashSet<CoreMember> coreMembers = new HashSet<>();
-
-        for ( Member member : members )
+        this.coreMembers = new HashSet<>();
+        for ( Member member : hazelcastMembers )
         {
             coreMembers.add( new CoreMember(
+                    address( member.getStringAttribute( DISCOVERY_SERVER ) ),
                     address( member.getStringAttribute( TRANSACTION_SERVER ) ),
                     address( member.getStringAttribute( RAFT_SERVER ) )
             ));
         }
 
+        this.edgeServerCount = hazelcast.getMap( EDGE_SERVERS ).size();
+    }
+
+    @Override
+    public boolean bootstrappable()
+    {
+        return bootstrappable;
+    }
+
+    @Override
+    public int getNumberOfCoreServers()
+    {
+        return coreMembers.size();
+    }
+
+    @Override
+    public Set<CoreMember> getMembers()
+    {
         return coreMembers;
     }
 
     @Override
     public int getNumberOfEdgeServers()
     {
-        return hazelcast.getMap( EDGE_SERVERS ).size();
+        return edgeServerCount;
     }
 
     @Override
     public AdvertisedSocketAddress firstTransactionServer()
     {
-        Member member = hazelcast.getCluster().getMembers().iterator().next();
-        return address( member.getStringAttribute( TRANSACTION_SERVER ) );
+        CoreMember member = coreMembers.iterator().next();
+        return member.getCoreAddress();
     }
 }

@@ -28,24 +28,30 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddressEncoder;
 
 /**
  * Format:
- * ┌────────────────────────────────────────────┐
- * │core address ┌─────────────────────────────┐│
- * │             │hostnameLength        4 bytes││
- * │             │hostnameBytes        variable││
- * │             │port                  4 bytes││
- * │             └─────────────────────────────┘│
- * │raft address ┌─────────────────────────────┐│
- * │             │hostnameLength        4 bytes││
- * │             │hostnameBytes        variable││
- * │             │port                  4 bytes││
- * │             └─────────────────────────────┘│
- * └────────────────────────────────────────────┘
+ * ┌─────────────────────────────────────────────────┐
+ * │discovery address ┌─────────────────────────────┐│
+ * │                  │hostnameLength        4 bytes││
+ * │                  │hostnameBytes        variable││
+ * │                  │port                  4 bytes││
+ * │                  └─────────────────────────────┘│
+ * │core address      ┌─────────────────────────────┐│
+ * │                  │hostnameLength        4 bytes││
+ * │                  │hostnameBytes        variable││
+ * │                  │port                  4 bytes││
+ * │                  └─────────────────────────────┘│
+ * │raft address      ┌─────────────────────────────┐│
+ * │                  │hostnameLength        4 bytes││
+ * │                  │hostnameBytes        variable││
+ * │                  │port                  4 bytes││
+ * │                  └─────────────────────────────┘│
+ * └─────────────────────────────────────────────────┘
  */
 public class CoreMemberMarshal
 {
     static public void serialize( CoreMember member, ByteBuf buffer )
     {
         AdvertisedSocketAddressEncoder encoder = new AdvertisedSocketAddressEncoder();
+        encoder.encode( member.getDiscoveryAddress(), buffer );
         encoder.encode( member.getCoreAddress(), buffer );
         encoder.encode( member.getRaftAddress(), buffer );
     }
@@ -53,8 +59,9 @@ public class CoreMemberMarshal
     static public CoreMember deserialize( ByteBuf buffer )
     {
         AdvertisedSocketAddressDecoder decoder = new AdvertisedSocketAddressDecoder();
+        AdvertisedSocketAddress discoveryAddress = decoder.decode( buffer );
         AdvertisedSocketAddress coreAddress = decoder.decode( buffer );
         AdvertisedSocketAddress raftAddress = decoder.decode( buffer );
-        return new CoreMember( coreAddress, raftAddress );
+        return new CoreMember( discoveryAddress, coreAddress, raftAddress );
     }
 }
