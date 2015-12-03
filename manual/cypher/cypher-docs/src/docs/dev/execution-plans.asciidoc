@@ -42,3 +42,7 @@ include::execution-plan-groups/row.asciidoc[]
 :leveloffset: 1
 
 include::execution-plan-groups/update.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plan-groups/query-shortestpath-planning.adoc[]

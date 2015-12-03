@@ -68,7 +68,10 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
                     }
 
                   case (queryText: String, placeHolder: ExecutionPlanPlaceHolder) =>
-                    explainSingleQuery(db, queryText, placeHolder)
+                    explainSingleQuery(db, queryText, placeHolder, profile = false)
+
+                  case (queryText: String, placeHolder: ProfileExecutionPlanPlaceHolder) =>
+                    explainSingleQuery(db, queryText, placeHolder, profile = true)
 
                   case _ =>
                     ???
@@ -129,9 +132,11 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
       QueryRunResult(queryText, content, formattedResult)
     }
 
-  private def explainSingleQuery(database: RestartableDatabase, queryText: String, placeHolder: ExecutionPlanPlaceHolder) = {
-    val planString = Try(database.execute(s"EXPLAIN $queryText")) match {
+  private def explainSingleQuery(database: RestartableDatabase, queryText: String, placeHolder: QueryResultPlaceHolder, profile: Boolean) = {
+    val queryPrefix = if (profile) "PROFILE " else "EXPLAIN "
+    val planString = Try(database.execute(queryPrefix + queryText)) match {
       case Success(inner) =>
+        inner.length // Consume the results before showing the profile results
         inner.executionPlanDescription().toString
       case x =>
         throw new InternalException(s"Did not see this one coming $x")
@@ -161,7 +166,7 @@ case class GraphVizRunResult(original: GraphVizPlaceHolder, graphViz: GraphViz) 
   override def newFailure = None
 }
 
-case class ExecutionPlanRunResult(queryText: String, original: ExecutionPlanPlaceHolder, executionPlan: ExecutionPlan) extends RunResult {
+case class ExecutionPlanRunResult(queryText: String, original: QueryResultPlaceHolder, executionPlan: ExecutionPlan) extends RunResult {
 
   override def success = true
 

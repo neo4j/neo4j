@@ -79,7 +79,8 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
     if (!dir.exists())
       dir.mkdirs()
 
-    val file = new File(s"$outputPathWithSeparator${doc.id}.adoc")
+    val s = s"$outputPathWithSeparator${doc.id}.adoc"
+    val file = new File(s)
     val pw = new PrintWriter(file)
     pw.write(asciiDocTree)
     pw.close()
@@ -90,7 +91,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
     def testName(q: String) = {
       count +=1
-      s"$count: $q"
+      s"$count: $q".replaceAll(System.lineSeparator(), " ")
     }
 
     result foreach {

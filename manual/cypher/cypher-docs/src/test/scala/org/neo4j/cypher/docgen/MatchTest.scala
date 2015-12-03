@@ -88,7 +88,7 @@ class MatchTest extends DocumentingTest {
       section("Related nodes") {
         p("The symbol `--` means _related to,_ without regard to type or direction of the relationship.")
         query("MATCH (director { name:'Oliver Stone' })--(movie) RETURN movie.title", assertWallStreetIsReturned) {
-          p("Returns all the movies directed by Oliver Stone.")
+          p("Returns all the movies directed by 'Oliver Stone'.")
           resultTable()
         }
       }
@@ -245,7 +245,21 @@ class MatchTest extends DocumentingTest {
               | you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
               | like relationship type, max hops and direction are all used when finding the shortest path.
               | If there is a WHERE clause following the match of a shortestPath, relevant predicates will be included in the shortestPath.
-              | If the predicate is a NONE() or ALL() on the relationship elements of the path, it will be used during the search to improve performance.""")
+              | If the predicate is a +NONE()+ or +ALL()+ on the relationship elements of the path, it will be used during the search to improve performance (see <<query-shortestpath-planning>>).""")
+          resultTable()
+        }
+      }
+      section("Single shortest path with predicates") {
+        p( """Predicates used in the WHERE clause that apply to the shortest path pattern are evaluated before deciding what the shortest matching path is. """)
+        query(
+          """MATCH (charlie:Person {name:"Charlie Sheen"}),
+            |      (martin:Person {name:"Martin Sheen"}),
+            |      p = shortestPath( (charlie)-[*]-(martin) )
+            |WHERE NONE(r in rels(p) WHERE type(r) = "FATHER")
+            |RETURN p""", assertShortestPathLength) {
+          p(
+            """This query will find the shortest path between 'Charlie Sheen' and 'Martin Sheen', and the +WHERE+ predicate
+              |will make sure that we don't consider the father/son relationship between the two.""")
           resultTable()
         }
       }
@@ -254,7 +268,7 @@ class MatchTest extends DocumentingTest {
         query("""match (martin:Person {name:"Martin Sheen"} ),
                 |      (michael:Person {name:"Michael Douglas"}),
                 |      p = allShortestPaths( (martin)-[*]-(michael) ) return p""", assertAllShortestPaths) {
-          p("Finds the two shortest paths between Martin and Michael.")
+          p("Finds the two shortest paths between 'Martin' and 'Michael'.")
           resultTable()
         }
       }
