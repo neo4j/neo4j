@@ -36,6 +36,12 @@ import static org.neo4j.metrics.MetricsSettings.gangliaEnabled;
 import static org.neo4j.metrics.MetricsSettings.gangliaInterval;
 import static org.neo4j.metrics.MetricsSettings.gangliaServer;
 
+/**
+ *  @deprecated  Ganglia support is experimental, and not guaranteed to work.
+ *  This built in support has been deprecated and will be removed from a subsequent version.
+ *  Please use {@link GraphiteOutput} instead
+ */
+@Deprecated
 public class GangliaOutput extends LifecycleAdapter
 {
     private final Config config;
