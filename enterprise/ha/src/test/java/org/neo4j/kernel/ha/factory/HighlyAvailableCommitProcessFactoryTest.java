@@ -28,15 +28,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class HighlyAvailableCommitProcessFactoryTest
@@ -50,7 +49,7 @@ public class HighlyAvailableCommitProcessFactoryTest
         Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), mock( IndexUpdatesValidator.class ), config );
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ), config );
 
         assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
     }
@@ -62,7 +61,7 @@ public class HighlyAvailableCommitProcessFactoryTest
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), mock( IndexUpdatesValidator.class ),
+                mock( TransactionRepresentationStoreApplier.class ), mock( IndexUpdatesValidator.class ),
                 new Config() );
 
         assertThat( commitProcess, not( instanceOf( ReadOnlyTransactionCommitProcess.class ) ) );

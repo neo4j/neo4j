@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 import static java.lang.String.format;
 
-class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
+class PropertyExistenceEnforcer extends TxStateVisitor.Adapter
 {
     private final EntityReadOperations readOperations;
     private final StoreReadLayer storeLayer;

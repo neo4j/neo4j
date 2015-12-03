@@ -55,18 +55,22 @@ import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
+import org.neo4j.kernel.impl.api.RecoveryLegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
@@ -137,6 +141,7 @@ import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -152,6 +157,7 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -159,6 +165,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 {
     private interface TransactionLogModule
     {
+        TransactionRepresentationStoreApplier storeApplier();
+
         LogicalTransactionStore logicalTransactionStore();
 
         PhysicalLogFiles logFiles();
@@ -471,15 +479,15 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                             fs,
                             indexProviders.values(), storageEngine );
 
-            buildRecovery( fs,
-                    storageEngine.neoStores(),
+            buildRecovery( fs, storageEngine.indexingService(),
+                    storageEngine.labelScanStore(), storageEngine.neoStores(),
                     monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
-                    storageEngine );
+                    storageEngine.legacyIndexApplierLookup(), storageEngine );
 
             KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(), storageEngine.neoStores(),
-                    storageEngine.indexingService(),
+                    transactionLogModule.storeApplier(), storageEngine.indexingService(),
                     storageEngine.indexUpdatesValidator(),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, storageEngine.labelScanStore(),
@@ -597,7 +605,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
                 fileSystemAbstraction );
 
-        final IdOrderingQueue legacyIndexTransactionOrdering = storageEngine.legacyIndexTransactionOrdering();
+        final IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+        final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
+                new TransactionRepresentationStoreApplier( alwaysCreateNewWriter( storageEngine.labelScanStore() ),
+                        lockService, storageEngine.indexConfigStore(),
+                        legacyIndexTransactionOrdering, storageEngine ) );
 
         TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
         final PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
@@ -673,6 +685,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return new TransactionLogModule()
         {
             @Override
+            public TransactionRepresentationStoreApplier storeApplier()
+            {
+                return storeApplier;
+            }
+
+            @Override
             public LogicalTransactionStore logicalTransactionStore()
             {
                 return logicalTransactionStore;
@@ -728,31 +746,41 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         };
     }
 
-    private void buildRecovery(
-            final FileSystemAbstraction fileSystemAbstraction,
-            final NeoStores neoStores,
-            RecoveryVisitor.Monitor recoveryVisitorMonitor,
-            Recovery.Monitor recoveryMonitor,
-            final PhysicalLogFiles logFiles,
-            final StoreFlusher storeFlusher,
-            final StartupStatisticsProvider startupStatistics,
-            StorageEngine storageEngine )
+    private Supplier<LabelScanWriter> alwaysCreateNewWriter( final LabelScanStore labelScanStore )
     {
-        @SuppressWarnings( "resource" )
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        return labelScanStore::newWriter;
+    }
 
-        @SuppressWarnings( "resource" )
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( metaDataStore, storageEngine, recoveryVisitorMonitor );
+    private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction,
+            IndexingService indexingService, LabelScanStore labelScanStore,
+            final NeoStores neoStores, RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
+            final PhysicalLogFiles logFiles, final StoreFlusher storeFlusher,
+            final StartupStatisticsProvider startupStatistics,
+            LegacyIndexApplierLookup legacyIndexApplierLookup, StorageEngine storageEngine )
+    {
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        final RecoveryLabelScanWriterProvider labelScanWriters =
+                new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
+        final RecoveryLegacyIndexApplierLookup recoveryLegacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
+                legacyIndexApplierLookup, 1000 );
+        final RecoveryIndexingUpdatesValidator indexUpdatesValidator = new RecoveryIndexingUpdatesValidator( indexingService );
+        final TransactionRepresentationStoreApplier storeRecoverer =
+                new TransactionRepresentationStoreApplier( labelScanWriters,
+                        lockService, storageEngine.indexConfigStore(), IdOrderingQueue.BYPASS,
+                        storageEngine );
+
+        RecoveryVisitor recoveryVisitor =
+                new RecoveryVisitor( metaDataStore, storeRecoverer, indexUpdatesValidator, recoveryVisitorMonitor );
 
         LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer =
+        final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
-        Recovery.SPI spi = new DefaultRecoverySPI(
+        Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
                 storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
-                checkPointFinder );
+                checkPointFinder, indexUpdatesValidator );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
 
         life.add( recovery );
@@ -769,13 +797,13 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     private KernelModule buildKernel( TransactionAppender appender,
-                                      NeoStores neoStores,
+                                      NeoStores neoStores, TransactionRepresentationStoreApplier storeApplier,
                                       IndexingService indexingService,
                                       IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine )
     {
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storeApplier,
                 indexUpdatesValidator, config );
 
         /*
@@ -810,10 +838,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final KernelTransactions kernelTransactions =
                 life.add( new KernelTransactions( neoStoreTxContextFactory,
                         locks, constraintIndexCreator,
-                        statementOperations, schemaWriteGuard,
+                        statementOperations, updateableSchemaState, schemaWriteGuard,
                         transactionHeaderInformationFactory, transactionCommitProcess,
-                        storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, transactionMonitor,
-                        life, tracers, storageEngine ) );
+                        storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, constraintSemantics,
+                        transactionMonitor, life, tracers, storageEngine ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 
@@ -952,10 +980,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private void awaitAllTransactionsClosed()
     {
-        // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
-        // otherwise if there has been a panic transactions will not be applied properly anyway.
-        while ( kernelHealth.isHealthy() &&
-                !storageEngine.neoStores().getMetaDataStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
+        while ( !storageEngine.neoStores().getMetaDataStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms
         }

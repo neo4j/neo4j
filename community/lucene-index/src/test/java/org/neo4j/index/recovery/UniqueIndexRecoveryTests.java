@@ -85,7 +85,7 @@ public class UniqueIndexRecoveryTests
     public void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
     {
         // GIVEN
-        Node unLabeledNode = createUnLabeledNodeWithProperty();
+        Node unLabeledNode = createUnLabeledNode();
         Node labeledNode = createLabeledNode();
         createUniqueConstraint();
         rotateLogAndCheckPoint(); // snapshot
@@ -183,7 +183,7 @@ public class UniqueIndexRecoveryTests
         }
     }
 
-    private Node createUnLabeledNodeWithProperty()
+    private Node createUnLabeledNode()
     {
         try ( Transaction tx = db.beginTx() )
         {

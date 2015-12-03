@@ -41,16 +41,21 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionQueue;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -64,16 +69,16 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 
 /**
  * Tool to rebuild store based on available transaction logs.
@@ -214,20 +219,32 @@ class RebuildFromLogs
         System.err.println( "         -tx       --  to rebuild the store up to a given transaction" );
     }
 
+
     private static class TransactionApplier implements AutoCloseable
     {
         private final GraphDatabaseAPI graphdb;
+        private final TransactionRepresentationStoreApplier storeApplier;
+        private final OnlineIndexUpdatesValidator indexUpdatesValidator;
+        private final NeoStores neoStores;
+        private final IndexingService indexingService;
         private final FileSystemAbstraction fs;
-        private final TransactionCommitProcess commitProcess;
 
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
             this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
-            this.commitProcess = graphdb.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+            DependencyResolver resolver = graphdb.getDependencyResolver();
+            this.neoStores = resolver.resolveDependency( NeoStores.class );
+            this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
+                    .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
+            this.indexingService = resolver.resolveDependency( IndexingService.class );
+            KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
+            this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
+                    neoStores, resolver.resolveDependency( KernelHealth.class ), new PropertyLoader( neoStores ),
+                    indexingService, IndexUpdateMode.BATCHED );
         }
 
-        long applyTransactionsFrom( File sourceDir, long upToTxId ) throws Exception
+        long applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
         {
             PhysicalLogFiles logFiles = new PhysicalLogFiles( sourceDir, fs );
             int startVersion = 0;
@@ -235,8 +252,6 @@ class RebuildFromLogs
             PhysicalLogVersionedStoreChannel startingChannel = openForVersion( logFiles, fs, startVersion );
             ReadableVersionableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
-            TransactionQueue queue = new TransactionQueue( 10_000,
-                    (tx) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                           new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
             {
@@ -244,14 +259,18 @@ class RebuildFromLogs
                 {
                     txId = cursor.get().getCommitEntry().getTxId();
                     TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
-                    queue.queue( new TransactionToApply( transaction, txId ) );
+                    try ( LockGroup locks = new LockGroup();
+                          ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( transaction ) )
+                    {
+                        storeApplier.apply( transaction, indexUpdates, locks, txId, EXTERNAL );
+                    }
                     if ( upToTxId != BASE_TX_ID && upToTxId == txId )
                     {
-                        break;
+                        return txId;
                     }
                 }
             }
-            queue.empty();
+            indexingService.flushAll();
             return txId;
         }
 

@@ -19,31 +19,27 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Test;
+
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -52,10 +48,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.raft.locks.CoreServiceRegistry.ServiceType.LOCK_MANAGER;
+import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
+import static org.neo4j.coreedge.raft.locks.CoreServiceRegistry.ServiceType.LOCK_MANAGER;
 
 public class ReplicatedTransactionStateMachineTest
 {
@@ -81,8 +77,9 @@ public class ReplicatedTransactionStateMachineTest
         listener.onReplicated( tx );
 
         // then
-        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ),
-                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionRepresentation.class ),
+                any( LockGroup.class ), any( CommitEvent.class ), any(
+                        TransactionApplicationMode.class ) );
     }
 
     @Test
@@ -104,7 +101,7 @@ public class ReplicatedTransactionStateMachineTest
         listener.onReplicated( tx );
 
         // then
-        verify( localCommitProcess ).commit( any( TransactionToApply.class ),
+        verify( localCommitProcess ).commit( any( TransactionRepresentation.class ), any( LockGroup.class ),
                 any( CommitEvent.class ), eq( TransactionApplicationMode.EXTERNAL ) );
     }
 
@@ -119,28 +116,20 @@ public class ReplicatedTransactionStateMachineTest
         CoreMember newLockManager = new CoreMember( address( "new:1" ), address( "new:2" ) );
 
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        tx.setHeader( null, 0, 0, 1, 3, 0, 0 );
+        tx.setHeader( null, 0, 0, 0, 3, 0, 0 );
         ReplicatedTransaction txBefore = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
-                tx, globalSession, localOperationIdBefore );
+                tx, globalSession, localOperationIdBefore
+        );
         PhysicalTransactionRepresentation after = mock( PhysicalTransactionRepresentation.class );
         when( after.getLatestCommittedTxWhenStarted() ).thenReturn( 3L );
         ReplicatedTransaction txAfter = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
-                after, globalSession, localOperationIdAfter );
+                after, globalSession, localOperationIdAfter
+        );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        final AtomicReference<TransactionRepresentation> committedTxRepresentation = new AtomicReference<>();
-        when( localCommitProcess.commit( any( TransactionToApply.class ),
+        when( localCommitProcess.commit( any( TransactionRepresentation.class ), any( LockGroup.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) ) )
-                .thenAnswer( new Answer<Long>()
-                {
-                    @Override
-                    public Long answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        committedTxRepresentation.set( invocation.getArgumentAt( 0,
-                                TransactionToApply.class ).transactionRepresentation() );
-                        return 4L;
-                    }
-                } );
+                .thenReturn( 4L );
         ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
                 sessionTracker, globalSession );
 
@@ -150,9 +139,7 @@ public class ReplicatedTransactionStateMachineTest
         listener.onReplicated( txAfter );
 
         // then
-        verify( localCommitProcess ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
-                eq( TransactionApplicationMode.EXTERNAL ) );
-        assertEquals( tx, committedTxRepresentation.get() );
+        verify( localCommitProcess ).commit( eq( tx ), any( LockGroup.class ), any( CommitEvent.class ), eq( TransactionApplicationMode.EXTERNAL ) );
         verifyNoMoreInteractions( localCommitProcess );
     }
 
@@ -177,7 +164,7 @@ public class ReplicatedTransactionStateMachineTest
         );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        when( localCommitProcess.commit( any( TransactionToApply.class ),
+        when( localCommitProcess.commit( any( TransactionRepresentation.class ), any( LockGroup.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) ) )
                 .thenReturn( 4L );
         ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
@@ -223,8 +210,9 @@ public class ReplicatedTransactionStateMachineTest
         listener.onReplicated( tx );
 
         // then
-        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ),
-                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionRepresentation.class ),
+                any( LockGroup.class ), any( CommitEvent.class ), any(
+                        TransactionApplicationMode.class ) );
     }
 
 }

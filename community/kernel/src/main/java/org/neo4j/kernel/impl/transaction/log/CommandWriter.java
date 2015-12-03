@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 
-public class CommandWriter extends CommandHandler.Adapter
+public class CommandWriter implements CommandHandler
 {
     private final WritableLogChannel channel;
 

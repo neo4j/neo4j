@@ -43,6 +43,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.BiFunction;
@@ -195,7 +196,7 @@ public class HighlyAvailableEditionModule
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( dependencies,
+                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
                         config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );

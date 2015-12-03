@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.IOException;
 
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -35,6 +36,14 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 
 final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater, AutoCloseable
 {
+    static final Function<EntryUpdater<CountsKey>, CountsUpdater> FACTORY = new Function<EntryUpdater<CountsKey>, CountsUpdater>()
+    {
+        @Override
+        public CountsUpdater apply( EntryUpdater<CountsKey> updater ) throws RuntimeException
+        {
+            return new CountsUpdater( updater );
+        }
+    };
     private final EntryUpdater<CountsKey> updater;
 
     public CountsUpdater( EntryUpdater<CountsKey> updater )

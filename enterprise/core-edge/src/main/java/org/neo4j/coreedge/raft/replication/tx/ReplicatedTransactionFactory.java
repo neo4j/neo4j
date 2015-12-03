@@ -19,17 +19,17 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
-import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -42,8 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 public class ReplicatedTransactionFactory
 {
-    public static ReplicatedTransaction createImmutableReplicatedTransaction(
-            TransactionRepresentation tx, GlobalSession globalSession, LocalOperationId localOperationId ) throws IOException
+    public static ReplicatedTransaction createImmutableReplicatedTransaction( TransactionRepresentation tx, GlobalSession globalSession, LocalOperationId localOperationId ) throws IOException
     {
         ByteBuf transactionBuffer = Unpooled.buffer();
 

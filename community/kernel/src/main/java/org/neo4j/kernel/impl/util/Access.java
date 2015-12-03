@@ -17,30 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.util;
 
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.atomic.AtomicReference;
 
-class ThreadLink
+/**
+ * Basically a very simple variant of {@link AtomicReference} with option to not have the of concurrency control,
+ * since it may be implemented for simple single threaded use.
+ */
+public interface Access<T>
 {
-    final Thread thread;
-    volatile ThreadLink next;
-    volatile boolean done;
+    T get();
 
-    public ThreadLink( Thread thread )
-    {
-        this.thread = thread;
-    }
-
-    public void unpark()
-    {
-        LockSupport.unpark( thread );
-    }
-
-    static final ThreadLink END = new ThreadLink( null );
-
-    static
-    {
-        END.next = END;
-    }
+    void set( T value );
 }

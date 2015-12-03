@@ -29,6 +29,7 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -36,6 +37,8 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.yield;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,18 +46,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.yield;
-
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 
 public class TestCommunication
 {
@@ -431,7 +429,7 @@ public class TestCommunication
 
     @Test
     @SuppressWarnings("rawtypes")
-    public void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws Exception
+    public void masterResponseShouldBeUnpackedIfRequestTypeRequires() throws IOException
     {
         // Given
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
@@ -443,7 +441,7 @@ public class TestCommunication
 
         // Then
         ArgumentCaptor<Response> captor = ArgumentCaptor.forClass( Response.class );
-        verify( responseUnpacker ).unpackResponse( captor.capture(), eq( NO_OP_TX_HANDLER ) );
+        verify( responseUnpacker ).unpackResponse( captor.capture(), any( TxHandler.class ) );
         assertEquals( storeIdToUse, captor.getValue().getStoreId() );
         assertEquals( 42 * 42, captor.getValue().response() );
     }
@@ -609,7 +607,7 @@ public class TestCommunication
     }
 
     public class TransactionStreamVerifyingResponseHandler
-            implements Response.Handler, Visitor<CommittedTransactionRepresentation,Exception>
+            implements Response.Handler, Visitor<CommittedTransactionRepresentation,IOException>
     {
         private final long txCount;
         private long expectedTxId = 1;
@@ -626,7 +624,7 @@ public class TestCommunication
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             return this;
         }
@@ -652,7 +650,7 @@ public class TestCommunication
         }
 
         @Override
-        public Visitor<CommittedTransactionRepresentation,Exception> transactions()
+        public Visitor<CommittedTransactionRepresentation,IOException> transactions()
         {
             throw new UnsupportedOperationException( "Should not be called" );
         }

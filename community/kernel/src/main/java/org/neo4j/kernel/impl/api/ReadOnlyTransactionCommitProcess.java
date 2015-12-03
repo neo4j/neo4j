@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
  * For databases in read_only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
@@ -30,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess
 {
     @Override
-    public long commit( TransactionToApply batch, CommitEvent commitEvent,
+    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
         throw new ReadOnlyDbException();

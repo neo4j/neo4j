@@ -95,7 +95,6 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -210,7 +209,6 @@ public class BatchInserterImpl implements BatchInserter
     private SchemaStore schemaStore;
 
     private LabelTokenStore labelTokenStore;
-    private final Locks.Client noopLockClient = new NoOpClient();
 
     /**
      * @deprecated use {@link #BatchInserterImpl(File, Map)} instead
@@ -335,7 +333,7 @@ public class BatchInserterImpl implements BatchInserter
 
         // Record access
         recordAccess = new DirectRecordAccessSet( neoStores );
-        relationshipCreator = new RelationshipCreator(
+        relationshipCreator = new RelationshipCreator( new NoOpClient(),
                 new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getDenseNodeThreshold() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
@@ -919,7 +917,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         long id = relationshipStore.nextId();
         int typeId = getOrCreateRelationshipTypeToken( type );
-        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, noopLockClient );
+        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess );
         if ( properties != null && !properties.isEmpty() )
         {
             RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null ).forChangingData();
@@ -1043,7 +1041,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new RuntimeException( e );
         }
-
+        
         neoStores.close();
 
         try

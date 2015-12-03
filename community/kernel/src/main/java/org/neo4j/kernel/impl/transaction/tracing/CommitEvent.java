@@ -42,6 +42,11 @@ public interface CommitEvent extends AutoCloseable
         {
             return StoreApplyEvent.NULL;
         }
+
+        @Override
+        public void setTransactionId( long transactionId )
+        {
+        }
     };
 
     /**
@@ -59,4 +64,9 @@ public interface CommitEvent extends AutoCloseable
      * Begin applying the commands of the committed transaction to the stores.
      */
     StoreApplyEvent beginStoreApply();
+
+    /**
+     * Set the ID that was assigned to the transaction.
+     */
+    void setTransactionId( long transactionId );
 }

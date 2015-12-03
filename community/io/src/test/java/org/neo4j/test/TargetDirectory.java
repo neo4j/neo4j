@@ -180,13 +180,8 @@ public class TargetDirectory
         return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
     }
 
-    public static TestDirectory testDirForTest( Class<?> owningTest, FileSystemAbstraction fs )
-    {
-        return new TargetDirectory( fs, owningTest ).testDirectory();
-    }
-
     public static TestDirectory testDirForTestWithEphemeralFS( EphemeralFileSystemAbstraction fileSystem,
-            Class<?> owningTest )
+                                                               Class<?> owningTest )
     {
         return new TargetDirectory( fileSystem, owningTest ).testDirectory();
     }

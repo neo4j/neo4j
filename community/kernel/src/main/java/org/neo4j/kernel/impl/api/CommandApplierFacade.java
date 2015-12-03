@@ -52,24 +52,6 @@ public class CommandApplierFacade implements CommandHandler, Visitor<Command,IOE
     }
 
     @Override
-    public void begin( TransactionToApply tx ) throws IOException
-    {
-        for ( CommandHandler handler : handlers )
-        {
-            handler.begin( tx );
-        }
-    }
-
-    @Override
-    public void end() throws Exception
-    {
-        for ( CommandHandler handler : handlers )
-        {
-            handler.end();
-        }
-    }
-
-    @Override
     public void apply()
     {
         throw new UnsupportedOperationException( "This method should not be called, only I call apply() methods" );

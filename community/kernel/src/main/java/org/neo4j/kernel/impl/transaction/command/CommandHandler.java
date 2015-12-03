@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
@@ -40,43 +39,26 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsComma
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 
 /**
- * A CommandHandler has to handle all type of commands that a Neo4j transaction can generate. It provides
- * methods for handling each type of {@link Command} available through a callback pattern to avoid dynamic dispatching.
+ * A CommandHandler has to handle all type of commands that a Neo transaction can generate. It provides
+ * methods for handling each type of Command available through a callback pattern to avoid dynamic dispatching.
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
- * For example, it is conceivable that a {@link CommandWriter} would use a {@link CommandHandler}.
+ * For example, it is conceivable that a CommandWriterHandler would use a CommandHandler and a SchemaCommandHandler.
  * <p>
- * A CommandHandler must also be capable of visiting commands for a batch of transactions, the access pattern
- * goes like this:
+ * The order in which the methods of a CommandHandler is expected to be called is this:
  * <ol>
- * <li>{@link #begin(TransactionToApply)} called for the transaction to now visit commands for</li>
- * <li>...one or more commands for that transaction</li>
- * <li>{@link #end()}</li>
- * <li>{@link #begin(TransactionToApply)} called for the next transaction in the same batch</li>
- * <li>...one or more commands for that transaction</li>
- * <li>{@link #end()}</li>
- * <li>...same as above for every transaction in this batch</li>
+ * <li>zero or more calls to visit??? methods</li>
  * <li>{@link #apply()}</li>
  * <li>{@link #close()}</li>
  * </ol>
+ * <p>
  * The boolean returned from visit methods is false for continuing traversal, and true for breaking traversal.
  */
 public interface CommandHandler extends AutoCloseable
 {
     CommandHandler EMPTY = new CommandHandler.Adapter();
-
-    /**
-     * Called before each transaction in this batch.
-     */
-    void begin( TransactionToApply transaction ) throws IOException;
-
-    /**
-     * Called after each transaction in this batch.
-     */
-    void end() throws Exception;
 
     // Store commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
@@ -115,9 +97,7 @@ public interface CommandHandler extends AutoCloseable
     boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException;
 
     /**
-     * Applies pending changes that might have been accumulated when visiting the commands for all
-     * transaction in this batch. This method is called before {@link #close()} and after all commands
-     * for all transactions have been visited, also after all {@link #end()} calls.
+     * Applies pending changes that might have been accumulated when visiting the commands.
      * A command handler can expect a call to {@link #apply()} before {@link #close()}.
      */
     void apply();
@@ -130,16 +110,6 @@ public interface CommandHandler extends AutoCloseable
 
     class Adapter implements CommandHandler
     {
-        @Override
-        public void begin( TransactionToApply transaction ) throws IOException
-        {
-        }
-
-        @Override
-        public void end() throws Exception
-        {
-        }
-
         @Override
         public boolean visitNodeCommand( NodeCommand command ) throws IOException
         {
@@ -232,7 +202,7 @@ public interface CommandHandler extends AutoCloseable
         }
 
         @Override
-        public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command )
         {
             return false;
         }
@@ -254,25 +224,13 @@ public interface CommandHandler extends AutoCloseable
         }
     }
 
-    class Delegator implements CommandHandler
+    public static class Delegator implements CommandHandler
     {
         private final CommandHandler delegate;
 
         public Delegator( CommandHandler delegate )
         {
             this.delegate = delegate;
-        }
-
-        @Override
-        public void begin( TransactionToApply transaction ) throws IOException
-        {
-            delegate.begin( transaction );
-        }
-
-        @Override
-        public void end() throws Exception
-        {
-            delegate.end();
         }
 
         @Override
@@ -390,7 +348,7 @@ public interface CommandHandler extends AutoCloseable
         }
     }
 
-    class HandlerVisitor implements Visitor<Command,IOException>
+    public static class HandlerVisitor implements Visitor<Command,IOException>
     {
         private final CommandHandler handler;
 

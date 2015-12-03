@@ -31,14 +31,12 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import org.neo4j.kernel.api.txstate.TransactionState;
 
 import static java.util.Arrays.asList;
-
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class TxStateVisitorTest

@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -43,15 +42,38 @@ import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
 /**
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
- * log file in batches for higher throughput in a concurrent scenario.
+ * log file in batches.
  */
 public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
+    private static class ThreadLink
+    {
+        final Thread thread;
+        volatile ThreadLink next;
+        volatile boolean done;
+
+        public ThreadLink( Thread thread )
+        {
+            this.thread = thread;
+        }
+
+        public void unpark()
+        {
+            LockSupport.unpark( thread );
+        }
+
+        static final ThreadLink END = new ThreadLink( null );
+
+        static
+        {
+            END.next = END;
+        }
+    }
+
     // For the graph store and schema indexes order-of-updates are managed by the high level entity locks
     // such that changes are applied to the affected records in the same order that they are written to the
     // log. For the legacy indexes there are no such locks, and hence no such ordering. This queue below
@@ -92,74 +114,66 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     }
 
     @Override
-    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
+    public Commitment append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
     {
+        long transactionId = -1;
+        int phase = 0;
+
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
         boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
         logAppendEvent.setLogRotated( logRotated );
 
-        // Assigned base tx id just to make compiler happy
-        long lastTransactionId = TransactionIdStore.BASE_TX_ID;
+        TransactionCommitment commitment;
+        try
+        {
+            // Synchronized with logFile to get absolute control over concurrent rotations happening
+            synchronized ( logFile )
+            {
+                try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
+                {
+                    transactionId = transactionIdStore.nextCommittingTransactionId();
+                    phase = 1;
+                    commitment = appendToLog( transaction, transactionId );
+                }
+            }
+
+            forceAfterAppend( logAppendEvent );
+            commitment.publishAsCommitted();
+            orderLegacyIndexChanges( commitment );
+            phase = 2;
+            return commitment;
+        }
+        finally
+        {
+            if ( phase == 1 )
+            {
+                // So we end up here if we enter phase 1, but fails to reach phase 2, which means that
+                // we told TransactionIdStore that we committed transaction, but something failed right after
+                transactionIdStore.transactionClosed( transactionId, 0l, 0l );
+            }
+        }
+    }
+
+    @Override
+    public Commitment append( TransactionRepresentation transaction, long expectedTransactionId ) throws IOException
+    {
+        // TODO this method is supposed to only be called from a single thread we should
+        // be able to remove this synchronized block. The only reason it's here now is that LogFile exposes
+        // a checkRotation, which any thread could call at any time. Although that method was added to
+        // be able to test a certain thing, so it should go away actually.
+
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized ( logFile )
         {
-            // Assert that kernel is healthy before making any changes
-            kernelHealth.assertHealthy( IOException.class );
-            try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
-            {
-                // Append all transactions in this batch to the log under the same logFile monitor
-                TransactionToApply tx = batch;
-                while ( tx != null )
-                {
-                    long transactionId = transactionIdStore.nextCommittingTransactionId();
-
-                    // If we're in a scenario where we're merely replicating transactions, i.e. transaction
-                    // id have already been generated by another entity we simply check that our id
-                    // that we generated match that id. If it doesn't we've run into a problem we can't ´
-                    // really recover from and would point to a bug somewhere.
-                    matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
-
-                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId );
-                    tx.commitment( commitment, transactionId );
-                    tx = tx.next();
-                    lastTransactionId = transactionId;
-                }
-            }
-        }
-
-        // At this point we've appended all transactions in this batch, but we can't mark any of them
-        // as committed since they haven't been forced to disk yet. So here we force, or potentially
-        // piggy-back on another force, but anyway after this call below we can be sure that all our transactions
-        // in this batch exist durably on disk.
-        forceAfterAppend( logAppendEvent );
-
-        // Mark all transactions as committed
-        publishAsCommitted( batch );
-
-        return lastTransactionId;
-    }
-
-    private void matchAgainstExpectedTransactionIdIfAny( long transactionId, TransactionToApply tx )
-    {
-        long expectedTransactionId = tx.transactionId();
-        if ( expectedTransactionId != TRANSACTION_ID_NOT_SPECIFIED )
-        {
+            long transactionId = transactionIdStore.nextCommittingTransactionId();
             if ( transactionId != expectedTransactionId )
             {
                 throw new ThisShouldNotHappenError( "Zhen Li and Mattias Persson",
-                        "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
+                        "Received " + transaction + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
             }
-        }
-    }
-
-    private void publishAsCommitted( TransactionToApply batch )
-    {
-        while ( batch != null )
-        {
-            batch.commitment().publishAsCommitted();
-            batch = batch.next();
+            return appendToLog( transaction, transactionId );
         }
     }
 
@@ -181,6 +195,52 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
 
         forceAfterAppend( logCheckPointEvent );
+    }
+
+    private static class TransactionCommitment implements Commitment
+    {
+        private final boolean hasLegacyIndexChanges;
+        private final long transactionId;
+        private final long transactionChecksum;
+        private final LogPosition logPosition;
+        private final TransactionIdStore transactionIdStore;
+        private boolean markedAsCommitted;
+
+        TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
+                LogPosition logPosition, TransactionIdStore transactionIdStore )
+        {
+            this.hasLegacyIndexChanges = hasLegacyIndexChanges;
+            this.transactionId = transactionId;
+            this.transactionChecksum = transactionChecksum;
+            this.logPosition = logPosition;
+            this.transactionIdStore = transactionIdStore;
+        }
+
+        @Override
+        public void publishAsCommitted()
+        {
+            markedAsCommitted = true;
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+        }
+
+        @Override
+        public void publishAsApplied()
+        {
+            transactionIdStore.transactionClosed( transactionId,
+                    logPosition.getLogVersion(), logPosition.getByteOffset() );
+        }
+
+        @Override
+        public long transactionId()
+        {
+            return transactionId;
+        }
+
+        @Override
+        public boolean markedAsCommitted()
+        {
+            return markedAsCommitted;
+        }
     }
 
     /**
@@ -226,6 +286,21 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             kernelHealth.panic( panic );
             throw panic;
+        }
+    }
+
+    private void orderLegacyIndexChanges( TransactionCommitment commit ) throws IOException
+    {
+        if ( commit.hasLegacyIndexChanges )
+        {
+            try
+            {
+                legacyIndexTransactionOrdering.waitFor( commit.transactionId );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
+            }
         }
     }
 
@@ -299,7 +374,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             ThreadLink tmp;
             do
             {
-                // Spin because of the race:y update when consing.
+                // Spin on this because of the racy update when consing.
                 tmp = links.next;
             }
             while ( tmp == null );
@@ -314,7 +389,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         LockSupport.parkNanos( this, parkTime );
     }
 
-    private void force() throws IOException
+    @Override
+    public void force() throws IOException
     {
         // Empty buffer into writer. We want to synchronize with appenders somehow so that they
         // don't append while we're doing that. The way rotation is coordinated we can't synchronize

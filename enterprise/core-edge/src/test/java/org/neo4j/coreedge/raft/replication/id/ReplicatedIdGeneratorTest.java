@@ -20,12 +20,8 @@
 package org.neo4j.coreedge.raft.replication.id;
 
 import org.junit.Before;
+
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
@@ -34,12 +30,18 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 {
-    private final ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
+    private ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
 
     @Before
     public void stubAcquirer()

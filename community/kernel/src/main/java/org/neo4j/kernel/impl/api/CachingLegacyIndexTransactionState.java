@@ -30,13 +30,13 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
-public class CachingLegacyIndexTransactionState implements LegacyIndexTransactionState
+class CachingLegacyIndexTransactionState implements LegacyIndexTransactionState
 {
     private Map<String,LegacyIndex> nodeLegacyIndexChanges;
     private Map<String,LegacyIndex> relationshipLegacyIndexChanges;
     private final LegacyIndexTransactionState txState;
 
-    public CachingLegacyIndexTransactionState( LegacyIndexTransactionState txState )
+    CachingLegacyIndexTransactionState( LegacyIndexTransactionState txState )
     {
         this.txState = txState;
     }

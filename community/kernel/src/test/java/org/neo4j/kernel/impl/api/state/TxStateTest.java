@@ -49,18 +49,16 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 import org.neo4j.test.RandomizedTestRule;
 import org.neo4j.test.RepeatRule;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.helpers.Pair.of;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
@@ -1569,7 +1567,6 @@ public class TxStateTest
     {
         return new IndexUpdater()
         {
-            @Override
             public void withDefaultStringProperties( long... nodeIds )
             {
                 Collection<Pair<Long, String>> entries = new ArrayList<>( nodeIds.length );
@@ -1580,7 +1577,6 @@ public class TxStateTest
                 withStringProperties( entries );
             }
 
-            @Override
             public void withStringProperties( Collection<Pair<Long, String>> nodesWithValues )
             {
                 final int labelId = descriptor.getLabelId();
@@ -1597,7 +1593,6 @@ public class TxStateTest
                 }
             }
 
-            @Override
             public <T extends Number> void withNumberProperties( Collection<Pair<Long, T>> nodesWithValues )
             {
                 final int labelId = descriptor.getLabelId();
@@ -1614,7 +1609,6 @@ public class TxStateTest
                 }
             }
 
-            @Override
             public void withBooleanProperties( Collection<Pair<Long, Boolean>> nodesWithValues )
             {
                 final int labelId = descriptor.getLabelId();

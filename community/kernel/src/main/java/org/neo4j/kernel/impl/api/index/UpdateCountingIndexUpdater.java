@@ -41,6 +41,7 @@ public class UpdateCountingIndexUpdater implements IndexUpdater
         this.storeView = storeView;
         this.descriptor = descriptor;
         this.delegate = delegate;
+        updates = 0l;
     }
 
     @Override

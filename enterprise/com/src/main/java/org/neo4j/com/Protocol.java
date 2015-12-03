@@ -252,7 +252,7 @@ public abstract class Protocol
         TransactionStream transactions = new TransactionStream()
         {
             @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
             {
                 LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );

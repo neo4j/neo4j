@@ -28,7 +28,6 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -71,6 +70,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -94,9 +94,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
@@ -589,9 +586,7 @@ public class IndexingServiceTest
         try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "foo" ), add( 2, "bar" ) ),
                 IndexUpdateMode.ONLINE ) )
         {
-            Set<IndexDescriptor> affectedIndexes = new HashSet<>();
-            updates.flush( affectedIndexes );
-            assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), affectedIndexes );
+            updates.flush();
         }
 
         // Then
@@ -623,7 +618,7 @@ public class IndexingServiceTest
                 IndexUpdateMode.ONLINE ) )
         {
             verifyZeroInteractions( reservation );
-            updates.flush( new HashSet<>() );
+            updates.flush();
             verifyZeroInteractions( reservation );
         }
 
@@ -668,7 +663,7 @@ public class IndexingServiceTest
                 NodePropertyUpdate.add( 1, propertyKeyId, "foo", new long[]{labelId1} ),
                 NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ), IndexUpdateMode.ONLINE ) )
         {
-            updates.flush( new HashSet<>() );
+            updates.flush();
         }
 
         // Then

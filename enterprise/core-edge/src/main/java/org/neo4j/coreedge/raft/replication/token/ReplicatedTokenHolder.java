@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.InMemoryTokenCache;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.core.Token;
@@ -251,8 +250,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
         try ( LockGroup lockGroup = new LockGroup() )
         {
-            commitProcess.commit( new TransactionToApply( representation ),
-                    CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            commitProcess.commit( representation, lockGroup, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
         }
         catch ( TransactionFailureException e )
         {

@@ -19,8 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
+import java.io.IOException;
+
 import org.neo4j.function.Supplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -42,7 +43,7 @@ public class ApplyPulledTransactions implements TxPullResponseListener
         {
             transactionApplierSupplier.get().appendToLogAndApplyToStore( tx.tx() );
         }
-        catch ( TransactionFailureException e )
+        catch ( IOException e )
         {
             log.error( "Failed to apply transaction.", e );
         }

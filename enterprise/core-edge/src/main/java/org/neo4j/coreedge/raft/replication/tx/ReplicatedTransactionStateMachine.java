@@ -26,16 +26,16 @@ import java.util.concurrent.Future;
 
 import org.neo4j.concurrent.CompletableFuture;
 import org.neo4j.coreedge.raft.locks.CoreServiceAssignment;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
@@ -100,9 +100,12 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                     long txId = -1;
                     if ( !shouldReject )
                     {
-                        txId = localCommitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
-                                TransactionApplicationMode.EXTERNAL );
-                        lastCommittedTxId = txId;
+                        try ( LockGroup lockGroup = new LockGroup() )
+                        {
+                            txId = localCommitProcess.commit( tx, lockGroup, CommitEvent.NULL,
+                                    TransactionApplicationMode.EXTERNAL );
+                            lastCommittedTxId = txId;
+                        }
                     }
 
                     if ( replicatedTransaction.globalSession().equals( myGlobalSession ) )
