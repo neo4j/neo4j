@@ -22,7 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_0.helpers
 import org.neo4j.cypher.internal.frontend.v3_0.ArithmeticException
 
 trait TypeSafeMathSupport {
-  def plus(left: Any, right: Any): Any = {
+
+  def plus(left: Any, right: Any): Any = makeNaNNull(innerPlus(left, right))
+  def minus(left: Any, right: Any): Any = makeNaNNull(innerMinus(left, right))
+  def multiply(left: Any, right: Any): Any = makeNaNNull(innerMultiply(left, right))
+  def divide(left: Any, right: Any): Any = makeNaNNull(innerDivide(left, right))
+
+  protected def makeNaNNull(value: Any) = value match {
+    case null => null
+    case d: Double if java.lang.Double.isNaN(d) => null
+    case other => other
+  }
+
+  private def innerPlus(left: Any, right: Any): Any = {
 
     try {
       (left, right) match {
@@ -77,57 +89,7 @@ trait TypeSafeMathSupport {
     }
   }
 
-  def divide(left: Any, right: Any): Any = {
-    (left, right) match {
-      case (null, _) => null
-      case (_, null) => null
-
-      case (l: Byte, r: Byte)   => l / r
-      case (l: Byte, r: Double) => l / r
-      case (l: Byte, r: Float)  => l / r
-      case (l: Byte, r: Int)    => l / r
-      case (l: Byte, r: Long)   => l / r
-      case (l: Byte, r: Short)  => l / r
-
-      case (l: Double, r: Byte)   => l / r
-      case (l: Double, r: Double) => l / r
-      case (l: Double, r: Float)  => l / r
-      case (l: Double, r: Int)    => l / r
-      case (l: Double, r: Long)   => l / r
-      case (l: Double, r: Short)  => l / r
-
-      case (l: Float, r: Byte)   => l / r
-      case (l: Float, r: Double) => l / r
-      case (l: Float, r: Float)  => l / r
-      case (l: Float, r: Int)    => l / r
-      case (l: Float, r: Long)   => l / r
-      case (l: Float, r: Short)  => l / r
-
-      case (l: Int, r: Byte)   => l / r
-      case (l: Int, r: Double) => l / r
-      case (l: Int, r: Float)  => l / r
-      case (l: Int, r: Int)    => l / r
-      case (l: Int, r: Long)   => l / r
-      case (l: Int, r: Short)  => l / r
-
-      case (l: Long, r: Byte)   => l / r
-      case (l: Long, r: Double) => l / r
-      case (l: Long, r: Float)  => l / r
-      case (l: Long, r: Int)    => l / r
-      case (l: Long, r: Long)   => l / r
-      case (l: Long, r: Short)  => l / r
-
-      case (l: Short, r: Byte)   => l / r
-      case (l: Short, r: Double) => l / r
-      case (l: Short, r: Float)  => l / r
-      case (l: Short, r: Int)    => l / r
-      case (l: Short, r: Long)   => l / r
-      case (l: Short, r: Short)  => l / r
-
-    }
-  }
-
-  def minus(left: Any, right: Any): Any = {
+  private def innerMinus(left: Any, right: Any): Any = {
     try {
       (left, right) match {
         case (null, _) => null
@@ -182,7 +144,7 @@ trait TypeSafeMathSupport {
     }
   }
 
-  def multiply(left: Any, right: Any): Any = {
+  private def innerMultiply(left: Any, right: Any): Any = {
     try {
       (left, right) match {
         case (null, _) => null
@@ -234,6 +196,56 @@ trait TypeSafeMathSupport {
     } catch {
       case e: java.lang.ArithmeticException  =>
         throw new ArithmeticException(s"result of $left * $right cannot be represented as an integer")
+    }
+  }
+
+  private def innerDivide(left: Any, right: Any): Any = {
+    (left, right) match {
+      case (null, _) => null
+      case (_, null) => null
+
+      case (l: Byte, r: Byte)   => l / r
+      case (l: Byte, r: Double) => l / r
+      case (l: Byte, r: Float)  => l / r
+      case (l: Byte, r: Int)    => l / r
+      case (l: Byte, r: Long)   => l / r
+      case (l: Byte, r: Short)  => l / r
+
+      case (l: Double, r: Byte)   => l / r
+      case (l: Double, r: Double) => l / r
+      case (l: Double, r: Float)  => l / r
+      case (l: Double, r: Int)    => l / r
+      case (l: Double, r: Long)   => l / r
+      case (l: Double, r: Short)  => l / r
+
+      case (l: Float, r: Byte)   => l / r
+      case (l: Float, r: Double) => l / r
+      case (l: Float, r: Float)  => l / r
+      case (l: Float, r: Int)    => l / r
+      case (l: Float, r: Long)   => l / r
+      case (l: Float, r: Short)  => l / r
+
+      case (l: Int, r: Byte)   => l / r
+      case (l: Int, r: Double) => l / r
+      case (l: Int, r: Float)  => l / r
+      case (l: Int, r: Int)    => l / r
+      case (l: Int, r: Long)   => l / r
+      case (l: Int, r: Short)  => l / r
+
+      case (l: Long, r: Byte)   => l / r
+      case (l: Long, r: Double) => l / r
+      case (l: Long, r: Float)  => l / r
+      case (l: Long, r: Int)    => l / r
+      case (l: Long, r: Long)   => l / r
+      case (l: Long, r: Short)  => l / r
+
+      case (l: Short, r: Byte)   => l / r
+      case (l: Short, r: Double) => l / r
+      case (l: Short, r: Float)  => l / r
+      case (l: Short, r: Int)    => l / r
+      case (l: Short, r: Long)   => l / r
+      case (l: Short, r: Short)  => l / r
+
     }
   }
 
