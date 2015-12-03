@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
-public abstract class VoteStoreTest
+public abstract class VoteStoreContractTest
 {
     public abstract VoteStore<CoreMember> createVoteStore();
 

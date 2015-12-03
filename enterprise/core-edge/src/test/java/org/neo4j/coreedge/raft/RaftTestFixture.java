@@ -61,7 +61,7 @@ public class RaftTestFixture
         {
             MemberFixture fixtureMember = new MemberFixture();
 
-            fixtureMember.timeoutService = new ControlledTimeoutService();
+            fixtureMember.timeoutService = new ControlledRenewableTimeoutService();
 
             fixtureMember.raftLog = new InMemoryRaftLog();
             fixtureMember.member = member( id );
@@ -135,7 +135,7 @@ public class RaftTestFixture
             }
         }
 
-        public void invokeTimeout( TimeoutService.TimeoutName name )
+        public void invokeTimeout( RenewableTimeoutService.TimeoutName name )
         {
             for ( MemberFixture memberFixture : memberMap.values() )
             {
@@ -173,7 +173,7 @@ public class RaftTestFixture
     {
         private RaftTestMember member;
         private RaftInstance<RaftTestMember> raftInstance;
-        private ControlledTimeoutService timeoutService;
+        private ControlledRenewableTimeoutService timeoutService;
         private RaftLog raftLog;
 
         public RaftTestMember member()
@@ -186,7 +186,7 @@ public class RaftTestFixture
             return raftInstance;
         }
 
-        public ControlledTimeoutService timeoutService()
+        public ControlledRenewableTimeoutService timeoutService()
         {
             return timeoutService;
         }

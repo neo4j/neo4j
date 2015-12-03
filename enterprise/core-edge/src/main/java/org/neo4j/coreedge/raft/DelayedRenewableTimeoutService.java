@@ -38,21 +38,37 @@ import static java.lang.System.nanoTime;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
-public class ScheduledTimeoutService extends LifecycleAdapter implements Runnable, TimeoutService
+/**
+ * A bare bones, wall clock based implementation of the {@link RenewableTimeoutService}. It uses a scheduled thread
+ * pool to check for timeouts and as such has a limited resolution of {@link #TIMER_RESOLUTION}, measured in
+ * {@link #TIMER_RESOLUTION_UNIT}. For the same reason, the timeouts are triggered at an approximate delay rather than
+ * exactly at the value requested.
+ * {@link org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutHandler} are all called from the same thread,
+ * so users should be aware to not perform time consuming tasks in them.
+ */
+public class DelayedRenewableTimeoutService extends LifecycleAdapter implements Runnable, RenewableTimeoutService
 {
+    public static final int TIMER_RESOLUTION = 1;
+    public static final TimeUnit TIMER_RESOLUTION_UNIT = TimeUnit.MILLISECONDS;
+
     /**
      * Sorted by next-to-trigger.
      */
-    private final SortedSet<ScheduledTimeout> timeouts = new TreeSet<>();
-    private final Queue<ScheduledTimeout> pendingRenewals = new ConcurrentLinkedDeque<>();
+    private final SortedSet<ScheduledRenewableTimeout> timeouts = new TreeSet<>();
+    private final Queue<ScheduledRenewableTimeout> pendingRenewals = new ConcurrentLinkedDeque<>();
     private final Clock clock;
     private final Random random;
     private final JobScheduler scheduler;
     private JobScheduler.JobHandle jobHandle;
 
-    public ScheduledTimeoutService()
+    public DelayedRenewableTimeoutService()
     {
-        this.clock = Clock.SYSTEM_CLOCK;
+        this( Clock.SYSTEM_CLOCK );
+    }
+
+    public DelayedRenewableTimeoutService( Clock clock )
+    {
+        this.clock = clock;
         this.random = new Random( nanoTime() );
         this.scheduler = new Neo4jJobScheduler();
     }
@@ -60,18 +76,18 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     /**
      * Set up a new timeout. The attachment is optional data to pass along to the trigger, and can be set to Object
      * and null if you don't care about it.
-     * <p/>
-     * The randomRange attribute allows you to introduce a bit of arbitrariness in when the timeout is triggered, which
+     * <p>
+     * The randomRangeInMillis attribute allows you to introduce a bit of arbitrariness in when the timeout is triggered, which
      * is a useful way to avoid "thundering herds" when multiple timeouts are likely to trigger at the same time.
-     * <p/>
-     * If you don't want randomness, set randomRange to 0.
+     * <p>
+     * If you don't want randomness, set randomRangeInMillis to 0.
      */
     @Override
-    public Timeout create( TimeoutName name, long milliseconds, long randomRange, TimeoutHandler handler )
+    public RenewableTimeout create( TimeoutName name, long delayInMillis, long randomRangeInMillis, TimeoutHandler handler )
     {
-        ScheduledTimeout timeout = new ScheduledTimeout(
-                calcTimeoutTimestamp( milliseconds, randomRange ),
-                milliseconds, randomRange, handler, this );
+        ScheduledRenewableTimeout timeout = new ScheduledRenewableTimeout(
+                calcTimeoutTimestamp( delayInMillis, randomRangeInMillis ),
+                delayInMillis, randomRangeInMillis, handler, this );
 
         synchronized ( timeouts )
         {
@@ -81,12 +97,12 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
         return timeout;
     }
 
-    public void renew( ScheduledTimeout timeout )
+    public void renew( ScheduledRenewableTimeout timeout )
     {
         pendingRenewals.offer( timeout );
     }
 
-    public void cancel( ScheduledTimeout timeout )
+    public void cancel( ScheduledRenewableTimeout timeout )
     {
         synchronized ( timeouts )
         {
@@ -106,12 +122,12 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
         try
         {
             long now = clock.currentTimeMillis();
-            Collection<ScheduledTimeout> triggered = new LinkedList<>();
+            Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
 
             synchronized ( timeouts )
             {
                 // Handle renewals
-                ScheduledTimeout renew;
+                ScheduledRenewableTimeout renew;
                 while ( (renew = pendingRenewals.poll()) != null )
                 {
                     timeouts.remove( renew );
@@ -120,7 +136,7 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
                 }
 
                 // Trigger timeouts
-                for ( ScheduledTimeout timeout : timeouts )
+                for ( ScheduledRenewableTimeout timeout : timeouts )
                 {
                     if ( timeout.shouldTrigger( now ) )
                     {
@@ -153,29 +169,30 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
     @Override
     public void start() throws Throwable
     {
-        jobHandle = scheduler.scheduleRecurring( new JobScheduler.Group( "Scheduler", POOLED ), this, 1,
-                TimeUnit.MILLISECONDS );
+        jobHandle = scheduler.scheduleRecurring( new JobScheduler.Group( "Scheduler", POOLED ), this, TIMER_RESOLUTION,
+                TIMER_RESOLUTION_UNIT );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        jobHandle.cancel( true );
+        jobHandle.cancel( false );
+        scheduler.stop();
         scheduler.shutdown();
     }
 
-    public static class ScheduledTimeout implements Timeout, Comparable<ScheduledTimeout>
+    public static class ScheduledRenewableTimeout implements RenewableTimeout, Comparable<ScheduledRenewableTimeout>
     {
         private static final AtomicLong idGen = new AtomicLong();
         private final long id = idGen.getAndIncrement();
         private final long timeoutLength;
         private final long randomRange;
         private final TimeoutHandler handler;
-        private final ScheduledTimeoutService timeouts;
+        private final DelayedRenewableTimeoutService timeouts;
         private long timeoutTimestampMillis;
 
-        public ScheduledTimeout( long timeoutTimestampMillis, long timeoutLength, long randomRange, TimeoutHandler
-                handler, ScheduledTimeoutService timeouts )
+        public ScheduledRenewableTimeout( long timeoutTimestampMillis, long timeoutLength, long randomRange, TimeoutHandler
+                handler, DelayedRenewableTimeoutService timeouts )
         {
             this.timeoutTimestampMillis = timeoutTimestampMillis;
             this.timeoutLength = timeoutLength;
@@ -212,7 +229,7 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
         }
 
         @Override
-        public int compareTo( ScheduledTimeout o )
+        public int compareTo( ScheduledRenewableTimeout o )
         {
             if ( timeoutTimestampMillis == o.timeoutTimestampMillis )
             {
@@ -236,7 +253,7 @@ public class ScheduledTimeoutService extends LifecycleAdapter implements Runnabl
                 return false;
             }
 
-            ScheduledTimeout timeout = (ScheduledTimeout) o;
+            ScheduledRenewableTimeout timeout = (ScheduledRenewableTimeout) o;
 
             return id == timeout.id;
         }

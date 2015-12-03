@@ -36,7 +36,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public abstract class RaftLogTest
+public abstract class RaftLogContractTest
 {
     public abstract RaftLog createRaftLog() throws Exception;
 

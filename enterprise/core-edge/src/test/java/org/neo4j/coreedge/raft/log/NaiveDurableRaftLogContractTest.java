@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft;
+package org.neo4j.coreedge.raft.log;
 
-public interface TimeoutService
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
+
+public class NaiveDurableRaftLogContractTest extends RaftLogContractTest
 {
-    Timeout create( TimeoutName timeoutName, long milliseconds, long randomRange, TimeoutHandler handler );
-
-    interface TimeoutName
+    @Override
+    public RaftLog createRaftLog() throws IOException
     {
-        String name();
-    }
+        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File directory = new File( "raft-log" );
+        fileSystem.mkdir( directory );
 
-    interface Timeout
-    {
-        void renew();
-
-        void cancel();
-    }
-
-    interface TimeoutHandler
-    {
-        void onTimeout( Timeout timeout );
+        return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(), new Monitors() );
     }
 }

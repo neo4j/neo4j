@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.raft.ControlledTimeoutService;
+import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
@@ -73,7 +73,7 @@ public class ElectionTest
     public void candidateShouldWinElectionAndBecomeLeader() throws Exception
     {
         // given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
         Outbound<RaftTestMember> outbound = mock( Outbound.class );
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -104,7 +104,7 @@ public class ElectionTest
         // remain as a candidate
 
         // given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
         Outbound<RaftTestMember> outbound = mock( Outbound.class );
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -132,7 +132,7 @@ public class ElectionTest
     public void candidateShouldVoteForTheSameCandidateInTheSameTerm() throws Exception
     {
         // given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
         Outbound<RaftTestMember> outbound = mock( Outbound.class );
 

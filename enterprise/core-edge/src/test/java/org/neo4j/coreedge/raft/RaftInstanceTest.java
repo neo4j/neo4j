@@ -23,14 +23,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.raft.ControlledTimeoutService;
-import org.neo4j.coreedge.raft.DirectNetworking;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
-import org.neo4j.coreedge.raft.OutboundMessageCollector;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftInstanceBuilder;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -85,7 +77,7 @@ public class RaftInstanceTest
     public void shouldRequestVotesOnElectionTimeout() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -112,7 +104,7 @@ public class RaftInstanceTest
     public void shouldBecomeLeaderInMajorityOf3() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -131,7 +123,7 @@ public class RaftInstanceTest
     public void shouldBecomeLeaderInMajorityOf5() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
@@ -153,7 +145,7 @@ public class RaftInstanceTest
     public void shouldNotBecomeLeaderOnMultipleVotesFromSameMember() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
@@ -173,7 +165,7 @@ public class RaftInstanceTest
     public void shouldNotBecomeLeaderWhenVotingOnItself() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -191,7 +183,7 @@ public class RaftInstanceTest
     public void shouldNotBecomeLeaderWhenMembersVoteNo() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -210,7 +202,7 @@ public class RaftInstanceTest
     public void shouldNotBecomeLeaderByVotesFromOldTerm() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -228,7 +220,7 @@ public class RaftInstanceTest
     public void shouldVoteFalseForCandidateInOldTerm() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -251,7 +243,7 @@ public class RaftInstanceTest
     public void shouldNotBecomeLeaderByVotesFromFutureTerm() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -270,7 +262,7 @@ public class RaftInstanceTest
     public void shouldSendHeartBeatsAfterBecomingLeader() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -293,7 +285,7 @@ public class RaftInstanceTest
     public void leaderShouldSendHeartBeatsOnHeartbeatTimeout() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
@@ -318,7 +310,7 @@ public class RaftInstanceTest
     public void shouldThrowExceptionIfReceivesClientRequestWithNoLeaderElected() throws Exception
     {
         // Given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -341,7 +333,7 @@ public class RaftInstanceTest
     public void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // given
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .raftLog( raftLog )
@@ -369,7 +361,7 @@ public class RaftInstanceTest
         final OutboundMessageCollector messages = new OutboundMessageCollector();
         newMemberInbound.registerHandler( message -> messages.send( newMember, message ) );
 
-        ControlledTimeoutService timeouts = new ControlledTimeoutService();
+        ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )

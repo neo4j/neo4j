@@ -45,7 +45,7 @@ public class RaftInstanceBuilder<MEMBER>
     private TermStore termStore = new InMemoryTermStore();
     private VoteStore<MEMBER> voteStore = new InMemoryVoteStore<>();
     private RaftLog raftLog = new InMemoryRaftLog();
-    private TimeoutService timeoutService = new ScheduledTimeoutService();
+    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService();
 
     private Inbound inbound = handler -> {};
     private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};
@@ -75,12 +75,12 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
         return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
-                timeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping );
+                renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping );
     }
 
-    public RaftInstanceBuilder<MEMBER> timeoutService( TimeoutService timeoutService )
+    public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
     {
-        this.timeoutService = timeoutService;
+        this.renewableTimeoutService = renewableTimeoutService;
         return this;
     }
 

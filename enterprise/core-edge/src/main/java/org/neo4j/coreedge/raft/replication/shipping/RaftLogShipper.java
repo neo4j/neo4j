@@ -25,8 +25,8 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
-import org.neo4j.coreedge.raft.TimeoutService.TimeoutName;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -34,7 +34,7 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
-import static org.neo4j.coreedge.raft.TimeoutService.*;
+import static org.neo4j.coreedge.raft.RenewableTimeoutService.*;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -92,12 +92,12 @@ public class RaftLogShipper<MEMBER>
     private final MEMBER follower;
     private final MEMBER leader;
 
-    private ScheduledTimeoutService timeoutService;
+    private DelayedRenewableTimeoutService timeoutService;
     private final TimeoutName timeoutName = () -> "RESEND";
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private Timeout timeout;
+    private RenewableTimeout timeout;
 
     private long timeoutAbsoluteMillis;
     private long lastSentIndex;
@@ -134,7 +134,7 @@ public class RaftLogShipper<MEMBER>
 
         try
         {
-            timeoutService = new ScheduledTimeoutService();
+            timeoutService = new DelayedRenewableTimeoutService();
             timeoutService.init();
             timeoutService.start();
         }

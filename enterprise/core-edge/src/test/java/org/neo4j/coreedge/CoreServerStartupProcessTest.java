@@ -26,13 +26,15 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
+import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CoreServerStartupProcess;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.server.core.DeleteStoreOnStartUp;
 import org.neo4j.coreedge.server.core.RaftLogReplay;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -54,7 +56,7 @@ public class CoreServerStartupProcessTest
         ReplicatedIdGeneratorFactory idGeneratorFactory = mock( ReplicatedIdGeneratorFactory.class );
         RaftServer<CoreMember> raftServer = mock( RaftServer.class );
         CatchupServer catchupServer = mock( CatchupServer.class );
-        ScheduledTimeoutService raftTimeoutService = mock( ScheduledTimeoutService.class );
+        DelayedRenewableTimeoutService raftTimeoutService = mock( DelayedRenewableTimeoutService.class );
         MembershipWaiter<CoreMember> membershipWaiter = mock( MembershipWaiter.class );
         RaftInstance raftInstance = mock( RaftInstance.class );
 

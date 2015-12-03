@@ -26,21 +26,21 @@ import org.neo4j.helpers.Pair;
 
 import static org.mockito.Mockito.mock;
 
-public class ControlledTimeoutService implements TimeoutService
+public class ControlledRenewableTimeoutService implements RenewableTimeoutService
 {
-    private Map<TimeoutName, Pair<TimeoutHandler, Timeout>> handlers = new HashMap<>();
+    private Map<TimeoutName, Pair<TimeoutHandler, RenewableTimeout>> handlers = new HashMap<>();
 
     @Override
-    public Timeout create( TimeoutName name, long milliseconds, long randomRange, TimeoutHandler handler )
+    public RenewableTimeout create( TimeoutName name, long delayInMillis, long randomRangeInMillis, TimeoutHandler handler )
     {
-        Timeout timeout = mock( Timeout.class );
+        RenewableTimeout timeout = mock( RenewableTimeout.class );
         handlers.put( name, Pair.of( handler, timeout ) );
         return timeout;
     }
 
     public void invokeTimeout( TimeoutName name )
     {
-        Pair<TimeoutHandler, Timeout> pair = handlers.get( name );
+        Pair<TimeoutHandler, RenewableTimeout> pair = handlers.get( name );
         pair.first().onTimeout( pair.other() );
     }
 }

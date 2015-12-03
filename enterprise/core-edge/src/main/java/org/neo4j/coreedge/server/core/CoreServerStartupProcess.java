@@ -24,12 +24,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.ScheduledTimeoutService;
+import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -44,7 +46,7 @@ public class CoreServerStartupProcess
                                                  ReplicatedIdGeneratorFactory idGeneratorFactory,
                                                  RaftInstance<CoreMember> raft, RaftServer<CoreMember> raftServer,
                                                  CatchupServer catchupServer,
-                                                 ScheduledTimeoutService raftTimeoutService,
+                                                 DelayedRenewableTimeoutService raftTimeoutService,
                                                  MembershipWaiter<CoreMember> membershipWaiter,
                                                  long joinCatchupTimeout, DeleteStoreOnStartUp deleteStoreOnStartUp,
                                                  RaftLogReplay raftLogReplay )

@@ -19,43 +19,12 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import org.junit.Test;
+import org.neo4j.coreedge.server.CoreMember;
 
-import static org.junit.Assert.*;
-
-public abstract class TermStoreTest
+public class InMemoryVoteStoreContractTest extends VoteStoreContractTest
 {
-    public abstract TermStore createTermStore();
-
-    @Test
-    public void shouldStoreCurrentTerm() throws Exception
+    @Override public VoteStore<CoreMember> createVoteStore()
     {
-        // given
-        TermStore termStore = createTermStore();
-
-        // when
-        termStore.update( 21 );
-
-        // then
-        assertEquals( 21, termStore.currentTerm() );
-    }
-
-    @Test
-    public void rejectLowerTerm() throws Exception
-    {
-        // given
-        TermStore termStore = createTermStore();
-        termStore.update( 21 );
-
-        // when
-        try
-        {
-            termStore.update( 20 );
-            fail( "Should have thrown exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+        return new InMemoryVoteStore<>();
     }
 }
