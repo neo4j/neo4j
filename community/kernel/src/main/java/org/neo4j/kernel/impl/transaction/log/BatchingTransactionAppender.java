@@ -29,7 +29,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -64,7 +64,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
     private final Lock forceLock = new ReentrantLock();
 
     private WritableLogChannel writer;
@@ -73,13 +73,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering, KernelHealth kernelHealth )
+            IdOrderingQueue legacyIndexTransactionOrdering, DatabaseHealth databaseHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
     }
 
@@ -105,7 +105,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         synchronized ( logFile )
         {
             // Assert that kernel is healthy before making any changes
-            kernelHealth.assertHealthy( IOException.class );
+            databaseHealth.assertHealthy( IOException.class );
             try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
             {
                 // Append all transactions in this batch to the log under the same logFile monitor
@@ -176,7 +176,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
         catch ( Throwable cause )
         {
-            kernelHealth.panic( cause );
+            databaseHealth.panic( cause );
             throw cause;
         }
 
@@ -224,7 +224,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
         catch ( final Throwable panic )
         {
-            kernelHealth.panic( panic );
+            databaseHealth.panic( panic );
             throw panic;
         }
     }
@@ -281,7 +281,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         }
         catch ( final Throwable panic )
         {
-            kernelHealth.panic( panic );
+            databaseHealth.panic( panic );
             throw panic;
         }
         finally

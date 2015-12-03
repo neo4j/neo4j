@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,13 +43,13 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
     private final IndexingService indexing;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
     private final IndexUpdateMode updateMode;
 
-    public OnlineIndexUpdatesValidator( NeoStores neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
-            IndexingService indexing, IndexUpdateMode updateMode )
+    public OnlineIndexUpdatesValidator( NeoStores neoStore, DatabaseHealth databaseHealth, PropertyLoader propertyLoader,
+                                        IndexingService indexing, IndexUpdateMode updateMode )
     {
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
         this.updateMode = updateMode;
         this.nodeStore = neoStore.getNodeStore();
         this.propertyStore = neoStore.getPropertyStore();
@@ -67,7 +67,7 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
         }
         catch ( IOException cause )
         {
-            kernelHealth.panic( cause );
+            databaseHealth.panic( cause );
             throw cause;
         }
 

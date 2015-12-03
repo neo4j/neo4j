@@ -140,6 +140,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -294,7 +295,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final FileSystemAbstraction fs;
     private final StoreUpgrader storeMigrationProcess;
     private final TransactionMonitor transactionMonitor;
-    private final KernelHealth kernelHealth;
+    private final DatabaseHealth databaseHealth;
     private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
@@ -354,7 +355,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             FileSystemAbstraction fs,
             StoreUpgrader storeMigrationProcess,
             TransactionMonitor transactionMonitor,
-            KernelHealth kernelHealth,
+            DatabaseHealth databaseHealth,
             PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             StartupStatisticsProvider startupStatistics,
@@ -382,7 +383,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.fs = fs;
         this.storeMigrationProcess = storeMigrationProcess;
         this.transactionMonitor = transactionMonitor;
-        this.kernelHealth = kernelHealth;
+        this.databaseHealth = databaseHealth;
         this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
@@ -554,7 +555,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
          * in the case of HA). Standalone instances will have to be restarted by the user, as is proper for all
          * kernel panics.
          */
-        kernelHealth.healed();
+        databaseHealth.healed();
     }
 
     // Startup sequence
@@ -580,7 +581,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return life.add(
                 new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, kernelHealth,
+                        tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
                         labelScanStore, legacyIndexProviderLookup, indexConfigStore ) );
     }
 
@@ -641,11 +642,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         final StoreFlusher storeFlusher = new StoreFlusher( storageEngine, indexProviders );
 
         final LogRotation logRotation =
-                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, kernelHealth );
+                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFile, databaseHealth );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
-                kernelHealth ) );
+                databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
 
@@ -661,7 +662,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 CheckPointThresholds.or( countCommittedTransactionThreshold, timeCheckPointThreshold );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                transactionIdStore, threshold, storeFlusher, logPruning, appender, kernelHealth, logProvider,
+                transactionIdStore, threshold, storeFlusher, logPruning, appender, databaseHealth, logProvider,
                 tracers.checkPointTracer );
 
         long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
@@ -815,7 +816,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, transactionMonitor,
                         life, tracers, storageEngine ) );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
+        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 
@@ -926,7 +927,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
             //Write new checkpoint in the log only if the kernel is healthy.
             // We cannot throw here since we need to shutdown without exceptions.
-            if ( kernelHealth.isHealthy() )
+            if ( databaseHealth.isHealthy() )
             {
                 try
                 {
@@ -954,7 +955,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         // Only wait for committed transactions to be applied if the kernel is healthy (i.e. no panic)
         // otherwise if there has been a panic transactions will not be applied properly anyway.
-        while ( kernelHealth.isHealthy() &&
+        while ( databaseHealth.isHealthy() &&
                 !storageEngine.neoStores().getMetaDataStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 10_000_000 ); // 10 ms

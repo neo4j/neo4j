@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -37,7 +37,7 @@ public interface TransactionAppender
      * After this method have returned the returned transaction id should be visible in
      * {@link TransactionIdStore#getLastCommittedTransactionId()}.
      *
-     * Any failure happening inside this method will cause a {@link KernelHealth#panic(Throwable) kernel panic}.
+     * Any failure happening inside this method will cause a {@link DatabaseHealth#panic(Throwable) kernel panic}.
      * Callers must make sure that successfully appended
      * transactions exiting this method are {@link Commitment#publishAsClosed()}}.
      *
