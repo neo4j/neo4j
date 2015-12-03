@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
@@ -131,7 +132,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     private void applyToStore( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
             throws TransactionFailureException
     {
-        try
+        try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {
             storageEngine.apply( batch, mode );
         }
