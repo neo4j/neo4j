@@ -27,9 +27,16 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
 
+
+/*
+ * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
+ * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
+ * much testing
+ */
 case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
     plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
@@ -115,9 +122,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
                     allPredicates: Seq[Expression],
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext) = pattern.length match {
     case l: VarPatternLength =>
-      val projectedDir = if (dir == SemanticDirection.BOTH) {
-        if (from == pattern.left) SemanticDirection.OUTGOING else SemanticDirection.INCOMING
-      } else pattern.dir
+      val projectedDir = projectedDirection(pattern, from, dir)
 
       val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
@@ -402,10 +407,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     planSkip(sortedLimit, skip)
   }
 
-  def planShortestPaths(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
-                       (implicit context: LogicalPlanningContext) = {
-    // TODO: Tell the planner that the shortestPath predicates are solved in shortestPath
-    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths))
+  def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
+                      (implicit context: LogicalPlanningContext) = {
+    val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
     FindShortestPaths(inner, shortestPaths, predicates)(solved)
   }
 
@@ -569,5 +573,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
     val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     CardinalityEstimation.lift(plannerQuery, cardinality)
+  }
+
+  def projectedDirection(pattern: PatternRelationship, from: IdName, dir: SemanticDirection): SemanticDirection = {
+    if (dir == SemanticDirection.BOTH) {
+      if (from == pattern.left)
+        SemanticDirection.OUTGOING
+      else
+        SemanticDirection.INCOMING
+    }
+    else
+      pattern.dir
   }
 }
