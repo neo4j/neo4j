@@ -1113,7 +1113,6 @@ return b
     assert(!result.columnAs[Node]("o").contains(null), "Result should not contain nulls")
   }
 
-
   test("should handle queries that cant be index solved because expressions lack dependencies") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
@@ -1140,7 +1139,7 @@ return b
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWithAllPlannersAndRuntimes("match (a:Label), (b:Label) where a.property = b.property return *")
+    val result = executeWithAllPlanners("match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
     assert(result.toSet === Set(

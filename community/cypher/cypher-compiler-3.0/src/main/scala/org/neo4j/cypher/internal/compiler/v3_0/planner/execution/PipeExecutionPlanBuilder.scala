@@ -417,6 +417,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
       TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)()
 
+    case ValueHashJoin(_, _, ast.Equals(lhsExpression, rhsExpression)) =>
+      ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)()
+
     case x =>
       throw new CantHandleQueryException(x.toString)
 
