@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.test.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandler.EMPTY;
 
 public class HighIdTransactionApplierTest
@@ -42,6 +44,7 @@ public class HighIdTransactionApplierTest
         NeoStores neoStores = neoStoresRule.open();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( EMPTY, neoStores );
 
+        tracker.begin( mock( TransactionToApply.class ) );
         // WHEN
         // Nodes
         tracker.visitNodeCommand( Commands.createNode( 10, 2, 3 ) );
@@ -74,6 +77,8 @@ public class HighIdTransactionApplierTest
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );
         tracker.visitPropertyCommand( Commands.createProperty( 20, PropertyType.ARRAY, 1, 8, 9 ) );
+
+        tracker.end();
 
         tracker.apply();
         tracker.close();
