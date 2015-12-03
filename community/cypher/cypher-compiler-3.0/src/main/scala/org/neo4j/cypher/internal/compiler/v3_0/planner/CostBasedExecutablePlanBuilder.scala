@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{MissingLabelNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Scope, SemanticTable}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -84,10 +83,10 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val unionQuery = toUnionQuery(ast, semanticTable)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-
-    val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable,
-      queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
+    val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer,
+      metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger,
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      config = createConfig(ast).withUpdateStrategy(updateStrategy))
 
     val plan = queryPlanner.plan(unionQuery)(context)
 
@@ -97,6 +96,11 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     if (plan.solved.readOnly) checkForUnresolvedTokens(ast, semanticTable).foreach(notificationLogger += _)
 
     (plan, pipeBuildContext)
+  }
+
+  private def createConfig(ast: Query) = {
+    if (!ast.part.containsUpdates) QueryPlannerConfiguration.readOnly
+    else QueryPlannerConfiguration.default
   }
 }
 

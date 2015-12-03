@@ -27,7 +27,26 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
 object QueryPlannerConfiguration {
-  val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
+  private val defaultLeafPlanners = LeafPlannerList(
+    argumentLeafPlanner,
+
+    // MATCH (n) WHERE id(n) IN ... RETURN n
+    idSeekLeafPlanner,
+
+    // MATCH (n) WHERE has(n.prop) RETURN n
+    indexScanLeafPlanner,
+
+    // MATCH (n:Person) RETURN n
+    labelScanLeafPlanner,
+
+    // MATCH (n) RETURN n
+    allNodesLeafPlanner,
+
+    // Legacy indices
+    legacyHintLeafPlanner
+  )
+
+  private val baseConfiguration: QueryPlannerConfiguration = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
       selectPatternPredicates,
@@ -40,32 +59,16 @@ object QueryPlannerConfiguration {
       applyOptional,
       outerHashJoin
     ),
-    leafPlanners = LeafPlannerList(
-      argumentLeafPlanner,
-
-      // MATCH (n) WHERE id(n) IN ... RETURN n
-      idSeekLeafPlanner,
-
-      // MATCH (n) WHERE n.prop IN ... RETURN n
-      uniqueIndexSeekLeafPlanner,
-
-      // MATCH (n) WHERE n.prop IN ... RETURN n
-      indexSeekLeafPlanner,
-
-      // MATCH (n) WHERE has(n.prop) RETURN n
-      indexScanLeafPlanner,
-
-      // MATCH (n:Person) RETURN n
-      labelScanLeafPlanner,
-
-      // MATCH (n) RETURN n
-      allNodesLeafPlanner,
-
-      // Legacy indices
-      legacyHintLeafPlanner
-    ),
-  updateStrategy = defaultUpdateStrategy
+    leafPlanners = defaultLeafPlanners,
+    updateStrategy = defaultUpdateStrategy
   )
+
+  val default = baseConfiguration.withLeafPlanners(defaultLeafPlanners +
+    nonUniqueindexSeekLeafPlanner + uniqueIndexSeekLeafPlanner)
+
+  //read-only queries doesn't need to treat unique indexes and normal indexes
+  //any differently
+  val readOnly = baseConfiguration.withLeafPlanners(defaultLeafPlanners + allIndexSeekLeafPlanner)
 }
 
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
