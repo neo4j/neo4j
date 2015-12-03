@@ -214,9 +214,9 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         // Save interesting pre-state
         MEMBER oldLeader = state.leader();
 
-        if( outcome.leader != null && outcome.leader.equals( myself ) )
+        if( outcome.getLeader() != null && outcome.getLeader().equals( myself ) )
         {
-            LeaderContext leaderContext = new LeaderContext( outcome.term, outcome.leaderCommit );
+            LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
 
             if ( oldLeader == null || !oldLeader.equals( myself ) )
             {
@@ -224,9 +224,9 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                 logShipping.start( leaderContext );
             }
 
-            logShipping.handleCommands( outcome.shipCommands, leaderContext );
+            logShipping.handleCommands( outcome.getShipCommands(), leaderContext );
         }
-        else if ( oldLeader != null && oldLeader.equals( myself ) && !outcome.leader.equals( myself ) ) // TODO: inspect the reported issue
+        else if ( oldLeader != null && oldLeader.equals( myself ) && !outcome.getLeader().equals( myself ) ) // TODO: inspect the reported issue
         {
             logShipping.stop();
         }
@@ -254,13 +254,13 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
             Outcome<MEMBER> outcome = currentRole.role.handle( (RaftMessages.Message<MEMBER>) incomingMessage, state, log );
 
             handleOutcome( outcome );
-            currentRole = outcome.newRole;
+            currentRole = outcome.getNewRole();
 
-            for ( RaftMessages.Directed<MEMBER> outgoingMessage : outcome.outgoingMessages )
+            for ( RaftMessages.Directed<MEMBER> outgoingMessage : outcome.getOutgoingMessages() )
             {
                 outbound.send( outgoingMessage.to(), outgoingMessage.message() );
             }
-            if ( outcome.renewElectionTimeout )
+            if ( outcome.electionTimeoutRenewed() )
             {
                 electionTimer.renew();
             }

@@ -125,7 +125,7 @@ public class Leader implements RaftMessageHandler
                 {
                     outcome.setNextTerm( res.term() );
                     outcome.setNextRole( FOLLOWER );
-                    outcome.followerStates = new FollowerStates<>();
+                    outcome.replaceFollowerStates( new FollowerStates<>() );
                     break;
                 }
 
@@ -137,8 +137,8 @@ public class Leader implements RaftMessageHandler
 
                     boolean followerProgressed = res.matchIndex() > follower.getMatchIndex();
 
-                    outcome.followerStates = outcome.followerStates.onSuccessResponse( res.from(),
-                            max( res.matchIndex(), follower.getMatchIndex() ) );
+                    outcome.replaceFollowerStates( outcome.getFollowerStates().onSuccessResponse( res.from(),
+                            max( res.matchIndex(), follower.getMatchIndex() ) ) );
 
                     outcome.addShipCommand( new ShipCommand.Match( res.matchIndex(), res.from() ) );
 
@@ -158,7 +158,7 @@ public class Leader implements RaftMessageHandler
                     {
                         // TODO: Test that mismatch between voting and participating members affects commit outcome
 
-                        long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), outcome.followerStates );
+                        long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), outcome.getFollowerStates() );
                         if ( quorumAppendIndex > ctx.entryLog().commitIndex() )
                         {
                             outcome.setLeaderCommit( quorumAppendIndex );

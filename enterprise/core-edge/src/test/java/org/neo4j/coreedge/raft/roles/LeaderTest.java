@@ -100,8 +100,8 @@ public class LeaderTest
                 .lastLogTerm( -1 ).build(), state, log() );
 
         // then
-        assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( HIGHEST_TERM, outcome.term );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( HIGHEST_TERM, outcome.getTerm() );
     }
 
     @Test
@@ -123,9 +123,9 @@ public class LeaderTest
 
         // then
         assertEquals( message, messageFor( outcome, myself ) );
-        assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( 0, count( outcome.logCommands ) );
-        assertEquals( state.term() + 1, outcome.term );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( 0, count( outcome.getLogCommands() ) );
+        assertEquals( state.term() + 1, outcome.getTerm() );
     }
 
     @Test
@@ -164,9 +164,9 @@ public class LeaderTest
 
         // then
         // The leader should not be trying to send any messages to that instance
-        assertTrue( outcome.outgoingMessages.isEmpty() );
+        assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<RaftTestMember> leadersViewOfFollowerStates = outcome.followerStates;
+        FollowerStates<RaftTestMember> leadersViewOfFollowerStates = outcome.getFollowerStates();
         assertEquals( 90, leadersViewOfFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -205,9 +205,9 @@ public class LeaderTest
 
         // then
         // The leader should not be trying to send any messages to that instance
-        assertTrue( outcome.outgoingMessages.isEmpty() );
+        assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.followerStates;
+        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -252,7 +252,7 @@ public class LeaderTest
 
         // then
         int matchCount = 0;
-        for ( ShipCommand shipCommand : outcome.shipCommands )
+        for ( ShipCommand shipCommand : outcome.getShipCommands() )
         {
             if ( shipCommand instanceof ShipCommand.Match )
             {
@@ -306,9 +306,9 @@ public class LeaderTest
 
         // then the leader should not send anything, since this is a delayed, out of order response to a previous append
         // request
-        assertTrue( outcome.outgoingMessages.isEmpty() );
+        assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // The follower state should not be touched
-        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.followerStates;
+        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -359,7 +359,7 @@ public class LeaderTest
 
         // then
         int mismatchCount = 0;
-        for ( ShipCommand shipCommand : outcome.shipCommands )
+        for ( ShipCommand shipCommand : outcome.getShipCommands() )
         {
             if ( shipCommand instanceof ShipCommand.Mismatch )
             {
@@ -386,10 +386,10 @@ public class LeaderTest
         Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
 
         // then
-        assertEquals( 0, count( outcome.outgoingMessages ) );
-        assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( 0, count( outcome.logCommands ) );
-        assertEquals( state.term() + 1, outcome.term );
+        assertEquals( 0, count( outcome.getOutgoingMessages() ) );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( 0, count( outcome.getLogCommands() ) );
+        assertEquals( state.term() + 1, outcome.getTerm() );
     }
 
     // TODO: test that shows we don't commit for previous terms
@@ -414,7 +414,7 @@ public class LeaderTest
         // then
         assertFalse( ((RaftMessages.Vote.Response<RaftTestMember>) messageFor( outcome, member1 ))
                 .voteGranted() );
-        assertEquals( LEADER, outcome.newRole );
+        assertEquals( LEADER, outcome.getNewRole() );
     }
 
     @Test
@@ -453,11 +453,11 @@ public class LeaderTest
         //state.update( outcome );
 
         // then
-        AppendLogEntry logCommand = (AppendLogEntry) single( outcome.logCommands );
+        AppendLogEntry logCommand = (AppendLogEntry) single( outcome.getLogCommands() );
         assertEquals( 0, logCommand.index );
         assertEquals( 0, logCommand.entry.term() );
 
-        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) single( outcome.shipCommands );
+        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) single( outcome.getShipCommands() );
 
         assertEquals( shipCommand, new ShipCommand.NewEntry( -1, -1, new RaftLogEntry( 0, CONTENT ) ) );
     }
@@ -486,8 +486,8 @@ public class LeaderTest
                 new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0 ), state, log() );
 
         // then
-        assertThat( firstOrNull( outcome.logCommands ), instanceOf( CommitCommand.class ) );
-        assertEquals( 0, outcome.leaderCommit );
+        assertThat( firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
+        assertEquals( 0, outcome.getLeaderCommit() );
     }
 
     @Test

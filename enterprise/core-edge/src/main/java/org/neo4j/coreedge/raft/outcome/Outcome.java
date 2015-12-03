@@ -41,27 +41,27 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 public class Outcome<MEMBER> implements Serializable
 {
     /* Common */
-    public Role newRole;
+    private Role newRole;
 
-    public long term;
-    public MEMBER leader;
+    private long term;
+    private MEMBER leader;
 
-    public long leaderCommit;
+    private long leaderCommit;
 
-    public ArrayList<LogCommand> logCommands = new ArrayList<>();
-    public ArrayList<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
+    private Collection<LogCommand> logCommands = new ArrayList<>();
+    private Collection<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
 
     /* Follower */
-    public MEMBER votedFor;
-    public boolean renewElectionTimeout;
+    private MEMBER votedFor;
+    private boolean renewElectionTimeout;
 
     /* Candidate */
-    public HashSet<MEMBER> votesForMe;
-    public long lastLogIndexBeforeWeBecameLeader;
+    private Set<MEMBER> votesForMe;
+    private long lastLogIndexBeforeWeBecameLeader;
 
     /* Leader */
-    public FollowerStates<MEMBER> followerStates;
-    public ArrayList<ShipCommand> shipCommands = new ArrayList<>();
+    private FollowerStates<MEMBER> followerStates;
+    private Collection<ShipCommand> shipCommands = new ArrayList<>();
 
     public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
     {
@@ -152,6 +152,21 @@ public class Outcome<MEMBER> implements Serializable
         this.votesForMe.add( voteFrom );
     }
 
+    public void setLastLogIndexBeforeWeBecameLeader( long lastLogIndexBeforeWeBecameLeader )
+    {
+        this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
+    }
+
+    public void replaceFollowerStates( FollowerStates<MEMBER> followerStates )
+    {
+        this.followerStates = followerStates;
+    }
+
+    public void addShipCommand( ShipCommand shipCommand )
+    {
+        shipCommands.add( shipCommand );
+    }
+
     @Override
     public String toString()
     {
@@ -171,13 +186,63 @@ public class Outcome<MEMBER> implements Serializable
                '}';
     }
 
-    public void setLastLogIndexBeforeWeBecameLeader( long lastLogIndexBeforeWeBecameLeader )
+    public Role getNewRole()
     {
-        this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
+        return newRole;
     }
 
-    public void addShipCommand( ShipCommand shipCommand )
+    public long getTerm()
     {
-        shipCommands.add( shipCommand );
+        return term;
+    }
+
+    public MEMBER getLeader()
+    {
+        return leader;
+    }
+
+    public long getLeaderCommit()
+    {
+        return leaderCommit;
+    }
+
+    public Collection<LogCommand> getLogCommands()
+    {
+        return logCommands;
+    }
+
+    public Collection<RaftMessages.Directed<MEMBER>> getOutgoingMessages()
+    {
+        return outgoingMessages;
+    }
+
+    public MEMBER getVotedFor()
+    {
+        return votedFor;
+    }
+
+    public boolean electionTimeoutRenewed()
+    {
+        return renewElectionTimeout;
+    }
+
+    public Set<MEMBER> getVotesForMe()
+    {
+        return votesForMe;
+    }
+
+    public long getLastLogIndexBeforeWeBecameLeader()
+    {
+        return lastLogIndexBeforeWeBecameLeader;
+    }
+
+    public FollowerStates<MEMBER> getFollowerStates()
+    {
+        return followerStates;
+    }
+
+    public Collection<ShipCommand> getShipCommands()
+    {
+        return shipCommands;
     }
 }

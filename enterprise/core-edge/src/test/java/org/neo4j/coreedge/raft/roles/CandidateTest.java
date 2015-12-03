@@ -78,8 +78,8 @@ public class CandidateTest
                 .lastLogTerm( -1 ).build(), state, log() );
 
         // then
-        assertEquals( FOLLOWER, outcome.newRole );
-        assertEquals( HIGHEST_TERM, outcome.term );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( HIGHEST_TERM, outcome.getTerm() );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class CandidateTest
 
         // then
         assertEquals( message, messageFor( outcome,  myself ) );
-        assertEquals( FOLLOWER, outcome.newRole );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
     }
 
     @Test
@@ -119,7 +119,7 @@ public class CandidateTest
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
-        assertEquals( CANDIDATE, outcome.newRole );
+        assertEquals( CANDIDATE, outcome.getNewRole() );
     }
 
     @Test
@@ -157,7 +157,7 @@ public class CandidateTest
 
         // then
         assertEquals( message, messageFor( outcome,  myself ) );
-        assertEquals( FOLLOWER, outcome.newRole );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
     }
 
     private Log log()

@@ -97,7 +97,7 @@ public class FollowerTest
                 .build(), state, log() );
 
         // Then
-        assertEquals( HIGHEST_TERM, outcome.term );
+        assertEquals( HIGHEST_TERM, outcome.getTerm() );
     }
 
     @Test
@@ -142,7 +142,7 @@ public class FollowerTest
 
         // then
         assertEquals( new Vote.Response<>( myself, state.term(), false ), messageFor( outcome, member1 ) );
-        assertEquals( FOLLOWER, outcome.newRole );
+        assertEquals( FOLLOWER, outcome.getNewRole() );
     }
 
     @Test
@@ -162,7 +162,7 @@ public class FollowerTest
         state.update( outcome );
 
         // then
-        assertEquals( CANDIDATE, outcome.newRole );
+        assertEquals( CANDIDATE, outcome.getNewRole() );
 
         assertNotNull( messageFor( outcome, member1 ) );
         assertNotNull( messageFor( outcome, member2 ) );
@@ -205,7 +205,7 @@ public class FollowerTest
         Outcome outcome = follower.handle( new Election<>( myself ), state, log() );
 
         // then
-        assertEquals( CANDIDATE, outcome.newRole );
+        assertEquals( CANDIDATE, outcome.getNewRole() );
     }
 
     @Test
@@ -343,8 +343,8 @@ public class FollowerTest
 
         Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log() );
 
-        assertEquals( 1, outcome.outgoingMessages.size() );
-        Message<RaftTestMember> outgoing = outcome.outgoingMessages.iterator().next().message();
+        assertEquals( 1, outcome.getOutgoingMessages().size() );
+        Message<RaftTestMember> outgoing = outcome.getOutgoingMessages().iterator().next().message();
         assertEquals( RaftMessages.Type.APPEND_ENTRIES_RESPONSE, outgoing.type() );
         RaftMessages.AppendEntries.Response response = (AppendEntries.Response) outgoing;
         assertFalse( response.success() );
@@ -374,7 +374,7 @@ public class FollowerTest
         Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log() );
 
         // Then there should be no actions taken against the log
-        assertFalse( outcome.logCommands.iterator().hasNext() );
+        assertFalse( outcome.getLogCommands().iterator().hasNext() );
     }
 
     @Test
@@ -400,7 +400,7 @@ public class FollowerTest
 
         Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log() );
 
-        assertFalse( outcome.logCommands.iterator().hasNext() );
+        assertFalse( outcome.getLogCommands().iterator().hasNext() );
     }
 
     @Test
@@ -425,7 +425,7 @@ public class FollowerTest
 
         Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log() );
 
-        Iterator<LogCommand> iterator = outcome.logCommands.iterator();
+        Iterator<LogCommand> iterator = outcome.getLogCommands().iterator();
         assertTrue( iterator.hasNext() );
         LogCommand logCommand = iterator.next();
         assertFalse( iterator.hasNext() );
@@ -531,7 +531,7 @@ public class FollowerTest
                 state, log() );
 
         // then
-        assertTrue( outcome.renewElectionTimeout );
+        assertTrue( outcome.electionTimeoutRenewed() );
     }
 
     @Test
@@ -549,7 +549,7 @@ public class FollowerTest
                 state, log() );
 
         // then
-        assertFalse( outcome.renewElectionTimeout );
+        assertFalse( outcome.electionTimeoutRenewed() );
     }
 
     @Test
@@ -584,7 +584,7 @@ public class FollowerTest
         outcome = follower.handle( new RaftMessages.AppendEntries.Request<>( myself, LEADER2_TERM, 0, LEADER1_TERM, newEntries, LEADER_COMMIT ), state, log() );
 
         // then
-        assertThat( outcome.logCommands, hasItem( new CommitCommand( 1 ) ) );
+        assertThat( outcome.getLogCommands(), hasItem( new CommitCommand( 1 ) ) );
     }
 
     private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend, int
