@@ -414,6 +414,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
     case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
       TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)()
 
+    case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
+      RollUpApplyPipe(lhs, rhs, collectionName.name, identifierToCollection.name, nullables.map(_.name))()
+
     case x =>
       throw new CantHandleQueryException(x.toString)
 
@@ -442,7 +445,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {
     val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
 
-    toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
+    toCommandExpression(expr).rewrite(resolver.resolveExpressions(_, planContext))
   }
 
   private def buildPredicate(expr: ast.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {

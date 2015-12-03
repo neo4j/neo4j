@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.PipeMonitor
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_0.parser.{MatchText, ParsedLikePattern, WildcardLikePatternOp}
 import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, IndexHintException}
 
 class IndexLookupBuilder extends PlanBuilder {

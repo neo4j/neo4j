@@ -342,14 +342,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planEmptyProjection(inner: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     EmptyResult(inner)(inner.solved)
 
-  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression])
+  def planStarProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
                         (implicit context: LogicalPlanningContext) =
-    inner.updateSolved(_.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions))))
+    inner.updateSolved(_.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported))))
 
-  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression])
+  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
                            (implicit context: LogicalPlanningContext) = {
-    val solved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(expressions)))
+    val solved: PlannerQuery = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.withProjections(reported)))
     Projection(inner, expressions)(solved)
+  }
+
+  def planRollup(lhs: LogicalPlan, rhs: LogicalPlan,
+                 collectionName: IdName, identifierToCollect: IdName,
+                 nullable: Set[IdName]): LogicalPlan = {
+    RollUpApply(lhs, rhs, collectionName, identifierToCollect, nullable)(lhs.solved)
   }
 
   def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LazyLabel], argumentIds: Set[IdName])

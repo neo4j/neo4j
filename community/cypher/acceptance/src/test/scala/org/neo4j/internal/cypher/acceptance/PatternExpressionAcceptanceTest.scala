@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{NestedPipeExpression, PathImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ArgumentPipe, ExpandAllPipe, LazyTypes}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Relationship
@@ -369,15 +367,13 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       )
     }
 
-    val args = result.executionPlanDescription().children.head.arguments
-    val legacyExpression = args.collect {case n: LegacyExpression => n}.head
-    val pipe = legacyExpression.value.asInstanceOf[NestedPipeExpression].pipe
+    val executionPlanDescription = result.executionPlanDescription()
 
-    pipe should beLike {
-      case ExpandAllPipe(_: ArgumentPipe, "n", _, _, SemanticDirection.OUTGOING, LazyTypes(List("HAS"))) => ()
-    }
-
-    pipe.sources.head.asInstanceOf[ArgumentPipe].estimatedCardinality should equal(Some(3.0))
+    executionPlanDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
+    executionPlanDescription.cd("Expand(All)").arguments.toSet should equal(Set(
+      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, varLength = false),
+      EstimatedRows(0.25)
+    ))
   }
 
   test("should be able to execute aggregating-functions on pattern expressions") {
