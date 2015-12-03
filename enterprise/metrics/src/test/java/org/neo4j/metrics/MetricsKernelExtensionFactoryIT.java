@@ -58,6 +58,9 @@ import static org.neo4j.metrics.MetricsSettings.metricsEnabled;
 
 public class MetricsKernelExtensionFactoryIT
 {
+    private static final int TIME_STAMP = 0;
+    private static final int METRICS_VALUE = 1;
+
     @Rule
     public final TargetDirectory.TestDirectory folder = TargetDirectory.testDirForTest( getClass() );
     @Rule
@@ -172,8 +175,8 @@ public class MetricsKernelExtensionFactoryIT
         {
             String[] headers = reader.readLine().split( "," );
             assertThat( headers.length, is( 2 ) );
-            assertThat( headers[0], is( "t" ) );
-            assertThat( headers[1], is( "value" ) );
+            assertThat( headers[TIME_STAMP], is( "t" ) );
+            assertThat( headers[METRICS_VALUE], is( "value" ) );
 
             // Now we can verify that the number of committed transactions should never decrease.
             int currentValue = 0;

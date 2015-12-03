@@ -37,15 +37,15 @@ import static org.neo4j.metrics.MetricsSettings.graphiteEnabled;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.graphiteServer;
 
-public class OutputBuilder
+public class EventReporterBuilder
 {
-    private Config config;
-    private MetricRegistry registry;
-    private Log logger;
-    private KernelContext kernelContext;
-    private LifeSupport life;
+    private final Config config;
+    private final MetricRegistry registry;
+    private final Log logger;
+    private final KernelContext kernelContext;
+    private final LifeSupport life;
 
-    public OutputBuilder( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext,
+    public EventReporterBuilder( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext,
             LifeSupport life )
     {
         this.config = config;
@@ -55,7 +55,7 @@ public class OutputBuilder
         this.life = life;
     }
 
-    public EventReporter build()
+    public CompositeEventReporter build()
     {
         CompositeEventReporter reporter = new CompositeEventReporter();
         final String prefix = createMetricsPrefix( config );
@@ -84,7 +84,7 @@ public class OutputBuilder
             life.add( gangliaOutput );
         }
 
-        return reporter.isEmpty() ? null : reporter;
+        return reporter;
     }
 
     private String createMetricsPrefix( Config config )

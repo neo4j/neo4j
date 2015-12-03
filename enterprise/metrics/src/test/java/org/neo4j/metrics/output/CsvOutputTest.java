@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -88,7 +89,7 @@ public class CsvOutputTest
     {
         // GIVEN
         File storeDir = directory.directory();
-        File outputFPath = new File( System.getProperty( "java.io.tmpdir" ), "output" );
+        File outputFPath = Files.createTempDirectory( "output" ).toFile();
         CsvOutput output = life.add( new CsvOutput( config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",

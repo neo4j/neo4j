@@ -25,13 +25,9 @@ import com.codahale.metrics.MetricRegistry;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static com.codahale.metrics.MetricRegistry.name;
-import static org.neo4j.metrics.source.jvm.JvmMetrics.prettifyName;
 
-public class MemoryPoolMetrics extends LifecycleAdapter implements Lifecycle
+public class MemoryPoolMetrics extends JvmMetrics
 {
     public static final String MEMORY_POOL = name( JvmMetrics.NAME_PREFIX, "memory.pool" );
     private final MetricRegistry registry;

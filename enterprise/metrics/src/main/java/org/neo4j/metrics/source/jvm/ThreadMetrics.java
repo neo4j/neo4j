@@ -22,12 +22,9 @@ package org.neo4j.metrics.source.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class ThreadMetrics extends LifecycleAdapter implements Lifecycle
+public class ThreadMetrics extends JvmMetrics
 {
     public static final String THREAD_COUNT = name( JvmMetrics.NAME_PREFIX, "thread.count" );
 

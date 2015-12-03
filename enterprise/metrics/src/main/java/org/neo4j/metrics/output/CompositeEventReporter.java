@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 
+/**
+ * An implementation of the {@link EventReporter} interface that compounds several reporters internally.
+ */
 public class CompositeEventReporter implements EventReporter
 {
     private final List<EventReporter> reporters = new ArrayList<>();

@@ -25,13 +25,9 @@ import com.codahale.metrics.MetricRegistry;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static com.codahale.metrics.MetricRegistry.name;
-import static org.neo4j.metrics.source.jvm.JvmMetrics.prettifyName;
 
-public class MemoryBuffersMetrics extends LifecycleAdapter implements Lifecycle
+public class MemoryBuffersMetrics extends JvmMetrics
 {
     public static final String MEMORY_BUFFER = name( JvmMetrics.NAME_PREFIX, "memory.buffer" );
 

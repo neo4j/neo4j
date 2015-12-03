@@ -25,14 +25,9 @@ import com.codahale.metrics.MetricRegistry;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import static com.codahale.metrics.MetricRegistry.name;
-import static org.neo4j.metrics.source.jvm.JvmMetrics.NAME_PREFIX;
-import static org.neo4j.metrics.source.jvm.JvmMetrics.prettifyName;
 
-public class GCMetrics extends LifecycleAdapter implements Lifecycle
+public class GCMetrics extends JvmMetrics
 {
     public static final String GC_PREFIX = name( NAME_PREFIX, "gc" );
     public static final String GC_TIME = name( GC_PREFIX, "time" );

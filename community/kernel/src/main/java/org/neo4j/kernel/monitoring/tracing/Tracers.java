@@ -107,6 +107,8 @@ public class Tracers
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
      * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
+     * @param monitors the monitoring manager
+     * @param jobScheduler a scheduler for async jobs
      */
     public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler )
     {

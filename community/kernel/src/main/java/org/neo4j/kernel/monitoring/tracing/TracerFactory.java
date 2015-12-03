@@ -41,6 +41,7 @@ public interface TracerFactory
     /**
      * Create a new PageCacheTracer instance.
      *
+     * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
@@ -49,6 +50,7 @@ public interface TracerFactory
     /**
      * Create a new TransactionTracer instance.
      *
+     * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */
@@ -57,6 +59,7 @@ public interface TracerFactory
     /**
      * Create a new CheckPointTracer instance.
      *
+     * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
      * @return The created instance.
      */

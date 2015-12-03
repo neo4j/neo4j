@@ -24,14 +24,11 @@ import com.codahale.metrics.MetricRegistry;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
-import org.neo4j.metrics.output.EventReporter;
-import org.neo4j.metrics.output.OutputBuilder;
+import org.neo4j.metrics.output.CompositeEventReporter;
+import org.neo4j.metrics.output.EventReporterBuilder;
 import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 
 public class MetricsExtension implements Lifecycle
@@ -61,25 +58,23 @@ public class MetricsExtension implements Lifecycle
         final MetricRegistry registry = new MetricRegistry();
 
         // Setup output
-        EventReporter reporter = new OutputBuilder( configuration, registry, logger, kernelContext, life ).build();
-        boolean outputBuilt = reporter != null;
+        CompositeEventReporter reporter =
+                new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
 
         // Setup metric gathering
         boolean metricsBuilt =
                 new Neo4jMetricsBuilder( registry, reporter, configuration, logService, dependencies, life ).build();
 
-        if ( metricsBuilt && !outputBuilt )
+        if ( metricsBuilt && reporter.isEmpty() )
         {
-            logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. "
-                         +
+            logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. " +
                          "Disabling kernel metrics extension." );
             life.clear();
         }
 
-        if ( outputBuilt && !metricsBuilt )
+        if ( !reporter.isEmpty() && !metricsBuilt )
         {
-            logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. "
-                         +
+            logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. " +
                          "Disabling kernel metrics extension." );
             life.clear();
         }

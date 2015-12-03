@@ -26,9 +26,6 @@ import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.impl.annotations.Documented;
-
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.source.ByteCountsMetric;
@@ -64,12 +61,6 @@ public class NetworkMetrics extends LifecycleAdapter
     @Override
     public void start()
     {
-       /*
-         * COM: MasterServer.class -> Writes transaction streams (writes)
-         *      ToNetworkStoreWriter.class, "storeCopier -> Storage files write to network (writes)
-         *
-         * HA: MasterClientXXX.class -> Transactions written to network for commit (writes)
-         */
         monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
         monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
                 ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
