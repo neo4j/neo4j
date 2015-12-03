@@ -197,4 +197,9 @@ public class GraphDatabaseFactory
         getCurrentState().setMonitors( monitors );
         return this;
     }
+
+    public String getEdition()
+    {
+        return "Community";
+    }
 }

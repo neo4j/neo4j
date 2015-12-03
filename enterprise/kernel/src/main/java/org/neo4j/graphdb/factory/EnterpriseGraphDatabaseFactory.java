@@ -42,4 +42,10 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             }
         };
     }
+
+    @Override
+    public String getEdition()
+    {
+        return "Enterprise";
+    }
 }
