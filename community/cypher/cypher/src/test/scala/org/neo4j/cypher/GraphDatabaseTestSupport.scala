@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -223,4 +224,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+
+  def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 }

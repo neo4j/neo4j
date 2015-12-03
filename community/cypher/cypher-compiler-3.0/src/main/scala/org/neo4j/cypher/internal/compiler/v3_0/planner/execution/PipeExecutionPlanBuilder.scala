@@ -194,17 +194,20 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
 
     case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-      NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), IndexSeekModeFactory(unique = false).fromQueryExpression(valueExpr))()
+      val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = true).fromQueryExpression(valueExpr)
+      NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)()
 
     case NodeUniqueIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-      NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), IndexSeekModeFactory(unique = true).fromQueryExpression(valueExpr))()
+      val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = true).fromQueryExpression(valueExpr)
+      NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)()
 
     case NodeIndexScan(IdName(id), label, propertyKey, _) =>
       NodeIndexScanPipe(id, label, propertyKey)()
 
     case LegacyIndexSeek(id, hint: NodeStartItem, _) =>
       val source = new SingleRowPipe()
-      val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
+      val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
+      val ep = entityProducerFactory.readNodeStartItems((planContext, startItem))
       NodeStartPipe(source, id.name, ep, Effects(ReadsAllNodes))()
   }
 

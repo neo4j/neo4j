@@ -25,8 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.StringHelper
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{Assertions, Matchers}
 
@@ -118,7 +120,12 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 // formatting applied to them
 class ValueFormatter(db: GraphDatabaseService, tx: Transaction) extends (Any => String) with StringHelper with GraphIcing {
   def apply(x: Any): String = {
-    val ctx = new TransactionBoundQueryContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)
+    val ctx = new TransactionBoundQueryContext(db.asInstanceOf[GraphDatabaseAPI], tx, true, db.statement)(QuietMonitor)
     text(x, ctx)
   }
+}
+
+object QuietMonitor extends IndexSearchMonitor {
+  override def indexSeek(index: IndexDescriptor, value: Any) = {}
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any) = {}
 }

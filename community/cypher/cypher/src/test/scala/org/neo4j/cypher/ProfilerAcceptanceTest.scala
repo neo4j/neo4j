@@ -361,7 +361,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     //THEN
     assertDbHits(7)(result)("Projection")
-    assertDbHits(1)(result)("NodeUniqueIndexSeek")
+    assertDbHits(2)(result)("NodeUniqueIndexSeek")
    }
 
   test("should show expand without types in a simple form") {

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlanner
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -183,7 +184,8 @@ trait CompatibilityFor3_0 {
     import org.neo4j.cypher.internal.compatibility.helpersv3_0._
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
-      val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+      val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+      val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_0(ctx)
     }
 

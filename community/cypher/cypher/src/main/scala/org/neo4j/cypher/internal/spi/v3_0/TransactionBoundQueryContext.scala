@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.{BeansAPIRelationshipIter
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
@@ -52,7 +53,7 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         initialStatement: Statement)
+                                         initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
@@ -145,8 +146,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       new BeansAPIRelationshipIterator(relationships, relationshipActions)
   }
 
-  def indexSeek(index: IndexDescriptor, value: Any) =
+  def indexSeek(index: IndexDescriptor, value: Any) = {
+    indexSearchMonitor.indexSeek(index, value)
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
+  }
 
   def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
@@ -271,8 +274,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
-    val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
+  def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
+    indexSearchMonitor.lockingUniqueIndexSeek(index, value)
+    val nodeId = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -530,4 +534,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
   }
 
+}
+
+object TransactionBoundQueryContext {
+  trait IndexSearchMonitor {
+    def indexSeek(index: IndexDescriptor, value: Any): Unit
+
+    def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Unit
+  }
 }
