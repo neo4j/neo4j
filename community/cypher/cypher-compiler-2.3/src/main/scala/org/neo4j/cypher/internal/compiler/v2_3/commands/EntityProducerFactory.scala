@@ -30,8 +30,8 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
-    private def asProducer[T <: PropertyContainer](startItem: StartItem)
-                                                  (f: (ExecutionContext, QueryState) => Iterator[T]) =
+  private def asProducer[T <: PropertyContainer](startItem: StartItem)
+                                                (f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
@@ -40,11 +40,19 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       def arguments: Seq[Argument] = startItem.arguments
     }
 
-  def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+  def readNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
     nodeById orElse
       nodeByIndex orElse
       nodeByIndexQuery orElse
-      nodeByIndexHint orElse
+      nodeByIndexHint(readOnly = true) orElse
+      nodeByLabel orElse
+      nodesAll
+
+  def updateNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+    nodeById orElse
+      nodeByIndex orElse
+      nodeByIndexQuery orElse
+      nodeByIndexHint(readOnly = false) orElse
       nodeByLabel orElse
       nodesAll
 
@@ -53,10 +61,10 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       planContext.checkNodeIndex(idxName)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-          val keyVal = key(m)(state).toString
-          val valueVal = value(m)(state)
-          val neoValue = makeValueNeoSafe(valueVal)
-          state.query.nodeOps.indexGet(idxName, keyVal, neoValue)
+        val keyVal = key(m)(state).toString
+        val valueVal = value(m)(state)
+        val neoValue = makeValueNeoSafe(valueVal)
+        state.query.nodeOps.indexGet(idxName, keyVal, neoValue)
       }
   }
 
@@ -116,7 +124,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         state.query.relationshipOps.all }
   }
 
-  val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+  def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, Some(ScanQueryExpression(_)))) =>
 
       val indexGetter = planContext.getIndexRule(labelName, propertyName)
@@ -125,7 +133,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
         val resultNodes: Iterator[Node] = state.query.indexScan(index)
         resultNodes
       }
@@ -139,7 +146,9 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
-      val indexFactory = IndexSeekModeFactory(unique = false).fromQueryExpression(expression).indexFactory(index)
+      val indexFactory = IndexSeekModeFactory(unique = false, readOnly = readOnly).
+        fromQueryExpression(expression).
+        indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)
@@ -154,7 +163,9 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
-      val indexFactory = IndexSeekModeFactory(unique = true).fromQueryExpression(expression).indexFactory(index)
+      val indexFactory = IndexSeekModeFactory(unique = true, readOnly = readOnly).
+        fromQueryExpression(expression).
+        indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         indexQuery(expression, m, state, indexFactory(state), labelName, propertyName)

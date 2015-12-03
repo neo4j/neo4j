@@ -77,7 +77,7 @@ case class NodeIndexSeekPipe(ident: String,
           case _ =>
             throw new InternalException("This should never happen. Missing a case?")
         }
-      case IndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
+      case IndexSeek | LockingUniqueIndexSeek | UniqueIndexSeek => Index(label.name, propertyKey.name)
       case _ => throw new InternalException("This should never happen. Missing a case?")
     }
     new PlanDescriptionImpl(this.id, name, NoChildren, Seq(indexDesc), identifiers)

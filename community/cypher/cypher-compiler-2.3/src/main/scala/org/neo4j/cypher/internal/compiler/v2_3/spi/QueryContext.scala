@@ -87,7 +87,7 @@ trait QueryContext extends TokenContext {
 
   def indexScan(index: IndexDescriptor): Iterator[Node]
 
-  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node]
+  def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node]
 
   def getNodesByLabel(id: Int): Iterator[Node]
 

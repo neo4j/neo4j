@@ -42,7 +42,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   val node2 = mock[Node]
 
   test("should produce the correct plan description for equality seeks") {
-    val uniquePipe = NodeIndexSeekPipe("a", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
+    val uniquePipe = NodeIndexSeekPipe("a", label, propertyKey, SingleQueryExpression(Literal("hello")), LockingUniqueIndexSeek)()
     val nonUniquePipe = NodeIndexSeekPipe("a", label, propertyKey, SingleQueryExpression(Literal("hello")), IndexSeek)()
 
     val uniquePlan = uniquePipe.planDescriptionWithoutCardinality.toString
@@ -139,9 +139,9 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should handle unique index lookups for multiple values") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = uniqueIndexFor(
-        "hello" -> Some(node),
-        "world" -> Some(node2)
+      query = indexFor(
+        "hello" -> Iterator(node),
+        "world" -> Iterator(node2)
       )
     )
 
@@ -175,8 +175,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should handle unique index lookups for multiple values when some are null") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = uniqueIndexFor(
-        "hello" -> Some(node)
+      query = indexFor(
+        "hello" -> Iterator(node)
       )
     )
 
@@ -259,7 +259,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState = QueryStateHelper.emptyWith(query = uniqueIndexFor("hello" -> Some(node)))
+    val queryState = QueryStateHelper.emptyWith(query = indexFor("hello" -> Iterator(node)))
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
@@ -282,18 +282,6 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // then
     result.map(_("n")).toList should equal(List(node))
-  }
-
-
-  private def uniqueIndexFor(values: (Any, Option[Node])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.uniqueIndexSeek(any(), any())).thenReturn(None)
-
-    values.foreach {
-      case (searchTerm, result) => when(query.uniqueIndexSeek(descriptor, searchTerm)).thenReturn(result)
-    }
-
-    query
   }
 
   private def indexFor(values: (Any, Iterator[Node])*): QueryContext = {

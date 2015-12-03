@@ -537,7 +537,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
     db.withTx {
       tx =>
-        val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)
+        val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)(indexSearchMonitor)
         val result = plan.run(queryContext, statement, ProfileMode, parameters)
         (result.toList, result)
     }

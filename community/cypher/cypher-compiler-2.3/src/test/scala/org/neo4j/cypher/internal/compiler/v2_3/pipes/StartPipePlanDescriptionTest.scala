@@ -111,7 +111,7 @@ class StartPipePlanDescriptionTest extends CypherFunSuite {
   }
 
   private def createPlanDescription(startItem: StartItem): InternalPlanDescription = {
-    val producer = factory.nodeStartItems((planContext, startItem))
+    val producer = factory.readNodeStartItems((planContext, startItem))
     val pipe = new NodeStartPipe(SingleRowPipe(), "n", producer)()
     pipe.planDescription
   }

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIter
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
@@ -52,7 +53,7 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         initialStatement: Statement)
+                                         initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
@@ -63,8 +64,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   def isOpen = open
-
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -274,7 +273,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def indexScan(index: IndexDescriptor) =
     mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
-  def uniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
+  def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
@@ -512,5 +511,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       baseTraversalDescription.expand(expander)
     }
     traversalDescription.traverse(realNode).iterator().asScala
+  }
+}
+
+object TransactionBoundQueryContext {
+  trait IndexSearchMonitor {
+    def exactIndexSearch(index: IndexDescriptor, value: Any): Unit
+
+    def lockingIndexSearch(index: IndexDescriptor, value: Any): Unit
   }
 }

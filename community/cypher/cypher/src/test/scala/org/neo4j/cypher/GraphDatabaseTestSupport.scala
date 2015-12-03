@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundPlanContext
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -225,6 +226,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+
+  def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 }
 
 trait Snitch extends GraphDatabaseAPI {
