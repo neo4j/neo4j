@@ -36,10 +36,13 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.Version;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.SimpleAppServer;
+import org.neo4j.shell.impl.SystemOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
@@ -52,6 +55,11 @@ import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
 public class StartClient
 {
     private AtomicBoolean hasBeenShutdown = new AtomicBoolean();
+
+    /**
+     * Prints the version and edition of neo4j and exits.
+     */
+    public static final String ARG_VERSION = "version";
 
     /**
      * The path to the local (this JVM) {@link GraphDatabaseService} to
@@ -109,12 +117,14 @@ public class StartClient
      */
     public static final String ARG_CONFIG = "config";
 
+    private final GraphDatabaseFactory factory;
     private final PrintStream out;
     private final PrintStream err;
 
     // Visible for testing
     StartClient( PrintStream out, PrintStream err )
     {
+        this.factory = loadEditionDatabaseFactory();
         this.out = out;
         this.err = err;
     }
@@ -141,6 +151,21 @@ public class StartClient
         }
     }
 
+    private static GraphDatabaseFactory loadEditionDatabaseFactory()
+    {
+        GraphDatabaseFactory factory;
+        try
+        {
+            factory = (GraphDatabaseFactory) Class.forName( "org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory" )
+                    .newInstance();
+        }
+        catch ( Exception e )
+        {
+            factory = new GraphDatabaseFactory();
+        }
+        return factory;
+    }
+
     // visible for testing
     void start( String[] arguments, CtrlCHandler signalHandler )
     {
@@ -156,8 +181,13 @@ public class StartClient
         String port = args.get( ARG_PORT, null );
         String name = args.get( ARG_NAME, null );
         String pid = args.get( ARG_PID, null );
+        boolean version = args.getBoolean( ARG_VERSION, false, true );
 
-        if ( (path != null && (port != null || name != null || host != null || pid != null))
+        if ( version )
+        {
+            out.printf( "Neo4j %s, version %s", factory.getEdition(), Version.getKernelVersion() );
+        }
+        else if ( (path != null && (port != null || name != null || host != null || pid != null))
              || (pid != null && host != null) )
         {
             err.println( "You have supplied both " +
@@ -270,7 +300,8 @@ public class StartClient
         {
             out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
         }
-        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ), signalHandler );
+        ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ),
+                new SystemOutput( out ), signalHandler );
         grabPromptOrJustExecuteCommand( client, args );
 
         shutdownIfNecessary( server );
@@ -279,7 +310,7 @@ public class StartClient
     protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly, String configFile )
             throws RemoteException
     {
-        return new GraphDatabaseShellServer( dbPath, readOnly, configFile );
+        return new GraphDatabaseShellServer( factory, dbPath, readOnly, configFile );
     }
 
     private void shutdownIfNecessary( ShellServer server )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -34,15 +35,21 @@ public class SystemOutput implements Output
 {
 	private PrintWriter out;
 
-    public SystemOutput() {
-		out = new PrintWriter( new OutputStreamWriter( System.out, StandardCharsets.UTF_8 ) );
-	}
+    public SystemOutput()
+    {
+        this( System.out );
+    }
+
+    public SystemOutput( OutputStream out )
+    {
+        this.out = new PrintWriter( new OutputStreamWriter( out, StandardCharsets.UTF_8 ) );
+    }
 
     public void print( Serializable object )
 	{
 		out.print(object);
 	}
-	
+
 	public void println()
 	{
 		out.println();
