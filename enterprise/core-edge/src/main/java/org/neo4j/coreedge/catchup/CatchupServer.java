@@ -31,6 +31,8 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
@@ -57,14 +59,13 @@ import org.neo4j.logging.LogProvider;
 public class CatchupServer extends LifecycleAdapter
 {
     private final LogProvider logProvider;
-//    private final CoreServerLocks remoteLocks;
 
     private final Supplier<StoreId> storeIdSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
 
-    private final NamedThreadFactory threadFactory = new NamedThreadFactory( "core-server" );
+    private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
@@ -91,7 +92,7 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
         startNettyServer();
     }
@@ -135,7 +136,6 @@ public class CatchupServer extends LifecycleAdapter
                                 checkPointerSupplier ) );
 
                         pipeline.addLast( new LockRequestDecoder( protocol ) );
-//                        pipeline.addLast( new LockRequestHandler( protocol, remoteLocks ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }
@@ -145,17 +145,21 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         try
         {
             channel.close().sync();
-            workerGroup.shutdownGracefully().sync();
         }
         catch( InterruptedException e )
         {
-            log.warn( "Interrupted while stopping core server." );
+            Thread.currentThread().interrupt();
+            log.warn( "Interrupted while closing channel." );
+        }
+
+        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        {
+            log.warn( "Worker group not shutdown within 10 seconds." );
         }
     }
-
 }

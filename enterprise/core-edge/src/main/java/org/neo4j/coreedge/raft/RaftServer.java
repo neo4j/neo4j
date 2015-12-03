@@ -34,6 +34,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
@@ -63,22 +65,27 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
         startNettyServer();
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
         try
         {
             channel.close().sync();
-            workerGroup.shutdownGracefully().sync();
         }
         catch( InterruptedException e )
         {
-            log.warn( "Interrupted while stopping raft server." );
+            Thread.currentThread().interrupt();
+            log.warn( "Interrupted while closing channel." );
+        }
+
+        if ( workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        {
+            log.warn( "Worker group not shutdown within 10 seconds." );
         }
     }
 
