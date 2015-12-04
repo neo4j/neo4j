@@ -33,7 +33,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -102,6 +101,7 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -284,27 +284,27 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void apply( TransactionToApply batch, TransactionApplicationMode mode ) throws Exception
     {
-        try ( LockGroup locks = new LockGroup() )
+        // Have these command appliers as separate try-with-resource to have better control over
+        // point between closing this and the locks above
+        try ( CommandApplierFacade applier = applier( mode ) )
         {
-            // Have these command appliers as separate try-with-resource to have better control over
-            // point between closing this and the locks above
-            try ( CommandApplierFacade applier = applier( mode, locks ) )
+            TransactionToApply tx = batch;
+            while ( tx != null )
             {
-                TransactionToApply tx = batch;
-                while ( tx != null )
+                try ( LockGroup locks = new LockGroup() )
                 {
                     ensureValidatedIndexUpdates( tx );
-                    applier.begin( tx );
+                    applier.begin( tx, locks );
                     tx.transactionRepresentation().accept( applier );
                     applier.end();
                     tx = tx.next();
                 }
+                catch ( Throwable cause )
+                {
+                    databaseHealth.panic( cause );
+                    throw cause;
+                }
             }
-        }
-        catch ( Throwable cause )
-        {
-            databaseHealth.panic( cause );
-            throw cause;
         }
     }
 
@@ -315,10 +315,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      *
      * After all transactions have been applied the appliers are closed (apply() then close()).
      */
-    private CommandApplierFacade applier( TransactionApplicationMode mode, LockGroup locks )
+    private CommandApplierFacade applier( TransactionApplicationMode mode )
     {
         // Graph store application. The order of the decorated store appliers is irrelevant
-        CommandHandler storeApplier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService, locks );
+        CommandHandler storeApplier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService );
         if ( mode.needsHighIdTracking() )
         {
             storeApplier = new HighIdTransactionApplier( storeApplier, neoStores );

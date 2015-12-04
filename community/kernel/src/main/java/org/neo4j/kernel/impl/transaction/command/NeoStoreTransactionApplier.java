@@ -46,22 +46,22 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
-    private final LockGroup lockGroup;
+    private LockGroup lockGroup;
     private long transactionId;
 
     public NeoStoreTransactionApplier( NeoStores store, CacheAccessBackDoor cacheAccess,
-            LockService lockService, LockGroup lockGroup )
+            LockService lockService )
     {
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
-        this.lockGroup = lockGroup;
     }
 
     @Override
-    public void begin( TransactionToApply transaction ) throws IOException
+    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
     {
         transactionId = transaction.transactionId();
+        lockGroup = locks;
     }
 
     @Override

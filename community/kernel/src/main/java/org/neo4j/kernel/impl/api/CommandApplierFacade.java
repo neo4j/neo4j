@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
@@ -52,11 +53,11 @@ public class CommandApplierFacade implements CommandHandler, Visitor<Command,IOE
     }
 
     @Override
-    public void begin( TransactionToApply tx ) throws IOException
+    public void begin( TransactionToApply tx, LockGroup locks ) throws IOException
     {
         for ( CommandHandler handler : handlers )
         {
-            handler.begin( tx );
+            handler.begin( tx, locks );
         }
     }
 

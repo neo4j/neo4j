@@ -135,9 +135,9 @@ public class HighIdTransactionApplier extends CommandHandler.Delegator
     }
 
     @Override
-    public void apply()
+    public void end() throws Exception
     {
-        super.apply();
+        super.end();
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
         for ( Map.Entry<CommonAbstractStore,HighId> highId : highIds.entrySet() )
