@@ -21,6 +21,57 @@ package org.neo4j.cypher
 
 class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  test("should not throw semantic check error for number-typed integer comparison") {
+    createNode()
+
+    // the parameter is used to disable auto-parametrization
+    val queryWithInt =
+      """PROFILE
+        |WITH {parameter} AS p
+        |WITH collect([0, 0.0]) as numbers
+        |UNWIND numbers as arr
+        |WITH arr[0] as expected
+        |MATCH (n) WHERE id(n)=expected
+        |RETURN n""".stripMargin
+    val result = execute(queryWithInt, "parameter" -> "placeholder")
+
+    result.toList.length shouldBe 1
+  }
+
+  test("should not throw semantic check error for number-typed float comparison") {
+    createNode()
+
+    // the parameter is used to disable auto-parametrization
+    val queryWithFloat =
+      """PROFILE
+        |WITH {parameter} AS p
+        |WITH collect([0.5, 0]) as numbers
+        |UNWIND numbers as arr
+        |WITH arr[0] as expected
+        |MATCH (n) WHERE id(n)=expected
+        |RETURN n""".stripMargin
+    val result = execute(queryWithFloat, "parameter" -> "placeholder")
+
+    result.toList shouldBe empty
+  }
+
+  test("should not throw semantic check error for any-typed string comparison") {
+    createNode()
+
+    // the parameter is used to disable auto-parametrization
+    val queryWithString =
+      """PROFILE
+        |WITH {parameter} AS p
+        |WITH collect(["0", 0]) as things
+        |UNWIND things as arr
+        |WITH arr[0] as expected
+        |MATCH (n) WHERE id(n)=expected
+        |RETURN n""".stripMargin
+    val result = execute(queryWithString, "parameter" -> "placeholder")
+
+    result.toList shouldBe empty
+  }
+
   test("should prohibit equals between node and parameter") {
     // given
     createLabeledNode("Person")

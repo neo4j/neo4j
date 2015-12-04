@@ -90,7 +90,9 @@ extends UpdateAction
     Iterator(context)
   }
 
-  def variables = Seq(key-> CTRelationship)
+  def variables = Seq(key-> CTRelationship) ++
+    from.introducedVariable.map(n => n -> CTNode) ++
+    to.introducedVariable.map(n => n -> CTNode)
 
   override def symbolTableDependencies: Set[String] = {
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
