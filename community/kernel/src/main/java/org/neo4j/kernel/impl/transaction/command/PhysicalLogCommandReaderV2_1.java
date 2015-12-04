@@ -274,7 +274,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
             {
                 record.setCreated();
             }
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 

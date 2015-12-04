@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -134,9 +135,17 @@ public enum LogEntryVersion
         {
             return new PhysicalLogCommandReaderV2_2_4();
         }
+    },
+    V3_0( -6, LogEntryParsersV2_3.class )
+    {
+        @Override
+        public CommandReader newCommandReader()
+        {
+            return new PhysicalLogCommandReaderV3_0();
+        }
     };
 
-    public static final LogEntryVersion CURRENT = V2_3;
+    public static final LogEntryVersion CURRENT = V3_0;
     public static final byte NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION = -1;
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] NEGATIVE = new LogEntryVersion[ALL.length+1]; // pessimistic size

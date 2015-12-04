@@ -269,7 +269,7 @@ public class PhysicalLogNeoCommandReaderV2_2 implements CommandReader
             {
                 record.setCreated();
             }
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 

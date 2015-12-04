@@ -143,10 +143,10 @@ public class TransactionWriter
         add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
-    public void create( RelationshipRecord relationship )
+    public void create( RelationshipRecord record )
     {
-        relationship.setCreated();
-        update( relationship );
+        record.setCreated();
+        update( new RelationshipRecord( record.getId() ), record );
     }
 
     public void delete( RelationshipGroupRecord group )
@@ -175,10 +175,10 @@ public class TransactionWriter
         addSchema( beforeRecords, afterRecords, rule );
     }
 
-    public void update( RelationshipRecord relationship )
+    public void update( RelationshipRecord before, RelationshipRecord after )
     {
-        relationship.setInUse( true );
-        add( relationship );
+        after.setInUse( true );
+        add( before, after );
     }
 
     public void update( RelationshipGroupRecord group )
@@ -187,10 +187,10 @@ public class TransactionWriter
         add( group );
     }
 
-    public void delete( RelationshipRecord relationship )
+    public void delete( RelationshipRecord record )
     {
-        relationship.setInUse( false );
-        add( relationship );
+        record.setInUse( false );
+        add( record, new RelationshipRecord( record.getId() ) );
     }
 
     public void create( PropertyRecord property )
@@ -237,10 +237,10 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void add( RelationshipRecord relationship )
+    public void add( RelationshipRecord before, RelationshipRecord after )
     {
         Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( relationship );
+        command.init( before, after );
         addCommand( command );
     }
 

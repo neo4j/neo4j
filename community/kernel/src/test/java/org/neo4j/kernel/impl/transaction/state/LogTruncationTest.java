@@ -83,7 +83,8 @@ public class LogTruncationTest
         permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand().init( new NodeRecord(
                 12l, false, 13l, 13l ), new NodeRecord( 0, false, 0, 0 ) ) } );
         permutations.put( Command.RelationshipCommand.class,
-                new Command[] { new Command.RelationshipCommand().init( new RelationshipRecord( 1l, 2l, 3l, 4 ) ) } );
+                new Command[] { new Command.RelationshipCommand().init( new RelationshipRecord( 1l ),
+                        new RelationshipRecord( 1l, 2l, 3l, 4 ) ) } );
         permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand().init(
                 new PropertyRecord( 1, new NodeRecord( 12l, false, 13l, 13 ) ), new PropertyRecord( 1, new NodeRecord(
                         12l, false, 13l, 13 ) ) ) } );

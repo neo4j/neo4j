@@ -78,31 +78,7 @@ public class CommandWriter extends CommandHandler.Adapter
         return false;
     }
 
-    @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
-    {
-        RelationshipRecord record = command.getRecord();
-        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
-        channel.put( NeoCommandType.REL_COMMAND );
-        channel.putLong( record.getId() );
-        channel.put( flags );
-        if ( record.inUse() )
-        {
-            channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
-                   .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
-                   .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
-                   .putLong( record.getNextProp() )
-                   .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
-        }
-        else
-        {
-            channel.putInt( record.getType() );
-        }
-        return false;
-    }
-
-    private boolean writeNodeRecord( NodeRecord record ) throws IOException
+    private void writeNodeRecord( NodeRecord record ) throws IOException
     {
         byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( inUse );
@@ -115,7 +91,37 @@ public class CommandWriter extends CommandHandler.Adapter
         // Always write dynamic label records because we want to know which ones have been deleted
         // especially if the node has been deleted.
         writeDynamicRecords( record.getDynamicLabelRecords() );
+    }
+
+    @Override
+    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+    {
+        RelationshipRecord before = command.getBefore();
+        RelationshipRecord after = command.getAfter();
+        channel.put( NeoCommandType.REL_COMMAND );
+        channel.putLong( after.getId() );
+        writeRelationshipRecord( before );
+        writeRelationshipRecord( after );
         return false;
+    }
+
+    private void writeRelationshipRecord( RelationshipRecord record ) throws IOException
+    {
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
+        channel.put( flags );
+        if ( record.inUse() )
+        {
+            channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
+                    .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
+                    .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
+                    .putLong( record.getNextProp() )
+                    .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
+        }
+        else
+        {
+            channel.putInt( record.getType() );
+        }
     }
 
     @Override
@@ -276,7 +282,7 @@ public class CommandWriter extends CommandHandler.Adapter
     {
         channel.put( NeoCommandType.UPDATE_NODE_COUNTS_COMMAND );
         channel.putInt( command.labelId() )
-               .putLong( command.delta() );
+                .putLong( command.delta() );
         return false;
     }
 
@@ -285,9 +291,9 @@ public class CommandWriter extends CommandHandler.Adapter
     {
         channel.put( NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND );
         channel.putInt( command.startLabelId() )
-               .putInt( command.typeId() )
-               .putInt( command.endLabelId() )
-               .putLong( command.delta() );
+                .putInt( command.typeId() )
+                .putInt( command.endLabelId() )
+                .putLong( command.delta() );
         return false;
     }
 
@@ -361,8 +367,8 @@ public class CommandWriter extends CommandHandler.Adapter
     }
 
     protected void writeIndexCommandHeader( byte valueType, byte entityType, byte entityIdNeedsLong,
-                                            byte startNodeNeedsLong, byte endNodeNeedsLong, int indexNameId,
-                                            int keyId ) throws IOException
+            byte startNodeNeedsLong, byte endNodeNeedsLong, int indexNameId,
+            int keyId ) throws IOException
     {
         channel.put( (byte) ((valueType << 2) | (entityType << 1) | (entityIdNeedsLong)) );
         channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6)) );
@@ -402,7 +408,7 @@ public class CommandWriter extends CommandHandler.Adapter
                 inUse |= Record.FIRST_IN_CHAIN.byteValue();
             }
             channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse ).putInt( record.getLength() )
-                   .putLong( record.getNextBlock() );
+                    .putLong( record.getNextBlock() );
             byte[] data = record.getData();
             assert data != null;
             channel.put( data, data.length );
