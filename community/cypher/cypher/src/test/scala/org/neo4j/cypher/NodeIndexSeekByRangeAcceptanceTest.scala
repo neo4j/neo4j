@@ -344,7 +344,6 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 10.0), "Label")
     createLabeledNode(Map("prop" -> 100), "Label")
     createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
-    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     // Non-matches
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
@@ -352,6 +351,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 0), "Label")
     createLabeledNode(Map("prop" -> 5), "Label")
     createLabeledNode(Map("prop" -> 5.0), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -361,14 +361,11 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = "MATCH (n:Label) WHERE n.prop > 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithAllPlannersReplaceNaNs(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
-    // TODO: this check should not be here, waiting for cypher to update NaN treatment behaviour
-    // values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
-    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
-    saneValues should equal(Seq(10, 10.0, 100, Double.PositiveInfinity))
+    values should equal(Seq(10, 10.0, 100, Double.PositiveInfinity))
     result should use("NodeIndexSeekByRange")
   }
 
@@ -378,7 +375,6 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 10.0), "Label")
     createLabeledNode(Map("prop" -> 100), "Label")
     createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
-    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     // Non-matches
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
@@ -386,6 +382,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 0), "Label")
     createLabeledNode(Map("prop" -> 5), "Label")
     createLabeledNode(Map("prop" -> 5.0), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -395,14 +392,11 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = "MATCH (n:Label) WHERE NOT n.prop <= 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithAllPlannersReplaceNaNs(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
-    // TODO: this check should not be here, waiting for cypher to update NaN treatment behaviour
-    //values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
-    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
-    saneValues should equal(Seq(10, 10.0, 100, Double.PositiveInfinity))
+    values should equal(Seq(10, 10.0, 100, Double.PositiveInfinity))
     result should use("NodeIndexSeekByRange")
   }
 
@@ -414,12 +408,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 10.0), "Label")
     createLabeledNode(Map("prop" -> 100), "Label")
     createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
-    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     // Non-matches
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
     createLabeledNode(Map("prop" -> -5), "Label")
     createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -429,14 +423,11 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = "MATCH (n:Label) WHERE n.prop >= 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithAllPlannersReplaceNaNs(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
-    // TODO: this check should not be here, waiting for cypher to update NaN treatment behaviour
-    //values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
-    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
-    saneValues should equal(Seq(5, 5.0, 10, 10.0, 100, Double.PositiveInfinity))
+    values should equal(Seq(5, 5.0, 10, 10.0, 100, Double.PositiveInfinity))
     result should use("NodeIndexSeekByRange")
   }
 
@@ -448,12 +439,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     createLabeledNode(Map("prop" -> 10.0), "Label")
     createLabeledNode(Map("prop" -> 100), "Label")
     createLabeledNode(Map("prop" -> Double.PositiveInfinity), "Label")
-    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     // Non-matches
     createLabeledNode(Map("prop" -> Double.NegativeInfinity), "Label")
     createLabeledNode(Map("prop" -> -5), "Label")
     createLabeledNode(Map("prop" -> 0), "Label")
+    createLabeledNode(Map("prop" -> Double.NaN), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -463,14 +454,11 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = "MATCH (n:Label) WHERE NOT n.prop < 5 RETURN n.prop AS prop"
 
     // When
-    val result = executeWithAllPlannersReplaceNaNs(query)
+    val result = executeWithAllPlanners(query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
-    // TODO: this check should not be here, waiting for cypher to update NaN treatment behaviour
-    // values.exists(d => java.lang.Double.isNaN(d.doubleValue())) should be(right = true)
-    val saneValues = values.filter(d => !java.lang.Double.isNaN(d.doubleValue()))
-    saneValues should equal(Seq(5, 5.0, 10, 10.0, 100, Double.PositiveInfinity))
+    values should equal(Seq(5, 5.0, 10, 10.0, 100, Double.PositiveInfinity))
     result should use("NodeIndexSeekByRange")
   }
 

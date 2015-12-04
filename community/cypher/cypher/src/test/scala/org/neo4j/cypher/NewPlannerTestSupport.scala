@@ -188,18 +188,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     costResult
   }
 
-  def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
-    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
-
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
-    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", replaceNaNs = true)
-    ruleResult.close()
-    costResult
-  }
-
-
   def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
@@ -215,12 +203,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     compiledResult
   }
 
-  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
-        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs costResult.toComparableResultWithOptions(replaceNaNs)
+        ruleResult.toComparableResultWithOptions should contain theSameElementsInOrderAs costResult.toComparableResultWithOptions
       } else {
-        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs costResult.toComparableResultWithOptions(replaceNaNs)
+        ruleResult.toComparableResultWithOptions should contain theSameElementsAs costResult.toComparableResultWithOptions
       }
     }
   }
@@ -274,25 +262,22 @@ trait NewPlannerTestSupport extends CypherTestSupport {
    * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
-    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
+    def toComparableResultWithOptions: Seq[Map[String, Any]] = res.toList.toCompararableSeq
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq
   }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
 
     import scala.collection.JavaConverters._
 
-    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
+    def toCompararableSeq: Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case a: Array[_] => a.toList.map(convert)
-        case m: Map[_,_] =>  {
+        case m: Map[_,_] =>
           Eagerly.immutableMapValues(m, convert)
-        }
-        case m: java.util.Map[_,_] =>  {
+        case m: java.util.Map[_,_] =>
           Eagerly.immutableMapValues(m.asScala, convert)
-        }
         case l: java.util.List[_] => l.asScala.map(convert)
-        case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => "NaNreplacement"
         case m => m
       }
 
@@ -306,7 +291,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(actual: InternalExecutionResult): MatchResult = {
       MatchResult(
-        matches = actual.toComparableResult == expected.toCompararableSeq(replaceNaNs = false),
+        matches = actual.toComparableResult == expected.toCompararableSeq,
         rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
         rawNegatedFailureMessage = s"Results are equal")
     }
