@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.kernel.impl.util.function.Optional;
+import java.util.Optional;
 
 abstract class WritableState<Key> extends ReadableState<Key>
 {

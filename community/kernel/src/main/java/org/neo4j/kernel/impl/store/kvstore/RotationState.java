@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.function.Optional;
-import org.neo4j.kernel.impl.util.function.Optionals;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
 {
@@ -115,7 +114,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             if ( version <= threshold )
             {
                 final EntryUpdater<Key> pre = preState.updater( version, lock );
-                return Optionals.<EntryUpdater<Key>>some( new EntryUpdater<Key>( lock )
+                return Optional.of( new EntryUpdater<Key>( lock )
                 {
                     @Override
                     public void apply( Key key, ValueUpdate update ) throws IOException
@@ -139,7 +138,7 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             }
             else
             {
-                return Optionals.some( post );
+                return Optional.of( post );
             }
         }
 
