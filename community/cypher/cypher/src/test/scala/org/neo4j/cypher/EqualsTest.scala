@@ -33,7 +33,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithInt, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithInt, "parameter" -> "placeholder")
 
     result.toList.length shouldBe 1
   }
@@ -50,7 +50,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithFloat, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithFloat, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }
@@ -67,7 +67,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithString, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithString, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }

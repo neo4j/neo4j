@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.graphdb.PropertyContainer
 
 import scala.collection.JavaConverters._
@@ -43,7 +42,7 @@ object GetGraphElements {
       case result: java.lang.Iterable[_] => result.asScala.view.map(castElement).iterator
       case result: Seq[_]                => result.view.map(castElement).iterator
       case element: PropertyContainer    => Iterator.single(element.asInstanceOf[T])
-      case x                             => throw new CypherTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
+      case x                             => Iterator.empty
     }
   }
 }
