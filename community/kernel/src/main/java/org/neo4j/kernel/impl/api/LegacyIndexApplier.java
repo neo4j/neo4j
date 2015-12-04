@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -131,7 +132,7 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void begin( TransactionToApply transaction ) throws IOException
+    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
     {
         if ( transaction.commitment().hasLegacyIndexChanges() )
         {

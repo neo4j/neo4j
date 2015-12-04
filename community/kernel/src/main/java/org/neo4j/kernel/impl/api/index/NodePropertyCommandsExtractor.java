@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -51,7 +52,7 @@ public class NodePropertyCommandsExtractor
     }
 
     @Override
-    public void begin( TransactionToApply transaction )
+    public void begin( TransactionToApply transaction, LockGroup locks )
     {
         nodeCommandsById.clear();
         propertyCommandsByNodeIds.clear();

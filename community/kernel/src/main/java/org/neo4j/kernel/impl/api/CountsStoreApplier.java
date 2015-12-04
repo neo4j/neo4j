@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
@@ -38,7 +39,7 @@ public class CountsStoreApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void begin( TransactionToApply transaction ) throws IOException
+    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
     {
         countsTracker.apply( transaction.transactionId() ).map(
                 ( CountsTracker.Updater updater ) -> this.countsUpdater = updater );

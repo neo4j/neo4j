@@ -34,13 +34,14 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -67,7 +68,6 @@ import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -80,6 +80,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
 public class NeoTransactionStoreApplierTest
 {
@@ -125,6 +127,7 @@ public class NeoTransactionStoreApplierTest
         when( lockService.acquireNodeLock( anyLong(), Matchers.<LockService.LockType>any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
+        when( transactionToApply.validatedIndexUpdates() ).thenReturn( mock( ValidatedIndexUpdates.class ) );
     }
 
     // NODE COMMAND
@@ -142,9 +145,9 @@ public class NeoTransactionStoreApplierTest
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNodeCommand( command );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNodeCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -166,9 +169,9 @@ public class NeoTransactionStoreApplierTest
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNodeCommand( command );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNodeCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -190,10 +193,9 @@ public class NeoTransactionStoreApplierTest
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNodeCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNodeCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -220,9 +222,9 @@ public class NeoTransactionStoreApplierTest
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNodeCommand( command );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNodeCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -242,9 +244,9 @@ public class NeoTransactionStoreApplierTest
         record.setInUse( true );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -261,9 +263,9 @@ public class NeoTransactionStoreApplierTest
         record.setInUse( false );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -280,10 +282,9 @@ public class NeoTransactionStoreApplierTest
         record.setInUse( true );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -304,9 +305,9 @@ public class NeoTransactionStoreApplierTest
         after.setNodeId( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -325,10 +326,9 @@ public class NeoTransactionStoreApplierTest
         after.setNodeId( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -348,9 +348,9 @@ public class NeoTransactionStoreApplierTest
         after.setRelId( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -368,10 +368,9 @@ public class NeoTransactionStoreApplierTest
         after.setRelId( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyCommand( new Command.PropertyCommand().init( before, after ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -383,15 +382,16 @@ public class NeoTransactionStoreApplierTest
     // RELATIONSHIP GROUP COMMAND
 
     @Test
-    public void shouldApplyRelationshipGroupCommandToTheStore() throws IOException
+    public void shouldApplyRelationshipGroupCommandToTheStore() throws Exception
     {
         // given
         final CommandHandler applier = newApplier( false );
         // when
         final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
-        final boolean result = applier.visitRelationshipGroupCommand(
-                new Command.RelationshipGroupCommand().init( record )
-        );
+        final boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipGroupCommand(
+                    new Command.RelationshipGroupCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -407,11 +407,10 @@ public class NeoTransactionStoreApplierTest
         // when
         final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
 
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipGroupCommand(
-                new Command.RelationshipGroupCommand().init( record ) );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipGroupCommand(
+                    new Command.RelationshipGroupCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -430,10 +429,10 @@ public class NeoTransactionStoreApplierTest
         final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipTypeTokenCommand(
-                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipTypeTokenCommand(
+                    (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -453,10 +452,9 @@ public class NeoTransactionStoreApplierTest
         when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitRelationshipTypeTokenCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitRelationshipTypeTokenCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -476,10 +474,10 @@ public class NeoTransactionStoreApplierTest
         final LabelTokenRecord record = new LabelTokenRecord( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitLabelTokenCommand(
-                (LabelTokenCommand) new Command.LabelTokenCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitLabelTokenCommand(
+                    (LabelTokenCommand) new Command.LabelTokenCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -498,10 +496,9 @@ public class NeoTransactionStoreApplierTest
         when( labelTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitLabelTokenCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitLabelTokenCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -521,10 +518,10 @@ public class NeoTransactionStoreApplierTest
         final PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyKeyTokenCommand(
-                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyKeyTokenCommand(
+                    (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -544,10 +541,9 @@ public class NeoTransactionStoreApplierTest
         when( propertyKeyTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitPropertyKeyTokenCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitPropertyKeyTokenCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -574,10 +570,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result =
-                applier.visitSchemaRuleCommand( command ) & indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command ) & indexApplier.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -601,11 +596,10 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command ) &
-                               indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier, indexApplier );
+        CommandHandler all = new CommandApplierFacade( applier, indexApplier );
+        boolean result = apply( all, (handler,tx) -> {
+            return all.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -630,10 +624,10 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command ) &
-                               indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
+        CommandHandler all = new CommandApplierFacade( applier, indexApplier );
+        boolean result = apply( all, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -657,11 +651,10 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result =
-                applier.visitSchemaRuleCommand( command ) & indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier, indexApplier );
+        CommandHandler all = new CommandApplierFacade( applier, indexApplier );
+        boolean result = apply( all, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -691,11 +684,12 @@ public class NeoTransactionStoreApplierTest
         // when
         try
         {
-            applier.begin( transactionToApply );
-            applier.visitSchemaRuleCommand( command );
+            apply( applier, (handler,tx) -> {
+                return handler.visitSchemaRuleCommand( command );
+            }, transactionToApply );
             fail( "should have thrown" );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             // then
             assertTrue( e.getCause() instanceof IndexNotFoundKernelException );
@@ -716,10 +710,10 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result =
-                applier.visitSchemaRuleCommand( command ) & indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
+        CommandHandler all = new CommandApplierFacade( applier, indexApplier );
+        boolean result = apply( all, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -743,11 +737,10 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result =
-                applier.visitSchemaRuleCommand( command ) & indexApplier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier, indexApplier );
+        CommandHandler all = new CommandApplierFacade( applier, indexApplier );
+        boolean result = apply( all, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -772,10 +765,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -799,10 +791,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -826,10 +817,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -852,11 +842,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( new TransactionToApply( new PhysicalTransactionRepresentation(
-                Arrays.<Command>asList( command ) ), transactionId ) );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -881,9 +869,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -907,10 +895,9 @@ public class NeoTransactionStoreApplierTest
                 new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.end();
-        applyAndClose( applier );
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitSchemaRuleCommand( command );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -932,9 +919,9 @@ public class NeoTransactionStoreApplierTest
         record.setNextProp( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNeoStoreCommand( new Command.NeoStoreCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNeoStoreCommand( new Command.NeoStoreCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -951,9 +938,9 @@ public class NeoTransactionStoreApplierTest
         record.setNextProp( 42 );
 
         // when
-        applier.begin( transactionToApply );
-        final boolean result = applier.visitNeoStoreCommand( new Command.NeoStoreCommand().init( record ) );
-        applier.end();
+        boolean result = apply( applier, (handler,tx) -> {
+            return handler.visitNeoStoreCommand( new Command.NeoStoreCommand().init( record ) );
+        }, transactionToApply );
 
         // then
         assertFalse( result );
@@ -961,24 +948,9 @@ public class NeoTransactionStoreApplierTest
         verify( metaDataStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
     }
 
-    // CLOSE
-
-    private void applyAndClose( CommandHandler... appliers )
-    {
-        for ( CommandHandler applier : appliers )
-        {
-            applier.apply();
-        }
-        for ( CommandHandler applier : appliers )
-        {
-            applier.close();
-        }
-    }
-
     private CommandHandler newApplier( boolean recovery )
     {
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService,
-                new LockGroup() );
+        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService );
         if ( recovery )
         {
             applier = new HighIdTransactionApplier( applier, neoStores );

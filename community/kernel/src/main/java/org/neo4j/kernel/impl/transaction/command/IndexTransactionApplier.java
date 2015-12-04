@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -65,7 +66,7 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void begin( TransactionToApply transaction ) throws IOException
+    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
     {
         indexUpdates = transaction.validatedIndexUpdates();
     }

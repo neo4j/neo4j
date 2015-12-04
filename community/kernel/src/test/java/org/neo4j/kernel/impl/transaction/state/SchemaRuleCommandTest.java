@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,8 +29,8 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -42,6 +41,8 @@ import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
@@ -77,7 +78,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        storeApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, command );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -96,7 +97,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        indexApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( indexApplier, command );
 
         // THEN
         verify( indexes ).createIndex( rule );
@@ -116,19 +117,11 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
 
         // WHEN
-        visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, command );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
-    }
-
-    private void visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
-    {
-        storeApplier.begin(
-                new TransactionToApply( new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ),
-                        txId ) );
-        storeApplier.visitSchemaRuleCommand( command );
     }
 
     @Test
@@ -144,7 +137,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        storeApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( storeApplier, command );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -163,7 +156,7 @@ public class SchemaRuleCommandTest
         command.init( beforeRecords, afterRecords, rule );
 
         // WHEN
-        indexApplier.visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( indexApplier, command );
 
         // THEN
         verify( indexes ).dropIndex( rule );
@@ -183,7 +176,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -205,7 +198,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
+        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -225,7 +218,7 @@ public class SchemaRuleCommandTest
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup() );
+            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
@@ -257,4 +250,11 @@ public class SchemaRuleCommandTest
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 
+    private void visitSchemaRuleCommand( CommandHandler applier, SchemaRuleCommand command ) throws Exception
+    {
+        TransactionToApply tx = new TransactionToApply(
+                new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ), txId );
+        tx.validatedIndexUpdates( mock( ValidatedIndexUpdates.class ) );
+        CommandHandlerContract.apply( applier, tx );
+    }
 }

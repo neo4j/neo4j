@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.util.function.Optionals;
@@ -46,7 +47,7 @@ public class CountsStoreApplierTest
         final CountsStoreApplier applier = new CountsStoreApplier( tracker, TransactionApplicationMode.INTERNAL );
 
         // WHEN
-        applier.begin( new TransactionToApply( null, 2L ) );
+        applier.begin( new TransactionToApply( null, 2L ), new LockGroup() );
         applier.visitNodeCountsCommand( addNodeCommand() );
         applier.apply();
 

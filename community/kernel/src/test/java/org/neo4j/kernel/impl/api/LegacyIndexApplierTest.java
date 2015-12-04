@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -117,7 +118,7 @@ public class LegacyIndexApplierTest
                     FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
                     commitment.setHasLegacyIndexChanges( true );
                     txToApply.commitment( commitment, txId );
-                    applier.begin( txToApply );
+                    applier.begin( txToApply, new LockGroup() );
                     applier.end();
                     applier.apply();
                     // Make sure threads are unordered

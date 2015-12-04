@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -71,7 +72,7 @@ public interface CommandHandler extends AutoCloseable
     /**
      * Called before each transaction in this batch.
      */
-    void begin( TransactionToApply transaction ) throws IOException;
+    void begin( TransactionToApply transaction, LockGroup locks ) throws IOException;
 
     /**
      * Called after each transaction in this batch.
@@ -131,7 +132,7 @@ public interface CommandHandler extends AutoCloseable
     class Adapter implements CommandHandler
     {
         @Override
-        public void begin( TransactionToApply transaction ) throws IOException
+        public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
         {
         }
 
@@ -264,9 +265,9 @@ public interface CommandHandler extends AutoCloseable
         }
 
         @Override
-        public void begin( TransactionToApply transaction ) throws IOException
+        public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
         {
-            delegate.begin( transaction );
+            delegate.begin( transaction, locks );
         }
 
         @Override

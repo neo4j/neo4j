@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
@@ -61,7 +62,7 @@ public class RecoveryIndexingUpdatesValidator implements IndexUpdatesValidator, 
     public ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException
     {
         // Extract updates...
-        extractor.begin( new TransactionToApply( transaction ) );
+        extractor.begin( new TransactionToApply( transaction ), new LockGroup() );
         transaction.accept( extractor );
 
         // and add them to the updates already existing in this batch.

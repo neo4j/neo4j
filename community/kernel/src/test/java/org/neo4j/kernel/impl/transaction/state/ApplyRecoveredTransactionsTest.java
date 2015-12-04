@@ -25,25 +25,24 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommandApplierFacade;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
@@ -96,13 +95,12 @@ public class ApplyRecoveredTransactionsTest
         return new RelationshipRecord( relationshipId );
     }
 
-    private void applyExternalTransaction( long transactionId, Command...commands ) throws IOException
+    private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
         NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ), new LockGroup() );
-        CommandApplierFacade applierFacade = new CommandApplierFacade( applier,
-                mock( CommandHandler.class ), mock( CommandHandler.class ), mock( CommandHandler.class ) );
-        new PhysicalTransactionRepresentation( Arrays.asList( commands ) ).accept( applierFacade );
+                mock( CacheAccessBackDoor.class ), mock( LockService.class ) );
+        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
+        CommandHandlerContract.apply( applier, new TransactionToApply( tx ) );
     }
 
     @Rule
