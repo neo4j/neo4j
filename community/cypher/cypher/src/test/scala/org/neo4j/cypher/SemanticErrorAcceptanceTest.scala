@@ -32,6 +32,34 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("don't allow a string after IN") {
+    executeAndEnsureError(
+      "MATCH (n) where id(n) IN '' return 1",
+      "Type mismatch: expected Collection<T> but was String (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a integer after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN 1 RETURN 1",
+      "Type mismatch: expected Collection<T> but was Integer (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a float after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN 1.0 RETURN 1",
+      "Type mismatch: expected Collection<T> but was Float (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a boolean after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN true RETURN 1",
+      "Type mismatch: expected Collection<T> but was Boolean (line 1, column 26 (offset: 25))"
+    )
+  }
+
   test("define node and treat it as a relationship") {
     executeAndEnsureError(
       "match (r) where id(r) = 0 match a-[r]->b return r",

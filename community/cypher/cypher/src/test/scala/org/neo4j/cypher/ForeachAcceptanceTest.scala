@@ -51,4 +51,24 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
     // then
     result shouldBe empty
   }
+
+  test("foreach should let you use inner variables from create relationship patterns") {
+    // given
+    val query = """FOREACH (x in [1] |
+                  |CREATE (e:Event)-[i:IN]->(p:Place)
+                  |SET e.foo='e_bar'
+                  |SET i.foo='i_bar'
+                  |SET p.foo='p_bar')
+                  |WITH 0 as dummy
+                  |MATCH (e:Event)-[i:IN]->(p:Place)
+                  |RETURN e.foo, i.foo, p.foo""".stripMargin
+
+    // when
+    val result = execute(query).toList
+
+    // then
+    result.head.get("e.foo") should equal(Some("e_bar"))
+    result.head.get("i.foo") should equal(Some("i_bar"))
+    result.head.get("p.foo") should equal(Some("p_bar"))
+  }
 }
