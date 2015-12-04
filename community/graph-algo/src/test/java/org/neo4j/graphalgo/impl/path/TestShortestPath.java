@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -48,12 +48,11 @@ import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
-import static common.SimpleGraphBuilder.KEY_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static java.util.Arrays.asList;
 
@@ -340,19 +339,22 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final PathFinder<Path> finder = new ShortestPath( 100, Traversal.expanderForAllTypes( Direction.OUTGOING ) )
         {
             @Override
-            protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
+            protected Node filterNextLevelNodes( Node nextNode )
             {
-                for ( final Node node : nextNodes )
+                if ( !allowedNodes.contains( nextNode ) )
                 {
-                    if ( !allowedNodes.contains( node ) )
-                    {
-                        fail( "Node " + node.getProperty( KEY_ID ) + " shouldn't be expanded" );
-                    }
+                    return null;
                 }
-                return nextNodes;
+                return nextNode;
             }
         };
-        finder.findAllPaths( a, c );
+        Iterator<Path> paths = finder.findAllPaths( a, c ).iterator();
+        for ( int i = 0; i < 4; i++ )
+        {
+            Path aToBToC = paths.next();
+            assertPath( aToBToC, a, b, c );
+        }
+        assertFalse( "should only have contained four paths", paths.hasNext() );
     }
 
     @Test

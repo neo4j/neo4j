@@ -316,7 +316,7 @@ public class ShortestPath implements PathFinder<Path>
 
         private void prepareNextLevel()
         {
-            Collection<Node> nodesToIterate = new ArrayList<Node>( filterNextLevelNodes( this.nextNodes ) );
+            Collection<Node> nodesToIterate = new ArrayList<>( this.nextNodes );
             this.nextNodes.clear();
             this.lastPath.setLength( currentDepth );
             this.nextRelationships = new NestingIterator<Relationship,Node>( nodesToIterate.iterator() )
@@ -342,27 +342,32 @@ public class ShortestPath implements PathFinder<Path>
                 {
                     return null;
                 }
-                lastMetadata.rels++;
 
                 Node result = nextRel.getOtherNode( this.lastPath.endNode() );
-                LevelData levelData = this.visitedNodes.get( result );
-                boolean createdLevelData = false;
-                if ( levelData == null )
+
+                if ( filterNextLevelNodes( result ) != null )
                 {
-                    levelData = new LevelData( nextRel, this.currentDepth );
-                    this.visitedNodes.put( result, levelData );
-                    createdLevelData = true;
-                }
-                if ( this.currentDepth == levelData.depth && !createdLevelData )
-                {
-                    levelData.addRel( nextRel );
-                }
-                // Was this level data created right now, i.e. have we visited this node before?
-                // In that case don't add it as next node to traverse
-                if ( createdLevelData )
-                {
-                    this.nextNodes.add( result );
-                    return result;
+                    lastMetadata.rels++;
+
+                    LevelData levelData = this.visitedNodes.get( result );
+                    boolean createdLevelData = false;
+                    if ( levelData == null )
+                    {
+                        levelData = new LevelData( nextRel, this.currentDepth );
+                        this.visitedNodes.put( result, levelData );
+                        createdLevelData = true;
+                    }
+                    if ( this.currentDepth == levelData.depth && !createdLevelData )
+                    {
+                        levelData.addRel( nextRel );
+                    }
+                    // Was this level data created right now, i.e. have we visited this node before?
+                    // In that case don't add it as next node to traverse
+                    if ( createdLevelData )
+                    {
+                        this.nextNodes.add( result );
+                        return result;
+                    }
                 }
             }
         }
@@ -475,9 +480,11 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
+    protected Node filterNextLevelNodes( Node nextNode )
     {
-        return nextNodes;
+        // We need to be able to override this method from Cypher, so it must exist in this concrete class.
+        // And we also need it to do nothing but still work when not overridden.
+        return nextNode;
     }
 
     // Many long-lived instances
