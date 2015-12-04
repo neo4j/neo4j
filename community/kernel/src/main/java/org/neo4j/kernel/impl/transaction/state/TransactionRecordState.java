@@ -175,10 +175,10 @@ public class TransactionRecordState implements RecordState
         Collections.sort( nodeCommands, COMMAND_SORTER );
 
         List<Command> relCommands = new ArrayList<>( context.getRelRecords().changeSize() );
-        for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
+        for ( RecordProxy<Long, RelationshipRecord, Void> change : context.getRelRecords().changes() )
         {
             Command.RelationshipCommand command = new Command.RelationshipCommand();
-            command.init( record.forReadingLinkage() );
+            command.init( change.getBefore(), change.forReadingLinkage() );
             relCommands.add( command );
         }
         Collections.sort( relCommands, COMMAND_SORTER );

@@ -235,10 +235,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand().init( before, record );
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -253,10 +254,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
 
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand().init( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -272,9 +274,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand().init( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );

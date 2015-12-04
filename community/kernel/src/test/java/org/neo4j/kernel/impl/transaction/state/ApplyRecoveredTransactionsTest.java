@@ -30,10 +30,8 @@ import java.util.Arrays;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -52,10 +50,10 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.any;
 
 public class ApplyRecoveredTransactionsTest
 {
@@ -88,10 +86,10 @@ public class ApplyRecoveredTransactionsTest
         return relationship;
     }
 
-    private Command relationshipCommand( RelationshipRecord relationship )
+    private Command relationshipCommand( RelationshipRecord record )
     {
         RelationshipCommand command = new RelationshipCommand();
-        command.init( relationship );
+        command.init( null, record );
         return command;
     }
 

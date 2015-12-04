@@ -87,9 +87,11 @@ public class Commands
     public static RelationshipCommand createRelationship( long id, long startNode, long endNode, int type )
     {
         RelationshipCommand command = new RelationshipCommand();
-        RelationshipRecord record = new RelationshipRecord( id, startNode, endNode, type );
-        record.setInUse( true );
-        command.init( record );
+        RelationshipRecord before = new RelationshipRecord( id );
+        before.setInUse( false );
+        RelationshipRecord after = new RelationshipRecord( id, startNode, endNode, type );
+        after.setInUse( true );
+        command.init( before, after );
         return command;
     }
 

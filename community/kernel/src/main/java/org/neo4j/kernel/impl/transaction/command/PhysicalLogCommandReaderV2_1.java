@@ -139,7 +139,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
             record.setCreated();
         }
         Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 

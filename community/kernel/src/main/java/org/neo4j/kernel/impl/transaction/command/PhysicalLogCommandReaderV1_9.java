@@ -115,7 +115,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record.setInUse( false );
         }
         Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 

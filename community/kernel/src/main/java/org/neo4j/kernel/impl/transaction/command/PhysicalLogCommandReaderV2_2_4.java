@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -191,7 +190,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
             record.setCreated();
         }
         Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 
