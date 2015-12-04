@@ -90,6 +90,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Mes
             buf.writeLong( appendResponse.term() );
             buf.writeBoolean( appendResponse.success() );
             buf.writeLong( appendResponse.matchIndex() );
+            buf.writeLong( appendResponse.appendIndex() );
         }
         else if ( message instanceof RaftMessages.NewEntry.Request )
         {

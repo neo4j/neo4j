@@ -62,8 +62,8 @@ public class Candidate implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
-                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req
-                                    .prevLogIndex() );
+                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false,
+                                    req.prevLogIndex(), ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;

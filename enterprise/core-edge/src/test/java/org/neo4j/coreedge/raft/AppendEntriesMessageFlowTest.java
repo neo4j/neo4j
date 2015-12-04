@@ -76,7 +76,8 @@ public class AppendEntriesMessageFlowTest
                 .prevLogTerm( 0 ).leaderCommit( 0 ).build() );
 
         // then
-        verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().from( myself ).term( 0 ).failure()
+        verify( outbound ).send( same( otherMember ),
+                eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( -1 ).matchIndex( -1 ).failure()
                 .build() ) );
     }
 
@@ -88,8 +89,8 @@ public class AppendEntriesMessageFlowTest
                 .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data ) ).leaderCommit( -1 ).build() );
 
         // then
-        verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().from( myself ).term( 0 ).success()
-                .build() ) );
+        verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().
+                appendIndex( 0 ).matchIndex( 0 ).from( myself ).term( 0 ).success().build() ) );
     }
 
     @Test
@@ -100,7 +101,8 @@ public class AppendEntriesMessageFlowTest
                 .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data ) ).build() );
 
         // then
-        verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().from( myself ).term( 0 ).success()
+        verify( outbound ).send( same( otherMember ),
+                eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success()
                 .build() ) );
     }
 
@@ -136,10 +138,19 @@ public class AppendEntriesMessageFlowTest
 
         // then
         InOrder invocationOrder = inOrder( outbound );
-        invocationOrder.verify( outbound, times( 3 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).success().build() ) );
-        invocationOrder.verify( outbound, times( 3 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 1 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 0 ).appendIndex( 1 ).matchIndex( 1 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 0 ).appendIndex( 2 ).matchIndex( 2 ).success().build() ) );
+
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 1 ).appendIndex( 3 ).matchIndex( 3 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 1 ).appendIndex( 4 ).matchIndex( 4 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 1 ).appendIndex( 5 ).matchIndex( 5 ).success().build() ) );
     }
 
     @Test
@@ -159,9 +170,13 @@ public class AppendEntriesMessageFlowTest
 
         // then
         InOrder invocationOrder = inOrder( outbound );
-        invocationOrder.verify( outbound, times( 3 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 2 ).failure().build() ) );
+                myself ).term( 0 ).matchIndex( 0 ).appendIndex( 0 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 0 ).matchIndex( 1 ).appendIndex( 1 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 0 ).matchIndex( 2 ).appendIndex( 2 ).success().build() ) );
+        invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
+                myself ).term( 2 ).matchIndex( -1 ).appendIndex( 2 ).failure().build() ) );
     }
 }

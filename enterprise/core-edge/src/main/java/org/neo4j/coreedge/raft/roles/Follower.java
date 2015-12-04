@@ -102,8 +102,8 @@ public class Follower implements RaftMessageHandler
 
                 if ( req.leaderTerm() < ctx.term() )
                 {
-                    Response<MEMBER> appendResponse =
-                            new Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex() );
+                    Response<MEMBER> appendResponse = new Response<>(
+                            ctx.myself(), ctx.term(), false, -1, ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -117,7 +117,9 @@ public class Follower implements RaftMessageHandler
                 if ( !logHistoryMatches( ctx, req.prevLogIndex(), req.prevLogTerm() ) )
                 {
                     assert req.prevLogIndex() > -1 && req.prevLogTerm() > -1;
-                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), false, -1 );
+                    Response<MEMBER> appendResponse = new Response<>(
+                            ctx.myself(), req.leaderTerm(), false, -1, ctx.entryLog().appendIndex() );
+
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
                 }
@@ -152,7 +154,7 @@ public class Follower implements RaftMessageHandler
                 long endMatchIndex = req.prevLogIndex() + req.entries().length; // this is the index of the last incoming entry
                 if ( endMatchIndex >= 0 )
                 {
-                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), true, endMatchIndex );
+                    Response<MEMBER> appendResponse = new Response<>( ctx.myself(), req.leaderTerm(), true, endMatchIndex, endMatchIndex );
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                 }
                 break;

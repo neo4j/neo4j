@@ -99,8 +99,6 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
                 entries[i] = new RaftLogEntry( entryTerm, content );
             }
 
-            // TODO: This currently needs to be last, because tx-content doesn't know its length and will just read
-            // to exhaustion.
             list.add( new RaftMessages.AppendEntries.Request<>( from, term, prevLogIndex, prevLogTerm,
                     entries, leaderCommit ) );
         }
@@ -109,8 +107,9 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long term = buffer.readLong();
             boolean success = buffer.readBoolean();
             long matchIndex = buffer.readLong();
+            long appendIndex = buffer.readLong();
 
-            list.add( new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex ) );
+            list.add( new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex ) );
         }
         else if ( messageType.equals( NEW_ENTRY_REQUEST ) )
         {
