@@ -21,8 +21,6 @@ package org.neo4j.kernel.configuration;
 
 import java.util.List;
 
-import org.neo4j.helpers.Triplet;
-
 /**
  * Generate a table with links to more details. For PDF generation, a list is
  * used instead of a table.
@@ -40,7 +38,7 @@ public class AsciiDocListGenerator
         this.shortenDescription = shortenDescription;
     }
 
-    public String generateListAndTableCombo( List<Triplet<String, String, String>> items )
+    public String generateListAndTableCombo( List<AsciiDocItem> items )
     {
         StringBuilder sb = new StringBuilder( 200 * items.size() );
         StringBuilder print = new StringBuilder( 100 * items.size() );
@@ -57,11 +55,11 @@ public class AsciiDocListGenerator
           .append( "|===\n" )
           .append( "|Name|Description\n" );
         print.append( ConfigAsciiDocGenerator.IFDEF_NONHTMLOUTPUT ).append( '\n' );
-        for ( Triplet<String,String,String> item : items )
+        for ( AsciiDocItem item : items )
         {
-            String id = item.first();
-            String name = item.second();
-            String description = item.third();
+            String id = item.id();
+            String name = item.name();
+            String description = item.description();
             if ( shortenDescription )
             {
                 int pos = description.indexOf( ". " );

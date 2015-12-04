@@ -28,7 +28,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.factory.SettingsResourceBundle;
-import org.neo4j.helpers.Triplet;
 
 /**
  * Generates AsciiDoc by using subclasses of {@link org.neo4j.graphdb.factory.SettingsResourceBundle},
@@ -73,8 +72,8 @@ public class ConfigAsciiDocGenerator
         }
 
         StringBuilder details = new StringBuilder();
-        List<Triplet<String, String, String>> beanList = new ArrayList<>();
-        List<Triplet<String, String, String>> deprecatedBeansList = new ArrayList<>();
+        List<AsciiDocItem> beanList = new ArrayList<>();
+        List<AsciiDocItem> deprecatedBeansList = new ArrayList<>();
 
         AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( settingsResourceId, bundleDescription, true );
         AsciiDocListGenerator deprecatedBeanslistGenerator = 
@@ -94,7 +93,7 @@ public class ConfigAsciiDocGenerator
                     String id = "config_" + name;
                     String descriptionKey = name + SettingsResourceBundle.DESCRIPTION;
                     String description = linkifyConfigSettings( bundle.getString( descriptionKey ), name, false );
-                    Triplet<String,String,String> beanSummary = Triplet.of( id, name, description );
+                    AsciiDocItem beanSummary = new AsciiDocItem( id, name, description );
                     String deprecatedKey = name + SettingsResourceBundle.DEPRECATED;
                     String obsoletedKey = name + SettingsResourceBundle.OBSOLETED;
                     if ( bundle.containsKey( deprecatedKey ) || bundle.containsKey( obsoletedKey ) )
