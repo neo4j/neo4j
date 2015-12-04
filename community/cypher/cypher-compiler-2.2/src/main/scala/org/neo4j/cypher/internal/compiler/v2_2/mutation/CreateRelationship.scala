@@ -90,7 +90,9 @@ extends UpdateAction
     Iterator(context)
   }
 
-  def identifiers = Seq(key-> CTRelationship)
+  def identifiers = Seq(key-> CTRelationship) ++
+    from.introducedIdentifier.map(n => n -> CTNode) ++
+    to.introducedIdentifier.map(n => n -> CTNode)
 
   override def symbolTableDependencies: Set[String] = {
       val a = props.flatMap(_._2.symbolTableDependencies).toSet
