@@ -27,35 +27,48 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.collection.primitive.Primitive.longSet;
 
-public class NodePropertyCommandsExtractor
-        extends CommandHandler.Adapter implements Visitor<Command,IOException>
+/**
+ * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage, cutting corners knowing
+ * that this is for recovery. See {@link RecoveryIndexingUpdatesValidator} for more details.
+ */
+public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
+        implements BatchTransactionApplier
 {
     final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
     final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
 
     @Override
-    public boolean visit( Command element ) throws IOException
-    {
-        element.handle( this );
-        return false;
-    }
-
-    @Override
-    public void begin( TransactionToApply transaction, LockGroup locks )
+    public TransactionApplier startTx( TransactionToApply transaction )
     {
         nodeCommandsById.clear();
         propertyCommandsByNodeIds.clear();
+
+        return this;
+    }
+
+    @Override
+    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup )
+    {
+        return startTx( transaction );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        // Nothing to close
     }
 
     @Override

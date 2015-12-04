@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
 import static java.lang.String.format;
@@ -145,7 +145,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( CommandVisitor visitor ) throws IOException
         {
             return visitor.visitIndexAddNodeCommand( this );
         }
@@ -224,7 +224,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( CommandVisitor visitor ) throws IOException
         {
             return visitor.visitIndexAddRelationshipCommand( this );
         }
@@ -248,7 +248,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( CommandVisitor visitor ) throws IOException
         {
             return visitor.visitIndexRemoveCommand( this );
         }
@@ -269,7 +269,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( CommandVisitor visitor ) throws IOException
         {
             return visitor.visitIndexDeleteCommand( this );
         }
@@ -322,7 +322,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean handle( CommandHandler visitor ) throws IOException
+        public boolean handle( CommandVisitor visitor ) throws IOException
         {
             return visitor.visitIndexCreateCommand( this );
         }

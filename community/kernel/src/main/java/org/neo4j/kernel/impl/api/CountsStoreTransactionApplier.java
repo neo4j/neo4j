@@ -21,34 +21,22 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
-
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
-public class CountsStoreApplier extends CommandHandler.Adapter
+public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
 {
-    private final CountsTracker countsTracker;
-    private CountsTracker.Updater countsUpdater;
     private final TransactionApplicationMode mode;
+    private final CountsTracker.Updater countsUpdater;
 
-    public CountsStoreApplier( CountsTracker countsTracker, TransactionApplicationMode mode )
+    public CountsStoreTransactionApplier( TransactionApplicationMode mode, CountsAccessor.Updater countsUpdater )
     {
-        this.countsTracker = countsTracker;
         this.mode = mode;
+        this.countsUpdater = countsUpdater;
     }
 
     @Override
-    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
-    {
-        countsTracker.apply( transaction.transactionId() ).map(
-                ( CountsTracker.Updater updater ) -> this.countsUpdater = updater );
-        assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
-    }
-
-    @Override
-    public void end()
+    public void close() throws Exception
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         if ( countsUpdater != null )

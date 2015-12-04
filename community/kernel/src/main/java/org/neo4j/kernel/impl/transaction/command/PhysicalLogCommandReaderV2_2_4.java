@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -66,7 +67,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter implements CommandReader
+public class PhysicalLogCommandReaderV2_2_4 implements CommandVisitor, CommandReader
 {
     private ReadableLogChannel channel;
     private IndexCommandHeader indexCommandHeader;
@@ -741,15 +742,5 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         default:
             throw new RuntimeException( "Unknown value type " + valueType );
         }
-    }
-
-    @Override
-    public void apply()
-    {   // Nothing to apply
-    }
-
-    @Override
-    public void close()
-    {   // Nothing to close
     }
 }

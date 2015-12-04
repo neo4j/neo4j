@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
-public class IndexTransactionApplierTest
+public class IndexBatchTransactionApplierTest
 {
     @Test
     public void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
@@ -49,7 +49,7 @@ public class IndexTransactionApplierTest
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 new WorkSync<>( singletonProvider( writer ) );
-        try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, labelScanSync ) )
+        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync ) )
         {
             // WHEN
             applier.visitNodeCommand( node( 15 ) );

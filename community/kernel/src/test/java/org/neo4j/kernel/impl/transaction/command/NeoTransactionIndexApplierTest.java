@@ -59,7 +59,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer );
 
         final NodeRecord before = new NodeRecord( 11 );
@@ -84,7 +84,7 @@ public class NeoTransactionIndexApplierTest
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
@@ -105,7 +105,7 @@ public class NeoTransactionIndexApplierTest
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer );
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();

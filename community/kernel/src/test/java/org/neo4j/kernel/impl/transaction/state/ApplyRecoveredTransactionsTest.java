@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -97,7 +97,7 @@ public class ApplyRecoveredTransactionsTest
 
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
-        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
+        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
                 mock( CacheAccessBackDoor.class ), mock( LockService.class ) );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
         CommandHandlerContract.apply( applier, new TransactionToApply( tx ) );

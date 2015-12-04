@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -118,7 +119,7 @@ public abstract class Command
         return o != null && o.getClass().equals( getClass() ) && getKey() == ((Command) o).getKey();
     }
 
-    public abstract boolean handle( CommandHandler handler ) throws IOException;
+    public abstract boolean handle( CommandVisitor handler ) throws IOException;
 
     protected String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
     {
@@ -139,7 +140,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitNodeCommand( this );
         }
@@ -179,7 +180,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitRelationshipCommand( this );
         }
@@ -208,7 +209,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitRelationshipGroupCommand( this );
         }
@@ -240,7 +241,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitNeoStoreCommand( this );
         }
@@ -255,7 +256,7 @@ public abstract class Command
     {
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitPropertyKeyTokenCommand( this );
         }
@@ -283,7 +284,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitPropertyCommand( this );
         }
@@ -338,7 +339,7 @@ public abstract class Command
     {
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitRelationshipTypeTokenCommand( this );
         }
@@ -348,7 +349,7 @@ public abstract class Command
     {
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitLabelTokenCommand( this );
         }
@@ -381,7 +382,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitSchemaRuleCommand( this );
         }
@@ -424,7 +425,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitNodeCountsCommand( this );
         }
@@ -467,7 +468,7 @@ public abstract class Command
         }
 
         @Override
-        public boolean handle( CommandHandler handler ) throws IOException
+        public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitRelationshipCountsCommand( this );
         }

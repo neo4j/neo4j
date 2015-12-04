@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -28,11 +29,11 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 
 /**
  * This class represents validated and prepared index updates that are ready to be flushed.
- * Flushing is performed with {@link ValidatedIndexUpdates#flush()} method.
+ * Flushing is performed with {@link ValidatedIndexUpdates#flush(Consumer)} method.
  * Releasing of resources is performed with {@link ValidatedIndexUpdates#close()} method.
  * <p>
  * Notion of being 'prepared' indicates that index updates are placed in internal data structures and no
- * pre-processing before {@link ValidatedIndexUpdates#flush()} is needed. Such data structure might represent simply
+ * pre-processing before {@link ValidatedIndexUpdates#flush(Consumer)} is needed. Such data structure might represent simply
  * a mapping 'Index -> [set of updates]'.
  * <p>
  * Notion of being 'validated' indicates that all updates in this batch can be consumed by corresponding indexes.
@@ -43,7 +44,7 @@ public interface ValidatedIndexUpdates extends AutoCloseable
     ValidatedIndexUpdates NONE = new ValidatedIndexUpdates()
     {
         @Override
-        public void flush( Set<IndexDescriptor> affectedIndexes )
+        public void flush( Consumer<IndexDescriptor> affectedIndexes )
         {
         }
 
@@ -60,7 +61,7 @@ public interface ValidatedIndexUpdates extends AutoCloseable
     };
 
     /**
-     * @return whether or not there are any updates to be {@link #flush() flushed}.
+     * @return whether or not there are any updates to be {@link #flush(Consumer) flushed}.
      */
     boolean hasChanges();
 
@@ -71,7 +72,7 @@ public interface ValidatedIndexUpdates extends AutoCloseable
      * This is a temporary solution until {@link ValidatedIndexUpdates} is removed and index updates
      * are done via proper commands... to achieve efficient batching of transactions.
      */
-    void flush( Set<IndexDescriptor> affectedIndexes )
+    void flush( Consumer<IndexDescriptor> affectedIndexes )
             throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
     /**

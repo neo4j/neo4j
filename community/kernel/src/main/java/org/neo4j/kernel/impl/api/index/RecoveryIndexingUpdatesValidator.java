@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -35,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
  * The design is to reduce garbage, cutting corners knowing that this is for recovery.
  * So the {@link IndexUpdatesValidator} is the same instance as the {@link ValidatedIndexUpdates} it hands out,
  * where updates are gathered for every call to {@link #validate(TransactionRepresentation)}. Now and then
- * {@link #flush()} is be called from the recovery code, where updates (node ids) are fed into the supplied
+ * {@link #flush(Consumer)} is be called from the recovery code, where updates (node ids) are fed into the supplied
  * {@link PrimitiveLongVisitor visitor} and a new batch can begin anew.
  */
 public class RecoveryIndexingUpdatesValidator implements IndexUpdatesValidator, ValidatedIndexUpdates
@@ -62,12 +64,18 @@ public class RecoveryIndexingUpdatesValidator implements IndexUpdatesValidator, 
     public ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException
     {
         // Extract updates...
-        extractor.begin( new TransactionToApply( transaction ), new LockGroup() );
-        transaction.accept( extractor );
+        try ( TransactionApplier txApplier = extractor.startTx( new TransactionToApply( transaction ) ) )
+        {
+            transaction.accept( txApplier );
 
-        // and add them to the updates already existing in this batch.
-        extractor.visitUpdatedNodeIds( nodeIdCollector );
-        return this;
+            // and add them to the updates already existing in this batch.
+            extractor.visitUpdatedNodeIds( nodeIdCollector );
+            return this;
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e );
+        }
     }
 
     @Override
@@ -77,7 +85,7 @@ public class RecoveryIndexingUpdatesValidator implements IndexUpdatesValidator, 
     }
 
     @Override
-    public void flush( Set<IndexDescriptor> affectedIndexes )
+    public void flush( Consumer<IndexDescriptor> affectedIndexes )
     {
         // Flush the batched changes to the supplied visitor.
         allNodeIds.visitKeys( updatedNodeVisitor );

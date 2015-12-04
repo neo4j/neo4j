@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -560,7 +559,7 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( false );
-        final CommandHandler indexApplier = new IndexTransactionApplier( indexingService,
+        final CommandHandler indexApplier = new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
@@ -950,7 +949,7 @@ public class NeoTransactionStoreApplierTest
 
     private CommandHandler newApplier( boolean recovery )
     {
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService );
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, cacheAccess, lockService );
         if ( recovery )
         {
             applier = new HighIdTransactionApplier( applier, neoStores );
@@ -962,6 +961,6 @@ public class NeoTransactionStoreApplierTest
 
     private CommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, labelScanStoreSynchronizer );
+        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer );
     }
 }

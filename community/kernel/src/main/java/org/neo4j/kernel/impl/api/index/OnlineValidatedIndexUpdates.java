@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -32,7 +33,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.Reservation;
 
 /**
- * Index updates that are validated and intended to be {@link #flush() flushed} into an
+ * Index updates that are validated and intended to be {@link #flush(Consumer) flushed} into an
  * {@link OnlineIndexProxy online index}.
  */
 class OnlineValidatedIndexUpdates implements ValidatedIndexUpdates
@@ -50,13 +51,13 @@ class OnlineValidatedIndexUpdates implements ValidatedIndexUpdates
     }
 
     @Override
-    public void flush( Set<IndexDescriptor> affectedIndexes )
+    public void flush( Consumer<IndexDescriptor> affectedIndexes )
             throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         for ( Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry : updatesByIndex.entrySet() )
         {
             IndexDescriptor indexDescriptor = entry.getKey();
-            affectedIndexes.add( indexDescriptor );
+            affectedIndexes.accept( indexDescriptor );
             List<NodePropertyUpdate> updates = entry.getValue();
 
             IndexUpdater updater = indexUpdaters.getUpdater( indexDescriptor );

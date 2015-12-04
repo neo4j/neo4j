@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -564,7 +565,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
 
             try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates, IndexUpdateMode.BATCHED ) )
             {
-                validatedUpdates.flush( new HashSet<>() );
+                validatedUpdates.flush( indexDescriptor -> {} );
                 monitor.appliedRecoveredData( recoveredUpdates );
             }
             catch ( IndexEntryConflictException | IndexCapacityExceededException e )

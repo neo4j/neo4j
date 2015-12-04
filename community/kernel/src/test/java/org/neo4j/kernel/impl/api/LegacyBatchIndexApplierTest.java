@@ -60,7 +60,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
-public class LegacyIndexApplierTest
+public class LegacyBatchIndexApplierTest
 {
     @Rule
     public final LifeRule life = new LifeRule( true );
@@ -77,7 +77,7 @@ public class LegacyIndexApplierTest
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
         when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
-        try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
+        try ( LegacyBatchIndexApplier applier = new LegacyBatchIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
         {
             // WHEN
             IndexDefineCommand definitions = definitions( names, keys );
@@ -111,7 +111,7 @@ public class LegacyIndexApplierTest
         {
             final long txId = i;
             race.addContestant( () -> {
-                try ( LegacyIndexApplier applier = new LegacyIndexApplier( config, applierLookup, queue, INTERNAL ) )
+                try ( LegacyBatchIndexApplier applier = new LegacyBatchIndexApplier( config, applierLookup, queue, INTERNAL ) )
                 {
                     TransactionToApply txToApply = new TransactionToApply(
                             new PhysicalTransactionRepresentation( new ArrayList<>() ) );

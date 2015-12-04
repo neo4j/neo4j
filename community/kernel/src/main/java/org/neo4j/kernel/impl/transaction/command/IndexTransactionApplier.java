@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -32,89 +33,48 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-/**
- * Gather node and property changes, converting them into logical updates to the indexes.
- * {@link #close()} will actually apply to the indexes.
- */
-public class IndexTransactionApplier extends CommandHandler.Adapter
+
+public class IndexTransactionApplier extends TransactionApplier.Adapter
 {
     private final IndexingService indexingService;
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private final ValidatedIndexUpdates indexUpdates;
+    private final Consumer<IndexDescriptor> affectedIndexesConsumer;
+    private final Consumer<NodeLabelUpdate> labelUpdateConsumer;
 
-    private List<NodeLabelUpdate> labelUpdates;
-    private Set<IndexDescriptor> affectedIndexes;
-    private ValidatedIndexUpdates indexUpdates;
-
-    public IndexTransactionApplier( IndexingService indexingService,
-                                    WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
+    public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
+            Consumer<IndexDescriptor> affectedIndexesConsumer, Consumer<NodeLabelUpdate> labelUpdateConsumer )
     {
         this.indexingService = indexingService;
-        this.labelScanStoreSync = labelScanStoreSync;
+        this.indexUpdates = indexUpdates;
+        this.affectedIndexesConsumer = affectedIndexesConsumer;
+        this.labelUpdateConsumer = labelUpdateConsumer;
     }
 
     @Override
-    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
-    {
-        indexUpdates = transaction.validatedIndexUpdates();
-    }
-
-    @Override
-    public void end() throws Exception
+    public void close() throws Exception
     {
         if ( indexUpdates.hasChanges() )
         {
-            // Lazily initialize set to hold which indexes has changed.
-            if ( affectedIndexes == null )
-            {
-                affectedIndexes = new HashSet<>();
-            }
-
             // Write index updates. The setup should be that these updates doesn't do unnecessary
             // work that could be done after the whole batch, like f.ex. refreshing index readers.
-            indexUpdates.flush( affectedIndexes );
+            indexUpdates.flush( affectedIndexesConsumer );
             indexUpdates.close();
         }
     }
 
     @Override
-    public void apply()
-    {
-        // Apply all the label updates within this whole batch of transactions.
-        if ( labelUpdates != null )
-        {
-            updateLabelScanStore();
-        }
-
-        if ( affectedIndexes != null )
-        {
-            // Since we have written changes to indexes w/o refreshing readers, then do so now
-            // at this point where all changes in this whole batch of transactions have been applied.
-            indexingService.flushAll( affectedIndexes );
-        }
-    }
-
-    private void updateLabelScanStore()
-    {
-        // Updates are sorted according to node id here, an artifact of node commands being sorted
-        // by node id when extracting from TransactionRecordState.
-        labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
-    }
-
-    @Override
-    public boolean visitNodeCommand( NodeCommand command ) throws IOException
+    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
     {
         // for label store updates
         NodeRecord before = command.getBefore();
@@ -122,31 +82,23 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
 
         NodeLabels labelFieldBefore = parseLabelsField( before );
         NodeLabels labelFieldAfter = parseLabelsField( after );
-        if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined()
-               && before.getLabelField() == after.getLabelField()) )
+        if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined() &&
+                before.getLabelField() == after.getLabelField()) )
         {
             long[] labelsBefore = labelFieldBefore.getIfLoaded();
             long[] labelsAfter = labelFieldAfter.getIfLoaded();
             if ( labelsBefore != null && labelsAfter != null )
             {
-                addLabelUpdate( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
+                labelUpdateConsumer.accept(
+                        NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
             }
         }
 
         return false;
     }
 
-    private void addLabelUpdate( NodeLabelUpdate labelChanges )
-    {
-        if ( labelUpdates == null )
-        {
-            labelUpdates = new ArrayList<>();
-        }
-        labelUpdates.add( labelChanges );
-    }
-
     @Override
-    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
     {
         if ( command.getSchemaRule() instanceof IndexRule )
         {
@@ -164,8 +116,8 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
                     catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
                             IndexPopulationFailedKernelException e )
                     {
-                        throw new IllegalStateException(
-                                "Unable to enable constraint, backing index is not online.", e );
+                        throw new IllegalStateException( "Unable to enable constraint, backing index is not online.",
+                                e );
                     }
                 }
                 break;
@@ -181,4 +133,6 @@ public class IndexTransactionApplier extends CommandHandler.Adapter
         }
         return false;
     }
+
+
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -60,25 +62,34 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     @Override
     public ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException
     {
-        NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
-        try
+        // NodePropertyCommandsExtractor doesn't actually do anything in close atm, but wrap in try-with-resources
+        // in case it will in the future
+        try ( NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor() )
         {
-            transaction.accept( extractor );
+            try ( TransactionApplier txApplier = extractor.startTx( new TransactionToApply( transaction ) ))
+            {
+                transaction.accept( txApplier );
+            }
+            catch ( IOException cause )
+            {
+                databaseHealth.panic( cause );
+                throw cause;
+            }
+
+            if ( !extractor.containsAnyNodeOrPropertyUpdate() )
+            {
+                return ValidatedIndexUpdates.NONE;
+            }
+
+            Iterable<NodePropertyUpdate> updates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
+                    extractor.propertyCommandsByNodeIds, extractor.nodeCommandsById );
+
+            return indexing.validate( updates, updateMode );
         }
-        catch ( IOException cause )
+        catch ( Exception cause )
         {
             databaseHealth.panic( cause );
-            throw cause;
+            throw new IOException( cause );
         }
-
-        if ( !extractor.containsAnyNodeOrPropertyUpdate() )
-        {
-            return ValidatedIndexUpdates.NONE;
-        }
-
-        Iterable<NodePropertyUpdate> updates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                extractor.propertyCommandsByNodeIds, extractor.nodeCommandsById );
-
-        return indexing.validate( updates, updateMode );
     }
 }

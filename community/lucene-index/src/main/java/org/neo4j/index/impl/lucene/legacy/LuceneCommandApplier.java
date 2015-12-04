@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -32,13 +33,12 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 /**
  * Applies changes from {@link IndexCommand commands} onto one ore more indexes from the same
  * {@link IndexImplementation provider}.
  */
-public class LuceneCommandApplier extends CommandHandler.Adapter
+public class LuceneCommandApplier extends TransactionApplier.Adapter
 {
     private final LuceneDataSource dataSource;
     private final Map<String,CommitContext> nodeContexts = new HashMap<>();
@@ -116,8 +116,9 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void apply()
+    public void close()
     {
+        // apply
         try
         {
             if ( definitions != null )
@@ -137,11 +138,8 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         {
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
-    }
 
-    @Override
-    public void close()
-    {
+        // close
         if ( definitions != null )
         {
             dataSource.releaseWriteLock();

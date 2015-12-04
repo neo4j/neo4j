@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
@@ -71,8 +70,8 @@ import static java.lang.String.format;
  *
  * The {@link #newCommandReader()} creates a new instance every time. An example of a {@link CommandReader}
  * is {@link PhysicalLogCommandReaderV2_2_4}. They are really (sort of) stateless, but the way they
- * are implemented, via the use of {@link CommandHandler} the channel to read from must be injected by
- * constructor or other means. That's why they have to be created at certain points and retained as long
+ * are implemented, via the use of {@link org.neo4j.kernel.impl.api.CommandVisitor} the channel to read from must be
+ * injected by constructor or other means. That's why they have to be created at certain points and retained as long
  * as it makes sense, local to the reading thread.
  *
  * We need to keep going the negative version number route until all supported versions have negative
@@ -210,10 +209,10 @@ public enum LogEntryVersion
     }
 
     /**
-     * Why do we create {@link CommandReader}s like this? The only reason is that we're using the {@link CommandHandler}
-     * as interface to drive the reading, and those methods doesn't accept the source of information as argument,
-     * i.e. in this case the channel. It's causing head aches actually. Perhaps we should include some genericified
-     * source in those calls as well?
+     * Why do we create {@link CommandReader}s like this? The only reason is that we're using the {@link
+     * org.neo4j.kernel.impl.api.CommandVisitor} as interface to drive the reading, and those methods doesn't accept the
+     * source of information as argument, i.e. in this case the channel. It's causing head aches actually. Perhaps we
+     * should include some genericified source in those calls as well?
      *
      * Please cache a returned instances so that there ain't one instance created per log entry.
      */

@@ -28,15 +28,15 @@ public class LockGroup implements AutoCloseable
 
     public final void add( Lock lock )
     {
+        if (lock == null) {
+            throw new NullPointerException( "Cannot add null locks. See LockService.NOLOCK instead." );
+        }
         locks.add( lock );
     }
 
     @Override
     public void close()
     {
-        for ( Lock lock : locks )
-        {
-            lock.release();
-        }
+        locks.forEach( Lock::release );
     }
 }

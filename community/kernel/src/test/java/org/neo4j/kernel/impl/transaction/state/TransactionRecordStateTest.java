@@ -67,9 +67,8 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -469,7 +468,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN a store that has got a node with a dynamic label record
         NeoStores store = neoStoresRule.open();
-        CommandHandler applier = new NeoStoreTransactionApplier( store, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( store, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
@@ -488,7 +487,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN a store that has got a node with a dynamic label record
         NeoStores store = neoStoresRule.open();
-        CommandHandler applier = new NeoStoreTransactionApplier( store, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( store, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
@@ -547,7 +546,7 @@ public class TransactionRecordStateTest
         recordState.relCreate( relId1, 0, nodeId, nodeId );
         recordState.relCreate( relId2, 0, nodeId, nodeId );
         recordState.nodeAddProperty( nodeId, 0, 101 );
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( recordState ) );
 
@@ -591,7 +590,7 @@ public class TransactionRecordStateTest
         recordState.relCreate( relId2, 0, nodeId1, nodeId1 );
         recordState.relCreate( relId4, 1, nodeId1, nodeId1 );
         recordState.nodeAddProperty( nodeId1, 0, 101 );
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( recordState ) );
 
@@ -737,7 +736,7 @@ public class TransactionRecordStateTest
             }
             tx.nodeAddProperty( nodes[3], 0, "old" );
             tx.nodeAddProperty( nodes[4], 0, "old" );
-            CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+            CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     locks );
             apply( applier, transaction( tx ) );
         }
@@ -757,7 +756,7 @@ public class TransactionRecordStateTest
         tx.nodeAddProperty( nodes[6], 0, "value" );
 
         //commit( tx );
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ), locks );
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ), locks );
         apply( applier, transaction( tx ) );
 
         // then
@@ -791,7 +790,7 @@ public class TransactionRecordStateTest
         tx.createRelationshipTypeToken( "A", typeA );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction( tx ) );
 
@@ -1066,7 +1065,7 @@ public class TransactionRecordStateTest
             recordState.createRelationshipTypeToken( "5", type5 );
             recordState.createRelationshipTypeToken( "10", type10 );
             recordState.createRelationshipTypeToken( "15", type15 );
-            CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+            CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     LockService.NO_LOCK_SERVICE );
             apply( applier, transaction( recordState ) );
         }
@@ -1084,7 +1083,7 @@ public class TransactionRecordStateTest
             // This relationship will cause the switch to dense
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
 
-            CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+            CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     LockService.NO_LOCK_SERVICE );
             apply( applier, transaction( recordState ) );
 
@@ -1099,7 +1098,7 @@ public class TransactionRecordStateTest
             long otherNodeId = neoStores.getNodeStore().nextId();
             recordState.nodeCreate( otherNodeId );
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
-            CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+            CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     LockService.NO_LOCK_SERVICE );
             apply( applier, transaction( recordState ) );
 
@@ -1115,7 +1114,7 @@ public class TransactionRecordStateTest
             long otherNodeId = neoStores.getNodeStore().nextId();
             recordState.nodeCreate( otherNodeId );
             recordState.relCreate( neoStores.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
-            CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+            CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                     LockService.NO_LOCK_SERVICE );
             apply( applier, transaction( recordState ) );
 
@@ -1252,14 +1251,14 @@ public class TransactionRecordStateTest
 
     private void apply( NeoStores neoStores, TransactionRepresentation transaction ) throws Exception
     {
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transaction );
     }
 
     private void apply( NeoStores neoStores, TransactionRecordState state ) throws Exception
     {
-        CommandHandler applier = new NeoStoreTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
+        CommandHandler applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );
         apply( applier, transactionRepresentationOf( state ) );
     }

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -213,7 +214,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
         }
     }
 
-    private class PhysicalNeoCommandReader extends CommandHandler.Adapter
+    private class PhysicalNeoCommandReader extends CommandVisitor.Adapter
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
@@ -781,16 +782,6 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
             default:
                 throw new RuntimeException( "Unknown value type " + valueType );
             }
-        }
-
-        @Override
-        public void apply()
-        {   // Nothing to apply
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close
         }
     }
 }
