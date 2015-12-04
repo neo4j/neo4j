@@ -354,7 +354,7 @@ public class ShortestPath implements PathFinder<Path>
 
         private void prepareNextLevel()
         {
-            Collection<Node> nodesToIterate = new ArrayList<Node>( filterNextLevelNodes( this.nextNodes ) );
+            Collection<Node> nodesToIterate = new ArrayList<>( this.nextNodes );
             this.nextNodes.clear();
             this.lastPath.setLength( currentDepth );
             this.nextRelationships = new NestingIterator<Relationship,Node>( nodesToIterate.iterator() )
@@ -380,20 +380,25 @@ public class ShortestPath implements PathFinder<Path>
                 {
                     return null;
                 }
-                lastMetadata.rels++;
 
                 Node result = nextRel.getOtherNode( this.lastPath.endNode() );
-                LevelData levelData = this.visitedNodes.get( result );
-                if ( levelData == null )
+
+                if ( filterNextLevelNodes( result ) != null )
                 {
-                    levelData = new LevelData( nextRel, this.currentDepth );
-                    this.visitedNodes.put( result, levelData );
-                    this.nextNodes.add( result );
-                    return result;
-                }
-                else if ( this.currentDepth == levelData.depth )
-                {
-                    levelData.addRel( nextRel );
+                    lastMetadata.rels++;
+
+                    LevelData levelData = this.visitedNodes.get( result );
+                    if ( levelData == null )
+                    {
+                        levelData = new LevelData( nextRel, this.currentDepth );
+                        this.visitedNodes.put( result, levelData );
+                        this.nextNodes.add( result );
+                        return result;
+                    }
+                    else if ( this.currentDepth == levelData.depth )
+                    {
+                        levelData.addRel( nextRel );
+                    }
                 }
             }
         }
@@ -506,9 +511,11 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    protected Collection<Node> filterNextLevelNodes( Collection<Node> nextNodes )
+    protected Node filterNextLevelNodes( Node nextNode )
     {
-        return nextNodes;
+        // We need to be able to override this method from Cypher, so it must exist in this concrete class.
+        // And we also need it to do nothing but still work when not overridden.
+        return nextNode;
     }
 
     // Many long-lived instances
