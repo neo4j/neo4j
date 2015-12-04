@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -40,7 +39,6 @@ public class ArrayEncoderTest
 {
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
-
 
     private static final Character[] base64chars = new Character[]{
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',

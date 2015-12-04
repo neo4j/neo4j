@@ -19,42 +19,19 @@
  */
 package org.neo4j.kernel.api.index;
 
-import sun.misc.BASE64Encoder;
-
-import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Array;
+import java.util.Base64;
 
 import org.neo4j.helpers.UTF8;
 
-public class ArrayEncoder
+public final class ArrayEncoder
 {
-    private static final BASE64Encoder base64Encoder = new BASE64Encoder()
+    private static final Base64.Encoder base64Encoder = Base64.getEncoder();
+
+    private ArrayEncoder()
     {
-        @Override
-        protected void encodeBufferPrefix( OutputStream out ) throws IOException
-        {
-            // don't initialize the non-thread-safe state and make sure we don't add any buffer prefix
-        }
-
-        @Override
-        protected void encodeBufferSuffix( OutputStream outputStream ) throws IOException
-        {
-            // make sure we don't add any buffer suffix
-        }
-
-        @Override
-        protected void encodeLinePrefix( OutputStream outputStream, int i ) throws IOException
-        {
-            // make sure we don't add any line prefix
-        }
-
-        @Override
-        protected void encodeLineSuffix( OutputStream out ) throws IOException
-        {
-            // don't use the non-thread-safe state and make sure we don't add any line suffix
-        }
-    };
+        throw new AssertionError( "Not for instantiation!" );
+    }
 
     public static String encode( Object array )
     {
@@ -83,7 +60,7 @@ public class ArrayEncoder
             {
                 type = "L";
                 String str = o.toString();
-                builder.append( base64Encoder.encode( UTF8.encode( str ) ) );
+                builder.append( base64Encoder.encodeToString( UTF8.encode( str ) ) );
             }
             builder.append( "|" );
         }
