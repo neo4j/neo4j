@@ -79,7 +79,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): RonjaPipe = {
-    val pipeBuilder = pipeBuilderFactory(monitors, p => buildPipe(p))
+    val pipeBuilder = pipeBuilderFactory(monitors, p => buildPipe(p), plan.solved.readOnly)
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[RonjaPipe]()
@@ -148,8 +148,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
 }
 
 case class PipeBuilderFactory() {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext):PipeBuilder =
-    new ActualPipeBuilder(monitors, recurse)
+  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext):PipeBuilder =
+    new ActualPipeBuilder(monitors, recurse, readOnly)
 }
 
 trait PipeBuilder {
@@ -162,7 +162,7 @@ trait PipeBuilder {
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
+case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean)
                             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
   def build(plan: LogicalPlan): RonjaPipe = plan match {
@@ -194,11 +194,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe)
       UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()
 
     case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-      val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = true).fromQueryExpression(valueExpr)
+      val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
       NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)()
 
     case NodeUniqueIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
-      val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = true).fromQueryExpression(valueExpr)
+      val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
       NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), indexSeekMode)()
 
     case NodeIndexScan(IdName(id), label, propertyKey, _) =>

@@ -58,7 +58,7 @@ case object LockingUniqueIndexSeek extends IndexSeekMode {
   override def indexFactory(descriptor: IndexDescriptor): (QueryState) => (Any) => Iterator[Node] =
     (state: QueryState) => (x: Any) => state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
 
-  override def name: String = "NodeUniqueIndexSeek"
+  override def name: String = "NodeUniqueIndexSeek(Locking)"
 }
 
 sealed trait SeekByRange {

@@ -19,10 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
-
 
   test("should be able to use unique index hints on IN expressions") {
     //GIVEN
@@ -102,5 +101,48 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
+  }
+
+  test("should not use locking index for read only query") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createConstraint("Person", "name")
+
+    //WHEN
+    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+
+    //THEN
+    result should use("NodeUniqueIndexSeek")
+    result shouldNot use("NodeUniqueIndexSeek(Locking)")
+  }
+
+  test("should use locking unique index for merge queries") {
+    //GIVEN
+    createLabeledNode(Map("name" -> "Andres"), "Person")
+    graph.createConstraint("Person", "name")
+
+    //WHEN
+    val result = updateWithBothPlanners("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+
+    //THEN
+    result shouldNot use("NodeIndexSeek")
+    result should use("NodeUniqueIndexSeek(Locking)")
+  }
+
+  test("should use locking unique index for mixed read write queries") {
+    //GIVEN
+    createLabeledNode(Map("name" -> "Andres"), "Person")
+    graph.createConstraint("Person", "name")
+
+    //WHEN
+    val result = updateWithBothPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name","coll"->List("Jacob"))
+
+    //THEN
+    result shouldNot use("NodeIndexSeek")
+    result should use("NodeUniqueIndexSeek(Locking)")
   }
 }

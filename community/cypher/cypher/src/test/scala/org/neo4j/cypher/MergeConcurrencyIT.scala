@@ -28,14 +28,21 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       // Given a constraint on :Label(id), create a linked list
       execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
 
+      var exceptionsThrown = List.empty[Throwable]
+
       val runner = new Runnable {
         def run() {
-          (1 to nodeCount) foreach {
-            x =>
-              execute("MERGE (a:Label {id:{id}}) " +
-                "MERGE (b:Label {id:{id}+1}) " +
-                "MERGE (a)-[r:TYPE]->(b) " +
-                "RETURN a, b, r", "id" -> x)
+          try {
+            (1 to nodeCount) foreach {
+              x =>
+                execute("MERGE (a:Label {id:{id}}) " +
+                  "MERGE (b:Label {id:{id}+1}) " +
+                  "MERGE (a)-[r:TYPE]->(b) " +
+                  "RETURN a, b, r", "id" -> x)
+            }
+          }
+          catch {
+            case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
           }
         }
       }
@@ -44,6 +51,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
       threads.foreach(_.start())
       threads.foreach(_.join())
+      exceptionsThrown.foreach(throw _)
 
       // Check that we haven't created duplicate nodes or duplicate relationships
       execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty
@@ -57,12 +65,18 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   test("should handle ten simultaneous threads with only nodes") {
     // Given a constraint on :Label(id), create a linked list
     execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
+    var exceptionsThrown = List.empty[Throwable]
 
     val runner = new Runnable {
       def run() {
-        (0 until nodeCount) foreach {
-          x =>
-            execute("MERGE (a:Label {id:{id}})", "id" -> x)
+        try {
+          (0 until nodeCount) foreach {
+            x =>
+              val res = execute("MERGE (a:Label {id:{id}})", "id" -> x)
+              println(res.executionPlanDescription())
+          }
+        } catch {
+          case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
         }
       }
     }
@@ -71,6 +85,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
     threads.foreach(_.start())
     threads.foreach(_.join())
+    exceptionsThrown.foreach(throw _)
 
     // Check that we haven't created duplicate nodes or duplicate relationships
     execute("match (a:Label) with a.id as id, count(*) as c where c > 1 return *") shouldBe empty

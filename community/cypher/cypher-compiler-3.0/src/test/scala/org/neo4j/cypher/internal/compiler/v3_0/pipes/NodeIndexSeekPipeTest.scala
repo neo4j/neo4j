@@ -46,11 +46,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val nonUniquePipe = NodeIndexSeekPipe("a", label, propertyKey, SingleQueryExpression(Literal("hello")), IndexSeek)()
 
     val uniquePlan = uniquePipe.planDescriptionWithoutCardinality.toString
-    uniquePlan should equal("""+----------------------+-----------+--------------------------+
-                              || Operator             | Variables | Other                    |
-                              |+----------------------+-----------+--------------------------+
-                              || +NodeUniqueIndexSeek | a         | :LabelName(PropertyName) |
-                              |+----------------------+-----------+--------------------------+
+    uniquePlan should equal("""+-------------------------------+-----------+--------------------------+
+                              || Operator                      | Variables | Other                    |
+                              |+-------------------------------+-----------+--------------------------+
+                              || +NodeUniqueIndexSeek(Locking) | a         | :LabelName(PropertyName) |
+                              |+-------------------------------+-----------+--------------------------+
                               |
                               |Total database accesses: ?
                               |""".stripMargin)

@@ -54,17 +54,21 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def readOnly: Boolean = updateGraph.isEmpty && queryGraph.nonEmpty
+  def readOnly: Boolean = {
+    val a: Boolean = updateGraph.isEmpty
+    val c: Boolean = tail.map(_.readOnly).getOrElse(true)
+    a && c
+  }
 
-  def writeOnly: Boolean = queryGraph.isEmpty && updateGraph.nonEmpty
+  def writeOnly: Boolean = queryGraph.isEmpty && updateGraph.nonEmpty && tail.map(_.writeOnly).getOrElse(true)
 
-  def writes: Boolean = exists(_.updateGraph.nonEmpty)
+  def writes: Boolean = exists(_.updateGraph.nonEmpty) || tail.exists(_.writes)
 
-  def createsNodes: Boolean = exists(_.updateGraph.createNodePatterns.nonEmpty)
+  def createsNodes: Boolean = exists(_.updateGraph.createNodePatterns.nonEmpty) || tail.exists(_.createsNodes)
 
-  def updatesNodes: Boolean = exists(_.updateGraph.updatesNodes)
+  def updatesNodes: Boolean = exists(_.updateGraph.updatesNodes) || tail.exists(_.updatesNodes)
 
-  def writesRelationships: Boolean = exists(_.updateGraph.createRelationshipPatterns.nonEmpty)
+  def writesRelationships: Boolean = exists(_.updateGraph.createRelationshipPatterns.nonEmpty) || tail.exists(_.writesRelationships)
 
   def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
