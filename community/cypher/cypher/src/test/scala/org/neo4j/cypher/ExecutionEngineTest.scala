@@ -284,9 +284,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     for (i <- 1 to 10) createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
-    intercept[CypherTypeException] {
-      executeWithAllPlanners(query, "a" -> "Andres").toList
-    }
+    executeWithAllPlanners(query, "a" -> "Andres") should be (empty)
   }
 
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
