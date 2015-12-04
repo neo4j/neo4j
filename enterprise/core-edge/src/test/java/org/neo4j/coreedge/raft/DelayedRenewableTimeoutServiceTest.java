@@ -24,8 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.test.ArtificialClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -117,7 +118,7 @@ public class DelayedRenewableTimeoutServiceTest
         // given
         final AtomicLong timeoutCount = new AtomicLong();
 
-        ArtificialClock clock = new ArtificialClock();
+        FakeClock clock = new FakeClock();
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock );
 
@@ -126,7 +127,7 @@ public class DelayedRenewableTimeoutServiceTest
 
         life.add( timeoutService );
 
-        clock.progress( 1000, MILLISECONDS );
+        clock.forward( 1000, MILLISECONDS );
         Thread.sleep( 5 ); // to make sure the scheduled thread has checked time elapsed
 
         assertThat( timeoutCount.get(), equalTo( 1L ) );
@@ -136,7 +137,7 @@ public class DelayedRenewableTimeoutServiceTest
 
         timeout.renew();
         Thread.sleep( 5 );
-        clock.progress( 1000, MILLISECONDS );
+        clock.forward( 1000, MILLISECONDS );
         Thread.sleep( 5 );
 
         assertThat( timeoutCount.get(), equalTo( 1L ) );
