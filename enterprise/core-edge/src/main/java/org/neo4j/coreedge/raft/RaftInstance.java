@@ -24,21 +24,23 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.raft.log.RaftStorageException;
+import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -86,6 +88,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private final long electionTimeout;
     private final long leaderWaitTimeout;
 
+    private final Dependencies dependencies;
+
     private final Outbound<MEMBER> outbound;
     private final Log log;
     private volatile boolean handlingMessage = false;
@@ -94,10 +98,12 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private RaftLogShippingManager<MEMBER> logShipping;
     private Set<Listener<LeadershipChange<MEMBER>>> leadershipChangeListeners = new HashSet<>();
 
-    public RaftInstance( MEMBER myself, TermStore termStore, VoteStore<MEMBER> voteStore, RaftLog entryLog, long electionTimeout,
-                         long heartbeatInterval, RenewableTimeoutService renewableTimeoutService, final Inbound inbound, final Outbound<MEMBER> outbound,
-                         long leaderWaitTimeout, LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
-                         RaftLogShippingManager<MEMBER> logShipping )
+    public RaftInstance( MEMBER myself, TermStore termStore, VoteStore<MEMBER> voteStore, RaftLog entryLog,
+                         long electionTimeout, long heartbeatInterval, RenewableTimeoutService renewableTimeoutService,
+                         final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
+                         LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
+                         RaftLogShippingManager<MEMBER> logShipping, Dependencies dependencies )
+
     {
         this.myself = myself;
         this.entryLog = entryLog;
@@ -109,6 +115,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.leaderWaitTimeout = leaderWaitTimeout;
         this.outbound = outbound;
         this.logShipping = logShipping;
+        this.dependencies = dependencies;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -156,6 +163,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         }
         catch ( RaftStorageException e )
         {
+            panic( e );
             throw new BootstrapException( e );
         }
     }
@@ -272,15 +280,20 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                 membershipManager.onFollowerStateChange( state.followerStates() );
             }
         }
-        catch ( Exception e )
+        catch ( RaftStorageException e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
-            throw new RuntimeException(e);
+            panic( e );
         }
         finally
         {
             handlingMessage = false;
         }
+    }
+
+    private void panic( RaftStorageException e )
+    {
+            dependencies.provideDependency( DatabaseHealth.class ).get().panic( e );
     }
 
     public boolean isLeader()

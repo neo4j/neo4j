@@ -20,20 +20,22 @@
 package org.neo4j.coreedge.raft;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.replication.LocalReplicator;
-import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.raft.replication.LocalReplicator;
+import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.state.InMemoryTermStore;
 import org.neo4j.coreedge.raft.state.InMemoryVoteStore;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+
 
 public class RaftInstanceBuilder<MEMBER>
 {
@@ -60,6 +62,7 @@ public class RaftInstanceBuilder<MEMBER>
     private long retryTimeMillis = electionTimeout/2;
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
+    private Dependencies dependencies;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -70,12 +73,15 @@ public class RaftInstanceBuilder<MEMBER>
 
     public RaftInstance<MEMBER> build()
     {
-        LocalReplicator<MEMBER,MEMBER> localReplicator = new LocalReplicator<>( member, member, outbound );
-        RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( localReplicator, memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout );
-        RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
+        LocalReplicator<MEMBER, MEMBER> localReplicator = new LocalReplicator<>( member, member, outbound );
+        RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( localReplicator,
+                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout );
+        RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
+                clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
         return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
-                renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping );
+                renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping,
+                dependencies );
     }
 
     public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
@@ -101,4 +107,11 @@ public class RaftInstanceBuilder<MEMBER>
         this.raftLog = raftLog;
         return this;
     }
+
+    public RaftInstanceBuilder<MEMBER> dependencies( Dependencies dependencies )
+    {
+        this.dependencies = dependencies;
+        return this;
+    }
+
 }

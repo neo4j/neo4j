@@ -26,25 +26,38 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.graphdb.event.ErrorState;
+import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.last;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -67,7 +80,8 @@ public class RaftInstanceTest
     public void shouldAlwaysStartAsFollower() throws Exception
     {
         // when
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .build();
 
         // then
         assertEquals( FOLLOWER, raft.currentRole() );
@@ -105,7 +119,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -124,7 +139,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
         // @logIndex=0
@@ -146,7 +162,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
         // @logIndex=0
@@ -166,7 +183,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -184,7 +202,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -203,7 +222,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -244,7 +264,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -311,7 +332,8 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE ).timeoutService( timeouts ).build();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
@@ -383,5 +405,215 @@ public class RaftInstanceTest
 
         // Then
         assertEquals( RaftMessages.AppendEntries.Request.class, messages.sentTo( newMember ).get( 0 ).getClass() );
+    }
+
+    @Test
+    public void shouldPanicWhenFailingToHandleMessageAtBootstrapTime() throws Throwable
+    {
+        // given
+        KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log() );
+        kernelEventHandlers.init();
+        MyKernelEventHandler myKernelEventHandler = new MyKernelEventHandler();
+        kernelEventHandlers.registerKernelEventHandler( myKernelEventHandler );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( new DatabaseHealth( new DatabasePanicEventGenerator( kernelEventHandlers ),
+                log() ) );
+        ExplodingRaftLog explodingLog = new ExplodingRaftLog();
+        explodingLog.startExploding();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .dependencies( dependencies )
+                .raftLog( explodingLog )
+                .build();
+        try
+        {
+            // when
+            raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
+            fail( "Contract expects exception so that others can take remedial action" );
+        }
+        catch ( RaftInstance.BootstrapException e )
+        {
+            // then
+            assertTrue( myKernelEventHandler.hasErrorHappened() );
+        }
+    }
+
+    public void shouldPanicWhenFailingToHandleMessageUnderNormalConditions() throws Throwable
+    {
+        // given
+        KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log() );
+        kernelEventHandlers.init();
+        MyKernelEventHandler myKernelEventHandler = new MyKernelEventHandler();
+        kernelEventHandlers.registerKernelEventHandler( myKernelEventHandler );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( new DatabaseHealth( new DatabasePanicEventGenerator( kernelEventHandlers ),
+                log() ) );
+        ExplodingRaftLog explodingLog = new ExplodingRaftLog();
+        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+                .dependencies( dependencies )
+                .raftLog( explodingLog )
+                .build();
+        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
+        explodingLog.startExploding();
+        // when
+        raft.handle(
+                new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
+                        new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
+        // then
+        assertTrue( myKernelEventHandler.hasErrorHappened() );
+    }
+
+    private static class ExplodingRaftLog implements RaftLog
+    {
+        private boolean startExploding = false;
+
+        @Override
+        public void replay() throws Throwable
+        {
+        }
+
+        @Override
+        public void registerListener( Listener consumer )
+        {
+        }
+
+        @Override
+        public long append( RaftLogEntry entry ) throws RaftStorageException
+        {
+            if ( startExploding )
+            {
+                throw new RaftStorageException( "Boom! append" );
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        @Override
+        public void truncate( long fromIndex ) throws RaftStorageException
+        {
+            throw new RaftStorageException( "Boom! truncate" );
+        }
+
+        @Override
+        public void commit( long commitIndex ) throws RaftStorageException
+        {
+            if ( startExploding )
+            {
+                throw new RaftStorageException( "Boom! commit" );
+            }
+        }
+
+        @Override
+        public long appendIndex()
+        {
+            return -1;
+        }
+
+        @Override
+        public long commitIndex()
+        {
+            return -1;
+        }
+
+        @Override
+        public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+        {
+            throw new RaftStorageException( "Boom! readLogEntry" );
+        }
+
+        @Override
+        public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
+        {
+            throw new RaftStorageException( "Boom! readEntryContent" );
+        }
+
+        @Override
+        public long readEntryTerm( long logIndex ) throws RaftStorageException
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean entryExists( long logIndex )
+        {
+            return false;
+        }
+
+        public void startExploding()
+        {
+            startExploding = true;
+        }
+    }
+
+    private static class MyKernelEventHandler implements KernelEventHandler
+    {
+        public boolean errorHappened;
+
+        @Override
+        public void beforeShutdown()
+        {
+        }
+
+        @Override
+        public void kernelPanic( ErrorState error )
+        {
+            errorHappened = true;
+        }
+
+        @Override
+        public Object getResource()
+        {
+            return new Object();
+        }
+
+        @Override
+        public KernelEventHandler.ExecutionOrder orderComparedTo( KernelEventHandler other )
+        {
+            return ExecutionOrder.AFTER;
+        }
+
+        /**
+         * Panic events are dispatched asynchronously, so we've gotta give this a fair go (10s) before failing.
+         * {
+         * }
+         *
+         * @Override public void kernelPanic( ErrorState error )
+         * {
+         * errorHappened = true;
+         * }
+         * @Override public Object getResource()
+         * {
+         * return new Object();
+         * }
+         * @Override public ExecutionOrder orderComparedTo( KernelEventHandler other )
+         * {
+         * return ExecutionOrder.AFTER;
+         * }
+         * /**
+         * Panic events are dispatched asynchronously, so we've gotta give this a fair go (10s) before failing.
+         */
+        public boolean hasErrorHappened()
+        {
+            long start = System.currentTimeMillis();
+            while ( System.currentTimeMillis() - start < 10_000 )
+            {
+                if ( !errorHappened )
+                {
+                    parkNanos( MILLISECONDS.toNanos( 100 ) );
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return errorHappened;
+        }
+    }
+
+    private Log log()
+    {
+        return NullLog.getInstance();
+        //return FormattedLog.toOutputStream( System.out );
     }
 }

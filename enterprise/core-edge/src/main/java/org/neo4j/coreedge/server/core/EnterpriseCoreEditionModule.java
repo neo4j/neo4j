@@ -182,7 +182,7 @@ public class EnterpriseCoreEditionModule
         life.add( voteStore );
 
         raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
-                termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService );
+                termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService, dependencies );
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound ) );
@@ -325,7 +325,8 @@ public class EnterpriseCoreEditionModule
                                                         CoreMember myself,
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
-                                                        DelayedRenewableTimeoutService raftTimeoutService )
+                                                        DelayedRenewableTimeoutService raftTimeoutService,
+                                                        Dependencies dependencies)
     {
         LoggingInbound loggingRaftInbound = new LoggingInbound( raftServer, messageLogger, myself.getRaftAddress() );
 
@@ -352,7 +353,7 @@ public class EnterpriseCoreEditionModule
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
-                raftMembershipManager, logShipping );
+                raftMembershipManager, logShipping, dependencies );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 
