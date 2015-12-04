@@ -22,7 +22,6 @@ package org.neo4j.kernel.configuration;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 
 import static org.junit.Assert.assertEquals;

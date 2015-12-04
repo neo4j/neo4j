@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;

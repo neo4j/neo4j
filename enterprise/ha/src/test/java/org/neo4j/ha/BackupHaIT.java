@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.function.IntFunction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
