@@ -358,7 +358,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
                     .key("method") .value("POST")
                     .key("to")     .value("/cypher")
                     .key("body")   .object()
-                                       .key("query").value("start n=node({id}) set n.foo = 10   return n")
+                                       .key("query").value("create (n) set n.foo = {maps:'not welcome'} return n")
                                        .key("params").object().key("id").value("0").endObject()
                                    .endObject()
                 .endObject()
