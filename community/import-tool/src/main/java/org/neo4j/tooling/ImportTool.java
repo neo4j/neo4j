@@ -682,20 +682,7 @@ public class ImportTool
         }
     };
 
-    private static final Function<String,Character> DELIMITER_CONVERTER = new Function<String,Character>()
-    {
-        private final Function<String,Character> fallback = Converters.toCharacter();
-
-        @Override
-        public Character apply( String value ) throws RuntimeException
-        {
-            if ( value.equals( "TAB" ) )
-            {
-                return '\t';
-            }
-            return fallback.apply( value );
-        }
-    };
+    private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
 
     private static final Function2<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
             new Function2<Args,String,Collection<Option<File[]>>>()
