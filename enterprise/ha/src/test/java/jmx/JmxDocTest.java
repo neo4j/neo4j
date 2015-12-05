@@ -38,7 +38,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -52,8 +51,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.configuration.AsciiDocItem;
 import org.neo4j.kernel.configuration.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
@@ -109,7 +108,7 @@ public class JmxDocTest
     @Test
     public void dumpJmxInfo() throws Exception
     {
-        List<Triplet<String, String, String>> beanItems = new ArrayList<>();
+        List<AsciiDocItem> asciiDocItems = new ArrayList<>();
         AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( "jmx-list", "MBeans exposed by Neo4j", false );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -159,7 +158,7 @@ public class JmxDocTest
                     .replace( '\n', ' ' );
 
             String id = getId( name );
-            beanItems.add( Triplet.of( id, name, description ) );
+            asciiDocItems.add( new AsciiDocItem( id, name, description ) );
 
             writeDetailsToFile( id, objectName, bean, info, description );
         }
@@ -167,7 +166,7 @@ public class JmxDocTest
         try
         {
             fw = AsciiDocGenerator.getFW( "target/docs/ops", "JMX List" );
-            fw.write( listGenerator.generateListAndTableCombo( beanItems ) );
+            fw.write( listGenerator.generateListAndTableCombo( asciiDocItems ) );
         }
         finally
         {
@@ -304,8 +303,7 @@ public class JmxDocTest
         beanInfo.append( "[options=\"header\", cols=\"23m,37,20m,20m\"]\n"
                 + "|===\n"
                 + "|Name|Description|ReturnType|Signature\n" );
-        SortedSet<String> operationInfo = new TreeSet<String>(
-                String.CASE_INSENSITIVE_ORDER );
+        SortedSet<String> operationInfo = new TreeSet<>( String.CASE_INSENSITIVE_ORDER );
         for ( MBeanOperationInfo operInfo : operations )
         {
             StringBuilder operationRow = new StringBuilder( 512 );

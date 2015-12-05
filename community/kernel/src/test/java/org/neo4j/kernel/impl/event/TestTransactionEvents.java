@@ -44,7 +44,6 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
@@ -59,11 +58,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -843,7 +841,7 @@ public class TestTransactionEvents
         // GIVEN
         final GraphDatabaseService db = dbRule.getGraphDatabaseService();
         final AtomicInteger accessCount = new AtomicInteger();
-        final Map<Long,Triplet<Node,String,Node>> expectedRelationshipData = new HashMap<>();
+        final Map<Long,RelationshipData> expectedRelationshipData = new HashMap<>();
         TransactionEventHandler<Void> handler = new TransactionEventHandler.Adapter<Void>()
         {
             @Override
@@ -871,11 +869,11 @@ public class TestTransactionEvents
             private void accessData( Relationship relationship )
             {
                 accessCount.incrementAndGet();
-                Triplet<Node,String,Node> expectancy = expectedRelationshipData.get( relationship.getId() );
+                RelationshipData expectancy = expectedRelationshipData.get( relationship.getId() );
                 assertNotNull( expectancy );
-                assertEquals( expectancy.first(), relationship.getStartNode() );
-                assertEquals( expectancy.second(), relationship.getType().name() );
-                assertEquals( expectancy.third(), relationship.getEndNode() );
+                assertEquals( expectancy.startNode, relationship.getStartNode() );
+                assertEquals( expectancy.type, relationship.getType().name() );
+                assertEquals( expectancy.endNode, relationship.getEndNode() );
             }
         };
         db.registerTransactionEventHandler( handler );
@@ -887,8 +885,7 @@ public class TestTransactionEvents
             try ( Transaction tx = db.beginTx() )
             {
                 relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-                expectedRelationshipData.put( relationship.getId(), Triplet.of(
-                        relationship.getStartNode(), relationship.getType().name(), relationship.getEndNode() ) );
+                expectedRelationshipData.put( relationship.getId(), new RelationshipData( relationship ) );
                 tx.success();
             }
             // THEN
@@ -900,9 +897,7 @@ public class TestTransactionEvents
                 relationship.setProperty( "name", "Smith" );
                 Relationship otherRelationship =
                         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-                expectedRelationshipData.put( otherRelationship.getId(), Triplet.of(
-                        otherRelationship.getStartNode(), otherRelationship.getType().name(),
-                        otherRelationship.getEndNode() ) );
+                expectedRelationshipData.put( otherRelationship.getId(), new RelationshipData( otherRelationship ) );
                 tx.success();
             }
             // THEN
@@ -1204,4 +1199,18 @@ public class TestTransactionEvents
 
     @Rule
     public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    private static class RelationshipData
+    {
+        final Node startNode;
+        final String type;
+        final Node endNode;
+
+        RelationshipData( Relationship relationship )
+        {
+            this.startNode = relationship.getStartNode();
+            this.type = relationship.getType().name();
+            this.endNode = relationship.getEndNode();
+        }
+    }
 }
