@@ -33,19 +33,22 @@ import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.query;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherAdapterStreamTest
@@ -153,7 +156,7 @@ public class CypherAdapterStreamTest
         when( result.getQueryStatistics() ).thenReturn( queryStatistics );
         when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
 
-        when( result.getNotifications() ).thenReturn( Arrays.asList(
+        when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
