@@ -135,7 +135,7 @@ public class CannedCypherExecutionTest
                                 executionCount.incrementAndGet();
                                 transaction.success();
                             }
-                            catch ( QueryExecutionException e )
+                            catch ( Exception e )
                             {
                                 throw new AssertionError( format( "Failed to execute query [%s] in file [%s]",
                                         statement, file ), e );
