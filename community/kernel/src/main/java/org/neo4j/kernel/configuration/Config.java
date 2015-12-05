@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -42,6 +44,7 @@ import org.neo4j.logging.Logger;
 import static java.lang.Character.isDigit;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
@@ -53,11 +56,11 @@ import static java.util.Collections.emptyList;
  * UI's can change configuration by calling applyChanges. Any listener, such as services that use
  * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
-public class Config implements DiagnosticsProvider
+public class Config implements DiagnosticsProvider, ConfigView
 {
     private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, String> params = new ConcurrentHashMap<>(  );
-    private final Function<String, String> settingsFunction;
+    private final ConfigValues settingsFunction;
 
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
@@ -70,7 +73,7 @@ public class Config implements DiagnosticsProvider
 
     public Config()
     {
-        this( new HashMap<String, String>(), Collections.<Class<?>>emptyList() );
+        this( new HashMap<>(), Collections.<Class<?>>emptyList() );
     }
 
     public Config( Map<String, String> inputParams )
@@ -85,8 +88,8 @@ public class Config implements DiagnosticsProvider
 
     public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
     {
-        this.settingsFunction = Functions.map( params );
         this.params.putAll( inputParams );
+        this.settingsFunction = new ConfigValues( params );
         registerSettingsClasses( settingsClasses );
     }
 
@@ -114,9 +117,20 @@ public class Config implements DiagnosticsProvider
     /**
      * Retrieve a configuration property.
      */
+    @Override
     public <T> T get( Setting<T> setting )
     {
         return setting.apply( settingsFunction );
+    }
+
+    /**
+     * Unlike the public {@link Setting} instances, the function passed in here has access to
+     * the raw setting data, meaning it can provide functionality that cross multiple settings
+     * and other more advanced use cases.
+     */
+    public <T> T view( org.neo4j.function.Function<ConfigValues,T> projection )
+    {
+        return projection.apply( settingsFunction );
     }
 
     /**
@@ -301,6 +315,79 @@ public class Config implements DiagnosticsProvider
 
         return Long.parseLong( number ) * multiplier;
     }
+
+    /**
+     * This mechanism can be used as an argument to {@link #view(Function)} to view a set of config options that share a common base config key as a group.
+     * This specific version handles multiple groups, so the common base key should be followed by a number denoting the group, followed by the group config
+     * values, eg:
+     *
+     * {@code <base name>.<group key>.<config key>}
+     *
+     * The config of each group can then be accessed as if the {@code config key} in the pattern above was the entire config key. For example, given the
+     * following configuration:
+     *
+     * <pre>
+     *     dbms.books.0.name=Hansel & Gretel
+     *     dbms.books.0.author=JJ Abrams
+     *     dbms.books.1.name=NKJV
+     *     dbms.books.1.author=Jesus
+     * </pre>
+     *
+     * We can then access these config values as groups:
+     *
+     * <pre>
+     * {@code
+     *     Setting<String> bookName = setting("name", STRING); // note that the key here is only 'name'
+     *
+     *     ConfigView firstBook = config.view( groups("dbms.books") ).get(0);
+     *
+     *     assert firstBook.get(bookName).equals("Hansel & Gretel");
+     * }
+     * </pre>
+     *
+     * @param baseName the base name for the groups, this will be the first part of the config key, followed by a grouping number, followed by the group
+     *                 config options
+     * @return a list of grouped config options
+     */
+    public static Function<ConfigValues,List<ConfigView>> groups( String baseName )
+    {
+        Pattern pattern = Pattern.compile( Pattern.quote( baseName ) + "\\.(\\d+)\\.(.+)" );
+
+        return ( values ) -> {
+            Map<String,Map<String,String>> groups = new HashMap<>();
+            for ( Pair<String,String> entry : values.rawConfiguration() )
+            {
+                Matcher matcher = pattern.matcher( entry.first() );
+
+                if( matcher.matches() )
+                {
+                    String index = matcher.group( 1 );
+                    String configName = matcher.group( 2 );
+                    String value = entry.other();
+
+                    Map<String,String> groupConfig = groups.get( index );
+                    if ( groupConfig == null )
+                    {
+                        groupConfig = new HashMap<>();
+                        groups.put( index, groupConfig );
+                    }
+                    groupConfig.put( configName, value );
+                }
+            }
+
+            return groups.values().stream()
+                    .map( m -> new ConfigView()
+                    {
+                        @Override
+                        public <T> T get( Setting<T> setting )
+                        {
+                            return setting.apply( m::get );
+                        }
+                    })
+                    .collect( toList() );
+        };
+    }
+
 
     /**
      * @return index of first non-digit character in {@code numberWithPotentialUnit}. If all digits then
