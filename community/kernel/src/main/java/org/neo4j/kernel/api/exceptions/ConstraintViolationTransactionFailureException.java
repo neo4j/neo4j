@@ -30,4 +30,9 @@ public class ConstraintViolationTransactionFailureException extends TransactionF
     {
         super( Status.Schema.ConstraintViolation, msg, cause );
     }
+
+    public ConstraintViolationTransactionFailureException( String msg )
+    {
+        this( msg, null );
+    }
 }

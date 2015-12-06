@@ -240,7 +240,7 @@ public class SessionIT
         assertThat( responses.next(), success() );
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
-        assertThat( discarding.next(), failedWith( Status.Transaction.ValidationFailed ) );
+        assertThat( discarding.next(), failedWith( Status.Schema.ConstraintViolation ) );
     }
 
     @Test

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -49,8 +50,9 @@ public class IntegrityValidator
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            throw new TransactionFailureException( Status.Transaction.ValidationFailed,
-                    "Node record " + record + " still has relationships" );
+            throw new ConstraintViolationTransactionFailureException(
+                    "Cannot delete node<" + record.getId() + ">, because it still has relationships. " +
+                    "To delete this node, you must first delete its relationships." );
         }
     }
 

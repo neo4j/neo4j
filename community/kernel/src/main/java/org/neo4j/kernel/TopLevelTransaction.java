@@ -27,7 +27,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransaction.CloseListener;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
@@ -51,14 +50,7 @@ public class TopLevelTransaction implements Transaction
     {
         this.transaction = transaction;
         this.stmtProvider = stmtProvider;
-        this.transaction.registerCloseListener( new CloseListener()
-        {
-            @Override
-            public void notify( boolean success )
-            {
-                stmtProvider.unbindTransactionFromCurrentThread();
-            }
-        } );
+        this.transaction.registerCloseListener( success -> stmtProvider.unbindTransactionFromCurrentThread() );
     }
 
     @Override
