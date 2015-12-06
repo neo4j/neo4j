@@ -57,7 +57,49 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
 public class LuceneIndexRecoveryIT
 {
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
+    private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
     private final static Label myLabel = label( "MyLabel" );
+    private GraphDatabaseAPI db;
+    private DirectoryFactory directoryFactory;
+
+    private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
+    {
+        @Override
+        public Directory open( File dir ) throws IOException
+        {
+            return directoryFactory.open( dir );
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+        {
+            directoryFactory.dumpToZip( zip, scratchPad );
+        }
+    };
+
+    @Before
+    public void before()
+    {
+        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    }
+
+    @After
+    public void after()
+    {
+        if ( db != null )
+        {
+            db.shutdown();
+        }
+        directoryFactory.close();
+    }
 
     @Test
     public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
@@ -189,49 +231,6 @@ public class LuceneIndexRecoveryIT
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
         assertEquals( 1, doIndexLookup( myLabel, 14 ).size() );
     }
-
-    @Before
-    public void before()
-    {
-        directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    }
-
-    @After
-    public void after()
-    {
-        if ( db != null )
-        {
-            db.shutdown();
-        }
-        directoryFactory.close();
-    }
-
-    private GraphDatabaseAPI db;
-    private DirectoryFactory directoryFactory;
-    private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
-    {
-        @Override
-        public Directory open( File dir ) throws IOException
-        {
-            return directoryFactory.open( dir );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
-        {
-            directoryFactory.dumpToZip( zip, scratchPad );
-        }
-    };
-
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
 
     private void startDb( KernelExtensionFactory<?> indexProviderFactory )
     {

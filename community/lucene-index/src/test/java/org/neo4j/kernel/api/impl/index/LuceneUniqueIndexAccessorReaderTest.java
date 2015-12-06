@@ -57,7 +57,7 @@ public class LuceneUniqueIndexAccessorReaderTest extends AbstractLuceneIndexAcce
     public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
         // Given
-        when( reader.numDocs() ).thenReturn( 0 );
+        ((IndexReaderStub) reader).setElements( new String[0] );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -73,7 +73,7 @@ public class LuceneUniqueIndexAccessorReaderTest extends AbstractLuceneIndexAcce
     public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
     {
         // Given
-        when( reader.numDocs() ).thenReturn( 2 );
+        ((IndexReaderStub) reader).setElements( new String[2] );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();

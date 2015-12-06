@@ -189,6 +189,12 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     }
 
     @Override
+    public File getIndexImplementationDirectory( File storeDir )
+    {
+        return storeDir;
+    }
+
+    @Override
     public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
         return new LegacyIndexProviderTransaction()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.junit.Ignore
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.scalacheck.{Shrink, Gen}
 

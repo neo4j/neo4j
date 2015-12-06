@@ -19,26 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.collection.IteratorUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class LuceneAllDocumentsReaderTest
 {
@@ -48,12 +43,10 @@ public class LuceneAllDocumentsReaderTest
         // given
         String[] elements = {"A", "B", "C"};
 
-        IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.isDeleted( anyInt() ) ).thenReturn( false );
-
         LuceneAllDocumentsReader reader =
                 new LuceneAllDocumentsReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
+                        new SearcherManagerStub( new SearcherStub( new IndexReaderStub( false, elements ), elements )
+                        ) );
 
         // when
         Iterator<Document> iterator = reader.iterator();
@@ -72,23 +65,10 @@ public class LuceneAllDocumentsReaderTest
         // given
         final String[] elements = {"A", "B", "C"};
 
-        final IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.isDeleted( anyInt() ) ).thenAnswer( new Answer<Boolean>()
-        {
-            @Override
-            public Boolean answer( InvocationOnMock invocation ) throws Throwable
-            {
-                if ( (int) invocation.getArguments()[0] >= elements.length )
-                {
-                    throw new IllegalArgumentException( "Doc id out of range" );
-                }
-                return true;
-            }
-        } );
-
         LuceneAllDocumentsReader reader =
                 new LuceneAllDocumentsReader(
-                        new SearcherManagerStub( new SearcherStub( indexReader, elements ) ) );
+                        new SearcherManagerStub( new SearcherStub( new IndexReaderStub( true, elements ), elements )
+                        ) );
 
         // when
         Iterator<Document> iterator = reader.iterator();
@@ -111,15 +91,8 @@ public class LuceneAllDocumentsReaderTest
         public Document doc( int docID ) throws IOException
         {
             Document document = new Document();
-            document.add( new Field( "element", elements[docID], Field.Store.YES, Field.Index.NO ) );
+            document.add( new StoredField( "element", elements[docID] ) );
             return document;
         }
-
-        @Override
-        public int maxDoc()
-        {
-            return elements.length;
-        }
     }
-
 }

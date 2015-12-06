@@ -82,6 +82,46 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 public class LuceneLabelScanStoreTest
 {
     private static final long[] NO_LABELS = new long[0];
+    private final LabelScanStorageStrategy strategy;
+
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> parameterizedWithStrategies()
+    {
+        return asList(
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                BitmapDocumentFormat._32 )},
+                new Object[]{
+                        new NodeRangeDocumentLabelScanStorageStrategy(
+                                BitmapDocumentFormat._64 )}
+        );
+    }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private final Random random = new Random();
+    private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    private LifeSupport life;
+    private TrackingMonitor monitor;
+    private LuceneLabelScanStore store;
+    private File dir;
+
+    @Before
+    public void clearDir() throws IOException
+    {
+        dir = testDirectory.directory( "lucene" );
+        if ( dir.exists() )
+        {
+            deleteRecursively( dir );
+        }
+    }
+
+    @After
+    public void shutdown() throws IOException
+    {
+        life.shutdown();
+    }
 
     @Test
     public void shouldUpdateIndexOnLabelChange() throws Exception
@@ -252,6 +292,7 @@ public class LuceneLabelScanStoreTest
             assertThat( labels, hasItem( label0Id ) );
         }
     }
+
     private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException, IndexCapacityExceededException
     {
         try ( LabelScanWriter writer = store.newWriter() )
@@ -380,25 +421,12 @@ public class LuceneLabelScanStoreTest
         return gaps;
     }
 
-    private final LabelScanStorageStrategy strategy;
-
     public LuceneLabelScanStoreTest( LabelScanStorageStrategy strategy )
     {
         this.strategy = strategy;
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Object[]> parameterizedWithStrategies()
-    {
-        return asList(
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                BitmapDocumentFormat._32 )},
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                BitmapDocumentFormat._64 )}
-        );
-    }
+
 
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
     {
@@ -416,16 +444,6 @@ public class LuceneLabelScanStoreTest
         }
         assertTrue( "Unexpected nodes in scan store " + nodeSet, nodeSet.isEmpty() );
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    private final Random random = new Random();
-    private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private LifeSupport life;
-    private TrackingMonitor monitor;
-    private LuceneLabelScanStore store;
-    private File dir;
 
     private List<NodeLabelUpdate> noData()
     {
@@ -506,22 +524,6 @@ public class LuceneLabelScanStoreTest
         {
             bytes[i] = (byte) random.nextInt();
         }
-    }
-
-    @Before
-    public void clearDir() throws IOException
-    {
-        dir = testDirectory.directory( "lucene" );
-        if ( dir.exists() )
-        {
-            deleteRecursively( dir );
-        }
-    }
-
-    @After
-    public void shutdown() throws IOException
-    {
-        life.shutdown();
     }
 
     private static class TrackingMonitor implements LuceneLabelScanStore.Monitor

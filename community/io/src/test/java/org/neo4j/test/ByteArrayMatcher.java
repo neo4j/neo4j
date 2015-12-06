@@ -22,6 +22,7 @@ package org.neo4j.test;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
+// TODO: move to common test module
 public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
 {
     public static ByteArrayMatcher byteArray( byte[] expected )

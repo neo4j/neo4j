@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -59,6 +60,45 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LuceneSchemaIndexPopulatorTest
 {
+
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private IndexDescriptor indexDescriptor;
+    private IndexStoreView indexStoreView;
+    private LuceneSchemaIndexProvider provider;
+    private Directory directory;
+    private IndexPopulator index;
+    private IndexReader reader;
+    private IndexSearcher searcher;
+    private final long indexId = 0;
+    private final int propertyKeyId = 666;
+    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+
+    @Before
+    public void before() throws Exception
+    {
+        directory = new RAMDirectory();
+        DirectoryFactory directoryFactory = new DirectoryFactory.Single(
+                new DirectoryFactory.UncloseableDirectory( directory ) );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ) );
+        indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
+        indexStoreView = mock( IndexStoreView.class );
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
+        index.create();
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        if ( reader != null )
+        {
+            reader.close();
+        }
+        directory.close();
+    }
+
     @Test
     public void addingValuesShouldPersistThem() throws Exception
     {
@@ -226,41 +266,6 @@ public class LuceneSchemaIndexPopulatorTest
         return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
 
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private IndexDescriptor indexDescriptor;
-    private IndexStoreView indexStoreView;
-    private LuceneSchemaIndexProvider provider;
-    private Directory directory;
-    private IndexPopulator index;
-    private IndexReader reader;
-    private IndexSearcher searcher;
-    private final long indexId = 0;
-    private final int propertyKeyId = 666;
-    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-
-    @Before
-    public void before() throws Exception
-    {
-        directory = new RAMDirectory();
-        DirectoryFactory directoryFactory = new DirectoryFactory.Single(
-                new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ) );
-        indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
-        indexStoreView = mock( IndexStoreView.class );
-        IndexConfiguration indexConfig = new IndexConfiguration( false );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-        index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
-        index.create();
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        if ( reader != null )
-            reader.close();
-        directory.close();
-    }
-
     private void assertIndexedValues( Hit... expectedHits ) throws IOException, IndexCapacityExceededException
     {
         switchToVerification();
@@ -283,7 +288,7 @@ public class LuceneSchemaIndexPopulatorTest
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
-        reader = IndexReader.open( directory );
+        reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
 

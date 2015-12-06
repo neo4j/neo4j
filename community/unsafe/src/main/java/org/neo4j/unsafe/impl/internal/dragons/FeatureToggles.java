@@ -99,6 +99,33 @@ public class FeatureToggles
     }
 
     /**
+     * Get the value of a {@code double} system property.
+     *
+     * The absolute name of the system property is computed based on the provided class and local name.
+     *
+     * @param location the class that owns the flag.
+     * @param name the local name of the flag
+     * @param defaultValue the default value of the flag if the system property is not assigned.
+     * @return the parsed value of the system property, or the default value.
+     */
+    public static double getDouble(Class<?> location, String name, double defaultValue)
+    {
+        try
+        {
+            String propertyValue = System.getProperty( name( location, name ) );
+            if ( propertyValue != null && propertyValue.length() > 0 )
+            {
+                return Double.parseDouble( propertyValue );
+            }
+        }
+        catch ( Exception e )
+        {
+            // ignored
+        }
+        return defaultValue;
+    }
+
+    /**
      * Get the value of a {@code enum} system property.
      *
      * The absolute name of the system property is computed based on the provided class and local name.

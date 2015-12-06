@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -66,12 +66,12 @@ public class LuceneIndexWriter implements Closeable
 
     public static boolean isOnline( Directory directory ) throws IOException
     {
-        if ( !IndexReader.indexExists( directory ) )
+        if ( !DirectoryReader.indexExists( directory ) )
         {
             return false;
         }
 
-        try ( IndexReader reader = IndexReader.open( directory ) )
+        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
         {
             Map<String,String> userData = reader.getIndexCommit().getUserData();
             return ONLINE.equals( userData.get( KEY_STATUS ) );
@@ -100,7 +100,7 @@ public class LuceneIndexWriter implements Closeable
 
     public void optimize() throws IOException
     {
-        writer.optimize( true );
+        writer.forceMerge( 1, true );
     }
 
     public SearcherManager createSearcherManager() throws IOException
@@ -115,13 +115,14 @@ public class LuceneIndexWriter implements Closeable
 
     public void commitAsOnline() throws IOException
     {
-        writer.commit( ONLINE_COMMIT_USER_DATA );
+        writer.setCommitData( ONLINE_COMMIT_USER_DATA );
+        writer.commit();
     }
 
     @Override
     public void close() throws IOException
     {
-        writer.close( true );
+        writer.close();
     }
 
     IndexDeletionPolicy getIndexDeletionPolicy()

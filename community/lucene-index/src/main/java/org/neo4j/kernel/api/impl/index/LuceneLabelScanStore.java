@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexNotFoundException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
@@ -153,7 +153,14 @@ public class LuceneLabelScanStore
     @Override
     public IndexSearcher acquireSearcher()
     {
-        return searcherManager.acquire();
+        try
+        {
+            return searcherManager.acquire();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -236,7 +243,7 @@ public class LuceneLabelScanStore
         {
             // Try to open it, this will throw exception if index is corrupt.
             // Opening it directly using the writer may hide corruption problems.
-            IndexReader.open( directory ).close();
+            DirectoryReader.open( directory ).close();
 
             writer = writerFactory.create( directory );
         }

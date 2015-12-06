@@ -20,11 +20,16 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.CollectionTerminatedException;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
@@ -207,9 +212,30 @@ public class LuceneLabelScanStoreWriterTest
         @Override
         public IndexSearcher acquireSearcher()
         {
-            return new IndexSearcher( mock( IndexReader.class ) )
+            return new IndexSearcher( new IndexReaderStub( false ) )
             {
-                private final Map<Integer, Document> docIds = new HashMap<>();
+                private final Map<Integer,Document> docIds = new HashMap<>();
+
+                @Override
+                public void search( Query query, Collector results ) throws IOException
+                {
+                    Document document = storage.get( ((TermQuery) query).getTerm() );
+                    if ( document == null )
+                    {
+                        return;
+                    }
+
+                    final int docId = new Random().nextInt();
+                    docIds.put( docId, document );
+                    try {
+                        LeafCollector leafCollector = results.getLeafCollector( leafContexts.get( 0 ) );
+                        Scorer scorer = new ConstantScoreScorer( null, 10f, new OneDocIdIterator( docId ) );
+                        leafCollector.setScorer( scorer );
+                        leafCollector.collect( docId );
+                    } catch ( CollectionTerminatedException swallow ) {
+                        // swallow
+                    }
+                }
 
                 @Override
                 public TopDocs search( Query query, int n )
@@ -247,6 +273,49 @@ public class LuceneLabelScanStoreWriterTest
         public Document getDocument( Term term )
         {
             return storage.get( term );
+        }
+    }
+
+    private final class OneDocIdIterator extends DocIdSetIterator {
+        private final int target;
+        private int currentDoc = -1;
+        private boolean exhausted;
+
+        public OneDocIdIterator(int docId)
+        {
+            target = docId;
+        }
+
+        @Override
+        public int docID()
+        {
+            return currentDoc;
+        }
+
+        @Override
+        public int nextDoc() throws IOException
+        {
+            return advance( currentDoc + 1 );
+        }
+
+        @Override
+        public int advance( int target ) throws IOException
+        {
+            if ( exhausted || target > this.target )
+            {
+                return currentDoc = DocIdSetIterator.NO_MORE_DOCS;
+            }
+            else
+            {
+                exhausted = true;
+                return currentDoc = this.target;
+            }
+        }
+
+        @Override
+        public long cost()
+        {
+            return 1L;
         }
     }
 }

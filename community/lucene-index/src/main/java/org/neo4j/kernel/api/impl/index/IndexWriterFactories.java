@@ -21,16 +21,23 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
-import java.io.IOException;
-
-import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
+import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.impl.lucene.legacy.MultipleBackupDeletionPolicy;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 public final class IndexWriterFactories
 {
+
+    private static final int MAX_BUFFERED_DOCS =
+            FeatureToggles.getInteger( IndexWriterFactories.class, "max_buffered_docs", 100000 );
+    private static final int MERGE_POLICY_MERGE_FACTOR =
+            FeatureToggles.getInteger( IndexWriterFactories.class, "merge.factor", 2 );
+    private static final double MERGE_POLICY_NO_CFS_RATIO =
+            FeatureToggles.getDouble( IndexWriterFactories.class, "nocfs.ratio.", 1.0 );
+    private static final double MERGE_POLICY_MIN_MERGE_MB =
+            FeatureToggles.getDouble( IndexWriterFactories.class, "min.merge", 0.1 );
+
     private IndexWriterFactories()
     {
         throw new AssertionError( "Not for instantiation!" );
@@ -38,53 +45,32 @@ public final class IndexWriterFactories
 
     public static IndexWriterFactory<ReservingLuceneIndexWriter> reserving()
     {
-        return new IndexWriterFactory<ReservingLuceneIndexWriter>()
-        {
-            @Override
-            public ReservingLuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new ReservingLuceneIndexWriter( directory, standardConfig() );
-            }
-        };
+        return directory -> new ReservingLuceneIndexWriter( directory, standardConfig() );
     }
 
     public static IndexWriterFactory<LuceneIndexWriter> tracking()
     {
-        return new IndexWriterFactory<LuceneIndexWriter>()
-        {
-            @Override
-            public LuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new TrackingLuceneIndexWriter( directory, standardConfig() );
-            }
-        };
+        return directory -> new TrackingLuceneIndexWriter( directory, standardConfig() );
     }
 
     public static IndexWriterFactory<LuceneIndexWriter> batchInsert( final IndexWriterConfig config )
     {
-        return new IndexWriterFactory<LuceneIndexWriter>()
-        {
-            @Override
-            public LuceneIndexWriter create( Directory directory ) throws IOException
-            {
-                return new TrackingLuceneIndexWriter( directory, config );
-            }
-        };
+        return directory -> new TrackingLuceneIndexWriter( directory, config );
     }
 
     private static IndexWriterConfig standardConfig()
     {
-        IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
+        IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 
-        writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
+        writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS ); // TODO figure out depending on environment?
         writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
-        writerConfig.setTermIndexInterval( 14 );
+        writerConfig.setUseCompoundFile( true );
 
+        // TODO: TieredMergePolicy & possibly SortingMergePolicy
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-        mergePolicy.setUseCompoundFile( true );
-        mergePolicy.setNoCFSRatio( 1.0 );
-        mergePolicy.setMinMergeMB( 0.1 );
-        mergePolicy.setMergeFactor( 2 );
+        mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );
+        mergePolicy.setMinMergeMB( MERGE_POLICY_MIN_MERGE_MB );
+        mergePolicy.setMergeFactor( MERGE_POLICY_MERGE_FACTOR );
         writerConfig.setMergePolicy( mergePolicy );
 
         return writerConfig;

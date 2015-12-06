@@ -20,16 +20,17 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.Collector;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.File;
 import java.io.IOException;
@@ -111,8 +112,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             throws IndexEntryConflictException, IOException, IndexCapacityExceededException
     {
         sampler.increment( 1 );
-        Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
-        Document doc = documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue );
+        Document doc = documentStructure.documentRepresentingProperty( nodeId, propertyValue );
         writer.addDocument( doc );
     }
 
@@ -125,15 +125,26 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         try
         {
             DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
-            TermEnum terms = searcher.getIndexReader().terms();
-            while ( terms.next() )
+            for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
             {
-                Term term = terms.term();
-
-                if ( !NODE_ID_KEY.equals( term.field() ) && terms.docFreq() > 1 )
+                Fields fields = leafReaderContext.reader().fields();
+                for ( String field : fields )
                 {
-                    collector.reset();
-                    searcher.search( new TermQuery( term ), collector );
+                    if ( NODE_ID_KEY.equals( field ) )
+                    {
+                        continue;
+                    }
+
+                    TermsEnum terms = fields.terms( field ).iterator();
+                    BytesRef termsRef;
+                    while ( (termsRef = terms.next()) != null )
+                    {
+                        if ( terms.docFreq() > 1 )
+                        {
+                            collector.reset();
+                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                        }
+                    }
                 }
             }
         }
@@ -181,9 +192,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                         sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
+                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case CHANGED:
@@ -192,9 +202,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                         // sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        Fieldable encodedValueAfter = documentStructure.encodeAsFieldable( update.getValueAfter() );
                         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValueAfter ) );
+                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
@@ -263,14 +272,13 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         }
     }
 
-    private static class DuplicateCheckingCollector extends Collector
+    private static class DuplicateCheckingCollector extends SimpleCollector
     {
         private final PropertyAccessor accessor;
         private final LuceneDocumentStructure documentStructure;
         private final int propertyKeyId;
         private EntrySet actualValues;
-        private IndexReader reader;
-        private int docBase;
+        private LeafReader reader;
 
         public DuplicateCheckingCollector(
                 PropertyAccessor accessor,
@@ -281,11 +289,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             this.documentStructure = documentStructure;
             this.propertyKeyId = propertyKeyId;
             actualValues = new EntrySet();
-        }
-
-        @Override
-        public void setScorer( Scorer scorer ) throws IOException
-        {
         }
 
         @Override
@@ -341,16 +344,15 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         }
 
         @Override
-        public void setNextReader( IndexReader reader, int docBase ) throws IOException
+        protected void doSetNextReader( LeafReaderContext context ) throws IOException
         {
-            this.reader = reader;
-            this.docBase = docBase;
+            this.reader = context.reader();
         }
 
         @Override
-        public boolean acceptsDocsOutOfOrder()
+        public boolean needsScores()
         {
-            return true;
+            return false;
         }
 
         public void reset()

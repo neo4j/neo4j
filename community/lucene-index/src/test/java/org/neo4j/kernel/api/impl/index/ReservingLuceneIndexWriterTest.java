@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -72,13 +71,13 @@ public class ReservingLuceneIndexWriterTest
         // When
         for ( int i = 0; i < toAdd; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         indexWriter.reserveInsertions( toReserve );
 
         // Then
-        assertEquals( toAdd, indexWriter.createSearcherManager().acquire().maxDoc() );
+        assertEquals( toAdd, indexWriter.createSearcherManager().acquire().getIndexReader().maxDoc() );
     }
 
     @Test
@@ -117,7 +116,7 @@ public class ReservingLuceneIndexWriterTest
         indexWriter.reserveInsertions( toAdd );
         for ( int i = 0; i < toAdd; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         try
@@ -138,7 +137,7 @@ public class ReservingLuceneIndexWriterTest
         File luceneDir = new File( "lucene" );
         fs.get().mkdir( luceneDir );
         Directory directory = new DirectoryFactory.InMemoryDirectoryFactory().open( luceneDir );
-        IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_36, null );
+        IndexWriterConfig config = new IndexWriterConfig( null );
         ReservingLuceneIndexWriter indexWriter = new ReservingLuceneIndexWriter( directory, config );
         ReservingLuceneIndexWriter indexWriterSpy = spy( indexWriter );
         when( indexWriterSpy.maxDocLimit() ).thenReturn( maxDocLimit );

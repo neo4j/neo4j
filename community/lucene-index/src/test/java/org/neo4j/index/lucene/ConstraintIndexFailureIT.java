@@ -42,13 +42,13 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class ConstraintIndexFailureIT
 {
-    public final @Rule TargetDirectory.TestDirectory storeDir = testDirForTest( ConstraintIndexFailureIT.class );
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = testDirForTest( ConstraintIndexFailureIT.class );
 
     @Test
     public void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception

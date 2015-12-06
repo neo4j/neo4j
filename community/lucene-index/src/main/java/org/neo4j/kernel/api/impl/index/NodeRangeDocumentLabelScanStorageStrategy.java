@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
@@ -117,20 +116,20 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
 
             List<Long> labels = new ArrayList<>();
 
-            for ( Fieldable fields : searcher.doc( doc ).getFields() )
+            for ( IndexableField fields : searcher.doc( doc ).getFields() )
             {
                 if ( "range".equals( fields.name() ) )
                 {
                     continue;
                 }
 
-                if ( fields instanceof NumericField )
+                Number numericValue = fields.numericValue();
+                if ( numericValue != null )
                 {
-                    NumericField labelField = (NumericField) fields;
-                    Long bitmap = Long.decode( labelField.stringValue() );
+                    Long bitmap = numericValue.longValue();
                     if ( format.bitmapFormat().hasLabel( bitmap, nodeId ) )
                     {
-                        labels.add( Long.decode( labelField.name() ) );
+                        labels.add( Long.decode( fields.name() ) );
                     }
                 }
             }

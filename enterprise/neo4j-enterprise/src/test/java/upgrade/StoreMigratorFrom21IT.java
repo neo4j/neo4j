@@ -58,6 +58,10 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings( "unchecked" )
 public class StoreMigratorFrom21IT
 {
+
+    @Rule
+    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void mustMendDuplicatePropertiesWhenUpgradingFromVersion21() throws Exception
     {
@@ -119,14 +123,20 @@ public class StoreMigratorFrom21IT
         try ( Transaction ignore = database.beginTx() )
         {
             verifyPropertiesEqual( database.getNodeById( 0 ),
-                    Pair.of( "keyA", "actual" ) );
+                    Pair.of( "keyA", "actual" ),
+                    Pair.of( "__DUPLICATE_keyA_1", "phony!" ),
+                    Pair.of( "__DUPLICATE_keyA_2", "phony!" ));
             verifyPropertiesEqual( database.getNodeById( 1 ),
                     Pair.of( "keyA", "actual" ),
                     Pair.of( "__DUPLICATE_keyA_1", "actual" ),
                     Pair.of( "__DUPLICATE_keyA_2", "actual" ));
             verifyPropertiesEqual( database.getNodeById( 2 ),
                     Pair.of( "keyA", "real1" ),
-                    Pair.of( "keyD", "real2" ) );
+                    Pair.of( "keyD", "real2" ),
+                    Pair.of( "__DUPLICATE_keyD_2", "phony" ),
+                    Pair.of( "__DUPLICATE_keyD_1", "phony" ),
+                    Pair.of( "__DUPLICATE_keyA_1", "phony" ),
+                    Pair.of( "__DUPLICATE_keyA_2", "phony" ));
             verifyPropertiesEqual( database.getNodeById( 3 ),
                     Pair.of( "keyA", "real1" ),
                     Pair.of( "__DUPLICATE_keyA_1", "real1" ),
@@ -196,9 +206,6 @@ public class StoreMigratorFrom21IT
         Map<String, String> properties = (Map) entity.getAllProperties();
         assertThat( properties, is( IteratorUtil.asMap( Arrays.asList( expectedProperties ) ) ) );
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
 }
 
 /*

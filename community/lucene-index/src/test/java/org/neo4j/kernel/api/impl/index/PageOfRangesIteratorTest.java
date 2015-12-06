@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -31,23 +30,27 @@ import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.collection.MapUtil;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.primitivesList;
 
@@ -56,10 +59,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.primitivesList;
  *
  * @see NodeRangeDocumentLabelScanStorageStrategyTest for tests for writing.
  */
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class PageOfRangesIteratorTest
 {
-    @Parameterized.Parameters(name = "{0} bits")
+    @Parameterized.Parameters( name = "{0} bits" )
     public static List<Object[]> formats()
     {
         ArrayList<Object[]> parameters = new ArrayList<>();
@@ -85,19 +88,36 @@ public class PageOfRangesIteratorTest
         // given
         Query query = mock( Query.class );
         IndexSearcher searcher = mock( IndexSearcher.class );
-        ScoreDoc doc1 = new ScoreDoc( 37, 0.0f );
-        ScoreDoc doc2 = new ScoreDoc( 16, 0.0f );
-        ScoreDoc doc3 = new ScoreDoc( 11, 0.0f );
-        when( searcher.searchAfter( any( ScoreDoc.class ), same( query ), anyInt() ) ).thenReturn(
-                docs( doc1, doc2 ), // page1
-                docs( doc3 )        // page2
-        );
-        when( searcher.doc( 37 ) ).thenReturn( document( format.rangeField( 0x1 ),
-                                                         format.labelField( labelId, 0x01 ) ) );
-        when( searcher.doc( 16 ) ).thenReturn( document( format.rangeField( 0x2 ),
-                                                         format.labelField( labelId, 0x03 ) ) );
-        when( searcher.doc( 11 ) ).thenReturn( document( format.rangeField( 0x3 ),
-                                                         format.labelField( labelId, 0x30 ) ) );
+
+        NumericDocValues rangeNDV = mock( NumericDocValues.class );
+        when( rangeNDV.get( 11 ) ).thenReturn( 0x1L );
+        when( rangeNDV.get( 16 ) ).thenReturn( 0x2L );
+        when( rangeNDV.get( 37 ) ).thenReturn( 0x3L );
+
+        NumericDocValues labelNDV = mock( NumericDocValues.class );
+        when( labelNDV.get( 11 ) ).thenReturn( 0x01L );
+        when( labelNDV.get( 16 ) ).thenReturn( 0x03L );
+        when( labelNDV.get( 37 ) ).thenReturn( 0x30L );
+
+        Map<String,NumericDocValues> docValues =
+                MapUtil.genericMap( "range", rangeNDV, "7", labelNDV );
+        IndexReaderStub reader = new IndexReaderStub( docValues );
+        reader.setElements( new String[]{"11", "16", "37"} );
+        final LeafReaderContext context = reader.getContext();
+
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                DocValuesCollector collector = (DocValuesCollector) invocation.getArguments()[1];
+                collector.doSetNextReader( context );
+                collector.collect( 11 );
+                collector.collect( 16 );
+                collector.collect( 37 );
+                return null;
+            }
+        } ).when( searcher ).search( same( query ), any( DocValuesCollector.class ) );
 
         PrimitiveLongIterator iterator = concat(
                 new PageOfRangesIterator( format, searcher, pageSize, query, labelId ) );
@@ -112,12 +132,13 @@ public class PageOfRangesIteratorTest
         /*doc3:*/(3L << format.bitmapFormat().shift) + 4, (3L << format.bitmapFormat().shift) + 5 ),
                       longs );
 
-        ArgumentCaptor<ScoreDoc> prefixCollector = ArgumentCaptor.forClass( ScoreDoc.class );
-        verify( searcher, times( 2 ) ).searchAfter( prefixCollector.capture(), same( query ), eq( 2 ) );
-        assertEquals( asList( null, doc2 ), prefixCollector.getAllValues() );
+        verify( searcher, times( 1 ) ).search( same( query ), any( DocValuesCollector.class ) );
+        verify( rangeNDV, times( 3 ) ).get( anyInt() );
+        verify( labelNDV, times( 3 ) ).get( anyInt() );
 
-        verify( searcher, times( 3 ) ).doc( anyInt() );
         verifyNoMoreInteractions( searcher );
+        verifyNoMoreInteractions( labelNDV );
+        verifyNoMoreInteractions( rangeNDV );
     }
 
     static TopDocs docs( ScoreDoc... docs )
@@ -125,10 +146,10 @@ public class PageOfRangesIteratorTest
         return new TopDocs( docs.length, docs, 0.0f );
     }
 
-    static Document document( Fieldable... fields )
+    static Document document( IndexableField... fields )
     {
         Document document = new Document();
-        for ( Fieldable field : fields )
+        for ( IndexableField field : fields )
         {
             document.add( field );
         }

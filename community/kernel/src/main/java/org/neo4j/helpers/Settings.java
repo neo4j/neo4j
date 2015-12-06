@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;

@@ -41,6 +41,12 @@ import static org.junit.Assert.fail;
 
 public class FailToStartStoreMigratorIT
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldFailToStartWithImproperlyUpgradedPropertyKeyStore() throws Exception
     {
@@ -68,9 +74,4 @@ public class FailToStartStoreMigratorIT
         }
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
 }

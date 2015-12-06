@@ -8,7 +8,10 @@ Apache Software License, Version 2.0
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
   hazelcast-all
+  Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
   Metrics Core
   Netty/All-in-One
   opencsv

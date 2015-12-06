@@ -58,9 +58,9 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -72,13 +72,13 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.Unzip;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -136,6 +136,19 @@ public class StoreUpgradeIntegrationTest
                     selectivities( 1.0, 1.0, 1.0 ),
                     indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
             )} );
+    private static final List<Store[]> STORES23 = Arrays.asList(
+            new Store[]{new Store( "0.A.6-empty.zip",
+                    0 /* node count */,
+                    1 /* last txId */,
+                    selectivities(),
+                    indexCounts()
+            )},
+            new Store[]{new Store( "0.A.6-data.zip",
+                    174 /* node count */,
+                    30 /* last txId */,
+                    selectivities( 1.0, 1.0, 1.0 ),
+                    indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) )
+            )} );
 
     @RunWith( Parameterized.class )
     public static class StoreUpgradeTest
@@ -146,7 +159,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES19, STORES20, STORES21, STORES22 ) );
+            return IteratorUtil.asCollection( Iterables.concat( STORES19, STORES20, STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -271,7 +284,7 @@ public class StoreUpgradeIntegrationTest
         public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.3-to-be-recovered.zip" );
+            File dir = Unzip.unzip( getClass(), "0.A.3-to-be-recovered.zip", testDir.graphDbDir() );
             new File( dir, "messages.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
@@ -287,7 +300,7 @@ public class StoreUpgradeIntegrationTest
             {
                 assertTrue( ex.getCause() instanceof LifecycleException );
                 Throwable realException = ex.getCause().getCause();
-                assertTrue( Exceptions.contains( realException, StoreFile.NODE_STORE.storeFileName(),
+                assertTrue( Exceptions.contains( realException, MetaDataStore.DEFAULT_NAME,
                         StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
             }
         }
@@ -302,7 +315,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES21, STORES22 ) );
+            return IteratorUtil.asCollection( Iterables.concat( STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -366,7 +379,7 @@ public class StoreUpgradeIntegrationTest
 
         public File prepareDirectory( File targetDir ) throws IOException
         {
-            AbstractNeo4jTestCase.unzip( targetDir, StoreUpgradeIntegrationTest.class, resourceName );
+            Unzip.unzip( getClass(), resourceName, targetDir );
             new File( targetDir, "messages.log" ).delete(); // clear the log
             return targetDir;
         }

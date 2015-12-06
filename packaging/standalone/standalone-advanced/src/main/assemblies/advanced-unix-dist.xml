@@ -110,6 +110,8 @@
         <include>org.neo4j:*</include>
         <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
+        <include>org.apache.lucene:lucene-analyzers-common</include>
+        <include>org.apache.lucene:lucene-queryparser</include>
         <include>org.scala-lang:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
@@ -133,7 +135,7 @@
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>jline:jline</exclude>
-        <exclude>org.apache.lucene:lucene-core</exclude>
+        <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>

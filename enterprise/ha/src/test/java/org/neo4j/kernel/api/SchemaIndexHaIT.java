@@ -63,6 +63,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -520,9 +521,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+                LabelScanStoreProvider labelScanStoreProvider )
         {
-            return delegate.storeMigrationParticipant( fs, pageCache );
+            return delegate.storeMigrationParticipant( fs, pageCache, labelScanStoreProvider );
         }
 
         @Override

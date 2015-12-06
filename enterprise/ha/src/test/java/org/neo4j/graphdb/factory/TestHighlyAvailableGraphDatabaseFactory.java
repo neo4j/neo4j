@@ -28,7 +28,6 @@ public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGrap
     {
         super.configure( builder );
         builder.setConfig( ClusterManager.CONFIG_FOR_SINGLE_JVM_CLUSTER );
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
     }
 }

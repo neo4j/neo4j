@@ -859,7 +859,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                                             Node endNodeOrNull )
         {
-            return new ReadOnlyIndexHitsProxy<Relationship>( this, actual.get( key, valueOrNull,
+            return new ReadOnlyIndexHitsProxy<>( this, actual.get( key, valueOrNull,
                     startNodeOrNull, endNodeOrNull ) );
         }
 
@@ -867,7 +867,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
                                               Node startNodeOrNull, Node endNodeOrNull )
         {
-            return new ReadOnlyIndexHitsProxy<Relationship>( this, actual.query( key,
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query( key,
                     queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull ) );
         }
 
@@ -875,7 +875,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
                                               Node startNodeOrNull, Node endNodeOrNull )
         {
-            return new ReadOnlyIndexHitsProxy<Relationship>( this, actual.query(
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query(
                     queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull ) );
         }
 
@@ -892,8 +892,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
     }
 
-    private static class ReadOnlyIndexHitsProxy<T extends PropertyContainer> implements
-            IndexHits<T>
+    private static class ReadOnlyIndexHitsProxy<T extends PropertyContainer> implements IndexHits<T>
     {
         private final ReadOnlyIndexProxy<T, ?> index;
         private final IndexHits<T> actual;

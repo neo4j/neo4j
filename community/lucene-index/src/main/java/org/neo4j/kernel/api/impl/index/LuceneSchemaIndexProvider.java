@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
@@ -57,7 +57,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
+        File rootDirectory = getSchemaIndexStoreDirectory( storeDir );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }
@@ -141,9 +141,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache,
+            LabelScanStoreProvider labelScanStoreProvider )
     {
-        return new SchemaIndexMigrator( fs, pageCache, new StoreFactory() );
+        return new SchemaIndexMigrator( fs, this, labelScanStoreProvider );
     }
 
     @Override

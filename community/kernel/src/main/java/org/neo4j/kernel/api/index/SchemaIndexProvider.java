@@ -21,22 +21,16 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -125,7 +119,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                        PageCache pageCache, LabelScanStoreProvider labelScanStoreProvider )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -136,24 +131,6 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                     throw new IllegalStateException();
                 }
             };
-
-    public static final SelectionStrategy HIGHEST_PRIORITIZED_OR_NONE =
-            new SelectionStrategy()
-    {
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException
-        {
-            List<Comparable> all = (List<Comparable>) addToCollection( candidates, new ArrayList<T>() );
-            if ( all.isEmpty() )
-            {
-                throw new IllegalArgumentException( "No schema index provider " +
-                        SchemaIndexProvider.class.getName() + " found. " + servicesClassPathEntryInformation() );
-            }
-            Collections.sort( all );
-            return (T) all.get( all.size()-1 );
-        }
-    };
 
     protected final int priority;
     private final Descriptor providerDescriptor;
@@ -233,12 +210,18 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return result;
     }
 
-    public static File getRootDirectory( File storeDir, String key )
+    /**
+     * Get schema index store root directory in specified store.
+     * @param storeDir store root directory
+     * @return shema index store root directory
+     */
+    public File getSchemaIndexStoreDirectory( File storeDir )
     {
-        return new File( new File( new File( storeDir, "schema" ), "index" ), key );
+        return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+            LabelScanStoreProvider labelScanStoreProvider );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.

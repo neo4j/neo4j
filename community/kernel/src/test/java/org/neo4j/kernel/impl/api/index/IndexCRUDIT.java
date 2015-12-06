@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.register.Register;
@@ -164,8 +165,9 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class )
-        ) ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
+                any( LabelScanStoreProvider.class ) ) )
+                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions(

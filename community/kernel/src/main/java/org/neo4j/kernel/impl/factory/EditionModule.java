@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 
@@ -57,8 +56,6 @@ public abstract class EditionModule
     public TransactionHeaderInformationFactory headerInformationFactory;
 
     public SchemaWriteGuard schemaWriteGuard;
-
-    public UpgradeConfiguration upgradeConfiguration;
 
     public ConstraintSemantics constraintSemantics;
 

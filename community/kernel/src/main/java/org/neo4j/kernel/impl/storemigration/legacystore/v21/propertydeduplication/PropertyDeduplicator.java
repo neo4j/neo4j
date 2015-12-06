@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -75,7 +76,7 @@ public class PropertyDeduplicator
             NodeStore nodeStore = neoStores.getNodeStore();
             SchemaStore schemaStore = neoStores.getSchemaStore();
             PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters = collectConflictingProperties( propertyStore );
-            resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore );
+            resolveConflicts( duplicateClusters, propertyStore, nodeStore, schemaStore, neoStores.getStoreDir() );
         }
     }
 
@@ -159,7 +160,7 @@ public class PropertyDeduplicator
             final PrimitiveLongObjectMap<List<DuplicateCluster>> duplicateClusters,
             PropertyStore propertyStore,
             final NodeStore nodeStore,
-            SchemaStore schemaStore ) throws IOException
+            SchemaStore schemaStore, File storeDir) throws IOException
     {
         if ( duplicateClusters.isEmpty() )
         {
@@ -176,13 +177,16 @@ public class PropertyDeduplicator
         // First find and resolve the duplicateClusters for all properties whose nodes are indexed.
         // The duplicateClusters are indexed by the propertyRecordId of the head-record in the property chain, so any node
         // whose nextProp() is amongst our duplicateClusters is potentially interesting.
-        try ( IndexLookup indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
-              IndexedConflictsResolver indexedConflictsResolver =
-                      new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
+        if ( !isIndexStorageEmpty( storeDir ) )
         {
-            if ( indexLookup.hasAnyIndexes() )
+            try ( IndexLookup indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );
+                  IndexedConflictsResolver indexedConflictsResolver =
+                          new IndexedConflictsResolver( duplicateClusters, indexLookup, nodeStore, propertyStore ) )
             {
-                nodeStore.scanAllRecords( indexedConflictsResolver );
+                if ( indexLookup.hasAnyIndexes() )
+                {
+                    nodeStore.scanAllRecords( indexedConflictsResolver );
+                }
             }
         }
 
@@ -192,4 +196,11 @@ public class PropertyDeduplicator
         NonIndexedConflictResolver resolver = new NonIndexedConflictResolver( keyTokenStore, propertyStore );
         duplicateClusters.visitEntries( resolver );
     }
+
+    private boolean isIndexStorageEmpty( File storeDir ) throws IOException
+    {
+        File storageDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
+        return FileUtils.isEmptyDirectory( storageDirectory );
+    }
+
 }

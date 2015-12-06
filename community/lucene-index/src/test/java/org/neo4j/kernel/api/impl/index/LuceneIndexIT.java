@@ -48,42 +48,6 @@ import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class LuceneIndexIT
 {
-    @Test
-    public void shouldProvideStoreSnapshot() throws Exception
-    {
-        // Given
-        updateAndCommit( asList(
-                add( nodeId, value ),
-                add( nodeId2, value ) ) );
-        accessor.force();
-
-        // When & Then
-        try ( ResourceIterator<File> snapshot = accessor.snapshotFiles() )
-        {
-            assertThat( asUniqueSetOfNames( snapshot ), equalTo( asSet( "_0.cfs", "segments_1" ) ) );
-        }
-    }
-
-    @Test
-    public void shouldProvideStoreSnapshotWhenThereAreNoCommits() throws Exception
-    {
-        // Given
-        // A completely un-used index
-
-        // When & Then
-        try(ResourceIterator<File> snapshot = accessor.snapshotFiles())
-        {
-            assertThat( asUniqueSetOfNames( snapshot ), equalTo( emptySetOf( String.class ) ) );
-        }
-    }
-
-    private Set<String> asUniqueSetOfNames( ResourceIterator<File> files )
-    {
-        ArrayList<String> out = new ArrayList<>();
-        while(files.hasNext())
-            out.add( files.next().getName() );
-        return asUniqueSet( out );
-    }
 
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value";
@@ -108,6 +72,43 @@ public class LuceneIndexIT
     {
         accessor.close();
         dirFactory.close();
+    }
+
+    @Test
+    public void shouldProvideStoreSnapshot() throws Exception
+    {
+        // Given
+        updateAndCommit( asList(
+                add( nodeId, value ),
+                add( nodeId2, value ) ) );
+        accessor.force();
+
+        // When & Then
+        try ( ResourceIterator<File> snapshot = accessor.snapshotFiles() )
+        {
+            assertThat( asUniqueSetOfNames( snapshot ), equalTo( asSet( "_0.cfe", "_0.cfs", "_0.si", "segments_1" ) ) );
+        }
+    }
+
+    @Test
+    public void shouldProvideStoreSnapshotWhenThereAreNoCommits() throws Exception
+    {
+        // Given
+        // A completely un-used index
+
+        // When & Then
+        try(ResourceIterator<File> snapshot = accessor.snapshotFiles())
+        {
+            assertThat( asUniqueSetOfNames( snapshot ), equalTo( emptySetOf( String.class ) ) );
+        }
+    }
+
+    private Set<String> asUniqueSetOfNames( ResourceIterator<File> files )
+    {
+        ArrayList<String> out = new ArrayList<>();
+        while(files.hasNext())
+            out.add( files.next().getName() );
+        return asUniqueSet( out );
     }
 
     private NodePropertyUpdate add( long nodeId, Object value )

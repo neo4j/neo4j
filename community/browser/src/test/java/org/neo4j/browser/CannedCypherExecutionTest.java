@@ -19,6 +19,12 @@
  */
 package org.neo4j.browser;
 
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -34,11 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.jsoup.helper.StringUtil.join;
@@ -117,7 +117,7 @@ public class CannedCypherExecutionTest
                                     }
 
                                     assertThat( format( "Query [%s] should only produce %s notifications. [%s]",
-                                                    ignorableStatusCodes, statement, fileName ),
+                                            ignorableStatusCodes, statement, fileName ),
                                             filteredNotifications, empty() );
 
                                     explainCount.incrementAndGet();
@@ -149,10 +149,6 @@ public class CannedCypherExecutionTest
 
         assertTrue( "Static files should contain at least one valid cypher statement",
                 executionCount.intValue() >= 1 );
-        System.out.printf( "Explained %s cypher statements extracted from HTML files, with no notifications.%n",
-                explainCount );
-        System.out.printf( "Executed %s cypher statements extracted from HTML files, with no errors.%n",
-                executionCount );
     }
 
     private boolean hasWarningInHtml( Element cypherElement )

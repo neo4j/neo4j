@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,9 +44,9 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Service;
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
+import org.neo4j.index.impl.lucene.legacy.LuceneBatchInserterIndexProviderNewImpl;
+import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
+import org.neo4j.index.impl.lucene.legacy.MyStandardAnalyzer;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -67,13 +68,40 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.impl.lucene.legacy.Contains.contains;
+import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
 public class TestLuceneBatchInsert
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File storeDir;
+    private BatchInserter inserter;
+    private GraphDatabaseService db;
+
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    @Before
+    public void startInserter() throws Exception
+    {
+        storeDir = testDirectory.graphDbDir();
+        Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
+                Service.load( KernelExtensionFactory.class ) );
+        inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );
+    }
+
+    @After
+    public void shutdown()
+    {
+        shutdownInserter();
+        if ( db != null )
+        {
+            db.shutdown();
+            db = null;
+        }
+    }
+
     @Test
     public void testSome() throws Exception
     {
@@ -250,7 +278,7 @@ public class TestLuceneBatchInsert
         assertThat( batchIndexResult3.size(), is( 1 ) );
 
         IndexHits<Long> batchIndexResult4 = batchIndex.query( "number", newIntRange( "number", 47, 98, false, false ) );
-        assertThat( batchIndexResult4, isEmpty() );
+        assertThat( batchIndexResult4, Matchers.emptyIterable() );
 
         provider.shutdown();
 
@@ -274,7 +302,7 @@ public class TestLuceneBatchInsert
             assertThat( indexResult3.size(), is( 1 ) );
 
             IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
-            assertThat( indexResult4, isEmpty() );
+            assertThat( indexResult4, Matchers.emptyIterable() );
             transaction.success();
         }
     }
@@ -511,22 +539,7 @@ public class TestLuceneBatchInsert
         }
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    private File storeDir;
-    private BatchInserter inserter;
-    private GraphDatabaseService db;
-
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
-    @Before
-    public void startInserter() throws Exception
-    {
-        storeDir = testDirectory.graphDbDir();
-        Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
-                Service.load( KernelExtensionFactory.class ) );
-        inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );
-    }
 
     @SuppressWarnings( "rawtypes" )
     private Predicate<? super KernelExtensionFactory> onlyRealLuceneExtensions()
@@ -580,17 +593,6 @@ public class TestLuceneBatchInsert
         {
             inserter.shutdown();
             inserter = null;
-        }
-    }
-
-    @After
-    public void shutdown()
-    {
-        shutdownInserter();
-        if ( db != null )
-        {
-            db.shutdown();
-            db = null;
         }
     }
 }

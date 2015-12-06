@@ -20,9 +20,9 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -37,13 +37,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
+
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.docs;
 import static org.neo4j.kernel.api.impl.index.PageOfRangesIteratorTest.document;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -114,10 +117,10 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
     public void shouldUpdateDocumentsForReLabeledNodes() throws Exception
     {
         // given
-        LabelScanStorageStrategy.StorageService storage = storage(
-                document( format.rangeField( 0 ),
-                          format.labelField( 7, 0x70 ) )
-        );
+        Document givenDoc = new Document();
+        format.addRangeValuesField( givenDoc, 0 );
+        format.addLabelFields( givenDoc, "7", 0x70L );
+        LabelScanStorageStrategy.StorageService storage = storage(givenDoc);
 
         LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 
@@ -126,11 +129,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         writer.close();
 
         // then
-        verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
-                                          match( document( format.rangeField( 0 ),
-                                                           format.labelField( 7, 0x71 ),
-                                                           format.labelField( 8, 0x01 ),
-                                                           format.labelSearchField( 8 ) ) ) );
+        Document thenDoc = new Document();
+        format.addRangeValuesField( thenDoc, 0 );
+        format.addLabelFields( thenDoc, "7", 0x71L );
+        format.addLabelAndSearchFields( thenDoc, 8, new Bitmap( 0x01L ) );
+        verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ), match( thenDoc ) );
     }
 
     @Test
@@ -212,10 +215,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             writer.close();
 
             // then
+            Document document = new Document();
+            format.addRangeValuesField( document, 0 );
+            format.addLabelAndSearchFields( document, 7, new Bitmap( 1L << i ) );
             verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
-                                              match( document( format.rangeField( 0 ),
-                                                               format.labelField( 7, 1L << i ),
-                                                               format.labelSearchField( 7 ) ) ) );
+                                              match( document ) );
         }
     }
 
@@ -241,8 +245,22 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( storage.acquireSearcher() ).thenReturn( searcher );
         for ( int i = 0; i < documents.length; i++ )
         {
-            when( searcher.search( new TermQuery( format.rangeTerm( documents[i] ) ), 1 ) )
-                    .thenReturn( docs( new ScoreDoc( i, 0.0f ) ) );
+            final int docId = i;
+            doAnswer( invocation -> {
+                FirstHitCollector collector = (FirstHitCollector) invocation.getArguments()[1];
+                try
+                {
+                   collector.collect( docId );
+                }
+                catch ( CollectionTerminatedException swallow )
+                {
+                    // swallow
+                }
+                return null;
+            } ).when( searcher ).search(
+                    eq( new TermQuery( format.rangeTerm( documents[i] ) ) ),
+                    any( FirstHitCollector.class )
+            );
             when( searcher.doc( i ) ).thenReturn( documents[i] );
         }
         return storage;
@@ -269,23 +287,23 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 description.appendValue( document );
             }
 
-            private Map<String, Fieldable> fields( Document doc )
+            private Map<String,IndexableField> fields( Document doc )
             {
-                Map<String, Fieldable> these = new HashMap<>();
-                for ( Fieldable field : doc.getFields() )
+                Map<String, IndexableField> these = new HashMap<>();
+                for ( IndexableField field : doc.getFields() )
                 {
                     these.put( field.name(), field );
                 }
                 return these;
             }
 
-            boolean equal( Map<String, Fieldable> these, Map<String, Fieldable> those )
+            boolean equal( Map<String, IndexableField> these, Map<String, IndexableField> those )
             {
                 if ( !these.keySet().equals( those.keySet() ) )
                 {
                     return false;
                 }
-                for ( Map.Entry<String, Fieldable> entry : these.entrySet() )
+                for ( Map.Entry<String, IndexableField> entry : these.entrySet() )
                 {
                     if ( !equal( entry.getValue(), those.get( entry.getKey() ) ) )
                     {
@@ -295,11 +313,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 return true;
             }
 
-            boolean equal( Fieldable lhs, Fieldable rhs )
+            boolean equal( IndexableField lhs, IndexableField rhs )
             {
-                if ( lhs.isBinary() && rhs.isBinary() )
+                if ( lhs.binaryValue() != null && rhs.binaryValue() != null )
                 {
-                    return Arrays.equals( lhs.getBinaryValue(), rhs.getBinaryValue() );
+                    return Arrays.equals( lhs.binaryValue().bytes, rhs.binaryValue().bytes );
                 }
                 return lhs.stringValue().equals( rhs.stringValue() );
             }

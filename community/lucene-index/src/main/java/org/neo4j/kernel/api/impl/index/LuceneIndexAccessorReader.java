@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -35,7 +39,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.index.impl.lucene.Hits;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -43,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -66,27 +71,42 @@ class LuceneIndexAccessorReader implements IndexReader
     public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
-        try ( TermEnum terms = luceneIndexReader().terms() )
-        {
-            while ( terms.next() )
-            {
-                Term term = terms.term();
 
-                if ( !NODE_ID_KEY.equals( term.field() ))
-                {
-                    String value = term.text();
-                    int frequency = terms.docFreq();
-                    sampler.include( value, frequency );
-                }
-                checkCancellation();
-            }
-        }
-        catch ( IOException e )
+        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
         {
-            throw new RuntimeException( e );
+            try
+            {
+                Set<String> fieldNames = getFieldNamesToSample( readerContext );
+                for ( String fieldName : fieldNames )
+                {
+                    Terms terms = readerContext.reader().terms( fieldName );
+                    if ( terms != null )
+                    {
+                        TermsEnum termsEnum = terms.iterator();
+                        BytesRef termsRef;
+                        while ( (termsRef = termsEnum.next()) != null )
+                        {
+                            sampler.include( termsRef.utf8ToString(), termsEnum.docFreq());
+                            checkCancellation();
+                        }
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         return sampler.result( result );
+    }
+
+    private Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
+    {
+        Fields fields = readerContext.reader().fields();
+        Set<String> fieldNames = Iterables.toSet( fields );
+        assert fieldNames.remove( NODE_ID_KEY );
+        return fieldNames;
     }
 
     @Override
@@ -125,14 +145,15 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
         Query valueQuery = documentLogic.newSeekQuery( propertyValue );
-        BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
+        BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
         try
         {
-            Hits hits = new Hits( searcher, nodeIdAndValueQuery, null );
+            TotalHitCountCollector collector = new TotalHitCountCollector();
+            searcher.search( nodeIdAndValueQuery.build(), collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
-            return hits.length();
+            return collector.getTotalHits();
         }
         catch ( IOException e )
         {
@@ -144,35 +165,37 @@ class LuceneIndexAccessorReader implements IndexReader
     public Set<Class> valueTypesInIndex()
     {
         Set<Class> types = new HashSet<>();
-        try ( TermEnum terms = luceneIndexReader().terms() )
+        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
         {
-            while ( terms.next() )
+            try
             {
-                String field = terms.term().field();
-                if ( !NODE_ID_KEY.equals( field ) )
+                Fields fields = readerContext.reader().fields();
+                for ( String field : fields )
                 {
-                    switch ( ValueEncoding.fromKey( field ) )
+                    if ( !NODE_ID_KEY.equals( field ) )
                     {
-                    case Number:
-                        types.add( Number.class );
-                        break;
-                    case String:
-                        types.add( String.class );
-                        break;
-                    case Array:
-                        types.add( Array.class );
-                        break;
-                    case Bool:
-                        types.add( Boolean.class );
-                        break;
+                        switch ( ValueEncoding.fromKey( field ) )
+                        {
+                        case Number:
+                            types.add( Number.class );
+                            break;
+                        case String:
+                            types.add( String.class );
+                            break;
+                        case Array:
+                            types.add( Array.class );
+                            break;
+                        case Bool:
+                            types.add( Boolean.class );
+                            break;
+                        }
                     }
                 }
             }
-
-        }
-        catch ( IOException ex )
-        {
-            throw new RuntimeException( ex );
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
         return types;
     }
@@ -208,8 +231,9 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         try
         {
-            Hits hits = new Hits( searcher, query, null );
-            return new HitsPrimitiveLongIterator( hits, documentLogic );
+            DocValuesCollector docValuesCollector = new DocValuesCollector();
+            searcher.search( query, docValuesCollector );
+            return docValuesCollector.getValuesIterator( NODE_ID_KEY );
         }
         catch ( IOException e )
         {

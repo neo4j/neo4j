@@ -315,42 +315,4 @@ public abstract class AbstractNeo4jTestCase
         NeoStores neoStores = graphDb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
         return neoStores.getPropertyStore();
     }
-
-    public static File unzip( File targetDir, Class<?> testClass, String resource ) throws IOException
-    {
-        try ( InputStream source = testClass.getResourceAsStream( resource ) )
-        {
-            if ( source == null )
-            {
-                throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
-            }
-            ZipInputStream zipStream = new ZipInputStream( source );
-            ZipEntry entry;
-            byte[] scratch = new byte[8096];
-            while ( (entry = zipStream.getNextEntry()) != null )
-            {
-                if ( entry.isDirectory() )
-                {
-                    new File( targetDir, entry.getName() ).mkdirs();
-                }
-                else
-                {
-                    try ( OutputStream file =
-                                  new BufferedOutputStream(
-                                          new FileOutputStream( new File( targetDir, entry.getName() ) ) ) )
-                    {
-                        long toCopy = entry.getSize();
-                        while ( toCopy > 0 )
-                        {
-                            int read = zipStream.read( scratch );
-                            file.write( scratch, 0, read );
-                            toCopy -= read;
-                        }
-                    }
-                }
-                zipStream.closeEntry();
-            }
-        }
-        return targetDir;
-    }
 }

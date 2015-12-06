@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,11 +35,13 @@ import java.util.Collection;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -47,7 +50,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
 
 @RunWith( Enclosed.class )
@@ -72,7 +77,8 @@ public class UpgradableDatabaseTest
                     new Object[]{Legacy19Store.LEGACY_VERSION},
                     new Object[]{Legacy20Store.LEGACY_VERSION},
                     new Object[]{Legacy21Store.LEGACY_VERSION},
-                    new Object[]{Legacy22Store.LEGACY_VERSION}
+                    new Object[]{Legacy22Store.LEGACY_VERSION},
+                    new Object[]{Legacy23Store.LEGACY_VERSION}
             );
         }
 
@@ -90,7 +96,7 @@ public class UpgradableDatabaseTest
         public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
 
@@ -104,9 +110,12 @@ public class UpgradableDatabaseTest
         @Test
         public void shouldRejectStoresIfOneFileHasIncorrectVersion() throws IOException
         {
+            // there are no store trailers in 2.3
+            Assume.assumeFalse( Legacy23Store.LEGACY_VERSION.equals( version ) );
+
             // given
             changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
 
@@ -121,7 +130,7 @@ public class UpgradableDatabaseTest
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
 
@@ -135,12 +144,34 @@ public class UpgradableDatabaseTest
         @Test
         public void shouldRejectStoresIfOneFileShorterThanExpectedVersionString() throws IOException
         {
+            // there are no store trailers in 2.3
+            Assume.assumeFalse( Legacy23Store.LEGACY_VERSION.equals( version ) );
+
             // given
             final int shortFileLength = 5 /* (RelationshipTypeStore.RECORD_SIZE) */ * 3;
             assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore " + version ).length );
             truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ),
                     shortFileLength );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
+                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
+                    new LegacyStoreVersionCheck( fileSystem ) );
+
+            // when
+            final boolean result = upgradableDatabase.storeFilesUpgradeable( workingDirectory );
+
+            // then
+            assertFalse( result );
+        }
+
+        @Test
+        public void shouldRejectStoresIfDBIsNotShutdownCleanly() throws IOException
+        {
+            // checkpoint has been introduced in 2.3
+            Assume.assumeTrue( Legacy23Store.LEGACY_VERSION.equals( version ) );
+
+            // given
+            removeCheckPointFromTxLog( fileSystem, workingDirectory );
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
 
@@ -161,14 +192,14 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameter( 0 )
         public String version;
         private File workingDirectory;
-        private static final String neostoreFilename = "neostore.nodestore.db";
+        private static final String neostoreFilename = "neostore";
 
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Object[]> versions()
         {
             return Arrays.asList(
-                    new Object[]{"v0.9.5" },
-                    new Object[]{"v0.A.4" }
+                    new Object[]{"v0.9.5"},
+                    new Object[]{"v0.A.4"}
             );
         }
 
@@ -182,13 +213,16 @@ public class UpgradableDatabaseTest
             // doesn't matter which version we pick we are changing it to the wrong one...
             MigrationTestUtils.findFormatStoreDirectoryForVersion( Legacy21Store.LEGACY_VERSION, workingDirectory );
             changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );
+            File metadataStore = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
+            MetaDataStore.setRecord( pageCacheRule.getPageCache( fileSystem ), metadataStore, STORE_VERSION,
+                    MetaDataStore.versionStringToLong( version ) );
         }
 
         @Test
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
 
@@ -203,7 +237,7 @@ public class UpgradableDatabaseTest
         public void shouldCommunicateWhatCausesInabilityToUpgrade() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
+            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
                     new LegacyStoreVersionCheck( fileSystem ) );
             try
@@ -216,10 +250,9 @@ public class UpgradableDatabaseTest
             {
                 // then
                 assertThat( e.getMessage(), containsString( neostoreFilename ) );
-                assertThat( e.getMessage(), containsString( "has a store version number that we cannot upgrade from. " +
-                                                            "Expected '" + Legacy21Store.LEGACY_VERSION +
-                                                            "' but file is version 'NodeStore " + version +
-                                                            "'." ) );
+                assertThat( e.getMessage(), containsString(
+                        "has a store version number that we cannot upgrade from. Expected '" +
+                        Legacy23Store.LEGACY_VERSION + "' but file is version '" + version + "'." ) );
             }
         }
     }

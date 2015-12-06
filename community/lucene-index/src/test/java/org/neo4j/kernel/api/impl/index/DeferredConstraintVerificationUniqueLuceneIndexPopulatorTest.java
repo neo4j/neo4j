@@ -53,6 +53,21 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
+
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
+    private static final int LABEL_ID = 1;
+    private static final int PROPERTY_KEY_ID = 2;
+    private static final int INDEX_ID = 42;
+
+    private final FailureStorage failureStorage = mock( FailureStorage.class );
+    private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
+
+    private final File indexDirectory = new File( "target/whatever" );
+    private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+
     @Test
     public void shouldVerifyThatThereAreNoDuplicates() throws Exception
     {
@@ -487,17 +502,6 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         verify( searcherManager ).afterClose();
     }
 
-    private static final int LABEL_ID = 1;
-    private static final int PROPERTY_KEY_ID = 2;
-    private static final int INDEX_ID = 42;
-
-    private final FailureStorage failureStorage = mock( FailureStorage.class );
-    private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
-
-    private final File indexDirectory = new File( "target/whatever" );
-    private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator() throws IOException
     {

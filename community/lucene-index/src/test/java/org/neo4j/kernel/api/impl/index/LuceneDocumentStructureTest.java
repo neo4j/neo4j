@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.junit.Test;
+
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
@@ -26,15 +34,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncod
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Number;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.String;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.NumericUtils;
-import org.junit.Test;
 
 public class LuceneDocumentStructureTest
 {
@@ -44,8 +43,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        Fieldable fieldable = documentStructure.encodeAsFieldable( "hello" );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, "hello" );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -56,8 +54,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        Fieldable fieldable = documentStructure.encodeAsFieldable( true );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, true );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -68,20 +65,18 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        Fieldable fieldable = documentStructure.encodeAsFieldable( 12 );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, 12 );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
-        assertEquals( NumericUtils.doubleToPrefixCoded( 12.0 ), document.get( Number.key() ) );
+        assertEquals( 12.0, document.getField( Number.key() ).numericValue().doubleValue() );
     }
 
     @Test
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        Fieldable fieldable = documentStructure.encodeAsFieldable( new Integer[]{1, 2, 3} );
-        Document document = documentStructure.newDocumentRepresentingProperty( 123, fieldable );
+        Document document = documentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
 
         // then
         assertEquals("123", document.get( NODE_ID_KEY ));
@@ -92,7 +87,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingBoolProperty() throws Exception
     {
         // given
-        TermQuery query = documentStructure.newSeekQuery( true );
+        TermQuery query = (TermQuery) documentStructure.newSeekQuery( true );
 
         // then
         assertEquals( "true", query.getTerm().text() );
@@ -102,7 +97,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingStringProperty() throws Exception
     {
         // given
-        TermQuery query = documentStructure.newSeekQuery( "Characters" );
+        TermQuery query = (TermQuery) documentStructure.newSeekQuery( "Characters" );
 
         // then
         assertEquals( "Characters", query.getTerm().text() );
@@ -113,17 +108,18 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
         // given
-        TermQuery query = documentStructure.newSeekQuery( 12 );
+        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) documentStructure.newSeekQuery( 12 );
 
         // then
-        assertEquals(  NumericUtils.doubleToPrefixCoded( 12.0 ), query.getTerm().text() );
+        assertEquals( 12.0, query.getMin() );
+        assertEquals( 12.0, query.getMax() );
     }
 
     @Test
     public void shouldBuildQueryRepresentingArrayProperty() throws Exception
     {
         // given
-        TermQuery query = documentStructure.newSeekQuery( new Integer[]{1, 2, 3} );
+        TermQuery query = (TermQuery) documentStructure.newSeekQuery( new Integer[]{1, 2, 3} );
 
         // then
         assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
@@ -133,25 +129,25 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByNumberQueryForStrings() throws Exception
     {
         // given
-        TermRangeQuery query = documentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
+        NumericRangeQuery<Double> query = documentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( NumericUtils.doubleToPrefixCoded( 12.0d ) , query.getLowerTerm() );
-        assertEquals( true, query.includesLower() );
-        assertEquals( null, query.getUpperTerm() );
-        assertEquals( true, query.includesUpper() );
+        assertEquals( 12.0 , query.getMin() );
+        assertEquals( true, query.includesMin() );
+        assertEquals( null, query.getMax() );
+        assertEquals( true, query.includesMax() );
     }
 
     @Test
     public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
     {
         // given
-        TermRangeQuery query = documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+        TermRangeQuery query = (TermRangeQuery) documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
 
         // then
         assertEquals( "string", query.getField() );
-        assertEquals( "foo" , query.getLowerTerm() );
+        assertEquals( "foo" , query.getLowerTerm().utf8ToString() );
         assertEquals( false, query.includesLower() );
         assertEquals( null, query.getUpperTerm() );
         assertEquals( true, query.includesUpper() );

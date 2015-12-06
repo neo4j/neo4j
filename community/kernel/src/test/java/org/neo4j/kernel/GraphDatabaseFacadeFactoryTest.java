@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;

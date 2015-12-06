@@ -45,8 +45,8 @@ import static org.junit.Assert.assertNotNull;
 public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 {
     @ClassRule
-    public static TargetDirectory.TestDirectory testDirectory =
-            TargetDirectory.testDirForTest( GetOrCreateDocIT.class );
+    public static TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( GetOrCreateDocIT
+            .class );
 
     @BeforeClass
     public static void init()

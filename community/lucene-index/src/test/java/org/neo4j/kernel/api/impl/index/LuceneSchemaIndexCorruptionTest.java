@@ -51,7 +51,7 @@ public class LuceneSchemaIndexCorruptionTest
         DirectoryFactory dirFactory = mock(DirectoryFactory.class);
 
         // This isn't quite correct, but it will trigger the correct code paths in our code
-        when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
+        when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken.", "" ));
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
 

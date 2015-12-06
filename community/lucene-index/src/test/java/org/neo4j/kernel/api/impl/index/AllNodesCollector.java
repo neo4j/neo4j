@@ -24,23 +24,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
 
-class AllNodesCollector extends Collector
+class AllNodesCollector extends SimpleCollector
 {
     static List<Long> getAllNodes( DirectoryFactory dirFactory, File indexDir, Object propertyValue ) throws IOException
     {
         try ( Directory directory = dirFactory.open( indexDir );
-              SearcherManager manager = new SearcherManager( directory, new SearcherFactory() );
-              IndexSearcher searcher = manager.acquire() )
+              SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ))
         {
+            IndexSearcher searcher = manager.acquire();
             List<Long> nodes = new ArrayList<>();
             LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
             Query query = documentStructure.newSeekQuery( propertyValue );
@@ -51,17 +51,12 @@ class AllNodesCollector extends Collector
 
     private final List<Long> nodeIds;
     private final LuceneDocumentStructure documentLogic;
-    private IndexReader reader;
+    private LeafReader reader;
 
     AllNodesCollector( LuceneDocumentStructure documentLogic, List<Long> nodeIds )
     {
         this.documentLogic = documentLogic;
         this.nodeIds = nodeIds;
-    }
-
-    @Override
-    public void setScorer( Scorer scorer ) throws IOException
-    {
     }
 
     @Override
@@ -71,14 +66,14 @@ class AllNodesCollector extends Collector
     }
 
     @Override
-    public void setNextReader( IndexReader reader, int docBase ) throws IOException
+    public boolean needsScores()
     {
-        this.reader = reader;
+        return false;
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder()
+    protected void doSetNextReader( LeafReaderContext context ) throws IOException
     {
-        return true;
+        this.reader = context.reader();
     }
 }

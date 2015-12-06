@@ -114,6 +114,7 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
         }
         printProgress( txs.get(), prevTxs, startTime, System.currentTimeMillis() );
         assertThat( failed.get(), is( false ) );
+        db.shutdown();
     }
 
     private void printProgress( long currTxs, long prevTxs, long startTime, long finishTime )

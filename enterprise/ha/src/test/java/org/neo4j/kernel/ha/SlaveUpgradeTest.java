@@ -28,7 +28,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -37,6 +37,9 @@ import static org.junit.Assert.fail;
 
 public class SlaveUpgradeTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void haShouldFailToStartWithOldStore() throws Exception
     {
@@ -48,7 +51,7 @@ public class SlaveUpgradeTest
             new TestHighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, "localhost:9999" ) // Mandatory setting, irrelevant for this test though, just needs to be here
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:9999" )
                     .newGraphDatabase();
 
             fail( "Should exit abnormally" );
@@ -56,10 +59,7 @@ public class SlaveUpgradeTest
         catch ( Exception e )
         {
             Throwable rootCause = Exceptions.rootCause( e );
-            assertThat( rootCause, instanceOf( UpgradeNotAllowedByDatabaseModeException.class ) );
+            assertThat( rootCause, instanceOf( UpgradeNotAllowedByConfigurationException.class ) );
         }
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

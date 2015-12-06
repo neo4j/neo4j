@@ -20,7 +20,8 @@
 package org.neo4j.server.exception;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
+
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -36,20 +37,20 @@ public class ServerStartupErrorsTest
     {
         // given
         AssertableLogProvider logging = new AssertableLogProvider();
-        LifecycleException error = new LifecycleException(new Object(), STARTING, STARTED,
-                new RuntimeException("Error starting org.neo4j.kernel.ha.factory.EnterpriseFacadeFactory",
-                        new LifecycleException(new Object(), STARTING, STARTED,
-                                new LifecycleException(new Object(), STARTING, STARTED,
-                                        new UpgradeNotAllowedByDatabaseModeException()))));
+        LifecycleException error = new LifecycleException( new Object(), STARTING, STARTED,
+                new RuntimeException( "Error starting org.neo4j.kernel.ha.factory.EnterpriseFacadeFactory",
+                        new LifecycleException( new Object(), STARTING, STARTED,
+                                new LifecycleException( new Object(), STARTING, STARTED,
+                                        new UpgradeNotAllowedByConfigurationException() ) ) ) );
 
         // when
         translateToServerStartupError( error ).describeTo( logging.getLog( "console" ) );
 
         // then
         logging.assertExactly( inLog( "console" )
-                .error( "Neo4j cannot be started, because the database files require upgrading and upgrading is not " +
-                     "supported in this database mode. Please start the database in stand-alone mode to allow a " +
-                     "safe upgrade of the database files." ));
+                .error( "Neo4j cannot be started, because the database files require upgrading and upgrades are " +
+                        "disabled in configuration. Please set '%s' to 'true' in your configuration file and try " +
+                        "again.", "allow_store_upgrade" ) );
 
     }
 }

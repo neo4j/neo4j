@@ -61,6 +61,23 @@ public class LuceneIndexAccessorReservationsTest
     @Parameter( 1 )
     public AccessorFactory accessorFactory;
 
+    @Parameters( name = "{0}" )
+    public static List<Object[]> accessorFactories()
+    {
+        return Arrays.asList(
+                new Object[]{
+                        UniqueLuceneIndexAccessor.class.getSimpleName(),
+                        (AccessorFactory) writer -> new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
+                                factoryOfOne( writer ), new InMemoryDirectoryFactory(), new File( "unique" ) )},
+                new Object[]{
+                        NonUniqueLuceneIndexAccessor.class.getSimpleName(),
+                        (AccessorFactory) writer -> new NonUniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
+                                factoryOfOne( writer ), new InMemoryDirectoryFactory(),
+                                new File( "non-unique" ), 100_000 )}
+        );
+    }
+
+
     @Test
     public void reservationShouldAllowReleaseOnlyOnce() throws Exception
     {
@@ -184,36 +201,6 @@ public class LuceneIndexAccessorReservationsTest
     private IndexUpdater newIndexUpdater( ReservingLuceneIndexWriter writer ) throws IOException
     {
         return accessorFactory.create( writer ).newUpdater( IndexUpdateMode.ONLINE );
-    }
-
-    @Parameters( name = "{0}" )
-    public static List<Object[]> accessorFactories()
-    {
-        return Arrays.asList(
-                new Object[]{
-                        UniqueLuceneIndexAccessor.class.getSimpleName(),
-                        new AccessorFactory()
-                        {
-                            @Override
-                            public IndexAccessor create( ReservingLuceneIndexWriter writer ) throws IOException
-                            {
-                                return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
-                                        factoryOfOne( writer ), new InMemoryDirectoryFactory(), new File( "unique" ) );
-                            }
-                        }},
-                new Object[]{
-                        NonUniqueLuceneIndexAccessor.class.getSimpleName(),
-                        new AccessorFactory()
-                        {
-                            @Override
-                            public IndexAccessor create( ReservingLuceneIndexWriter writer ) throws IOException
-                            {
-                                return new NonUniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
-                                        factoryOfOne( writer ), new InMemoryDirectoryFactory(),
-                                        new File( "non-unique" ), 100_000 );
-                            }
-                        }}
-        );
     }
 
     @SuppressWarnings( "unchecked" )

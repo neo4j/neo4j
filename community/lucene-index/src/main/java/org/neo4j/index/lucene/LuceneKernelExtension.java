@@ -23,7 +23,7 @@ import java.io.File;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
+import org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;

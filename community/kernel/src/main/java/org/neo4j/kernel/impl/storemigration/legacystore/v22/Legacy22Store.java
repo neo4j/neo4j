@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v22;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
@@ -38,31 +36,11 @@ public class Legacy22Store implements LegacyStore
 {
     public static final String LEGACY_VERSION = "v0.A.5";
 
-    private final File storageFileName;
-
-    public Legacy22Store( File storageFileName ) throws IOException
-    {
-        this.storageFileName = storageFileName;
-        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
-    }
-
-    /**
-     * Store files that don't need migration are just copied and have their trailing versions replaced
-     * by the current version. For this to work the legacy version and the current version must have the
-     * same encoded length.
-     */
-    static void assertLegacyAndCurrentVersionHaveSameLength( String legacyVersion, String currentVersion )
-    {
-        if ( UTF8.encode( legacyVersion ).length != UTF8.encode( currentVersion ).length )
-        {
-            throw new IllegalStateException( "Encoded version string length must remain the same between versions" );
-        }
-    }
-
     @Override
     public File getStorageFileName()
     {
-        return storageFileName;
+        // not needed
+        throw new UnsupportedOperationException();
     }
 
     @Override

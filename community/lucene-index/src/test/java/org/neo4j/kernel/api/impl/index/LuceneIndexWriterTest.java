@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,10 +33,26 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
+import static org.neo4j.index.impl.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class LuceneIndexWriterTest
 {
+    private Directory directory;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
+
+    @Before
+    public void before() throws Exception
+    {
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        directory = dirFactory.open( new File( "dir" ) );
+    }
+
+    @After
+    public void after()
+    {
+        dirFactory.close();
+    }
+
     @Test
     public void forceShouldSetOnlineStatus() throws Exception
     {
@@ -86,25 +101,9 @@ public class LuceneIndexWriterTest
         assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
     }
 
-    private Directory directory;
-    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-
-    @Before
-    public void before() throws Exception
-    {
-        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        directory = dirFactory.open( new File( "dir" ) );
-    }
-
-    @After
-    public void after()
-    {
-        dirFactory.close();
-    }
-
     private LuceneIndexWriter newWriter() throws IOException
     {
-        return new LuceneIndexWriter( directory, new IndexWriterConfig( Version.LUCENE_36, KEYWORD_ANALYZER ) );
+        return new LuceneIndexWriter( directory, new IndexWriterConfig( KEYWORD_ANALYZER ) );
     }
 
     private Document newDocument()

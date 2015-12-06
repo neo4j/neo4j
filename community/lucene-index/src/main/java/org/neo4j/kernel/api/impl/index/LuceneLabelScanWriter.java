@@ -20,11 +20,10 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,15 +109,17 @@ public class LuceneLabelScanWriter implements LabelScanWriter
 
     private Map<Long/*range*/, Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
     {
-        Map<Long/*label*/, Bitmap> fields = new HashMap<>();
+        Map<Long/*label*/,Bitmap> fields = new HashMap<>();
         Term documentTerm = format.rangeTerm( range );
-        TopDocs docs = searcher.search( new TermQuery( documentTerm ), 1 );
-        if ( docs != null && docs.totalHits != 0 )
+        TermQuery query = new TermQuery( documentTerm );
+        FirstHitCollector hitCollector = new FirstHitCollector();
+        searcher.search( query, hitCollector );
+        if ( hitCollector.hasMatched() )
         {
-            Document document = searcher.doc( docs.scoreDocs[0].doc );
-            for ( Fieldable field : document.getFields() )
+            Document document = searcher.doc( hitCollector.getMatchedDoc() );
+            for ( IndexableField field : document.getFields() )
             {
-                if ( !format.isRangeField( field ) )
+                if ( !format.isRangeOrLabelField( field ) )
                 {
                     Long label = Long.valueOf( field.name() );
                     fields.put( label, format.readBitmap( field ) );
@@ -139,7 +140,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         updateFields( updates, fields );
 
         Document document = new Document();
-        document.add( format.rangeField( currentRange ) );
+        format.addRangeValuesField( document, currentRange );
 
         for ( Map.Entry<Long/*label*/, Bitmap> field : fields.entrySet() )
         {
@@ -147,7 +148,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
             Bitmap value = field.getValue();
             if ( value.hasContent() )
             {
-                format.addLabelField( document, field.getKey(), value );
+                format.addLabelAndSearchFields( document, field.getKey(), value );
             }
         }
 
@@ -164,9 +165,9 @@ public class LuceneLabelScanWriter implements LabelScanWriter
 
     private boolean isEmpty( Document document )
     {
-        for ( Fieldable fieldable : document.getFields() )
+        for ( IndexableField fieldable : document.getFields() )
         {
-            if ( !format.isRangeField( fieldable ) )
+            if ( !format.isRangeOrLabelField( fieldable ) )
             {
                 return false;
             }

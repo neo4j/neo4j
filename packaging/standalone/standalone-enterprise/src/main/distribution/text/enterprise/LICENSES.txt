@@ -27,7 +27,10 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  Lucene Common Analyzers
   Lucene Core
+  Lucene Memory
+  Lucene QueryParsers
   Metrics Core
   Netty/All-in-One
   opencsv

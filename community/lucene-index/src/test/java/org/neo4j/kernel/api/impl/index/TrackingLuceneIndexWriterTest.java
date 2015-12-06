@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -56,7 +55,7 @@ public class TrackingLuceneIndexWriterTest
         // When
         for ( int i = 0; i < toAdd; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         // Then
@@ -74,13 +73,13 @@ public class TrackingLuceneIndexWriterTest
 
         for ( int i = 0; i < maxDocLimit; i++ )
         {
-            indexWriter.addDocument( documentStructure.newDocument( i ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( i ) );
         }
 
         try
         {
             // When
-            indexWriter.addDocument( documentStructure.newDocument( maxDocLimit + 42 ) );
+            indexWriter.addDocument( documentStructure.reusedDocument( maxDocLimit + 42 ) );
             fail( "Should have thrown " + IndexCapacityExceededException.class.getSimpleName() );
         }
         catch ( IndexCapacityExceededException e )
@@ -101,13 +100,14 @@ public class TrackingLuceneIndexWriterTest
 
         for ( int i = 0; i < maxDocLimit; i++ )
         {
-            indexWriter.updateDocument( new Term( "foo", "bar" ), documentStructure.newDocument( i ) );
+            indexWriter.updateDocument( new Term( "foo", "bar" ), documentStructure.reusedDocument( i ) );
         }
 
         try
         {
             // When
-            indexWriter.updateDocument( new Term( "foo", "bar" ), documentStructure.newDocument( maxDocLimit + 42 ) );
+            indexWriter.updateDocument( new Term( "foo", "bar" ), documentStructure.reusedDocument( maxDocLimit + 42
+            ) );
             fail( "Should have thrown " + IndexCapacityExceededException.class.getSimpleName() );
         }
         catch ( IndexCapacityExceededException e )
@@ -122,7 +122,7 @@ public class TrackingLuceneIndexWriterTest
         File luceneDir = new File( "lucene" );
         fs.get().mkdir( luceneDir );
         Directory directory = new DirectoryFactory.InMemoryDirectoryFactory().open( luceneDir );
-        IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_36, null );
+        IndexWriterConfig config = new IndexWriterConfig( null );
         TrackingLuceneIndexWriter indexWriter = new TrackingLuceneIndexWriter( directory, config );
         TrackingLuceneIndexWriter indexWriterSpy = spy( indexWriter );
         when( indexWriterSpy.maxDocLimit() ).thenReturn( maxDocLimit );

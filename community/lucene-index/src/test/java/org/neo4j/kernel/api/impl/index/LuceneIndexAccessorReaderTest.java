@@ -22,11 +22,12 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +43,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.CancellationRequest.NEVER_CANCELLED;
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorReaderTest<LuceneIndexAccessorReader>
 {
@@ -59,13 +59,13 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
         };
 
         when( searcher.getIndexReader() ).thenReturn( reader );
-        when( reader.terms() ).thenReturn( terms );
     }
 
     @Test
     public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
         // When
+        when( fields.iterator() ).thenReturn( Arrays.asList( "id", "bool" ).iterator() );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         long indexSize = accessor.sampleIndex( output );
 
@@ -79,11 +79,12 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     public void shouldProvideTheIndexUniqueValuesForAnIndexWithDuplicates() throws Exception
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, false );
-        when( terms.docFreq() ).thenReturn( 1, 2 );
-        when( terms.term() ).thenReturn(
-                new Term( "string", "aaa" ),
-                new Term( "string", "ccc" )
+        when( fields.iterator() ).thenReturn( Arrays.asList( "id", "string" ).iterator() );
+        when( termsEnum.next() ).thenReturn( new BytesRef("aaa"), new BytesRef("ccc"), null );
+        when( termsEnum.docFreq() ).thenReturn( 1, 2 );
+        when( termsEnum.term() ).thenReturn(
+                new BytesRef("aaa"),
+                new BytesRef("ccc")
         );
 
         // When
@@ -97,32 +98,10 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     }
 
     @Test
-    public void shouldSkipTheNonNodeIdKeyEntriesWhenCalculatingIndexUniqueValues() throws Exception
-    {
-        // Given
-        when( terms.next() ).thenReturn( true, true, false );
-        when( terms.docFreq() ).thenReturn( 1 );
-        when( terms.term() ).thenReturn(
-                new Term( NODE_ID_KEY, "aaa" ), // <- this should be ignored
-                new Term( "string", "bbb" )
-        );
-
-        // When
-
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        long indexSize = accessor.sampleIndex( output );
-
-        // Then
-        assertEquals( 1, indexSize );
-        assertEquals( 1, output.readFirst() );
-        assertEquals( 1, output.readSecond() );
-    }
-
-    @Test
     public void shouldReturnNoValueTypesIfTheIndexIsEmpty() throws Exception
     {
         // Given
-        when( terms.next() ).thenReturn( false );
+        when( fields.iterator() ).thenReturn( Collections.<String>emptyIterator() );
 
         // When
         final Set<Class> types = accessor.valueTypesInIndex();
@@ -135,8 +114,7 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     public void shouldReturnAllValueTypesContainedInTheIndex1() throws Exception
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, true, false );
-        when( terms.term() ).thenReturn( new Term( "array" ), new Term( "string" ), new Term( "array" ) );
+        when( fields.iterator() ).thenReturn( Arrays.asList( "array", "string", "array" ).iterator() );
 
         // When
         final Set<Class> types = accessor.valueTypesInIndex();
@@ -150,9 +128,7 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     public void shouldReturnAllValueTypesContainedInTheIndex2() throws Exception
     {
         // Given
-        when( terms.next() ).thenReturn( true, true, true, true, false );
-        when( terms.term() )
-                .thenReturn( new Term( "array" ), new Term( "number" ), new Term( "string" ), new Term( "bool" ) );
+        when( fields.iterator() ).thenReturn( Arrays.asList( "array", "number", "string", "bool" ).iterator() );
 
         // When
         final Set<Class> types = accessor.valueTypesInIndex();
@@ -166,7 +142,7 @@ public class LuceneIndexAccessorReaderTest extends AbstractLuceneIndexAccessorRe
     {
         // Given
         final IOException ioex = new IOException();
-        when( terms.next() ).thenThrow( ioex );
+        ((IndexReaderStub) reader).throwOnNextFieldsAccess( ioex );
 
         // When
         try
