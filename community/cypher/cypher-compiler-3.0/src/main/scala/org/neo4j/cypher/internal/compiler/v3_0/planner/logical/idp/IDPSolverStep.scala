@@ -19,6 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
+/**
+  * P - What is being solved - a PatternRelationship or Equals predicate
+  * S - The type of the solution, e.g. LogicalPlan
+  * C - A context that needs to be implicitly provided, e.g. LogicalPlanningContext
+  * Goal - The BitSet of P's that need to be solved
+  */
 object IDPSolverStep {
   def empty[S, P, C] = new IDPSolverStep[S, P, C] {
     override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =

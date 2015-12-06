@@ -55,7 +55,7 @@ trait IdRegistry[I] {
 }
 
 object IdRegistry {
-  def apply[I] = new DefaultIdRegistry[I]
+  def default[I] = new DefaultIdRegistry[I]
 }
 
 class DefaultIdRegistry[I] extends IdRegistry[I] {

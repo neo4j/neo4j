@@ -23,16 +23,17 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{AllIterablePredicate, Filter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import IDPQueryGraphSolver.RelOrJoin
 
-case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[RelOrJoin, LogicalPlan, LogicalPlanningContext] {
 
   import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
+  override def apply(registry: IdRegistry[RelOrJoin], goal: Goal, table: IDPCache[LogicalPlan])
                     (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
-    val result: Iterator[Iterator[LogicalPlan]] =
+    val result =
       for (patternId <- goal.iterator;
-           pattern <- registry.lookup(patternId);
+           pattern <- registry.lookup(patternId).collect { case Left(p) => p };
            plan <- table(goal - patternId)
       ) yield {
         if (plan.availableSymbols.contains(pattern.name))
@@ -46,7 +47,6 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
           ).flatten
       }
 
-    // This should be (and is) lazy
     result.flatten
   }
 }

@@ -39,7 +39,7 @@ trait IDPSolverMonitor {
  */
 class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
                          projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
-                         registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
+                         registryFactory: () => IdRegistry[Solvable] = () => IdRegistry.default[Solvable], // maps from Set[S] to BitSet
                          tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
                          maxTableSize: Int, // limits computation effort by reducing result quality
                          monitor: IDPSolverMonitor) {

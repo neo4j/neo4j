@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, L
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import IDPQueryGraphSolver.RelOrJoin
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
@@ -47,13 +48,13 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
 
   test("does not expand based on empty table") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry.default[RelOrJoin]
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry.default[RelOrJoin]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
@@ -64,7 +65,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry.default[RelOrJoin]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
@@ -78,7 +79,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry.default[RelOrJoin]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
@@ -89,7 +90,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   }
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry = IdRegistry.default[RelOrJoin]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
     table.put(register(pattern1, pattern2), plan1)
@@ -102,5 +103,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     ))
   }
 
-  def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
+  private def register(patRels: PatternRelationship*)(implicit registry: IdRegistry[RelOrJoin]): Goal = {
+    val steps = patRels.map { r =>
+      val step: RelOrJoin = Left(r)
+      step
+    }
+    registry.registerAll(steps)
+  }
 }

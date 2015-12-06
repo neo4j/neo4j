@@ -169,7 +169,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(joinSolverStep(_)))
+      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(nodeJoinSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -217,7 +217,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
     new given {
       val predicate = Equals(Property(varFor("r1"), PropertyKeyName("foo")(pos))(pos), Property(varFor("r2"), PropertyKeyName("foo")(pos))(pos))(pos)
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(joinSolverStep(_)))
+      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(nodeJoinSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
