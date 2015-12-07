@@ -647,9 +647,23 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError("CREATE ()-->()", "A single relationship type must be specified for CREATE (line 1, column 10 (offset: 9))")
   }
 
+  test("give a nice error message when merging a pattern with no relationship type") {
+    executeAndEnsureError("MERGE ()-->()", "A single relationship type must be specified for MERGE (line 1, column 9 (offset: 8))")
+  }
+
+  test("give a nice error message when merging a pattern with no relationship type -- missing colon") {
+    executeAndEnsureError("MATCH (a), (b) MERGE (a)-[NO_COLON]->(b)",
+                          "A single relationship type must be specified for MERGE (line 1, column 25 (offset: 24))")
+  }
+
   test("give a nice error message when trying to create multiple relationship types") {
     executeAndEnsureError("CREATE ()-[:A|:B]->()",
       "A single relationship type must be specified for CREATE (line 1, column 10 (offset: 9))")
+  }
+
+  test("give a nice error message when trying to merge multiple relationship types") {
+    executeAndEnsureError("MERGE ()-[:A|:B]->()",
+      "A single relationship type must be specified for MERGE (line 1, column 9 (offset: 8))")
   }
 
   def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
