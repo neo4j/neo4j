@@ -19,61 +19,82 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
-import org.junit.Assert.assertThat
-import org.hamcrest.Matchers._
+import org.neo4j.cypher.docgen.tooling._
+import org.neo4j.graphdb.{Node, Path, Relationship}
 
-class UsingTest extends DocumentingTestBase {
+import scala.collection.JavaConverters._
 
-  override def graphDescription = List(
-    "Andres:Swede KNOWS Peter",
-    "Stefan:German KNOWS Andres",
-    "Stefan KNOWS Peter",
-    "Emil:Expat KNOWS Peter",
-    "Emil KNOWS Andres",
-    "Emil KNOWS Stefan",
-    "Jim:Brit KNOWS Andres",
-    "Jim KNOWS Peter",
-    "Jim KNOWS Emil",
-    "Jim KNOWS Stefan"
+class UsingTest extends DocumentingTest {
+  override def outputPath = "target/docs/dev/ql/"
+  override def doc = new DocBuilder {
+    doc("Using", "query-using")
+    initQueries(
+      "CREATE INDEX ON :Scientist(name)",
+      "CREATE INDEX ON :Science(name)",
+
+      """CREATE (curie:Scientist {name: 'Curie', born: 1867})-[:RESEARCHED]->(chemistry:Science {name: 'Chemistry'}),
+        |       (liskov:Scientist {name: 'Liskov', born: 1939})-[:RESEARCHED]->(cs:Science {name: 'Computer Science'})
+      """
+    )
+    synopsis("The `USING` clause is used to influence the decisions of the planner when building an execution plan for a query.")
+    caution {
+      p("Forcing planner behavior is an advanced feature, and should be used with caution by experienced developers and/or database administrators only, as it may cause queries to perform poorly.")
+    }
+    section("Introduction") {
+      p("""When executing a query, Neo4j needs to decide where in the query graph to start matching.
+          |This is done by looking at the `MATCH` clause and the `WHERE` conditions and using that information to find useful indexes.""")
+      p("This index might not be the best choice though -- sometimes multiple indexes could be used, and Neo4j has picked the wrong one (from a performance point of view).")
+      p("You can force Neo4j to use a specific starting point through the `USING` clause. This is called giving an index hint.")
+      p("""If your query matches large parts of an index, it might be faster to scan the label and filter out nodes that do not match.
+          |To do this, you can use `USING SCAN`.
+          |This will force Cypher to not use an index that could have been used, and instead do a label scan.""")
+      note {
+        p("You cannot use index hints if your query has a `START` clause.")
+      }
+      p("The following graph is used for the examples below:")
+      graphViz()
+    }
+    section("Index hints") {
+      section("Query using an index hint") {
+        p("To query using an index hint, use `USING INDEX`.")
+        query(s"MATCH (s:Scientist) USING INDEX s:Scientist(name) WHERE s.name = 'Curie' RETURN s.born AS $columnName",
+              assertIntegersReturned(1867)) {
+          p("Returns the year Marie Curie was born.")
+          profileExecutionPlan()
+        }
+      }
+      section("Query using multiple index hints") {
+        p("To query using multiple index hint, use `USING INDEX`.")
+        query(s"""MATCH (barbara:Scientist {name: 'Liskov'})-->(field:Science {name: 'Computer Science'})
+                 |USING INDEX barbara:Scientist(name)
+                 |USING INDEX field:Science(name)
+                 |RETURN barbara.born AS $columnName""",
+              assertIntegersReturned(1939)) {
+          p("Returns the year Barbara Liskov was born.")
+          profileExecutionPlan()
+        }
+      }
+    }
+    section("Scan hints") {
+      section("Hinting a label scan") {
+        p("If the best performance is to be had by scanning all nodes in a label and then filtering on that set, use `USING SCAN`.")
+        query(s"""MATCH (s:Scientist)
+                 |USING SCAN s:Scientist
+                 |WHERE s.born > 1800
+                 |RETURN s.born AS $columnName""",
+              assertIntegersReturned(1867, 1939)) {
+          p("Returns all scientists born after 1800.")
+          profileExecutionPlan()
+        }
+      }
+    }
+  }.build()
+
+  private val columnName = "column"
+
+  private def assertIntegersReturned(values: Long*) = ResultAssertions(result =>
+    values.foreach { value =>
+      result.columnAs[Long](columnName) should equal(value)
+    }
   )
-
-  override val setupConstraintQueries: List[String] = List("CREATE INDEX ON :Swede(surname)", "CREATE INDEX ON :German(surname)")
-
-  override val properties = Map(
-    "Andres" -> Map[String, Any]("age" -> 40l, "surname" -> "Taylor"),
-    "Peter" -> Map[String, Any]("age" -> 42l, "surname" -> "Neubauer"),
-    "Stefan" -> Map[String, Any]("age" -> 37l, "surname" -> "Plantikow"),
-    "Emil" -> Map[String, Any]("age" -> 37l, "surname" -> "Eifrem"),
-    "Jim" -> Map[String, Any]("age" -> 39l, "surname" -> "Webber")
-  )
-
-  def section = "Using"
-
-  @Test def query_using_single_index_hint() {
-    profileQuery(
-      title = "Query using an index hint",
-      text = "To query using an index hint, use +USING+ +INDEX+.",
-      queryText = "match (n:Swede) using index n:Swede(surname) where n.surname = 'Taylor' return n",
-      assertions = (p) => assert(p.toList === List(Map("n" -> node("Andres"))))
-    )
-  }
-
-  @Test def query_using_multiple_index_hints() {
-    profileQuery(
-      title = "Query using multiple index hints",
-      text = "To query using multiple index hints, use +USING+ +INDEX+.",
-      queryText = "match (m:German)-->(n:Swede) using index m:German(surname) using index n:Swede(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
-      assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
-    )
-  }
-
-  @Test def query_forcing_label_scan() {
-    profileQuery(
-      title = "Hinting a label scan",
-      text = "If the best performance is to be had by scanning all nodes in a label and then filtering on that set, use +USING+ +SCAN+.",
-      queryText = "match (m:German) using scan m:German where m.surname = 'Plantikow' return m",
-      assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
-    )
-  }
 }

@@ -31,6 +31,6 @@ include::ql/union/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/using/index.asciidoc[]
+include::ql/query-using.adoc[]
 
 :leveloffset: 0

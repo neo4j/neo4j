@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.docgen.tooling.Admonitions.{Note, Tip}
+import org.neo4j.cypher.docgen.tooling.Admonitions.{Caution, Note, Tip}
 
 import scala.collection.mutable
 
@@ -98,6 +98,7 @@ trait DocBuilder {
 
   def tip(f: => Unit) = inScope(AdmonitionScope(Tip.apply), f)
   def note(f: => Unit) = inScope(AdmonitionScope(Note.apply), f)
+  def caution(f: => Unit) = inScope(AdmonitionScope(Caution.apply), f)
 
   def query(q: String, assertions: QueryAssertions)(f: => Unit) =
     inScope(QueryScope(q.stripMargin, assertions), {
