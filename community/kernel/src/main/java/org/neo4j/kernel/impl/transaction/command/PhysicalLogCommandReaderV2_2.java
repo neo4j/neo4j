@@ -233,7 +233,7 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
         Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 

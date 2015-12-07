@@ -134,9 +134,10 @@ public class Commands
     public static RelationshipGroupCommand createRelationshipGroup( long id, int type )
     {
         RelationshipGroupCommand command = new RelationshipGroupCommand();
-        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
-        record.setInUse( true );
-        command.init( record );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( id, type );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( id, type );
+        after.setInUse( true );
+        command.init( before, after );
         return command;
     }
 

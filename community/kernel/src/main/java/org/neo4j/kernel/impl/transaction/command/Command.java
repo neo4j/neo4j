@@ -199,19 +199,21 @@ public abstract class Command
 
     public static class RelationshipGroupCommand extends Command
     {
-        private RelationshipGroupRecord record;
+        private RelationshipGroupRecord before;
+        private RelationshipGroupRecord after;
 
-        public RelationshipGroupCommand init( RelationshipGroupRecord record )
+        public RelationshipGroupCommand init( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
             return this;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -220,9 +222,14 @@ public abstract class Command
             return handler.visitRelationshipGroupCommand( this );
         }
 
-        public RelationshipGroupRecord getRecord()
+        public RelationshipGroupRecord getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public RelationshipGroupRecord getAfter()
+        {
+            return after;
         }
     }
 

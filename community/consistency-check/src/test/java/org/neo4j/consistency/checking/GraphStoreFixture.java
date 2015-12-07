@@ -306,9 +306,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( group );
         }
 
-        public void update(  RelationshipGroupRecord group )
+        public void update(  RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            writer.update( group );
+            writer.update( before, after );
         }
 
         public void delete(  RelationshipGroupRecord group )

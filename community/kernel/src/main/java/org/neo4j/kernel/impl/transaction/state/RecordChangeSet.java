@@ -79,7 +79,7 @@ public class RecordChangeSet implements RecordAccessSet
         this.nodeRecords = new RecordChanges<>( nodeLoader, true, changeCounter );
         this.propertyRecords = new RecordChanges<>( propertyLoader, true, changeCounter );
         this.relRecords = new RecordChanges<>( relationshipLoader, true, changeCounter );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, beforeStateForAll, changeCounter );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, true, changeCounter );
         this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, true, changeCounter );
         this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, beforeStateForAll, changeCounter );
         this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, beforeStateForAll, changeCounter );

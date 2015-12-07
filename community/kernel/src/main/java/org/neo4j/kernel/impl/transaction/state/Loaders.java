@@ -177,7 +177,7 @@ public class Loaders
             @Override
             public RelationshipGroupRecord clone( RelationshipGroupRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }

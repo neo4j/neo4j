@@ -204,6 +204,16 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     private Command visitRelationshipGroupCommand( ReadableLogChannel channel ) throws IOException
     {
         long id = channel.getLong();
+        RelationshipGroupRecord before = readRelationshipGroupRecord( id, channel );
+        RelationshipGroupRecord after = readRelationshipGroupRecord( id, channel );
+        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
+        command.init( before, after );
+        return command;
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableLogChannel channel )
+            throws IOException
+    {
         byte inUseByte = channel.get();
         boolean inUse = inUseByte == Record.IN_USE.byteValue();
         if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
@@ -218,9 +228,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( record );
-        return command;
+        return record;
     }
 
     private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException

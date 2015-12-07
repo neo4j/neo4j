@@ -379,14 +379,15 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
-        final Command command = new Command.RelationshipGroupCommand().init( record );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        final Command command = new Command.RelationshipGroupCommand().init( before, after );
         final boolean result = apply( applier, command::handle, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -395,16 +396,17 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( true );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
-        final Command command = new Command.RelationshipGroupCommand().init( record );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        final Command command = new Command.RelationshipGroupCommand().init( before, after );
 
         boolean result = apply( applier, command::handle, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     // RELATIONSHIP TYPE TOKEN COMMAND

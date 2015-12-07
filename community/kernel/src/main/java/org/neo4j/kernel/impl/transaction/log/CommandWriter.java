@@ -140,9 +140,17 @@ public class CommandWriter implements CommandVisitor
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        RelationshipGroupRecord record = command.getRecord();
+        RelationshipGroupRecord before = command.getBefore();
+        RelationshipGroupRecord after = command.getAfter();
         channel.put( NeoCommandType.REL_GROUP_COMMAND );
-        channel.putLong( record.getId() );
+        channel.putLong( after.getId() );
+        writeRelationshipGroupRecord( before );
+        writeRelationshipGroupRecord( after );
+        return false;
+    }
+
+    private void writeRelationshipGroupRecord( RelationshipGroupRecord record ) throws IOException
+    {
         channel.put( (byte) (record.inUse() ? Record.IN_USE.intValue() : Record.NOT_IN_USE.intValue()) );
         channel.putShort( (short) record.getType() );
         channel.putLong( record.getNext() );
@@ -150,7 +158,6 @@ public class CommandWriter implements CommandVisitor
         channel.putLong( record.getFirstIn() );
         channel.putLong( record.getFirstLoop() );
         channel.putLong( record.getOwningNode() );
-        return false;
     }
 
     @Override
