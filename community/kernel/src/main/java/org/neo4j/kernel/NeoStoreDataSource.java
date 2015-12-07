@@ -131,7 +131,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -465,7 +464,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     storageEngine );
 
             KernelModule kernelModule = buildKernel(
-                    transactionLogModule.transactionAppender(), storageEngine.neoStores(),
+                    transactionLogModule.transactionAppender(),
                     storageEngine.indexingService(),
                     storageEngine.indexUpdatesValidator(),
                     storageEngine.storeReadLayer(),
@@ -763,7 +762,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     private KernelModule buildKernel( TransactionAppender appender,
-                                      NeoStores neoStores,
                                       IndexingService indexingService,
                                       IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
@@ -793,21 +791,16 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
         LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-        NeoStoreTransactionContextFactory neoStoreTxContextFactory =
-                new NeoStoreTransactionContextFactory( neoStores );
 
         StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
                 storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
                 legacyIndexStore ) );
 
-        final TransactionHooks hooks = new TransactionHooks();
-        final KernelTransactions kernelTransactions =
-                life.add( new KernelTransactions( neoStoreTxContextFactory,
-                        locks, constraintIndexCreator,
-                        statementOperations, schemaWriteGuard,
-                        transactionHeaderInformationFactory, transactionCommitProcess,
-                        storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks, transactionMonitor,
-                        life, tracers, storageEngine ) );
+        TransactionHooks hooks = new TransactionHooks();
+        KernelTransactions kernelTransactions = life.add( new KernelTransactions( locks, constraintIndexCreator,
+                statementOperations, schemaWriteGuard, transactionHeaderInformationFactory,
+                transactionCommitProcess, storageEngine.indexConfigStore(), legacyIndexProviderLookup, hooks,
+                transactionMonitor, life, tracers, storageEngine ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor );
 
