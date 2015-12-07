@@ -62,7 +62,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
 
         List<QueryEngineProvider> queryEngineProviders = toList( Service.load( QueryEngineProvider.class ) );
 
-        return new GraphDatabaseDependencies( null, null, new ArrayList<>(), kernelExtensions,
+        return new GraphDatabaseDependencies( null, null, new ArrayList<Class<?>>(), kernelExtensions,
                 urlAccessRules, queryEngineProviders );
     }
 
@@ -118,7 +118,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
     public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses,
-                addAll( new ArrayList<>(), kernelExtensions ),
+                addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
                 urlAccessRules, queryEngineProviders );
     }
 

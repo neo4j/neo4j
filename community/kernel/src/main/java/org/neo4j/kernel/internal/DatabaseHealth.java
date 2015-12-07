@@ -27,7 +27,7 @@ import static org.neo4j.helpers.Exceptions.withCause;
 
 public class DatabaseHealth
 {
-    private static final String panicMessage = "Kernel has encountered some problem, "
+    private static final String panicMessage = "Database has encountered some problem, "
             + "please perform necessary action (tx recovery/restart)";
 
     // Keep that cozy name for legacy purposes
@@ -102,6 +102,6 @@ public class DatabaseHealth
     {
         tmOk = true;
         causeOfPanic = null;
-        log.info( "Kernel health set to OK" );
+        log.info( "Database health set to OK" );
     }
 }

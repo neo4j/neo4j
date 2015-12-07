@@ -31,8 +31,8 @@ import org.neo4j.coreedge.raft.state.InMemoryTermStore;
 import org.neo4j.coreedge.raft.state.InMemoryVoteStore;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
+import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -62,7 +62,7 @@ public class RaftInstanceBuilder<MEMBER>
     private long retryTimeMillis = electionTimeout/2;
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
-    private Dependencies dependencies;
+    private RaftStorageExceptionHandler raftStorageExceptionHandler;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -81,7 +81,7 @@ public class RaftInstanceBuilder<MEMBER>
 
         return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping,
-                dependencies );
+                raftStorageExceptionHandler );
     }
 
     public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
@@ -108,10 +108,9 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> dependencies( Dependencies dependencies )
+    public RaftInstanceBuilder<MEMBER> raftStorageExceptionHandler( RaftStorageExceptionHandler raftStorageExceptionHandler)
     {
-        this.dependencies = dependencies;
+        this.raftStorageExceptionHandler = raftStorageExceptionHandler;
         return this;
     }
-
 }

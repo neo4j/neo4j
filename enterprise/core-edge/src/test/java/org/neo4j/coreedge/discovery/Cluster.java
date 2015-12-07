@@ -179,7 +179,6 @@ public class Cluster
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "100M" );
-
         final File storeDir = coreServerStoreDirectory( parentDir, serverId );
         return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );

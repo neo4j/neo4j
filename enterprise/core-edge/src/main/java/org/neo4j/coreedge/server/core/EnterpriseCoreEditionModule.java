@@ -24,62 +24,63 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.function.Supplier;
 
-import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.CatchupServer;
-import org.neo4j.coreedge.raft.state.TermStore;
-import org.neo4j.coreedge.raft.state.VoteStore;
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
+import org.neo4j.coreedge.catchup.StoreIdSupplier;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
+import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
-import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.locks.CoreServiceManager;
 import org.neo4j.coreedge.raft.locks.CoreServiceRegistry;
-import org.neo4j.coreedge.raft.replication.LocalReplicator;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
-import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
-import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
-import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
-import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.SenderService;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.replication.RaftReplicator;
-import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
+import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
-import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.LoggingInbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
-import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.raft.replication.LocalReplicator;
 import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
+import org.neo4j.coreedge.raft.replication.RaftReplicator;
+import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
+import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
+import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
+import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
+import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess;
+import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
+import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.DurableTermStore;
 import org.neo4j.coreedge.raft.state.DurableVoteStore;
-import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
+import org.neo4j.coreedge.raft.state.TermStore;
+import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.Expiration;
+import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -108,6 +109,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -170,8 +172,8 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService();
 
         File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
-        NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory, new RaftContentSerializer(),
-                platformModule.monitors );
+        NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
+                new RaftContentSerializer(), platformModule.monitors );
 
         DurableTermStore termStore = new DurableTermStore( fileSystem, raftLogsDirectory );
         DurableVoteStore voteStore = new DurableVoteStore( fileSystem, raftLogsDirectory );
@@ -180,8 +182,16 @@ public class EnterpriseCoreEditionModule
         life.add( termStore );
         life.add( voteStore );
 
+        Supplier<DatabaseHealth> databaseHealthSupplier = (Supplier) () -> dependencies.provideDependency( DatabaseHealth.class );
+
+
+        RaftStorageExceptionHandler raftStorageExceptionHandler =
+                new RaftStorageExceptionHandler( databaseHealthSupplier );
+
+
         raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
-                termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService, dependencies );
+                termStore, voteStore, myself, logProvider, raftServer, raftTimeoutService,
+                raftStorageExceptionHandler );
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound ) );
@@ -189,7 +199,8 @@ public class EnterpriseCoreEditionModule
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
         GlobalSessionTracker sessionTracker = new GlobalSessionTracker();
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, sessionTracker, dependencies, SYSTEM_CLOCK );
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, sessionTracker,
+                dependencies, SYSTEM_CLOCK );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself );
         replicator.subscribe( idAllocationStateMachine );
@@ -265,9 +276,9 @@ public class EnterpriseCoreEditionModule
         life.add( CoreServerStartupProcess.createLifeSupport(
                 platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
-                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) ,
+                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ),
                 new DeleteStoreOnStartUp( localDatabase ), new RaftLogReplay( raftLog )
-        ));
+        ) );
     }
 
     public boolean isLeader()
@@ -323,7 +334,7 @@ public class EnterpriseCoreEditionModule
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
                                                         DelayedRenewableTimeoutService raftTimeoutService,
-                                                        Dependencies dependencies)
+                                                        RaftStorageExceptionHandler raftStorageExceptionHandler )
     {
         LoggingInbound loggingRaftInbound = new LoggingInbound( raftServer, messageLogger, myself.getRaftAddress() );
 
@@ -339,18 +350,22 @@ public class EnterpriseCoreEditionModule
 
         Replicator localReplicator = new LocalReplicator<>( myself, myself.getRaftAddress(), outbound );
 
-        RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( localReplicator, memberSetBuilder, raftLog,
-                logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( CoreEdgeClusterSettings.join_catch_up_timeout ) );
+        RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( localReplicator,
+                memberSetBuilder, raftLog,
+                logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK, config.get( CoreEdgeClusterSettings
+                .join_catch_up_timeout ) );
 
-        RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ), logProvider, raftLog,
-                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout, config.get( CoreEdgeClusterSettings.catchup_batch_size ),
+        RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ),
+                logProvider, raftLog,
+                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout, config.get( CoreEdgeClusterSettings
+                .catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
-                raftMembershipManager, logShipping, dependencies );
+                raftMembershipManager, logShipping, raftStorageExceptionHandler );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 
@@ -378,7 +393,8 @@ public class EnterpriseCoreEditionModule
 
     protected SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return () -> {
+        };
     }
 
     protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,

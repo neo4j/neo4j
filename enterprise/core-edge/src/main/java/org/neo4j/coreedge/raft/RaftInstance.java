@@ -38,9 +38,8 @@ import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
-import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -88,7 +87,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private final long electionTimeout;
     private final long leaderWaitTimeout;
 
-    private final Dependencies dependencies;
+    private final RaftStorageExceptionHandler raftStorageExceptionHandler;
 
     private final Outbound<MEMBER> outbound;
     private final Log log;
@@ -102,7 +101,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          long electionTimeout, long heartbeatInterval, RenewableTimeoutService renewableTimeoutService,
                          final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
-                         RaftLogShippingManager<MEMBER> logShipping, Dependencies dependencies )
+                         RaftLogShippingManager<MEMBER> logShipping,
+                         RaftStorageExceptionHandler raftStorageExceptionHandler)
 
     {
         this.myself = myself;
@@ -115,7 +115,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.leaderWaitTimeout = leaderWaitTimeout;
         this.outbound = outbound;
         this.logShipping = logShipping;
-        this.dependencies = dependencies;
+        this.raftStorageExceptionHandler = raftStorageExceptionHandler;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -163,7 +163,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         }
         catch ( RaftStorageException e )
         {
-            panic( e );
+            raftStorageExceptionHandler.panic( e );
             throw new BootstrapException( e );
         }
     }
@@ -283,17 +283,12 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         catch ( RaftStorageException e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
-            panic( e );
+            raftStorageExceptionHandler.panic( e );
         }
         finally
         {
             handlingMessage = false;
         }
-    }
-
-    private void panic( RaftStorageException e )
-    {
-            dependencies.provideDependency( DatabaseHealth.class ).get().panic( e );
     }
 
     public boolean isLeader()

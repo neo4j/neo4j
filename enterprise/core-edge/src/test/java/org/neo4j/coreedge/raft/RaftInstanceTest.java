@@ -31,17 +31,7 @@ import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
+import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -411,18 +401,13 @@ public class RaftInstanceTest
     public void shouldPanicWhenFailingToHandleMessageAtBootstrapTime() throws Throwable
     {
         // given
-        KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log() );
-        kernelEventHandlers.init();
-        MyKernelEventHandler myKernelEventHandler = new MyKernelEventHandler();
-        kernelEventHandlers.registerKernelEventHandler( myKernelEventHandler );
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( new DatabaseHealth( new DatabasePanicEventGenerator( kernelEventHandlers ),
-                log() ) );
+        TestRaftStorageExceptionHandler raftStorageExceptionHandler = new TestRaftStorageExceptionHandler();
+
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
         explodingLog.startExploding();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .dependencies( dependencies )
                 .raftLog( explodingLog )
+                .raftStorageExceptionHandler( raftStorageExceptionHandler )
                 .build();
         try
         {
@@ -433,7 +418,7 @@ public class RaftInstanceTest
         catch ( RaftInstance.BootstrapException e )
         {
             // then
-            assertTrue( myKernelEventHandler.hasErrorHappened() );
+            assertTrue( raftStorageExceptionHandler.hasPanicked() );
         }
     }
 
@@ -441,27 +426,24 @@ public class RaftInstanceTest
     public void shouldPanicWhenFailingToHandleMessageUnderNormalConditions() throws Throwable
     {
         // given
-        KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log() );
-        kernelEventHandlers.init();
-        MyKernelEventHandler myKernelEventHandler = new MyKernelEventHandler();
-        kernelEventHandlers.registerKernelEventHandler( myKernelEventHandler );
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( new DatabaseHealth( new DatabasePanicEventGenerator( kernelEventHandlers ),
-                log() ) );
+        TestRaftStorageExceptionHandler raftStorageExceptionHandler = new TestRaftStorageExceptionHandler();
+
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
+
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .dependencies( dependencies )
                 .raftLog( explodingLog )
+                .raftStorageExceptionHandler( raftStorageExceptionHandler )
                 .build();
+
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
         explodingLog.startExploding();
 
         // when
-        raft.handle(
-                new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
-                        new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
+        raft.handle( new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
+                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
+
         // then
-        assertTrue( myKernelEventHandler.hasErrorHappened() );
+        assertTrue( raftStorageExceptionHandler.hasPanicked() );
     }
 
     private static class ExplodingRaftLog implements RaftLog
@@ -548,74 +530,23 @@ public class RaftInstanceTest
         }
     }
 
-    private static class MyKernelEventHandler implements KernelEventHandler
+    private class TestRaftStorageExceptionHandler extends RaftStorageExceptionHandler
     {
-        public boolean errorHappened;
+        private boolean panicked;
 
-        @Override
-        public void beforeShutdown()
+        public TestRaftStorageExceptionHandler()
         {
+            super( null );
         }
 
-        @Override
-        public void kernelPanic( ErrorState error )
+        public void panic( RaftStorageException ex )
         {
-            errorHappened = true;
+            panicked = true;
         }
 
-        @Override
-        public Object getResource()
+        public boolean hasPanicked()
         {
-            return new Object();
+            return panicked;
         }
-
-        @Override
-        public KernelEventHandler.ExecutionOrder orderComparedTo( KernelEventHandler other )
-        {
-            return ExecutionOrder.AFTER;
-        }
-
-        /**
-         * Panic events are dispatched asynchronously, so we've gotta give this a fair go (10s) before failing.
-         * {
-         * }
-         *
-         * @Override public void kernelPanic( ErrorState error )
-         * {
-         * errorHappened = true;
-         * }
-         * @Override public Object getResource()
-         * {
-         * return new Object();
-         * }
-         * @Override public ExecutionOrder orderComparedTo( KernelEventHandler other )
-         * {
-         * return ExecutionOrder.AFTER;
-         * }
-         * /**
-         * Panic events are dispatched asynchronously, so we've gotta give this a fair go (10s) before failing.
-         */
-        public boolean hasErrorHappened()
-        {
-            long start = System.currentTimeMillis();
-            while ( System.currentTimeMillis() - start < 10_000 )
-            {
-                if ( !errorHappened )
-                {
-                    parkNanos( MILLISECONDS.toNanos( 100 ) );
-                }
-                else
-                {
-                    break;
-                }
-            }
-            return errorHappened;
-        }
-    }
-
-    private Log log()
-    {
-        return NullLog.getInstance();
-        //return FormattedLog.toOutputStream( System.out );
     }
 }
