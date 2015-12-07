@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.Primitive.intObjectMap;
 
 /**
@@ -141,25 +141,35 @@ public class IndexDefineCommand extends Command
         return id;
     }
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        IndexDefineCommand that = (IndexDefineCommand) o;
+        return nextIndexNameId.get() == that.nextIndexNameId.get() &&
+               nextKeyId.get() == that.nextKeyId.get() &&
+               Objects.equals( indexNameIdRange, that.indexNameIdRange ) &&
+               Objects.equals( keyIdRange, that.keyIdRange ) &&
+               Objects.equals( idToIndexName, that.idToIndexName ) &&
+               Objects.equals( idToKey, that.idToKey );
+    }
 
     @Override
     public int hashCode()
     {
-        int result = nextIndexNameId != null ? nextIndexNameId.hashCode() : 0;
-        result = 31 * result + (nextKeyId != null ? nextKeyId.hashCode() : 0);
-        result = 31 * result + (getIndexNameIdRange() != null ? getIndexNameIdRange().hashCode() : 0);
-        result = 31 * result + (getKeyIdRange() != null ? getKeyIdRange().hashCode() : 0);
-        result = 31 * result + (idToIndexName != null ? idToIndexName.hashCode() : 0);
-        result = 31 * result + (idToKey != null ? idToKey.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        IndexDefineCommand other = (IndexDefineCommand) obj;
-        return getIndexNameIdRange().equals( other.getIndexNameIdRange() ) &&
-                getKeyIdRange().equals( other.getKeyIdRange() );
+        return Objects.hash( super.hashCode(), nextIndexNameId.get(), nextKeyId.get(), indexNameIdRange, keyIdRange,
+                idToIndexName, idToKey );
     }
 
     @Override
