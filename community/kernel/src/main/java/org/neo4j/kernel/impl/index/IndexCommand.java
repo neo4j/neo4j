@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -205,22 +206,28 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public int hashCode()
+        public boolean equals( Object o )
         {
-            int result = (int) (startNode ^ (startNode >>> 32));
-            result = 31 * result + (int) (endNode ^ (endNode >>> 32));
-            return result;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            if ( !super.equals( obj ) )
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
-            AddRelationshipCommand other = (AddRelationshipCommand) obj;
-            return startNode == other.startNode && endNode == other.endNode;
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
+            AddRelationshipCommand that = (AddRelationshipCommand) o;
+            return startNode == that.startNode && endNode == that.endNode;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( super.hashCode(), startNode, endNode );
         }
 
         @Override
@@ -297,15 +304,28 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public int hashCode()
+        public boolean equals( Object o )
         {
-            return config != null ? config.hashCode() : 0;
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
+            CreateCommand that = (CreateCommand) o;
+            return Objects.equals( config, that.config );
         }
 
         @Override
-        public boolean equals( Object obj )
+        public int hashCode()
         {
-            return super.equals( obj ) && config.equals( ((CreateCommand)obj).config );
+            return Objects.hash( super.hashCode(), config );
         }
 
         @Override
@@ -323,20 +343,34 @@ public abstract class IndexCommand extends Command
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        IndexCommand other = (IndexCommand) obj;
-        boolean equals = getCommandType() == other.getCommandType() &&
-                entityType == other.entityType &&
-                indexNameId == other.indexNameId &&
-                keyId == other.keyId &&
-                getValueType() == other.getValueType();
-        if ( !equals )
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        IndexCommand that = (IndexCommand) o;
+        return commandType == that.commandType &&
+               indexNameId == that.indexNameId &&
+               entityType == that.entityType &&
+               entityId == that.entityId &&
+               keyId == that.keyId &&
+               valueType == that.valueType &&
+               Objects.equals( value, that.value );
+    }
 
-        return value == null ? other.value == null : value.equals( other.value );
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), commandType, indexNameId, entityType, entityId, keyId, valueType, value );
     }
 
     public byte getCommandType()
