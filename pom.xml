@@ -27,7 +27,7 @@
     <licensing.phase>compile</licensing.phase>
     <lucene.version>5.3.1</lucene.version>
     <logback-classic.version>1.1.2</logback-classic.version>
-    <bouncycastle.version>1.52</bouncycastle.version>
+    <bouncycastle.version>1.53</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings>-Xmx1G -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true</test.runner.jvm.settings>
