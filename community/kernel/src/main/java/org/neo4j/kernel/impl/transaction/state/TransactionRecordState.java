@@ -210,7 +210,7 @@ public class TransactionRecordState implements RecordState
             for ( RecordProxy<Long,NeoStoreRecord, Void> change : neoStoreRecord.changes() )
             {
                 Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-                command.init( change.forReadingData() );
+                command.init( change.getBefore(), change.forReadingData() );
                 commands.add( command );
             }
         }
@@ -485,11 +485,11 @@ public class TransactionRecordState implements RecordState
                 }
 
                 @Override
-                public NeoStoreRecord clone(NeoStoreRecord neoStoreRecord ) {
-                    // We do not expect to manage the before state, so this operation will not be called.
-                    throw new UnsupportedOperationException("Clone on NeoStoreRecord");
+                public NeoStoreRecord clone( NeoStoreRecord neoStoreRecord )
+                {
+                    return neoStoreRecord.clone();
                 }
-            }, false, new IntCounter() );
+            }, true, new IntCounter() );
         }
         return neoStoreRecord.getOrLoad( 0L, null );
     }

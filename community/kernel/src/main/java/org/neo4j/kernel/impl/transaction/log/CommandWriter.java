@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -221,8 +222,15 @@ public class CommandWriter implements CommandVisitor
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
-        channel.put( NeoCommandType.NEOSTORE_COMMAND ).putLong( command.getRecord().getNextProp() );
+        channel.put( NeoCommandType.NEOSTORE_COMMAND );
+        writeNeoStoreRecord( command.getBefore() );
+        writeNeoStoreRecord( command.getAfter() );
         return false;
+    }
+
+    private void writeNeoStoreRecord( NeoStoreRecord record ) throws IOException
+    {
+        channel.putLong( record.getNextProp() );
     }
 
     @Override

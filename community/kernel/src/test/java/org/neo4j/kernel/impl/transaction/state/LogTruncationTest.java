@@ -80,8 +80,10 @@ public class LogTruncationTest
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {
+        NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
         permutations.put( Command.NeoStoreCommand.class,
-                new Command[] { new Command.NeoStoreCommand().init( new NeoStoreRecord() ) } );
+                new Command[] { new Command.NeoStoreCommand().init( new NeoStoreRecord(), after ) } );
         permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand().init( new NodeRecord(
                 12l, false, 13l, 13l ), new NodeRecord( 0, false, 0, 0 ) ) } );
         permutations.put( Command.RelationshipCommand.class,

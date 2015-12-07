@@ -41,4 +41,12 @@ public class NeoStoreRecord extends PrimitiveRecord
     public void setIdTo( PropertyRecord property )
     {
     }
+
+    @Override
+    public NeoStoreRecord clone()
+    {
+        NeoStoreRecord neoStoreRecord = new NeoStoreRecord();
+        neoStoreRecord.setNextProp( getNextProp() );
+        return neoStoreRecord;
+    }
 }

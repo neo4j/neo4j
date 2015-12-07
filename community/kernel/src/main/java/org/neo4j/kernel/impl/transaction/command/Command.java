@@ -88,7 +88,7 @@ public abstract class Command
     protected final void setup( long key, Mode mode )
     {
         this.mode = mode;
-        this.keyHash = (int) (( key >>> 32 ) ^ key );
+        this.keyHash = (int) ((key >>> 32) ^ key);
         this.key = key;
     }
 
@@ -235,22 +235,21 @@ public abstract class Command
 
     public static class NeoStoreCommand extends Command
     {
-        private NeoStoreRecord record;
+        private NeoStoreRecord before;
+        private NeoStoreRecord after;
 
-        public NeoStoreCommand init( NeoStoreRecord record )
+        public NeoStoreCommand init( NeoStoreRecord before, NeoStoreRecord after )
         {
-            if( record != null )
-            {
-                setup( record.getId(), Mode.fromRecordState( record ) );
-            }
-            this.record = record;
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
             return this;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -259,9 +258,14 @@ public abstract class Command
             return handler.visitNeoStoreCommand( this );
         }
 
-        public NeoStoreRecord getRecord()
+        public NeoStoreRecord getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public NeoStoreRecord getAfter()
+        {
+            return after;
         }
     }
 
@@ -375,7 +379,7 @@ public abstract class Command
         private SchemaRule schemaRule;
 
         public SchemaRuleCommand init( Collection<DynamicRecord> recordsBefore,
-                           Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule )
+                Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
             this.recordsBefore = recordsBefore;
@@ -434,7 +438,7 @@ public abstract class Command
         public String toString()
         {
             return String.format( "UpdateCounts[(%s) %s %d]",
-                                  label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
+                    label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
         }
 
         @Override
@@ -464,7 +468,8 @@ public abstract class Command
         public RelationshipCountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
         {
             setup( typeId, Mode.UPDATE );
-            assert delta != 0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
+            assert delta !=
+                   0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
             this.startLabelId = startLabelId;
             this.typeId = typeId;
             this.endLabelId = endLabelId;

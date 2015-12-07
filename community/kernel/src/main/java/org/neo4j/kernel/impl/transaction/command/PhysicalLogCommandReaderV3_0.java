@@ -345,12 +345,19 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
 
     private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
     {
+        NeoStoreRecord before = readNeoStoreRecord( channel );
+        NeoStoreRecord after = readNeoStoreRecord( channel );
+        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
+        command.init( before, after );
+        return command;
+    }
+
+    private NeoStoreRecord readNeoStoreRecord( ReadableLogChannel channel ) throws IOException
+    {
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
-        return command;
+        return record;
     }
 
     private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException

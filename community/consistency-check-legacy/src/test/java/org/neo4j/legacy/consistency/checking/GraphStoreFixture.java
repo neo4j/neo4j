@@ -220,9 +220,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.relationshipType( id, relationshipType, id + 1 );
         }
 
-        public void update( NeoStoreRecord record )
+        public void update( NeoStoreRecord before, NeoStoreRecord after )
         {
-            writer.update( record );
+            writer.update( before, after );
         }
 
         public void create( NodeRecord node )

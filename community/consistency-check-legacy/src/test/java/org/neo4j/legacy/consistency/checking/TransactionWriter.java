@@ -81,10 +81,10 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void update( NeoStoreRecord record )
+    public void update( NeoStoreRecord before, NeoStoreRecord after )
     {
         Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
+        command.init( before, after );
         addCommand( command );
     }
 
@@ -272,10 +272,10 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void add( NeoStoreRecord record )
+    public void add( NeoStoreRecord before, NeoStoreRecord after )
     {
         Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
+        command.init( before, after );
         addCommand( command );
     }
 

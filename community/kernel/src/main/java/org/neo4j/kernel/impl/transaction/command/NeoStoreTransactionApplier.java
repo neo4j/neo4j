@@ -178,7 +178,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
-        neoStores.getMetaDataStore().setGraphNextProp( command.getRecord().getNextProp() );
+        neoStores.getMetaDataStore().setGraphNextProp( command.getAfter().getNextProp() );
         return false;
     }
 }

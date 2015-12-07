@@ -857,9 +857,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final NeoStoreRecord record = new NeoStoreRecord();
-        record.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand().init( record );
+        final NeoStoreRecord before = new NeoStoreRecord();
+        final NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
+        final Command command = new Command.NeoStoreCommand().init( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -867,7 +868,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
+        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
     }
 
     @Test
@@ -875,9 +876,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final NeoStoreRecord record = new NeoStoreRecord();
-        record.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand().init( record );
+        final NeoStoreRecord before = new NeoStoreRecord();
+        final NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
+        final Command command = new Command.NeoStoreCommand().init( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -885,7 +887,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
+        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
     }
 
     private BatchTransactionApplier newApplier( boolean recovery )

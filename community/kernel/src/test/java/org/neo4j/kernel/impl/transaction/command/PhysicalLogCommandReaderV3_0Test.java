@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -75,5 +76,29 @@ public class PhysicalLogCommandReaderV3_0Test
         // Then
         assertEquals( before, relationshipGroupCommand.getBefore() );
         assertEquals( after, relationshipGroupCommand.getAfter() );
+    }
+
+    @Test
+    public void shouldReadNeoStoreCommand() throws Throwable
+    {
+        // Given
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        CommandWriter writer = new CommandWriter( channel );
+        NeoStoreRecord before = new NeoStoreRecord();
+        NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
+
+        writer.visitNeoStoreCommand( new Command.NeoStoreCommand().init( before, after ) );
+
+        // When
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.NeoStoreCommand);
+
+        Command.NeoStoreCommand neoStoreCommand = (Command.NeoStoreCommand) command;
+
+        // Then
+        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
+        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
     }
 }

@@ -355,7 +355,7 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
         Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 
