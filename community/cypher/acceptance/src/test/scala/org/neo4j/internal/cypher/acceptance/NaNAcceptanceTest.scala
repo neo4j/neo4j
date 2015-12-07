@@ -338,6 +338,39 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppo
     result.toList shouldBe empty
   }
 
+  test("SUM should not produce NaN") {
+    createLabeledNode(Map("num" -> 1.0), "A")
+    createLabeledNode(Map("num" -> 2.0), "A")
+    createLabeledNode(Map("num" -> Double.NaN), "A")
+    val query = "MATCH (n:A) RETURN sum(n.num) as ans, count(n) as c"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should be(List(Map("c" -> 3, "ans" -> 3.0)))
+  }
+
+  test("AVG should not produce NaN") {
+    createLabeledNode(Map("num" -> 1.0), "A")
+    createLabeledNode(Map("num" -> 2.0), "A")
+    createLabeledNode(Map("num" -> Double.NaN), "A")
+    val query = "MATCH (n:A) RETURN avg(n.num) as ans, sum(n.num) / count(n) as nav"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should be(List(Map("ans" -> 1.5, "nav" -> 1.0)))
+  }
+
+  test("STDEV should not produce NaN") {
+    createLabeledNode(Map("num" -> 1.0), "A")
+    createLabeledNode(Map("num" -> 2.0), "A")
+    createLabeledNode(Map("num" -> Double.NaN), "A")
+    val query = "MATCH (n:A) RETURN stdev(n.num) as ans"
+
+    val result = executeWithAllPlanners(query)
+
+    result.columnAs[Double]("ans").toList.head should be(0.7 +- 0.01)
+  }
+
   ignore("index scans should skip float nans") {
     graph.createIndex("Label", "prop")
     createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
