@@ -437,6 +437,7 @@ public class RaftInstanceTest
         }
     }
 
+    @Test
     public void shouldPanicWhenFailingToHandleMessageUnderNormalConditions() throws Throwable
     {
         // given
@@ -454,6 +455,7 @@ public class RaftInstanceTest
                 .build();
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
         explodingLog.startExploding();
+
         // when
         raft.handle(
                 new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
