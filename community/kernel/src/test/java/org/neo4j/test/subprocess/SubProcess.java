@@ -43,6 +43,7 @@ import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -540,14 +541,14 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new RuntimeException( "Broken implementation!", e );
         }
-        return new sun.misc.BASE64Encoder().encode( os.toByteArray() );
+        return Base64.getEncoder().encodeToString( os.toByteArray() );
     }
 
     @SuppressWarnings( "restriction" )
     private static DispatcherTrap deserialize( String data ) throws Exception
     {
         return (DispatcherTrap) new ObjectInputStream( new ByteArrayInputStream(
-                new sun.misc.BASE64Decoder().decodeBuffer( data ) ) ).readObject();
+                Base64.getDecoder().decode( data ) ) ).readObject();
     }
 
     private interface Dispatcher extends Remote

@@ -25,11 +25,10 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import sun.misc.BASE64Encoder;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -397,9 +396,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             }
             catch ( Throwable t )
             {
-
                 log.error( String.format( "Could not handle cluster member available message: %s (%d)",
-                        new BASE64Encoder().encode( payload.getBuf() ), payload.getLen() ), t );
+                        Base64.getEncoder().encodeToString( payload.getBuf() ), payload.getLen() ), t );
             }
         }
     }
