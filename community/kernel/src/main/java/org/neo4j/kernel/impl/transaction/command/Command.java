@@ -271,7 +271,6 @@ public abstract class Command
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
-
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -331,30 +330,36 @@ public abstract class Command
 
     public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
     {
-        protected RECORD record;
+        protected RECORD after;
+        private RECORD before;
 
-        public TokenCommand<RECORD> init( RECORD record )
+        public TokenCommand<RECORD> init( RECORD before, RECORD after )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
             return this;
         }
 
-        public RECORD getRecord()
+        public RECORD getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public RECORD getAfter()
+        {
+            return after;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
         }
     }
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
-
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -364,7 +369,6 @@ public abstract class Command
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
-
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {

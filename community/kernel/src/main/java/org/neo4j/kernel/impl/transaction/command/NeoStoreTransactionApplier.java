@@ -112,21 +112,21 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
-        neoStores.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
+        neoStores.getRelationshipTypeTokenStore().updateRecord( command.getAfter() );
         return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
-        neoStores.getLabelTokenStore().updateRecord( command.getRecord() );
+        neoStores.getLabelTokenStore().updateRecord( command.getAfter() );
         return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
-        neoStores.getPropertyKeyTokenStore().updateRecord( command.getRecord() );
+        neoStores.getPropertyKeyTokenStore().updateRecord( command.getAfter() );
         return false;
     }
 

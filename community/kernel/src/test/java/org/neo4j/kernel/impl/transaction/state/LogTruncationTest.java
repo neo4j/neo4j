@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -93,7 +94,8 @@ public class LogTruncationTest
                 new PropertyRecord( 1, new NodeRecord( 12l, false, 13l, 13 ) ), new PropertyRecord( 1, new NodeRecord(
                         12l, false, 13l, 13 ) ) ) } );
         permutations.put( Command.RelationshipGroupCommand.class,
-                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ) ) } );
+                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ),
+                        createLabelTokenRecord( 1 ) ) } );
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand().init(
                 asList( dynamicRecord( 1l, false, true, -1l, 1, "hello".getBytes() ) ),
                 asList( dynamicRecord( 1l, true, true, -1l, 1, "hello".getBytes() ) ), new IndexRule( 1, 3, 4,
@@ -101,11 +103,13 @@ public class LogTruncationTest
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
                         new Command[] { new Command.RelationshipTypeTokenCommand()
-                                .init( new RelationshipTypeTokenRecord( 1 ) ) } );
+                                .init( new RelationshipTypeTokenRecord( 1 ), createRelationshipTypeTokenRecord( 1 ) ) } );
         permutations.put( Command.PropertyKeyTokenCommand.class,
-                new Command[] { new Command.PropertyKeyTokenCommand().init( new PropertyKeyTokenRecord( 1 ) ) } );
+                new Command[] { new Command.PropertyKeyTokenCommand().init( new PropertyKeyTokenRecord( 1 ),
+                        createPropertyKeyTokenRecord( 1 ) ) } );
         permutations.put( Command.LabelTokenCommand.class,
-                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ) ) } );
+                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ),
+                        createLabelTokenRecord( 1 ) ) } );
 
         // Index commands
         AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
@@ -251,5 +255,32 @@ public class LogTruncationTest
             assertEquals( i, channel.getInt() );
         }
         channel.close();
+    }
+
+    private LabelTokenRecord createLabelTokenRecord( int id )
+    {
+        LabelTokenRecord labelTokenRecord = new LabelTokenRecord( id );
+        labelTokenRecord.setInUse( true );
+        labelTokenRecord.setNameId( 333 );
+        labelTokenRecord.addNameRecord( new DynamicRecord( 43 ) );
+        return labelTokenRecord;
+    }
+
+    private RelationshipTypeTokenRecord createRelationshipTypeTokenRecord( int id )
+    {
+        RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( id );
+        relationshipTypeTokenRecord.setInUse( true );
+        relationshipTypeTokenRecord.setNameId( 333 );
+        relationshipTypeTokenRecord.addNameRecord( new DynamicRecord( 43 ) );
+        return relationshipTypeTokenRecord;
+    }
+
+    private PropertyKeyTokenRecord createPropertyKeyTokenRecord( int id )
+    {
+        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( id );
+        propertyKeyTokenRecord.setInUse( true );
+        propertyKeyTokenRecord.setNameId( 333 );
+        propertyKeyTokenRecord.addNameRecord( new DynamicRecord( 43 ) );
+        return propertyKeyTokenRecord;
     }
 }

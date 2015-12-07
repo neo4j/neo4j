@@ -32,4 +32,19 @@ public class LabelTokenRecord extends TokenRecord
     {
         return "Label";
     }
+
+    @Override
+    public LabelTokenRecord clone()
+    {
+        LabelTokenRecord labelTokenRecord = new LabelTokenRecord( getId() );
+        labelTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
+        {
+            labelTokenRecord.setCreated();
+        }
+        labelTokenRecord.setIsLight( isLight() );
+        labelTokenRecord.setNameId( getNameId() );
+        labelTokenRecord.addNameRecords( getNameRecords() );
+        return labelTokenRecord;
+    }
 }

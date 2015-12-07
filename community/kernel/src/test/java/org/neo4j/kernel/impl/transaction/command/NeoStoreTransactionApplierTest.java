@@ -416,8 +416,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
-        final Command command = new RelationshipTypeTokenCommand().init( record );
+        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new RelationshipTypeTokenCommand().init( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -425,7 +428,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -433,9 +436,13 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
+
+        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
         final Command.RelationshipTypeTokenCommand command =
-                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( record );
+                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( before, after );
         final RelationshipTypeToken token = new RelationshipTypeToken( "token", 21 );
         when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -445,8 +452,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipTypeTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addRelationshipTypeToken( token );
     }
 
@@ -457,8 +464,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final LabelTokenRecord record = new LabelTokenRecord( 42 );
-        final Command command = new LabelTokenCommand().init( record );
+        final LabelTokenRecord before = new LabelTokenRecord( 42 );
+        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new LabelTokenCommand().init( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -466,7 +476,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).updateRecord( record );
+        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -474,8 +484,12 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final LabelTokenRecord record = new LabelTokenRecord( 42 );
-        final Command.LabelTokenCommand command = (LabelTokenCommand) new Command.LabelTokenCommand().init( record );
+        final LabelTokenRecord before = new LabelTokenRecord( 42 );
+        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command.LabelTokenCommand command =
+                (LabelTokenCommand) new Command.LabelTokenCommand().init( before, after );
         final Token token = new Token( "token", 21 );
         when( labelTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -485,8 +499,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( labelTokenStore, times( 1 ) ).updateRecord( record );
+        verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addLabelToken( token );
     }
 
@@ -497,8 +511,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( 42 );
-        final Command command = new PropertyKeyTokenCommand().init( record );
+        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new PropertyKeyTokenCommand().init( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -506,7 +523,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( record );
+        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -514,9 +531,13 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( 42 );
+
+        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
         final Command.PropertyKeyTokenCommand command =
-                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand().init( record );
+                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand().init( before, after );
         final Token token = new Token( "token", 21 );
         when( propertyKeyTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -526,8 +547,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( record );
+        verify( propertyKeyTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addPropertyKeyToken( token );
     }
 

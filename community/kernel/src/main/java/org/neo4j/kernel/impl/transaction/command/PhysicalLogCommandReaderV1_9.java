@@ -161,7 +161,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record.addNameRecord( dr );
         }
         Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 
@@ -189,7 +189,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             return null;
         }
         Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
+        command.init( null, record );
         return command;
     }
 

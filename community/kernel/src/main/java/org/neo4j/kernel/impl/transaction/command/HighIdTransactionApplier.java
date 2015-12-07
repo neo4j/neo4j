@@ -176,7 +176,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     void trackToken( TokenStore<RECORD, TOKEN> tokenStore, TokenCommand<RECORD> tokenCommand )
     {
         track( tokenStore, tokenCommand );
-        track( tokenStore.getNameStore(), tokenCommand.getRecord().getNameRecords() );
+        track( tokenStore.getNameStore(), tokenCommand.getAfter().getNameRecords() );
     }
 
     private static class HighId

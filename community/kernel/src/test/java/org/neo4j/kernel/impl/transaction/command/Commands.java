@@ -98,9 +98,10 @@ public class Commands
     public static LabelTokenCommand createLabelToken( int id, int nameId )
     {
         LabelTokenCommand command = new LabelTokenCommand();
-        LabelTokenRecord record = new LabelTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
+        LabelTokenRecord before = new LabelTokenRecord( id );
+        LabelTokenRecord after = new LabelTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        command.init( before, after );
         return command;
     }
 
@@ -116,18 +117,20 @@ public class Commands
     public static PropertyKeyTokenCommand createPropertyKeyToken( int id, int nameId )
     {
         PropertyKeyTokenCommand command = new PropertyKeyTokenCommand();
-        PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( id );
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        command.init( before, after );
         return command;
     }
 
     public static RelationshipTypeTokenCommand createRelationshipTypeToken( int id, int nameId )
     {
         RelationshipTypeTokenCommand command = new RelationshipTypeTokenCommand();
-        RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        command.init( before, after );
         return command;
     }
 

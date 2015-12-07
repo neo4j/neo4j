@@ -233,8 +233,28 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
 
     private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException
     {
-        // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
+        RelationshipTypeTokenRecord before = readRelationshipTypeTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        RelationshipTypeTokenRecord after = readRelationshipTypeTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+        command.init( before, after );
+        return command;
+    }
+
+    private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableLogChannel channel )
+            throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -258,15 +278,32 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
-        return command;
+        return record;
     }
 
     private Command visitLabelTokenCommand( ReadableLogChannel channel ) throws IOException
     {
-        // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
+        LabelTokenRecord before = readLabelTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        LabelTokenRecord after = readLabelTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+        command.init( before, after );
+        return command;
+    }
+
+    private LabelTokenRecord readLabelTokenRecord( int id, ReadableLogChannel channel ) throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -290,15 +327,32 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( record );
-        return command;
+        return record;
     }
 
     private Command visitPropertyKeyTokenCommand( ReadableLogChannel channel ) throws IOException
     {
-        // id+in_use(byte)+count(int)+key_blockId(int)
         int id = channel.getInt();
+        PropertyKeyTokenRecord before = readPropertyKeyTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        PropertyKeyTokenRecord after = readPropertyKeyTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
+        command.init( before, after );
+        return command;
+    }
+
+    private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableLogChannel channel ) throws IOException
+    {
+        // in_use(byte)+count(int)+key_blockId(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -317,9 +371,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
-        return command;
+        return record;
     }
 
     private Command visitSchemaRuleCommand( ReadableLogChannel channel ) throws IOException

@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -59,7 +58,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.createCommandBytes;
 import static org.neo4j.coreedge.raft.replication.token.TokenType.LABEL;
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
@@ -258,7 +256,7 @@ public class ReplicatedTokenHolderTest
     {
         List<Command> commands = new ArrayList<>();
         Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
-        labelTokenCommand.init( new LabelTokenRecord( tokenId ) );
+        labelTokenCommand.init( new LabelTokenRecord( tokenId ), new LabelTokenRecord( tokenId ) );
         commands.add( labelTokenCommand );
         return commands;
     }

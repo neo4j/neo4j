@@ -63,21 +63,22 @@ public class TransactionWriter
     public void propertyKey( int id, String key, int... dynamicIds )
     {
         Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) );
+        command.init( new PropertyKeyTokenRecord( id ), withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) );
         addCommand( command );
     }
 
     public void label( int id, String name, int... dynamicIds )
     {
         Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( withName( new LabelTokenRecord( id ), dynamicIds, name ) );
+        command.init( new LabelTokenRecord( id ), withName( new LabelTokenRecord( id ), dynamicIds, name ) );
         addCommand( command );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds )
     {
         Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) );
+        command.init( new RelationshipTypeTokenRecord( id ),
+                withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) );
         addCommand( command );
     }
 
@@ -88,10 +89,10 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void update( LabelTokenRecord labelToken )
+    public void update( LabelTokenRecord before, LabelTokenRecord after )
     {
         Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( labelToken );
+        command.init( before, after );
         addCommand( command );
     }
 
@@ -110,13 +111,13 @@ public class TransactionWriter
     public void create( LabelTokenRecord labelToken )
     {
         labelToken.setCreated();
-        update( labelToken );
+        update( new LabelTokenRecord( labelToken.getId() ), labelToken );
     }
 
     public void create( PropertyKeyTokenRecord token )
     {
         token.setCreated();
-        update( token );
+        update( new PropertyKeyTokenRecord( token.getId() ), token );
     }
 
     public void create( RelationshipGroupRecord group )
@@ -131,10 +132,10 @@ public class TransactionWriter
         add( before, node );
     }
 
-    public void update( PropertyKeyTokenRecord token )
+    public void update( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
-        token.setInUse( true );
-        add( token );
+        after.setInUse( true );
+        add( before, after );
     }
 
     public void delete( NodeRecord node )
@@ -258,17 +259,17 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void add( RelationshipTypeTokenRecord record )
+    public void add( RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
     {
         Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
+        command.init( before, after );
         addCommand( command );
     }
 
-    public void add( PropertyKeyTokenRecord record )
+    public void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
         Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
+        command.init( before, after );
         addCommand( command );
     }
 

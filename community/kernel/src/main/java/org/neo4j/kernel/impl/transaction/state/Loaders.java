@@ -247,7 +247,7 @@ public class Loaders
             @Override
             public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
@@ -278,7 +278,7 @@ public class Loaders
             @Override
             public LabelTokenRecord clone( LabelTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
@@ -309,7 +309,7 @@ public class Loaders
             @Override
             public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }

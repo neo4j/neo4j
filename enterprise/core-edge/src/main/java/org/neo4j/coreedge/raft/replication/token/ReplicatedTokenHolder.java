@@ -168,7 +168,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         TokenStore<RECORD,TOKEN> tokenStore = resolveStore();
         RecordAccess.Loader<Integer,RECORD,Void> recordLoader = resolveLoader( tokenStore );
 
-        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, false, new IntCounter() );
+        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, true, new IntCounter() );
         TokenCreator<RECORD,TOKEN> tokenCreator = new TokenCreator<>( tokenStore );
         tokenCreator.createToken( tokenName, (int) tokenId, recordAccess );
 
@@ -176,7 +176,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         for ( RecordAccess.RecordProxy<Integer,RECORD, Void> record : recordAccess.changes() )
         {
             Command.TokenCommand<RECORD> command = createCommand();
-            command.init( record.forReadingLinkage() );
+            command.init( record.getBefore(), record.forReadingLinkage() );
             commands.add( command );
         }
 
@@ -278,7 +278,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         {
             if( command instanceof Command.TokenCommand )
             {
-                return ((Command.TokenCommand) command).getRecord().getId();
+                return ((Command.TokenCommand) command).getAfter().getId();
             }
         }
         throw new NoSuchEntryException( "Expected command not found" );

@@ -164,35 +164,59 @@ public class CommandWriter implements CommandVisitor
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
-        RelationshipTypeTokenRecord record = command.getRecord();
+        RelationshipTypeTokenRecord before = command.getBefore();
+        RelationshipTypeTokenRecord after = command.getAfter();
+        channel.put( NeoCommandType.REL_TYPE_COMMAND );
+        channel.putInt( after.getId() );
+        writeRelationshipTypeRecord( before );
+        writeRelationshipTypeRecord( after );
+        return false;
+    }
+
+    private void writeRelationshipTypeRecord( RelationshipTypeTokenRecord record ) throws IOException
+    {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-        channel.put( NeoCommandType.REL_TYPE_COMMAND );
-        channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
+        channel.put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
-        return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
-        LabelTokenRecord record = command.getRecord();
+        LabelTokenRecord before = command.getBefore();
+        LabelTokenRecord after = command.getAfter();
+        channel.put( NeoCommandType.LABEL_KEY_COMMAND );
+        channel.putInt( after.getId() );
+        writeLabelTokenRecord( before );
+        writeLabelTokenRecord( after );
+        return false;
+    }
+
+    private void writeLabelTokenRecord( LabelTokenRecord record ) throws IOException
+    {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-        channel.put( NeoCommandType.LABEL_KEY_COMMAND );
-        channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
+        channel.put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
-        return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
-        PropertyKeyTokenRecord record = command.getRecord();
+        PropertyKeyTokenRecord before = command.getBefore();
+        PropertyKeyTokenRecord after = command.getAfter();
+        channel.put( NeoCommandType.PROP_INDEX_COMMAND );
+        channel.putInt( after.getId() );
+        writePropertyKeyTokenRecord( before );
+        writePropertyKeyTokenRecord( after );
+        return false;
+    }
+
+    private void writePropertyKeyTokenRecord( PropertyKeyTokenRecord record ) throws IOException
+    {
         // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
         byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-        channel.put( NeoCommandType.PROP_INDEX_COMMAND );
-        channel.putInt( record.getId() );
         channel.put( inUse );
         channel.putInt( record.getPropertyCount() ).putInt( record.getNameId() );
         if ( record.isLight() )
@@ -203,7 +227,6 @@ public class CommandWriter implements CommandVisitor
         {
             writeDynamicRecords( record.getNameRecords() );
         }
-        return false;
     }
 
     @Override
