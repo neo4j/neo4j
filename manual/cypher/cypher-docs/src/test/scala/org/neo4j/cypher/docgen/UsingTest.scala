@@ -33,7 +33,10 @@ class UsingTest extends DocumentingTest {
       "CREATE INDEX ON :Science(name)",
 
       """CREATE (curie:Scientist {name: 'Curie', born: 1867})-[:RESEARCHED]->(chemistry:Science {name: 'Chemistry'}),
-        |       (liskov:Scientist {name: 'Liskov', born: 1939})-[:RESEARCHED]->(cs:Science {name: 'Computer Science'})
+        |       (liskov:Scientist {name: 'Liskov', born: 1939})-[:RESEARCHED]->(cs:Science {name: 'Computer Science'}),
+        |       (conway:Scientist {name: 'Conway', born: 1938})-[:RESEARCHED]->(cs),
+        |       (wing:Scientist {name: 'Wing', born: 1956})-[:RESEARCHED]->(cs),
+        |       (liskov)-[:KNOWS]->(wing)
       """
     )
     synopsis("The `USING` clause is used to influence the decisions of the planner when building an execution plan for a query.")
@@ -80,10 +83,31 @@ class UsingTest extends DocumentingTest {
         p("If the best performance is to be had by scanning all nodes in a label and then filtering on that set, use `USING SCAN`.")
         query(s"""MATCH (s:Scientist)
                  |USING SCAN s:Scientist
-                 |WHERE s.born > 1800
+                 |WHERE s.born < 1938
                  |RETURN s.born AS $columnName""",
               assertIntegersReturned(1867, 1939)) {
-          p("Returns all scientists born after 1800.")
+          p("Returns all scientists born before 1938.")
+          profileExecutionPlan()
+        }
+      }
+    }
+    section("Join hints") {
+      section("Hinting a join on a single node") {
+        p("To force the query planner to produce a join on a variable, use `USING JOIN`.")
+        query(s"""MATCH (liskov {name: 'Liskov'})-->(x:Science)<--(conway {name: 'Conway'})
+                 |USING JOIN ON x
+                 |RETURN x.name AS $columnName""",
+              assertStringsReturnedAndUsingHashJoin("Computer Science")) {
+          p("Returns the name of the science with both Barbara Liskov and Lynn Conway are related to, by joining.")
+          profileExecutionPlan()
+        }
+      }
+      section("Hinting a join on multiple nodes") {
+        p("Force the query planner to produce a join between two specified variables.")
+        query(s"""MATCH (conway {name: 'Conway'})-->(cs)<--(liskov {name: 'Liskov'})<--(wing)
+                 |USING JOIN ON cs, liskov
+                 |RETURN cs.name AS $columnName""", assertStringsReturnedAndUsingHashJoin("Computer Science")) {
+          p("")
           profileExecutionPlan()
         }
       }
@@ -96,5 +120,13 @@ class UsingTest extends DocumentingTest {
     values.foreach { value =>
       result.columnAs[Long](columnName) should equal(value)
     }
+  )
+
+  private def assertStringsReturnedAndUsingHashJoin(values: String*) = ResultAssertions(result => {
+    values.foreach { value =>
+      result.columnAs[String](columnName) should equal(value)
+    }
+    result.executionPlanDescription().toString should contain("NodeHashJoin")
+  }
   )
 }
