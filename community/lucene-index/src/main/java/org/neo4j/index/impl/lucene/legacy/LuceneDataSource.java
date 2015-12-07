@@ -554,7 +554,7 @@ public class LuceneDataSource extends LifecycleAdapter
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
                 IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, name );
-                getIndexSearcher( identifier );
+                getIndexSearcher( identifier ).close();
             }
         }
         for ( String name : indexStore.getNames( Relationship.class ) )
@@ -563,7 +563,7 @@ public class LuceneDataSource extends LifecycleAdapter
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
                 IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, name );
-                getIndexSearcher( identifier );
+                getIndexSearcher( identifier ).close();
             }
         }
     }

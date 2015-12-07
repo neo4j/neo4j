@@ -525,6 +525,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     e, true );
             try
             {
+                life.shutdown();
                 // Close the neostore, so that locks are released properly
                 storageEngine.neoStores().close();
             }
