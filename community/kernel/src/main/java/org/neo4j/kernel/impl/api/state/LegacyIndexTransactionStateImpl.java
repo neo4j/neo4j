@@ -162,10 +162,10 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
         }
         else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
         {
-            commands = nodeCommands.get( indexName );
+            commands = relationshipCommands.get( indexName );
             if ( commands == null )
             {
-                nodeCommands.put( indexName, commands = new ArrayList<>() );
+                relationshipCommands.put( indexName, commands = new ArrayList<>() );
             }
         }
         else
