@@ -115,7 +115,7 @@ public class StoreMigratorFrom20IT
         upgrader( indexMigrator, storeMigrator ).migrateIfNeeded( find20FormatStoreDirectory( storeDir.directory() ) );
 
         // THEN
-        assertEquals( 100, monitor.eventSize() );
+        assertEquals( 2, monitor.progresses().size() );
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
 

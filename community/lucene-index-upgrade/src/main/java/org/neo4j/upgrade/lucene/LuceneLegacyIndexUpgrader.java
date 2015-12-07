@@ -19,7 +19,6 @@
  */
 package org.neo4j.upgrade.lucene;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +44,25 @@ import org.neo4j.upgrade.loader.JarLoaderSupplier;
  */
 public class LuceneLegacyIndexUpgrader
 {
+    public interface Monitor
+    {
+        /**
+         * Upgrade is starting.
+         *
+         * @param count number of indexes to migrate.
+         */
+        default void starting( int count ) {}
+
+        /**
+         * Called after an index has been migrated, called for each migrated index.
+         *
+         * @param name name of the index.
+         */
+        default void migrated( String name ) {}
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor() {};
+
     private static final String LIBRARY_DIRECTORY = "lib";
     private static final String RESOURCE_SEPARATOR = "/";
     private static final String LUCENE4_CORE_JAR_NAME = "lucene-core-4.10.4.jar";
@@ -53,9 +71,11 @@ public class LuceneLegacyIndexUpgrader
     public static final String SEGMENTS_FILE_NAME_PREFIX = "segments";
 
     private final Path indexRootPath;
+    private final Monitor monitor;
 
-    public LuceneLegacyIndexUpgrader( Path indexRootPath )
+    public LuceneLegacyIndexUpgrader( Path indexRootPath, Monitor monitor )
     {
+        this.monitor = monitor;
         if ( Files.exists( indexRootPath ) && !Files.isDirectory( indexRootPath ) )
         {
             throw new IllegalArgumentException( "Index path should be a directory" );
@@ -75,6 +95,7 @@ public class LuceneLegacyIndexUpgrader
             {
                 return;
             }
+            monitor.starting( (int) Files.walk( indexRootPath ).count() );
             try ( Stream<Path> pathStream = Files.walk( indexRootPath );
                   IndexUpgraderWrapper lucene4Upgrader = createIndexUpgrader( getLucene4JarPaths() );
                   IndexUpgraderWrapper lucene5Upgrader = createIndexUpgrader( getLucene5JarPaths() ) )
@@ -86,6 +107,7 @@ public class LuceneLegacyIndexUpgrader
                     {
                         lucene4Upgrader.upgradeIndex( indexPath );
                         lucene5Upgrader.upgradeIndex( indexPath );
+                        monitor.migrated( indexPath.toFile().getName() );
                     }
                     catch ( Throwable e )
                     {

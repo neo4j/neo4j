@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -50,9 +49,8 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.participant.BaseStoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -308,7 +306,7 @@ public class StoreUpgraderTest
 
             // THEN
             verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ),
-                    any( MigrationProgressMonitor.class ), eq( versionToMigrateFrom ) );
+                    any( MigrationProgressMonitor.Section.class ), eq( versionToMigrateFrom ) );
             verify( observingParticipant, Mockito.times( 1 ) ).
                     moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ) );
 
@@ -385,7 +383,7 @@ public class StoreUpgraderTest
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
     {
-        return new BaseStoreMigrationParticipant()
+        return new AbstractStoreMigrationParticipant( "Failing" )
         {
             @Override
             public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom )
@@ -422,15 +420,6 @@ public class StoreUpgraderTest
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( defaultMigrator );
         return upgrader;
-    }
-
-    private DatabaseMigrator getDatabaseMigrator( PageCache pageCache, Config config )
-    {
-        check = new StoreVersionCheck( pageCache );
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-        NullLogService logService = NullLogService.getInstance();
-        return new DatabaseMigrator( progressMonitor, fileSystem, config, logService,
-                schemaIndexProvider, labelScanStoreProvider, new HashMap<>(), pageCache);
     }
 
     private List<File> migrationHelperDirs()

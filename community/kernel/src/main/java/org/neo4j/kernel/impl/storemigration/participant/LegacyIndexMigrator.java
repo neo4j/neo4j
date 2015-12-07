@@ -36,31 +36,33 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.upgrade.lucene.LegacyIndexMigrationException;
 import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader;
+import org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader.Monitor;
 
 /**
  * Migrates legacy lucene indexes between different neo4j versions.
  * Participates in store upgrade as one of the migration participants.
  */
-public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
+public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private static final String LUCENE_LEGACY_INDEX_PROVIDER_NAME = "lucene";
-    private Map<String,IndexImplementation> indexProviders;
+    private final Map<String,IndexImplementation> indexProviders;
     private final FileSystemAbstraction fileSystem;
     private File migrationLegacyIndexesRoot;
     private File originalLegacyIndexesRoot;
-    private Log log;
+    private final Log log;
     private boolean legacyIndexMigrated = false;
 
     public LegacyIndexMigrator( FileSystemAbstraction fileSystem, Map<String,IndexImplementation> indexProviders,
             LogProvider logProvider )
     {
+        super( "Legacy indexes" );
         this.fileSystem = fileSystem;
         this.indexProviders = indexProviders;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom ) throws IOException
     {
         IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
@@ -77,7 +79,7 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
                 migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
                 if ( isNotEmptyDirectory( originalLegacyIndexesRoot ) )
                 {
-                    migrateLegacyIndexes();
+                    migrateLegacyIndexes( progressMonitor );
                     legacyIndexMigrated = true;
                 }
                 break;
@@ -116,13 +118,13 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
         return migrationLegacyIndexesRoot != null && fileSystem.fileExists( migrationLegacyIndexesRoot );
     }
 
-    private void migrateLegacyIndexes() throws IOException
+    private void migrateLegacyIndexes( MigrationProgressMonitor.Section progressMonitor ) throws IOException
     {
         try
         {
             fileSystem.copyRecursively( originalLegacyIndexesRoot, migrationLegacyIndexesRoot );
             Path indexRootPath = migrationLegacyIndexesRoot.toPath();
-            LuceneLegacyIndexUpgrader indexUpgrader = createLuceneLegacyIndexUpgrader( indexRootPath );
+            LuceneLegacyIndexUpgrader indexUpgrader = createLuceneLegacyIndexUpgrader( indexRootPath, progressMonitor );
             indexUpgrader.upgradeIndexes();
         }
         catch ( LegacyIndexMigrationException lime )
@@ -143,9 +145,27 @@ public class LegacyIndexMigrator extends BaseStoreMigrationParticipant
         return false;
     }
 
-    LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath )
+    LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath,
+            MigrationProgressMonitor.Section progressMonitor )
     {
-        return new LuceneLegacyIndexUpgrader( indexRootPath );
+        return new LuceneLegacyIndexUpgrader( indexRootPath, progressMonitor( progressMonitor ) );
     }
 
+    private Monitor progressMonitor( MigrationProgressMonitor.Section progressMonitor )
+    {
+        return new Monitor()
+        {
+            @Override
+            public void starting( int total )
+            {
+                progressMonitor.start( total );
+            }
+
+            @Override
+            public void migrated( String name )
+            {
+                progressMonitor.progress( 1 );
+            }
+        };
+    }
 }

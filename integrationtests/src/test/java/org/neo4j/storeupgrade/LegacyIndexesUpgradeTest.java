@@ -44,6 +44,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
@@ -60,6 +61,9 @@ public class LegacyIndexesUpgradeTest
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     public void setUp() throws IOException
     {
@@ -81,6 +85,8 @@ public class LegacyIndexesUpgradeTest
         startDbAndCheckData();
 
         checkIndexData();
+
+        checkMigrationProgressFeedback();
     }
 
     @Test
@@ -247,8 +253,7 @@ public class LegacyIndexesUpgradeTest
 
     private class NestedThrowableMatcher extends TypeSafeMatcher<Throwable>
     {
-
-        private Class<? extends Throwable> expectedType;
+        private final Class<? extends Throwable> expectedType;
 
         public NestedThrowableMatcher( Class<? extends Throwable> expectedType )
         {
@@ -278,5 +283,13 @@ public class LegacyIndexesUpgradeTest
             while ( currentThrowable != null );
             return false;
         }
+    }
+
+    private void checkMigrationProgressFeedback()
+    {
+        suppressOutput.getOutputVoice().containsMessage( "Starting upgrade of database" );
+        suppressOutput.getOutputVoice().containsMessage( "Successfully finished upgrade of database" );
+        suppressOutput.getOutputVoice().containsMessage( "10%" );
+        suppressOutput.getOutputVoice().containsMessage( "100%" );
     }
 }

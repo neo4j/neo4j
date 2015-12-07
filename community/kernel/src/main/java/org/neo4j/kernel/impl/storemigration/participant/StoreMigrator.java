@@ -127,7 +127,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator extends BaseStoreMigrationParticipant
+public class StoreMigrator extends AbstractStoreMigrationParticipant
 {
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
@@ -143,6 +143,7 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, SchemaIndexProvider schemaIndexProvider )
     {
+        super( "Store files" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
@@ -152,7 +153,7 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom ) throws IOException
     {
         // Extract information about the last transaction from legacy neostore
@@ -349,7 +350,7 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
             long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache,
-            MigrationProgressMonitor progressMonitor, String versionToUpgradeFrom )
+            MigrationProgressMonitor.Section progressMonitor, String versionToUpgradeFrom )
             throws IOException
     {
         prepareBatchImportMigration( storeDir, migrationDir );
@@ -372,8 +373,8 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
                 readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService,
-                withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor ),
-                        importConfig ), additionalInitialIds );
+                withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
+                        importConfig ), importConfig ), additionalInitialIds );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
@@ -488,17 +489,11 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
     }
 
     private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore,
-            MigrationProgressMonitor progressMonitor )
+            final MigrationProgressMonitor.Section progressMonitor, Configuration config )
     {
-        return new CoarseBoundedProgressExecutionMonitor(
-                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
-        {
-            @Override
-            protected void percent( int percent )
-            {
-                progressMonitor.percentComplete( percent );
-            }
-        };
+        return new BatchImporterProgressMonitor(
+                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId(),
+                config, progressMonitor );
     }
 
     private StoreFactory storeFactory( PageCache pageCache, File migrationDir )
@@ -890,5 +885,25 @@ public class StoreMigrator extends BaseStoreMigrationParticipant
     public String toString()
     {
         return "Kernel StoreMigrator";
+    }
+
+    private class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
+    {
+        private final MigrationProgressMonitor.Section progressMonitor;
+
+        BatchImporterProgressMonitor( long highNodeId, long highRelationshipId,
+                org.neo4j.unsafe.impl.batchimport.staging.Configuration configuration,
+                MigrationProgressMonitor.Section progressMonitor )
+        {
+            super( highNodeId, highRelationshipId, configuration );
+            this.progressMonitor = progressMonitor;
+            this.progressMonitor.start( total() );
+        }
+
+        @Override
+        protected void progress( long progress )
+        {
+            progressMonitor.progress( progress );
+        }
     }
 }

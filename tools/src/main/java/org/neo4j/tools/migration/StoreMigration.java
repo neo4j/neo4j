@@ -94,7 +94,7 @@ public class StoreMigration
                 StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, storeDirectory );
 
         VisibleMigrationProgressMonitor progressMonitor =
-                new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigration.class ) );
+                new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigration.class ) );
 
         LifeSupport life = new LifeSupport();
 
@@ -171,7 +171,7 @@ public class StoreMigration
     private class LegacyIndexProvider implements IndexProviders
     {
 
-        private Map<String,IndexImplementation> indexProviders = new HashMap<>();
+        private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
 
         public Map<String,IndexImplementation> getIndexProviders()
         {

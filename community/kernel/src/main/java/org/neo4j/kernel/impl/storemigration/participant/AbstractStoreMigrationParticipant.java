@@ -31,30 +31,39 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
  *
  * @see org.neo4j.kernel.impl.storemigration.StoreUpgrader
  */
-public class BaseStoreMigrationParticipant implements StoreMigrationParticipant
+public class AbstractStoreMigrationParticipant implements StoreMigrationParticipant
 {
+    protected final String name;
+
+    public AbstractStoreMigrationParticipant( String name )
+    {
+        this.name = name;
+    }
+
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom ) throws IOException
     {
-
     }
 
     @Override
     public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom ) throws IOException
     {
-
     }
 
     @Override
     public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
     {
-
     }
 
     @Override
     public void cleanup( File migrationDir ) throws IOException
     {
+    }
 
+    @Override
+    public String getName()
+    {
+        return name;
     }
 }

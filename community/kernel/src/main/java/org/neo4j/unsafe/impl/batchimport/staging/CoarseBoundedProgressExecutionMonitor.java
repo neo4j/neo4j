@@ -21,8 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.collection.IteratorUtil.last;
@@ -31,63 +29,58 @@ import static org.neo4j.helpers.collection.IteratorUtil.last;
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
  * in advance.
  */
-public class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
+public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adapter
 {
-    private long totalDoneBatches;
-    private final long highNodeId;
-    private final long highRelationshipId;
-    private int previousPercent;
+    private final long totalNumberOfBatches;
+    private long[] prevDoneBatches;
 
-    public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId )
+    public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
+            Configuration configuration )
     {
         super( 1, SECONDS );
-        this.highNodeId = highNodeId;
-        this.highRelationshipId = highRelationshipId;
+        // This calculation below is aware of internals of the parallel importer and may
+        // be wrong for other importers.
+        this.totalNumberOfBatches =
+                (highNodeId/configuration.batchSize()) * 2 + // node records encountered twice
+                (highRelationshipId/configuration.batchSize()) * 3; // rel records encountered three times;
+    }
+
+    protected long total()
+    {
+        return totalNumberOfBatches;
     }
 
     @Override
     public void check( StageExecution[] executions )
     {
-        updatePercent( executions );
+        update( executions );
     }
 
-    private void updatePercent( StageExecution[] executions )
+    @Override
+    public void start( StageExecution[] executions )
     {
-        int highestPercentThere = previousPercent;
-        for ( StageExecution execution : executions )
-        {
-            // This calculation below is aware of internals of the parallel importer and may
-            // be wrong for other importers.
-            long maxNumberOfBatches =
-                    (highNodeId/execution.getConfig().batchSize()) * 2 + // node records encountered twice
-                    (highRelationshipId/execution.getConfig().batchSize()) * 3; // rel records encountered three times;
+        prevDoneBatches = new long[executions.length];
+    }
 
-            long doneBatches = totalDoneBatches + doneBatches( execution );
-            int percentThere = (int) ((doneBatches*100D)/maxNumberOfBatches);
-            percentThere = min( percentThere, 100 );
-            highestPercentThere = max( percentThere, highestPercentThere );
+    private void update( StageExecution[] executions )
+    {
+        long diff = 0;
+        for ( int i = 0; i < executions.length; i++ )
+        {
+            long doneBatches = doneBatches( executions[i] );
+            diff += doneBatches - prevDoneBatches[i];
+            prevDoneBatches[i] = doneBatches;
         }
-
-        applyPercentage( highestPercentThere );
-    }
-
-    private void applyPercentage( int percentThere )
-    {
-        while ( previousPercent < percentThere )
+        if ( diff > 0 )
         {
-            percent( ++previousPercent );
+            progress( diff );
         }
     }
 
-    protected void percent( int percent )
-    {
-        // TODO An execution monitor that does not accept the writer? A kitten dies every time this happens, you know
-        System.out.print( "." );
-        if ( percent % 10 == 0 )
-        {
-            System.out.println( "  " + percent + "%" );
-        }
-    }
+    /**
+     * @param progress Relative progress.
+     */
+    protected abstract void progress( long progress );
 
     private long doneBatches( StageExecution execution )
     {
@@ -95,17 +88,15 @@ public class CoarseBoundedProgressExecutionMonitor extends ExecutionMonitor.Adap
     }
 
     @Override
-    public void end( StageExecution[] executions, long totalTimeMillis )
-    {
-        for ( StageExecution execution : executions )
-        {
-            this.totalDoneBatches += doneBatches( execution );
-        }
-    }
-
-    @Override
     public void done( long totalTimeMillis, String additionalInformation )
     {
-        applyPercentage( 100 );
+        long prev = 0;
+        for ( long done : prevDoneBatches )
+        {
+            prev += done;
+        }
+
+        // Just report the last progress
+        progress( totalNumberOfBatches-prev );
     }
 }

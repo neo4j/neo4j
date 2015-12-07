@@ -49,13 +49,13 @@ import static org.mockito.Mockito.when;
 public class LegacyIndexMigratorTest
 {
 
-    private FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private LogProvider logProvider = mock( LogProvider.class );
-    private MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
-    private File storeDir = mock( File.class );
-    private File migrationDir = mock( File.class );
-    private File originalIndexStore = mock( File.class );
-    private File migratedIndexStore = new File( "." );
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final LogProvider logProvider = mock( LogProvider.class );
+    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+    private final File storeDir = mock( File.class );
+    private final File migrationDir = mock( File.class );
+    private final File originalIndexStore = mock( File.class );
+    private final File migratedIndexStore = new File( "." );
 
     @Before
     public void setUp()
@@ -156,7 +156,7 @@ public class LegacyIndexMigratorTest
     private class TestLegacyIndexMigrator extends LegacyIndexMigrator
     {
 
-        private boolean successfullMigration;
+        private final boolean successfullMigration;
 
         public TestLegacyIndexMigrator( FileSystemAbstraction fileSystem,
                 Map<String,IndexImplementation> indexProviders, LogProvider logProvider, boolean successfullMigration )
@@ -166,7 +166,8 @@ public class LegacyIndexMigratorTest
         }
 
         @Override
-        LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath )
+        LuceneLegacyIndexUpgrader createLuceneLegacyIndexUpgrader( Path indexRootPath,
+                MigrationProgressMonitor.Section progressMonitor )
         {
             return new HumbleLegacyIndexUpgrader( indexRootPath, successfullMigration );
         }
@@ -174,11 +175,11 @@ public class LegacyIndexMigratorTest
 
     private class HumbleLegacyIndexUpgrader extends LuceneLegacyIndexUpgrader
     {
-        private boolean successfulMigration;
+        private final boolean successfulMigration;
 
         public HumbleLegacyIndexUpgrader( Path indexRootPath, boolean successfulMigration )
         {
-            super( indexRootPath );
+            super( indexRootPath, NO_MONITOR );
             this.successfulMigration = successfulMigration;
         }
 

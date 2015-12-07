@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -84,7 +85,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find19Form
 
 public class StoreMigratorFrom19IT
 {
-
     @Rule
     public final TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
     @Rule
@@ -127,7 +127,7 @@ public class StoreMigratorFrom19IT
         newStoreUpgrader().migrateIfNeeded( legacyStoreDir );
 
         // THEN
-        assertEquals( 100, monitor.eventSize() );
+        assertEquals( 2, monitor.progresses().size() );
         assertTrue( monitor.isStarted() );
         assertTrue( monitor.isFinished() );
 
