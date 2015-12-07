@@ -32,12 +32,14 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,7 +56,8 @@ public class KernelTransactionFactory
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
                 mock( RecordStateForCacheAccessor.class ),
-                null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
+                null, mock( NeoStore.class ), new NoOpLocks(),
+                new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( PersistenceCache.class ),
@@ -62,6 +65,7 @@ public class KernelTransactionFactory
                 mock( LegacyIndexTransactionState.class ),
                 mock(Pool.class),
                 Clock.SYSTEM_CLOCK,
-                TransactionTracer.NULL );
+                TransactionTracer.NULL,
+                mock( NeoStoreTransactionContext.class ) );
     }
 }

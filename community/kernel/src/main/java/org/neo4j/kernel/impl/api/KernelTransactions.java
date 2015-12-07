@@ -150,8 +150,6 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         public KernelTransactionImplementation newInstance()
         {
             NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
-            Locks.Client locksClient = locks.newClient();
-            context.bind( locksClient );
             TransactionRecordState recordState = new TransactionRecordState(
                     neoStore, integrityValidator, context );
             LegacyIndexTransactionState legacyIndexTransactionState =
@@ -161,9 +159,10 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, recordState, recordStateForCache, providerMap,
-                    neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
+                    neoStore, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
-                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer );
+                    legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer,
+                    context );
 
             allTransactions.add( tx );
 
@@ -224,9 +223,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     {
         for ( KernelTransactionImplementation tx : allTransactions )
         {
-            // we mark all transactions for termination since we want to make sure these transactions
-            // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
-            // certainly want to keep that from being reused from this point.
+            // We mark all transactions for termination since we want to be on the safe side here.
             tx.markForTermination();
         }
         localTxPool.disposeAll();
@@ -250,6 +247,4 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
             throw new DatabaseShutdownException();
         }
     }
-
-
 }
