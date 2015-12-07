@@ -97,6 +97,14 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <!-- This dependency is needed for Netty to be able to generate
+    self signed certificate on a JDK without sun.security.* package -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>

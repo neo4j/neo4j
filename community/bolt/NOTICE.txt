@@ -44,3 +44,7 @@ BSD License
   ASM Core
   Scala Compiler
 
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
