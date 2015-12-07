@@ -71,9 +71,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x =>
-              val res = execute("MERGE (a:Label {id:{id}})", "id" -> x)
-              println(res.executionPlanDescription())
+            x => execute("MERGE (a:Label {id:{id}})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e

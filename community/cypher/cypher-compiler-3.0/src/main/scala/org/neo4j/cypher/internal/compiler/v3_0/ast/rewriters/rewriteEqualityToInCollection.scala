@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 /*
 This class rewrites equality predicates into IN comparisons which can then be turned into
@@ -31,13 +30,15 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
   override def apply(that: AnyRef) = bottomUp(instance)(that)
 
-  // TODO: Consider removing this or introducing proper Seek ast nodes
-
   private val instance: Rewriter = Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
-      if func.function == Some(functions.Id) =>
+      if func.function.contains(functions.Id) =>
       In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
+
+    // Equality between two property lookups should not be rewritten
+    case predicate@Equals(_:Property, _:Property) =>
+      predicate
 
     // a.prop = value => a.prop IN [value]
     case predicate@Equals(prop@Property(id: Variable, propKeyName), idValueExpr) =>

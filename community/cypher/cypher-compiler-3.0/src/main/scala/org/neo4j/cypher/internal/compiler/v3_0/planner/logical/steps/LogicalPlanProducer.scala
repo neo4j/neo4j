@@ -213,6 +213,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     NodeHashJoin(nodes, left, right)(solved)
   }
 
+  def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals)(implicit context: LogicalPlanningContext) = {
+    val plannerQuery = left.solved ++ right.solved
+    val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
+    ValueHashJoin(left, right, join)(solved)
+  }
+
   def planNodeUniqueIndexSeek(idName: IdName,
                               label: ast.LabelToken,
                               propertyKey: ast.PropertyKeyToken,

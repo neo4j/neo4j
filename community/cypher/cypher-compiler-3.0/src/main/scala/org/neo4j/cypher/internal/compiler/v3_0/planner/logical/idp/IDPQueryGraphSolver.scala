@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IteratorSupport._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{planShortestPaths, applyOptional, outerHashJoin}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{applyOptional, outerHashJoin, planShortestPaths}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 import scala.annotation.tailrec
 
@@ -167,19 +166,6 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
   private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph)
     (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
 
-    def findBestCartesianProduct(plans: Set[LogicalPlan]): Set[LogicalPlan] = {
-
-      assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
-
-      val allCrossProducts = (for (p1 <- plans; p2 <- plans if p1 != p2) yield {
-        val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2), qg)
-        (crossProduct, (p1, p2))
-      }).toMap
-      val bestCartesian = kit.pickBest(allCrossProducts.keySet).get
-      val (p1, p2) = allCrossProducts(bestCartesian)
-
-      plans - p1 - p2 + bestCartesian
-    }
 
     @tailrec
     def recurse(plans: Set[LogicalPlan], optionalMatches: Seq[QueryGraph]): (Set[LogicalPlan], Seq[QueryGraph]) = {
@@ -196,11 +182,11 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
 
           case None =>
             // If we couldn't find any optional match we can take on, produce the best cartesian product possible
-            recurse(findBestCartesianProduct(plans), optionalMatches)
+            recurse(cartesianProductsOrValueJoins(plans, qg), optionalMatches)
         }
       } else if (plans.size > 1) {
 
-        recurse(findBestCartesianProduct(plans), optionalMatches)
+        recurse(cartesianProductsOrValueJoins(plans, qg), optionalMatches)
       } else (plans, optionalMatches)
     }
 

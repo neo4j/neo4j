@@ -112,6 +112,8 @@ abstract class LogicalPlan
     s"""$productPrefix($nonChildFields) $childrenText""".stripMargin
   }
 
+  def satisfiesExpressionDependencies(e: Expression) = e.dependencies.map(IdName.fromVariable).forall(availableSymbols.contains)
+
   private def indent(in: String) = {
     in.split("\n").map("  " + _).mkString("\n")
   }

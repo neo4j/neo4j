@@ -57,7 +57,6 @@ object CardinalityCostModel extends CostModel {
     => FAST_STORE
 
     case _: NodeHashJoin |
-
          _: Aggregation |
          _: AbstractLetSemiApply |
          _: Limit |
@@ -71,6 +70,7 @@ object CardinalityCostModel extends CostModel {
          _: SortedLimit |
          _: Union |
          _: Selection |
+         _: ValueHashJoin |
          _: UnwindCollection
     => CPU_BOUND
 
@@ -134,6 +134,7 @@ object CardinalityCostModel extends CostModel {
     def unapply(x: Any): Option[(LogicalPlan, LogicalPlan)] = x match {
       case NodeHashJoin(_, l, r) => Some(l -> r)
       case OuterHashJoin(_, l, r) => Some(l -> r)
+      case ValueHashJoin(l, r, _) => Some(l -> r)
       case _ => None
     }
   }

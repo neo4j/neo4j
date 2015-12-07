@@ -61,6 +61,11 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
       "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
   }
 
+  test("should not rewrite a comparison between two properties") {
+    shouldNotRewrite(
+      "MATCH (a), (b) WHERE a.prop = b.prop")
+  }
+
   private def shouldRewrite(from: String, to: String) {
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]
