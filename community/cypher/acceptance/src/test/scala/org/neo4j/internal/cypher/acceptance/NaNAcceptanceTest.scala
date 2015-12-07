@@ -176,6 +176,14 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppo
     shouldContainOnlyNullFor(result, "shouldBeNull")
   }
 
+  test("-inf + inf should not produce nan for float infinities") {
+    val query = "WITH {lhs} + {rhs} AS shouldBeNull RETURN shouldBeNull"
+
+    val result = executeWithAllPlanners(query, "lhs" -> Float.NegativeInfinity, "rhs" -> Float.PositiveInfinity)
+
+    shouldContainOnlyNullFor(result, "shouldBeNull")
+  }
+
   test("inf - inf should not produce nan") {
     val query = "WITH {lhs} - {rhs} AS shouldBeNull RETURN shouldBeNull"
 
@@ -219,12 +227,12 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppo
   test("1^-inf should not produce nan") {
     val query = "WITH 1^{inf} AS shouldBeNull RETURN shouldBeNull"
 
-    val result = executeWithAllPlanners(query, "inf" -> Double.NegativeInfinity)
+    val result = executeWithAllPlanners(query, "inf" -> Float.NegativeInfinity)
 
     shouldContainOnlyNullFor(result, "shouldBeNull")
   }
 
-  test("a parameter holding NaN should be filtered just as if it were null") {
+  test("a parameter holding double NaN should be filtered just as if it were null") {
     val query = "WITH {nan} AS shouldBeNull RETURN shouldBeNull"
 
     val result = executeWithAllPlanners(query, "nan" -> Double.NaN)
@@ -232,13 +240,126 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppo
     shouldContainOnlyNullFor(result, "shouldBeNull")
   }
 
-  test("a parameter holding NaN should be filtered just as if it were null for write query") {
+  test("a parameter holding float NaN should be filtered just as if it were null") {
+    val query = "WITH {nan} AS shouldBeNull RETURN shouldBeNull"
+
+    val result = executeWithAllPlanners(query, "nan" -> Float.NaN)
+
+    shouldContainOnlyNullFor(result, "shouldBeNull")
+  }
+
+  test("a parameter holding double NaN should be filtered just as if it were null for write query") {
     createNode()
     val query = "WITH {nan} AS shouldBeNull MATCH (n) SET n.prop = shouldBeNull RETURN n.prop"
 
     val result = executeWithAllPlanners(query, "nan" -> Double.NaN)
 
     shouldContainOnlyNullFor(result, "n.prop")
+  }
+
+  test("a parameter holding float NaN should be filtered just as if it were null for write query") {
+    createNode()
+    val query = "WITH {nan} AS shouldBeNull MATCH (n) SET n.prop = shouldBeNull RETURN n.prop"
+
+    val result = executeWithAllPlanners(query, "nan" -> Float.NaN)
+
+    shouldContainOnlyNullFor(result, "n.prop")
+  }
+
+  test("exists should return false for double nans") {
+    createLabeledNode(Map("prop" -> Double.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE exists(n.prop) RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe empty
+  }
+
+  test("exists should return false for double nans for relationships") {
+    relate(createNode(), createNode(), "REL", Map("prop" -> Double.NaN, "name" -> "Mats"))
+    val query = "MATCH ()-[r]->() WHERE exists(r.prop) RETURN r.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe empty
+  }
+
+  test("exists should return false for float nans") {
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE exists(n.prop) RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe empty
+  }
+
+  test("NOT exists should return true for float nans") {
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE NOT exists(n.prop) RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe List(Map("n.name" -> "Mats"))
+  }
+
+  test("IS NULL should return true for nans") {
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE n.prop IS NULL RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe List(Map("n.name" -> "Mats"))
+  }
+
+  test("IS NULL should return true for nans on relationships") {
+    relate(createNode(), createNode(), "REL", Map("prop" -> Float.NaN, "name" -> "Mats"))
+    val query = "MATCH ()-[r]->() WHERE r.prop IS NULL RETURN r.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe List(Map("r.name" -> "Mats"))
+  }
+
+  test("NOT IS NULL should return false for nans") {
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE NOT n.prop IS NULL RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe empty
+  }
+
+  test("IS NOT NULL should return false for nans") {
+    createLabeledNode(Map("prop" -> Double.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) WHERE n.prop IS NOT NULL RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList shouldBe empty
+  }
+
+  ignore("index scans should skip float nans") {
+    graph.createIndex("Label", "prop")
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) USING INDEX n:Label(prop) WHERE exists(n.prop) RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    println(result.executionPlanDescription())
+
+    result.toList shouldBe empty
+  }
+
+  ignore("index scans should skip double nans") {
+    graph.createIndex("Label", "prop")
+    createLabeledNode(Map("prop" -> Float.NaN, "name" -> "Mats"), "Label")
+    val query = "MATCH (n:Label) USING INDEX n:Label(prop) WHERE exists(n.prop) RETURN n.name"
+
+    val result = executeWithAllPlanners(query)
+
+    println(result.executionPlanDescription())
+
+    result.toList shouldBe empty
   }
 
   private def shouldContainOnlyNullFor(result: InternalExecutionResult, column: String) = {

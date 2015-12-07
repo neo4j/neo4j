@@ -31,6 +31,7 @@ trait TypeSafeMathSupport {
   protected def makeNaNNull(value: Any) = value match {
     case null => null
     case d: Double if java.lang.Double.isNaN(d) => null
+    case f: Float if java.lang.Double.isNaN(f) => null
     case other => other
   }
 
