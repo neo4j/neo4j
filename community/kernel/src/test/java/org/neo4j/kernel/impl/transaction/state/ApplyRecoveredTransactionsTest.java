@@ -61,12 +61,12 @@ public class ApplyRecoveredTransactionsTest
         long nodeId = neoStores.getNodeStore().nextId();
         long relationshipId = neoStores.getRelationshipStore().nextId();
         int type = 1;
-        applyExternalTransaction( 1,
+        applyExternalTransaction(
                 nodeCommand( node( nodeId ), inUse( created( node( nodeId ) ) ) ),
                 relationshipCommand( inUse( created( with( relationship( relationshipId ), nodeId, nodeId, type ) ) ) ) );
 
         // and when, later on, recovering a transaction deleting some of those
-        applyExternalTransaction( 2,
+        applyExternalTransaction(
                 nodeCommand( inUse( created( node( nodeId ) ) ), node( nodeId ) ),
                 relationshipCommand( relationship( relationshipId ) ) );
 
@@ -83,10 +83,10 @@ public class ApplyRecoveredTransactionsTest
         return relationship;
     }
 
-    private Command relationshipCommand( RelationshipRecord relationship )
+    private Command relationshipCommand( RelationshipRecord record )
     {
         RelationshipCommand command = new RelationshipCommand();
-        command.init( relationship );
+        command.init( null, record );
         return command;
     }
 
@@ -95,7 +95,7 @@ public class ApplyRecoveredTransactionsTest
         return new RelationshipRecord( relationshipId );
     }
 
-    private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
+    private void applyExternalTransaction( Command...commands ) throws Exception
     {
         NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
                 mock( CacheAccessBackDoor.class ), mock( LockService.class ) );

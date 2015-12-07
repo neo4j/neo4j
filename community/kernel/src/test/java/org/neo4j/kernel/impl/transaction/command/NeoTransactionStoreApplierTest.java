@@ -240,12 +240,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
@@ -259,12 +260,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
@@ -278,12 +280,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( true );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
