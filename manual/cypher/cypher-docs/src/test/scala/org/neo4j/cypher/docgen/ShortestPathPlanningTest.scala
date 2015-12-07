@@ -47,15 +47,15 @@ class ShortestPathPlanningTest extends DocumentingTest {
     )
     synopsis("Shortest path finding in Cypher and how it is planned")
     section("-=-=-=-=-=-=-=-") {
-      p( """Planning shortest paths in Cypher can lead to different query plans depending on the predicates that need
-        |to be evaluated. Internally, Neo4j will use a fast bidirectional breadth-first search algorithm if the
-        |predicates can be evaluated whilst searching for the path. If the predicates need to inspect the whole path
-        |before deciding on whether it is valid or not, this fast algorithm cannot be used, and Neo4j will fall back to
-        |a slower exhaustive search for the path. The difference between these two can be in the order of magnitude,
-        |so it is important to ensure that the fast approach is used for time critical queries.""")
-      p( """When the exhaustive search is planned, it is still only executed when the fast algorithm fails to find any
-           |matching paths. The fast algorithm is always executed first, since it is possible that it can find a valid
-           |path even though that could not be guaranteed at planning time.""")
+      p("""Planning shortest paths in Cypher can lead to different query plans depending on the predicates that need
+          |to be evaluated. Internally, Neo4j will use a fast bidirectional breadth-first search algorithm if the
+          |predicates can be evaluated whilst searching for the path. If the predicates need to inspect the whole path
+          |before deciding on whether it is valid or not, this fast algorithm cannot be used, and Neo4j will fall back to
+          |a slower exhaustive search for the path. The difference between these two can be in the order of magnitude,
+          |so it is important to ensure that the fast approach is used for time critical queries.""")
+      p("""When the exhaustive search is planned, it is still only executed when the fast algorithm fails to find any
+          |matching paths. The fast algorithm is always executed first, since it is possible that it can find a valid
+          |path even though that could not be guaranteed at planning time.""")
       query(
         """MATCH (martin:Person {name:"Martin Sheen"} ),
           |      (charlie:Person {name:"Charlie Sheen"}),
@@ -63,11 +63,13 @@ class ShortestPathPlanningTest extends DocumentingTest {
           |WHERE ALL(r in rels WHERE type(r) = "ACTED_IN")
           |RETURN p""", assertShortestPathLength) {
         p(
-          """This query can be evaluated with the fast algorithm - there are no predicates that need to see the whole path before being evaluated.""")
+          """This query can be evaluated with the fast algorithm - there are no predicates that need to see the whole
+            |path before being evaluated.""")
         profileExecutionPlan()
       }
       section("Single shortest path with predicates") {
-        p( """Predicates used in the WHERE clause that apply to the shortest path pattern are evaluated before deciding what the shortest matching path is. """)
+        p("""Predicates used in the WHERE clause that apply to the shortest path pattern are evaluated before deciding
+             |what the shortest matching path is. """)
         query(
           """MATCH (charlie:Person {name:"Charlie Sheen"}),
             |      (martin:Person {name:"Martin Sheen"}),
@@ -80,10 +82,10 @@ class ShortestPathPlanningTest extends DocumentingTest {
               |exhaustive search algorithm""")
           profileExecutionPlan()
         }
-        p( """The way the bigger exhaustive query plan works is by using +Apply+/+Optional+ to ensure that when the
-             |fast algorithm does not find any results, a null result is generated instead of simply stopping the result stream.
-             |On top of this, the planner will issue an +AntiCondiitionalApply+, which will run the exhaustive search
-             |if the path variable is pointing to null instead of a path.""")
+        p("""The way the bigger exhaustive query plan works is by using +Apply+/+Optional+ to ensure that when the
+            |fast algorithm does not find any results, a `null` result is generated instead of simply stopping the result stream.
+            |On top of this, the planner will issue an +AntiCondiitionalApply+, which will run the exhaustive search
+            |if the path variable is pointing to `null` instead of a path.""")
       }
     }
   }.build()

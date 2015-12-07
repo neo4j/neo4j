@@ -68,10 +68,10 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
                     }
 
                   case (queryText: String, placeHolder: ExecutionPlanPlaceHolder) =>
-                    explainSingleQuery(db, queryText, placeHolder, profile = false)
+                    executionPlanForSingleQuery(db, queryText, placeHolder, profile = false)
 
                   case (queryText: String, placeHolder: ProfileExecutionPlanPlaceHolder) =>
-                    explainSingleQuery(db, queryText, placeHolder, profile = true)
+                    executionPlanForSingleQuery(db, queryText, placeHolder, profile = true)
 
                   case _ =>
                     ???
@@ -132,7 +132,10 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
       QueryRunResult(queryText, content, formattedResult)
     }
 
-  private def explainSingleQuery(database: RestartableDatabase, queryText: String, placeHolder: QueryResultPlaceHolder, profile: Boolean) = {
+  private def executionPlanForSingleQuery(database: RestartableDatabase,
+                                          queryText: String,
+                                          placeHolder: QueryResultPlaceHolder,
+                                          profile: Boolean) = {
     val queryPrefix = if (profile) "PROFILE " else "EXPLAIN "
     val planString = Try(database.execute(queryPrefix + queryText)) match {
       case Success(inner) =>

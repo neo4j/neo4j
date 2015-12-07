@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{Assertions, Matchers}
 
 
@@ -79,8 +78,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
     if (!dir.exists())
       dir.mkdirs()
 
-    val s = s"$outputPathWithSeparator${doc.id}.adoc"
-    val file = new File(s)
+    val file = new File(s"$outputPathWithSeparator${doc.id}.adoc")
     val pw = new PrintWriter(file)
     pw.write(asciiDocTree)
     pw.close()
