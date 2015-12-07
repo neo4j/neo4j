@@ -33,9 +33,9 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
 sealed trait UpdateClause extends Clause
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
-  val name = "LOAD CSV"
+  override def name = "LOAD CSV"
 
-  def semanticCheck: SemanticCheck =
+  override def semanticCheck: SemanticCheck =
     urlString.semanticCheck(Expression.SemanticContext.Simple) chain
       urlString.expectType(CTString.covariant) chain
       checkFieldTerminator chain
@@ -60,15 +60,15 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
-  val name = "START"
+  override def name = "START"
 
-  def semanticCheck = items.semanticCheck chain where.semanticCheck
+  override def semanticCheck = items.semanticCheck chain where.semanticCheck
 }
 
 case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
-  def name = "MATCH"
+  override def name = "MATCH"
 
-  def semanticCheck =
+  override def semanticCheck =
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
       hints.semanticCheck chain
       uniqueHints chain
@@ -177,20 +177,20 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def applicable(other: Expression) = {
     other match {
       case _: Property => false
-      case f: FunctionInvocation => f.function != Some(functions.Id)
+      case f: FunctionInvocation => !f.function.contains(functions.Id)
       case _ => true
     }
   }
 
   private def containsLabelPredicate(variable: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), labels, _) if variable == id =>
-        list => list ++ labels.map(_.name)
+      case NodePattern(Some(Variable(id)), nodeLabels, _) if variable == id =>
+        list => list ++ nodeLabels.map(_.name)
     }
     labels = where match {
-      case Some(where) => where.treeFold(labels) {
-        case HasLabels(Variable(id), labels) if id == variable =>
-          (acc, _) => acc ++ labels.map(_.name)
+      case Some(innerWhere) => innerWhere.treeFold(labels) {
+        case HasLabels(Variable(id), predicateLabels) if id == variable =>
+          (acc, _) => acc ++ predicateLabels.map(_.name)
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
@@ -203,17 +203,25 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 }
 
 case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
-  def name = "MERGE"
+  override def name = "MERGE"
 
-  def semanticCheck =
+  override def semanticCheck =
     pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
-      actions.semanticCheck
+      actions.semanticCheck chain checkRelTypes
+
+  // Copied code from CREATE below
+  private def checkRelTypes: SemanticCheck  =
+    pattern.patternParts.foldSemanticCheck {
+      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+        SemanticError("A single relationship type must be specified for MERGE", rel.position)
+      case _ => SemanticCheckResult.success
+    }
 }
 
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
-  def name = "CREATE"
+  override def name = "CREATE"
 
-  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
+  override def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
 
   //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
   private def checkRelTypes: SemanticCheck  =
@@ -225,41 +233,41 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
-  def name = "CREATE UNIQUE"
+  override def name = "CREATE UNIQUE"
 
-  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.CreateUnique)
+  override def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.CreateUnique)
 }
 
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
-  def name = "SET"
+  override def name = "SET"
 
-  def semanticCheck = items.semanticCheck
+  override def semanticCheck = items.semanticCheck
 }
 
 case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: InputPosition) extends UpdateClause {
-  def name = "DELETE"
+  override def name = "DELETE"
 
-  def semanticCheck =
+  override def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) chain
       warnAboutDeletingLabels chain
       expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
 
-  def warnAboutDeletingLabels =
+  private def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
       e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
 }
 
 case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends UpdateClause {
-  def name = "REMOVE"
+  override def name = "REMOVE"
 
-  def semanticCheck = items.semanticCheck
+  override def semanticCheck = items.semanticCheck
 }
 
 case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
-  def name = "FOREACH"
+  override def name = "FOREACH"
 
-  def semanticCheck =
+  override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
       expression.expectType(CTCollection(CTAny).covariant) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
@@ -270,7 +278,7 @@ case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clau
 }
 
 case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
-  def name = "UNWIND"
+  override def name = "UNWIND"
 
   override def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Results) chain
@@ -281,7 +289,7 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
-  def semanticCheck = noteCurrentScope
+  override def semanticCheck = noteCurrentScope
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
@@ -296,7 +304,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     super.semanticCheck chain
       returnItems.semanticCheck
 
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
     val specialReturnItems = createSpecialReturnItems(previousScope, s)
     val specialStateForShuffle = specialReturnItems.declareVariables(previousScope)(s).state
     val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
@@ -329,13 +337,13 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
-  protected def checkSkip: SemanticState => Seq[SemanticError] =
+  private def checkSkip: SemanticState => Seq[SemanticError] =
     s => skip.semanticCheck(SemanticState.clean).errors
 
-  protected def checkLimit: SemanticState => Seq[SemanticError] =
+  private def checkLimit: SemanticState => Seq[SemanticError] =
     s => limit.semanticCheck(SemanticState.clean).errors
 
-  protected def ignoreErrors(inner: SemanticCheck): SemanticCheck =
+  private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
     s => SemanticCheckResult.success(inner.apply(s).state)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
@@ -354,7 +362,7 @@ case class With(
                  limit: Option[Limit],
                  where: Option[Where])(val position: InputPosition) extends ProjectionClause {
 
-  def name = "WITH"
+  override def name = "WITH"
 
   override def semanticCheck =
     super.semanticCheck chain
@@ -365,7 +373,7 @@ case class With(
       where.semanticCheck
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
-    case li: ReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
+    case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
 }
@@ -377,11 +385,11 @@ case class Return(
                    skip: Option[Skip],
                    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
 
-  def name = "RETURN"
+  override def name = "RETURN"
 
   override def semanticCheck = super.semanticCheck chain checkVariableScope
 
-  protected def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
+  private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
     if (returnItems.includeExisting && s.currentScope.isEmpty)
       Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
     else
@@ -389,9 +397,9 @@ case class Return(
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {
-  def name = "_PRAGMA WITHOUT"
+  override def name = "_PRAGMA WITHOUT"
   val excludedNames = excluded.map(_.name).toSet
 
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
     SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
 }
