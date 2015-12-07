@@ -237,6 +237,14 @@ public class PhysicalLogCommandReaderV3_0 extends CommandHandler.Adapter impleme
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
         long id = channel.getLong();
+        RelationshipGroupRecord before = readRelationshipGroupRecord( id );
+        RelationshipGroupRecord after = readRelationshipGroupRecord( id );
+        command.init( before, after );
+        return false;
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupRecord( long id ) throws IOException
+    {
         byte inUseByte = channel.get();
         boolean inUse = inUseByte == Record.IN_USE.byteValue();
         if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
@@ -251,8 +259,7 @@ public class PhysicalLogCommandReaderV3_0 extends CommandHandler.Adapter impleme
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-        command.init( record );
-        return false;
+        return record;
     }
 
     @Override

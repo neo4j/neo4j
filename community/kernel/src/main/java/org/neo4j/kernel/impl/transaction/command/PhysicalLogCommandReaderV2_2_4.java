@@ -260,7 +260,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-        command.init( record );
+        command.initForLegacyCommand( record );
         return false;
     }
 

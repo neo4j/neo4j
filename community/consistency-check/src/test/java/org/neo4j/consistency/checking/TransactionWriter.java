@@ -122,7 +122,7 @@ public class TransactionWriter
     public void create( RelationshipGroupRecord group )
     {
         group.setCreated();
-        update( group );
+        update( new RelationshipGroupRecord( group.getId(), group.getType() ), group );
     }
 
     public void update( NodeRecord before, NodeRecord node )
@@ -152,7 +152,7 @@ public class TransactionWriter
     public void delete( RelationshipGroupRecord group )
     {
         group.setInUse( false );
-        add( group );
+        add( group, new RelationshipGroupRecord( group.getId(), group.getType() ) );
     }
 
     public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord,
@@ -181,10 +181,10 @@ public class TransactionWriter
         add( before, after );
     }
 
-    public void update( RelationshipGroupRecord group )
+    public void update( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
-        group.setInUse( true );
-        add( group );
+        after.setInUse( true );
+        add( before, after );
     }
 
     public void delete( RelationshipRecord record )
@@ -244,10 +244,10 @@ public class TransactionWriter
         addCommand( command );
     }
 
-    public void add( RelationshipGroupRecord group )
+    public void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
         Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( group );
+        command.init( before, after );
         addCommand( command );
     }
 

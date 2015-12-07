@@ -224,7 +224,7 @@ public class PhysicalLogCommandReaderV1_9 implements CommandReader
             record.setFirstIn( channel.getLong() );
             record.setFirstLoop( channel.getLong() );
             record.setOwningNode( channel.getLong() );
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 

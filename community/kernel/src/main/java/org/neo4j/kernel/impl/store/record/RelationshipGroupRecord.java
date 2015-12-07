@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store.record;
 
 
+import java.util.Objects;
+
 public class RelationshipGroupRecord extends Abstract64BitRecord
 {
     private int type;
@@ -152,5 +154,37 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
                 .append( ",used=" + inUse() )
                 .append( ",owner=" + getOwningNode() )
                 .append( "]" ).toString();
+    }
+
+
+    @Override
+    public RelationshipGroupRecord clone()
+    {
+        return new RelationshipGroupRecord( getId(), type, firstOut, firstIn, firstLoop, owningNode, next, inUse() );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        if ( !super.equals( o ) )
+        { return false; }
+        RelationshipGroupRecord that = (RelationshipGroupRecord) o;
+        return type == that.type &&
+               next == that.next &&
+               firstOut == that.firstOut &&
+               firstIn == that.firstIn &&
+               firstLoop == that.firstLoop &&
+               owningNode == that.owningNode &&
+               prev == that.prev;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), type, next, firstOut, firstIn, firstLoop, owningNode, prev );
     }
 }

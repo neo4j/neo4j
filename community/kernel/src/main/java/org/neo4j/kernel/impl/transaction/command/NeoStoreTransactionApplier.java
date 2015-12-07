@@ -104,7 +104,7 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        neoStores.getRelationshipGroupStore().updateRecord( command.getRecord() );
+        neoStores.getRelationshipGroupStore().updateRecord( command.getAfter() );
         return false;
     }
 

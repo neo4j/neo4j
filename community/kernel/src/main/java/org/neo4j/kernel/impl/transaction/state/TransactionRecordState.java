@@ -196,7 +196,7 @@ public class TransactionRecordState implements RecordState
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
             Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-            command.init( change.forReadingData() );
+            command.init( change.getBefore(), change.forReadingData() );
             relGroupCommands.add( command );
         }
         Collections.sort( relGroupCommands, COMMAND_SORTER );
