@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0
+package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class ValueHashJoinIntegrationTest extends ExecutionEngineFunSuite {
+class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("find friends of others") {
     // given
     createLabeledNode(Map("id" -> 1), "A")
@@ -30,7 +30,7 @@ class ValueHashJoinIntegrationTest extends ExecutionEngineFunSuite {
     createLabeledNode(Map("id" -> 3), "B")
 
     // when
-    val result = execute("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
+    val result = executeWithAllPlanners("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
     result.toSet should equal(Set(Map("a" -> a, "b" -> b)))
@@ -48,7 +48,7 @@ class ValueHashJoinIntegrationTest extends ExecutionEngineFunSuite {
     }
 
     // when
-    val result = execute("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
+    val result = executeWithAllPlanners("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
     result.size should equal(11)

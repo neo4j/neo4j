@@ -31,7 +31,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val x = state
     if (input.isEmpty)
       return Iterator.empty
@@ -52,12 +52,11 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
         val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
         seq.map(context ++ _)
       }
-    //
     result.flatten
   }
 
 
-  def planDescriptionWithoutCardinality: InternalPlanDescription = {
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = {
     new PlanDescriptionImpl(
       id = id,
       name = "ValueHashJoin",
@@ -67,18 +66,18 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     )
   }
 
-  def symbols = left.symbols.add(right.symbols.variables)
+  override def symbols = left.symbols.add(right.symbols.variables)
 
   override val sources = Seq(left, right)
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (left :: right :: Nil) = sources
     copy(left = left, right = right)(estimatedCardinality)
   }
 
   override def localEffects = Effects()
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
     val table = new mutable.HashMap[Any, mutable.MutableList[ExecutionContext]]
