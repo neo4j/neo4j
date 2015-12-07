@@ -32,6 +32,7 @@ import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.URI;
+import static org.neo4j.kernel.configuration.Settings.basePath;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -60,6 +61,13 @@ public class ServerInternalSettings
             "org.neo4j.server.webserver.statistics", BOOLEAN, FALSE );
 
     // paths
+    /**
+     * Common base directory used for resolving relative config paths. By default, this is the processes working directory, but this setting can
+     * conveniently be overridden to point somewhere else, which can be very helpful for tests that don't want to create a bunch of Neo4j files
+     * in the current directory.
+     */
+    public static final Setting<File> neo4j_base_dir = setting("dbms.base_dir", PATH, "." );
+
     public static final Setting<URI> rest_api_path = setting( "org.neo4j.server.webadmin.data.uri",
             NORMALIZED_RELATIVE_URI, "/db/data" );
 
@@ -76,14 +84,15 @@ public class ServerInternalSettings
 
     public static final Setting<Long> startup_timeout = setting( "org.neo4j.server.startup_timeout", DURATION, "120s" );
 
-    public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
-
     public static final Setting<File> rrd_store = setting("org.neo4j.server.webadmin.rrdb.location", PATH, "data/rrd");
 
-    public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
+    public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db", basePath( neo4j_base_dir ) );
 
     public static final Setting<File> legacy_db_config = setting( "org.neo4j.server.db.tuning.properties", PATH,
             separator + "etc" + separator + "neo" + separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME);
+
+
+    public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth", basePath( neo4j_base_dir ));
 
     public static final Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );
 

@@ -41,10 +41,10 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder.toStringForThirdPartyPackageProperty;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_PORT_PROPERTY_KEY;
 import static org.neo4j.test.Digests.md5Hex;
 
@@ -177,7 +177,8 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( DATABASE_LOCATION_PROPERTY_KEY, serverFolder.getAbsolutePath() );
+        config.put( ServerInternalSettings.neo4j_base_dir.name(), serverFolder.getAbsolutePath() );
+        config.put( ServerInternalSettings.legacy_db_location.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 
