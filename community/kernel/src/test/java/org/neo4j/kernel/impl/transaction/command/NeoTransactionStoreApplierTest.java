@@ -240,12 +240,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
@@ -259,12 +260,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
@@ -278,12 +280,13 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final CommandHandler applier = newApplier( true );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
         // when
         boolean result = apply( applier, (handler,tx) -> {
-            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( record ) );
+            return handler.visitRelationshipCommand( new Command.RelationshipCommand().init( before, record ) );
         }, transactionToApply );
 
         // then
@@ -387,16 +390,17 @@ public class NeoTransactionStoreApplierTest
         // given
         final CommandHandler applier = newApplier( false );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
         final boolean result = apply( applier, (handler,tx) -> {
             return handler.visitRelationshipGroupCommand(
-                    new Command.RelationshipGroupCommand().init( record ) );
+                    new Command.RelationshipGroupCommand().init( before, after ) );
         }, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -405,18 +409,19 @@ public class NeoTransactionStoreApplierTest
         // given
         final CommandHandler applier = newApplier( true );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
 
         boolean result = apply( applier, (handler,tx) -> {
             return handler.visitRelationshipGroupCommand(
-                    new Command.RelationshipGroupCommand().init( record ) );
+                    new Command.RelationshipGroupCommand().init( before, after ) );
         }, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     // RELATIONSHIP TYPE TOKEN COMMAND

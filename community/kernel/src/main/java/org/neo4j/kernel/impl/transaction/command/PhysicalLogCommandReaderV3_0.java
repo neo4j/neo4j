@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter implements CommandReader
+public class PhysicalLogCommandReaderV3_0 extends CommandHandler.Adapter implements CommandReader
 {
     private ReadableLogChannel channel;
     private IndexCommandHeader indexCommandHeader;
@@ -114,15 +114,15 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         case NeoCommandType.INDEX_DEFINE_COMMAND:
             return new IndexDefineCommand();
         case NeoCommandType.INDEX_ADD_COMMAND:
-            return new IndexCommand.AddNodeCommand();
+            return new AddNodeCommand();
         case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
-            return new IndexCommand.AddRelationshipCommand();
+            return new AddRelationshipCommand();
         case NeoCommandType.INDEX_REMOVE_COMMAND:
-            return new IndexCommand.RemoveCommand();
+            return new RemoveCommand();
         case NeoCommandType.INDEX_DELETE_COMMAND:
-            return new IndexCommand.DeleteCommand();
+            return new DeleteCommand();
         case NeoCommandType.INDEX_CREATE_COMMAND:
-            return new IndexCommand.CreateCommand();
+            return new CreateCommand();
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
             return new RelationshipCountsCommand();
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
@@ -162,20 +162,24 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
     public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
     {
         long id = channel.getLong();
+
         NodeRecord before = readNodeRecord( id );
         if ( before == null )
         {
             return true;
         }
+
         NodeRecord after = readNodeRecord( id );
         if ( after == null )
         {
             return true;
         }
+
         if ( !before.inUse() && after.inUse() )
         {
             after.setCreated();
         }
+
         command.init( before, after );
         return false;
     }
@@ -184,40 +188,27 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
         long id = channel.getLong();
-        byte flags = channel.get();
-        boolean inUse = false;
-        if ( notFlag( notFlag( flags, Record.IN_USE.byteValue() ), Record.CREATED_IN_TX ) != 0 )
+
+
+        RelationshipRecord before = readRelationshipRecord( id );
+        if ( before == null )
         {
-            throw new IOException( "Illegal in use flag: " + flags );
+            return true;
         }
-        if ( bitFlag( flags, Record.IN_USE.byteValue() ) )
+
+        RelationshipRecord after = readRelationshipRecord( id );
+        if ( after == null )
         {
-            inUse = true;
+            return true;
         }
-        RelationshipRecord record;
-        if ( inUse )
+
+        if ( !before.inUse() && after.inUse() )
         {
-            record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
-            record.setInUse( true );
-            record.setFirstPrevRel( channel.getLong() );
-            record.setFirstNextRel( channel.getLong() );
-            record.setSecondPrevRel( channel.getLong() );
-            record.setSecondNextRel( channel.getLong() );
-            record.setNextProp( channel.getLong() );
-            byte extraByte = channel.get();
-            record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
-            record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
+            after.setCreated();
         }
-        else
-        {
-            record = new RelationshipRecord( id, -1, -1, channel.getInt() );
-            record.setInUse( false );
-        }
-        if ( bitFlag( flags, Record.CREATED_IN_TX ) )
-        {
-            record.setCreated();
-        }
-        command.initForLegacyCommand( record );
+
+
+        command.init( before, after );
         return false;
     }
 
@@ -246,6 +237,14 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
         long id = channel.getLong();
+        RelationshipGroupRecord before = readRelationshipGroupRecord( id );
+        RelationshipGroupRecord after = readRelationshipGroupRecord( id );
+        command.init( before, after );
+        return false;
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupRecord( long id ) throws IOException
+    {
         byte inUseByte = channel.get();
         boolean inUse = inUseByte == Record.IN_USE.byteValue();
         if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
@@ -260,8 +259,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-        command.initForLegacyCommand( record );
-        return false;
+        return record;
     }
 
     @Override
@@ -419,6 +417,45 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         record.setLabelField( labelField, dynamicLabelRecords );
 
         record.setInUse( inUse );
+        return record;
+    }
+
+    private RelationshipRecord readRelationshipRecord( long id ) throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = false;
+        if ( notFlag( notFlag( flags, Record.IN_USE.byteValue() ), Record.CREATED_IN_TX ) != 0 )
+        {
+            throw new IOException( "Illegal in use flag: " + flags );
+        }
+        if ( bitFlag( flags, Record.IN_USE.byteValue() ) )
+        {
+            inUse = true;
+        }
+        RelationshipRecord record;
+        if ( inUse )
+        {
+            record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
+            record.setInUse( true );
+            record.setFirstPrevRel( channel.getLong() );
+            record.setFirstNextRel( channel.getLong() );
+            record.setSecondPrevRel( channel.getLong() );
+            record.setSecondNextRel( channel.getLong() );
+            record.setNextProp( channel.getLong() );
+            byte extraByte = channel.get();
+            record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
+            record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
+        }
+        else
+        {
+            record = new RelationshipRecord( id, -1, -1, channel.getInt() );
+            record.setInUse( false );
+        }
+        if ( bitFlag( flags, Record.CREATED_IN_TX ) )
+        {
+            record.setCreated();
+        }
+
         return record;
     }
 

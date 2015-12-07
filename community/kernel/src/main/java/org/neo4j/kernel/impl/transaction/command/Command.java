@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
@@ -163,19 +162,26 @@ public abstract class Command
 
     public static class RelationshipCommand extends Command
     {
-        private RelationshipRecord record;
+        private RelationshipRecord before;
+        private RelationshipRecord after;
 
-        public RelationshipCommand init( RelationshipRecord record )
+        public RelationshipCommand initForLegacyCommand( RelationshipRecord record )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
+            return init( null, record );
+        }
+
+        public RelationshipCommand init( RelationshipRecord before, RelationshipRecord after )
+        {
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
             return this;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -184,27 +190,39 @@ public abstract class Command
             return handler.visitRelationshipCommand( this );
         }
 
-        public RelationshipRecord getRecord()
+        public RelationshipRecord getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public RelationshipRecord getAfter()
+        {
+            return after;
         }
     }
 
     public static class RelationshipGroupCommand extends Command
     {
-        private RelationshipGroupRecord record;
+        private RelationshipGroupRecord before;
+        private RelationshipGroupRecord after;
 
-        public RelationshipGroupCommand init( RelationshipGroupRecord record )
+        public RelationshipGroupCommand initForLegacyCommand( RelationshipGroupRecord record )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
+            return init( null, record );
+        }
+
+        public RelationshipGroupCommand init( RelationshipGroupRecord before, RelationshipGroupRecord after )
+        {
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
             return this;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -213,9 +231,14 @@ public abstract class Command
             return handler.visitRelationshipGroupCommand( this );
         }
 
-        public RelationshipGroupRecord getRecord()
+        public RelationshipGroupRecord getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public RelationshipGroupRecord getAfter()
+        {
+            return after;
         }
     }
 

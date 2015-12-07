@@ -198,7 +198,7 @@ public class PhysicalLogCommandReaderV2_0 implements CommandReader
                 record = new RelationshipRecord( id, -1, -1, -1 );
                 record.setInUse( false );
             }
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 
@@ -244,7 +244,7 @@ public class PhysicalLogCommandReaderV2_0 implements CommandReader
             record.setFirstIn( channel.getLong() );
             record.setFirstLoop( channel.getLong() );
             record.setOwningNode( channel.getLong() );
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 

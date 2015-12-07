@@ -274,7 +274,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
             {
                 record.setCreated();
             }
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 
@@ -317,7 +317,7 @@ public class PhysicalLogCommandReaderV2_1 implements CommandReader
             record.setFirstIn( channel.getLong() );
             record.setFirstLoop( channel.getLong() );
             record.setOwningNode( channel.getLong() );
-            command.init( record );
+            command.initForLegacyCommand( record );
             return false;
         }
 

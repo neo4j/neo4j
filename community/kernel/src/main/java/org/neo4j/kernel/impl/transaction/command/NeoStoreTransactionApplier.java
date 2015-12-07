@@ -26,11 +26,9 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -71,9 +69,7 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
         // update store
-        NodeStore nodeStore = neoStores.getNodeStore();
-        nodeStore.updateRecord( command.getAfter() );
-
+        neoStores.getNodeStore().updateRecord( command.getAfter() );
         return false;
     }
 
@@ -82,8 +78,7 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     {
         lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
-        RelationshipRecord record = command.getRecord();
-        neoStores.getRelationshipStore().updateRecord( record );
+        neoStores.getRelationshipStore().updateRecord( command.getAfter() );
         return false;
     }
 
@@ -109,7 +104,7 @@ public class NeoStoreTransactionApplier extends CommandHandler.Adapter
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        neoStores.getRelationshipGroupStore().updateRecord( command.getRecord() );
+        neoStores.getRelationshipGroupStore().updateRecord( command.getAfter() );
         return false;
     }
 

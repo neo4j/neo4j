@@ -122,7 +122,7 @@ public class TransactionWriter
     public void create( RelationshipGroupRecord group )
     {
         group.setCreated();
-        update( group );
+        update( new RelationshipGroupRecord( group.getId(), group.getType() ), group );
     }
 
     public void update( NodeRecord before, NodeRecord node )
@@ -143,16 +143,16 @@ public class TransactionWriter
         add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
-    public void create( RelationshipRecord relationship )
+    public void create(  RelationshipRecord record  )
     {
-        relationship.setCreated();
-        update( relationship );
+        record.setCreated();
+        update( new RelationshipRecord( record.getId() ), record );
     }
 
     public void delete( RelationshipGroupRecord group )
     {
         group.setInUse( false );
-        add( group );
+        add( group, new RelationshipGroupRecord( group.getId(), group.getType() ) );
     }
 
     public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord,
@@ -175,22 +175,22 @@ public class TransactionWriter
         addSchema( beforeRecords, afterRecords, rule );
     }
 
-    public void update( RelationshipRecord relationship )
+    public void update( RelationshipRecord before, RelationshipRecord after )
     {
-        relationship.setInUse( true );
-        add( relationship );
+        after.setInUse( true );
+        add( before, after );
     }
 
-    public void update( RelationshipGroupRecord group )
+    public void update( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
-        group.setInUse( true );
-        add( group );
+        after.setInUse( true );
+        add( before, after );
     }
 
-    public void delete( RelationshipRecord relationship )
+    public void delete(  RelationshipRecord record  )
     {
-        relationship.setInUse( false );
-        add( relationship );
+        record.setInUse( false );
+        add( record, new RelationshipRecord( record.getId() ) );
     }
 
     public void create( PropertyRecord property )
@@ -233,21 +233,21 @@ public class TransactionWriter
     public void add( NodeRecord before, NodeRecord after )
     {
         Command.NodeCommand command = new Command.NodeCommand();
-        command.init(  before, after );
+        command.init( before, after );
         addCommand( command );
     }
 
-    public void add( RelationshipRecord relationship )
+    public void add( RelationshipRecord before, RelationshipRecord after )
     {
         Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( relationship );
+        command.init( before, after );
         addCommand( command );
     }
 
-    public void add( RelationshipGroupRecord group )
+    public void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
         Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( group );
+        command.init( before, after );
         addCommand( command );
     }
 

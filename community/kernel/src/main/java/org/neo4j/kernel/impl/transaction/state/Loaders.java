@@ -145,9 +145,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone(RelationshipRecord relationshipRecord) {
-                // Not needed because we don't manage before state for relationship records.
-                throw new UnsupportedOperationException("Unexpected call to clone on a relationshipRecord");
+            public RelationshipRecord clone(RelationshipRecord relationshipRecord)
+            {
+                return relationshipRecord.clone();
             }
         };
     }
@@ -177,7 +177,7 @@ public class Loaders
             @Override
             public RelationshipGroupRecord clone( RelationshipGroupRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
