@@ -69,7 +69,7 @@ public class DatabaseHealthTest
         // THEN
         logProvider.assertAtLeastOnce(
                 inLog( DatabaseHealth.class ).error(
-                        is("Database panic: Kernel has encountered some problem, please perform necessary action (tx recovery/restart)" ),
+                        is("Database panic: Database has encountered some problem, please perform necessary action (tx recovery/restart)" ),
                         sameInstance( exception )
                 )
         );
