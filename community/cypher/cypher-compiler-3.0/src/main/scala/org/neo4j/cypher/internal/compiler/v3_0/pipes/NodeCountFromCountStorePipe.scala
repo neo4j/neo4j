@@ -32,14 +32,13 @@ case class NodeCountFromCountStorePipe(ident: String, label: Option[LazyLabel])(
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelId: Int = label match {
+    val count = label match {
       case Some(lazyLabel) => lazyLabel.id(state.query) match {
-        case Some(idOfLabel) => idOfLabel
-        case _ => throw new IllegalArgumentException("Cannot find id for label: " + lazyLabel)
+        case Some(idOfLabel) => state.query.nodeCountByCountStore(idOfLabel)
+        case _ => 0
       }
-      case _ => NameId.WILDCARD
+      case _ => state.query.nodeCountByCountStore(NameId.WILDCARD)
     }
-    val count = state.query.nodeCountByCountStore(labelId)
     Seq(baseContext.newWith1(ident, count)).iterator
   }
 

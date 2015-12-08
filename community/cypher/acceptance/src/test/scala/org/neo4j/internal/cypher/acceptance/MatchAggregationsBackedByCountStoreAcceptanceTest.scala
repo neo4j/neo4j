@@ -62,7 +62,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n) > 0").toSet[Boolean] should equal(Set(true))
 
-      })
+      }, expectedResultOnEmptyDatabase = Set(false))
   }
 
   test("counts nodes using count store and projection expression with variable") {
@@ -323,7 +323,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(n) > 1").toSet[Boolean] should equal(Set(true))
 
-      })
+      },
+      expectedResultOnEmptyDatabase = Set(false))
   }
 
   test("counts nodes using count store and projection expression with variable considering transaction state") {
@@ -388,7 +389,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.columnAs("count(r) > 2").toSet[Boolean] should equal(Set(true))
 
-      })
+      },
+      expectedResultOnEmptyDatabase = Set(false))
   }
 
   test("counts relationships using count store and projection with expression and variable considering transaction state") {
@@ -419,7 +421,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
         // Then
         result.toList should equal(List(Map("userKnows" -> 2, "otherKnows" -> 1)))
 
-      })
+      },
+      expectedResultOnEmptyDatabase = Set.empty)
   }
 
 //  MATCH (n:X)-[r:Y]->() WITH count(r) as rcount MATCH (n)-[r:Y]->() WHERE count(r) = rcount RETURN rcount, labels(n)
@@ -544,8 +547,11 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 label2: String = "User",
                 type1: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
-                query: String, f: InternalExecutionResult => Unit): Unit = {
-    updateWithBothPlanners(
+                query: String, f: InternalExecutionResult => Unit,
+                expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+
+    innerExecute(
       s"""
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
@@ -555,6 +561,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     val result: InternalExecutionResult = executeWithAllPlanners(query)
     result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     f(result)
+
+    deleteAllEntities()
+
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+  }
+
+  private def verifyOnEmptyDatabase(expectedLogicalPlan: String, query: String,
+                                   expectedResult: Set[Any]): Unit = {
+    val resultOnEmptyDb: InternalExecutionResult = executeWithAllPlanners(query)
+    resultOnEmptyDb.executionPlanDescription() should includeOperation(expectedLogicalPlan)
+    withClue("should return a count of 0 on an empty database") {
+      resultOnEmptyDb.columnAs(resultOnEmptyDb.columns.head).toSet[Int] should equal(expectedResult)
+    }
   }
 
   def withRelationshipsModel(label1: String = "User",
@@ -572,8 +591,11 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                 type2: String = "KNOWS",
                 type3: String = "KNOWS",
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
-                query: String, f: InternalExecutionResult => Unit): Unit = {
-    updateWithBothPlanners(
+                query: String, f: InternalExecutionResult => Unit,
+                expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
+
+    innerExecute(
       s"""
          |CREATE (m:X {name: 'Mats'})
          |CREATE (p:$label1 {name: 'Petra'})
@@ -596,6 +618,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
       result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
       f(result)
     }
+
+    deleteAllEntities()
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase)
   }
 
   def withRelationshipsModelAndTransaction(label1: String = "User",
@@ -605,8 +630,10 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
                         type2: String = "KNOWS",
                         type3: String = "KNOWS",
                         expectedLogicalPlan: String = "RelationshipCountFromCountStore",
-                        query: String, f: InternalExecutionResult => Unit): Unit = {
-    withModelAndTransaction(label1, label2, label3, type1, type2, type3, expectedLogicalPlan, query, f)
+                        query: String, f: InternalExecutionResult => Unit,
+                        expectedResultOnEmptyDatabase: Set[Any] = Set(0)): Unit = {
+    withModelAndTransaction(label1, label2, label3, type1, type2, type3,
+                            expectedLogicalPlan, query, f, expectedResultOnEmptyDatabase)
   }
 
   case class includeOperation(operationName: String) extends Matcher[InternalPlanDescription] {
