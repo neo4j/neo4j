@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 
 /**
  * Constructors for basic {@link Predicate} types
- * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public class Predicates
 {
@@ -96,16 +95,6 @@ public class Predicates
             }
             return false;
         };
-    }
-
-    public static <T> Predicate<T> not( final Predicate<T> other )
-    {
-        return item -> !other.test( item );
-    }
-
-    public static <T> Predicate<T> equalTo( final T other )
-    {
-        return item -> other == null ? item == null : other.equals( item );
     }
 
     public static <T> Predicate<T> instanceOf( final Class clazz )

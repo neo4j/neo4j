@@ -32,7 +32,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 
 import static org.neo4j.function.Predicates.any;
-import static org.neo4j.function.Predicates.not;
 
 /**
  * Neo4j transaction template that automates the retry-on-exception logic. It uses the builder
@@ -84,9 +83,9 @@ public class TransactionTemplate
 
     public TransactionTemplate()
     {
-        this( null, new Monitor.Adapter(), 0, 0, not( any(
+        this( null, new Monitor.Adapter(), 0, 0, any(
                 Predicates.<Throwable>instanceOf( Error.class ),
-                Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ) ) );
+                Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ).negate() );
     }
 
     public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,

@@ -246,7 +246,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      */
     public RESTDocsGenerator expectedHeader( final String expectedHeaderField, String expectedValue )
     {
-        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicates.equalTo( expectedValue )) );
+        this.expectedHeaderFields.add( Pair.of(expectedHeaderField, Predicate.isEqual( expectedValue )) );
         return this;
     }
 

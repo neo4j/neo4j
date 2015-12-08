@@ -58,14 +58,11 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
-import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -156,7 +153,7 @@ public class ClusterTopologyChangesIT
         assertTrue( slave2Left.await( 60, SECONDS ) );
 
         // master loses quorum and goes to PENDING, cluster is unavailable
-        cluster.await( not( masterAvailable() ) );
+        cluster.await( masterAvailable().negate() );
         assertEquals( HighAvailabilityMemberState.PENDING, master.getInstanceState() );
 
         // WHEN: both slaves are repaired, majority restored, quorum can be achieved

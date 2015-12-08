@@ -44,7 +44,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.function.Predicates.in;
-import static org.neo4j.function.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
@@ -375,7 +374,7 @@ class ClusterContextImpl
     @Override
     public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
     {
-        return Iterables.filter( not( in( me ) ), commonState.configuration().getMemberIds() );
+        return Iterables.filter( in( me ).negate(), commonState.configuration().getMemberIds() );
     }
 
     /** Used to ensure that no other instance is trying to join with the same id from a different machine */

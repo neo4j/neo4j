@@ -56,7 +56,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.function.Predicates.in;
-import static org.neo4j.function.Predicates.not;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
@@ -213,7 +212,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                                                   final MemberIsAvailable newMessage )
         {
             return Iterables.append( newMessage, Iterables.filter( item -> {
-                return not( in( newMessage.getInstanceId() ) ).test( item.getInstanceId() );
+                return in( newMessage.getInstanceId() ).negate().test( item.getInstanceId() );
             }, previousSnapshot ) );
         }
     }
