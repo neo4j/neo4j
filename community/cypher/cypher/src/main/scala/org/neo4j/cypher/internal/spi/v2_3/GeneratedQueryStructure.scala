@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import java.util
+import java.util.function.Supplier
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGeneratorOption._
@@ -42,7 +43,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, CypherExecutionException, ParameterNotFoundException, symbols}
-import org.neo4j.function.Supplier
 import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.MapUtil

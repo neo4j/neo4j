@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
@@ -69,6 +68,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 

@@ -25,8 +25,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.PropertyStore;

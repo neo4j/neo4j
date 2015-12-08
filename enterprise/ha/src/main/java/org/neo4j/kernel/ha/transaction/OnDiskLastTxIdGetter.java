@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;

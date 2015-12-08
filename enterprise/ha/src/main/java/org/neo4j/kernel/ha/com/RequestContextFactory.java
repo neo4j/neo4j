@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.ha.com;
 
+import java.util.function.Supplier;
+
 import org.neo4j.com.RequestContext;
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

@@ -19,22 +19,22 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.function.Supplier;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,14 +50,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -102,13 +101,12 @@ public class CoreServerReplicationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
-                assertEventually( "node to appear on core server " + config.get( CoreEdgeClusterSettings
-                        .raft_advertised_address ), nodeCount,
-                        greaterThan( 0L ), 15, SECONDS );
+                assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
+                        greaterThan(  0L ), 15, SECONDS );
 
                 for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
                 {
@@ -155,7 +153,7 @@ public class CoreServerReplicationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
@@ -187,7 +185,7 @@ public class CoreServerReplicationIT
 
         cluster.removeCoreServer( leader );
         final GraphDatabaseService newLeader = cluster.findLeader( 5000 );
-        Supplier<Boolean> creationSuccess = () -> {
+        ThrowingSupplier<Boolean, Exception> creationSuccess = () -> {
             try ( Transaction tx = newLeader.beginTx() )
             {
                 Node node = newLeader.createNode();
@@ -210,7 +208,7 @@ public class CoreServerReplicationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
@@ -255,7 +253,7 @@ public class CoreServerReplicationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
 
@@ -313,7 +311,7 @@ public class CoreServerReplicationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );
 
                 Config config = db.getDependencyResolver().resolveDependency( Config.class );
                 assertEventually( "node to appear on core server " +

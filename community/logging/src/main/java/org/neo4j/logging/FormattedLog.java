@@ -29,10 +29,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 
 /**
@@ -40,14 +40,7 @@ import org.neo4j.function.Suppliers;
  */
 public class FormattedLog extends AbstractLog
 {
-    static final Supplier<Date> DEFAULT_CURRENT_DATE_SUPPLIER = new Supplier<Date>()
-    {
-        @Override
-        public Date get()
-        {
-            return new Date();
-        }
-    };
+    static final Supplier<Date> DEFAULT_CURRENT_DATE_SUPPLIER = Date::new;
     static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER = new Function<OutputStream, PrintWriter>()
     {
         @Override

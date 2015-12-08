@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Constructors for basic {@link Predicate} types
@@ -221,12 +223,12 @@ public class Predicates
     }
 
 
-    public static void awaitForever( Supplier<Boolean> condition, long checkInterval, TimeUnit unit ) throws InterruptedException
+    public static void awaitForever( BooleanSupplier condition, long checkInterval, TimeUnit unit ) throws InterruptedException
     {
         long sleep = unit.toMillis( checkInterval );
         do
         {
-            if ( condition.get() )
+            if ( condition.getAsBoolean() )
             {
                 return;
             }

@@ -22,11 +22,12 @@ package org.neo4j.coreedge.catchup.tx.core;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.coreedge.catchup.ResponseMessageType;
+import java.util.function.Supplier;
+
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;

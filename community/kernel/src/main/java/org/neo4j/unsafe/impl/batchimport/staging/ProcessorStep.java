@@ -22,15 +22,12 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.LongPredicate;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
-import org.neo4j.unsafe.impl.batchimport.executor.Task;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
@@ -81,14 +78,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         super.start( orderingGuarantees );
         this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
-                DEFAULT_PARK_STRATEGY, name(), new Supplier<Sender>()
-                {
-                    @Override
-                    public ProcessorStep<T>.Sender get()
-                    {
-                        return new Sender();
-                    }
-                } );
+                DEFAULT_PARK_STRATEGY, name(), () -> new Sender() );
     }
 
     @Override
@@ -98,42 +88,37 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         long idleTime = await( catchUp, workAheadSize );
         incrementQueue();
 
-        executor.submit( new Task<Sender>()
-        {
-            @Override
-            public void run( Sender sender )
+        executor.submit( sender -> {
+            assertHealthy();
+            sender.initialize( ticket );
+            try
             {
-                assertHealthy();
-                sender.initialize( ticket );
-                try
+                // If we're ordering tickets we will force calls to #permit to be ordered by ticket
+                // since grabbing a permit may include locking.
+                if ( guarantees( ORDER_PROCESS ) )
                 {
-                    // If we're ordering tickets we will force calls to #permit to be ordered by ticket
-                    // since grabbing a permit may include locking.
-                    if ( guarantees( ORDER_PROCESS ) )
+                    await( rightBeginTicket, ticket );
+                }
+                try ( Resource precondition = permit( batch ) )
+                {
+                    begunBatches.incrementAndGet();
+                    long startTime1 = currentTimeMillis();
+                    process( batch, sender );
+                    if ( downstream == null )
                     {
-                        await( rightBeginTicket, ticket );
+                        // No batches were emmitted so we couldn't track done batches in that way.
+                        // We can see that we're the last step so increment here instead
+                        doneBatches.incrementAndGet();
                     }
-                    try ( Resource precondition = permit( batch ) )
-                    {
-                        begunBatches.incrementAndGet();
-                        long startTime = currentTimeMillis();
-                        process( batch, sender );
-                        if ( downstream == null )
-                        {
-                            // No batches were emmitted so we couldn't track done batches in that way.
-                            // We can see that we're the last step so increment here instead
-                            doneBatches.incrementAndGet();
-                        }
-                        totalProcessingTime.add( currentTimeMillis()-startTime-sender.sendTime );
-                    }
+                    totalProcessingTime.add( currentTimeMillis() - startTime1 - sender.sendTime );
+                }
 
-                    decrementQueue();
-                    checkNotifyEndDownstream();
-                }
-                catch ( Throwable e )
-                {
-                    issuePanic( e );
-                }
+                decrementQueue();
+                checkNotifyEndDownstream();
+            }
+            catch ( Throwable e )
+            {
+                issuePanic( e );
             }
         } );
 

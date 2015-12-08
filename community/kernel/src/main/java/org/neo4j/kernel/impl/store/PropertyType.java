@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
-import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -193,14 +192,7 @@ public enum PropertyType
         public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block,
                                              final Supplier<PropertyStore> store )
         {
-            return Property.lazyStringProperty(propertyKeyId, new Callable<String>()
-            {
-                @Override
-                public String call() throws Exception
-                {
-                    return getValue( block, store.get() );
-                }
-            });
+            return Property.lazyStringProperty(propertyKeyId, () -> getValue( block, store.get() ) );
         }
 
         @Override
@@ -224,14 +216,7 @@ public enum PropertyType
         @Override
         public DefinedProperty readProperty( int propertyKeyId, final PropertyBlock block, final Supplier<PropertyStore> store )
         {
-            return Property.lazyArrayProperty(propertyKeyId, new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return getValue( block, store.get() );
-                }
-            });
+            return Property.lazyArrayProperty(propertyKeyId, () -> getValue( block, store.get() ) );
         }
 
         @Override

@@ -19,21 +19,21 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.stream.ChunkedNioStream;
 
-import org.neo4j.coreedge.catchup.ResponseMessageType;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.function.Supplier;
+
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
-import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
+import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.storecopy.FileHeader;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
-import org.neo4j.function.Supplier;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;

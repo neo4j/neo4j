@@ -20,8 +20,8 @@
 package org.neo4j.legacy.consistency;
 
 import java.io.PrintWriter;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.logging.AbstractPrintWriterLogger;
 import org.neo4j.logging.Logger;

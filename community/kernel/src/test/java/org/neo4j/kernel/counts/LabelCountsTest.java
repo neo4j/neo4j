@@ -23,7 +23,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -35,7 +36,6 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.Label.label;
 
 public class LabelCountsTest

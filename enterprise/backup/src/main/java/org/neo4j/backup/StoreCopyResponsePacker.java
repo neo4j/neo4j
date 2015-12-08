@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.util.function.Supplier;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -27,7 +29,6 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreCopyServer.Monitor;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -67,18 +68,13 @@ public class StoreCopyResponsePacker extends ResponsePacker
     {
         final long toStartFrom = mandatoryStartTransactionId;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
-        TransactionStream transactions = new TransactionStream()
-        {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+        TransactionStream transactions = visitor -> {
+            // Check so that it's even worth thinking about extracting any transactions at all
+            if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {
-                // Check so that it's even worth thinking about extracting any transactions at all
-                if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
-                {
-                    monitor.startStreamingTransactions( toStartFrom );
-                    extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
-                    monitor.finishStreamingTransactions( toEndAt );
-                }
+                monitor.startStreamingTransactions( toStartFrom );
+                extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
+                monitor.finishStreamingTransactions( toEndAt );
             }
         };
         return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );

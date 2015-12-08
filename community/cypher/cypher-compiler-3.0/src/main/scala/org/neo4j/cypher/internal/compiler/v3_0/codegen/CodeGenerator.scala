@@ -21,20 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen
 
 import java.lang.Boolean.getBoolean
 import java.util
+import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeGenerator.SourceSink
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.function.Supplier
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.NodeManager

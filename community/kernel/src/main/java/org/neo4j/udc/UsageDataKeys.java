@@ -19,8 +19,9 @@
  */
 package org.neo4j.udc;
 
+import java.util.function.Supplier;
+
 import org.neo4j.concurrent.RecentK;
-import org.neo4j.function.Supplier;
 
 import static org.neo4j.udc.UsageDataKey.key;
 
@@ -44,14 +45,8 @@ public class UsageDataKeys
     public static final UsageDataKey<OperationalMode> operationalMode = key( "neo4j.opMode", OperationalMode.unknown );
 
     /** Self-reported names of clients connecting to us. */
-    public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames", new Supplier<RecentK<String>>()
-    {
-        @Override
-        public RecentK<String> get()
-        {
-            return new RecentK<>( 10 );
-        }
-    } );
+    public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames",
+            (Supplier<RecentK<String>>) () -> new RecentK<>( 10 ) );
 
     /** Cluster server ID */
     public static final UsageDataKey<String> serverId = key( "neo4j.serverId" );

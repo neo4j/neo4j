@@ -22,8 +22,9 @@ package org.neo4j.concurrencytest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.function.Supplier;
+
 import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;

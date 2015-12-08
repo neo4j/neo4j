@@ -19,13 +19,14 @@
  */
 package org.neo4j.com.storecopy;
 
+import java.util.function.Supplier;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -53,16 +54,11 @@ public class ResponsePacker
     {
         final long toStartFrom = context.lastAppliedTransaction() + 1;
         final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
-        TransactionStream transactions = new TransactionStream()
-        {
-            @Override
-            public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
+        TransactionStream transactions = visitor -> {
+            // Check so that it's even worth thinking about extracting any transactions at all
+            if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
             {
-                // Check so that it's even worth thinking about extracting any transactions at all
-                if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
-                {
-                    extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
-                }
+                extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
             }
         };
         return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );
@@ -90,17 +86,12 @@ public class ResponsePacker
     protected Visitor<CommittedTransactionRepresentation,Exception> filterVisitor(
             final Visitor<CommittedTransactionRepresentation,Exception> delegate, final long txToEndAt )
     {
-        return new Visitor<CommittedTransactionRepresentation,Exception>()
-        {
-            @Override
-            public boolean visit( CommittedTransactionRepresentation element ) throws Exception
+        return element -> {
+            if ( element.getCommitEntry().getTxId() > txToEndAt )
             {
-                if ( element.getCommitEntry().getTxId() > txToEndAt )
-                {
-                    return false;
-                }
-                return delegate.visit( element );
+                return false;
             }
+            return delegate.visit( element );
         };
     }
 

@@ -19,12 +19,12 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Supplier;
-
 import java.io.PrintWriter;
+import java.util.function.Supplier;
 
-import static java.util.Objects.*;
+import org.neo4j.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * An abstract {@link Logger} implementation, which takes care of locking and flushing.

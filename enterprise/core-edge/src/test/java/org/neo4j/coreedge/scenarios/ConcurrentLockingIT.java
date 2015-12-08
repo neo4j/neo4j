@@ -19,6 +19,11 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,27 +35,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.raft.NoLeaderTimeoutException;
-import org.neo4j.function.Supplier;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.Assert.assertEventually;
 
@@ -157,7 +153,7 @@ public class ConcurrentLockingIT
         executor.awaitTermination( durationMillis + 5_000, TimeUnit.MILLISECONDS );
     }
 
-    public void createNodes( long nodeCount ) throws NoLeaderTimeoutException
+    public void createNodes( long nodeCount ) throws Exception
     {
         GraphDatabaseService coreServer = cluster.findLeader( 5000 );
         try ( Transaction tx = coreServer.beginTx() )
@@ -173,7 +169,7 @@ public class ConcurrentLockingIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Supplier<Long> actualNodeCount = () -> count( GlobalGraphOperations.at( db ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> actualNodeCount = () -> count( db.getAllNodes() );
 
                 assertEventually( "nodes to appear", actualNodeCount, is( nodeCount ), 10, SECONDS );
                 tx.success();

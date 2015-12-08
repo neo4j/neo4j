@@ -25,6 +25,7 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -48,7 +49,6 @@ import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -231,14 +231,7 @@ public class HighlyAvailableEditionModule
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
                         new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStores.class ) ),
-                        new HighAvailabilityMemberInfoProvider()
-                        {
-                            @Override
-                            public HighAvailabilityMemberState getHighAvailabilityMemberState()
-                            {
-                                return electionProviderRef.get().getCurrentState();
-                            }
-                        }
+                        () -> electionProviderRef.get().getCurrentState()
                 );
 
 
@@ -340,14 +333,7 @@ public class HighlyAvailableEditionModule
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
-        InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
-        {
-            @Override
-            public void handle()
-            {
-                exceptionHandlerRef.get().forceElections();
-            }
-        };
+        InvalidEpochExceptionHandler invalidEpochHandler = () -> exceptionHandlerRef.get().forceElections();
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
@@ -395,12 +381,8 @@ public class HighlyAvailableEditionModule
                 slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                 monitors, platformModule.transactionMonitor );
 
-        final Factory<MasterImpl.SPI> masterSPIFactory = new Factory<MasterImpl.SPI>()
-        {
-            @Override
-            public MasterImpl.SPI newInstance()
-            {
-                return new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
+        final Factory<MasterImpl.SPI> masterSPIFactory =
+                () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
                         labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
@@ -408,26 +390,11 @@ public class HighlyAvailableEditionModule
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ));
-            }
-        };
 
-        final Factory<ConversationSPI> conversationSPIFactory = new Factory<ConversationSPI>()
-        {
-            @Override
-            public ConversationSPI newInstance()
-            {
-                return new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
-            }
-        };
-        Factory<ConversationManager> conversationManagerFactory = new Factory<ConversationManager>()
-
-        {
-            @Override
-            public ConversationManager newInstance()
-            {
-                return new ConversationManager( conversationSPIFactory.newInstance(), config );
-            }
-        };
+        final Factory<ConversationSPI> conversationSPIFactory =
+                () -> new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
+        Factory<ConversationManager> conversationManagerFactory =
+                () -> new ConversationManager( conversationSPIFactory.newInstance(), config );
 
         BiFunction<ConversationManager, LifeSupport, Master> masterFactory = new BiFunction<ConversationManager, LifeSupport, Master>()
         {
@@ -515,19 +482,14 @@ public class HighlyAvailableEditionModule
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
-        schemaWriteGuard = new SchemaWriteGuard()
-        {
-            @Override
-            public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
+        schemaWriteGuard = () -> {
+            if ( !memberStateMachine.isMaster() )
             {
-                if ( !memberStateMachine.isMaster() )
-                {
-                    throw new InvalidTransactionTypeKernelException(
-                            "Modifying the database schema can only be done on the master server, " +
-                                    "this server is a slave. Please issue schema modification commands directly to " +
-                                    "the master."
-                    );
-                }
+                throw new InvalidTransactionTypeKernelException(
+                        "Modifying the database schema can only be done on the master server, " +
+                                "this server is a slave. Please issue schema modification commands directly to " +
+                                "the master."
+                );
             }
         };
 

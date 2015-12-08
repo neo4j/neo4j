@@ -19,7 +19,7 @@
  */
 package org.neo4j.cursor;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 /**
  * A cursor is an object that moves to point to different locations in a data structure.

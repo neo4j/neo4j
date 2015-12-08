@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
@@ -34,7 +35,6 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
@@ -67,32 +67,25 @@ public class DataFactories
             throw new IllegalArgumentException( "No files specified" );
         }
 
-        return new DataFactory<ENTITY>()
+        return config -> new Data<ENTITY>()
         {
             @Override
-            public Data<ENTITY> create( final Configuration config )
+            public CharSeeker stream()
             {
-                return new Data<ENTITY>()
+                try
                 {
-                    @Override
-                    public CharSeeker stream()
-                    {
-                        try
-                        {
-                            return charSeeker( files( charset, files ), config, true );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new InputException( e.getMessage(), e );
-                        }
-                    }
+                    return charSeeker( files( charset, files ), config, true );
+                }
+                catch ( IOException e )
+                {
+                    throw new InputException( e.getMessage(), e );
+                }
+            }
 
-                    @Override
-                    public Function<ENTITY,ENTITY> decorator()
-                    {
-                        return decorator;
-                    }
-                };
+            @Override
+            public Function<ENTITY,ENTITY> decorator()
+            {
+                return decorator;
             }
         };
     }
@@ -105,25 +98,18 @@ public class DataFactories
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
             final Supplier<CharReadable> readable )
     {
-        return new DataFactory<ENTITY>()
+        return config -> new Data<ENTITY>()
         {
             @Override
-            public Data<ENTITY> create( final Configuration config )
+            public CharSeeker stream()
             {
-                return new Data<ENTITY>()
-                {
-                    @Override
-                    public CharSeeker stream()
-                    {
-                        return charSeeker( readable.get(), config, true );
-                    }
+                return charSeeker( readable.get(), config, true );
+            }
 
-                    @Override
-                    public Function<ENTITY,ENTITY> decorator()
-                    {
-                        return decorator;
-                    }
-                };
+            @Override
+            public Function<ENTITY,ENTITY> decorator()
+            {
+                return decorator;
             }
         };
     }

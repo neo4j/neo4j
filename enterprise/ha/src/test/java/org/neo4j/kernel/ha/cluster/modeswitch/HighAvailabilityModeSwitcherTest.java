@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.net.URI;
@@ -34,13 +33,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ComException;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
@@ -166,25 +165,20 @@ public class HighAvailabilityModeSwitcherTest
         SwitchToMaster switchToMaster = mock( SwitchToMaster.class );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
-                any( CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
-        {
-            @Override
-            public URI answer( InvocationOnMock invocationOnMock ) throws Throwable
-            {
-                switching.countDown();
-                CancellationRequest cancel = (CancellationRequest) invocationOnMock.getArguments()[3];
-                if ( firstSwitch.get() )
-                {
-                    while ( !cancel.cancellationRequested() )
+                any( CancellationRequest.class ) ) ).thenAnswer( invocationOnMock -> {
+                    switching.countDown();
+                    CancellationRequest cancel = (CancellationRequest) invocationOnMock.getArguments()[3];
+                    if ( firstSwitch.get() )
                     {
-                        Thread.sleep( 1 );
+                        while ( !cancel.cancellationRequested() )
+                        {
+                            Thread.sleep( 1 );
+                        }
+                        firstSwitch.set( false );
                     }
-                    firstSwitch.set( false );
-                }
-                slaveAvailable.countDown();
-                return URI.create( "ha://slave" );
-            }
-        } );
+                    slaveAvailable.countDown();
+                    return URI.create( "ha://slave" );
+                } );
 
         HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave, switchToMaster,
                 mock( Election.class ), availability, mock( ClusterClient.class ), storeSupplierMock(),
@@ -238,45 +232,24 @@ public class HighAvailabilityModeSwitcherTest
                 final ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
                 final ExecutorService realExecutor = Executors.newSingleThreadExecutor();
 
-                when( executor.submit( any( Runnable.class ) ) ).thenAnswer( new Answer<Future<?>>()
-                {
-                    @Override
-                    public Future<?> answer( final InvocationOnMock invocation ) throws Throwable
-                    {
-                        return realExecutor.submit( new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                ((Runnable) invocation.getArguments()[0]).run();
-                            }
-                        } );
-                    }
-                } );
+                when( executor.submit( any( Runnable.class ) ) ).thenAnswer(
+                        (Answer<Future<?>>) invocation ->
+                                realExecutor.submit( (Runnable) () ->
+                                        ((Runnable) invocation.getArguments()[0]).run() ) );
 
                 when( executor.schedule( any( Runnable.class ), anyLong(), any( TimeUnit.class ) ) ).thenAnswer(
-                        new Answer<Future<?>>()
-                        {
-                            @Override
-                            public Future<?> answer( final InvocationOnMock invocation ) throws Throwable
-                            {
-                                realExecutor.submit( new Callable<Void>()
-                                {
-                                    @Override
-                                    public Void call() throws Exception
-                                    {
-                                        firstMasterAvailableHandled.countDown();
+                        (Answer<Future<?>>) invocation -> {
+                            realExecutor.submit( (Callable<Void>) () -> {
+                                firstMasterAvailableHandled.countDown();
 
-                                        // wait until the second masterIsAvailable comes and then call switchToSlave
-                                        // method
-                                        secondMasterAvailableComes.await();
-                                        ((Runnable) invocation.getArguments()[0]).run();
-                                        secondMasterAvailableHandled.countDown();
-                                        return null;
-                                    }
-                                } );
-                                return mock( ScheduledFuture.class );
-                            }
+                                // wait until the second masterIsAvailable comes and then call switchToSlave
+                                // method
+                                secondMasterAvailableComes.await();
+                                ((Runnable) invocation.getArguments()[0]).run();
+                                secondMasterAvailableHandled.countDown();
+                                return null;
+                            } );
+                            return mock( ScheduledFuture.class );
                         } );
                 return executor;
             }
@@ -344,27 +317,14 @@ public class HighAvailabilityModeSwitcherTest
         toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
 
         when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any(
-                CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
-
-        {
-            // The first time around it must "fail" so as to cause a rerun, then wait for the mIE to come through
-            @Override
-            public URI answer( InvocationOnMock invocation ) throws Throwable
-            {
-                firstCallMade.countDown();
-                waitForSecondMessage.await();
-                throw new MismatchingStoreIdException( StoreId.DEFAULT, StoreId.DEFAULT );
-            }
-        } ).thenAnswer( new Answer<URI>()
-        {
-            // The second time around it can finish normally, it doesn't really matter. Just let the test continue.
-            @Override
-            public URI answer( InvocationOnMock invocation ) throws Throwable
-            {
-                secondCallMade.countDown();
-                return URI.create( "ha://server3" );
-            }
-        } );
+                CancellationRequest.class ) ) ).thenAnswer( invocation -> {
+                    firstCallMade.countDown();
+                    waitForSecondMessage.await();
+                    throw new MismatchingStoreIdException( StoreId.DEFAULT, StoreId.DEFAULT );
+                } ).thenAnswer( invocation -> {
+                    secondCallMade.countDown();
+                    return URI.create( "ha://server3" );
+                } );
 
         // When
 
@@ -492,15 +452,10 @@ public class HighAvailabilityModeSwitcherTest
             {
                 ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
 
-                doAnswer( new Answer<Future<?>>()
-                {
-                    @Override
-                    public Future<?> answer( InvocationOnMock invocation ) throws Throwable
-                    {
-                        ((Runnable) invocation.getArguments()[0]).run();
-                        modeSwitchHappened.countDown();
-                        return mock( Future.class );
-                    }
+                doAnswer( invocation -> {
+                    ((Runnable) invocation.getArguments()[0]).run();
+                    modeSwitchHappened.countDown();
+                    return mock( Future.class );
                 } ).when( executor ).submit( any( Runnable.class ) );
 
                 return executor;

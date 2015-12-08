@@ -21,7 +21,8 @@ package org.neo4j.test;
 
 import org.junit.rules.ExternalResource;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,7 +57,7 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
         }
         return fs;
     }
-    
+
     public void clear()
     {
         fs.shutdown();
@@ -65,13 +66,6 @@ public class EphemeralFileSystemRule extends ExternalResource implements Supplie
 
     public static Runnable shutdownDbAction( final GraphDatabaseService db )
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                db.shutdown();
-            }
-        };
+        return () -> db.shutdown();
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -27,7 +28,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;

@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.traversal;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -79,7 +79,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     {
         this( NO_STATEMENT );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription startSide( TraversalDescription startSideDescription )
     {
@@ -97,7 +97,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
                 (MonoDirectionalTraversalDescription)endSideDescription,
                 this.collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription mirroredSides( TraversalDescription sideDescription )
     {
@@ -130,7 +130,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end, this.collisionPolicy,
                 addEvaluator( this.collisionEvaluator, collisionEvaluator ), this.sideSelector, statementFactory, maxDepth );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator )
     {

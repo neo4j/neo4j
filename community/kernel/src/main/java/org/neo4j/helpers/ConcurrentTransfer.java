@@ -20,9 +20,9 @@
 package org.neo4j.helpers;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Supplier;
 
 /**
  * Abstracts a meeting point between two threads, where a reference can change hands. It is essentially

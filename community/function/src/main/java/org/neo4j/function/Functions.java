@@ -20,6 +20,7 @@
 package org.neo4j.function;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Constructors for basic {@link Function} and {@link BiFunction} types
@@ -194,38 +195,6 @@ public final class Functions
             public T apply( Void t )
             {
                 return supplier.get();
-            }
-        };
-    }
-
-    /**
-     * @deprecated use {@link Consumers#noop()}
-     * @param <TYPE> the type of object to swallow
-     * @param type the type to swallow
-     * @return return the consumer of the type object
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <TYPE> Consumer<TYPE> swallow( @SuppressWarnings( "UnusedParameters" ) Class<TYPE> type )
-    {
-        return Consumers.noop();
-    }
-
-    /**
-     * @deprecated use {@link Suppliers#singleton(Object)}
-     * @param <T> the type of the item object
-     * @param item the constant item
-     * @return return a factory object
-     */
-    @Deprecated
-    public static <T> Factory<T> constantly( final T item )
-    {
-        return new Factory<T>()
-        {
-            @Override
-            public T newInstance()
-            {
-                return item;
             }
         };
     }

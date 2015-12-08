@@ -19,7 +19,8 @@
  */
 package org.neo4j.coreedge.catchup;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 

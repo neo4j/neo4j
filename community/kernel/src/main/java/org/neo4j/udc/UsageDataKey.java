@@ -19,7 +19,7 @@
  */
 package org.neo4j.udc;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 import static org.neo4j.function.Suppliers.singleton;
 

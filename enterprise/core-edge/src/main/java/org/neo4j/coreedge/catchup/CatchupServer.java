@@ -32,18 +32,18 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
-import org.neo4j.coreedge.server.ListenSocketAddress;
-import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
-import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseEncoder;
-import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.function.Supplier;
+import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;

@@ -19,15 +19,15 @@
  */
 package org.neo4j.consistency;
 
+import java.io.PrintWriter;
+import java.util.function.Supplier;
+
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogger;
-
-import java.io.PrintWriter;
 
 public class ConsistencyReportLog extends AbstractLog
 {

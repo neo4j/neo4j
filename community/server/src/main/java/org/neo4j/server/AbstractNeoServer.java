@@ -28,11 +28,11 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -239,15 +239,9 @@ public abstract class AbstractNeoServer implements NeoServer
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
 
-        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, new
-                Runnable()
-        {
-            @Override
-            public void run()
-            {
-                long maxAge = clock.currentTimeMillis() - timeoutMillis;
-                transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
-            }
+        resolveDependency( JobScheduler.class ).scheduleRecurring( serverTransactionTimeout, () -> {
+            long maxAge = clock.currentTimeMillis() - timeoutMillis;
+            transactionRegistry.rollbackSuspendedTransactionsIdleSince( maxAge );
         }, runEvery, MILLISECONDS );
 
         return new TransactionFacade(
@@ -291,14 +285,7 @@ public abstract class AbstractNeoServer implements NeoServer
             @Override
             public Runnable apply( final ServerModule module )
             {
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        module.stop();
-                    }
-                };
+                return () -> module.stop();
             }
         }, serverModules ) )
                 .run();
@@ -483,27 +470,9 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         // TODO: All components should be moved over to the LifeSupport instance, life, in here.
         new RunCarefully(
-            new Runnable() {
-                @Override
-                public void run()
-                {
-                    stopWebServer();
-                }
-            },
-            new Runnable() {
-                @Override
-                public void run()
-                {
-                    stopModules();
-                }
-            },
-            new Runnable() {
-                @Override
-                public void run()
-                {
-                    life.stop();
-                }
-            }
+                this::stopWebServer,
+                this::stopModules,
+                life::stop
         ).run();
 
         //noinspection deprecation
@@ -629,7 +598,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver.resolveDependency( type );
     }
 
-    private final Dependencies dependencyResolver = new Dependencies(new Supplier<DependencyResolver>()
+    private final Dependencies dependencyResolver = new Dependencies( new Supplier<DependencyResolver>()
     {
         @Override
         public DependencyResolver get()
@@ -637,5 +606,5 @@ public abstract class AbstractNeoServer implements NeoServer
             Database db = dependencyResolver.resolveDependency( Database.class );
             return db.getGraph().getDependencyResolver();
         }
-    });
+    } );
 }

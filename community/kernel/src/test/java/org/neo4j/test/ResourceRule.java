@@ -24,8 +24,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 

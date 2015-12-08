@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import java.io.{PrintWriter, StringWriter}
 import java.util
-import java.util.Collections
+import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.{EntityNotFoundException, ProfilerStatisticsNotReadyException}
-import org.neo4j.function.Supplier
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._

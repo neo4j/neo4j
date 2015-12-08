@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -181,13 +181,8 @@ public class Predicates
     public static <TYPE> void await( final Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
-        await( new Supplier<TYPE>()
-        {
-            @Override
-            public TYPE get()
-            {
-                return provider.instance();
-            }
+        await( (Supplier<TYPE>) () -> {
+            return provider.instance();
         }, predicate, timeout, unit );
     }
 

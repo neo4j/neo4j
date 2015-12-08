@@ -23,11 +23,11 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.LongFunction;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;

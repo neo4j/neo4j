@@ -23,11 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -279,17 +279,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         }
     }
 
-    public static interface RestartAction
+    public interface RestartAction
     {
         void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException;
 
-        public static RestartAction EMPTY = new RestartAction()
-        {
-            @Override
-            public void run( FileSystemAbstraction fs, File storeDirectory )
-            {
-                // duh
-            }
+        RestartAction EMPTY = ( fs, storeDirectory ) -> {
+            // duh
         };
     }
 

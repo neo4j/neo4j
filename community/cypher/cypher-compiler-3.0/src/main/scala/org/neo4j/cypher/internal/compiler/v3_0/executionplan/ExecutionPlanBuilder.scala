@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
+import java.util.function.Supplier
+
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
@@ -27,17 +29,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v3_0.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ProfileMode, _}
-import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PeriodicCommitInOpenTransactionException}
+import org.neo4j.cypher.internal.frontend.v3_0.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{LargeLabelWithLoadCsvNotification, EagerLoadCsvNotification, InternalNotification}
-import org.neo4j.function.Supplier
+import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType

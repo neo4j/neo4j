@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 
+import java.util.function.Supplier
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
@@ -33,11 +35,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.function.Supplier
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
-import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 

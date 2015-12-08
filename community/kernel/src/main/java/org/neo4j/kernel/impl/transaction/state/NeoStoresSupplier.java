@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.store.NeoStores;
 
 /**
