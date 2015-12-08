@@ -25,7 +25,7 @@ package org.neo4j.function;
  * @param <R> the type of the result of the function
  * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
-public interface LongFunction<R> extends ThrowingLongFunction<R,RuntimeException>, org.neo4j.function.primitive.FunctionFromPrimitiveLong<R>
+public interface LongFunction<R> extends ThrowingLongFunction<R,RuntimeException>
 {
     /**
      * Applies this function to the given argument.

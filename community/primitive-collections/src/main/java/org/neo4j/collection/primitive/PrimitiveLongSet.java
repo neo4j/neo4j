@@ -21,9 +21,7 @@ package org.neo4j.collection.primitive;
 
 import java.util.function.LongPredicate;
 
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
-
-public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate, PrimitiveLongPredicate
+public interface PrimitiveLongSet extends PrimitiveLongCollection, LongPredicate
 {
     boolean add( long value );
 

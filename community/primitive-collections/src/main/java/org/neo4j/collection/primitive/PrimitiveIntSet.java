@@ -21,9 +21,7 @@ package org.neo4j.collection.primitive;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
-
-public interface PrimitiveIntSet extends PrimitiveIntCollection, IntPredicate, PrimitiveIntPredicate
+public interface PrimitiveIntSet extends PrimitiveIntCollection, IntPredicate
 {
     boolean add( int value );
 

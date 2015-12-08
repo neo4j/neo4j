@@ -104,12 +104,6 @@ public class Empty
         }
 
         @Override
-        public boolean accept( long value )
-        {
-            return false;
-        }
-
-        @Override
         public boolean remove( long value )
         {
             return false;
@@ -155,12 +149,6 @@ public class Empty
 
         @Override
         public boolean test( int value )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean accept( int value )
         {
             return false;
         }

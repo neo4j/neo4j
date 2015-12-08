@@ -25,8 +25,6 @@ import java.util.NoSuchElementException;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
 import static java.util.Arrays.copyOf;
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
@@ -238,28 +236,12 @@ public class PrimitiveIntCollections
         }
     }
 
-    /**
-     * @deprecated use {@link #filter(PrimitiveIntIterator, IntPredicate)} instead
-     */
-    @Deprecated
-    public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final PrimitiveIntPredicate filter )
-    {
-        return new PrimitiveIntFilteringIterator( source )
-        {
-            @Override
-            public boolean accept( int item )
-            {
-                return filter.accept( item );
-            }
-        };
-    }
-
     public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final IntPredicate filter )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
             @Override
-            public boolean accept( int item )
+            public boolean test( int item )
             {
                 return filter.test( item );
             }
@@ -273,7 +255,7 @@ public class PrimitiveIntCollections
             private final PrimitiveIntSet visited = Primitive.intSet();
 
             @Override
-            public boolean accept( int testItem )
+            public boolean test( int testItem )
             {
                 return visited.add( testItem );
             }
@@ -285,7 +267,7 @@ public class PrimitiveIntCollections
         return new PrimitiveIntFilteringIterator( source )
         {
             @Override
-            public boolean accept( int testItem )
+            public boolean test( int testItem )
             {
                 return testItem != disallowedValue;
             }
@@ -299,7 +281,7 @@ public class PrimitiveIntCollections
             private int skipped = 0;
 
             @Override
-            public boolean accept( int item )
+            public boolean test( int item )
             {
                 if ( skipped < skipTheFirstNItems )
                 {
@@ -311,8 +293,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static abstract class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator
-            implements PrimitiveIntPredicate
+    public static abstract class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator implements IntPredicate
     {
         private final PrimitiveIntIterator source;
 
@@ -327,7 +308,7 @@ public class PrimitiveIntCollections
             while ( source.hasNext() )
             {
                 int testItem = source.next();
-                if ( accept( testItem ) )
+                if ( test( testItem ) )
                 {
                     return next( testItem );
                 }
@@ -335,12 +316,8 @@ public class PrimitiveIntCollections
             return false;
         }
 
-        /**
-         * @deprecated use {@link IntPredicate} instead
-         */
-        @Deprecated
         @Override
-        public abstract boolean accept( int testItem );
+        public abstract boolean test( int testItem );
     }
 
     // Limitinglic
@@ -727,7 +704,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveInt<T> mapFunction,
+    public static <T> Iterator<T> map( final org.neo4j.function.IntFunction<T> mapFunction,
             final PrimitiveIntIterator source )
     {
         return new Iterator<T>()
