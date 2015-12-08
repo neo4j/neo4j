@@ -22,7 +22,6 @@ package org.neo4j.kernel.lifecycle;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
@@ -42,7 +41,7 @@ public class LifeSupport
     private volatile List<LifecycleInstance> instances = new ArrayList<>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
     private final List<LifecycleListener> listeners = new ArrayList<>();
-    
+
     public LifeSupport()
     {
     }
@@ -311,18 +310,13 @@ public class LifeSupport
 
     public synchronized void dump( Logger logger )
     {
-        logger.bulk( new Consumer<Logger>()
-        {
-            @Override
-            public void accept( Logger bulkLogger )
+        logger.bulk( bulkLogger -> {
+            bulkLogger.log("Lifecycle status: %s", status.name());
+            for ( LifecycleInstance instance : instances )
             {
-                bulkLogger.log("Lifecycle status: %s", status.name());
-                for ( LifecycleInstance instance : instances )
-                {
-                    bulkLogger.log(instance.toString());
-                }
+                bulkLogger.log(instance.toString());
             }
-        });
+        } );
     }
 
     private void bringToState( LifecycleInstance instance )

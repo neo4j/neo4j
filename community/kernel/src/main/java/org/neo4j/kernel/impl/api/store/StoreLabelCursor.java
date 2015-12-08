@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Consumer;
+
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.cursor.LabelItem;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;

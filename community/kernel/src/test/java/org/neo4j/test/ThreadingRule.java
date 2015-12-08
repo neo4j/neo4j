@@ -27,10 +27,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.ConcurrentTransfer;
@@ -65,7 +64,7 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> execute( ThrowingFunction<FROM,TO,EX> function, FROM parameter )
     {
-        return executor.submit( task( Barrier.NONE, function, parameter, Consumers.<Thread>noop() ) );
+        return executor.submit( task( Barrier.NONE, function, parameter, (t) -> {} ) );
     }
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(

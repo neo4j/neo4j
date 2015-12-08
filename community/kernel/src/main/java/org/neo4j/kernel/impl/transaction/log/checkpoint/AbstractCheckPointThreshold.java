@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * Abstract class that implement common logic for making the consumer to consume the {@link #description()} of this

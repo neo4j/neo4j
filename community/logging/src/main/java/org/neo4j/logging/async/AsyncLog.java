@@ -20,8 +20,9 @@
 
 package org.neo4j.logging.async;
 
+import java.util.function.Consumer;
+
 import org.neo4j.concurrent.AsyncEventSender;
-import org.neo4j.function.Consumer;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;

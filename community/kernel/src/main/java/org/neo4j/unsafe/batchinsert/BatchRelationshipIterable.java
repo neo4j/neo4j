@@ -21,7 +21,6 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Iterator;
 
-import org.neo4j.function.Consumers;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -45,7 +44,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         this.relationshipCursor = new StoreNodeRelationshipCursor(
                 relationshipRecord, neoStores,
                 relationshipGroupRecord, null,
-                Consumers.<StoreNodeRelationshipCursor>noop(), NO_LOCK_SERVICE );
+                (cursor) -> {}, NO_LOCK_SERVICE );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
         // critical path instance so perhaps not necessary a.t.m.

@@ -20,9 +20,9 @@
 package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;

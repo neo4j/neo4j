@@ -23,8 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.Queue;
-
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * Buffers all messages sent to it, and is able to replay those messages into

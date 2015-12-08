@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -99,35 +98,20 @@ public class LabelsAcceptanceTest
             }
         } );
         // POST "FOOBAR"
-        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
-        {
-            @Override
-            public void accept( GraphDatabaseService db )
-            {
-                node.addLabel( label( "FOOBAR" ) );
-            }
+        dbRule.executeAndCommit( db -> {
+            node.addLabel( label( "FOOBAR" ) );
         } );
         // POST ["BAZQUX"]
-        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
-        {
-            @Override
-            public void accept( GraphDatabaseService db )
-            {
-                node.addLabel( label( "BAZQUX" ) );
-            }
+        dbRule.executeAndCommit( db -> {
+            node.addLabel( label( "BAZQUX" ) );
         } );
         // PUT ["BAZQUX"]
-        dbRule.executeAndCommit( new Consumer<GraphDatabaseService>()
-        {
-            @Override
-            public void accept( GraphDatabaseService db )
+        dbRule.executeAndCommit( db -> {
+            for ( Label label : node.getLabels() )
             {
-                for ( Label label : node.getLabels() )
-                {
-                    node.removeLabel( label );
-                }
-                node.addLabel( label( "BAZQUX" ) );
+                node.removeLabel( label );
             }
+            node.addLabel( label( "BAZQUX" ) );
         } );
         // GET
         List<Label> labels = dbRule.executeAndCommit( new Function<GraphDatabaseService, List<Label>>()

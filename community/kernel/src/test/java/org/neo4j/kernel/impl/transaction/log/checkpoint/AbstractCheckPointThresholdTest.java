@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.function.Consumer;
-
 import static org.junit.Assert.assertEquals;
 
 public class AbstractCheckPointThresholdTest
@@ -38,14 +36,7 @@ public class AbstractCheckPointThresholdTest
 
         final AtomicReference<String> calledWith = new AtomicReference<>();
         // When
-        threshold.isCheckPointingNeeded( 42, new Consumer<String>()
-        {
-            @Override
-            public void accept( String description )
-            {
-                calledWith.set( description );
-            }
-        } );
+        threshold.isCheckPointingNeeded( 42, calledWith::set );
 
         // Then
         assertEquals( description, calledWith.get() );
@@ -58,13 +49,8 @@ public class AbstractCheckPointThresholdTest
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
 
         // When
-        threshold.isCheckPointingNeeded( 42, new Consumer<String>()
-        {
-            @Override
-            public void accept( String s )
-            {
-                throw new IllegalStateException( "nooooooooo!" );
-            }
+        threshold.isCheckPointingNeeded( 42, s -> {
+            throw new IllegalStateException( "nooooooooo!" );
         } );
 
         // Then

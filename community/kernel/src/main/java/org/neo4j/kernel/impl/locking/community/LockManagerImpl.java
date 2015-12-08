@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockManager;
@@ -100,14 +99,9 @@ public class LockManagerImpl implements LockManager
             }
             lock = resourceLockMap.get( resource );
         }
-        logger.bulk( new Consumer<Logger>()
-        {
-            @Override
-            public void accept( Logger bulkLogger )
-            {
-                bulkLogger.log( "Dump locks on resource %s", resource );
-                lock.logTo( bulkLogger );
-            }
+        logger.bulk( bulkLogger -> {
+            bulkLogger.log( "Dump locks on resource %s", resource );
+            lock.logTo( bulkLogger );
         } );
     }
 

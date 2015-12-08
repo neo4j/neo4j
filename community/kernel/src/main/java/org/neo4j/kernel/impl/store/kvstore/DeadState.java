@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 

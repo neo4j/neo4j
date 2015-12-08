@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.function.Consumer;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 public class SessionWorkerTest
@@ -34,14 +33,7 @@ public class SessionWorkerTest
         // Given
         Session session = Mockito.mock( Session.class );
         SessionWorker worker = new SessionWorker( session, NullLogService.getInstance() );
-        worker.handle( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.run( "Hello, world!", null, null, null );
-            }
-        });
+        worker.handle( s -> s.run( "Hello, world!", null, null, null ) );
         worker.handle( SessionWorker.SHUTDOWN );
 
         // When
@@ -59,14 +51,9 @@ public class SessionWorkerTest
         // Given
         Session session = Mockito.mock( Session.class );
         SessionWorker worker = new SessionWorker( session, NullLogService.getInstance() );
-        worker.handle( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                throw new RuntimeException( "It didn't work out." );
-            }
-        });
+        worker.handle( s -> {
+            throw new RuntimeException( "It didn't work out." );
+        } );
 
         // When
         worker.run();

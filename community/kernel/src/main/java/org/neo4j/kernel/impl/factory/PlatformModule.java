@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -228,14 +227,8 @@ public class PlatformModule
             builder.withUserLogProvider( userLogProvider );
         }
 
-        builder.withRotationListener( new Consumer<LogProvider>()
-        {
-            @Override
-            public void accept( LogProvider logProvider )
-            {
-                diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) );
-            }
-        } );
+        builder.withRotationListener(
+                logProvider -> diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
 
         for ( String debugContext : config.get( GraphDatabaseSettings.store_internal_debug_contexts ) )
         {

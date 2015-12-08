@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.cursor;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;

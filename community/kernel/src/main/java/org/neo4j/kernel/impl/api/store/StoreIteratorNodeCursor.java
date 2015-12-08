@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;

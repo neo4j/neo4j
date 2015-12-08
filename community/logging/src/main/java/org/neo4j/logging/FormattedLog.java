@@ -29,9 +29,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 

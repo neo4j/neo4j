@@ -20,9 +20,8 @@
 package org.neo4j.logging;
 
 import java.io.PrintWriter;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import org.neo4j.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 

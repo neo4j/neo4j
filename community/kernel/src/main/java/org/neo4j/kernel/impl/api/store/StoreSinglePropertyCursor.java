@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
+
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;

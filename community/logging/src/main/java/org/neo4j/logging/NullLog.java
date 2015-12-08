@@ -19,7 +19,7 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * A {@link Log} implementation that discards all messages

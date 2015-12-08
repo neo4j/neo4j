@@ -25,9 +25,9 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 
 import org.neo4j.concurrent.AsyncEvent;
-import org.neo4j.function.Consumer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 

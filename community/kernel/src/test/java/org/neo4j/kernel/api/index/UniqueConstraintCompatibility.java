@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Assert;
@@ -36,7 +27,16 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Consumer;
+import java.io.File;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +

@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import java.util.function.Consumer;
+
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.cursor.EntityItem;
 import org.neo4j.kernel.api.cursor.PropertyItem;

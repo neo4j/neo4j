@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.cursor.PropertyItem;

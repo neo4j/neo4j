@@ -20,7 +20,6 @@
 package org.neo4j.logging;
 
 import org.junit.Test;
-import org.neo4j.function.Consumer;
 
 public class DuplicatingLogTest
 {
@@ -55,14 +54,7 @@ public class DuplicatingLogTest
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
 
         // When
-        log.bulk( new Consumer<Log>()
-        {
-            @Override
-            public void accept( Log bulkLog )
-            {
-                bulkLog.info( "When the going gets weird" );
-            }
-        } );
+        log.bulk( bulkLog -> bulkLog.info( "When the going gets weird" ) );
 
         // Then
         logProvider.assertExactly(

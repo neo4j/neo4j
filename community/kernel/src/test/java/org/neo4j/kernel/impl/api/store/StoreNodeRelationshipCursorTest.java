@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Test;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
+
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -32,7 +33,6 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;

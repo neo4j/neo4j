@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.DependencyResolver;

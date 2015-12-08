@@ -23,14 +23,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.duration;
 
 /**

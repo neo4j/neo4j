@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.function.Consumers;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -50,15 +49,9 @@ public class TransactionMonitorTest
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(
-                new Object[]{Consumers.<GraphDatabaseService,Exception>throwingNoop(), false, "read"},
-                new Object[]{new ThrowingConsumer<GraphDatabaseService,Exception>()
-                {
-                    @Override
-                    public void accept( GraphDatabaseService db ) throws Exception
-                    {
-                        db.createNode();
-                    }
-                }, true, "write"}
+                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) (db) -> {}, false, "read"},
+                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) GraphDatabaseService::createNode,
+                        true, "write"}
         );
     }
 

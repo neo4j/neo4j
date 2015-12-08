@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
-import org.junit.Test;
-
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,22 +42,8 @@ public class TimedRepositoryTest
     private final AtomicLong valueGenerator = new AtomicLong();
     private final List<Long> reapedValues = new ArrayList<>();
 
-    private final Factory<Long> provider = new Factory<Long>()
-    {
-        @Override
-        public Long newInstance()
-        {
-            return valueGenerator.getAndIncrement();
-        }
-    };
-    private final Consumer<Long> consumer = new Consumer<Long>()
-    {
-        @Override
-        public void accept( Long value )
-        {
-            reapedValues.add( value );
-        }
-    };
+    private final Factory<Long> provider = valueGenerator::getAndIncrement;
+    private final Consumer<Long> consumer = reapedValues::add;
 
     private final long timeout = 100;
     private final FakeClock clock = new FakeClock();
