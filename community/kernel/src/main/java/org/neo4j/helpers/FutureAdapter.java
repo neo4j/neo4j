@@ -78,23 +78,6 @@ public abstract class FutureAdapter<V> implements Future<V>
 
     public static final Future<Void> VOID = new Present<>( null );
 
-    /**
-     * @deprecated use {@link #latchGuardedValue(Supplier, CountDownLatch, String)} instead
-     * @param value the value getter
-     * @param guardedByLatch the guard
-     * @param jobDescription description
-     * @param <T> the type
-     * @return the future from which to get the value
-     */
-    @Deprecated
-    public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch,
-            final String jobDescription )
-    {
-        return latchGuardedValue( (Supplier<T>) () -> {
-            return value.get();
-        }, guardedByLatch, jobDescription );
-    }
-
     public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
                                                    final String jobDescription )
     {
