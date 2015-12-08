@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.api.cursor;
 
-import org.neo4j.function.IntSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * Represents a single label on a node
  */
-public interface LabelItem
-        extends IntSupplier
+public interface LabelItem extends IntSupplier
 {
 }

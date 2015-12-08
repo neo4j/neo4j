@@ -20,10 +20,10 @@
 package org.neo4j.kernel.api.cursor;
 
 import java.util.Arrays;
+import java.util.function.IntSupplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.IntSupplier;
 import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
