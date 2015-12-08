@@ -483,7 +483,7 @@ public class LeaderTest
 
         // when a single instance responds (plus self == 2 out of 3 instances)
         Outcome<RaftTestMember> outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0 ), state, log() );
+                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ), state, log() );
 
         // then
         assertThat( firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
@@ -510,7 +510,7 @@ public class LeaderTest
 
         // when
         Outcome<RaftTestMember> outcome =
-                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2 ), state, log() );
+                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2 ), state, log() );
 
         state.update( outcome );
 

@@ -109,7 +109,8 @@ public class Leader implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
-                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex() );
+                            new RaftMessages.AppendEntries.Response<>(
+                                    ctx.myself(), ctx.term(), false, req.prevLogIndex(), ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -185,7 +186,7 @@ public class Leader implements RaftMessageHandler
                 }
                 else // Response indicated failure. Must go back a log entry and retry - this is where catchup happens
                 {
-                    outcome.addShipCommand( new ShipCommand.Mismatch( ctx.entryLog().appendIndex(), res.from() ) ); // TODO: Fix remote last appended parameter.
+                    outcome.addShipCommand( new ShipCommand.Mismatch( res.appendIndex(), res.from() ) );
                 }
 
                 break;

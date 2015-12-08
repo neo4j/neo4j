@@ -44,6 +44,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
+import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
@@ -61,6 +63,7 @@ import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Iterator;
@@ -74,6 +77,7 @@ public class FollowerTest
     /* A few members that we use at will in tests. */
     private RaftTestMember member1 = member( 1 );
     private RaftTestMember member2 = member( 2 );
+    private RaftTestMember leader = member( 3 );
 
     @Mock
     private Inbound inbound;
@@ -252,7 +256,6 @@ public class FollowerTest
         assertThat( response, instanceOf( AppendEntries.Response.class ) );
         assertTrue( ((AppendEntries.Response) response).success() );
     }
-
 
     @Test
     public void followerShouldOverwriteSomeAppendedEntriesOnReceiptOfConflictingCommittedEntries() throws Exception
@@ -585,6 +588,36 @@ public class FollowerTest
 
         // then
         assertThat( outcome.getLogCommands(), hasItem( new CommitCommand( 1 ) ) );
+    }
+
+    @Test
+    public void shouldIncludeLatestAppendedInResponse() throws Exception
+    {
+        // given: just a single appended entry at follower
+        RaftLogEntry entryA = new RaftLogEntry( 1, ReplicatedString.valueOf( "A" ) );
+
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
+        raftLog.append( entryA );
+
+        RaftState<RaftTestMember> state = raftState()
+                .myself( myself )
+                .entryLog( raftLog )
+                .term( 1 )
+                .build();
+
+        Follower follower = new Follower();
+
+        RaftLogEntry entryB = new RaftLogEntry( 1, ReplicatedString.valueOf( "B" ) );
+
+        // when: append request for item way forward (index=10, term=2)
+        Outcome<RaftTestMember> outcome = follower.handle(
+                new RaftMessages.AppendEntries.Request<>( leader, 2, 10, 2,
+                        new RaftLogEntry[]{entryB}, 10 ), state, log() );
+
+        // then: respond with false and how far ahead we are
+        assertThat( single( outcome.getOutgoingMessages()).message(), equalTo(
+                appendEntriesResponse().from( myself ).term( 2 ).appendIndex( 0 ).matchIndex( -1 ).failure()
+                        .build() ) );
     }
 
     private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend, int

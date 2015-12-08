@@ -147,7 +147,7 @@ public class RaftMessageProcessingTest
         // given
         CoreMember member = new CoreMember( address( "host1:9000" ), address( "host1:9001" ) );
         RaftMessages.AppendEntries.Response response =
-                new RaftMessages.AppendEntries.Response<>( member, 1, false, -1 );
+                new RaftMessages.AppendEntries.Response<>( member, 1, false, -1, 0 );
 
         // when
         channel.writeOutbound( response );

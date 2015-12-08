@@ -299,13 +299,15 @@ public interface RaftMessages
             private long term;
             private boolean success;
             private long matchIndex;
+            private long appendIndex;
 
-            public Response( MEMBER from, long term, boolean success, long matchIndex )
+            public Response( MEMBER from, long term, boolean success, long matchIndex, long appendIndex )
             {
                 super( from, Type.APPEND_ENTRIES_RESPONSE );
                 this.term = term;
                 this.success = success;
                 this.matchIndex = matchIndex;
+                this.appendIndex = appendIndex;
             }
 
             public long term()
@@ -313,46 +315,48 @@ public interface RaftMessages
                 return term;
             }
 
+            public boolean success()
+            {
+                return success;
+            }
+
             public long matchIndex()
             {
                 return matchIndex;
+            }
+
+            public long appendIndex()
+            {
+                return appendIndex;
             }
 
             @Override
             public boolean equals( Object o )
             {
                 if ( this == o )
-                {
-                    return true;
-                }
+                { return true; }
                 if ( o == null || getClass() != o.getClass() )
-                {
-                    return false;
-                }
-
+                { return false; }
+                if ( !super.equals( o ) )
+                { return false; }
                 Response<?> response = (Response<?>) o;
-
-                return term == response.term && success == response.success;
+                return term == response.term &&
+                       success == response.success &&
+                       matchIndex == response.matchIndex &&
+                       appendIndex == response.appendIndex;
             }
 
             @Override
             public int hashCode()
             {
-                int result = (int) (term ^ (term >>> 32));
-                result = 31 * result + (success ? 1 : 0);
-                return result;
+                return Objects.hash( super.hashCode(), term, success, matchIndex, appendIndex );
             }
 
             @Override
             public String toString()
             {
-                return format( "AppendEntries.Response from %s {term=%d, success=%s, matchIndex=%d}",
-                        super.from(), term, success, matchIndex );
-            }
-
-            public boolean success()
-            {
-                return success;
+                return String.format( "Response{term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
+                        term, success, matchIndex, appendIndex );
             }
         }
     }

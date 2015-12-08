@@ -25,12 +25,13 @@ public class AppendEntriesResponseBuilder<MEMBER>
     private long term = -1;
     private MEMBER from = null;
     private long matchIndex = -1;
+    private long appendIndex = -1;
 
     public RaftMessages.AppendEntries.Response<MEMBER> build()
     {
         // a response of false should always have a match index of -1
         assert !( success == false && matchIndex != -1 );
-        return new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex );
+        return new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex );
     }
 
     public AppendEntriesResponseBuilder<MEMBER> from( MEMBER from )
@@ -48,6 +49,12 @@ public class AppendEntriesResponseBuilder<MEMBER>
     public AppendEntriesResponseBuilder<MEMBER> matchIndex( long matchIndex )
     {
         this.matchIndex = matchIndex;
+        return this;
+    }
+
+    public AppendEntriesResponseBuilder<MEMBER> appendIndex( long appendIndex )
+    {
+        this.appendIndex = appendIndex;
         return this;
     }
 
