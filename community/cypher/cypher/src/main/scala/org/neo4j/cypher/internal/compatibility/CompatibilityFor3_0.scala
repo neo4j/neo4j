@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
+import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}
@@ -425,7 +425,6 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
     val plannerName = planner match {
       case CypherPlanner.default => None
       case CypherPlanner.cost | CypherPlanner.idp => Some(IDPPlannerName)
-      case CypherPlanner.greedy => Some(GreedyPlannerName)
       case CypherPlanner.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }

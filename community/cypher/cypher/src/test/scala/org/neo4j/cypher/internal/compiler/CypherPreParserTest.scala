@@ -56,10 +56,6 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
     ("CYPHER 2.3 planner=idp runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(IDPPlannerOption, CompiledRuntimeOption))), (1, 41, 40))), ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
       (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
-    ("CYPHER 2.3 planner=greedy runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(GreedyPlannerOption, CompiledRuntimeOption))), (1, 44, 43))),
-    ("CYPHER 2.3  runtime=compiled  planner=greedy   RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(CompiledRuntimeOption, GreedyPlannerOption))), (1, 48, 47))),
     ("explainmatch", PreParsedStatement("explainmatch", Seq.empty, (1, 1, 0))),
     ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(EagerOption))), (1, 29, 28)))
   )

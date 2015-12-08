@@ -44,12 +44,6 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     eengine.execute(query) should havePlanner(IDPPlannerName)
   }
 
-  test("specifying greedy planner should provide greedy") {
-    val query = "PROFILE CYPHER planner=greedy RETURN 1"
-
-    eengine.execute(query) should havePlanner(GreedyPlannerName)
-  }
-
   test("specifying dp planner should provide DP") {
     val query = "PROFILE CYPHER planner=dp RETURN 1"
 
@@ -72,12 +66,6 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     val query = "PROFILE CYPHER planner=idp RETURN 1"
 
     eengine.execute(query) should havePlanner(IDPPlannerName)
-  }
-
-  test("specifying greedy planner should provide greedy using old syntax") {
-    val query = "PROFILE CYPHER planner=greedy RETURN 1"
-
-    eengine.execute(query) should havePlanner(GreedyPlannerName)
   }
 
   test("specifying dp planner should provide DP using old syntax") {

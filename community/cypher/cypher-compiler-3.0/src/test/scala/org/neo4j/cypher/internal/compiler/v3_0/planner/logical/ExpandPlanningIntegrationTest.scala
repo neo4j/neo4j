@@ -84,8 +84,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           Expand(
             AllNodesScan(IdName("b"),Set.empty)(solved),
-            IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r1"),ExpandAll)(solved),
-          IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+            IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"),ExpandAll)(solved),
+          IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandInto)(solved)
         )(solved)
     )
   }

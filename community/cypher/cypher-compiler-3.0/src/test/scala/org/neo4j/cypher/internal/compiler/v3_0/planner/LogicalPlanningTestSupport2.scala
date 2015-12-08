@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, LazyLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.{GreedyPlanTable, GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
@@ -63,11 +64,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
-  var queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
-    new GreedyQueryGraphSolver(expandsOrJoins),
-    new GreedyQueryGraphSolver(expandsOnly)
-  )
-
+  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
@@ -175,7 +172,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
-          SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)
+
+          val rewritten = iterateUntilConverged((p:LogicalPlan) => p.endoRewrite(unnestApply))(resultPlan)
+
+          SemanticPlan(rewritten, newTable)
       }
     }
 
@@ -221,9 +221,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
-
-  def greedyPlanTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
-    plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
