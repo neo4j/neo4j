@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.net;
 
 import io.netty.buffer.ByteBuf;
 
-import org.neo4j.coreedge.raft.locks.NewLeaderBarrier;
+import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetSerializer;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
