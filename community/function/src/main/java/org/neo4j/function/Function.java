@@ -26,7 +26,7 @@ package org.neo4j.function;
  * @param <R> the type of the result of the function
  * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
  */
-public interface Function<T, R> extends ThrowingFunction<T,R,RuntimeException>, RawFunction<T,R,RuntimeException>
+public interface Function<T, R> extends ThrowingFunction<T,R,RuntimeException>
 {
     /**
      * Apply a value to this function

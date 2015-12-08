@@ -21,6 +21,6 @@ package org.neo4j.function;
 
 import java.io.IOException;
 
-public interface IOFunction<T, R> extends RawFunction<T,R,IOException>
+public interface IOFunction<T, R> extends ThrowingFunction<T,R,IOException>
 {
 }
