@@ -27,12 +27,12 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
+import org.neo4j.function.Functions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
@@ -173,18 +173,13 @@ public class Settings
     private static <T> Function<Function<String, String>, String> inheritedDefault( final Function<Function<String,
             String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
-                }
-                return value;
+                value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
             }
+            return value;
         };
     }
 
@@ -496,14 +491,7 @@ public class Settings
      *   <li>10k<br>    ==&gt; 10 * 1024</li>
      * </ul>
      */
-    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = new Function<String, Long>()
-    {
-        @Override
-        public Long apply( String from )
-        {
-            return Config.parseLongWithUnit( from );
-        }
-    };
+    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Config::parseLongWithUnit;
 
     public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
     {
@@ -759,34 +747,22 @@ public class Settings
     // Setting helpers
     private static Function<Function<String, String>, String> named( final String name )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
-            {
-                return settings.apply( name );
-            }
-        };
+        return settings -> settings.apply( name );
     }
 
     private static Function<Function<String, String>, String> withDefault( final String defaultValue,
                                                                            final Function<Function<String, String>,
                                                                                    String> lookup )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    return defaultValue;
-                }
-                else
-                {
-                    return value;
-                }
+                return defaultValue;
+            }
+            else
+            {
+                return value;
             }
         };
     }
@@ -794,18 +770,13 @@ public class Settings
     private static Function<Function<String, String>, String> mandatory( final Function<Function<String, String>,
             String> lookup )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    throw new IllegalArgumentException( "mandatory setting is missing" );
-                }
-                return value;
+                throw new IllegalArgumentException( "mandatory setting is missing" );
             }
+            return value;
         };
     }
 

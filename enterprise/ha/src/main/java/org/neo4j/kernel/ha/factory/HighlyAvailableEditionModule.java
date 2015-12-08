@@ -26,6 +26,7 @@ import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -48,7 +49,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -351,16 +351,10 @@ public class HighlyAvailableEditionModule
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
 
-        Function<Slave, SlaveServer> slaveServerFactory = new Function<Slave, SlaveServer>()
-        {
-            @Override
-            public SlaveServer apply( Slave slave ) throws RuntimeException
-            {
-                return new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
+        Function<Slave, SlaveServer> slaveServerFactory =
+                slave -> new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
                         monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                         monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
-            }
-        };
 
 
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,

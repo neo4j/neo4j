@@ -27,8 +27,10 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
@@ -159,36 +161,26 @@ public final class Settings
     private static <T> Function<Function<String, String>, String> inheritedValue( final Function<Function<String,
             String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
-                }
-                return value;
+                value = ((SettingHelper<T>) inheritedSetting).lookup( settings );
             }
+            return value;
         };
     }
 
     private static <T> Function<Function<String, String>, String> inheritedDefault( final Function<Function<String,
             String>, String> lookup, final Setting<T> inheritedSetting )
     {
-        return new Function<Function<String, String>, String>()
-        {
-            @Override
-            public String apply( Function<String, String> settings )
+        return settings -> {
+            String value = lookup.apply( settings );
+            if ( value == null )
             {
-                String value = lookup.apply( settings );
-                if ( value == null )
-                {
-                    value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
-                }
-                return value;
+                value = ((SettingHelper<T>) inheritedSetting).defaultLookup( settings );
             }
+            return value;
         };
     }
 
@@ -514,14 +506,7 @@ public final class Settings
      * </ul>
      */
     @Deprecated
-    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = new Function<String, Long>()
-    {
-        @Override
-        public Long apply( String from )
-        {
-            return Config.parseLongWithUnit( from );
-        }
-    };
+    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Config::parseLongWithUnit;
 
     @Deprecated
     public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )

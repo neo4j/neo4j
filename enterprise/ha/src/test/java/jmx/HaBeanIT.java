@@ -28,7 +28,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -293,38 +292,19 @@ public class HaBeanIT
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
-        return first( filter( new Predicate<URI>()
-        {
-            @Override
-            public boolean test( URI item )
-            {
-                return item.getScheme().equals( scheme );
-            }
+        return first( filter( item -> {
+            return item.getScheme().equals( scheme );
         }, uris ) );
     }
 
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
-        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
-        {
-            @Override
-            public URI apply( String from )
-            {
-                return URI.create( from );
-            }
-        }, Arrays.asList( master.getUris() ) ) ).getPort() );
+        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( master.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 2 );
-        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
-        {
-            @Override
-            public URI apply( String from )
-            {
-                return URI.create( from );
-            }
-        }, Arrays.asList( slave.getUris() ) ) ).getPort() );
+        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( slave.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
         assertTrue( "Slave not available", slave.isAvailable() );
     }

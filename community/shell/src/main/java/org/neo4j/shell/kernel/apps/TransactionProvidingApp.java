@@ -28,9 +28,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -72,32 +72,22 @@ public abstract class TransactionProvidingApp extends AbstractApp
     private static final Label[] EMPTY_LABELS = new Label[0];
     private static final RelationshipType[] EMPTY_REL_TYPES = new RelationshipType[0];
 
-    private static final Function<String[],Label[]> CREATE_LABELS = new Function<String[],Label[]>()
-    {
-        @Override
-        public Label[] apply( String[] values )
+    private static final Function<String[],Label[]> CREATE_LABELS = values -> {
+        Label[] labels = new Label[values.length];
+        for ( int i = 0; i < values.length; i++ )
         {
-            Label[] labels = new Label[values.length];
-            for ( int i = 0; i < values.length; i++ )
-            {
-                labels[i] = Label.label( values[i] );
-            }
-            return labels;
+            labels[i] = Label.label( values[i] );
         }
+        return labels;
     };
 
-    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = new Function<String[],RelationshipType[]>()
-    {
-        @Override
-        public RelationshipType[] apply( String[] values )
+    private static final Function<String[],RelationshipType[]> CREATE_REL_TYPES = values -> {
+        RelationshipType[] types = new RelationshipType[values.length];
+        for ( int i = 0; i < values.length; i++ )
         {
-            RelationshipType[] types = new RelationshipType[values.length];
-            for ( int i = 0; i < values.length; i++ )
-            {
-                types[i] = RelationshipType.withName( values[i] );
-            }
-            return types;
+            types[i] = RelationshipType.withName( values[i] );
         }
+        return types;
     };
 
     protected static final String[] STANDARD_EVAL_IMPORTS = new String[] {

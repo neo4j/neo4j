@@ -20,6 +20,7 @@
 package org.neo4j.cluster;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -36,8 +37,6 @@ import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.setting;
-
-import org.neo4j.helpers.Function;
 
 /**
  * Settings for cluster members

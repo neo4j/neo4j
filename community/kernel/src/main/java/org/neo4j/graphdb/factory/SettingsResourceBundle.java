@@ -26,8 +26,8 @@ import java.util.LinkedHashSet;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;

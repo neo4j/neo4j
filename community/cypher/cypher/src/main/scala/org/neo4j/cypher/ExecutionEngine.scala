@@ -211,7 +211,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     .resolveDependency(classOf[ThreadToStatementContextBridge])
 
   private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
-    val javaCreator = new org.neo4j.function.Function[ExecutionEngine, V]() {
+    val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(this, javaCreator)

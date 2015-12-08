@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
@@ -70,7 +70,7 @@ public class Config implements DiagnosticsProvider
 
     public Config()
     {
-        this( new HashMap<String, String>(), Collections.<Class<?>>emptyList() );
+        this( new HashMap<>(), Collections.<Class<?>>emptyList() );
     }
 
     public Config( Map<String, String> inputParams )

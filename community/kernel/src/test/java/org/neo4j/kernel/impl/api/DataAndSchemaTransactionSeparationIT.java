@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -33,7 +34,6 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
@@ -44,47 +44,37 @@ public class DataAndSchemaTransactionSeparationIT
     private static Function<GraphDatabaseService, Void> expectFailureAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
     {
-        return new Function<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
+        return graphDb -> {
+            // given
+            graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+
+            // when
+            try
             {
-                // given
-                graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+                function.apply( graphDb );
 
-                // when
-                try
-                {
-                    function.apply( graphDb );
-
-                    fail( "expected exception" );
-                }
-                // then
-                catch ( Exception e )
-                {
-                    assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.",
-                            e.getMessage() );
-                }
-                return null;
+                fail( "expected exception" );
             }
+            // then
+            catch ( Exception e )
+            {
+                assertEquals( "Cannot perform data updates in a transaction that has performed schema updates.",
+                        e.getMessage() );
+            }
+            return null;
         };
     }
 
     private static Function<GraphDatabaseService, Void> succeedAfterSchemaOperation(
             final Function<GraphDatabaseService, ?> function )
     {
-        return new Function<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
-            {
-                // given
-                graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
+        return graphDb -> {
+            // given
+            graphDb.schema().indexFor( label( "Label1" ) ).on( "key1" ).create();
 
-                // when/then
-                function.apply( graphDb );
-                return null;
-            }
+            // when/then
+            function.apply( graphDb );
+            return null;
         };
     }
 
@@ -144,14 +134,7 @@ public class DataAndSchemaTransactionSeparationIT
 
     private static Function<GraphDatabaseService, Node> createNode()
     {
-        return new Function<GraphDatabaseService, Node>()
-        {
-            @Override
-            public Node apply( GraphDatabaseService graphDb )
-            {
-                return graphDb.createNode();
-            }
-        };
+        return GraphDatabaseService::createNode;
     }
 
     private static <T extends PropertyContainer> Function<GraphDatabaseService, Object> propertyRead(
@@ -183,26 +166,12 @@ public class DataAndSchemaTransactionSeparationIT
 
     private static Function<GraphDatabaseService, Pair<Node, Node>> aPairOfNodes()
     {
-        return new Function<GraphDatabaseService, Pair<Node, Node>>()
-        {
-            @Override
-            public Pair<Node, Node> apply( GraphDatabaseService graphDb )
-            {
-                return Pair.of( graphDb.createNode(), graphDb.createNode() );
-            }
-        };
+        return graphDb -> Pair.of( graphDb.createNode(), graphDb.createNode() );
     }
 
     private static Function<GraphDatabaseService, Relationship> relate( final Pair<Node, Node> nodes )
     {
-        return new Function<GraphDatabaseService, Relationship>()
-        {
-            @Override
-            public Relationship apply( GraphDatabaseService graphDb )
-            {
-                return nodes.first().createRelationshipTo( nodes.other(), withName( "RELATED" ) );
-            }
-        };
+        return graphDb -> nodes.first().createRelationshipTo( nodes.other(), withName( "RELATED" ) );
     }
 
     private static abstract class FailureRewrite<T> implements Function<GraphDatabaseService, T>

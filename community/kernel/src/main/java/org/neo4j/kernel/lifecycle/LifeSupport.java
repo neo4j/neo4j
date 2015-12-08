@@ -22,7 +22,6 @@ package org.neo4j.kernel.lifecycle;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Logger;
@@ -269,14 +268,7 @@ public class LifeSupport
 
     public Iterable<Lifecycle> getLifecycleInstances()
     {
-        return Iterables.map( new Function<LifecycleInstance, Lifecycle>()
-        {
-            @Override
-            public Lifecycle apply( LifecycleInstance lifecycleInstance )
-            {
-                return lifecycleInstance.instance;
-            }
-        }, new ArrayList<>(instances) );
+        return Iterables.map( lifecycleInstance -> lifecycleInstance.instance, new ArrayList<>(instances) );
     }
 
     /**

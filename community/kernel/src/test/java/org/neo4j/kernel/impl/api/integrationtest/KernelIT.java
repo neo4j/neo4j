@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
-import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,7 +44,11 @@ import org.neo4j.kernel.impl.api.Kernel;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -562,14 +566,7 @@ public class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             Statement statement = statementContextSupplier.get();
-            String state = statement.readOperations().schemaStateGetOrCreate( key, new Function<String,String>()
-            {
-                @Override
-                public String apply( String s )
-                {
-                    return maybeSetThisState;
-                }
-            } );
+            String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
         }
@@ -581,14 +578,9 @@ public class KernelIT extends KernelIntegrationTest
         {
             Statement statement = statementContextSupplier.get();
             final AtomicBoolean result = new AtomicBoolean( true );
-            statement.readOperations().schemaStateGetOrCreate( key, new Function<String,Object>()
-            {
-                @Override
-                public Object apply( String s )
-                {
-                    result.set( false );
-                    return null;
-                }
+            statement.readOperations().schemaStateGetOrCreate( key, s -> {
+                result.set( false );
+                return null;
             } );
             tx.success();
             return result.get();

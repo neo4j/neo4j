@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.server.ServerStartupException;

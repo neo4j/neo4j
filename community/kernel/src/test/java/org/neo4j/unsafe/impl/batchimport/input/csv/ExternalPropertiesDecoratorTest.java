@@ -23,11 +23,11 @@ import org.junit.Test;
 
 import java.io.StringReader;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;

@@ -23,8 +23,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
@@ -344,12 +344,5 @@ public class AvailabilityGuard
     }
 
     public static final Function<AvailabilityRequirement, String> DESCRIPTION =
-            new Function<AvailabilityRequirement, String>()
-            {
-                @Override
-                public String apply( AvailabilityRequirement availabilityRequirement )
-                {
-                    return availabilityRequirement.description();
-                }
-            };
+            AvailabilityRequirement::description;
 }

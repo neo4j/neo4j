@@ -22,6 +22,7 @@ package org.neo4j.function;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -32,60 +33,36 @@ public final class Functions
 {
     public static <From, To> Function<From,To> map( final Map<From,To> map )
     {
-        return new Function<From,To>()
-        {
-            @Override
-            public To apply( From from )
-            {
-                return map.get( from );
-            }
-        };
+        return map::get;
     }
 
     public static <From, To> Function<From,To> withDefaults( final Function<From,To> defaults, final Function<From,
             To> f )
     {
-        return new Function<From,To>()
-        {
-            @Override
-            public To apply( From from )
-            {
-                To to = f.apply( from );
+        return from -> {
+            To to = f.apply( from );
 
-                if ( to == null )
-                {
-                    return defaults.apply( from );
-                }
-                else
-                {
-                    return to;
-                }
+            if ( to == null )
+            {
+                return defaults.apply( from );
+            }
+            else
+            {
+                return to;
             }
         };
     }
 
     public static <From, To> Function<From,To> nullFunction()
     {
-        return new Function<From,To>()
-        {
-            @Override
-            public To apply( From from )
-            {
-                return null; // Always return null
-            }
+        return from -> {
+            return null; // Always return null
         };
     }
 
     public static <From, To> Function<From,To> constant( final To value )
     {
-        return new Function<From,To>()
-        {
-            @Override
-            public To apply( From from )
-            {
-                return value;
-            }
-        };
+        return from -> value;
     }
 
     private static Function IDENTITY = value -> value;
@@ -98,14 +75,7 @@ public final class Functions
 
     public static <From, From2, To> BiFunction<? super Function<From,From2>,? super Function<From2,To>,Function<From,To>> compose()
     {
-        return ( f1, f2 ) -> new Function<From,To>()
-        {
-            @Override
-            public To apply( From from )
-            {
-                return f2.apply( f1.apply( from ) );
-            }
-        };
+        return ( f1, f2 ) -> (Function<From,To>) from -> f2.apply( f1.apply( from ) );
     }
 
     public static <T1, T2> BiFunction<? super BiFunction<T1,T2,T1>,? super BiFunction<T1,T2,T1>,BiFunction<T1,T2,T1>> compose2()
@@ -115,19 +85,14 @@ public final class Functions
                         function1.apply( function2.apply( from1, from2 ), from2 );
     }
 
-    public static Function<Object,String> TO_STRING = new Function<Object,String>()
-    {
-        @Override
-        public String apply( Object from )
+    public static Function<Object,String> TO_STRING = from -> {
+        if ( from != null )
         {
-            if ( from != null )
-            {
-                return from.toString();
-            }
-            else
-            {
-                return "";
-            }
+            return from.toString();
+        }
+        else
+        {
+            return "";
         }
     };
 
@@ -151,26 +116,14 @@ public final class Functions
 
     public static <T> Function<T,Void> fromConsumer( final Consumer<T> consumer )
     {
-        return new Function<T,Void>()
-        {
-            @Override
-            public Void apply( T t )
-            {
-                consumer.accept( t );
-                return null;
-            }
+        return t -> {
+            consumer.accept( t );
+            return null;
         };
     }
 
     public static <T> Function<Void,T> fromSupplier( final Supplier<T> supplier )
     {
-        return new Function<Void,T>()
-        {
-            @Override
-            public T apply( Void t )
-            {
-                return supplier.get();
-            }
-        };
+        return t -> supplier.get();
     }
 }

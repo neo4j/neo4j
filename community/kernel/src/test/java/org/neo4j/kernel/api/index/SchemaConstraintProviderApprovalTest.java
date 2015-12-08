@@ -29,8 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -142,18 +142,13 @@ public abstract class SchemaConstraintProviderApprovalTest
 
     public static final String LABEL = "Person";
     public static final String PROPERTY_KEY = "name";
-    public static final Function<Node, Object> PROPERTY_EXTRACTOR = new Function<Node, Object>()
-    {
-        @Override
-        public Object apply( Node node )
+    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node -> {
+        Object value = node.getProperty( PROPERTY_KEY );
+        if ( value.getClass().isArray() )
         {
-            Object value = node.getProperty( PROPERTY_KEY );
-            if ( value.getClass().isArray() )
-            {
-                return new ArrayEqualityObject( value );
-            }
-            return value;
+            return new ArrayEqualityObject( value );
         }
+        return value;
     };
 
     @Test

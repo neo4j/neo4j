@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
@@ -36,7 +37,6 @@ import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;

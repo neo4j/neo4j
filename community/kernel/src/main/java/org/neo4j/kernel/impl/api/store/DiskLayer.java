@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
@@ -89,37 +89,16 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 public class DiskLayer implements StoreReadLayer
 {
     private static final Function<PropertyConstraintRule, PropertyConstraint> RULE_TO_CONSTRAINT =
-            new Function<PropertyConstraintRule, PropertyConstraint>()
-            {
-                @Override
-                public PropertyConstraint apply( PropertyConstraintRule rule )
-                {
-                    // We can use propertyKeyId straight up here, without reading from the record, since we have
-                    // verified that it has that propertyKeyId in the predicate. And since we currently only support
-                    // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
-                    return rule.toConstraint();
-                }
-            };
+            // We can use propertyKeyId straight up here, without reading from the record, since we have
+            // verified that it has that propertyKeyId in the predicate. And since we currently only support
+            // uniqueness on single properties, there is nothing else to pass in to UniquenessConstraint.
+            PropertyConstraintRule::toConstraint;
 
     private static final Function<NodePropertyConstraintRule,NodePropertyConstraint> NODE_RULE_TO_CONSTRAINT =
-            new Function<NodePropertyConstraintRule,NodePropertyConstraint>()
-            {
-                @Override
-                public NodePropertyConstraint apply( NodePropertyConstraintRule rule )
-                {
-                    return rule.toConstraint();
-                }
-            };
+            NodePropertyConstraintRule::toConstraint;
 
     private static final Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint> REL_RULE_TO_CONSTRAINT =
-            new Function<RelationshipPropertyConstraintRule,RelationshipPropertyConstraint>()
-            {
-                @Override
-                public RelationshipPropertyConstraint apply( RelationshipPropertyConstraintRule rule )
-                {
-                    return rule.toConstraint();
-                }
-            };
+            RelationshipPropertyConstraintRule::toConstraint;
 
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;

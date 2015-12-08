@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -199,14 +198,7 @@ public class ClusterConfiguration
 
     public Iterable<String> getRolesOf( final InstanceId node )
     {
-        return Iterables.map( new Function<Map.Entry<String, InstanceId>, String>()
-        {
-            @Override
-            public String apply( Map.Entry<String, InstanceId> stringURIEntry )
-            {
-                return stringURIEntry.getKey();
-            }
-        }, Iterables.filter( item -> {
+        return Iterables.map( Map.Entry::getKey, Iterables.filter( item -> {
             return item.getValue().equals( node );
         }, roles.entrySet() ) );
     }

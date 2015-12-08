@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.cluster.member;
 import java.util.function.Predicate;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -92,14 +91,8 @@ public class ClusterMembers
         {
             return members;
         }
-        return Iterables.map( new Function<ClusterMember,ClusterMember>()
-        {
-            @Override
-            public ClusterMember apply( ClusterMember member ) throws RuntimeException
-            {
-                return currentMember.getInstanceId().equals( member.getInstanceId() ) ? currentMember : member;
-            }
-        }, members );
+        return Iterables.map(
+                member -> currentMember.getInstanceId().equals( member.getInstanceId() ) ? currentMember : member, members );
     }
 
     private static ClusterMember updateRole( ClusterMember member, HighAvailabilityMemberState state )

@@ -19,12 +19,11 @@
  */
 package org.neo4j.tooling;
 
-import java.util.Collections;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
+import java.util.Collections;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -145,14 +144,7 @@ public class GlobalGraphOperationsIT
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
-            Iterable<String> result = map( new Function<RelationshipType,String>()
-            {
-                @Override
-                public String apply( RelationshipType relationshipType )
-                {
-                    return relationshipType.name();
-                }
-            }, GlobalGraphOperations.at( db ).getAllRelationshipTypes() );
+            Iterable<String> result = map( RelationshipType::name, GlobalGraphOperations.at( db ).getAllRelationshipTypes() );
             assertThat( toSet( result ), equalTo( toSet( asList( alive.name(), dead.name() ) ) ) );
         }
     }
@@ -181,14 +173,7 @@ public class GlobalGraphOperationsIT
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
-            Iterable<String> result = map( new Function<RelationshipType,String>()
-            {
-                @Override
-                public String apply( RelationshipType relationshipType )
-                {
-                    return relationshipType.name();
-                }
-            }, db.getAllRelationshipTypes() );
+            Iterable<String> result = map( RelationshipType::name, db.getAllRelationshipTypes() );
             assertThat( toSet( result ) , equalTo( Collections.singleton( alive.name() ) ) );
         }
     }

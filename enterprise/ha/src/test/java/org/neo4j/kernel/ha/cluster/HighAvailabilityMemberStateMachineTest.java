@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +42,6 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
@@ -69,7 +66,6 @@ import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
@@ -474,15 +470,10 @@ public class HighAvailabilityMemberStateMachineTest
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Function<Slave,SlaveServer>()
-                {
-                    @Override
-                    public SlaveServer apply( Slave slave ) throws RuntimeException
-                    {
-                        SlaveServer mock = mock( SlaveServer.class );
-                        when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
-                        return mock;
-                    }
+                slave -> {
+                    SlaveServer mock = mock( SlaveServer.class );
+                    when( mock.getSocketAddress() ).thenReturn( new InetSocketAddress( "localhost", 123 ) );
+                    return mock;
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters );
 
         ComponentSwitcherContainer switcherContainer = new ComponentSwitcherContainer();
@@ -561,15 +552,9 @@ public class HighAvailabilityMemberStateMachineTest
     private ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
-        doAnswer( new Answer()
-        {
-            @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
-                return null;
-            }
-
+        doAnswer( invocation -> {
+            listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
+            return null;
         } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
         return listenerContainer;
     }

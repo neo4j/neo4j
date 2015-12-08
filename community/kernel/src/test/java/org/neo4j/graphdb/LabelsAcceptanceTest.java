@@ -29,9 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -89,14 +89,8 @@ public class LabelsAcceptanceTest
     @Test
     public void shouldInsertLabelsWithoutDuplicatingThem() throws Exception
     {
-        final Node node = dbRule.executeAndCommit( new Function<GraphDatabaseService, Node>()
-        {
-            @Override
-            public Node apply( GraphDatabaseService db )
-            {
-                return db.createNode();
-            }
-        } );
+        final Node node = dbRule.executeAndCommit(
+                (Function<GraphDatabaseService,Node>) GraphDatabaseService::createNode );
         // POST "FOOBAR"
         dbRule.executeAndCommit( db -> {
             node.addLabel( label( "FOOBAR" ) );
@@ -114,18 +108,13 @@ public class LabelsAcceptanceTest
             node.addLabel( label( "BAZQUX" ) );
         } );
         // GET
-        List<Label> labels = dbRule.executeAndCommit( new Function<GraphDatabaseService, List<Label>>()
-        {
-            @Override
-            public List<Label> apply( GraphDatabaseService db )
+        List<Label> labels = dbRule.executeAndCommit( db -> {
+            List<Label> labels1 = new ArrayList<>();
+            for ( Label label : node.getLabels() )
             {
-                List<Label> labels = new ArrayList<>();
-                for ( Label label : node.getLabels() )
-                {
-                    labels.add( label );
-                }
-                return labels;
+                labels1.add( label );
             }
+            return labels1;
         } );
         assertEquals( labels.toString(), 1, labels.size() );
         assertEquals( "BAZQUX", labels.get( 0 ).name() );

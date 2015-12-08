@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -44,7 +45,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Pair;

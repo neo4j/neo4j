@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,7 +47,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -122,15 +121,7 @@ public class LegacyLogEntryReaderTest
                 null
         );
 
-        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs,
-                new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
-        {
-            @Override
-            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
-            {
-                return logEntryReader;
-            }
-        } );
+        final LegacyLogEntryReader reader = new LegacyLogEntryReader( fs, from -> logEntryReader );
 
         // when
         final IOCursor<LogEntry> cursor = reader.openReadableChannel( input ).other();

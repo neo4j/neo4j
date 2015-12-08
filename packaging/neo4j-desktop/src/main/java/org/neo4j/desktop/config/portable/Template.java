@@ -26,7 +26,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 
-import org.neo4j.helpers.Function;
+import java.util.function.Function;
 
 public class Template
 {

@@ -20,7 +20,8 @@
 
 package org.neo4j.server.rest.repr;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
@@ -52,14 +53,7 @@ public class IndexDefinitionRepresentation extends MappingRepresentation
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putString( "label", indexDefinition.getLabel().name() );
-        Function<String,Representation> converter = new Function<String,Representation>()
-        {
-            @Override
-            public Representation apply( String propertyKey )
-            {
-                return ValueRepresentation.string( propertyKey );
-            }
-        };
+        Function<String,Representation> converter = ValueRepresentation::string;
         Iterable<Representation> propertyKeyRepresentations = map( converter, indexDefinition.getPropertyKeys() );
         serializer.putList( "property_keys", new ListRepresentation( RepresentationType.STRING,
                 propertyKeyRepresentations ) );

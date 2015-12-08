@@ -21,10 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -146,26 +145,21 @@ public class CsvInput implements Input
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
-                                decorator, new Validator<InputRelationship>()
-                                {
-                                    @Override
-                                    public void validate( InputRelationship entity )
+                                decorator, entity -> {
+                                    if ( entity.startNode() == null )
                                     {
-                                        if ( entity.startNode() == null )
-                                        {
-                                            throw new MissingRelationshipDataException(Type.START_ID,
-                                                                entity + " is missing " + Type.START_ID + " field" );
-                                        }
-                                        if ( entity.endNode() == null )
-                                        {
-                                            throw new MissingRelationshipDataException(Type.END_ID,
-                                                                entity + " is missing " + Type.END_ID + " field" );
-                                        }
-                                        if ( !entity.hasTypeId() && entity.type() == null )
-                                        {
-                                            throw new MissingRelationshipDataException(Type.TYPE,
-                                                                entity + " is missing " + Type.TYPE + " field" );
-                                        }
+                                        throw new MissingRelationshipDataException(Type.START_ID,
+                                                            entity + " is missing " + Type.START_ID + " field" );
+                                    }
+                                    if ( entity.endNode() == null )
+                                    {
+                                        throw new MissingRelationshipDataException(Type.END_ID,
+                                                            entity + " is missing " + Type.END_ID + " field" );
+                                    }
+                                    if ( !entity.hasTypeId() && entity.type() == null )
+                                    {
+                                        throw new MissingRelationshipDataException(Type.TYPE,
+                                                            entity + " is missing " + Type.TYPE + " field" );
                                     }
                                 }, badCollector );
                     }

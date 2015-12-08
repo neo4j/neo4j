@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
@@ -34,7 +35,6 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;

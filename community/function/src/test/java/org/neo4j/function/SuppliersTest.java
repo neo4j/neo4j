@@ -21,6 +21,7 @@ package org.neo4j.function;
 
 import org.junit.Test;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.hamcrest.Matchers.sameInstance;

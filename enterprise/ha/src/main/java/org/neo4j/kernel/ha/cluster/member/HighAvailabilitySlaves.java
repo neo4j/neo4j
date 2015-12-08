@@ -21,12 +21,12 @@ package org.neo4j.kernel.ha.cluster.member;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.function.Functions.withDefaults;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
@@ -64,21 +64,16 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
 
     private Function<ClusterMember, Slave> slaveForMember()
     {
-        return new Function<ClusterMember, Slave>()
-        {
-            @Override
-            public Slave apply( ClusterMember from )
+        return from -> {
+            synchronized ( HighAvailabilitySlaves.this )
             {
-                synchronized ( HighAvailabilitySlaves.this )
+                Slave presentSlave = slaves.get( from );
+                if ( presentSlave == null )
                 {
-                    Slave presentSlave = slaves.get( from );
-                    if ( presentSlave == null )
-                    {
-                        presentSlave = slaveFactory.newSlave( life, from );
-                        slaves.put( from, presentSlave );
-                    }
-                    return presentSlave;
+                    presentSlave = slaveFactory.newSlave( life, from );
+                    slaves.put( from, presentSlave );
                 }
+                return presentSlave;
             }
         };
     }

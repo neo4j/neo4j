@@ -24,14 +24,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.ThreadingRule;
 
@@ -82,31 +79,27 @@ public class ConversationTest
         final CountDownLatch stopLatch = new CountDownLatch( 1 );
         final CountDownLatch stopReadyLatch = new CountDownLatch( 1 );
         final int sleepTime = 1000;
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                stopReadyLatch.countDown();
-                stopLatch.await();
-                TimeUnit.MILLISECONDS.sleep( sleepTime );
-                return null;
-            }
+        doAnswer( invocation -> {
+            stopReadyLatch.countDown();
+            stopLatch.await();
+            TimeUnit.MILLISECONDS.sleep( sleepTime );
+            return null;
         } ).when( client ).stop();
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                answerLatch.countDown();
-                return null;
-            }
+        doAnswer( invocation -> {
+            answerLatch.countDown();
+            return null;
         } ).when( client ).close();
 
-        threadingRule.execute( stopConversation(), conversation );
+        threadingRule.execute( conversation -> {
+            conversation.stop();
+            return null;
+        }, conversation );
 
         stopReadyLatch.await();
-        threadingRule.execute( closeConversation(), conversation );
+        threadingRule.execute( conversation -> {
+            conversation.close();
+            return null;
+        }, conversation );
 
         long raceStartTime = System.currentTimeMillis();
         stopLatch.countDown();
@@ -115,31 +108,5 @@ public class ConversationTest
         long executionTime = System.currentTimeMillis() - raceStartTime;
         assertTrue(String.format( "Execution time should be at least equal to %d, but was %d.", sleepTime, executionTime),
                 executionTime  >= sleepTime);
-    }
-
-    private Function<Conversation,Void> closeConversation()
-    {
-        return new Function<Conversation,Void>()
-        {
-            @Override
-            public Void apply( Conversation conversation )
-            {
-                conversation.close();
-                return null;
-            }
-        };
-    }
-
-    private Function<Conversation,Void> stopConversation()
-    {
-        return new Function<Conversation,Void>()
-        {
-            @Override
-            public Void apply( Conversation conversation )
-            {
-                conversation.stop();
-                return null;
-            }
-        };
     }
 }

@@ -24,8 +24,8 @@ import org.mockito.InOrder;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;

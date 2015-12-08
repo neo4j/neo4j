@@ -22,8 +22,8 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -55,14 +55,7 @@ public class Schema extends TransactionProvidingApp
     private static final String INDENT = "  ";
 
     private static final Function<IndexDefinition,String> LABEL_COMPARE_FUNCTION =
-            new Function<IndexDefinition,String>()
-            {
-                @Override
-                public String apply( IndexDefinition index )
-                {
-                    return index.getLabel().name();
-                }
-            };
+            index -> index.getLabel().name();
 
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,

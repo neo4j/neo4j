@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
@@ -43,7 +44,6 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -93,14 +93,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitable.accept( visitor );
 
         // THEN
-        exerciseVisitor( new Function<Object, DbStructureVisitor>()
-        {
-            @Override
-            public DbStructureVisitor apply( Object o ) throws RuntimeException
-            {
-                return verify( visitor );
-            }
-        } );
+        exerciseVisitor( o -> verify( visitor ) );
         verifyNoMoreInteractions( visitor );
     }
 
@@ -150,16 +143,9 @@ public class DbStructureInvocationTracingAcceptanceTest
     private void assertCompiles( final String className, String source )
     {
         compile( className, source,
-                new CompilationListener<Boolean>()
-                {
-                    @Override
-                    public Boolean compiled( Boolean success,
-                                             JavaFileManager manager,
-                                             List<Diagnostic<? extends JavaFileObject>> diagnostics )
-                    {
-                        assertSuccessfullyCompiled( success, diagnostics, className );
-                        return true;
-                    }
+                ( success, manager, diagnostics ) -> {
+                    assertSuccessfullyCompiled( success, diagnostics, className );
+                    return true;
                 }
         );
     }
@@ -167,26 +153,20 @@ public class DbStructureInvocationTracingAcceptanceTest
     private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
     {
         return compile( className, inputSource,
-                new CompilationListener<Visitable<DbStructureVisitor>>()
-                {
-                    @Override
-                    public Visitable<DbStructureVisitor> compiled( Boolean success, JavaFileManager manager,
-                                                                   List<Diagnostic<? extends JavaFileObject>> diagnostics )
+                ( success, manager, diagnostics ) -> {
+                    assertSuccessfullyCompiled( success, diagnostics, className );
+                    Object instance;
+                    try
                     {
-                        assertSuccessfullyCompiled( success, diagnostics, className );
-                        Object instance;
-                        try
-                        {
-                            ClassLoader classLoader = manager.getClassLoader( null );
-                            Class<?> clazz = classLoader.loadClass( className );
-                            instance = clazz.getDeclaredField( "INSTANCE" ).get( null );
-                        }
-                        catch ( IllegalAccessException | ClassNotFoundException | NoSuchFieldException e )
-                        {
-                            throw new AssertionError( "Failed to instantiate compiled class", e );
-                        }
-                        return (Visitable<DbStructureVisitor>) instance;
+                        ClassLoader classLoader = manager.getClassLoader( null );
+                        Class<?> clazz = classLoader.loadClass( className );
+                        instance = clazz.getDeclaredField( "INSTANCE" ).get( null );
                     }
+                    catch ( IllegalAccessException | ClassNotFoundException | NoSuchFieldException e )
+                    {
+                        throw new AssertionError( "Failed to instantiate compiled class", e );
+                    }
+                    return (Visitable<DbStructureVisitor>) instance;
                 }
         );
     }

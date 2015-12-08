@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -44,7 +45,6 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
@@ -524,14 +524,7 @@ public abstract class IteratorUtil
      */
     public static <T> Iterable<T> loop( final Iterator<T> iterator )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return iterator;
-            }
-        };
+        return () -> iterator;
     }
 
     /**
@@ -761,14 +754,7 @@ public abstract class IteratorUtil
      * Function for converting Enum to String
      */
     @SuppressWarnings( "rawtypes" )
-    public final static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
-    {
-        @Override
-        public String apply( Enum from )
-        {
-            return from.name();
-        }
-    };
+    public final static Function<Enum, String> ENUM_NAME = Enum::name;
 
     /**
      * Converts an {@link Iterable} of enums to {@link Set} of their names.
@@ -851,27 +837,13 @@ public abstract class IteratorUtil
 
     public static Iterable<Long> asIterable( final long... array )
     {
-        return new Iterable<Long>()
-        {
-            @Override
-            public Iterator<Long> iterator()
-            {
-                return asIterator( array );
-            }
-        };
+        return () -> asIterator( array );
     }
 
     @SafeVarargs
     public static <T> Iterable<T> asIterable( final T... array )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return IteratorUtil.iterator( array );
-            }
-        };
+        return () -> iterator( array );
     }
 
     public static Iterator<Long> asIterator( final long... array )
@@ -1024,13 +996,8 @@ public abstract class IteratorUtil
 
     public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( new Function<T,T>()
-        {
-            @Override
-            public T apply( T from )
-            {
-                return itemClass.cast( from.clone() );
-            }
+        return Iterables.map( from -> {
+            return itemClass.cast( from.clone() );
         }, items );
     }
 
@@ -1171,14 +1138,7 @@ public abstract class IteratorUtil
 
     public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
     {
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                return resourceIterator( iterable.iterator(), Resource.EMPTY );
-            }
-        };
+        return () -> resourceIterator( iterable.iterator(), Resource.EMPTY );
     }
 
     @SafeVarargs

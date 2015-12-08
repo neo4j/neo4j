@@ -25,12 +25,12 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
@@ -60,7 +60,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;

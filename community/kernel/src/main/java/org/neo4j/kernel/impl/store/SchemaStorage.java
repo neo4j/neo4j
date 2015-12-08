@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;

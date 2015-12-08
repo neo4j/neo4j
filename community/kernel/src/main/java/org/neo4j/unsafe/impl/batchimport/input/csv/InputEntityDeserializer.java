@@ -20,11 +20,11 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;

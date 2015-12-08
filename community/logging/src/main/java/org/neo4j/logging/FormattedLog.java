@@ -30,9 +30,9 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 
 /**
@@ -41,14 +41,8 @@ import org.neo4j.function.Suppliers;
 public class FormattedLog extends AbstractLog
 {
     static final Supplier<Date> DEFAULT_CURRENT_DATE_SUPPLIER = Date::new;
-    static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER = new Function<OutputStream, PrintWriter>()
-    {
-        @Override
-        public PrintWriter apply( OutputStream outputStream )
-        {
-            return new PrintWriter( new OutputStreamWriter( outputStream, StandardCharsets.UTF_8 ) );
-        }
-    };
+    static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER =
+            outputStream -> new PrintWriter( new OutputStreamWriter( outputStream, StandardCharsets.UTF_8 ) );
     static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
 
     /**

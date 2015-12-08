@@ -40,7 +40,6 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.function.Function;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
@@ -266,14 +265,7 @@ public class ElectionContextImpl
     public Iterable<String> getRolesRequiringElection()
     {
         return filter( role -> clusterContext.getConfiguration().getElected( role ) == null,
-                map( new Function<ElectionRole, String>() // Convert ElectionRole to String
-        {
-            @Override
-            public String apply( ElectionRole role )
-            {
-                return role.getName();
-            }
-        }, roles ) );
+                map( ElectionRole::getName, roles ) );
     }
 
     @Override

@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -36,12 +37,5 @@ public class LuceneKernelExtensions
     }
 
     public static final Function<Class<DirectoryFactory>, DirectoryFactory> IN_MEMORY_FACTORY =
-            new Function<Class<DirectoryFactory>, DirectoryFactory>()
-    {
-        @Override
-        public DirectoryFactory apply( Class<DirectoryFactory> directoryFactoryClass )
-        {
-            return new DirectoryFactory.InMemoryDirectoryFactory();
-        }
-    };
+            directoryFactoryClass -> new DirectoryFactory.InMemoryDirectoryFactory();
 }

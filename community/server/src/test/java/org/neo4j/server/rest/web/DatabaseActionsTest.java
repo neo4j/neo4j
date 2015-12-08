@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -1190,14 +1189,9 @@ public class DatabaseActionsTest
         }
 
         // THEN
-        assertEquals( asSet( node1, node2 ), asSet( Iterables.map( new Function<Object, Long>()
-        {
-            @Override
-            public Long apply( Object from )
-            {
-                Map<?, ?> nodeMap = (Map<?, ?>) from;
-                return nodeUriToId( (String) nodeMap.get( "self" ) );
-            }
+        assertEquals( asSet( node1, node2 ), asSet( Iterables.map( from -> {
+            Map<?, ?> nodeMap = (Map<?, ?>) from;
+            return nodeUriToId( (String) nodeMap.get( "self" ) );
         }, representation ) ) );
     }
 

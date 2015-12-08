@@ -32,7 +32,6 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -212,14 +211,7 @@ public class Neo4jMatchers
 
     public static Set<String> asLabelNameSet( Iterable<Label> enums )
     {
-        return asSet( map( new Function<Label, String>()
-        {
-            @Override
-            public String apply( Label from )
-            {
-                return from.name();
-            }
-        }, enums ) );
+        return asSet( map( Label::name, enums ) );
     }
 
     public static Matcher<? super Iterator<Long>> hasSamePrimitiveItems( final PrimitiveLongIterator actual )

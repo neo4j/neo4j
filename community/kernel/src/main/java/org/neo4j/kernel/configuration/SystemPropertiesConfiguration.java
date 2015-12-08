@@ -23,10 +23,10 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
 
 /**
  * Collect settings from System.getProperties(). For the given settings classes, using the Setting pattern,

@@ -22,8 +22,8 @@ package org.neo4j.tools.dump;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -68,15 +68,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            Function<File,StoreFactory> createStoreFactory = new Function<File,StoreFactory>()
-            {
-                @Override
-                public StoreFactory apply( File file )
-                {
-                    return new StoreFactory( file.getParentFile(), new Config(), idGeneratorFactory, pageCache, fs,
+            Function<File,StoreFactory> createStoreFactory =
+                    file -> new StoreFactory( file.getParentFile(), new Config(), idGeneratorFactory, pageCache, fs,
                             logProvider() );
-                }
-            };
 
             for ( String arg : args )
             {

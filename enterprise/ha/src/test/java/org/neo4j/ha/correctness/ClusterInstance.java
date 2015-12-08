@@ -49,7 +49,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotContext;
 import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.statemachine.StateMachine;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
@@ -71,14 +70,7 @@ class ClusterInstance
     private final ClusterInstanceOutput output;
     private final URI uri;
 
-    public static final Executor DIRECT_EXECUTOR = new Executor()
-    {
-        @Override
-        public void execute( Runnable command )
-        {
-            command.run();
-        }
-    };
+    public static final Executor DIRECT_EXECUTOR = command -> command.run();
 
     private boolean online = true;
 
@@ -166,13 +158,8 @@ class ClusterInstance
 
     private Iterable<String> stateMachineStates()
     {
-        return Iterables.map( new Function<StateMachine, String>()
-        {
-            @Override
-            public String apply( StateMachine stateMachine )
-            {
-                return stateMachine.getState().toString();
-            }
+        return Iterables.map( stateMachine -> {
+            return stateMachine.getState().toString();
         }, server.getStateMachines().getStateMachines() );
     }
 

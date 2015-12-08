@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.function.Function;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.ThreadingRule;
 
@@ -111,21 +111,16 @@ public class ArrayEncoderTest
                 "Hopefully this isn't just nonsensical drivel, and maybe, just maybe someone might actually read it."};
         long executionTime = SECONDS.toMillis( 5 );
         final AtomicBoolean running = new AtomicBoolean( true );
-        Function<String, Boolean> function = new Function<String, Boolean>()
-        {
-            @Override
-            public Boolean apply( String input )
+        ThrowingFunction<String, Boolean, RuntimeException> function = input -> {
+            String first = ArrayEncoder.encode( new String[]{input} );
+            do
             {
-                String first = ArrayEncoder.encode( new String[]{input} );
-                do
+                if ( !first.equals( ArrayEncoder.encode( new String[]{input} ) ) )
                 {
-                    if ( !first.equals( ArrayEncoder.encode( new String[]{input} ) ) )
-                    {
-                        return false;
-                    }
-                } while ( running.get() );
-                return true;
-            }
+                    return false;
+                }
+            } while ( running.get() );
+            return true;
         };
         List<Future<Boolean>> futures = new ArrayList<>();
 

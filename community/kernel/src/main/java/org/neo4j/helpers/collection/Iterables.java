@@ -30,10 +30,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
@@ -115,14 +115,7 @@ public final class Iterables
 
     public static <T> Function<Iterable<T>, Iterable<T>> limit( final int limitItems )
     {
-        return new Function<Iterable<T>, Iterable<T>>()
-        {
-            @Override
-            public Iterable<T> apply( Iterable<T> ts )
-            {
-                return limit( limitItems, ts );
-            }
-        };
+        return ts -> limit( limitItems, ts );
     }
 
     public static <T> Iterable<T> unique( final Iterable<T> iterable )
@@ -414,15 +407,7 @@ public final class Iterables
 
     public static <FROM, TO> Function<FROM, TO> cast()
     {
-        return new Function<FROM, TO>()
-        {
-            @Override
-            @SuppressWarnings("unchecked")
-            public TO apply( FROM from )
-            {
-                return (TO) from;
-            }
-        };
+        return from -> (TO) from;
     }
 
     public static <T, C extends T> Iterable<T> prepend( final C item, final Iterable<T> iterable )

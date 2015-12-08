@@ -28,8 +28,8 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;

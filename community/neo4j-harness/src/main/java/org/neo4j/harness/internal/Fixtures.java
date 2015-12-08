@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
@@ -41,19 +41,14 @@ public class Fixtures
 
     private final String cypherSuffix = "cyp";
 
-    private final FileFilter cypherFileOrDirectoryFilter = new FileFilter()
-    {
-        @Override
-        public boolean accept( File file )
+    private final FileFilter cypherFileOrDirectoryFilter = file -> {
+        if(file.isDirectory())
         {
-            if(file.isDirectory())
-            {
-                return true;
-            }
-            String[] split = file.getName().split( "\\." );
-            String suffix = split[split.length-1];
-            return suffix.equals( cypherSuffix );
+            return true;
         }
+        String[] split = file.getName().split( "\\." );
+        String suffix = split[split.length-1];
+        return suffix.equals( cypherSuffix );
     };
 
     public void add( File fixturePath )

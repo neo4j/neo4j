@@ -24,17 +24,17 @@ import org.w3c.dom.Node;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Function;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileUtils;
 
 /**
  * Validates a config setting for the location of a HTTP log config file. It ensures that, if there is a log directory specified, that directory
  * exists and is writable.
  */
-public class HttpLogSetting implements Function<String, File>
+public class HttpLogSetting implements Function<String,File>
 {
     @Override
     public File apply( String setting )

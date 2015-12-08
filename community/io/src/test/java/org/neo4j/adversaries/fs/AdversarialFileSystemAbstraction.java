@@ -34,9 +34,9 @@ import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;

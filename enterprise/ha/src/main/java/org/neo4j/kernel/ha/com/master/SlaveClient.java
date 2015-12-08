@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.cluster.InstanceId;
@@ -31,16 +29,15 @@ import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
-import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.helpers.Functions;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readString;
@@ -66,28 +63,17 @@ public class SlaveClient extends Client<Slave> implements Slave
     @Override
     public Response<Void> pullUpdates( final long upToAndIncludingTxId )
     {
-        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, new Serializer()
-        {
-            @Override
-            public void write( ChannelBuffer buffer ) throws IOException
-            {
-                writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
-                buffer.writeLong( upToAndIncludingTxId );
-            }
+        return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, buffer -> {
+            writeString( buffer, NeoStoreDataSource.DEFAULT_DATA_SOURCE_NAME );
+            buffer.writeLong( upToAndIncludingTxId );
         }, Protocol.VOID_DESERIALIZER );
     }
 
     public static enum SlaveRequestType implements RequestType<Slave>
     {
-        PULL_UPDATES( new TargetCaller<Slave, Void>()
-        {
-            @Override
-            public Response<Void> call( Slave master, RequestContext context, ChannelBuffer input,
-                                        ChannelBuffer target )
-            {
-                readString( input ); // And discard
-                return master.pullUpdates( input.readLong() );
-            }
+        PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) -> {
+            readString( input ); // And discard
+            return master.pullUpdates( input.readLong() );
         }, VOID_SERIALIZER );
 
         private final TargetCaller caller;

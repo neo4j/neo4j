@@ -24,10 +24,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -383,40 +383,26 @@ public class RelationshipChangesForNode
 
     private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( final int[] types )
     {
-        return new Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>>()
+        return relationshipsByType -> new PrefetchingIterator<Set<Long>>()
         {
-            @Override
-            public Iterator<Set<Long>> apply( final Map<Integer, Set<Long>> relationshipsByType )
-            {
-                return new PrefetchingIterator<Set<Long>>()
-                {
-                    private final PrimitiveIntIterator iterTypes = iterator( types );
+            private final PrimitiveIntIterator iterTypes = iterator( types );
 
-                    @Override
-                    protected Set<Long> fetchNextOrNull()
+            @Override
+            protected Set<Long> fetchNextOrNull()
+            {
+                while ( iterTypes.hasNext() )
+                {
+                    Set<Long> relsByType = relationshipsByType.get( iterTypes.next() );
+                    if ( relsByType != null )
                     {
-                        while ( iterTypes.hasNext() )
-                        {
-                            Set<Long> relsByType = relationshipsByType.get( iterTypes.next() );
-                            if ( relsByType != null )
-                            {
-                                return relsByType;
-                            }
-                        }
-                        return null;
+                        return relsByType;
                     }
-                };
+                }
+                return null;
             }
         };
     }
 
     private static final Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> ALL_TYPES
-            = new Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>>()
-    {
-        @Override
-        public Iterator<Set<Long>> apply( Map<Integer, Set<Long>> integerSetMap )
-        {
-            return integerSetMap.values().iterator();
-        }
-    };
+            = integerSetMap -> integerSetMap.values().iterator();
 }

@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import javax.xml.parsers.DocumentBuilder;
@@ -1185,7 +1186,7 @@ public class ClusterManager
             }
         }
 
-        public void applyOnAll( org.neo4j.function.Function<GraphDatabaseService,Void> function )
+        public void applyOnAll( Function<GraphDatabaseService,Void> function )
         {
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
             {

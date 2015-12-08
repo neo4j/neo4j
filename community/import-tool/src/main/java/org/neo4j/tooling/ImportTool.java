@@ -29,9 +29,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
@@ -678,14 +678,7 @@ public class ImportTool
         };
     }
 
-    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
-    {
-        @Override
-        public IdType apply( String from )
-        {
-            return IdType.valueOf( from.toUpperCase() );
-        }
-    };
+    private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );
 
     private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
 

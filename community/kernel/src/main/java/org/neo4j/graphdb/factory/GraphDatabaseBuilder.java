@@ -31,8 +31,8 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.helpers.Functions.map;
-import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.function.Functions.map;
+import static org.neo4j.function.Functions.withDefaults;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -82,7 +82,7 @@ public class GraphDatabaseBuilder
     /**
      * Set an unvalidated configuration option.
      * @deprecated Use setConfig with explicit {@link Setting} instead.
-     * 
+     *
      * @param name Name of the setting
      * @param value New value of the setting
      * @return the builder

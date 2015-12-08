@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -197,14 +196,7 @@ public class KernelSchemaStateFlushingTest
     {
         try ( Statement statement = tx.acquireStatement() )
         {
-            return statement.readOperations().schemaStateGetOrCreate( key, new Function<String, String>()
-            {
-                @Override
-                public String apply( String from )
-                {
-                    return value;
-                }
-            } );
+            return statement.readOperations().schemaStateGetOrCreate( key, from -> value );
         }
     }
 

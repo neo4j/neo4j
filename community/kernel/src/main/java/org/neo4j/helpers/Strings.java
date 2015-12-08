@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
 
 /**
  * Helper functions for working with strings.
@@ -34,30 +35,25 @@ public final class Strings
     {
     }
 
-    public static final Function<String,String> decamelize = new Function<String,String>()
-    {
-        @Override
-        public String apply( String name )
+    public static final Function<String,String> decamelize = name -> {
+        StringBuilder result = new StringBuilder();
+        for ( int i = 0; i < name.length(); i++ )
         {
-            StringBuilder result = new StringBuilder();
-            for ( int i = 0; i < name.length(); i++ )
+            char c = name.charAt( i );
+            if ( Character.isUpperCase( c ) )
             {
-                char c = name.charAt( i );
-                if ( Character.isUpperCase( c ) )
+                if ( i > 0 )
                 {
-                    if ( i > 0 )
-                    {
-                        result.append( '_' );
-                    }
-                    result.append( Character.toLowerCase( c ) );
+                    result.append( '_' );
                 }
-                else
-                {
-                    result.append( c );
-                }
+                result.append( Character.toLowerCase( c ) );
             }
-            return result.toString();
+            else
+            {
+                result.append( c );
+            }
         }
+        return result.toString();
     };
 
     public static boolean isBlank( String str )

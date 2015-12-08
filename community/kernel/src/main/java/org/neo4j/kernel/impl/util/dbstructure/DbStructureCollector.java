@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -87,32 +86,20 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
-                return Iterables.map( new Function<UniquenessConstraint,Pair<String,String>>()
-                {
-                    @Override
-                    public Pair<String,String> apply( UniquenessConstraint uniquenessConstraint )
-                            throws RuntimeException
-                    {
-                        String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                        String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
-                        return Pair.of( label, propertyKey );
-                    }
+                return Iterables.map( uniquenessConstraint -> {
+                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    return Pair.of( label, propertyKey );
                 }, uniquenessConstraints.iterator() );
             }
 
             @Override
             public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
             {
-                return Iterables.map( new Function<NodePropertyExistenceConstraint,Pair<String,String>>()
-                {
-                    @Override
-                    public Pair<String,String> apply( NodePropertyExistenceConstraint uniquenessConstraint )
-                            throws RuntimeException
-                    {
-                        String label = labels.byIdOrFail( uniquenessConstraint.label() );
-                        String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
-                        return Pair.of( label, propertyKey );
-                    }
+                return Iterables.map( uniquenessConstraint -> {
+                    String label = labels.byIdOrFail( uniquenessConstraint.label() );
+                    String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
+                    return Pair.of( label, propertyKey );
                 }, nodePropertyExistenceConstraints.iterator() );
             }
 

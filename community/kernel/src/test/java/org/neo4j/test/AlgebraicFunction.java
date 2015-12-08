@@ -19,7 +19,7 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
 
 public abstract class AlgebraicFunction<FROM, TO> implements Function<FROM, TO>
 {

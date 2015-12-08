@@ -28,11 +28,11 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -280,15 +280,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void stopModules()
     {
-        new RunCarefully( map( new Function<ServerModule, Runnable>()
-        {
-            @Override
-            public Runnable apply( final ServerModule module )
-            {
-                return () -> module.stop();
-            }
-        }, serverModules ) )
-                .run();
+        new RunCarefully( map( (Function<ServerModule,Runnable>) module -> module::stop, serverModules ) ).run();
     }
 
     @Override

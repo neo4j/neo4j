@@ -38,7 +38,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -60,7 +59,6 @@ import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
-import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
@@ -325,17 +323,12 @@ public class SwitchToSlaveTest
                 storeCopyClient,
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
-                new Function<Slave,SlaveServer>()
-                {
-                    @Override
-                    public SlaveServer apply( Slave slave ) throws RuntimeException
-                    {
-                        SlaveServer server = mock( SlaveServer.class );
-                        InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
+                slave -> {
+                    SlaveServer server = mock( SlaveServer.class );
+                    InetSocketAddress inetSocketAddress = InetSocketAddress.createUnresolved( "localhost", 42 );
 
-                        when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
-                        return server;
-                    }
+                    when( server.getSocketAddress() ).thenReturn( inetSocketAddress );
+                    return server;
                 }, updatePuller, pageCacheMock, mock( Monitors.class ), transactionCounters ) );
     }
 

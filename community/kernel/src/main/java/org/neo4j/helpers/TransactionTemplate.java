@@ -21,9 +21,9 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -125,14 +125,9 @@ public class TransactionTemplate
 
     public void execute( final Consumer<Transaction> txConsumer )
     {
-        execute( new Function<Transaction, Object>()
-        {
-            @Override
-            public Object apply( Transaction transaction )
-            {
-                txConsumer.accept( transaction );
-                return null;
-            }
+        execute( transaction -> {
+            txConsumer.accept( transaction );
+            return null;
         } );
     }
 

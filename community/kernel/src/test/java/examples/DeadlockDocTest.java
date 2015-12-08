@@ -19,12 +19,11 @@
  */
 package examples;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Function;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -53,14 +52,9 @@ public class DeadlockDocTest
         // END SNIPPET: template
 
         // START SNIPPET: usage-template
-        Object result = template.with(graphDatabaseService).execute( new Function<Transaction, Object>()
-        {
-            @Override
-            public Object apply( Transaction transaction ) throws RuntimeException
-            {
-                Object result = null;
-                return result;
-            }
+        Object result = template.with(graphDatabaseService).execute( transaction -> {
+            Object result1 = null;
+            return result1;
         } );
         // END SNIPPET: usage-template
     }

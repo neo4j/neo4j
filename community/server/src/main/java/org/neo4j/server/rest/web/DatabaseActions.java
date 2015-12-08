@@ -29,9 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -141,14 +141,7 @@ public class DatabaseActions
     }
 
     private final Function<ConstraintDefinition,Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
-            new Function<ConstraintDefinition,Representation>()
-            {
-                @Override
-                public Representation apply( ConstraintDefinition from )
-                {
-                    return new ConstraintDefinitionRepresentation( from );
-                }
-            };
+            ConstraintDefinitionRepresentation::new;
 
     public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing,
             GraphDatabaseAPI graphDatabaseAPI )

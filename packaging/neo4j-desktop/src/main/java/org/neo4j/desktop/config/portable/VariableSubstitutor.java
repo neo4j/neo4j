@@ -22,7 +22,7 @@ package org.neo4j.desktop.config.portable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.Function;
+import java.util.function.Function;
 
 class VariableSubstitutor
 {

@@ -53,12 +53,12 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;

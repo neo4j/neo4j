@@ -24,8 +24,6 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -80,7 +78,14 @@ public class ConstraintIndexConcurrencyTest
                     "The value is irrelevant, we just want to perform some sort of lookup against this index" );
 
             // then let another thread come in and create a node
-            threads.execute( createNode( label, propertyKey, conflictingValue ), graphDb ).get();
+            threads.execute( db -> {
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    db.createNode( label ).setProperty( propertyKey, conflictingValue );
+                    transaction.success();
+                }
+                return null;
+            }, graphDb ).get();
 
             // before we create a node with the same property ourselves - using the same statement that we have
             // already used for lookup against that very same index
@@ -102,23 +107,5 @@ public class ConstraintIndexConcurrencyTest
 
             tx.success();
         }
-    }
-
-    private static Function<GraphDatabaseService,Void> createNode(
-            final Label label, final String key, final Object value )
-    {
-        return new Function<GraphDatabaseService,Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
-            {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
-                    graphDb.createNode( label ).setProperty( key, value );
-                    tx.success();
-                }
-                return null;
-            }
-        };
     }
 }

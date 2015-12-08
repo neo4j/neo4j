@@ -25,6 +25,7 @@ import java.io.File;
 import java.net.URI;
 import java.util.List;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -34,24 +35,23 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.Functions.map;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.MANDATORY;
-import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.basePath;
-import static org.neo4j.kernel.configuration.Settings.isFile;
-import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.matches;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.range;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.function.Functions.map;
+import static org.neo4j.helpers.Settings.DURATION;
+import static org.neo4j.helpers.Settings.MANDATORY;
+import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
+import static org.neo4j.helpers.Settings.PATH;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.basePath;
+import static org.neo4j.helpers.Settings.isFile;
+import static org.neo4j.helpers.Settings.list;
+import static org.neo4j.helpers.Settings.matches;
+import static org.neo4j.helpers.Settings.max;
+import static org.neo4j.helpers.Settings.min;
+import static org.neo4j.helpers.Settings.range;
+import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.helpers.Settings.INTEGER;
 
 public class SettingsTest
 {

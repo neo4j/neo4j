@@ -19,8 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.util.function.Function;
+
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
