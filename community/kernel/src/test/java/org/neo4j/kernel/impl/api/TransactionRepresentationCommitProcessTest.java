@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -31,6 +32,8 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -59,20 +62,16 @@ public class TransactionRepresentationCommitProcessTest
     private final CommitEvent commitEvent = CommitEvent.NULL;
 
     @Test
-    public void shouldNotIncrementLastCommittedTxIdIfAppendFails() throws Exception
+    public void shouldFailWithProperMessageOnAppendException() throws Exception
     {
         // GIVEN
         TransactionAppender appender = mock( TransactionAppender.class );
-        long txId = 11;
         IOException rootCause = new IOException( "Mock exception" );
         doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionToApply.class ),
                 any( LogAppendEvent.class ) );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         StorageEngine storageEngine = mock( StorageEngine.class );
         TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                appender,
-                storageEngine,
-                mockedIndexUpdatesValidator() );
+                appender, storageEngine, mockedIndexUpdatesValidator() );
 
         // WHEN
         try
@@ -85,8 +84,6 @@ public class TransactionRepresentationCommitProcessTest
             assertThat( e.getMessage(), containsString( "Could not append transaction representation to log" ) );
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
-
-        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0 );
     }
 
     @Test
@@ -148,6 +145,31 @@ public class TransactionRepresentationCommitProcessTest
             // Then
             assertEquals( Status.Transaction.ValidationFailed, e.status() );
         }
+    }
+
+    @Test
+    public void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception
+    {
+        // GIVEN
+        long txId = 11;
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        TransactionAppender appender = new TestableTransactionAppender( transactionIdStore );
+        when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+
+        StorageEngine storageEngine = mock( StorageEngine.class );
+
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+                appender,
+                storageEngine,
+                mockedIndexUpdatesValidator() );
+        PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        noCommandTx.setHeader( new byte[0], -1, -1, -1, -1, -1, -1 );
+
+        // WHEN
+
+        commitProcess.commit( new TransactionToApply( noCommandTx ), commitEvent, INTERNAL );
+
+        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM );
     }
 
     private TransactionToApply mockedTransaction()
