@@ -25,6 +25,7 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -46,7 +47,6 @@ import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DependencyResolver;
@@ -389,33 +389,23 @@ public class HighlyAvailableEditionModule
         Factory<ConversationManager> conversationManagerFactory =
                 () -> new ConversationManager( conversationSPIFactory.newInstance(), config );
 
-        BiFunction<ConversationManager, LifeSupport, Master> masterFactory = new BiFunction<ConversationManager, LifeSupport, Master>()
-        {
-            @Override
-            public Master apply( ConversationManager conversationManager, LifeSupport life )
-            {
-                return life.add( new MasterImpl( masterSPIFactory.newInstance(),
-                        conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
-            }
-        };
+        BiFunction<ConversationManager, LifeSupport, Master> masterFactory = ( conversationManager, life1 ) ->
+                life1.add( new MasterImpl( masterSPIFactory.newInstance(),
+                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
 
-        BiFunction<Master, ConversationManager, MasterServer> masterServerFactory = new BiFunction<Master, ConversationManager, MasterServer>()
-        {
-            @Override
-            public MasterServer apply( final Master master, ConversationManager conversationManager ) throws RuntimeException
-            {
-                TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
+        BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
+                ( master1, conversationManager ) -> {
+                    TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
+                            platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
+                            platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
 
 
-                return new MasterServer( master, logging.getInternalLogProvider(),
-                        masterServerConfig( config ),
-                        new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
-                        monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
-            }
-        };
+                    return new MasterServer( master1, logging.getInternalLogProvider(),
+                            masterServerConfig( config ),
+                            new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
+                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
+                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
+                };
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, dependencies.provideDependency( SlaveFactory.class ),

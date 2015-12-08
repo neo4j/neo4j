@@ -19,6 +19,8 @@
  */
 package org.neo4j.function;
 
+import java.util.function.BiFunction;
+
 /**
  * @deprecated use {@link BiFunction} instead
  */
