@@ -244,15 +244,15 @@ class MatchTest extends DocumentingTest {
             """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long.
               |Inside of the parentheses you define a single link of a path -- the starting node, the connecting relationship
               |and the end node. Characteristics describing the relationship like relationship type, max hops and direction
-              |are all used when finding the shortest path. If there is a WHERE clause following the match of a shortestPath,
-              |relevant predicates will be included in the shortestPath. If the predicate is a `NONE()` or `ALL()` on the
-              |relationship elements of the path, it will be used during the search to improve performance
-              |(see <<query-shortestpath-planning>>).""")
+              |are all used when finding the shortest path. If there is a `WHERE` clause following the match of a
+              |`shortestPath`, relevant predicates will be included in the `shortestPath`.
+              |If the predicate is a `NONE()` or `ALL()` on the relationship elements of the path,
+              |it will be used during the search to improve performance (see <<query-shortestpath-planning>>).""")
           resultTable()
         }
       }
       section("Single shortest path with predicates") {
-        p("""Predicates used in the WHERE clause that apply to the shortest path pattern are evaluated before deciding
+        p("""Predicates used in the `WHERE` clause that apply to the shortest path pattern are evaluated before deciding
           |what the shortest matching path is.""")
         query(
           """MATCH (charlie:Person {name:"Charlie Sheen"}),
@@ -261,8 +261,8 @@ class MatchTest extends DocumentingTest {
             |WHERE NONE(r in rels(p) WHERE type(r) = "FATHER")
             |RETURN p""", assertShortestPathLength) {
           p(
-            """This query will find the shortest path between 'Charlie Sheen' and 'Martin Sheen', and the +WHERE+ predicate
-              |will make sure that we don't consider the father/son relationship between the two.""")
+            """This query will find the shortest path between 'Charlie Sheen' and 'Martin Sheen', and the `WHERE` predicate
+              |will ensure that we don't consider the father/son relationship between the two.""")
           resultTable()
         }
       }

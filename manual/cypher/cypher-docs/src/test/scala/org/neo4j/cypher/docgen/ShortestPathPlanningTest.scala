@@ -45,48 +45,49 @@ class ShortestPathPlanningTest extends DocumentingTest {
         |       (rob)-[:DIRECTED]->(thePresident)""",
         "CREATE INDEX ON :Person(name)"
     )
-    synopsis("Shortest path finding in Cypher and how it is planned")
-    section("-=-=-=-=-=-=-=-") {
-      p("""Planning shortest paths in Cypher can lead to different query plans depending on the predicates that need
-          |to be evaluated. Internally, Neo4j will use a fast bidirectional breadth-first search algorithm if the
-          |predicates can be evaluated whilst searching for the path. If the predicates need to inspect the whole path
-          |before deciding on whether it is valid or not, this fast algorithm cannot be used, and Neo4j will fall back to
-          |a slower exhaustive search for the path. The difference between these two can be in the order of magnitude,
-          |so it is important to ensure that the fast approach is used for time critical queries.""")
-      p("""When the exhaustive search is planned, it is still only executed when the fast algorithm fails to find any
-          |matching paths. The fast algorithm is always executed first, since it is possible that it can find a valid
-          |path even though that could not be guaranteed at planning time.""")
+    synopsis("Shortest path finding in Cypher and how it is planned.")
+    p("""Planning shortest paths in Cypher can lead to different query plans depending on the predicates that need
+        |to be evaluated. Internally, Neo4j will use a fast bidirectional breadth-first search algorithm if the
+        |predicates can be evaluated whilst searching for the path. If the predicates need to inspect the whole path
+        |before deciding on whether it is valid or not, this fast algorithm cannot be used, and Neo4j will fall back to
+        |a slower exhaustive search for the path. The difference between these two can be in the order of magnitude,
+        |so it is important to ensure that the fast approach is used for time critical queries.""")
+    p("""When the exhaustive search is planned, it is still only executed when the fast algorithm fails to find any
+        |matching paths. The fast algorithm is always executed first, since it is possible that it can find a valid
+        |path even though that could not be guaranteed at planning time.""")
+    section("Shortest path with fast algorithm") {
       query(
-        """MATCH (martin:Person {name:"Martin Sheen"} ),
-          |      (charlie:Person {name:"Charlie Sheen"}),
-          |      p = shortestPath( (martin)-[rels*]-(charlie) )
+        """MATCH (ms:Person {name:"Martin Sheen"} ),
+          |      (cs:Person {name:"Charlie Sheen"}),
+          |      p = shortestPath( (ms)-[rels*]-(cs) )
           |WHERE ALL(r in rels WHERE type(r) = "ACTED_IN")
           |RETURN p""", assertShortestPathLength) {
         p(
-          """This query can be evaluated with the fast algorithm - there are no predicates that need to see the whole
+          """This query can be evaluated with the fast algorithm -- there are no predicates that need to see the whole
             |path before being evaluated.""")
         profileExecutionPlan()
       }
-      section("Single shortest path with predicates") {
-        p("""Predicates used in the WHERE clause that apply to the shortest path pattern are evaluated before deciding
-             |what the shortest matching path is. """)
-        query(
-          """MATCH (charlie:Person {name:"Charlie Sheen"}),
-            |      (martin:Person {name:"Martin Sheen"}),
-            |      p = shortestPath( (charlie)-[*]-(martin) )
-            |WHERE length(p) > 1
-            |RETURN p""", assertShortestPathLength) {
-          p(
-            """This query, in contrast with the one above, needs to check that the whole path follows the predicate
-              |before we know if it is valid or not, and so the query plan will also include the fall back to the slower
-              |exhaustive search algorithm""")
-          profileExecutionPlan()
-        }
-        p("""The way the bigger exhaustive query plan works is by using +Apply+/+Optional+ to ensure that when the
-            |fast algorithm does not find any results, a `null` result is generated instead of simply stopping the result stream.
-            |On top of this, the planner will issue an +AntiCondiitionalApply+, which will run the exhaustive search
-            |if the path variable is pointing to `null` instead of a path.""")
+    }
+    section("Shortest path with additional predicate checks on the paths") {
+      p("""Predicates used in the `WHERE` clause that apply to the shortest path pattern are evaluated before deciding
+           |what the shortest matching path is. """)
+      query(
+        """MATCH (cs:Person {name:"Charlie Sheen"}),
+          |      (ms:Person {name:"Martin Sheen"}),
+          |      p = shortestPath( (cs)-[*]-(ms) )
+          |WHERE length(p) > 1
+          |RETURN p""", assertShortestPathLength) {
+        p(
+          """This query, in contrast with the one above, needs to check that the whole path follows the predicate
+            |before we know if it is valid or not, and so the query plan will also include the fall back to the slower
+            |exhaustive search algorithm""")
+        profileExecutionPlan()
       }
+      p("""The way the bigger exhaustive query plan works is by using +Apply+/+Optional+ to ensure that when the
+          |fast algorithm does not find any results, a `NULL` result is generated instead of simply stopping the result
+          |stream.
+          |On top of this, the planner will issue an `AntiCondiitionalApply`, which will run the exhaustive search
+          |if the path variable is pointing to `NULL` instead of a path.""")
     }
   }.build()
 
