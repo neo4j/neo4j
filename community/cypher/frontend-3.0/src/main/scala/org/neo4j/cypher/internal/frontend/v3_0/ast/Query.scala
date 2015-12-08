@@ -54,7 +54,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val hints = clauses.collect { case m: Match => m.hints }.flatten
     val hasStartClause = clauses.exists(_.isInstanceOf[Start])
     if (hints.nonEmpty && hasStartClause) {
-      SemanticCheckResult.error(s, SemanticError("Cannot use index hints with start clause", hints.head.position))
+      SemanticCheckResult.error(s, SemanticError("Cannot use planner hints with start clause", hints.head.position))
     } else {
       SemanticCheckResult.success(s)
     }
@@ -62,7 +62,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkOrder: SemanticCheck = s => {
     val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause], Vector.empty[SemanticError]) {
-      case ((_, errors), pair) =>
+      case ((_, semanticErrors), pair) =>
         val optError = pair match {
           case Seq(_: With, _: Start) =>
             None
@@ -83,7 +83,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case _ =>
             None
         }
-        (pair, optError.fold(errors)(errors :+ _))
+        (pair, optError.fold(semanticErrors)(semanticErrors :+ _))
     }
 
     val lastError = lastPair.last match {
