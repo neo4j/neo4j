@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,11 +39,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class TestConfig
+public class ConfigTest
 {
 
     public static class MyMigratingSettings
@@ -206,4 +209,34 @@ public class TestConfig
         assertThat( config.get( setting("non-overlapping", STRING, "") ), equalTo( "huzzah" ) );
         assertThat( config.get( setting("unrelated", STRING, "") ), equalTo( "hello" ) );
     }
+
+    @Test
+    public void shouldProvideViewOfGroups() throws Throwable
+    {
+        // Given
+        Config config = new Config( stringMap(
+                "myusers.0.name", "Bob",
+                "myusers.0.age", "81",
+                "myusers.1.name", "Greta",
+                "myusers.1.age", "82" ) );
+
+        Setting<String> name = setting( "name", STRING, NO_DEFAULT );
+        Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
+
+        // When
+        List<ConfigView> views = config.view( Config.groups( "myusers" ) );
+
+        // Then
+        assertThat( views.size(), equalTo( 2 ));
+
+        ConfigView bob = views.get( 0 );
+        assertThat( bob.get( name ), equalTo( "Bob" ) );
+        assertThat( bob.get( age ), equalTo( 81 ) );
+
+        ConfigView greta = views.get( 1 );
+        assertThat( greta.get( name ), equalTo( "Greta" ) );
+        assertThat( greta.get( age ), equalTo( 82 ) );
+
+    }
+
 }
