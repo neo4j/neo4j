@@ -59,6 +59,21 @@ public class Leader implements RaftMessageHandler
         }
     }
 
+    static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
+            content ) throws RaftStorageException
+    {
+        long prevLogIndex = ctx.entryLog().appendIndex();
+        long prevLogTerm = prevLogIndex == -1 ? -1 :
+                prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
+                        ctx.term() :
+                        ctx.entryLog().readLogEntry( prevLogIndex ).term();
+
+        RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
+
+        outcome.addShipCommand( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
+        outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
+    }
+
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.Message<MEMBER> message,
                                             ReadableRaftState<MEMBER> ctx, Log log ) throws RaftStorageException
@@ -198,16 +213,7 @@ public class Leader implements RaftMessageHandler
                 RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
                 ReplicatedContent content = req.content();
 
-                long prevLogIndex = ctx.entryLog().appendIndex();
-                long prevLogTerm = prevLogIndex == -1 ? -1 :
-                                        prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
-                                                ctx.term() :
-                                                ctx.entryLog().readLogEntry( prevLogIndex ).term();
-
-                RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
-
-                outcome.addShipCommand( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
-                outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
+                appendNewEntry( ctx, outcome, content );
                 break;
             }
         }

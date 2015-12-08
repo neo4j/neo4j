@@ -24,22 +24,21 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
-import org.neo4j.coreedge.raft.locks.LockRequestEncoder;
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
-import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.server.ExpiryScheduler;
-import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
-import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
+import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.logging.LogProvider;
 
 public class EdgeToCoreClient extends CoreClient
@@ -75,7 +74,6 @@ public class EdgeToCoreClient extends CoreClient
 
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
-            pipeline.addLast( new LockRequestEncoder() );
             pipeline.addLast( new ResponseMessageTypeEncoder() );
             pipeline.addLast( new RequestMessageTypeEncoder() );
 

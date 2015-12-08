@@ -36,6 +36,8 @@ import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -353,6 +355,6 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 2, testEntryLog.commitIndex() );
-        verify( entryConsumer ).onCommitted( ReplicatedInteger.valueOf( 1 ) );
+        verify( entryConsumer ).onCommitted( eq( ReplicatedInteger.valueOf( 1 ) ), anyLong() );
     }
 }

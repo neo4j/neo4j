@@ -90,7 +90,7 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
     }
 
     @Override
-    public void onCommitted( ReplicatedContent content )
+    public void onCommitted( ReplicatedContent content, long index )
     {
         if ( content instanceof RaftGroup )
         {

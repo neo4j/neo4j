@@ -26,10 +26,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.raft.NewLeaderBarrier;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -37,10 +38,14 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
+import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
+import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
@@ -55,15 +60,36 @@ public class CandidateTest
 
     /* A few members that we use at will in tests. */
     private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
-
-    private RaftLog raftLog = new InMemoryRaftLog();
 
     @Mock
     private Inbound inbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     public static final int HIGHEST_TERM = 99;
+
+    @Test
+    public void shouldBeElectedLeader() throws Exception
+    {
+        // given
+        long term = 0;
+        RaftState<RaftTestMember> state = raftState()
+                .myself( myself )
+                .term( term )
+                .build();
+
+        Candidate candidate = new Candidate();
+
+        // when
+        Outcome<RaftTestMember> outcome = candidate.handle( voteResponse()
+                .term( term )
+                .from( member1 )
+                .grant()
+                .build(), state, log() );
+
+        // then
+        assertEquals( LEADER, outcome.getNewRole() );
+        assertThat( outcome.getLogCommands(), hasItem( new AppendLogEntry( 0, new RaftLogEntry( term, new NewLeaderBarrier() ) )) );
+    }
 
     @Test
     public void candidateShouldUpdateTermToCurrentMessageAndBecomeFollower() throws Exception

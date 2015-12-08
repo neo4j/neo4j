@@ -40,8 +40,6 @@ import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
-import org.neo4j.coreedge.raft.locks.LockRequestDecoder;
-import org.neo4j.coreedge.raft.locks.LockResponseEncoder;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseEncoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
@@ -122,7 +120,6 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
-                        pipeline.addLast( new LockResponseEncoder() );
 
                         pipeline.addLast( new ServerMessageTypeHandler( protocol, logProvider ) );
 
@@ -134,8 +131,6 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
-
-                        pipeline.addLast( new LockRequestDecoder( protocol ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }

@@ -19,12 +19,15 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.LinkedList;
+
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.RaftMessages.NewEntry.Request;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 
 import static org.junit.Assert.assertEquals;
@@ -56,7 +59,7 @@ public class CatchUpTest
         // then
         for ( long aMember : allMembers )
         {
-            assertLogEntries( 1, fixture.members().withId( aMember ).raftLog(), 42 );
+            assertLogEntries( fixture.members().withId( aMember ).raftLog(), 42 );
         }
     }
 
@@ -92,10 +95,11 @@ public class CatchUpTest
         // then
         for ( long awakeMember : awakeMembers )
         {
-            assertLogEntries( 1, fixture.members().withId( awakeMember ).raftLog(), 10, 20, 30, 40 );
+            assertLogEntries( fixture.members().withId( awakeMember ).raftLog(), 10, 20, 30, 40 );
         }
 
-        assertEquals( 0, fixture.members().withId( sleepyId ).raftLog().appendIndex() );
+        int[] nothing = {};
+        assertLogEntries( fixture.members().withId( sleepyId ).raftLog(), nothing );
 
         // when
         net.reconnect( sleepyId );
@@ -103,20 +107,26 @@ public class CatchUpTest
         net.processMessages();
 
         // then
-        assertLogEntries( 1, fixture.members().withId( sleepyId ).raftLog(), 10, 20, 30, 40 );
-        assertEquals( 4, fixture.members().withId( sleepyId ).raftLog().appendIndex() );
+        assertLogEntries( fixture.members().withId( sleepyId ).raftLog(), 10, 20, 30, 40 );
     }
 
-    private void assertLogEntries( final int startIndex, ReadableRaftLog log, int... expectedValues ) throws RaftStorageException
+    private void assertLogEntries( ReadableRaftLog log, int... expectedValues ) throws RaftStorageException
     {
-        long logIndex = startIndex;
-
-        for ( int expectedValue : expectedValues )
+        LinkedList<Integer> expected = new LinkedList<>();
+        for ( int value : expectedValues )
         {
-            assertTrue( "Missing entry for logIndex " + logIndex, log.entryExists( logIndex ) );
-            assertEquals( ((ReplicatedInteger) log.readEntryContent( logIndex )).get(), expectedValue );
-
-            logIndex++;
+            expected.add( value );
         }
+
+        for ( long logIndex = 0; logIndex <= log.appendIndex(); logIndex++ )
+        {
+            ReplicatedContent content = log.readEntryContent( logIndex );
+            if ( content instanceof ReplicatedInteger )
+            {
+                ReplicatedInteger integer = (ReplicatedInteger) content;
+                assertEquals( (int) expected.pop(), integer.get() );
+            }
+        }
+        assertTrue( expected.isEmpty() );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
 
@@ -39,7 +38,6 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -95,7 +93,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager<MEMBER> logShipping;
-    private Set<Listener<LeadershipChange<MEMBER>>> leadershipChangeListeners = new HashSet<>();
 
     public RaftInstance( MEMBER myself, TermStore termStore, VoteStore<MEMBER> voteStore, RaftLog entryLog,
                          long electionTimeout, long heartbeatInterval, RenewableTimeoutService renewableTimeoutService,
@@ -200,23 +197,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return state;
     }
 
-    /**
-     * These listeners will be notified from within the raft, so they should be short, efficient and
-     * not have dependencies on raft. Any substantial work must be scheduled on a some other thread.
-     */
-    public void registerLeadershipChangeListener( Listener<LeadershipChange<MEMBER>> listener )
-    {
-        leadershipChangeListeners.add( listener );
-    }
-
-    private void notifyListenersOnLeadershipChange( MEMBER newLeader )
-    {
-        for ( Listener<LeadershipChange<MEMBER>> listener : leadershipChangeListeners )
-        {
-            listener.receive( new LeadershipChange<>( newLeader ) );
-        }
-    }
-
     protected void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException
     {
         // Save interesting pre-state
@@ -241,12 +221,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         // Update state
         state.update( outcome );
-
-        // Act after updating state
-        if ( oldLeader != state.leader() )
-        {
-            notifyListenersOnLeadershipChange( state.leader() );
-        }
     }
 
     public synchronized void handle( Serializable incomingMessage )

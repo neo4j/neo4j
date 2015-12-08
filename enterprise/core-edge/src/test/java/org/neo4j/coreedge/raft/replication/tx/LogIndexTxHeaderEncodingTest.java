@@ -17,27 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.locks;
+package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.List;
+import org.junit.Test;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import static org.junit.Assert.*;
 
-import org.neo4j.coreedge.raft.replication.StringMarshal;
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
-public class LockResponseEncoder extends MessageToMessageEncoder<LockMessage.Response>
+public class LogIndexTxHeaderEncodingTest
 {
-    @Override
-    protected void encode( ChannelHandlerContext ctx, LockMessage.Response msg, List<Object> out ) throws Exception
+    @Test
+    public void shouldEncodeIndexAsBytes() throws Exception
     {
-        ByteBuf buffer = ctx.alloc().buffer();
-        LockMessageMarshall.serialize( buffer, msg.request );
-
-        buffer.writeInt( msg.result.getStatus().ordinal() );
-        StringMarshal.serialize( buffer, msg.result.getMessage() );
-
-        out.add( buffer );
+        long index = 123_456_789_012_567L;
+        byte[] bytes = encodeLogIndexAsTxHeader( index );
+        assertEquals( index, decodeLogIndexFromTxHeader( bytes ) );
     }
 }

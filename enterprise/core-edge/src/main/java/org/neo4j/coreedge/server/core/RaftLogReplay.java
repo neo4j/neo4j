@@ -21,19 +21,26 @@ package org.neo4j.coreedge.server.core;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class RaftLogReplay extends LifecycleAdapter
 {
     private final RaftLog raftLog;
+    private final Log log;
 
-    public RaftLogReplay( RaftLog raftLog )
+    public RaftLogReplay( RaftLog raftLog, LogProvider logProvider )
     {
         this.raftLog = raftLog;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void start() throws Throwable
     {
+        long start = System.currentTimeMillis();
         raftLog.replay();
+
+        log.info( "Replay done, took %d ms", System.currentTimeMillis() - start );
     }
 }

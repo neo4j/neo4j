@@ -17,22 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.locks;
+package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.List;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-
-public class LockRequestEncoder extends MessageToMessageEncoder<LockMessage.Request>
+/**
+ * Log index is encoded in the header of transactions in the transaction log.
+ */
+public class LogIndexTxHeaderEncoding
 {
-    @Override
-    protected void encode( ChannelHandlerContext ctx, LockMessage.Request msg, List<Object> out ) throws Exception
+    public static byte[] encodeLogIndexAsTxHeader( long logIndex )
     {
-        ByteBuf buffer = ctx.alloc().buffer();
-        LockMessageMarshall.serialize( buffer, msg );
+        byte[] b = new byte[Long.BYTES];
+        for ( int i = Long.BYTES - 1; i > 0; i-- )
+        {
+            b[i] = (byte) logIndex;
+            logIndex >>>= Byte.SIZE;
+        }
+        b[0] = (byte) logIndex;
+        return b;
+    }
 
-        out.add( buffer );
+    public static long decodeLogIndexFromTxHeader( byte[] bytes )
+    {
+        long logIndex = 0;
+        for ( int i = 0; i < Long.BYTES; i++ )
+        {
+            logIndex <<= Byte.SIZE;
+            logIndex ^= bytes[i] & 0xFF;
+        }
+        return logIndex;
     }
 }

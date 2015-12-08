@@ -17,11 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.locks;
+package org.neo4j.coreedge.raft;
 
-import java.io.IOException;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
-public interface LockResultListener
+/**
+ * When a new leader is elected, it replicates one entry of this type to mark the start of its reign.
+ * By listening for content of this type, we can partition content by leader reign.
+ */
+public class NewLeaderBarrier implements ReplicatedContent
 {
-    void onLockResponses( LockMessage.Response response ) throws IOException;
+    @Override
+    public String toString()
+    {
+        return "NewLeaderBarrier";
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 1;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return obj instanceof NewLeaderBarrier;
+    }
 }

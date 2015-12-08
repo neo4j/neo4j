@@ -27,11 +27,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
-import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
-import org.neo4j.coreedge.raft.replication.token.TokenType;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -49,6 +44,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import static java.util.Collections.singletonList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -104,6 +100,7 @@ public class ReplicatedTokenHolderTest
         ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
+        tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
 
         // when
@@ -111,6 +108,25 @@ public class ReplicatedTokenHolderTest
 
         // then
         assertEquals( EXPECTED_TOKEN_ID, tokenId );
+    }
+
+    @Test
+    public void shouldThrowExceptionIfLastCommittedIndexNotSet() throws Exception
+    {
+        // given
+        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( null,
+                null, dependencies );
+
+        // when
+        try
+        {
+            tokenHolder.start();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // expected
+        }
     }
 
     @Test
@@ -128,8 +144,9 @@ public class ReplicatedTokenHolderTest
         ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
+        tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
-        tokenHolder.onReplicated( new ReplicatedTokenRequest( TokenType.LABEL, "Person", ReplicatedTokenRequestSerializer.createCommandBytes( expectedCommands ) ) );
+        tokenHolder.onReplicated( new ReplicatedTokenRequest( TokenType.LABEL, "Person", ReplicatedTokenRequestSerializer.createCommandBytes( expectedCommands ) ), 0 );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
@@ -153,6 +170,7 @@ public class ReplicatedTokenHolderTest
         ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
+        tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
         replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( TokenType.LABEL, "Person",
                 ReplicatedTokenRequestSerializer.createCommandBytes( injectedCommands ) ) );
@@ -180,6 +198,7 @@ public class ReplicatedTokenHolderTest
         ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
+        tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
         replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( TokenType.LABEL, "Dog",
                 ReplicatedTokenRequestSerializer.createCommandBytes( injectedCommands ) ) );
@@ -209,9 +228,9 @@ public class ReplicatedTokenHolderTest
             {
                 if ( otherToken != null )
                 {
-                    listener.onReplicated( otherToken );
+                    listener.onReplicated( otherToken, 0 );
                 }
-                listener.onReplicated( content );
+                listener.onReplicated( content, 0 );
             }
         }
 
@@ -237,7 +256,7 @@ public class ReplicatedTokenHolderTest
         {
             for ( ReplicatedContentListener listener : listeners )
             {
-                listener.onReplicated( content );
+                listener.onReplicated( content, 0 );
             }
         }
 

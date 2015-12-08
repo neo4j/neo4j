@@ -19,80 +19,37 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.io.IOException;
-
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
-import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
-import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
+import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
+import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
+import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.raft.locks.LockMessage;
-import org.neo4j.coreedge.raft.locks.LockRequestEncoder;
-import org.neo4j.coreedge.raft.locks.LockResponseDecoder;
-import org.neo4j.coreedge.raft.locks.LockResponseHandler;
-import org.neo4j.coreedge.raft.locks.LockResultListener;
-import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
-import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.server.ExpiryScheduler;
-import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
-import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
-import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.helpers.Listeners;
+import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.logging.LogProvider;
 
-public class CoreToCoreClient extends CoreClient implements LockResultListener
+public class CoreToCoreClient extends CoreClient
 {
-    private Iterable<LockResultListener> lockResultListeners = Listeners.newListeners();
-
     public CoreToCoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration, ChannelInitializer channelInitializer )
     {
         super( logProvider, expiryScheduler, expiration, channelInitializer );
-    }
-
-    public void sendLockRequest( AdvertisedSocketAddress to, LockMessage.Request lockRequest )
-    {
-        send( to, RequestMessageType.LOCK, lockRequest );
-    }
-
-    public void addLockResultListener( LockResultListener listener )
-    {
-        lockResultListeners = Listeners.addListener( listener, lockResultListeners );
-    }
-
-    public void removeLockResultListener( LockResultListener listener )
-    {
-        lockResultListeners = Listeners.removeListener( listener, lockResultListeners );
-    }
-
-    @Override
-    public void onLockResponses( final LockMessage.Response lockResult ) throws IOException
-    {
-        Listeners.notifyListeners( lockResultListeners,
-                listener -> {
-                    try
-                    {
-                        listener.onLockResponses( lockResult );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                } );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>
@@ -121,7 +78,6 @@ public class CoreToCoreClient extends CoreClient implements LockResultListener
 
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
-            pipeline.addLast( new LockRequestEncoder() );
             pipeline.addLast( new ResponseMessageTypeEncoder() );
             pipeline.addLast( new RequestMessageTypeEncoder() );
 
@@ -132,9 +88,6 @@ public class CoreToCoreClient extends CoreClient implements LockResultListener
 
             pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
-
-            pipeline.addLast( new LockResponseDecoder( protocol ) );
-            pipeline.addLast( new LockResponseHandler( protocol, owner ) );
 
             pipeline.addLast( new TxStreamFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new TxStreamFinishedResponseHandler( protocol, owner ) );

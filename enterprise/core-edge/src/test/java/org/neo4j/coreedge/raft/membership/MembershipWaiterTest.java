@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.RaftStateBuilder;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,7 +46,8 @@ public class MembershipWaiterTest
     public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 500 );
+        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 500,
+                NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -66,7 +68,8 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1 );
+        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1,
+                NullLogProvider.getInstance());
 
         RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -92,7 +95,8 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1 );
+        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1,
+                NullLogProvider.getInstance() );
 
         RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )

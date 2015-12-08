@@ -34,10 +34,10 @@ import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -270,15 +270,17 @@ public class RaftInstanceTest
     }
 
     @Test
-    public void shouldSendHeartBeatsAfterBecomingLeader() throws Exception
+    public void shouldAppendNewLeaderBarrierAfterBecomingLeader() throws Exception
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
+        InMemoryRaftLog raftLog = new InMemoryRaftLog();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
+                .raftLog( raftLog )
                 .build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
@@ -288,8 +290,7 @@ public class RaftInstanceTest
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // Then
-        assertTrue( last( messages.sentTo( member1 ) ) instanceof RaftMessages.Heartbeat );
-        assertTrue( last( messages.sentTo( member2 ) ) instanceof RaftMessages.Heartbeat );
+        assertEquals( new NewLeaderBarrier(), raftLog.readEntryContent( raftLog.appendIndex() ) );
     }
 
     @Test

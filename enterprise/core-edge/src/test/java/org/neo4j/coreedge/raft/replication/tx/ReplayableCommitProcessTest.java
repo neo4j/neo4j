@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -84,7 +85,7 @@ public class ReplayableCommitProcessTest
         verifyNoMoreInteractions( localDatabase.commitProcess );
     }
 
-    private static class StubLocalDatabase implements TransactionCounter, TransactionCommitProcess
+    private static class StubLocalDatabase extends LifecycleAdapter implements TransactionCounter, TransactionCommitProcess
     {
         long lastCommittedTransactionId;
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );

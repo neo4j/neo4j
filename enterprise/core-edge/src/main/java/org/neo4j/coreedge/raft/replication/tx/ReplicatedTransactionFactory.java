@@ -56,12 +56,12 @@ public class ReplicatedTransactionFactory
         return new ReplicatedTransaction( txBytes, globalSession, localOperationId );
     }
 
-    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction replicatedTransaction ) throws IOException
+    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction replicatedTransaction, byte[] extraHeader ) throws IOException
     {
         ByteBuf txBuffer = Unpooled.wrappedBuffer( replicatedTransaction.getTxBytes() );
         NetworkReadableLogChannelNetty4 channel = new NetworkReadableLogChannelNetty4( txBuffer );
 
-        return TransactionDeserializer.read( channel );
+        return read( channel, extraHeader );
     }
 
     public static class TransactionSerializer
@@ -91,42 +91,42 @@ public class ReplicatedTransactionFactory
         }
     }
 
-    public static class TransactionDeserializer
+    public static TransactionRepresentation read( NetworkReadableLogChannelNetty4 channel, byte[] extraHeader ) throws IOException
     {
-        public static TransactionRepresentation read( NetworkReadableLogChannelNetty4 channel ) throws IOException
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
+
+        int authorId = channel.getInt();
+        int masterId = channel.getInt();
+        long latestCommittedTxWhenStarted = channel.getLong();
+        long timeStarted = channel.getLong();
+        long timeCommitted = channel.getLong();
+        int lockSessionId = channel.getInt();
+
+        int headerLength = channel.getInt();
+        byte[] header;
+        if ( headerLength == 0 )
         {
-            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
-
-            int authorId = channel.getInt();
-            int masterId = channel.getInt();
-            long latestCommittedTxWhenStarted = channel.getLong();
-            long timeStarted = channel.getLong();
-            long timeCommitted = channel.getLong();
-            int lockSessionId = channel.getInt();
-
-            int headerLength = channel.getInt();
-            byte[] header = new byte[headerLength];
-
-            channel.get( header, headerLength );
-
-            if ( headerLength == 0 )
-            {
-                header = null;
-            }
-
-            LogEntryCommand entryRead;
-            List<Command> commands = new LinkedList<>();
-
-            while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
-            {
-                commands.add( entryRead.getXaCommand() );
-            }
-
-            PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-            tx.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSessionId );
-
-            return tx;
+            header = extraHeader;
         }
+        else
+        {
+            header = new byte[headerLength];
+        }
+
+        channel.get( header, headerLength );
+
+        LogEntryCommand entryRead;
+        List<Command> commands = new LinkedList<>();
+
+        while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
+        {
+            commands.add( entryRead.getXaCommand() );
+        }
+
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
+        tx.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSessionId );
+
+        return tx;
     }
 
 }

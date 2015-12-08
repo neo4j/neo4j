@@ -96,16 +96,19 @@ public class RaftContentSerializerTest
         IndexCommand.AddNodeCommand addNodeCommand = new IndexCommand.AddNodeCommand();
         addNodeCommand.init( 0, 0, 0, 0 );
 
-        commands.add(  addNodeCommand);
+        commands.add( addNodeCommand );
+
+        byte[] extraHeader = new byte[0];
 
         PhysicalTransactionRepresentation txIn = new PhysicalTransactionRepresentation( commands );
+        txIn.setHeader( extraHeader, -1, -1, 0, 0, 0, 0 );
         ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn, globalSession, new LocalOperationId( 0, 0 ) );
 
         // when
         ByteBuffer buffer = serializer.serialize( in );
         ReplicatedTransaction out = (ReplicatedTransaction)serializer.deserialize( buffer );
 
-        TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out );
+        TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out, extraHeader );
 
         // then
         assertEquals( in, out );

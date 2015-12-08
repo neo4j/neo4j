@@ -23,22 +23,41 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
+/**
+ * Waits until member has "fully joined" the raft membership.
+ * We consider a member fully joined where:
+ * <ul>
+ *     <li>It is a member of the voting group
+ *     (its opinion will count towards leader elections and committing entries), and</li>
+ *     <li>It is sufficiently caught up with the leader,
+ *     so that long periods of unavailability are unlikely, should the leader fail.</li>
+ * </ul>
+ *
+ * To determine whether the member is sufficiently caught up, we check periodically how far behind we are,
+ * once every {@code maxCatchupLag}. If the leader is always moving forwards we will never fully catch up,
+ * so all we look for is that we have caught up with where the leader was the <i>previous</i> time
+ * that we checked.
+ */
 public class MembershipWaiter<MEMBER>
 {
     private final MEMBER myself;
     private final JobScheduler jobScheduler;
     private final long maxCatchupLag;
+    private final Log log;
 
-    public MembershipWaiter( MEMBER myself, JobScheduler jobScheduler, long maxCatchupLag )
+    public MembershipWaiter( MEMBER myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.maxCatchupLag = maxCatchupLag;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState<MEMBER> raftState )
@@ -47,25 +66,23 @@ public class MembershipWaiter<MEMBER>
 
         JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
-                new Evaluator<>( raftState, myself, catchUpFuture ), maxCatchupLag, MILLISECONDS );
+                new Evaluator( raftState, catchUpFuture ), maxCatchupLag, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
 
         return catchUpFuture;
     }
 
-    private static class Evaluator<MEMBER> implements Runnable
+    private class Evaluator implements Runnable
     {
         private final ReadableRaftState<MEMBER> raftState;
-        private final MEMBER myself;
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
 
-        private Evaluator( ReadableRaftState<MEMBER> raftState, MEMBER myself, CompletableFuture<Boolean> catchUpFuture )
+        private Evaluator( ReadableRaftState<MEMBER> raftState, CompletableFuture<Boolean> catchUpFuture )
         {
             this.raftState = raftState;
-            this.myself = myself;
             this.catchUpFuture = catchUpFuture;
             this.lastLeaderCommit = raftState.leaderCommit();
         }
@@ -87,15 +104,23 @@ public class MembershipWaiter<MEMBER>
         {
             boolean caughtUpWithLeader = false;
 
+            long localCommit = raftState.entryLog().commitIndex();
             if ( lastLeaderCommit != -1 )
             {
-                caughtUpWithLeader = raftState.entryLog().commitIndex() >= lastLeaderCommit;
+                caughtUpWithLeader = localCommit >= lastLeaderCommit;
             }
             lastLeaderCommit = raftState.leaderCommit();
-            System.out.printf( "%s CATCHUP: %d => %d (%d behind)%n",
-                    myself,
-                    raftState.entryLog().commitIndex(), raftState.leaderCommit(),
-                    raftState.leaderCommit() - raftState.entryLog().commitIndex() );
+            if ( lastLeaderCommit != -1 )
+            {
+                log.info( "%s Catchup: %d => %d (%d behind)%n",
+                        myself,
+                        localCommit, lastLeaderCommit,
+                        lastLeaderCommit - localCommit );
+            }
+            else
+            {
+                log.info( "Leader commit unknown" );
+            }
 
             return caughtUpWithLeader;
         }

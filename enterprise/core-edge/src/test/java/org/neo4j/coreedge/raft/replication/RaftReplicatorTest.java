@@ -26,13 +26,10 @@ import org.junit.Test;
 import org.neo4j.concurrent.CompletableFuture;
 import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.RaftTestFixture;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.ReplicatedString;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -81,7 +78,7 @@ public class RaftReplicatorTest
         private CompletableFuture<ReplicatedContent> content = new CompletableFuture<>();
 
         @Override
-        public void onReplicated( ReplicatedContent value )
+        public void onReplicated( ReplicatedContent value, long logIndex )
         {
             this.content.complete( value );
         }
