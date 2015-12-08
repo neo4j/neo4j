@@ -125,12 +125,14 @@ public class ReplicatedTransactionStateMachineTest
         when( localCommitProcess.commit( any( TransactionToApply.class ),
                 any( CommitEvent.class ), any( TransactionApplicationMode.class ) ) )
                 .thenAnswer( invocation -> {
-                    committedTxRepresentation.set( invocation.getArgumentAt( 0,
-                            TransactionToApply.class ).transactionRepresentation() );
+                    committedTxRepresentation.set(
+                            invocation.getArgumentAt( 0, TransactionToApply.class ).transactionRepresentation() );
                     return 4L;
-                } );
-        ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine( localCommitProcess,
-                globalSession, null );
+                } )
+                .thenAnswer( invocation -> 5L ); // This is for the barrier tx
+
+        ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine(
+                localCommitProcess, globalSession, null );
 
         // when
         listener.onReplicated( txBefore, 0 ); // Just to get the Id
@@ -138,14 +140,14 @@ public class ReplicatedTransactionStateMachineTest
         listener.onReplicated( txAfter, 0 );
 
         // then
-        verify( localCommitProcess ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
+        verify( localCommitProcess, times( 2 ) ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
                 eq( TransactionApplicationMode.EXTERNAL ) );
         assertEquals( timeBefore, committedTxRepresentation.get().getTimeStarted() );
         verifyNoMoreInteractions( localCommitProcess );
     }
 
     @Test
-    public void shouldFailFutureForTransactionCommittedUnderOldLeader() throws Exception
+    public void shouldFailFutureForTransactionCommittedUnderWrongLockManagerWithDifferentLastTxIdsWhenStarted() throws Exception
     {
         // given
         LocalOperationId localOperationIdBefore = new LocalOperationId( 0, 0 );

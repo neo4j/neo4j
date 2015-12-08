@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,8 +40,11 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
+
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
 public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedContentListener
 {
@@ -51,7 +55,7 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     private final Map<LocalOperationId, FutureTxId> outstanding = new ConcurrentHashMap<>();
     private long lastCommittedIndex = -1;
     private long lastCommittedTxId; // Maintains the last committed tx id, used to set the next field
-    private long lastTxIdForPreviousLeaderReign; // Maintains the last txid committed under the previous service assignment
+    private long reignStartTxId; // Maintains the last txid committed under the previous service assignment
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession, Dependencies dependencies )
@@ -78,8 +82,24 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
         }
         if ( content instanceof NewLeaderBarrier )
         {
-            lastTxIdForPreviousLeaderReign = lastCommittedTxId;
+            try
+            {
+                reignStartTxId = appendBarrierTx( logIndex );
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
+    }
+
+    private long appendBarrierTx( long logIndex ) throws TransactionFailureException
+    {
+        PhysicalTransactionRepresentation dummyTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        // TODO we need to set the "-1"'s below to useful values
+        dummyTx.setHeader( encodeLogIndexAsTxHeader( logIndex ), -1, -1, -1, -1, -1, -1 );
+
+        return commitProcess.commit( new TransactionToApply( dummyTx ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
     }
 
     private void handleTransaction( ReplicatedTransaction replicatedTx, long logIndex )
@@ -92,7 +112,7 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 
         try
         {
-            byte[] extraHeader = LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader( logIndex );
+            byte[] extraHeader = encodeLogIndexAsTxHeader( logIndex );
             TransactionRepresentation tx = ReplicatedTransactionFactory.extractTransactionRepresentation(
                     replicatedTx, extraHeader );
 
@@ -101,7 +121,7 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                     Optional.ofNullable( outstanding.remove( replicatedTx.localOperationId() ) ) :
                     Optional.<CompletableFuture<Long>>empty();
 
-            if ( tx.getLatestCommittedTxWhenStarted() < lastTxIdForPreviousLeaderReign )
+            if ( tx.getLatestCommittedTxWhenStarted() < reignStartTxId )
             {
                 future.ifPresent( txFuture -> txFuture.completeExceptionally( new TransientTransactionFailureException(
                         "Attempt to commit transaction that was started on a different leader term. " +
