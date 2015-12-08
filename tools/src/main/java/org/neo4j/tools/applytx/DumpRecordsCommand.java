@@ -24,8 +24,8 @@ import io.airlift.airline.Cli;
 import io.airlift.airline.Cli.CliBuilder;
 
 import java.io.PrintStream;
+import java.util.function.Supplier;
 
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
@@ -54,10 +54,10 @@ public class DumpRecordsCommand implements Command
     }
 
     private final Cli<Action> cli;
-    private final Provider<StoreAccess> store;
+    private final Supplier<StoreAccess> store;
 
     @SuppressWarnings( "unchecked" )
-    public DumpRecordsCommand( Provider<StoreAccess> store )
+    public DumpRecordsCommand( Supplier<StoreAccess> store )
     {
         this.store = store;
         CliBuilder<Action> builder = Cli.<Action>builder( NAME )
@@ -79,7 +79,7 @@ public class DumpRecordsCommand implements Command
     @Override
     public void run( String[] args, PrintStream out ) throws Exception
     {
-        cli.parse( args ).run( store.instance(), out );
+        cli.parse( args ).run( store.get(), out );
     }
 
     @Override
