@@ -31,53 +31,36 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final JobScheduler scheduler;
     private final IndexDescriptor descriptor;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
-    private final IndexPopulationJob job;
     private final IndexConfiguration configuration;
+    private final IndexPopulationJob job;
 
-    public PopulatingIndexProxy( JobScheduler scheduler,
-                                 IndexDescriptor descriptor,
+    public PopulatingIndexProxy( IndexDescriptor descriptor,
                                  IndexConfiguration configuration,
-                                 FailedIndexProxyFactory failureDelegateFactory,
-                                 IndexPopulator writer,
-                                 FlippableIndexProxy flipper,
-                                 IndexStoreView storeView,
-                                 LogProvider logProvider,
-                                 String indexUserDescription,
                                  SchemaIndexProvider.Descriptor providerDescriptor,
-                                 IndexingService.Monitor monitor,
-                                 Runnable schemaStateChangeCallback )
+                                 IndexPopulationJob job )
     {
-        this.scheduler = scheduler;
         this.descriptor = descriptor;
         this.configuration = configuration;
         this.providerDescriptor = providerDescriptor;
-        this.job = new IndexPopulationJob( descriptor, configuration, providerDescriptor,
-                indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                logProvider, monitor, schemaStateChangeCallback );
+        this.job = job;
     }
 
     @Override
     public void start()
     {
-        scheduler.schedule( indexPopulation, job );
     }
 
     @Override

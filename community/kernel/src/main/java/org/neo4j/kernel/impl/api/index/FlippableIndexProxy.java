@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 
 public class FlippableIndexProxy implements IndexProxy
 {

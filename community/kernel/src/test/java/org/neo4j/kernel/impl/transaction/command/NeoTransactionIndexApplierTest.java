@@ -119,7 +119,7 @@ public class NeoTransactionIndexApplierTest
 
         // Then
         assertFalse( result );
-        verify( indexingService ).createIndex( indexRule );
+        verify( indexingService ).createIndexes( indexRule );
     }
 
     @Test

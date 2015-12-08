@@ -46,9 +46,10 @@ import static org.junit.Assert.fail;
 
 public class ConstraintRecoveryIT
 {
-    private static final Label LABEL = Label.label( "label1" );
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+
+    private static final Label LABEL = Label.label( "label1" );
     private GraphDatabaseAPI db;
 
     @Test

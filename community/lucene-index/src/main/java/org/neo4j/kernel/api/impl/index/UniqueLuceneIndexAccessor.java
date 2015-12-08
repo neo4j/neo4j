@@ -31,8 +31,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 
 /**
  * Variant of {@link LuceneIndexAccessor} that also verifies uniqueness constraints.

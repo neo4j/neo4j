@@ -57,7 +57,30 @@ public class IndexStatisticsIT
     public static final Label ALIEN = label( "Alien" );
     public static final String SPECIMEN = "specimen";
 
-    // NOTE: Index sampling is disabled in this test
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private GraphDatabaseService db;
+
+    @Before
+    public void before()
+    {
+        setupDb( fsRule.get() );
+    }
+
+    @After
+    public void after()
+    {
+        try
+        {
+            db.shutdown();
+        }
+        finally
+        {
+            db = null;
+        }
+    }
 
     @Test
     public void shouldRecoverIndexCountsBySamplingThemOnStartup()
@@ -176,18 +199,6 @@ public class IndexStatisticsIT
         return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStores.class );
     }
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-    private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private GraphDatabaseService db;
-
-    @Before
-    public void before()
-    {
-        setupDb( fsRule.get() );
-    }
-
     private void setupDb( EphemeralFileSystemAbstraction fs )
     {
         db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
@@ -202,18 +213,5 @@ public class IndexStatisticsIT
     {
         db.shutdown();
         setupDb( fsRule.get().snapshot() );
-    }
-
-    @After
-    public void after()
-    {
-        try
-        {
-            db.shutdown();
-        }
-        finally
-        {
-            db = null;
-        }
     }
 }

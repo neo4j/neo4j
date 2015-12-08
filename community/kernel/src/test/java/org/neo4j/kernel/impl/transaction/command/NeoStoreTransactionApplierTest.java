@@ -573,7 +573,7 @@ public class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).createIndex( rule );
+        verify( indexingService, times( 1 ) ).createIndexes( rule );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 
@@ -597,7 +597,7 @@ public class NeoStoreTransactionApplierTest
 
         verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).createIndex( rule );
+        verify( indexingService, times( 1 ) ).createIndexes( rule );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 

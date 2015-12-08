@@ -508,23 +508,5 @@ public class PropertyIT extends KernelIntegrationTest
             assertThat( ops.relationshipGetProperty( rel, prop ), nullValue() );
         }
     }
-
-    private static Matcher<Property> isDefinedProperty()
-    {
-        return new TypeSafeMatcher<Property>()
-        {
-            @Override
-            protected boolean matchesSafely( Property item )
-            {
-                return item.isDefined();
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "a defined Property" );
-            }
-        };
-    }
 }
 

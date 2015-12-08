@@ -390,7 +390,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     samplingController.awaitSamplingCompleted(time, unit)
   }
 
-  protected def samplingController = indexingService.samplingController
+  protected def samplingController = indexingService.getSamplingController
   protected def indexingService = db.getDependencyResolver.resolveDependency(classOf[IndexingService])
 
   protected def assertIsDeleted(pc: PropertyContainer) {

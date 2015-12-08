@@ -26,48 +26,43 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
-public class IndexProxySetup
+/**
+ * Helper class of {@link IndexingService}. Used mainly as factory of index proxies.
+ */
+public class IndexProxyCreator
 {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
     private final SchemaIndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
-    private final JobScheduler scheduler;
     private final LogProvider logProvider;
-    private final Runnable schemaStateChangeCallback;
 
-    public IndexProxySetup( IndexSamplingConfig samplingConfig,
+    public IndexProxyCreator( IndexSamplingConfig samplingConfig,
                             IndexStoreView storeView,
                             SchemaIndexProviderMap providerMap,
                             TokenNameLookup tokenNameLookup,
-                            JobScheduler scheduler,
-                            LogProvider logProvider,
-                            Runnable schemaStateChangeCallback )
+                            LogProvider logProvider )
     {
         this.samplingConfig = samplingConfig;
         this.storeView = storeView;
         this.providerMap = providerMap;
         this.tokenNameLookup = tokenNameLookup;
-        this.scheduler = scheduler;
         this.logProvider = logProvider;
-        this.schemaStateChangeCallback = schemaStateChangeCallback;
     }
 
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
                                                   final IndexDescriptor descriptor,
                                                   final SchemaIndexProvider.Descriptor providerDescriptor,
                                                   final boolean constraint,
-                                                  final IndexingService.Monitor monitor ) throws IOException
+                                                  final IndexingService.Monitor monitor,
+                                                  final IndexPopulationJob populationJob ) throws IOException
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
@@ -83,39 +78,36 @@ public class IndexProxySetup
                 providerDescriptor,
                 populator,
                 indexUserDescription,
-                IndexCountsRemover.Factory.create( storeView, descriptor ),
+                new IndexCountsRemover( storeView, descriptor ),
                 logProvider
         );
 
         PopulatingIndexProxy populatingIndex =
-                new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
-                        storeView, logProvider, indexUserDescription, providerDescriptor, monitor,
-                        schemaStateChangeCallback );
+                new PopulatingIndexProxy( descriptor, config, providerDescriptor, populationJob );
+
+        populationJob.addPopulator( populator, descriptor, config, providerDescriptor, indexUserDescription,
+                flipper, failureDelegateFactory );
+
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
-        flipper.setFlipTarget( new IndexProxyFactory()
-        {
-            @Override
-            public IndexProxy create()
+        flipper.setFlipTarget( () -> {
+            try
             {
-                try
+                monitor.populationCompleteOn( descriptor );
+                OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
+                        descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
+                        config, samplingConfig ), storeView, providerDescriptor
+                );
+                if ( constraint )
                 {
-                    monitor.populationCompleteOn( descriptor );
-                    OnlineIndexProxy onlineProxy = new OnlineIndexProxy(
-                            descriptor, config, onlineAccessorFromProvider( providerDescriptor, ruleId,
-                            config, samplingConfig ), storeView, providerDescriptor
-                    );
-                    if ( constraint )
-                    {
-                        return new TentativeConstraintIndexProxy( flipper, onlineProxy );
-                    }
-                    return onlineProxy;
+                    return new TentativeConstraintIndexProxy( flipper, onlineProxy );
                 }
-                catch ( IOException e )
-                {
-                    return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
-                }
+                return onlineProxy;
+            }
+            catch ( IOException e )
+            {
+                return createFailedIndexProxy( ruleId, descriptor, providerDescriptor, constraint, failure( e ) );
             }
         } );
 
@@ -127,10 +119,8 @@ public class IndexProxySetup
                                                   boolean constraint )
     {
         IndexConfiguration configuration = IndexConfiguration.of( constraint );
-        IndexProxy proxy;
-        proxy = new RecoveringIndexProxy( descriptor, providerDescriptor, configuration );
-        proxy = new ContractCheckingIndexProxy( proxy, true );
-        return proxy;
+        IndexProxy proxy = new RecoveringIndexProxy( descriptor, providerDescriptor, configuration );
+        return new ContractCheckingIndexProxy( proxy, true );
     }
 
     public IndexProxy createOnlineIndexProxy( long ruleId,
@@ -173,27 +163,17 @@ public class IndexProxySetup
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
-                IndexCountsRemover.Factory.create( storeView, descriptor ),
+                new IndexCountsRemover( storeView, descriptor ),
                 logProvider
         );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;
     }
 
-    public String indexStateInfo( String tag, Long indexId, InternalIndexState state, IndexDescriptor descriptor )
-    {
-        return format( "IndexingService.%s: index %d on %s is %s", tag, indexId, indexUserDescription( descriptor ), state.name() );
-    }
-
-    public String indexUserDescription( final IndexDescriptor descriptor,
+    private String indexUserDescription( final IndexDescriptor descriptor,
                                          final SchemaIndexProvider.Descriptor providerDescriptor )
     {
-        return format( "%s [provider: %s]", indexUserDescription( descriptor ), providerDescriptor.toString() );
-    }
-
-    public String indexUserDescription( final IndexDescriptor descriptor )
-    {
-        return descriptor.userDescription( tokenNameLookup );
+        return format( "%s [provider: %s]", descriptor.userDescription( tokenNameLookup ), providerDescriptor.toString() );
     }
 
     private IndexPopulator populatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,

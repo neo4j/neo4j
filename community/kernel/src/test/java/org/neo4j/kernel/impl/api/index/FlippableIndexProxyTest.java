@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
@@ -33,19 +34,20 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class FlippableIndexProxyTest
 {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void shouldBeAbleToSwitchDelegate() throws Exception
     {
@@ -78,15 +80,9 @@ public class FlippableIndexProxyTest
         delegate.setFlipTarget( indexContextFactory );
 
         //THEN
-        try
-        {
-            delegate.flip( noOp(), null );
-            fail("Expected IndexProxyAlreadyClosedKernelException to be thrown");
-        }
-        catch ( IndexProxyAlreadyClosedKernelException e )
-        {
-            // expected
-        }
+        expectedException.expect( IndexProxyAlreadyClosedKernelException.class );
+
+        delegate.flip( noOp(), null );
     }
 
     @Test
@@ -104,15 +100,8 @@ public class FlippableIndexProxyTest
         delegate.drop().get();
 
         //THEN
-        try
-        {
-            delegate.flip( noOp(), singleFailedDelegate( failed ) );
-            fail("Expected IndexProxyAlreadyClosedKernelException to be thrown");
-        }
-        catch ( IndexProxyAlreadyClosedKernelException e )
-        {
-            // expected
-        }
+        expectedException.expect( IndexProxyAlreadyClosedKernelException.class );
+        delegate.flip( noOp(), singleFailedDelegate( failed ) );
     }
 
     @Test
@@ -201,37 +190,16 @@ public class FlippableIndexProxyTest
 
     private Callable<Void> noOp()
     {
-        return new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                return null;
-            }
-        };
+        return () -> null;
     }
 
     public static IndexProxyFactory singleProxy( final IndexProxy proxy )
     {
-        return new IndexProxyFactory()
-        {
-            @Override
-            public IndexProxy create()
-            {
-                return proxy;
-            }
-        };
+        return () -> proxy;
     }
 
     private FailedIndexProxyFactory singleFailedDelegate( final IndexProxy failed )
     {
-        return new FailedIndexProxyFactory()
-        {
-            @Override
-            public IndexProxy create( Throwable failure )
-            {
-                return failed;
-            }
-        };
+        return failure -> failed;
     }
 }
