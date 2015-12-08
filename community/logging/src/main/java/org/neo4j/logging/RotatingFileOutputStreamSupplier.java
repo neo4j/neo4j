@@ -31,9 +31,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.function.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -65,14 +65,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         }
     }
 
-    private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = new LongSupplier()
-    {
-        @Override
-        public long getAsLong()
-        {
-            return System.currentTimeMillis();
-        }
-    };
+    private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = System::currentTimeMillis;
 
     private final LongSupplier currentTimeSupplier;
     private final FileSystemAbstraction fileSystem;
