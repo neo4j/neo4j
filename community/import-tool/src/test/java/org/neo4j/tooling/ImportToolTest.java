@@ -35,10 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.function.IntPredicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -307,34 +307,24 @@ public class ImportToolTest
 
         // THEN
         verifyData(
-                new Validator<Node>()
-                {
-                    @Override
-                    public void validate( Node node )
+                node -> {
+                    if ( node.getId() < NODE_COUNT / 2 )
                     {
-                        if ( node.getId() < NODE_COUNT / 2 )
-                        {
-                            assertNodeHasLabels( node, firstLabels );
-                        }
-                        else
-                        {
-                            assertNodeHasLabels( node, secondLabels );
-                        }
+                        assertNodeHasLabels( node, firstLabels );
+                    }
+                    else
+                    {
+                        assertNodeHasLabels( node, secondLabels );
                     }
                 },
-                new Validator<Relationship>()
-                {
-                    @Override
-                    public void validate( Relationship relationship )
+                relationship -> {
+                    if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
                     {
-                        if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
-                        {
-                            assertEquals( firstType, relationship.getType().name() );
-                        }
-                        else
-                        {
-                            assertEquals( secondType, relationship.getType().name() );
-                        }
+                        assertEquals( firstType, relationship.getType().name() );
+                    }
+                    else
+                    {
+                        assertEquals( secondType, relationship.getType().name() );
                     }
                 } );
     }
@@ -643,14 +633,9 @@ public class ImportToolTest
                 "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
-        verifyData( new Validator<Node>()
-        {
-            @Override
-            public void validate( Node node )
-            {
-                assertTrue( node.hasLabel( label1 ) );
-                assertTrue( node.hasLabel( label2 ) );
-            }
+        verifyData( node -> {
+            assertTrue( node.hasLabel( label1 ) );
+            assertTrue( node.hasLabel( label2 ) );
         }, Validators.<Relationship>emptyValidator() );
     }
 
@@ -1394,14 +1379,7 @@ public class ImportToolTest
 
     private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
-        return new IntPredicate()
-        {
-            @Override
-            public boolean test( int line )
-            {
-                return line >= startingAt && line < endingAt;
-            }
-        };
+        return line -> line >= startingAt && line < endingAt;
     }
 
     private void importTool( String... arguments ) throws IOException

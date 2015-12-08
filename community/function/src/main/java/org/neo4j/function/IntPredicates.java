@@ -19,29 +19,17 @@
  */
 package org.neo4j.function;
 
+import java.util.function.IntPredicate;
+
 /**
  * Constructors for basic {@link IntPredicate} types
  * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public final class IntPredicates
 {
-    private static final IntPredicate TRUE = new IntPredicate()
-    {
-        @Override
-        public boolean test( int value )
-        {
-            return true;
-        }
-    };
+    private static final IntPredicate TRUE = value -> true;
 
-    private static final IntPredicate FALSE = new IntPredicate()
-    {
-        @Override
-        public boolean test( int value )
-        {
-            return false;
-        }
-    };
+    private static final IntPredicate FALSE = value -> false;
 
     /**
      * A predicate that is always true

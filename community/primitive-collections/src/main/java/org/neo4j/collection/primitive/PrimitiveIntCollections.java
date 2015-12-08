@@ -22,15 +22,14 @@ package org.neo4j.collection.primitive;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.IntPredicate;
 import org.neo4j.function.IntPredicates;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
 /**
