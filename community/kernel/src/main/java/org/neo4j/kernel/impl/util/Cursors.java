@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Resource;
 
 public class Cursors
@@ -187,7 +187,7 @@ public class Cursors
             {
                 try
                 {
-                    return map.apply( cursor.get() );
+                    return map.applyAsInt( cursor.get() );
                 }
                 finally
                 {

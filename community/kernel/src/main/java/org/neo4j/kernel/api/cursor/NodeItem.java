@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.cursor;
 
 import java.util.Arrays;
 import java.util.function.IntSupplier;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.ToIntFunction;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -36,23 +36,9 @@ import org.neo4j.kernel.impl.util.Cursors;
 public interface NodeItem
         extends EntityItem
 {
-    ToIntFunction<LabelItem> GET_LABEL = new ToIntFunction<LabelItem>()
-    {
-        @Override
-        public int apply( LabelItem item )
-        {
-            return item.getAsInt();
-        }
-    };
+    ToIntFunction<LabelItem> GET_LABEL = IntSupplier::getAsInt;
 
-    ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = new ToIntFunction<IntSupplier>()
-    {
-        @Override
-        public int apply( IntSupplier item )
-        {
-            return item.getAsInt();
-        }
-    };
+    ToIntFunction<IntSupplier> GET_RELATIONSHIP_TYPE = IntSupplier::getAsInt;
 
     public abstract class NodeItemHelper
             extends EntityItemHelper
