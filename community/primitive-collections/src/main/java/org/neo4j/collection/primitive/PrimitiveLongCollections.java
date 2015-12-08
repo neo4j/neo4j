@@ -22,14 +22,13 @@ package org.neo4j.collection.primitive;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.LongPredicate;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
 /**

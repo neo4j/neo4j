@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
-import org.neo4j.function.LongPredicate;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;

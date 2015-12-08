@@ -20,8 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongPredicate;
 
-import org.neo4j.function.LongPredicate;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
@@ -43,23 +43,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private final int initialProcessorCount = 1;
     // zero for unlimited
     private final int maxProcessors;
-    private final LongPredicate catchUp = new LongPredicate()
-    {
-        @Override
-        public boolean test( long queueSizeThreshold )
-        {
-            return queuedBatches.get() <= queueSizeThreshold;
-        }
-    };
+    private final LongPredicate catchUp = queueSizeThreshold -> queuedBatches.get() <= queueSizeThreshold;
     protected final AtomicLong begunBatches = new AtomicLong();
-    private final LongPredicate rightBeginTicket = new LongPredicate()
-    {
-        @Override
-        public boolean test( long ticket )
-        {
-            return begunBatches.get() == ticket;
-        }
-    };
+    private final LongPredicate rightBeginTicket = ticket -> begunBatches.get() == ticket;
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
@@ -78,7 +64,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         super.start( orderingGuarantees );
         this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
-                DEFAULT_PARK_STRATEGY, name(), () -> new Sender() );
+                DEFAULT_PARK_STRATEGY, name(), Sender::new );
     }
 
     @Override
