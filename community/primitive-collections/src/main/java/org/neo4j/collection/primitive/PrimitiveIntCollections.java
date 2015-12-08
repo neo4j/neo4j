@@ -729,24 +729,6 @@ public class PrimitiveIntCollections
         };
     }
 
-    private static final PrimitiveIntPredicate TRUE = new PrimitiveIntPredicate()
-    {
-        @Override
-        public boolean accept( int value )
-        {
-            return true;
-        }
-    };
-
-    /**
-     * @deprecated use {@link IntPredicates#alwaysTrue()} instead
-     */
-    @Deprecated
-    public static PrimitiveIntPredicate alwaysTrue()
-    {
-        return TRUE;
-    }
-
     public static PrimitiveIntIterator constant( final int value )
     {
         return new PrimitiveIntBaseIterator()

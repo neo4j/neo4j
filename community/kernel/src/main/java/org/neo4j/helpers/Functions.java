@@ -103,47 +103,6 @@ public final class Functions
     }
 
     @Deprecated
-    public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()
-    {
-        return new Function2<Function<From, From2>, Function<From2, To>, Function<From, To>>()
-        {
-            @Override
-            public Function<From, To> apply( final Function<From, From2> f1, final Function<From2, To> f2 )
-            {
-                return new Function<From, To>()
-                {
-                    @Override
-                    public To apply( From from )
-                    {
-                        return f2.apply( f1.apply( from ) );
-                    }
-                };
-            }
-        };
-    }
-
-    @Deprecated
-    public static <T1, T2> Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>> compose2()
-    {
-        return new Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>>()
-        {
-            @Override
-            public Function2<T1, T2, T1> apply( final Function2<T1, T2, T1> function1, final Function2<T1, T2,
-                    T1> function2 )
-            {
-                return new Function2<T1, T2, T1>()
-                {
-                    @Override
-                    public T1 apply( T1 from1, T2 from2 )
-                    {
-                        return function1.apply( function2.apply( from1, from2 ), from2 );
-                    }
-                };
-            }
-        };
-    }
-
-    @Deprecated
     public static Function<Object, String> TO_STRING = new Function<Object, String>()
     {
         @Override

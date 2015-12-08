@@ -29,6 +29,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.cluster.InstanceId;
@@ -47,7 +48,6 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
-import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Iterables;
@@ -85,7 +85,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
                                     AtomicBroadcast atomicBroadcast, LogProvider logProvider,
                                     Predicate<ClusterMembersSnapshot> validator,
-                                    Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
+                                    BiFunction<Iterable<MemberIsAvailable>, MemberIsAvailable,
                                     Iterable<MemberIsAvailable>> snapshotFilter,
                                     ObjectInputStreamFactory lenientObjectInputStream,
                                     ObjectOutputStreamFactory lenientObjectOutputStream,
@@ -206,7 +206,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     }
 
     public static class UniqueRoleFilter
-            implements Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>>
+            implements BiFunction<Iterable<MemberIsAvailable>,MemberIsAvailable,Iterable<MemberIsAvailable>>
     {
         @Override
         public Iterable<MemberIsAvailable> apply( final Iterable<MemberIsAvailable> previousSnapshot,
@@ -222,11 +222,11 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             implements Serializable
     {
         private final
-        Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
+        BiFunction<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
 
         private Iterable<MemberIsAvailable> availableMembers = new ArrayList<>();
 
-        public ClusterMembersSnapshot( Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
+        public ClusterMembersSnapshot( BiFunction<Iterable<MemberIsAvailable>, MemberIsAvailable,
                 Iterable<MemberIsAvailable>> nextSnapshotFunction )
         {
             this.nextSnapshotFunction = nextSnapshotFunction;

@@ -96,43 +96,23 @@ public final class Functions
         return IDENTITY;
     }
 
-    public static <From, From2, To> Function2<? super Function<From,From2>,? super Function<From2,To>,Function<From,To>> compose()
+    public static <From, From2, To> BiFunction<? super Function<From,From2>,? super Function<From2,To>,Function<From,To>> compose()
     {
-        return new Function2<Function<From,From2>,Function<From2,To>,Function<From,To>>()
+        return ( f1, f2 ) -> new Function<From,To>()
         {
             @Override
-            public Function<From,To> apply( final Function<From,From2> f1, final Function<From2,To> f2 )
+            public To apply( From from )
             {
-                return new Function<From,To>()
-                {
-                    @Override
-                    public To apply( From from )
-                    {
-                        return f2.apply( f1.apply( from ) );
-                    }
-                };
+                return f2.apply( f1.apply( from ) );
             }
         };
     }
 
-    public static <T1, T2> Function2<? super BiFunction<T1,T2,T1>,? super BiFunction<T1,T2,T1>,Function2<T1,T2,T1>> compose2()
+    public static <T1, T2> BiFunction<? super BiFunction<T1,T2,T1>,? super BiFunction<T1,T2,T1>,BiFunction<T1,T2,T1>> compose2()
     {
-        return new Function2<BiFunction<T1,T2,T1>,BiFunction<T1,T2,T1>,Function2<T1,T2,T1>>()
-        {
-            @Override
-            public Function2<T1,T2,T1> apply( final BiFunction<T1,T2,T1> function1, final BiFunction<T1,T2,
-                    T1> function2 )
-            {
-                return new Function2<T1,T2,T1>()
-                {
-                    @Override
-                    public T1 apply( T1 from1, T2 from2 )
-                    {
-                        return function1.apply( function2.apply( from1, from2 ), from2 );
-                    }
-                };
-            }
-        };
+        return ( function1, function2 ) ->
+                ( from1, from2 ) ->
+                        function1.apply( function2.apply( from1, from2 ), from2 );
     }
 
     public static Function<Object,String> TO_STRING = new Function<Object,String>()

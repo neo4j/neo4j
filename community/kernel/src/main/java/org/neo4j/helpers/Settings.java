@@ -19,8 +19,6 @@
  */
 package org.neo4j.helpers;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -106,7 +105,7 @@ public final class Settings
     @Deprecated
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
-                                          final Function2<T, Function<String, String>, T>... valueConverters )
+                                          final BiFunction<T, Function<String, String>, T>... valueConverters )
     {
         return setting( name, parser, defaultValue, null, valueConverters );
     }
@@ -122,8 +121,8 @@ public final class Settings
     @Deprecated
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
-                                          final Setting<T> inheritedSetting, final Function2<T, Function<String,
-            String>, T>... valueConverters )
+                                          final Setting<T> inheritedSetting,
+                                          final BiFunction<T, Function<String,String>, T>... valueConverters )
     {
         Function<Function<String, String>, String> valueLookup = named( name );
 
@@ -601,11 +600,11 @@ public final class Settings
 
     // Modifiers
     @Deprecated
-    public static Function2<String, Function<String, String>, String> matches( final String regex )
+    public static BiFunction<String, Function<String, String>, String> matches( final String regex )
     {
         final Pattern pattern = Pattern.compile( regex );
 
-        return new Function2<String, Function<String, String>, String>()
+        return new BiFunction<String, Function<String, String>, String>()
         {
             @Override
             public String apply( String value, Function<String, String> settings )
@@ -627,9 +626,9 @@ public final class Settings
     }
 
     @Deprecated
-    public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> min( final T min )
+    public static <T extends Comparable<T>> BiFunction<T, Function<String, String>, T> min( final T min )
     {
-        return new Function2<T, Function<String, String>, T>()
+        return new BiFunction<T, Function<String, String>, T>()
         {
             @Override
             public T apply( T value, Function<String, String> settings )
@@ -650,9 +649,9 @@ public final class Settings
     }
 
     @Deprecated
-    public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> max( final T max )
+    public static <T extends Comparable<T>> BiFunction<T, Function<String, String>, T> max( final T max )
     {
-        return new Function2<T, Function<String, String>, T>()
+        return new BiFunction<T, Function<String, String>, T>()
         {
             @Override
             public T apply( T value, Function<String, String> settings )
@@ -673,9 +672,9 @@ public final class Settings
     }
 
     @Deprecated
-    public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> range( final T min, final T max )
+    public static <T extends Comparable<T>> BiFunction<T, Function<String, String>, T> range( final T min, final T max )
     {
-        return new Function2<T, Function<String, String>, T>()
+        return new BiFunction<T, Function<String, String>, T>()
         {
             @Override
             public T apply( T from1, Function<String, String> from2 )
@@ -692,17 +691,13 @@ public final class Settings
     }
 
     @Deprecated
-    public static final Function2<Integer, Function<String, String>, Integer> port =
+    public static final BiFunction<Integer, Function<String, String>, Integer> port =
             illegalValueMessage( "must be a valid port number", range( 0, 65535 ) );
-
     @Deprecated
-    public static <T> Function2<T, Function<String, String>, T> illegalValueMessage( final String message,
-                                                                                     final Function2<T,
-                                                                                             Function<String,
-                                                                                                     String>,
-                                                                                             T> valueFunction )
+    public static <T> BiFunction<T, Function<String, String>, T> illegalValueMessage( final String message,
+            final BiFunction<T,Function<String,String>,T> valueFunction )
     {
-        return new Function2<T, Function<String, String>, T>()
+        return new BiFunction<T, Function<String, String>, T>()
         {
             @Override
             public T apply( T from1, Function<String, String> from2 )
@@ -733,37 +728,24 @@ public final class Settings
     }
 
     @Deprecated
-    public static Function2<String, Function<String, String>, String> toLowerCase =
-            new Function2<String, Function<String, String>, String>()
-            {
-                @Override
-                public String apply( String value, Function<String, String> settings )
-                {
-                    return value.toLowerCase();
-                }
-            };
-
+    public static BiFunction<String, Function<String, String>, String> toLowerCase =
+            ( value, settings ) -> value.toLowerCase();
     @Deprecated
-    public static Function2<URI, Function<String, String>, URI> normalize =
-            new Function2<URI, Function<String, String>, URI>()
-            {
-                @Override
-                public URI apply( URI value, Function<String, String> settings )
+    public static BiFunction<URI, Function<String, String>, URI> normalize =
+            ( value, settings ) -> {
+                String resultStr = value.normalize().toString();
+                if ( resultStr.endsWith( "/" ) )
                 {
-                    String resultStr = value.normalize().toString();
-                    if ( resultStr.endsWith( "/" ) )
-                    {
-                        value = java.net.URI.create( resultStr.substring( 0, resultStr.length() - 1 ) );
-                    }
-                    return value;
+                    value = java.net.URI.create( resultStr.substring( 0, resultStr.length() - 1 ) );
                 }
+                return value;
             };
 
     // Setting converters and constraints
     @Deprecated
-    public static Function2<File, Function<String, String>, File> basePath( final Setting<File> baseSetting )
+    public static BiFunction<File, Function<String, String>, File> basePath( final Setting<File> baseSetting )
     {
-        return new Function2<File, Function<String, String>, File>()
+        return new BiFunction<File, Function<String, String>, File>()
         {
             @Override
             public File apply( File path, Function<String, String> settings )
@@ -782,37 +764,27 @@ public final class Settings
     }
 
     @Deprecated
-    public static Function2<File, Function<String, String>, File> isFile =
-            new Function2<File, Function<String, String>, File>()
-            {
-                @Override
-                public File apply( File path, Function<String, String> settings )
+    public static BiFunction<File, Function<String, String>, File> isFile =
+            ( path, settings ) -> {
+                if ( path.exists() && !path.isFile() )
                 {
-                    if ( path.exists() && !path.isFile() )
-                    {
-                        throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
-                                path.toString() ) );
-                    }
-
-                    return path;
+                    throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
+                            path.toString() ) );
                 }
+
+                return path;
             };
 
     @Deprecated
-    public static Function2<File, Function<String, String>, File> isDirectory =
-            new Function2<File, Function<String, String>, File>()
-            {
-                @Override
-                public File apply( File path, Function<String, String> settings )
+    public static BiFunction<File, Function<String, String>, File> isDirectory =
+            ( path, settings ) -> {
+                if ( path.exists() && !path.isDirectory() )
                 {
-                    if ( path.exists() && !path.isDirectory() )
-                    {
-                        throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
-                                path.toString() ) );
-                    }
-
-                    return path;
+                    throw new IllegalArgumentException( String.format( "%s must point to a file, not a directory",
+                            path.toString() ) );
                 }
+
+                return path;
             };
 
     // Setting helpers
@@ -880,12 +852,12 @@ public final class Settings
         private final Function<String, T> parser;
         private final Function<Function<String, String>, String> valueLookup;
         private final Function<Function<String, String>, String> defaultLookup;
-        private Function2<T, Function<String, String>, T>[] valueConverters;
+        private BiFunction<T, Function<String, String>, T>[] valueConverters;
 
         public DefaultSetting( String name, Function<String, T> parser,
                                Function<Function<String, String>, String> valueLookup, Function<Function<String,
                 String>, String> defaultLookup,
-                               Function2<T, Function<String, String>, T>... valueConverters )
+                BiFunction<T, Function<String, String>, T>... valueConverters )
         {
             this.name = name;
             this.parser = parser;
@@ -947,7 +919,7 @@ public final class Settings
             {
                 result = parser.apply( value );
                 // Apply converters and constraints
-                for ( Function2<T, Function<String, String>, T> valueConverter : valueConverters )
+                for ( BiFunction<T, Function<String, String>, T> valueConverter : valueConverters )
                 {
                     result = valueConverter.apply( result, settings );
                 }
@@ -972,7 +944,7 @@ public final class Settings
                 builder.append( " which " );
                 for ( int i = 0; i < valueConverters.length; i++ )
                 {
-                    Function2<T, Function<String, String>, T> valueConverter = valueConverters[i];
+                    BiFunction<T, Function<String, String>, T> valueConverter = valueConverters[i];
                     if (i > 0)
                         builder.append( ", and " );
                     builder.append( valueConverter );

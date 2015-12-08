@@ -927,8 +927,8 @@ public class ImportToolTest
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -948,8 +948,8 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                    "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                    "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
