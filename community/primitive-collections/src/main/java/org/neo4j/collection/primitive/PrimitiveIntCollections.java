@@ -25,7 +25,6 @@ import java.util.NoSuchElementException;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.IntPredicates;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
