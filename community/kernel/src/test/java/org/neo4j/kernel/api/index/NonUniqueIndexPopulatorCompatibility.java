@@ -51,7 +51,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
     {
         // when
-        IndexConfiguration config = new IndexConfiguration( false );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
@@ -73,7 +73,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
@@ -90,7 +90,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
@@ -107,7 +107,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.close( false );
@@ -122,7 +122,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexConfiguration config = new IndexConfiguration( false );
+        IndexConfiguration config = IndexConfiguration.NON_UNIQUE;
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         populator.create();
@@ -151,7 +151,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ), indexSamplingConfig );
+        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( propertyValue );

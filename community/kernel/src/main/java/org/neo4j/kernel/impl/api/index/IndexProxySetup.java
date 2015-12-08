@@ -73,7 +73,7 @@ public class IndexProxySetup
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
-        final IndexConfiguration config = new IndexConfiguration( constraint );
+        final IndexConfiguration config = IndexConfiguration.of( constraint );
         IndexPopulator populator = populatorFromProvider( providerDescriptor, ruleId, descriptor, config,
                 samplingConfig );
 
@@ -126,7 +126,7 @@ public class IndexProxySetup
                                                   SchemaIndexProvider.Descriptor providerDescriptor,
                                                   boolean constraint )
     {
-        IndexConfiguration configuration = new IndexConfiguration( constraint );
+        IndexConfiguration configuration = IndexConfiguration.of( constraint );
         IndexProxy proxy;
         proxy = new RecoveringIndexProxy( descriptor, providerDescriptor, configuration );
         proxy = new ContractCheckingIndexProxy( proxy, true );
@@ -141,7 +141,7 @@ public class IndexProxySetup
         // TODO Hook in version verification/migration calls to the SchemaIndexProvider here
         try
         {
-            IndexConfiguration config = new IndexConfiguration( unique );
+            IndexConfiguration config = IndexConfiguration.of( unique );
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, config, samplingConfig );
             IndexProxy proxy;
@@ -161,7 +161,7 @@ public class IndexProxySetup
                                               boolean unique,
                                               IndexPopulationFailure populationFailure )
     {
-        IndexConfiguration config = new IndexConfiguration( unique );
+        IndexConfiguration config = IndexConfiguration.of( unique );
         IndexPopulator indexPopulator =
                 populatorFromProvider( providerDescriptor, ruleId, descriptor, config, samplingConfig );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);

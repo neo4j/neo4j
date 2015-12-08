@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 /** The indexing services view of the universe. */
@@ -47,7 +50,15 @@ public interface IndexStoreView extends PropertyAccessor
             Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
-    Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
+    /**
+     * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
+     * and puts those updates into {@code target}.
+     *
+     * @param nodeId id of node to load.
+     * @param reusableRecord {@link NodeRecord} to load node record into.
+     * @param target {@link Collection} to add updates into.
+     */
+    void nodeAsUpdates( long nodeId, NodeRecord reusableRecord, Collection<NodePropertyUpdate> target );
 
     DoubleLongRegister indexUpdatesAndSize( IndexDescriptor descriptor, DoubleLongRegister output );
 

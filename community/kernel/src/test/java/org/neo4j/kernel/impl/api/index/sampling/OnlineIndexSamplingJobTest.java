@@ -88,7 +88,7 @@ public class OnlineIndexSamplingJobTest
     public void setup() throws IndexNotFoundKernelException
     {
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
-        when( indexProxy.config() ).thenReturn( new IndexConfiguration( false ) );
+        when( indexProxy.config() ).thenReturn( IndexConfiguration.NON_UNIQUE );
         when( indexProxy.newReader() ).thenReturn( indexReader );
         doAnswer( answerWith( indexUniqueValues, indexSize ) ).when( indexReader )
                                                               .sampleIndex( any( DoubleLong.Out.class ) );

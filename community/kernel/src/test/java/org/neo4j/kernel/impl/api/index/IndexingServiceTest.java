@@ -28,6 +28,7 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -648,8 +650,10 @@ public class IndexingServiceTest
 
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), monitor );
 
-        when( storeView.nodeAsUpdates( nodeId1 ) ).thenReturn( asSet( nodeUpdate1 ) );
-        when( storeView.nodeAsUpdates( nodeId2 ) ).thenReturn( asSet( nodeUpdate2 ) );
+        doAnswer( nodeUpdatesAnswer( nodeUpdate1 ) ).when( storeView )
+                .nodeAsUpdates( eq( nodeId1 ), any( NodeRecord.class ), any( Collection.class ) );
+        doAnswer( nodeUpdatesAnswer( nodeUpdate2 ) ).when( storeView )
+                .nodeAsUpdates( eq( nodeId2 ), any( NodeRecord.class ), any( Collection.class ) );
 
         // When
         life.init();
@@ -696,7 +700,8 @@ public class IndexingServiceTest
         // GIVEN
         long nodeId = 0, indexId = 1, otherIndexId = 2;
         NodePropertyUpdate update = add( nodeId, "value" );
-        when( storeView.nodeAsUpdates( nodeId ) ).thenReturn( asList( update ) );
+        doAnswer( nodeUpdatesAnswer( update ) ).when( storeView )
+                .nodeAsUpdates( eq( nodeId ), any( NodeRecord.class ), any( Collection.class ) );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
@@ -994,5 +999,19 @@ public class IndexingServiceTest
         {
             throw new UnsupportedOperationException( "Not required" );
         }
+    }
+
+    private Answer nodeUpdatesAnswer( NodePropertyUpdate... updates )
+    {
+        return new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Collection<NodePropertyUpdate> target = (Collection<NodePropertyUpdate>) invocation.getArguments()[2];
+                target.addAll( asList( updates ) );
+                return null;
+            }
+        };
     }
 }

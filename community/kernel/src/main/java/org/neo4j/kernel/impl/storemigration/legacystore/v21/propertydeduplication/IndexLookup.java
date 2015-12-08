@@ -44,7 +44,7 @@ class IndexLookup implements AutoCloseable
     private final Map<IndexRule,IndexReader> readerCache;
     private final SchemaIndexProvider schemaIndexProvider;
     private final PrimitiveIntObjectMap<List<IndexRule>> indexRuleIndex;
-    private IndexSamplingConfig samplingConfig;
+    private final IndexSamplingConfig samplingConfig;
 
     public IndexLookup( SchemaStore store, SchemaIndexProvider schemaIndexProvider )
     {
@@ -108,7 +108,7 @@ class IndexLookup implements AutoCloseable
         IndexReader reader = readerCache.get( rule );
         if ( reader == null )
         {
-            IndexConfiguration indexConfig = new IndexConfiguration( rule.isConstraintIndex() );
+            IndexConfiguration indexConfig = IndexConfiguration.of( rule );
             IndexAccessor accessor = schemaIndexProvider.getOnlineAccessor(
                     rule.getId(), indexConfig, samplingConfig );
             indexAccessors.add( accessor );

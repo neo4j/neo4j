@@ -569,7 +569,7 @@ public class IndexPopulationJobTest
 
     private IndexPopulator inMemoryPopulator( boolean constraint )
     {
-        IndexConfiguration indexConfig = new IndexConfiguration( constraint );
+        IndexConfiguration indexConfig = IndexConfiguration.of( constraint );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
@@ -642,7 +642,7 @@ public class IndexPopulationJobTest
         IndexDescriptor descriptor = indexDescriptor( label, propertyKey );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return new IndexPopulationJob(
-                descriptor, new IndexConfiguration( constraint ), PROVIDER_DESCRIPTOR,
+                descriptor, IndexConfiguration.of( constraint ), PROVIDER_DESCRIPTOR,
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView,
