@@ -834,27 +834,13 @@ public class CsvInputTest
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( data, Functions.<ENTITY>identity() );
-            }
-        };
+        return config -> dataItem( data, Functions.<ENTITY>identity() );
     }
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharSeeker data,
             final Function<ENTITY,ENTITY> decorator )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( data, decorator );
-            }
-        };
+        return config -> dataItem( data, decorator );
     }
 
     private static <ENTITY extends InputEntity> Data<ENTITY> dataItem( final CharSeeker data,
@@ -921,14 +907,7 @@ public class CsvInputTest
 
     private Header.Factory header( final Header.Entry... entries )
     {
-        return new Header.Factory()
-        {
-            @Override
-            public Header create( CharSeeker from, Configuration configuration, IdType idType )
-            {
-                return new Header( entries );
-            }
-        };
+        return ( from, configuration, idType ) -> new Header( entries );
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
@@ -949,14 +928,7 @@ public class CsvInputTest
     private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data,
             final Function<ENTITY,ENTITY> decorator )
     {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( Configuration config )
-            {
-                return dataItem( charSeeker( data ), decorator );
-            }
-        };
+        return config -> dataItem( charSeeker( data ), decorator );
     }
 
     private static final org.neo4j.csv.reader.Configuration SEEKER_CONFIG =

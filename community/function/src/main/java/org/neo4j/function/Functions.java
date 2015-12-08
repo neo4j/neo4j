@@ -87,17 +87,10 @@ public final class Functions
         };
     }
 
-    private static UnaryOperator IDENTITY = new UnaryOperator()
-    {
-        @Override
-        public Object apply( Object value )
-        {
-            return value;
-        }
-    };
+    private static Function IDENTITY = value -> value;
 
     @SuppressWarnings( "unchecked" )
-    public static <T> UnaryOperator<T> identity()
+    public static <T> Function<T,T> identity()
     {
         return IDENTITY;
     }
