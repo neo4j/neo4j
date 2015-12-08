@@ -22,6 +22,7 @@ package org.neo4j.collection.primitive;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
@@ -704,8 +705,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static <T> Iterator<T> map( final org.neo4j.function.IntFunction<T> mapFunction,
-            final PrimitiveIntIterator source )
+    public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final PrimitiveIntIterator source )
     {
         return new Iterator<T>()
         {

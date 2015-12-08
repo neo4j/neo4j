@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.function.IntFunction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
@@ -38,7 +37,6 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -47,14 +45,7 @@ public class BackupHaIT
     @ClassRule
     public static ClusterRule clusterRule = new ClusterRule( BackupHaIT.class )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceSetting( OnlineBackupSettings.online_backup_server, new IntFunction<String>()
-            {
-                @Override
-                public String apply( int serverId )
-                {
-                    return (":" + (4444 + serverId));
-                }
-            } );
+            .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> (":" + (4444 + serverId)) );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

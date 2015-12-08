@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -56,8 +57,6 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
-import org.neo4j.function.Function;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -141,14 +140,7 @@ public class ClusterManager
 
     public static IntFunction<String> constant( final String value )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int ignored )
-            {
-                return value;
-            }
-        };
+        return ignored -> value;
     }
 
     private final File root;
@@ -186,15 +178,10 @@ public class ClusterManager
      */
     public static Provider fromXml( final URI clustersXml )
     {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Exception
-            {
-                DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                Document clustersXmlDoc = documentBuilder.parse( clustersXml.toURL().openStream() );
-                return new ClustersXMLSerializer( documentBuilder ).read( clustersXmlDoc );
-            }
+        return () -> {
+            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document clustersXmlDoc = documentBuilder.parse( clustersXml.toURL().openStream() );
+            return new ClustersXMLSerializer( documentBuilder ).read( clustersXmlDoc );
         };
     }
 
@@ -264,14 +251,7 @@ public class ClusterManager
 
     public static Provider provided( final Clusters clusters )
     {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Throwable
-            {
-                return clusters;
-            }
-        };
+        return () -> clusters;
     }
 
     /**
@@ -334,16 +314,9 @@ public class ClusterManager
             public boolean test( ManagedCluster cluster )
             {
                 Predicate<HighlyAvailableGraphDatabase> filterMasterPredicate =
-                        new Predicate<HighlyAvailableGraphDatabase>()
-                        {
-                            @Override
-                            public boolean test( HighlyAvailableGraphDatabase node )
-                            {
-                                return !excludedNodes.contains( node ) &&
-                                       node.isAvailable( 0 ) &&
-                                       node.isMaster();
-                            }
-                        };
+                        node -> !excludedNodes.contains( node ) &&
+                               node.isAvailable( 0 ) &&
+                               node.isMaster();
                 return Iterables.filter( filterMasterPredicate, cluster.getAllMembers() ).iterator().hasNext();
             }
 
@@ -661,14 +634,7 @@ public class ClusterManager
         @Override
         public Builder withSeedDir( final File seedDir )
         {
-            return withStoreDirInitializer( new StoreDirInitializer()
-            {
-                @Override
-                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
-                {
-                    copyRecursively( seedDir, storeDir );
-                }
-            } );
+            return withStoreDirInitializer( ( serverId, storeDir ) -> copyRecursively( seedDir, storeDir ) );
         }
 
         @Override
@@ -737,7 +703,7 @@ public class ClusterManager
 
         public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
         {
-            Callable<GraphDatabaseService> starter = () -> graphDatabaseBuilder.newGraphDatabase();
+            Callable<GraphDatabaseService> starter = graphDatabaseBuilder::newGraphDatabase;
             executor = Executors.newFixedThreadPool( 1 );
             untilThen = executor.submit( starter );
         }
@@ -897,13 +863,8 @@ public class ClusterManager
          */
         public Iterable<HighlyAvailableGraphDatabase> getAllMembers()
         {
-            return Iterables.map( new Function<HighlyAvailableGraphDatabaseProxy,HighlyAvailableGraphDatabase>()
-            {
-                @Override
-                public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
-                {
-                    return from.get();
-                }
+            return Iterables.map( from -> {
+                return from.get();
             }, members.values() );
         }
 

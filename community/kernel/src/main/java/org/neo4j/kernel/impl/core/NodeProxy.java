@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
@@ -78,7 +76,7 @@ public class NodeProxy
     public interface NodeActions
     {
         Statement statement();
-        
+
         GraphDatabaseService getGraphDatabase();
 
         void assertInUnterminatedTransaction();
@@ -141,29 +139,24 @@ public class NodeProxy
     public ResourceIterable<Relationship> getRelationships( final Direction dir )
     {
         assertInUnterminatedTransaction();
-        return new ResourceIterable<Relationship>()
-        {
-            @Override
-            public ResourceIterator<Relationship> iterator()
+        return () -> {
+            Statement statement = actions.statement();
+            try
             {
-                Statement statement = actions.statement();
-                try
-                {
-                    RelationshipConversion result = new RelationshipConversion( actions );
-                    result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
-                    result.statement = statement;
-                    return result;
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    statement.close();
-                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-                }
-                catch ( Throwable e )
-                {
-                    statement.close();
-                    throw e;
-                }
+                RelationshipConversion result = new RelationshipConversion( actions );
+                result.iterator = statement.readOperations().nodeGetRelationships( nodeId, dir );
+                result.statement = statement;
+                return result;
+            }
+            catch ( EntityNotFoundException e )
+            {
+                statement.close();
+                throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+            }
+            catch ( Throwable e )
+            {
+                statement.close();
+                throw e;
             }
         };
     }
@@ -804,20 +797,15 @@ public class NodeProxy
 
     private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
     {
-        return asList( map( new IntFunction<RelationshipType>()
-        {
-            @Override
-            public RelationshipType apply( int id )
+        return asList( map( id -> {
+            try
             {
-                try
-                {
-                    return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
-                }
-                catch ( RelationshipTypeIdNotFoundKernelException e )
-                {
-                    throw new ThisShouldNotHappenError( "Jake",
-                            "Kernel API returned non-existent relationship type: " + id );
-                }
+                return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
+            }
+            catch ( RelationshipTypeIdNotFoundKernelException e )
+            {
+                throw new ThisShouldNotHappenError( "Jake",
+                        "Kernel API returned non-existent relationship type: " + id );
             }
         }, input ) );
     }

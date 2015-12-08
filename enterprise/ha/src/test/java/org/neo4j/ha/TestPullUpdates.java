@@ -28,12 +28,12 @@ import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -51,11 +51,9 @@ import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -131,15 +129,9 @@ public class TestPullUpdates
                     HaSettings.tx_push_factor.name(), "0" ,
                     ShellSettings.remote_shell_enabled.name(), "true" ) )
                 .withInstanceConfig( MapUtil.<String,IntFunction<String>>genericMap(
-                    ShellSettings.remote_shell_port.name(), new IntFunction<String>()
-                    {
-                        @Override
-                        public String apply( int oneBasedServerId )
-                        {
-                            return oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
-                                    "" + (SHELL_PORT + oneBasedServerId) : null;
-                        }
-                    } ) ).build();
+                    ShellSettings.remote_shell_port.name(),
+                        (IntFunction<String>) oneBasedServerId -> oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
+                                "" + (SHELL_PORT + oneBasedServerId) : null ) ).build();
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
 

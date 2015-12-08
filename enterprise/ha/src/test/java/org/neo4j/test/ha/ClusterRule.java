@@ -30,9 +30,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -247,14 +247,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> intBase( final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return String.valueOf( oneBasedServerId + serverId );
-            }
-        };
+        return serverId -> String.valueOf( oneBasedServerId + serverId );
     }
 
     /**
@@ -271,13 +264,6 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> stringWithIntBase( final String prefix, final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return prefix + (oneBasedServerId + serverId);
-            }
-        };
+        return serverId -> prefix + (oneBasedServerId + serverId);
     }
 }

@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
@@ -42,21 +41,14 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class TestSlaveOnlyCluster
 {
     @ClassRule
     public static ClusterRule clusterRule = new ClusterRule( TestSlaveOnlyCluster.class )
-            .withInstanceSetting( HaSettings.slave_only, new IntFunction<String>()
-            {
-                @Override
-                public String apply( int value )
-                {
-                    return value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE;
-                }
-            } );
+            .withInstanceSetting( HaSettings.slave_only,
+                    value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
     private static final String PROPERTY = "foo";
     private static final String VALUE = "bar";
 
@@ -82,7 +74,7 @@ public class TestSlaveOnlyCluster
 
         try ( Transaction ignore = master.beginTx() )
         {
-            assertThat( (String) master.getNodeById( nodeId ).getProperty( PROPERTY ), equalTo( VALUE ) );
+            assertThat( master.getNodeById( nodeId ).getProperty( PROPERTY ), equalTo( VALUE ) );
         }
     }
 
