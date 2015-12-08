@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import java.util.function.IntPredicate;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
@@ -63,7 +65,7 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     }
 
     /**
-     * Prefer using {@link #contains(long)} - this method is identical and required by the {@link org.neo4j.function.IntPredicate} interface
+     * Prefer using {@link #contains(long)} - this method is identical and required by the {@link IntPredicate} interface
      *
      * @param value the input argument
      * @return true if the input argument matches the predicate, otherwise false

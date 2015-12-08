@@ -20,7 +20,8 @@
 package org.neo4j.function;
 
 /**
- * Represents a predicate (boolean-valued function) of one int-valued argument. This is the int-consuming primitive type specialization of {@link Predicate}.
+ * Represents a predicate (boolean-valued function) of one int-valued argument.
+ * This is the int-consuming primitive type specialization of {@link java.util.function.Predicate}.
  *
  * @param <E> the type of exception that may be thrown from the predicate
  */

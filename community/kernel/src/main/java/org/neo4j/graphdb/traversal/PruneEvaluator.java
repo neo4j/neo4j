@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Path;
 
 /**
@@ -28,7 +30,7 @@ import org.neo4j.graphdb.Path;
  * position or not.
  *
  * @deprecated because of the introduction of {@link Evaluator} which combines
- * {@link PruneEvaluator} and filtering ({@link org.neo4j.function.Predicate} of {@link Path}s).
+ * {@link PruneEvaluator} and filtering ({@link Predicate} of {@link Path}s).
  */
 public interface PruneEvaluator
 {
@@ -36,13 +38,7 @@ public interface PruneEvaluator
      * Default {@link PruneEvaluator}, does not prune any parts of the
      * traversal.
      */
-    PruneEvaluator NONE = new PruneEvaluator()
-    {
-        public boolean pruneAfter( Path position )
-        {
-            return false;
-        }
-    };
+    PruneEvaluator NONE = position -> false;
 
     /**
      * Decides whether or not to prune after {@code position}. If {@code true}
