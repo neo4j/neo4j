@@ -23,7 +23,6 @@ import org.jboss.netty.logging.InternalLoggerFactory;
 
 import java.net.URI;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -57,7 +56,6 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Settings;
@@ -179,15 +177,9 @@ public class ClusterClientModule
             }
         }, receiver, logging ));
 
-        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
-        {
-            @Override
-            public ExecutorService newInstance()
-            {
-                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors
-                        .newMonitor( NamedThreadFactory.Monitor.class ) ) );
-            }
-        } );
+        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter(
+                () -> Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine", monitors
+                        .newMonitor( NamedThreadFactory.Monitor.class ) ) ) );
 
         AcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 

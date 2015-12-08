@@ -31,7 +31,6 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Factory;
 
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicy.CollisionPolicyWrapper;
@@ -153,15 +152,9 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public Traverser traverse( final Iterable<Node> startNodes, final Iterable<Node> endNodes )
     {
-        return new DefaultTraverser( new Factory<TraverserIterator>(){
-            @Override
-            public TraverserIterator newInstance()
-            {
-                return new BidirectionalTraverserIterator(
-                        statementFactory.get(),
-                        start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes);
-            }
-        });
+        return new DefaultTraverser( () -> new BidirectionalTraverserIterator(
+                statementFactory.get(),
+                start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes) );
     }
 
     /**

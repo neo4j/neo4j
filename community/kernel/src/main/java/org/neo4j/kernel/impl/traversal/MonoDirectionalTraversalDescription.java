@@ -44,7 +44,6 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
-import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Uniqueness;
 
@@ -109,19 +108,14 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 
     public Traverser traverse( final Iterable<Node> iterableStartNodes )
     {
-        return new DefaultTraverser( new Factory<TraverserIterator>()
-        {
-            @Override
-            public TraverserIterator newInstance()
-            {
-                Resource statement = statementSupplier.get();
-                MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
-                        statement,
-                        uniqueness.create( uniquenessParameter ),
-                        expander, branchOrdering, evaluator,
-                        iterableStartNodes, initialState, uniqueness );
-                return sorting != null ? new SortingTraverserIterator( statement, sorting, iterator ) : iterator;
-            }
+        return new DefaultTraverser( () -> {
+            Resource statement = statementSupplier.get();
+            MonoDirectionalTraverserIterator iterator = new MonoDirectionalTraverserIterator(
+                    statement,
+                    uniqueness.create( uniquenessParameter ),
+                    expander, branchOrdering, evaluator,
+                    iterableStartNodes, initialState, uniqueness );
+            return sorting != null ? new SortingTraverserIterator( statement, sorting, iterator ) : iterator;
         } );
     }
 
