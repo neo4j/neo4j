@@ -19,7 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Path;
 

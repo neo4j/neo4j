@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.cluster.member;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -31,7 +32,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -51,14 +51,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class ObservedClusterMembers
 {
-    private static final Predicate<ClusterMember> ALIVE = new Predicate<ClusterMember>()
-    {
-        @Override
-        public boolean accept( ClusterMember item )
-        {
-            return item.isAlive();
-        }
-    };
+    private static final Predicate<ClusterMember> ALIVE = ClusterMember::isAlive;
 
     private final Log log;
     private final InstanceId me;

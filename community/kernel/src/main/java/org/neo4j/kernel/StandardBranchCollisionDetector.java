@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;

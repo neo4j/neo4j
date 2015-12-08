@@ -35,10 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
@@ -49,7 +49,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -199,10 +198,10 @@ public abstract class IteratorUtil
     /**
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
-     * 
+     *
      * @param first the first iterator
      * @param other the other iterator
-     * @return {@code true} if all items are equal; otherwise 
+     * @return {@code true} if all items are equal; otherwise
      */
     public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
@@ -591,19 +590,6 @@ public abstract class IteratorUtil
     }
 
     /**
-     * Counts the number of items in the {@code iterable} by looping through it.
-     *
-     * @param <T> the type of items in the iterator.
-     * @param iterable the {@link Iterable} to count items in.
-     * @param filter the filter to apply
-     * @return the number of items found in {@code iterator}.
-     */
-    public static <T> int count( Iterable<T> iterable, org.neo4j.helpers.Predicate<T> filter )
-    {
-        return count( iterable.iterator(), org.neo4j.helpers.Predicates.upgrade( filter ) );
-    }
-
-    /**
      * Counts the number of filtered items in the {@code iterable} by looping through it.
      *
      * @param <T> the type of items in the iterator.
@@ -725,7 +711,7 @@ public abstract class IteratorUtil
 
     /**
      * Alias for asSet()
-     * 
+     *
      * @param items the items to add to the set.
      * @param <T> the type of the items
      * @return the {@link Set} containing the items.

@@ -31,8 +31,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -538,8 +538,6 @@ public class TestLuceneBatchInsert
             throw launderedException( e );
         }
     }
-
-
 
     @SuppressWarnings( "rawtypes" )
     private Predicate<? super KernelExtensionFactory> onlyRealLuceneExtensions()

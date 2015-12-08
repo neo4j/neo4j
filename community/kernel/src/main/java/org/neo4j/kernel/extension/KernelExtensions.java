@@ -23,9 +23,9 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.spi.KernelContext;

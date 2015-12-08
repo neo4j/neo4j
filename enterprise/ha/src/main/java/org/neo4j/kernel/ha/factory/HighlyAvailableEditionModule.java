@@ -71,7 +71,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighAvailabilityDiagnostics;
 import org.neo4j.kernel.ha.HighAvailabilityLogger;
-import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
@@ -119,7 +118,6 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -243,32 +241,27 @@ public class HighlyAvailableEditionModule
         ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
-                new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
-                {
-                    @Override
-                    public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
+                item -> {
+                    for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                     {
-                        for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
+                        if ( member.getRoleUri().getScheme().equals( "ha" ) )
                         {
-                            if ( member.getRoleUri().getScheme().equals( "ha" ) )
+                            if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                    platformModule.config.get( ClusterSettings.server_id ) ) )
                             {
-                                if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
-                                        platformModule.config.get( ClusterSettings.server_id ) ) )
-                                {
-                                    logging.getInternalLog( PaxosClusterMemberEvents.class ).error(
-                                            String.format( "Instance " +
-                                                            "%s has" +
-                                                            " the same serverId as ours (%s) - will not " +
-                                                            "join this cluster",
-                                                    member.getRoleUri(),
-                                                    config.get( ClusterSettings.server_id ).toIntegerIndex()
-                                            ) );
-                                    return true;
-                                }
+                                logging.getInternalLog( PaxosClusterMemberEvents.class ).error(
+                                        String.format( "Instance " +
+                                                        "%s has" +
+                                                        " the same serverId as ours (%s) - will not " +
+                                                        "join this cluster",
+                                                member.getRoleUri(),
+                                                config.get( ClusterSettings.server_id ).toIntegerIndex()
+                                        ) );
+                                return true;
                             }
                         }
-                        return true;
                     }
+                    return true;
                 }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
                 platformModule.monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );

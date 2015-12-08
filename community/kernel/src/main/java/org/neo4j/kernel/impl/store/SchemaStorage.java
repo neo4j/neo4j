@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -35,10 +35,10 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 
@@ -102,14 +102,8 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexRule( final int labelId, final int propertyKeyId, IndexRuleKind kind )
     {
-        Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class, new Predicate<IndexRule>()
-        {
-            @Override
-            public boolean test( IndexRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getPropertyKey() == propertyKeyId;
-            }
-        } );
+        Iterator<IndexRule> rules = schemaRules( cast( IndexRule.class ), IndexRule.class,
+                rule -> rule.getLabel() == labelId && rule.getPropertyKey() == propertyKeyId );
 
         IndexRule foundRule = null;
 
@@ -165,16 +159,8 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( new Predicate<SchemaRule>()
-        {
-            @SuppressWarnings( "unchecked" )
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleType.isAssignableFrom( rule.getKind().getRuleClass() ) &&
-                       predicate.test( (R) rule );
-            }
-        }, loadAllSchemaRules() ) );
+        return map( ruleConversion, filter( rule -> ruleType.isAssignableFrom( rule.getKind().getRuleClass() ) &&
+                                            predicate.test( (R) rule ), loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
@@ -182,28 +168,13 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( new Predicate<SchemaRule>()
-        {
-            @SuppressWarnings("unchecked")
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleClass.isInstance( rule );
-            }
-        }, loadAllSchemaRules() ) );
+        return map( ruleConversion, filter( ruleClass::isInstance, loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule> Iterator<R> schemaRules( final Class<R> ruleClass )
     {
         @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"/*the predicate ensures that this cast is safe*/})
-        Iterator<R> result = (Iterator)filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return ruleClass.isInstance( rule );
-            }
-        }, loadAllSchemaRules() );
+        Iterator<R> result = (Iterator)filter( ruleClass::isInstance, loadAllSchemaRules() );
         return result;
     }
 
@@ -292,15 +263,8 @@ public class SchemaStorage implements SchemaRuleAccess
             final int labelId, final int propertyKeyId )
             throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
-        Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
-        {
-            @Override
-            public boolean test( Rule item )
-            {
-                return item.getLabel() == labelId &&
-                       item.containsPropertyKeyId( propertyKeyId );
-            }
-        } );
+        Iterator<Rule> rules = schemaRules( cast( type ), type, item -> item.getLabel() == labelId &&
+                                                                item.containsPropertyKeyId( propertyKeyId ) );
         if ( !rules.hasNext() )
         {
             throw new EntitySchemaRuleNotFoundException( EntityType.NODE, labelId, propertyKeyId );
@@ -319,15 +283,9 @@ public class SchemaStorage implements SchemaRuleAccess
             final int relationshipTypeId, final int propertyKeyId )
             throws SchemaRuleNotFoundException, DuplicateEntitySchemaRuleException
     {
-        Iterator<Rule> rules = schemaRules( cast( type ), type, new Predicate<Rule>()
-        {
-            @Override
-            public boolean test( Rule item )
-            {
-                return item.getRelationshipType() == relationshipTypeId &&
-                       item.containsPropertyKeyId( propertyKeyId );
-            }
-        } );
+        Iterator<Rule> rules = schemaRules( cast( type ), type,
+                item -> item.getRelationshipType() == relationshipTypeId &&
+                        item.containsPropertyKeyId( propertyKeyId ) );
         if ( !rules.hasNext() )
         {
             throw new EntitySchemaRuleNotFoundException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );

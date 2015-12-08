@@ -22,17 +22,17 @@ package org.neo4j.kernel.impl.util.diffsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 
 public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLongIterator>
 {
     @Override
     ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
-    static final class Empty<T> implements ReadableDiffSets<T>
+    final class Empty<T> implements ReadableDiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
         public static <T> ReadableDiffSets<T> instance()

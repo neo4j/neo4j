@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphmatching.filter.AbstractFilterExpression;
 import org.neo4j.graphmatching.filter.FilterBinaryNode;
@@ -267,30 +266,26 @@ public class PatternMatcher
         public FilteredPatternFinder( Iterable<PatternMatch> source,
             final Map<String, PatternNode> objectVariables )
         {
-            super( source, new Predicate<PatternMatch>()
-            {
-                public boolean test( PatternMatch item )
+            super( source, item -> {
+                Set<PatternGroup> calculatedGroups = new HashSet<>();
+                for ( PatternElement element : item.getElements() )
                 {
-                    Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
-                    for ( PatternElement element : item.getElements() )
+                    PatternNode node = element.getPatternNode();
+                    PatternGroup group = node.getGroup();
+                    if ( calculatedGroups.add( group ) )
                     {
-                        PatternNode node = element.getPatternNode();
-                        PatternGroup group = node.getGroup();
-                        if ( calculatedGroups.add( group ) )
+                        FilterValueGetter valueGetter = new SimpleRegexValueGetter(
+                            objectVariables, item, group.getFilters() );
+                        for ( FilterExpression expression : group.getFilters() )
                         {
-                            FilterValueGetter valueGetter = new SimpleRegexValueGetter(
-                                objectVariables, item, group.getFilters() );
-                            for ( FilterExpression expression : group.getFilters() )
+                            if ( !expression.matches( valueGetter ) )
                             {
-                                if ( !expression.matches( valueGetter ) )
-                                {
-                                    return false;
-                                }
+                                return false;
                             }
                         }
                     }
-                    return true;
                 }
+                return true;
             } );
         }
 	}

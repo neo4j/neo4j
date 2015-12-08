@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -211,15 +211,7 @@ public enum StoreFile
 
     public static Iterable<StoreFile> legacyStoreFilesForVersion( final String version )
     {
-        Predicate<StoreFile> predicate = new Predicate<StoreFile>()
-        {
-            @Override
-            public boolean test( StoreFile item )
-            {
-                return version.compareTo( item.sinceVersion ) >= 0;
-            }
-        };
-
+        Predicate<StoreFile> predicate = item -> version.compareTo( item.sinceVersion ) >= 0;
         Iterable<StoreFile> storeFiles = currentStoreFiles();
         Iterable<StoreFile> filter = Iterables.filter( predicate, storeFiles );
         return filter;

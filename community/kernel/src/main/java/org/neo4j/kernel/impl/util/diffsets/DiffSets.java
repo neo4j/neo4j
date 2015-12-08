@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;

@@ -25,23 +25,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
 /**
@@ -87,37 +84,32 @@ public final class Iterables
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
+        return () -> {
+            final Iterator<T> iterator = iterable.iterator();
+
+            return new Iterator<T>()
             {
-                final Iterator<T> iterator = iterable.iterator();
+                int count;
 
-                return new Iterator<T>()
+                @Override
+                public boolean hasNext()
                 {
-                    int count;
+                    return count < limitItems && iterator.hasNext();
+                }
 
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return count < limitItems && iterator.hasNext();
-                    }
+                @Override
+                public T next()
+                {
+                    count++;
+                    return iterator.next();
+                }
 
-                    @Override
-                    public T next()
-                    {
-                        count++;
-                        return iterator.next();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        iterator.remove();
-                    }
-                };
-            }
+                @Override
+                public void remove()
+                {
+                    iterator.remove();
+                }
+            };
         };
     }
 
@@ -135,50 +127,45 @@ public final class Iterables
 
     public static <T> Iterable<T> unique( final Iterable<T> iterable )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
+        return () -> {
+            final Iterator<T> iterator = iterable.iterator();
+
+            return new Iterator<T>()
             {
-                final Iterator<T> iterator = iterable.iterator();
+                Set<T> items = new HashSet<>();
+                T nextItem;
 
-                return new Iterator<T>()
+                @Override
+                public boolean hasNext()
                 {
-                    Set<T> items = new HashSet<>();
-                    T nextItem;
-
-                    @Override
-                    public boolean hasNext()
+                    while ( iterator.hasNext() )
                     {
-                        while ( iterator.hasNext() )
+                        nextItem = iterator.next();
+                        if ( items.add( nextItem ) )
                         {
-                            nextItem = iterator.next();
-                            if ( items.add( nextItem ) )
-                            {
-                                return true;
-                            }
+                            return true;
                         }
-
-                        return false;
                     }
 
-                    @Override
-                    public T next()
+                    return false;
+                }
+
+                @Override
+                public T next()
+                {
+                    if ( nextItem == null && !hasNext() )
                     {
-                        if ( nextItem == null && !hasNext() )
-                        {
-                            throw new NoSuchElementException();
-                        }
-
-                        return nextItem;
+                        throw new NoSuchElementException();
                     }
 
-                    @Override
-                    public void remove()
-                    {
-                    }
-                };
-            }
+                    return nextItem;
+                }
+
+                @Override
+                public void remove()
+                {
+                }
+            };
         };
     }
 
@@ -220,35 +207,9 @@ public final class Iterables
         return c;
     }
 
-    /**
-     * @deprecated use {@link #filter(Predicate, Iterable)} instead
-     * @param specification filter
-     * @param i source iterable
-     * @param <X> the type of the elements
-     * @return a filtering iterable
-     */
-    @Deprecated
-    public static <X> Iterable<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterable<X> i )
-    {
-        return new FilterIterable<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
-    }
-
     public static <X> Iterable<X> filter( Predicate<? super X> specification, Iterable<X> i )
     {
         return new FilterIterable<>( i, specification );
-    }
-
-    /**
-     * @deprecated use {@link #filter(Predicate, Iterator)} instead
-     * @param specification filter
-     * @param i source iterator
-     * @param <X> the type of the elements
-     * @return a filtering iterator
-     */
-    @Deprecated
-    public static <X> Iterator<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterator<X> i )
-    {
-        return new FilterIterable.FilterIterator<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
     }
 
     public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
@@ -276,27 +237,22 @@ public final class Iterables
 
     public static <X> Iterable<X> skip( final int skip, final Iterable<X> iterable )
     {
-        return new Iterable<X>()
-        {
-            @Override
-            public Iterator<X> iterator()
+        return () -> {
+            Iterator<X> iterator = iterable.iterator();
+
+            for ( int i = 0; i < skip; i++ )
             {
-                Iterator<X> iterator = iterable.iterator();
-
-                for ( int i = 0; i < skip; i++ )
+                if ( iterator.hasNext() )
                 {
-                    if ( iterator.hasNext() )
-                    {
-                        iterator.next();
-                    }
-                    else
-                    {
-                        return Iterables.<X>empty().iterator();
-                    }
+                    iterator.next();
                 }
-
-                return iterator;
+                else
+                {
+                    return Iterables.<X>empty().iterator();
+                }
             }
+
+            return iterator;
         };
     }
 
@@ -325,82 +281,77 @@ public final class Iterables
         return new FlattenIterable<>( asList(multiIterator) );
     }
 
-    public static <X, S extends Iterable<? extends X>, I extends Iterable<S>> Iterable<X> flattenIterable( I
-            multiIterator )
+    public static <X, S extends Iterable<? extends X>, I extends Iterable<S>> Iterable<X> flattenIterable(
+            I multiIterator )
     {
-        return new FlattenIterable<X, S>( multiIterator );
+        return new FlattenIterable<>( multiIterator );
     }
 
     @SafeVarargs
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
+        return () -> {
+            final Iterable<Iterator<T>> iterators = toList( map( new Function<Iterable<T>, Iterator<T>>()
             {
-                final Iterable<Iterator<T>> iterators = toList( map( new Function<Iterable<T>, Iterator<T>>()
+                @Override
+                public Iterator<T> apply( Iterable<T> iterable )
                 {
-                    @Override
-                    public Iterator<T> apply( Iterable<T> iterable )
-                    {
-                        return iterable.iterator();
-                    }
-                }, asList(iterables) ) );
+                    return iterable.iterator();
+                }
+            }, asList(iterables) ) );
 
-                return new Iterator<T>()
+            return new Iterator<T>()
+            {
+                Iterator<Iterator<T>> iterator;
+
+                Iterator<T> iter;
+
+                @Override
+                public boolean hasNext()
                 {
-                    Iterator<Iterator<T>> iterator;
-
-                    Iterator<T> iter;
-
-                    @Override
-                    public boolean hasNext()
+                    for ( Iterator<T> iterator : iterators )
                     {
-                        for ( Iterator<T> iterator : iterators )
+                        if ( iterator.hasNext() )
                         {
-                            if ( iterator.hasNext() )
-                            {
-                                return true;
-                            }
+                            return true;
                         }
-
-                        return false;
                     }
 
-                    @Override
-                    public T next()
+                    return false;
+                }
+
+                @Override
+                public T next()
+                {
+                    if ( iterator == null )
                     {
-                        if ( iterator == null )
-                        {
-                            iterator = iterators.iterator();
-                        }
-
-                        while ( iterator.hasNext() )
-                        {
-                            iter = iterator.next();
-
-                            if ( iter.hasNext() )
-                            {
-                                return iter.next();
-                            }
-                        }
-
-                        iterator = null;
-
-                        return next();
+                        iterator = iterators.iterator();
                     }
 
-                    @Override
-                    public void remove()
+                    while ( iterator.hasNext() )
                     {
-                        if ( iter != null )
+                        iter = iterator.next();
+
+                        if ( iter.hasNext() )
                         {
-                            iter.remove();
+                            return iter.next();
                         }
                     }
-                };
-            }
+
+                    iterator = null;
+
+                    return next();
+                }
+
+                @Override
+                public void remove()
+                {
+                    if ( iter != null )
+                    {
+                        iter.remove();
+                    }
+                }
+            };
         };
     }
 
@@ -476,108 +427,96 @@ public final class Iterables
 
     public static <T, C extends T> Iterable<T> prepend( final C item, final Iterable<T> iterable )
     {
-        return new Iterable<T>()
+        return () -> new Iterator<T>()
         {
+            T first = item;
+            Iterator<T> iterator;
+
             @Override
-            public Iterator<T> iterator()
+            public boolean hasNext()
             {
-                return new Iterator<T>()
+                if ( first != null )
                 {
-                    T first = item;
-                    Iterator<T> iterator;
-
-                    @Override
-                    public boolean hasNext()
+                    return true;
+                }
+                else
+                {
+                    if ( iterator == null )
                     {
-                        if ( first != null )
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            if ( iterator == null )
-                            {
-                                iterator = iterable.iterator();
-                            }
-                        }
-
-                        return iterator.hasNext();
+                        iterator = iterable.iterator();
                     }
+                }
 
-                    @Override
-                    public T next()
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                if ( first != null )
+                {
+                    try
                     {
-                        if ( first != null )
-                        {
-                            try
-                            {
-                                return first;
-                            }
-                            finally
-                            {
-                                first = null;
-                            }
-                        }
-                        else
-                        {
-                            return iterator.next();
-                        }
+                        return first;
                     }
-
-                    @Override
-                    public void remove()
+                    finally
                     {
+                        first = null;
                     }
-                };
+                }
+                else
+                {
+                    return iterator.next();
+                }
+            }
+
+            @Override
+            public void remove()
+            {
             }
         };
     }
 
     public static <T, C extends T> Iterable<T> append( final C item, final Iterable<T> iterable )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
+        return () -> {
+            final Iterator<T> iterator = iterable.iterator();
+
+            return new Iterator<T>()
             {
-                final Iterator<T> iterator = iterable.iterator();
+                T last = item;
 
-                return new Iterator<T>()
+                @Override
+                public boolean hasNext()
                 {
-                    T last = item;
+                    return iterator.hasNext() || last != null;
+                }
 
-                    @Override
-                    public boolean hasNext()
+                @Override
+                public T next()
+                {
+                    if ( iterator.hasNext() )
                     {
-                        return iterator.hasNext() || last != null;
+                        return iterator.next();
                     }
-
-                    @Override
-                    public T next()
+                    else
                     {
-                        if ( iterator.hasNext() )
+                        try
                         {
-                            return iterator.next();
+                            return last;
                         }
-                        else
+                        finally
                         {
-                            try
-                            {
-                                return last;
-                            }
-                            finally
-                            {
-                                last = null;
-                            }
+                            last = null;
                         }
                     }
+                }
 
-                    @Override
-                    public void remove()
-                    {
-                    }
-                };
-            }
+                @Override
+                public void remove()
+                {
+                }
+            };
         };
     }
 
@@ -624,109 +563,90 @@ public final class Iterables
         {
             return (ResourceIterable<T>) iterable;
         }
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                return asResourceIterator( iterable.iterator() );
-            }
-        };
+        return () -> asResourceIterator( iterable.iterator() );
     }
 
     public static <T> ResourceIterable<T> asResourceIterable( final ResourceIterator<T> it )
     {
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                return it;
-            }
-        };
+        return () -> it;
     }
 
     public static <T> ResourceIterable<T> iterable( final IOCursor<T> cursor )
     {
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
+        return () -> {
+            try
             {
-                try
+                if ( cursor.next() )
                 {
-                    if ( cursor.next() )
+                    final T first = cursor.get();
+
+                    return new ResourceIterator<T>()
                     {
-                        final T first = cursor.get();
+                        T instance = first;
 
-                        return new ResourceIterator<T>()
+                        @Override
+                        public boolean hasNext()
                         {
-                            T instance = first;
+                            return instance != null;
+                        }
 
-                            @Override
-                            public boolean hasNext()
+                        @Override
+                        public T next()
+                        {
+                            try
                             {
-                                return instance != null;
+                                return instance;
                             }
-
-                            @Override
-                            public T next()
+                            finally
                             {
                                 try
                                 {
-                                    return instance;
-                                }
-                                finally
-                                {
-                                    try
+                                    if ( cursor.next() )
                                     {
-                                        if ( cursor.next() )
-                                        {
-                                            instance = cursor.get();
-                                        }
-                                        else
-                                        {
-                                            cursor.close();
-                                            instance = null;
-                                        }
+                                        instance = cursor.get();
                                     }
-                                    catch ( IOException e )
+                                    else
                                     {
+                                        cursor.close();
                                         instance = null;
                                     }
                                 }
-                            }
-
-                            @Override
-                            public void remove()
-                            {
-                                throw new UnsupportedOperationException();
-                            }
-
-                            @Override
-                            public void close()
-                            {
-                                try
-                                {
-                                    cursor.close();
-                                }
                                 catch ( IOException e )
                                 {
-                                    // Ignore
+                                    instance = null;
                                 }
                             }
-                        };
-                    }
-                    else
-                    {
-                        cursor.close();
-                        return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
-                    }
+                        }
+
+                        @Override
+                        public void remove()
+                        {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
+                        public void close()
+                        {
+                            try
+                            {
+                                cursor.close();
+                            }
+                            catch ( IOException e )
+                            {
+                                // Ignore
+                            }
+                        }
+                    };
                 }
-                catch ( IOException e )
+                else
                 {
+                    cursor.close();
                     return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
                 }
+            }
+            catch ( IOException e )
+            {
+                return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
             }
         };
     }
@@ -886,9 +806,9 @@ public final class Iterables
     {
         private final Iterable<T> iterable;
 
-        private final org.neo4j.function.Predicate<? super T> specification;
+        private final Predicate<? super T> specification;
 
-        public FilterIterable( Iterable<T> iterable, org.neo4j.function.Predicate<? super T> specification )
+        public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
         {
             this.iterable = iterable;
             this.specification = specification;
@@ -1105,7 +1025,7 @@ public final class Iterables
      * More formally, returns the lowest index <tt>i</tt> such that
      * <tt>(o==null&nbsp;?&nbsp;get(i)==null&nbsp;:&nbsp;o.equals(get(i)))</tt>,
      * or -1 if there is no such index.
-     * 
+     *
      * @param itemToFind element to find
      * @param iterable iterable to look for the element in
      * @param <T> the type of the elements
@@ -1148,29 +1068,14 @@ public final class Iterables
             return Collections.emptyList();
         }
 
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return IteratorUtil.iterator( item );
-            }
-        };
+        return () -> IteratorUtil.iterator( item );
     }
 
     @SuppressWarnings( "rawtypes" )
     public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
     {
         List<T> list = toList( iterable );
-        Collections.sort( list, new Comparator<T>()
-        {
-            @SuppressWarnings( "unchecked" )
-            @Override
-            public int compare( T o1, T o2 )
-            {
-                return compareFunction.apply( o1 ).compareTo( compareFunction.apply( o2 ) );
-            }
-        } );
+        Collections.sort( list, ( o1, o2 ) -> compareFunction.apply( o1 ).compareTo( compareFunction.apply( o2 ) ) );
         return list;
     }
 

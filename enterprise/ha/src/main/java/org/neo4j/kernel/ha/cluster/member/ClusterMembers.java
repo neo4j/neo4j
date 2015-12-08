@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
+import java.util.function.Predicate;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -39,26 +40,12 @@ public class ClusterMembers
 {
     public static Predicate<ClusterMember> inRole( final String role )
     {
-        return new Predicate<ClusterMember>()
-        {
-            @Override
-            public boolean test( ClusterMember item )
-            {
-                return item.hasRole( role );
-            }
-        };
+        return item -> item.hasRole( role );
     }
 
     public static Predicate<ClusterMember> hasInstanceId( final InstanceId instanceId )
     {
-        return new Predicate<ClusterMember>()
-        {
-            @Override
-            public boolean test( ClusterMember item )
-            {
-                return item.getInstanceId().equals( instanceId );
-            }
-        };
+        return item -> item.getInstanceId().equals( instanceId );
     }
 
     private final ObservedClusterMembers observedClusterMembers;

@@ -21,8 +21,8 @@ package org.neo4j.legacy.consistency.checking.full;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -39,9 +39,9 @@ import org.neo4j.legacy.consistency.checking.CheckerEngine;
 import org.neo4j.legacy.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.legacy.consistency.checking.OwningRecordCheck;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
-import org.neo4j.legacy.consistency.report.ConsistencyReporter;
 import org.neo4j.legacy.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.legacy.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
+import org.neo4j.legacy.consistency.report.ConsistencyReporter;
 import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.RecordAccess;
 import org.neo4j.legacy.consistency.store.synthetic.CountsEntry;

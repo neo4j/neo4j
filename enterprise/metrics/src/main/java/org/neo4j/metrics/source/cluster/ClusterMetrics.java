@@ -26,9 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 

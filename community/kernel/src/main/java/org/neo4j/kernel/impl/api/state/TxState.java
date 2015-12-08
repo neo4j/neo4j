@@ -33,7 +33,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -1191,14 +1190,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             final int propertyKey )
     {
         return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges().filterAdded(
-                new Predicate<NodePropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( NodePropertyConstraint item )
-                    {
-                        return item.propertyKey() == propertyKey;
-                    }
-                } );
+                item -> item.propertyKey() == propertyKey );
     }
 
     @Override
@@ -1223,14 +1215,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             int relTypeId, final int propertyKey )
     {
         return constraintsChangesForRelationshipType( relTypeId ).filterAdded(
-                new Predicate<RelationshipPropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( RelationshipPropertyConstraint constraint )
-                    {
-                        return constraint.propertyKey() == propertyKey;
-                    }
-                }
+                constraint -> constraint.propertyKey() == propertyKey
         );
     }
 

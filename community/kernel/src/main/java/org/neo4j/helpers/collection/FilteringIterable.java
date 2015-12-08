@@ -19,11 +19,9 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 
 /**
@@ -36,17 +34,6 @@ public class FilteringIterable<T> implements Iterable<T>
 {
 	private final Iterable<T> source;
 	private final Predicate<T> predicate;
-
-    /**
-     * @deprecated use {@link #FilteringIterable(Iterable, Predicate)} instead
-     * @param source iterable to fetch items from
-     * @param predicate filter to decide which items to pass through
-     */
-    @Deprecated
-	public FilteringIterable( Iterable<T> source, org.neo4j.helpers.Predicate<T> predicate )
-	{
-        this( source, org.neo4j.helpers.Predicates.upgrade( predicate ) );
-    }
 
     public FilteringIterable( Iterable<T> source, Predicate<T> predicate )
     {
@@ -63,49 +50,9 @@ public class FilteringIterable<T> implements Iterable<T>
     {
         return new FilteringIterable<T>( source, Predicates.<T>notNull() );
     }
-    
+
     public static <T> Iterable<T> noDuplicates( Iterable<T> source )
     {
         return new FilteringIterable<T>( source, Predicates.<T>noDuplicates() );
     }
-
-    /**
-     * @deprecated use {@link Predicates#noDuplicates()} instead
-     * @param <T> the type of the elements
-     * @return a filter which skips duplicates
-     */
-    @Deprecated
-    public static <T> org.neo4j.helpers.Predicate<T> noDuplicatesPredicate()
-    {
-        return new org.neo4j.helpers.Predicate<T>()
-        {
-            private final Set<T> visitedItems = new HashSet<T>();
-            
-            public boolean accept( T item )
-            {
-                return visitedItems.add( item );
-            }
-        };
-    }
-
-    /**
-     * @deprecated use {@link Predicates#notNull()} instead
-     * @param <T> the type of the elements
-     * @return a filter which skips {@code null}s
-     */
-    @Deprecated
-    @SuppressWarnings("unchecked")
-    public static <T> org.neo4j.helpers.Predicate<T> notNullPredicate()
-    {
-        return (org.neo4j.helpers.Predicate<T>) NOT_NULL_PREDICATE;
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static final org.neo4j.helpers.Predicate NOT_NULL_PREDICATE = new org.neo4j.helpers.Predicate()
-    {
-        public boolean accept( Object item )
-        {
-            return item != null;
-        }
-    };
 }

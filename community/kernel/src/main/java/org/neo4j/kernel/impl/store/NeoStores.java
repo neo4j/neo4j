@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;

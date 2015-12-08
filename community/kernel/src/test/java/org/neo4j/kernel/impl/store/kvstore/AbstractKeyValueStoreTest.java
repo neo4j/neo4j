@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Pair;
@@ -248,14 +247,8 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
-            {
-                return Thread.State.TIMED_WAITING == thread.getState();
-            }
-        }, 100, SECONDS );
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l,
+                thread -> Thread.State.TIMED_WAITING == thread.getState(), 100, SECONDS );
 
         Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
 
@@ -274,21 +267,16 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, thread -> {
+            switch ( thread.getState() )
             {
-                switch ( thread.getState() )
-                {
-                case BLOCKED:
-                case WAITING:
-                case TIMED_WAITING:
-                case TERMINATED:
-                    return true;
-                default:
-                    return false;
-                }
+            case BLOCKED:
+            case WAITING:
+            case TIMED_WAITING:
+            case TERMINATED:
+                return true;
+            default:
+                return false;
             }
         }, 100, SECONDS );
         // rotation should wait...
@@ -370,15 +358,10 @@ public class AbstractKeyValueStoreTest
 
     private void updateStore( final Store store, long transaction ) throws IOException
     {
-        ThrowingConsumer<Long,IOException> update = new ThrowingConsumer<Long,IOException>()
-        {
-            @Override
-            public void accept( Long update ) throws IOException
+        ThrowingConsumer<Long,IOException> update = u -> {
+            try ( EntryUpdater<String> updater = store.updater( u ).get() )
             {
-                try ( EntryUpdater<String> updater = store.updater( update ).get() )
-                {
-                    updater.apply( "key " + update, store.value( "value " + update ) );
-                }
+                updater.apply( "key " + u, store.value( "value " + u ) );
             }
         };
         update.accept( transaction );
@@ -418,14 +401,7 @@ public class AbstractKeyValueStoreTest
     class Store extends AbstractKeyValueStore<String>
     {
         private final HeaderField<?>[] headerFields;
-        final IOFunction<Long,Long> rotation = new IOFunction<Long,Long>()
-        {
-            @Override
-            public Long apply( Long version ) throws IOException
-            {
-                return prepareRotation( version ).rotate();
-            }
-        };
+        final IOFunction<Long,Long> rotation = version -> prepareRotation( version ).rotate();
 
         private Store( HeaderField<?>... headerFields )
         {
@@ -547,14 +523,7 @@ public class AbstractKeyValueStoreTest
 
         ValueUpdate value( final String value )
         {
-            return new ValueUpdate()
-            {
-                @Override
-                public void update( WritableBuffer target )
-                {
-                    writeKey( value, target );
-                }
-            };
+            return target -> writeKey( value, target );
         }
 
         public String get( String key ) throws IOException

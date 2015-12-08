@@ -26,9 +26,9 @@ import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -359,25 +359,11 @@ public class HaBeanIT
 
     private Predicate<ClusterMemberInfo> dbAvailability( final boolean available )
     {
-        return new Predicate<ClusterMemberInfo>()
-        {
-            @Override
-            public boolean test( ClusterMemberInfo item )
-            {
-                return item.isAvailable() == available;
-            }
-        };
+        return item -> item.isAvailable() == available;
     }
 
     private Predicate<ClusterMemberInfo> dbAlive( final boolean alive )
     {
-        return new Predicate<ClusterMemberInfo>()
-        {
-            @Override
-            public boolean test( ClusterMemberInfo item )
-            {
-                return item.isAlive() == alive;
-            }
-        };
+        return item -> item.isAlive() == alive;
     }
 }

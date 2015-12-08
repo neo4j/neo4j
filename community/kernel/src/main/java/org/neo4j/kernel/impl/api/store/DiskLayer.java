@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.EntityType;
@@ -293,47 +293,17 @@ public class DiskLayer implements StoreReadLayer
 
     private static Predicate<SchemaRule> indexRules( final int labelId )
     {
-        return new Predicate<SchemaRule>()
-        {
-
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
-            }
-        };
+        return rule -> rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
     }
 
     private static Predicate<SchemaRule> constraintIndexRules( final int labelId )
     {
-        return new Predicate<SchemaRule>()
-        {
-
-            @Override
-            public boolean test( SchemaRule rule )
-            {
-                return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
-            }
-        };
+        return rule -> rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
     }
 
-    private static final Predicate<SchemaRule> INDEX_RULES = new Predicate<SchemaRule>()
-    {
-
-        @Override
-        public boolean test( SchemaRule rule )
-        {
-            return rule.getKind() == SchemaRule.Kind.INDEX_RULE;
-        }
-    }, CONSTRAINT_INDEX_RULES = new Predicate<SchemaRule>()
-    {
-
-        @Override
-        public boolean test( SchemaRule rule )
-        {
-            return rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
-        }
-    };
+    private static final Predicate<SchemaRule> INDEX_RULES = rule -> rule.getKind() == SchemaRule.Kind.INDEX_RULE;
+    private static final Predicate<SchemaRule> CONSTRAINT_INDEX_RULES =
+            rule -> rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
 
     private Iterator<IndexDescriptor> getIndexDescriptorsFor( Predicate<SchemaRule> filter )
     {
@@ -419,14 +389,7 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( int labelId, final int propertyKeyId )
     {
         return schemaStorage.schemaRulesForNodes( NODE_RULE_TO_CONSTRAINT, NodePropertyConstraintRule.class,
-                labelId, new Predicate<NodePropertyConstraintRule>()
-                {
-                    @Override
-                    public boolean test( NodePropertyConstraintRule rule )
-                    {
-                        return rule.containsPropertyKeyId( propertyKeyId );
-                    }
-                } );
+                labelId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override
@@ -441,14 +404,7 @@ public class DiskLayer implements StoreReadLayer
             final int propertyKeyId )
     {
         return schemaStorage.schemaRulesForRelationships( REL_RULE_TO_CONSTRAINT,
-                RelationshipPropertyConstraintRule.class, typeId, new Predicate<RelationshipPropertyConstraintRule>()
-                {
-                    @Override
-                    public boolean test( RelationshipPropertyConstraintRule rule )
-                    {
-                        return rule.containsPropertyKeyId( propertyKeyId );
-                    }
-                } );
+                RelationshipPropertyConstraintRule.class, typeId, rule -> rule.containsPropertyKeyId( propertyKeyId ) );
     }
 
     @Override

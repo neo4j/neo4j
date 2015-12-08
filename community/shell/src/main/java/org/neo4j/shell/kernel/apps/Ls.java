@@ -22,15 +22,14 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,7 +58,7 @@ import org.neo4j.shell.ShellException;
 public class Ls extends TransactionProvidingApp
 {
     private static final int DEFAULT_MAX_RELS_PER_TYPE_LIMIT = 10;
-    
+
     {
         addOptionDefinition( "b", new OptionDefinition( OptionValueType.NONE,
             "Brief summary instead of full content" ) );
@@ -170,14 +169,7 @@ public class Ls extends TransactionProvidingApp
         {
             list.add( item );
         }
-        Collections.sort( list, new Comparator<String>()
-        {
-            @Override
-            public int compare( String item1, String item2 )
-            {
-                return item1.toLowerCase().compareTo( item2.toLowerCase() );
-            }
-        } );
+        Collections.sort( list, ( item1, item2 ) -> item1.toLowerCase().compareTo( item2.toLowerCase() ) );
         return list;
     }
 
@@ -226,7 +218,7 @@ public class Ls extends TransactionProvidingApp
         List<String> labelNames = new ArrayList<String>();
         for ( Label label : thing.asNode().getLabels() )
             labelNames.add( label.name() );
-        
+
         if ( brief )
         {
             out.println( "Label count: " + labelNames.size() );
@@ -240,7 +232,7 @@ public class Ls extends TransactionProvidingApp
             }
         }
     }
-    
+
     private void displayRelationships( AppCommandParser parser, NodeOrRelationship thing,
         Session session, Output out, boolean verbose, boolean quiet,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
@@ -285,7 +277,7 @@ public class Ls extends TransactionProvidingApp
             {
                 iterator = wrapInLimitingIterator( parser, iterator, filterMap, caseInsensitiveFilters, looseFilters );
             }
-            
+
             while ( iterator.hasNext() )
             {
                 Relationship rel = iterator.next();
@@ -298,7 +290,7 @@ public class Ls extends TransactionProvidingApp
             }
         }
     }
-    
+
     private Iterator<Relationship> wrapInLimitingIterator( AppCommandParser parser,
             Iterator<Relationship> iterator, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
             boolean looseFilters ) throws ShellException

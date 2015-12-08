@@ -32,9 +32,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -93,7 +93,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -1305,13 +1304,6 @@ public class TransactionRecordStateTest
 
     private PropertyCommand singlePropertyCommand( Collection<Command> commands )
     {
-        return (PropertyCommand) single( filter( new Predicate<Command>()
-        {
-            @Override
-            public boolean test( Command t )
-            {
-                return t instanceof PropertyCommand;
-            }
-        }, commands ) );
+        return (PropertyCommand) single( filter( t -> t instanceof PropertyCommand, commands ) );
     }
 }

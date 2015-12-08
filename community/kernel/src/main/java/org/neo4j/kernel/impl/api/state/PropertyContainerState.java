@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;

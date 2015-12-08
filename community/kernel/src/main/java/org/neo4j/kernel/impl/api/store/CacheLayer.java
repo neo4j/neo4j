@@ -44,7 +44,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -140,14 +139,7 @@ public class CacheLayer implements StoreReadLayer
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
             final SchemaRule.Kind kind )
     {
-        Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule item )
-            {
-                return item.getKind() == kind;
-            }
-        }, rules.iterator() );
+        Iterator<SchemaRule> filteredRules = filter( item -> item.getKind() == kind, rules.iterator() );
         return map( TO_INDEX_RULE, filteredRules );
     }
 

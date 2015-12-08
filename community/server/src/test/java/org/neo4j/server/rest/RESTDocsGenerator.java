@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientRequest.Builder;
+import com.sun.jersey.api.client.ClientResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -31,12 +36,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
+import java.util.function.Predicate;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
@@ -45,10 +49,6 @@ import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientRequest.Builder;
-import com.sun.jersey.api.client.ClientResponse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -57,9 +57,9 @@ import static org.junit.Assert.fail;
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
  * The status and media type of all responses is checked as well as the
  * existence of any expected headers.
- * 
+ *
  * The filename of the resulting ASCIIDOC test file is derived from the title.
- * 
+ *
  * The title is determined by either a JavaDoc period terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
@@ -93,7 +93,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.valueOf( "application/json; charset=UTF-8" );
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
-    private final List<Pair<String, Predicate<String>>> expectedHeaderFields = new ArrayList<>();
+    private final List<Pair<String,Predicate<String>>> expectedHeaderFields = new ArrayList<>();
     private String payload;
     private final Map<String, String> addedRequestHeaders = new TreeMap<>(  );
     private boolean noDoc = false;
@@ -107,7 +107,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      * response, use {@link ResponseEntity#entity} to get the entity or
      * {@link ResponseEntity#response} to get the rest of the response
      * (excluding the entity).
-     * 
+     *
      * @param title title of the test
      */
     public static RESTDocsGenerator create( final String title )
@@ -123,13 +123,13 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     {
         super( title, "rest-api" );
     }
-    
+
 
 
     /**
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
-     * 
+     *
      * @param expectedResponseStatus the expected response status
      */
     public RESTDocsGenerator expectedStatus( final int expectedResponseStatus )
@@ -137,11 +137,11 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
     }
-    
+
     /**
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.
-     * 
+     *
      * @param expectedStatus the expected response status
      */
     public RESTDocsGenerator expectedStatus( final ClientResponse.Status expectedStatus)
@@ -153,7 +153,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     /**
      * Set the expected media type of the response. The test will fail if the
      * response has a different media type. Defaults to application/json.
-     * 
+     *
      * @param expectedMediaType the expected media tyupe
      */
     public RESTDocsGenerator expectedType( final MediaType expectedMediaType )
@@ -164,7 +164,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * The media type of the request payload. Defaults to application/json.
-     * 
+     *
      * @param payloadMediaType the media type to use
      */
     public RESTDocsGenerator payloadType( final MediaType payloadMediaType )
@@ -187,7 +187,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Set the payload of the request.
-     * 
+     *
      * @param payload the payload
      */
     public RESTDocsGenerator payload( final String payload )
@@ -209,7 +209,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Set a custom heading level. Defaults to 3.
-     * 
+     *
      * @param headingLevel a value between 1 and 6 (inclusive)
      */
     public RESTDocsGenerator docHeadingLevel( final int headingLevel )
@@ -227,7 +227,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
      * Add an expected response header. If the heading is missing in the
      * response the test will fail. The header and its value are also included
      * in the documentation.
-     * 
+     *
      * @param expectedHeaderField the expected header
      */
     public RESTDocsGenerator expectedHeader( final String expectedHeaderField )
@@ -252,7 +252,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Send a request using your own request object.
-     * 
+     *
      * @param request the request to perform
      */
     public ResponseEntity request( final ClientRequest request )
@@ -260,7 +260,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return retrieveResponse( title, description, request.getURI()
                 .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
     }
-    
+
     @Override
     public RESTDocsGenerator description( String description )
     {
@@ -269,7 +269,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Send a GET request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity get( final String uri )
@@ -280,7 +280,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Send a POST request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity post( final String uri )
@@ -291,7 +291,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Send a PUT request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity put( final String uri )
@@ -302,7 +302,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     /**
      * Send a DELETE request.
-     * 
+     *
      * @param uri the URI to use.
      */
     public ResponseEntity delete( final String uri )

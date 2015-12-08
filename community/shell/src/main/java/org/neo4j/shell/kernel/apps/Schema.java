@@ -24,7 +24,6 @@ import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -389,14 +388,7 @@ public class Schema extends TransactionProvidingApp
         Iterable<IndexDefinition> indexes = indexesByLabel( schema, labels );
         if ( property != null )
         {
-            indexes = filter( new Predicate<IndexDefinition>()
-            {
-                @Override
-                public boolean test( IndexDefinition index )
-                {
-                    return indexOf( property, index.getPropertyKeys() ) != -1;
-                }
-            }, indexes );
+            indexes = filter( index -> indexOf( property, index.getPropertyKeys() ) != -1, indexes );
         }
         return indexes;
     }
@@ -404,33 +396,17 @@ public class Schema extends TransactionProvidingApp
     private Iterable<ConstraintDefinition> constraintsByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
             final Label[] labels, final String property )
     {
-
-        return filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition constraint )
-            {
-                return isNodeConstraint( constraint ) &&
-                       hasLabel( constraint, labels ) &&
-                       isMatchingConstraint( constraint, property );
-            }
-        }, schema.getConstraints() );
+        return filter( constraint -> isNodeConstraint( constraint ) &&
+                             hasLabel( constraint, labels ) &&
+                             isMatchingConstraint( constraint, property ), schema.getConstraints() );
     }
 
     private Iterable<ConstraintDefinition> constraintsByTypeAndProperty( org.neo4j.graphdb.schema.Schema schema,
             final RelationshipType[] types, final String property )
     {
-
-        return filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition constraint )
-            {
-                return isRelationshipConstraint( constraint ) &&
-                       hasType( constraint, types ) &&
-                       isMatchingConstraint( constraint, property );
-            }
-        }, schema.getConstraints() );
+        return filter( constraint -> isRelationshipConstraint( constraint ) &&
+                             hasType( constraint, types ) &&
+                             isMatchingConstraint( constraint, property ), schema.getConstraints() );
     }
 
     private boolean hasLabel( ConstraintDefinition constraint, Label[] labels )
@@ -495,13 +471,8 @@ public class Schema extends TransactionProvidingApp
         Iterable<IndexDefinition> indexes = schema.getIndexes();
         for ( final Label label : labels )
         {
-            indexes = filter( new Predicate<IndexDefinition>()
-            {
-                @Override
-                public boolean test( IndexDefinition item )
-                {
-                    return item.getLabel().name().equals( label.name() );
-                }
+            indexes = filter( item -> {
+                return item.getLabel().name().equals( label.name() );
             }, indexes );
         }
         return indexes;

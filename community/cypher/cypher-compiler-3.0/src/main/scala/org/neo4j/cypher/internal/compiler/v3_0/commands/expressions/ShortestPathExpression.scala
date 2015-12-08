@@ -33,7 +33,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb._
-import org.neo4j.function.{Predicate => KernelPredicate}
+import java.util.function.{Predicate => KernelPredicate}
 import org.neo4j.kernel.Traversal
 
 import scala.collection.JavaConverters._

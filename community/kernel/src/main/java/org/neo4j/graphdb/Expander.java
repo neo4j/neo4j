@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
 
 /**
  * This interface is an extension of the {@link RelationshipExpander} interface
@@ -64,47 +64,8 @@ public interface Expander extends RelationshipExpander
      *
      * @param filter filter to use
      * @return new instance
-     * @deprecated use {@link #addNodeFilter(Predicate)} instead
-     */
-    @Deprecated
-    Expander addNodeFilter( org.neo4j.helpers.Predicate<? super Node> filter );
-
-    /**
-     * Add a {@link Node} filter.
-     *
-     * @param filter filter to use
-     * @return new instance
      */
     Expander addNodeFilter( Predicate<? super Node> filter );
-
-    /**
-     * Add a {@link Relationship} filter.
-     *
-     * @param filter filter to use
-     * @return new instance
-     * @deprecated because of typo, use {@link Expander#addRelationshipFilter(Predicate)} instead
-     */
-    @Deprecated
-    Expander addRelationsipFilter( org.neo4j.helpers.Predicate<? super Relationship> filter );
-
-    /**
-     * Add a {@link Relationship} filter.
-     *
-     * @param filter filter to use
-     * @return new instance
-     * @deprecated because of typo, use {@link Expander#addRelationshipFilter(Predicate)} instead
-     */
-    Expander addRelationsipFilter( Predicate<? super Relationship> filter );
-
-    /**
-     * Add a {@link Relationship} filter.
-     *
-     * @param filter filter to use
-     * @return new instance
-     * @deprecated use {@link #addRelationshipFilter(Predicate)} instead
-     */
-    @Deprecated
-    Expander addRelationshipFilter( org.neo4j.helpers.Predicate<? super Relationship> filter );
 
     /**
      * Add a {@link Relationship} filter.

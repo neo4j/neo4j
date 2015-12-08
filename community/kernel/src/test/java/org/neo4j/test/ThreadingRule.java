@@ -27,10 +27,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Consumers;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.ConcurrentTransfer;
@@ -82,24 +82,19 @@ public class ThreadingRule extends ExternalResource
             final Barrier barrier, final ThrowingFunction<FROM,TO,EX> function, final FROM parameter,
             final Consumer<Thread> threadConsumer )
     {
-        return new Callable<TO>()
-        {
-            @Override
-            public TO call() throws Exception
+        return () -> {
+            Thread thread = Thread.currentThread();
+            String name = thread.getName();
+            thread.setName( function.toString() );
+            threadConsumer.accept( thread );
+            barrier.reached();
+            try
             {
-                Thread thread = Thread.currentThread();
-                String name = thread.getName();
-                thread.setName( function.toString() );
-                threadConsumer.accept( thread );
-                barrier.reached();
-                try
-                {
-                    return function.apply( parameter );
-                }
-                finally
-                {
-                    thread.setName( name );
-                }
+                return function.apply( parameter );
+            }
+            finally
+            {
+                thread.setName( name );
             }
         };
     }

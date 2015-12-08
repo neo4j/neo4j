@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.function.Predicate;
+
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -62,7 +64,7 @@ public class TestMultipleFilters extends TraversalTestBase
     {
          tx.close();
     }
-    
+
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator
     {
         private final Node node;
@@ -95,25 +97,20 @@ public class TestMultipleFilters extends TraversalTestBase
     public void testNarrowingFilters()
     {
         Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
-        Evaluator mustNotHaveMoreThanTwoOutRels = new Evaluator()
-        {
-            public Evaluation evaluate( Path path )
-            {
-                return Evaluation.ofIncludes( count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
-            }
-        };
-        
+        Evaluator mustNotHaveMoreThanTwoOutRels =
+                path -> Evaluation.ofIncludes( count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
+
         TraversalDescription description = traversal().evaluator( mustBeConnectedToK );
         expectNodes( description.traverse( node( "a" ) ), "b", "c" );
         expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
     }
-    
+
     @Test
     public void testBroadeningFilters()
     {
         MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
         MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
-        
+
         // Nodes connected (OUTGOING) to c (which "a" is)
         expectNodes( traversal().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
         // Nodes connected (OUTGOING) to c AND e (which none is)

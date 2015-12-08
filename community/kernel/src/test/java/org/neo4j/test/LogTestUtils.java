@@ -24,15 +24,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -59,7 +58,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class LogTestUtils
 {
-    public static interface LogHook<RECORD> extends Predicate<RECORD>
+    public interface LogHook<RECORD> extends Predicate<RECORD>
     {
         void file( File file );
 
@@ -171,14 +170,7 @@ public class LogTestUtils
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( new File( storeDir ), fileSystem );
         final List<File> files = new ArrayList<>();
-        logFiles.accept( new LogVersionVisitor()
-        {
-            @Override
-            public void visit( File file, long logVersion )
-            {
-                files.add( file );
-            }
-        } );
+        logFiles.accept( ( file, logVersion ) -> files.add( file ) );
         for ( File file : files )
         {
             File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );

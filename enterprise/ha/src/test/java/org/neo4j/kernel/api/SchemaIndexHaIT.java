@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -73,12 +73,10 @@ import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -315,14 +313,8 @@ public class SchemaIndexHaIT
         return slaveDown;
     }
 
-    public static final Predicate<GraphDatabaseService> IS_MASTER = new Predicate<GraphDatabaseService>()
-    {
-        @Override
-        public boolean test( GraphDatabaseService item )
-        {
-            return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
-        }
-    };
+    public static final Predicate<GraphDatabaseService> IS_MASTER =
+            item -> item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
 
     private final String key = "key";
     private final Label label = label( "label" );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.function.Predicate;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.CheckDecorator;
@@ -29,7 +31,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;

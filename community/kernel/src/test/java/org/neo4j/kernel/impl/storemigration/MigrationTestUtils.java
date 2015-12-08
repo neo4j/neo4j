@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
@@ -302,14 +302,8 @@ public class MigrationTestUtils
         return new File( dbDirectory, "upgrade" );
     }
 
-    private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE = new Predicate<StoreFile>()
-    {
-        @Override
-        public boolean test( StoreFile item )
-        {
-            return item != StoreFile.COUNTS_STORE_LEFT && item != StoreFile.COUNTS_STORE_RIGHT;
-        }
-    };
+    private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE =
+            item -> item != StoreFile.COUNTS_STORE_LEFT && item != StoreFile.COUNTS_STORE_RIGHT;
 
     public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File workingDirectory )
             throws IOException

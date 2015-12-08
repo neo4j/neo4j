@@ -20,17 +20,16 @@
 package org.neo4j.graphalgo.impl.path;
 
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
 import org.neo4j.graphalgo.impl.util.DijkstraBranchCollisionDetector;
 import org.neo4j.graphalgo.impl.util.DijkstraSelectorFactory;
 import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
+import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -114,14 +113,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         final Traverser traverser = traverser( start, end, PathInterestFactory.allShortest( epsilon ) );
-        return new Iterable<WeightedPath>()
-        {
-            @Override
-            public Iterator<WeightedPath> iterator()
-            {
-                return new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator );
-            }
-        };
+        return () -> new TopFetchingWeightedPathIterator( traverser.iterator(), costEvaluator );
     }
 
     private Traverser traverser( Node start, final Node end, PathInterest interest )

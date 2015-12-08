@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi.v3_0
 
+import java.util.function.Predicate
+
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
-import org.neo4j.function.Predicate
 import org.neo4j.graphdb.traversal.{BranchCollisionPolicy, _}
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.kernel.{StandardBranchCollisionDetector, Traversal, Uniqueness}

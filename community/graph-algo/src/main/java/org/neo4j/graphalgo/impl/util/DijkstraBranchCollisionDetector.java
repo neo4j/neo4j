@@ -19,7 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluator;

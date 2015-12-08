@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -56,22 +55,12 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "Database is now ready" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "Database is now ready" );
         } ), is( 1 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "Database is now unavailable" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "Database is now unavailable" );
         } ), is( 1 ) );
     }
 
@@ -92,13 +81,8 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A debug entry" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "A debug entry" );
         } ), is( 0 ) );
     }
 
@@ -123,31 +107,16 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A debug entry" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "A debug entry" );
         } ), is( 1 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A GDS debug entry" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "A GDS debug entry" );
         } ), is( 0 ) );
 
-        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), new Predicate<String>()
-        {
-            @Override
-            public boolean test( String line )
-            {
-                return line.contains( "A SW debug entry" );
-            }
+        assertThat( IteratorUtil.count( asIterable( internalLog, StandardCharsets.UTF_8 ), line -> {
+            return line.contains( "A SW debug entry" );
         } ), is( 1 ) );
     }
 }
