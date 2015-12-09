@@ -39,6 +39,43 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   val VERBOSE = false // Lots of debug prints
 
+  test("shortestPath with same start and end node should return zero length path with no fallback") {
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
+         |RETURN nodes(p) AS nodes""".stripMargin)
+
+    dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
+    dprintln(results.executionPlanDescription())
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    debugResults(result(0).asJava.asScala.toList)
+
+    // Then
+    result.length should equal(1)
+    result(0).toSet should equal(Set(node(0, 0)))
+    results shouldNot executeShortestPathFallbackWith(minRows = 1)
+  }
+
+  test("shortestPath with same start and end node as well as predicates should resort to fallback") {
+    val start = System.currentTimeMillis
+    val results = executeUsingCostPlannerOnly(
+      s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
+         |WHERE ANY(n in nodes(p) WHERE n:$topRight)
+         |RETURN nodes(p) AS nodes""".stripMargin)
+
+    dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
+    dprintln(results.executionPlanDescription())
+
+    val result = results.columnAs[List[Node]]("nodes").toList
+    debugResults(result(0).asJava.asScala.toList)
+
+    // Then
+    result.length should equal(1)
+    result(0).toSet should equal(row(0) ++ row(1))
+    results should executeShortestPathFallbackWith(minRows = 1)
+  }
+
   test("Shortest path from first to first node via top right (reverts to exhaustive)") {
     val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(
@@ -630,6 +667,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       relate(nodesByName(prev), nodesByName(name), "DIAG", s"c${prev}-c${name}")
     }
   }
+
+  private def node(row: Int, col: Int): Node = nodesByName(s"$row$col")
 
   private def row(row: Int, min: Int = 0, max: Int = dMax): Set[Node] = {
     val nodes = min to max map { col: Int =>

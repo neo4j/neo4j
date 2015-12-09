@@ -153,7 +153,7 @@ public class ShortestPath implements PathFinder<Path>
         lastMetadata = new Metadata();
         if ( start.equals( end ) )
         {
-            return Collections.singletonList( PathImpl.singular( start ) );
+            return filterPaths(Collections.singletonList( PathImpl.singular( start ) ));
         }
         Hits hits = new Hits();
         Collection<Long> sharedVisitedRels = new HashSet<Long>();
