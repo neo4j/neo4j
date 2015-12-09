@@ -48,7 +48,7 @@ public class TestConfiguration
         FileUtils.deleteDirectory( new File( SOURCE_DIR ) );
         FileUtils.deleteDirectory( new File( BACKUP_DIR ) );
     }
-    
+
     @Test
     public void testOnByDefault() throws Exception
     {
@@ -56,7 +56,7 @@ public class TestConfiguration
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
         db.shutdown();
     }
-    
+
     @Test
     public void testOffByConfig() throws Exception
     {
@@ -73,7 +73,7 @@ public class TestConfiguration
         }
         db.shutdown();
     }
-    
+
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
@@ -100,7 +100,7 @@ public class TestConfiguration
         catch ( Exception e )
         { // Good
         }
-        
+
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress(), Integer.parseInt(customPort) ).full( BACKUP_DIR );
         db.shutdown();
     }

@@ -22,7 +22,7 @@ package org.neo4j.shell;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.helpers.SillyUtils.ignore;
 

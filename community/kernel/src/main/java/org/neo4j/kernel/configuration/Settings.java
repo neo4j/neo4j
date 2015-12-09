@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
-
-import org.apache.commons.lang3.StringUtils;
+package org.neo4j.kernel.configuration;
 
 import java.io.File;
 import java.net.URI;
@@ -32,9 +30,13 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Function2;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
@@ -49,13 +51,10 @@ import org.neo4j.kernel.configuration.Config;
  * which means that you don't want any default value at all, and MANDATORY, which means that the user has to specify a value
  * for this setting. Not providing a mandatory value for a setting leads to an IllegalArgumentException.
  *
- * @deprecated this class is deprecated and will be moved to internal packages in the next major release
+ * If a setting does not have a provided value, and no default, then
  */
-@Deprecated
-public final class Settings
+public class Settings
 {
-    // NOTE: Do not use this class, use org.neo4j.kernel.configuration.Settings instead
-
     private static final String MATCHES_PATTERN_MESSAGE = "matches the pattern `%s`";
 
     private interface SettingHelper<T>
@@ -69,19 +68,19 @@ public final class Settings
     // Set default value to this if user HAS to set a value
     @SuppressWarnings("RedundantStringConstructorCall")
     // It's an explicitly allocated string so identity equality checks work
-    @Deprecated public static final String MANDATORY = org.neo4j.kernel.configuration.Settings.MANDATORY;
-    @Deprecated public static final String NO_DEFAULT = null;
-    @Deprecated public static final String EMPTY = "";
+    public static final String MANDATORY = new String( "mandatory" );
+    public static final String NO_DEFAULT = null;
+    public static final String EMPTY = "";
 
-    @Deprecated public static final String TRUE = "true";
-    @Deprecated public static final String FALSE = "false";
+    public static final String TRUE = "true";
+    public static final String FALSE = "false";
 
-    @Deprecated public static final String DEFAULT = "default";
+    public static final String DEFAULT = "default";
 
-    @Deprecated public static final String SEPARATOR = ",";
+    public static final String SEPARATOR = ",";
 
-    @Deprecated public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
-    @Deprecated public static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
+    public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
+    public static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
 
     private static final String DURATION_UNITS = DURATION_FORMAT.substring(
             DURATION_FORMAT.indexOf( '(' ) + 1, DURATION_FORMAT.indexOf( ')' ) )
@@ -93,9 +92,8 @@ public final class Settings
             .replace( "[", "" )
             .replace( "]", "" );
 
-    @Deprecated public static final String ANY = ".+";
+    public static final String ANY = ".+";
 
-    @Deprecated
     @SuppressWarnings("unchecked")
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue )
@@ -103,7 +101,6 @@ public final class Settings
         return setting( name, parser, defaultValue, (Setting<T>) null );
     }
 
-    @Deprecated
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
                                           final Function2<T, Function<String, String>, T>... valueConverters )
@@ -111,7 +108,6 @@ public final class Settings
         return setting( name, parser, defaultValue, null, valueConverters );
     }
 
-    @Deprecated
     @SuppressWarnings("unchecked")
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final Setting<T> inheritedSetting )
@@ -119,7 +115,6 @@ public final class Settings
         return setting( name, parser, null, inheritedSetting );
     }
 
-    @Deprecated
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue,
                                           final Setting<T> inheritedSetting, final Function2<T, Function<String,
@@ -193,7 +188,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static final Function<String, Integer> INTEGER = new Function<String, Integer>()
     {
         @Override
@@ -216,7 +210,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Long> LONG = new Function<String, Long>()
     {
         @Override
@@ -239,7 +232,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Boolean> BOOLEAN = new Function<String, Boolean>()
     {
         @Override
@@ -266,7 +258,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Float> FLOAT = new Function<String, Float>()
     {
         @Override
@@ -289,7 +280,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Double> DOUBLE = new Function<String, Double>()
     {
         @Override
@@ -312,7 +302,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, String> STRING = new Function<String, String>()
     {
         @Override
@@ -328,7 +317,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, List<String>> STRING_LIST = new Function<String, List<String>>()
     {
         @Override
@@ -352,8 +340,7 @@ public final class Settings
         }
     };
 
-    @Deprecated
-    public static final Function<String, HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
+    public static final Function<String,HostnamePort> HOSTNAME_PORT = new Function<String, HostnamePort>()
     {
         @Override
         public HostnamePort apply( String value )
@@ -368,7 +355,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Long> DURATION = new Function<String, Long>()
     {
         @Override
@@ -384,7 +370,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
         @Override
@@ -421,7 +406,7 @@ public final class Settings
             catch ( NumberFormatException e )
             {
                 throw new IllegalArgumentException( String.format( "%s is not a valid size, must be e.g. 10, 5K, 1M, " +
-                                                                   "11G", value ) );
+                        "11G", value ) );
             }
         }
 
@@ -432,7 +417,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, URI> URI =
             new Function<String, URI>()
             {
@@ -456,7 +440,6 @@ public final class Settings
                 }
             };
 
-    @Deprecated
     public static final Function<String, URI> NORMALIZED_RELATIVE_URI = new Function<String, URI>()
     {
         @Override
@@ -485,7 +468,6 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static final Function<String, File> PATH = new Function<String, File>()
     {
         @Override
@@ -505,7 +487,7 @@ public final class Settings
 
     /**
      * For values expressed with a unit such as {@code 100M}.
-     *
+     * 
      * <ul>
      *   <li>100M<br>   ==&gt; 100 * 1024 * 1024</li>
      *   <li>37261<br>  ==&gt; 37261</li>
@@ -514,7 +496,6 @@ public final class Settings
      *   <li>10k<br>    ==&gt; 10 * 1024</li>
      * </ul>
      */
-    @Deprecated
     public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = new Function<String, Long>()
     {
         @Override
@@ -524,19 +505,16 @@ public final class Settings
         }
     };
 
-    @Deprecated
     public static <T extends Enum> Function<String, T> options( final Class<T> enumClass )
     {
         return options( EnumSet.allOf( enumClass ) );
     }
 
-    @Deprecated
     public static <T> Function<String, T> options( T... optionValues )
     {
         return Settings.<T>options( Iterables.<T,T>iterable( optionValues ) );
     }
 
-    @Deprecated
     public static <T> Function<String, T> options( final Iterable<T> optionValues )
     {
         return new Function<String, T>()
@@ -571,7 +549,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static <T> Function<String, List<T>> list( final String separator, final Function<String, T> itemParser )
     {
         return new Function<String, List<T>>()
@@ -600,7 +577,6 @@ public final class Settings
     }
 
     // Modifiers
-    @Deprecated
     public static Function2<String, Function<String, String>, String> matches( final String regex )
     {
         final Pattern pattern = Pattern.compile( regex );
@@ -626,7 +602,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> min( final T min )
     {
         return new Function2<T, Function<String, String>, T>()
@@ -649,7 +624,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> max( final T max )
     {
         return new Function2<T, Function<String, String>, T>()
@@ -672,7 +646,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> range( final T min, final T max )
     {
         return new Function2<T, Function<String, String>, T>()
@@ -691,11 +664,9 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static final Function2<Integer, Function<String, String>, Integer> port =
             illegalValueMessage( "must be a valid port number", range( 0, 65535 ) );
 
-    @Deprecated
     public static <T> Function2<T, Function<String, String>, T> illegalValueMessage( final String message,
                                                                                      final Function2<T,
                                                                                              Function<String,
@@ -723,7 +694,7 @@ public final class Settings
                 String description = message;
                 if ( valueFunction != null
                      && !String.format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
-                        valueFunction.toString() ) )
+                             valueFunction.toString() ) )
                 {
                     description += " (" + valueFunction.toString() + ")";
                 }
@@ -732,7 +703,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static Function2<String, Function<String, String>, String> toLowerCase =
             new Function2<String, Function<String, String>, String>()
             {
@@ -743,7 +713,6 @@ public final class Settings
                 }
             };
 
-    @Deprecated
     public static Function2<URI, Function<String, String>, URI> normalize =
             new Function2<URI, Function<String, String>, URI>()
             {
@@ -760,7 +729,6 @@ public final class Settings
             };
 
     // Setting converters and constraints
-    @Deprecated
     public static Function2<File, Function<String, String>, File> basePath( final Setting<File> baseSetting )
     {
         return new Function2<File, Function<String, String>, File>()
@@ -781,7 +749,6 @@ public final class Settings
         };
     }
 
-    @Deprecated
     public static Function2<File, Function<String, String>, File> isFile =
             new Function2<File, Function<String, String>, File>()
             {
@@ -798,7 +765,6 @@ public final class Settings
                 }
             };
 
-    @Deprecated
     public static Function2<File, Function<String, String>, File> isDirectory =
             new Function2<File, Function<String, String>, File>()
             {
@@ -816,7 +782,6 @@ public final class Settings
             };
 
     // Setting helpers
-    @Deprecated
     private static Function<Function<String, String>, String> named( final String name )
     {
         return new Function<Function<String, String>, String>()
@@ -873,7 +838,6 @@ public final class Settings
     {
     }
 
-    @Deprecated
     public static class DefaultSetting<T> implements SettingHelper<T>
     {
         private final String name;

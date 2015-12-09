@@ -113,7 +113,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     {
         return new ArrayList<String>()
         {{
-                add( "shell" );
-            }};
+            add( "shell" );
+        }};
     }
 }

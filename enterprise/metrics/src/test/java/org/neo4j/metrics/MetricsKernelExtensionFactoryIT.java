@@ -38,6 +38,8 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.metrics.source.CypherMetrics;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
 
