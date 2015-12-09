@@ -42,7 +42,7 @@ import org.neo4j.tools.txlog.checktypes.CheckTypes;
  *
  * Transaction log is considered consistent when every command's before state is the same as after state for
  * corresponding record in previously committed transaction.
- * 
+ *
  * Tool expects a single argument - directory with transaction logs.
  * It then simply iterates over all commands in those logs, compares before state for current record with previously
  * seen after state and stores after state for current record, if before state is consistent.

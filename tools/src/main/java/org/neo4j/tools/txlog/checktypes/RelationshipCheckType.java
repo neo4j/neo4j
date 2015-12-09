@@ -21,30 +21,30 @@ package org.neo4j.tools.txlog.checktypes;
 
 import java.util.Objects;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
-class NodeCheckType extends CheckType<Command.NodeCommand,NodeRecord>
+public class RelationshipCheckType extends CheckType<Command.RelationshipCommand,RelationshipRecord>
 {
-    NodeCheckType()
+    RelationshipCheckType()
     {
-        super( Command.NodeCommand.class );
+        super( Command.RelationshipCommand.class );
     }
 
     @Override
-    public NodeRecord before( Command.NodeCommand command )
+    public RelationshipRecord before( Command.RelationshipCommand command )
     {
         return command.getBefore();
     }
 
     @Override
-    public NodeRecord after( Command.NodeCommand command )
+    public RelationshipRecord after( Command.RelationshipCommand command )
     {
         return command.getAfter();
     }
 
     @Override
-    public boolean equal( NodeRecord record1, NodeRecord record2 )
+    public boolean equal( RelationshipRecord record1, RelationshipRecord record2 )
     {
         Objects.requireNonNull( record1 );
         Objects.requireNonNull( record2 );
@@ -52,14 +52,21 @@ class NodeCheckType extends CheckType<Command.NodeCommand,NodeRecord>
         return record1.getId() == record2.getId() &&
                record1.inUse() == record2.inUse() &&
                record1.getNextProp() == record2.getNextProp() &&
-               record1.getNextRel() == record2.getNextRel() &&
-               record1.isDense() == record2.isDense() &&
-               record1.getLabelField() == record2.getLabelField();
+               record1.isFirstInFirstChain() == record2.isFirstInFirstChain() &&
+               record1.isFirstInSecondChain() == record2.isFirstInSecondChain() &&
+               record1.getFirstNextRel() == record2.getFirstNextRel() &&
+               record1.getFirstNode() == record2.getFirstNode() &&
+               record1.getFirstPrevRel() == record2.getFirstPrevRel() &&
+               record1.getSecondNextRel() == record2.getSecondNextRel() &&
+               record1.getSecondNode() == record2.getSecondNode() &&
+               record1.getSecondPrevRel() == record2.getSecondPrevRel() &&
+               record1.getType() == record2.getType();
     }
+
 
     @Override
     public String name()
     {
-        return "node";
+        return "relationship";
     }
 }
