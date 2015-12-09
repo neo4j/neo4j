@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -125,16 +126,41 @@ public abstract class Command
         return format( " -%s%n         +%s", before, after );
     }
 
-    public static class NodeCommand extends Command
-    {
-        private NodeRecord before;
-        private NodeRecord after;
 
-        public NodeCommand init( NodeRecord before, NodeRecord after )
+    public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
+    {
+        protected RECORD before;
+        protected RECORD after;
+
+        protected void initialize( RECORD before, RECORD after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
+        }
+
+        @Override
+        public String toString()
+        {
+            return beforeAndAfterToString( before, after );
+        }
+
+        public RECORD getBefore()
+        {
+            return before;
+        }
+
+        public RECORD getAfter()
+        {
+            return after;
+        }
+    }
+
+    public static class NodeCommand extends BaseCommand<NodeRecord>
+    {
+        public NodeCommand init( NodeRecord before, NodeRecord after )
+        {
+            initialize( before, after );
             return this;
         }
 
@@ -143,41 +169,14 @@ public abstract class Command
         {
             return handler.visitNodeCommand( this );
         }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
-        }
-
-        public NodeRecord getBefore()
-        {
-            return before;
-        }
-
-        public NodeRecord getAfter()
-        {
-            return after;
-        }
     }
 
-    public static class RelationshipCommand extends Command
+    public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
     {
-        private RelationshipRecord before;
-        private RelationshipRecord after;
-
         public RelationshipCommand init( RelationshipRecord before, RelationshipRecord after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
+            initialize( before, after );
             return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -185,35 +184,14 @@ public abstract class Command
         {
             return handler.visitRelationshipCommand( this );
         }
-
-        public RelationshipRecord getBefore()
-        {
-            return before;
-        }
-
-        public RelationshipRecord getAfter()
-        {
-            return after;
-        }
     }
 
-    public static class RelationshipGroupCommand extends Command
+    public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
-        private RelationshipGroupRecord before;
-        private RelationshipGroupRecord after;
-
         public RelationshipGroupCommand init( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
+            initialize( before, after );
             return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -221,35 +199,14 @@ public abstract class Command
         {
             return handler.visitRelationshipGroupCommand( this );
         }
-
-        public RelationshipGroupRecord getBefore()
-        {
-            return before;
-        }
-
-        public RelationshipGroupRecord getAfter()
-        {
-            return after;
-        }
     }
 
-    public static class NeoStoreCommand extends Command
+    public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
     {
-        private NeoStoreRecord before;
-        private NeoStoreRecord after;
-
         public NeoStoreCommand init( NeoStoreRecord before, NeoStoreRecord after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
+            initialize( before, after );
             return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -257,64 +214,22 @@ public abstract class Command
         {
             return handler.visitNeoStoreCommand( this );
         }
-
-        public NeoStoreRecord getBefore()
-        {
-            return before;
-        }
-
-        public NeoStoreRecord getAfter()
-        {
-            return after;
-        }
     }
 
-    public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
+    public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange
     {
-        @Override
-        public boolean handle( CommandVisitor handler ) throws IOException
-        {
-            return handler.visitPropertyKeyTokenCommand( this );
-        }
-    }
-
-    public static class PropertyCommand extends Command implements PropertyRecordChange
-    {
-        private PropertyRecord before;
-        private PropertyRecord after;
-
         // TODO as optimization the deserialized key/values could be passed in here
         // so that the cost of deserializing them only applies in recovery/HA
         public PropertyCommand init( PropertyRecord before, PropertyRecord after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
+            initialize( before, after );
             return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
         }
 
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitPropertyCommand( this );
-        }
-
-        @Override
-        public PropertyRecord getBefore()
-        {
-            return before;
-        }
-
-        @Override
-        public PropertyRecord getAfter()
-        {
-            return after;
         }
 
         public long getNodeId()
@@ -355,6 +270,15 @@ public abstract class Command
         public String toString()
         {
             return beforeAndAfterToString( before, after );
+        }
+    }
+
+    public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
+    {
+        @Override
+        public boolean handle( CommandVisitor handler ) throws IOException
+        {
+            return handler.visitPropertyKeyTokenCommand( this );
         }
     }
 
