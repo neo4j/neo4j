@@ -88,7 +88,7 @@ class MatchTest extends DocumentingTest {
       section("Related nodes") {
         p("The symbol `--` means _related to,_ without regard to type or direction of the relationship.")
         query("MATCH (director { name:'Oliver Stone' })--(movie) RETURN movie.title", assertWallStreetIsReturned) {
-          p("Returns all the movies directed by Oliver Stone.")
+          p("Returns all the movies directed by 'Oliver Stone'.")
           resultTable()
         }
       }
@@ -209,8 +209,8 @@ class MatchTest extends DocumentingTest {
       section("Zero length paths") {
         p(
           """Using variable length paths that have the lower bound zero means that two variables can point to the same node.
-            | If the path length between two nodes is zero, they are by definition the same node.
-            | Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.""")
+            |If the path length between two nodes is zero, they are by definition the same node.
+            |Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.""")
         query("MATCH (wallstreet:Movie { title:'Wall Street' })-[*0..1]-(x) RETURN x", assertLabelStats("x", Map("Movie" -> 1, "Person" -> 4))) {
           p("Returns the movie itself as well as actors and directors one relationship away")
           resultTable()
@@ -241,11 +241,28 @@ class MatchTest extends DocumentingTest {
             |      p = shortestPath( (martin)-[*..15]-(oliver) )
             |RETURN p""", assertShortestPathLength) {
           p(
-            """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parentheses
-              | you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
-              | like relationship type, max hops and direction are all used when finding the shortest path.
-              | If there is a WHERE clause following the match of a shortestPath, relevant predicates will be included in the shortestPath.
-              | If the predicate is a NONE() or ALL() on the relationship elements of the path, it will be used during the search to improve performance.""")
+            """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long.
+              |Inside of the parentheses you define a single link of a path -- the starting node, the connecting relationship
+              |and the end node. Characteristics describing the relationship like relationship type, max hops and direction
+              |are all used when finding the shortest path. If there is a `WHERE` clause following the match of a
+              |`shortestPath`, relevant predicates will be included in the `shortestPath`.
+              |If the predicate is a `NONE()` or `ALL()` on the relationship elements of the path,
+              |it will be used during the search to improve performance (see <<query-shortestpath-planning>>).""")
+          resultTable()
+        }
+      }
+      section("Single shortest path with predicates") {
+        p("""Predicates used in the `WHERE` clause that apply to the shortest path pattern are evaluated before deciding
+          |what the shortest matching path is.""")
+        query(
+          """MATCH (charlie:Person {name:"Charlie Sheen"}),
+            |      (martin:Person {name:"Martin Sheen"}),
+            |      p = shortestPath( (charlie)-[*]-(martin) )
+            |WHERE NONE(r in rels(p) WHERE type(r) = "FATHER")
+            |RETURN p""", assertShortestPathLength) {
+          p(
+            """This query will find the shortest path between 'Charlie Sheen' and 'Martin Sheen', and the `WHERE` predicate
+              |will ensure that we don't consider the father/son relationship between the two.""")
           resultTable()
         }
       }
@@ -254,7 +271,7 @@ class MatchTest extends DocumentingTest {
         query("""match (martin:Person {name:"Martin Sheen"} ),
                 |      (michael:Person {name:"Michael Douglas"}),
                 |      p = allShortestPaths( (martin)-[*]-(michael) ) return p""", assertAllShortestPaths) {
-          p("Finds the two shortest paths between Martin and Michael.")
+          p("Finds the two shortest paths between 'Martin' and 'Michael'.")
           resultTable()
         }
       }

@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{Assertions, Matchers}
 
 
@@ -90,7 +89,7 @@ trait DocumentingTest extends CypherFunSuite with Assertions with Matchers with 
 
     def testName(q: String) = {
       count +=1
-      s"$count: $q"
+      s"$count: $q".replaceAll(System.lineSeparator(), " ")
     }
 
     result foreach {

@@ -241,13 +241,7 @@ case class GraphViz(s: String) extends Content with NoQueries {
 
 case class ExecutionPlan(planString: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = {
-    s""".Query plan
-       |[source]
-       |----
-       |$planString
-       |----
-       |
-       |""".stripMargin
+    s".Query plan\n[source]\n----\n$planString\n----\n\n"
   }
 }
 
@@ -284,3 +278,4 @@ class TablePlaceHolder(val assertions: QueryAssertions) extends Content with Que
 class GraphVizPlaceHolder(val options: String) extends Content with QueryResultPlaceHolder
 class ErrorPlaceHolder() extends Content with QueryResultPlaceHolder
 class ExecutionPlanPlaceHolder extends Content with QueryResultPlaceHolder
+class ProfileExecutionPlanPlaceHolder extends Content with QueryResultPlaceHolder
