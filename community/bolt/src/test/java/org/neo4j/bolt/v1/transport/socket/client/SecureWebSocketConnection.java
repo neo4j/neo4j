@@ -26,6 +26,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -95,7 +96,8 @@ public class SecureWebSocketConnection implements Connection, WebSocketListener
         throw new UnsupportedOperationException();
     }
 
-    private void waitForRecievedData( int length, int remaining, byte[] target ) throws InterruptedException
+    private void waitForRecievedData( int length, int remaining, byte[] target )
+            throws InterruptedException, SocketTimeoutException
     {
         while( currentRecieveBuffer == null || currentRecieveIndex >= currentRecieveBuffer.length )
         {
@@ -103,9 +105,9 @@ public class SecureWebSocketConnection implements Connection, WebSocketListener
             currentRecieveBuffer = received.poll(30, TimeUnit.SECONDS);
             if(currentRecieveBuffer == null)
             {
-                throw new RuntimeException( "Waited 30 seconds for " + remaining + " bytes, " +
-                                            "" + (length - remaining) + " was recieved: " +
-                                            HexPrinter.hex( ByteBuffer.wrap( target ), 0, length - remaining ) );
+                throw new SocketTimeoutException( "Waited 30 seconds for " + remaining + " bytes, " +
+                                                  "" + (length - remaining) + " was recieved: " +
+                                                  HexPrinter.hex( ByteBuffer.wrap( target ), 0, length - remaining ) );
             }
         }
     }

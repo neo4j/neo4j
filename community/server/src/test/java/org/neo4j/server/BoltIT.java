@@ -81,7 +81,7 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         SecureSocketConnection conn = new SecureSocketConnection();
         conn.connect( new HostnamePort( host, port ) );
-        conn.send( new byte[]{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
+        conn.send( new byte[]{(byte)0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} );
         assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ));
     }
 }

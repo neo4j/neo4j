@@ -37,7 +37,7 @@ IMPORTANT: If TLS is enabled, and no certificate has been specified, Neo4j will 
 After connecting, a handshake takes place to establish which Bolt protocol version should be used for that connection.
 This handshake is a _version-independent_ mini-protocol which is guaranteed to remain the same, regardless of preferred or available protocol versions.
 
-In the handshake, the client proposes up to four protocol versions it supports, in order of preference.
+In the handshake, the client fist sends a magic four byte preamble (6060 B017) followed by four protocol versions it supports, in order of preference.
 The proposal is always represented as four 32-bit unsigned integers.
 Each integer represents a proposed protocol version to use, or zero (`00 00 00 00`) for "none".
 
@@ -49,6 +49,7 @@ If none of the proposed protocols are supported, the server responds with zero (
 [source,bolt_exchange]
 ----
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
       #  Version 1      None         None         None
 
@@ -61,6 +62,7 @@ Server: 00 00 00 01
 [source,bolt_exchange]
 ----
 Client: <connect>
+Client: 60 60 B0 17
 Client: 00 00 00 06  00 00 00 00  00 00 00 00  00 00 00 00
       #   Version 6      None         None         None
 

@@ -79,6 +79,11 @@ public class SocketConnection implements Connection
         {
             throw new SocketTimeoutException( "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
         }
+        //all the bytes could not be read, fail
+        if (left != 0)
+        {
+            throw new IOException( "Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: " + HexPrinter.hex( bytes ) );
+        }
         return bytes;
     }
 

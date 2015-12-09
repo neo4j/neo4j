@@ -25,8 +25,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
+import java.util.function.Function;
+
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.LogProvider;
 

@@ -26,9 +26,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.function.Function;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -124,10 +124,15 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             }
             return;
         case NO_APPLICABLE_PROTOCOL:
+            buffer.release();
             ctx.writeAndFlush( wrappedBuffer( new byte[]{0, 0, 0, 0} ) )
                     .sync()
                     .channel()
                     .close();
+            return;
+        case INVALID_HANDSHAKE:
+            buffer.release();
+            ctx.close();
             return;
         case PARTIAL_HANDSHAKE:
         }
@@ -139,21 +144,24 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         PROTOCOL_CHOSEN,
         /** Pending more bytes before handshake can complete */
         PARTIAL_HANDSHAKE,
+        /** the client sent an invalid handshake */
+        INVALID_HANDSHAKE,
         /** None of the clients suggested protocol versions are available :( */
         NO_APPLICABLE_PROTOCOL
     }
 
     /**
      * Manages the state for choosing the protocol version to use.
-     * The protocol opens with the client sending four suggested protocol versions, in preference order and big endian,
-     * each a 4-byte unsigned integer. Since that message could get split up along the way, we first gather the
-     * 16 bytes of data we need, and then choose a protocol to use.
+     * The protocol opens with the client sending four bytes (0x6060 B017) followed by four suggested protocol
+     * versions in preference order. All bytes are expected to be big endian, and each of the suggested protocols are
+     * 4-byte unsigned integers. Since that message could get split up along the way, we first gather the
+     * 20 bytes of data we need, and then choose a protocol to use.
      */
     public static class ProtocolChooser
     {
         private final PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions;
-        private final ByteBuffer suggestedVersions = ByteBuffer.allocateDirect( 4 * 4 ).order( ByteOrder.BIG_ENDIAN );
-
+        private final ByteBuffer handShake = ByteBuffer.allocateDirect( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
+        private static final int MAGIC_PREAMBLE = 0x6060B017;
         private BoltProtocol protocol;
 
         /**
@@ -166,27 +174,34 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
         public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
         {
-            if ( suggestedVersions.remaining() > buffer.readableBytes() )
+            if ( handShake.remaining() > buffer.readableBytes() )
             {
-                suggestedVersions.limit( suggestedVersions.position() + buffer.readableBytes() );
-                buffer.readBytes( suggestedVersions );
-                suggestedVersions.limit( suggestedVersions.capacity() );
+                handShake.limit( handShake.position() + buffer.readableBytes() );
+                buffer.readBytes( handShake );
+                handShake.limit( handShake.capacity() );
             }
             else
             {
-                buffer.readBytes( suggestedVersions );
+                buffer.readBytes( handShake );
             }
 
-            if ( suggestedVersions.remaining() == 0 )
+            if ( handShake.remaining() == 0 )
             {
-                suggestedVersions.flip();
-                for ( int i = 0; i < 4; i++ )
+                handShake.flip();
+                //Check so that handshake starts with 0x606 0B017
+                if ( handShake.getInt() != MAGIC_PREAMBLE )
                 {
-                    long suggestion = suggestedVersions.getInt() & 0xFFFFFFFFL;
-                    if ( availableVersions.containsKey( suggestion ) )
+                    return HandshakeOutcome.INVALID_HANDSHAKE;
+                }
+                else {
+                    for ( int i = 0; i < 4; i++ )
                     {
-                        protocol = availableVersions.get( suggestion ).apply( ch );
-                        return HandshakeOutcome.PROTOCOL_CHOSEN;
+                        long suggestion = handShake.getInt() & 0xFFFFFFFFL;
+                        if ( availableVersions.containsKey( suggestion ) )
+                        {
+                            protocol = availableVersions.get( suggestion ).apply( ch );
+                            return HandshakeOutcome.PROTOCOL_CHOSEN;
+                        }
                     }
                 }
 
