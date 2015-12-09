@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -56,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.NODE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.PROPERTY;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.RELATIONSHIP;
+import static org.neo4j.tools.txlog.checktypes.CheckTypes.RELATIONSHIP_GROUP;
 
 public class CheckTxLogsTest
 {
@@ -414,6 +416,123 @@ public class CheckTxLogsTest
         assertTrue( seenRecord2.isFirstInFirstChain() );
         assertEquals( 42, currentRecord2.getId() );
         assertFalse(currentRecord2.isFirstInFirstChain() );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupInconsistenciesFromSingleLog() throws IOException
+    {
+        // Given
+        File log = logFile( 1 );
+
+        writeTxContent( log,
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 42, -1, -1, -1, -1, -1, -1, false ),
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true )
+                ),
+                new Command.PropertyCommand().init(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 21, 1, 2, 3, 4, 5, 7, true ),
+                        new RelationshipGroupRecord( 21, -1, -1, -1, -1, -1, -1, false )
+                )
+        );
+
+        writeTxContent( log,
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 53, 1, 2, 3, 4, 5, 6, true ),
+                        new RelationshipGroupRecord( 53, 1, 2, 30, 4, 14, 6, true )
+                ),
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 9, 5, 6, true ),
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true )
+                )
+        );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+
+        // When
+        checker.scan( new File[]{log}, handler, RELATIONSHIP_GROUP );
+
+        // Then
+        assertEquals( 1, handler.inconsistencies.size() );
+
+        RelationshipGroupRecord seenRecord = (RelationshipGroupRecord) handler.inconsistencies.get( 0 ).committed.record();
+        RelationshipGroupRecord currentRecord = (RelationshipGroupRecord) handler.inconsistencies.get( 0 ).current.record();
+
+        assertEquals( 42, seenRecord.getId() );
+        assertEquals( 4, seenRecord.getFirstLoop() );
+        assertEquals( 42, currentRecord.getId() );
+        assertEquals( 9, currentRecord.getFirstLoop() );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupInconsistenciesFromDifferentLogs() throws IOException
+    {
+        // Given
+        File log1 = logFile( 1 );
+        File log2 = logFile( 2 );
+        File log3 = logFile( 3 );
+
+        writeTxContent( log1,
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 42, -1, -1, -1, -1, -1, -1, false ),
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true )
+                ),
+                new Command.PropertyCommand().init(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 21, 1, 2, 3, 4, 5, 6, true ),
+                        new RelationshipGroupRecord( 21, -1, -1, -1, -1, -1, -1, false )
+                )
+        );
+
+        writeTxContent( log2,
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 9, 5, 6, true ),
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true )
+                )
+        );
+
+        writeTxContent( log3,
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 53, 1, 2, 3, 4, 5, 6, true ),
+                        new RelationshipGroupRecord( 53, 1, 2, 30, 4, 14, 6, true )
+                ),
+                new Command.RelationshipGroupCommand().init(
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, false ),
+                        new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, false )
+                )
+        );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+
+        // When
+        checker.scan( new File[]{log1, log2, log3}, handler, RELATIONSHIP_GROUP );
+
+        // Then
+        assertEquals( 2, handler.inconsistencies.size() );
+
+        RelationshipGroupRecord seenRecord1 = (RelationshipGroupRecord) handler.inconsistencies.get( 0 ).committed.record();
+        RelationshipGroupRecord currentRecord1 = (RelationshipGroupRecord) handler.inconsistencies.get( 0 ).current.record();
+
+        assertEquals( 42, seenRecord1.getId() );
+        assertEquals( 4, seenRecord1.getFirstLoop() );
+        assertEquals( 42, currentRecord1.getId() );
+        assertEquals( 9, currentRecord1.getFirstLoop() );
+
+        RelationshipGroupRecord seenRecord2 = (RelationshipGroupRecord) handler.inconsistencies.get( 1 ).committed.record();
+        RelationshipGroupRecord currentRecord2 = (RelationshipGroupRecord) handler.inconsistencies.get( 1 ).current.record();
+
+        assertEquals( 42, seenRecord2.getId() );
+        assertTrue( seenRecord2.inUse() );
+        assertEquals( 42, currentRecord2.getId() );
+        assertFalse(currentRecord2.inUse() );
     }
 
     private static File logFile( long version )

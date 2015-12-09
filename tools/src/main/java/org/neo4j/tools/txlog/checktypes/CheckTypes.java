@@ -27,6 +27,7 @@ public class CheckTypes
     public static final NodeCheckType NODE = new NodeCheckType();
     public static final PropertyCheckType PROPERTY = new PropertyCheckType();
     public static final RelationshipCheckType RELATIONSHIP = new RelationshipCheckType();
+    public static final RelationshipGroupCheckType RELATIONSHIP_GROUP = new RelationshipGroupCheckType();
 
     @SuppressWarnings( "unchecked" )
     public static final CheckType<? extends Command, ? extends Abstract64BitRecord>[] CHECK_TYPES =
