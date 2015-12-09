@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -32,6 +34,9 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
+import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.FakeClock;
+import org.neo4j.helpers.TickingClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -323,8 +328,12 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
+
+        int leaderWaitTimeout = 10000;
+        Clock clock = new TickingClock(0, leaderWaitTimeout + 1, TimeUnit.MILLISECONDS);
+
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .timeoutService( timeouts ).build();
+                .timeoutService( timeouts ).clock( clock ).leaderWaitTimeout( leaderWaitTimeout ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
