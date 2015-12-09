@@ -43,10 +43,8 @@
     <bundle.namespace>org.neo4j</bundle.namespace>
     <short-name>kernel</short-name>
     <version-package>kernel.impl</version-package>
-    <git.executable>git</git.executable>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <git.directory>${project.basedir}/../../.git</git.directory>
   </properties>
 
   <packaging>jar</packaging>
@@ -74,27 +72,6 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <profiles>
-    <profile>
-      <id>neo4j-root</id>
-      <activation>
-        <property><name>neo4j-root</name></property>
-      </activation>
-      <properties>
-        <git.directory>${project.basedir}/../../../.git</git.directory>
-      </properties>
-    </profile>
-    <profile>
-      <id>git-windows</id>
-      <activation>
-        <os><family>Windows</family></os>
-      </activation>
-      <properties>
-        <git.executable>git.cmd</git.executable>
-      </properties>
-    </profile>
-  </profiles>
 
   <build>
     <plugins>
@@ -125,15 +102,6 @@ the relevant Commercial Agreement.
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>pl.project13.maven</groupId>
-        <artifactId>git-commit-id-plugin</artifactId>
-        <configuration>
-          <dotGitDirectory>${git.directory}</dotGitDirectory>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <useNativeGit>true</useNativeGit>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>

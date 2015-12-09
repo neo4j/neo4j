@@ -114,16 +114,7 @@ public class Version extends Service
             result.append( build ).append( '/' );
         }
         result.append( getCommitId() );
-        if ( getCommitDescription().endsWith( "-dirty" ) )
-        {
-            result.append( "-dirty" );
-        }
         return result.toString();
-    }
-
-    protected String getCommitDescription()
-    {
-        return "{CommitDescription}";
     }
 
     protected String getBuildNumber()
@@ -170,7 +161,6 @@ public class Version extends Service
         System.out.println( "Version: " + kernelVersion.getVersion() );
         System.out.println( "ReleaseVersion: " + kernelVersion.getReleaseVersion() );
         System.out.println( "Revision: " + kernelVersion.getRevision() );
-        System.out.println( "CommitDescription: " + kernelVersion.getCommitDescription() );
         System.out.println( "BuildNumber: " + kernelVersion.getBuildNumber() );
         System.out.println( "BranchName: " + kernelVersion.getBranchName() );
         System.out.println( "CommitId: " + kernelVersion.getCommitId() );
