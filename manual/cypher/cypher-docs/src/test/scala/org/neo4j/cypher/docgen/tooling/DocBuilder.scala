@@ -68,7 +68,7 @@ trait DocBuilder {
     val queryScope = scope.collectFirst {
       case q: QueryScope => q
     }.get
-    queryScope.addContent(new ProfileExecutionPlanPlaceHolder())
+    queryScope.addContent(new ProfileExecutionPlanPlaceHolder(queryScope.assertions))
   }
 
   def graphViz(options: String = "") = current.addContent(new GraphVizPlaceHolder(options))

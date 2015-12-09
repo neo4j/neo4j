@@ -68,10 +68,10 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
                     }
 
                   case (queryText: String, placeHolder: ExecutionPlanPlaceHolder) =>
-                    executionPlanForSingleQuery(db, queryText, placeHolder, profile = false)
+                    explainSingleQuery(db, queryText, placeHolder)
 
                   case (queryText: String, placeHolder: ProfileExecutionPlanPlaceHolder) =>
-                    executionPlanForSingleQuery(db, queryText, placeHolder, profile = true)
+                    profileSingleQuery(db, queryText, placeHolder.assertions, placeHolder)
 
                   case _ =>
                     ???
@@ -116,7 +116,7 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
               Left(exception)
 
             case x =>
-              throw new InternalException(s"This not see this one coming $x")
+              throw new InternalException(s"Did not see this one coming $x")
           }
         } catch {
           case e: Throwable =>
@@ -132,18 +132,41 @@ class QueryRunner(formatter: (GraphDatabaseService, Transaction) => InternalExec
       QueryRunResult(queryText, content, formattedResult)
     }
 
-  private def executionPlanForSingleQuery(database: RestartableDatabase,
-                                          queryText: String,
-                                          placeHolder: QueryResultPlaceHolder,
-                                          profile: Boolean) = {
-    val queryPrefix = if (profile) "PROFILE " else "EXPLAIN "
-    val planString = Try(database.execute(queryPrefix + queryText)) match {
+  private def explainSingleQuery(database: RestartableDatabase,
+                                 queryText: String,
+                                 placeHolder: QueryResultPlaceHolder) = {
+    val planString = Try(database.execute(s"EXPLAIN $queryText")) match {
       case Success(inner) =>
-        inner.length // Consume the results before showing the profile results
         inner.executionPlanDescription().toString
       case x =>
         throw new InternalException(s"Did not see this one coming $x")
     }
+    ExecutionPlanRunResult(queryText, placeHolder, ExecutionPlan(planString))
+  }
+
+  private def profileSingleQuery(database: RestartableDatabase,
+                                 queryText: String,
+                                 assertions: QueryAssertions,
+                                 placeHolder: QueryResultPlaceHolder) = {
+    val profilingAttempt = Try(database.execute(s"PROFILE $queryText"))
+    val planString = (assertions, profilingAttempt) match {
+      case (ResultAssertions(f), Success(inner)) =>
+        val result = RewindableExecutionResult(inner)
+        f(result)
+        result.executionPlanDescription().toString
+
+      case (ResultAndDbAssertions(f), Success(inner)) =>
+        val result = RewindableExecutionResult(inner)
+        f(result, database.getInnerDb)
+        result.executionPlanDescription().toString
+
+      case (NoAssertions, Success(inner)) =>
+        inner.executionPlanDescription().toString
+
+      case x =>
+        throw new InternalException(s"Did not see this one coming $x")
+    }
+    println(planString)
     ExecutionPlanRunResult(queryText, placeHolder, ExecutionPlan(planString))
   }
 }
