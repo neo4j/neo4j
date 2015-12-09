@@ -34,6 +34,9 @@
     <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
+    <git.commit.id.describe>${project.version}-dev-build</git.commit.id.describe>
+    <git.commit.id.branch>unknown-branch-${project.version}</git.commit.id.branch>
+    <git.commit.id>unknown-commit</git.commit.id>
   </properties>
 
   <modules>
@@ -185,28 +188,6 @@ public class ComponentVersion extends Version
           <version>1.2.0.0</version>
         </plugin>
         <plugin>
-          <groupId>pl.project13.maven</groupId>
-          <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.1.13</version>
-          <executions>
-            <execution>
-              <id>generate-git-hash</id>
-              <goals>
-                <goal>revision</goal>
-              </goals>
-            </execution>
-          </executions>
-          <configuration>
-            <skipPoms>false</skipPoms>
-            <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
-            <gitDescribe>
-              <dirty>-dirty</dirty>
-              <abbrev>7</abbrev>
-              <forceLongFormat>true</forceLongFormat>
-            </gitDescribe>
-          </configuration>
-        </plugin>
-        <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>licensing-maven-plugin</artifactId>
           <version>1.7.5</version>
@@ -282,6 +263,55 @@ public class ComponentVersion extends Version
   </build>
 
   <profiles>
+    <!--
+     Git information extraction profiles.
+     Activate by adding the required Git information to the environment, e.g. on *nix:
+
+     export GIT_DESCRIBE
+     export GIT_BRANCH
+     export GIT_COMMIT
+     GIT_DESCRIBE=$(git describe)
+     GIT_BRANCH=$(git rev-parse - -abbrev-ref HEAD)
+     GIT_COMMIT=$(git rev-parse - -short HEAD)
+    -->
+    <profile>
+      <id>attach-git-info-describe</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>env.GIT_DESCRIBE</name>
+        </property>
+      </activation>
+      <properties>
+        <git.commit.id.describe>${env.GIT_DESCRIBE}</git.commit.id.describe>
+      </properties>
+    </profile>
+    <profile>
+      <id>attach-git-info-branch</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>env.GIT_BRANCH</name>
+        </property>
+      </activation>
+      <properties>
+        <git.commit.id.describe>${env.GIT_BRANCH}</git.commit.id.describe>
+      </properties>
+    </profile>
+    <profile>
+      <id>attach-git-info-commit</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>env.GIT_COMMIT</name>
+        </property>
+      </activation>
+      <properties>
+        <git.commit.id.describe>${env.GIT_COMMIT}</git.commit.id.describe>
+      </properties>
+    </profile>
+
+    <!-- Build configuration profiles -->
     <profile>
       <id>neo-full-build</id>
       <activation>
@@ -536,14 +566,6 @@ public class ComponentVersion extends Version
         <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
-<!--
-      <dependency>
-        <groupId>org.ow2.jotm</groupId>
-        <artifactId>jotm-core</artifactId>
-        <version>2.2.3</version>
-        <scope>test</scope>
-      </dependency>
--->
       <dependency>
         <groupId>geronimo-spec</groupId>
         <artifactId>geronimo-spec-j2ee</artifactId>
