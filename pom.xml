@@ -187,7 +187,7 @@ public class ComponentVersion extends Version
         <plugin>
           <groupId>pl.project13.maven</groupId>
           <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.1.13</version>
+          <version>2.2.0</version>
           <executions>
             <execution>
               <id>generate-git-hash</id>
