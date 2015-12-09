@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
@@ -47,15 +45,14 @@ import static java.util.Collections.newSetFromMap;
 /**
  * Central source of transactions in the database.
  * <p>
- * This class maintains references to all transactions, a pool of passive kernel transactions, and provides
- * capabilities
- * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
- * ones requires no synchronization (although the live list is not guaranteed to be exact).
+ * This class maintains references to all running transactions and provides capabilities for enumerating them.
+ * During normal operation, acquiring new transactions and enumerating live ones requires same amount of
+ * synchronization as {@link ConcurrentHashMap} provides for insertions and iterations.
+ * <p>
+ * Live list is not guaranteed to be exact.
  */
 public class KernelTransactions extends LifecycleAdapter implements Factory<KernelTransaction>
 {
-    // Transaction dependencies
-
     private final Locks locks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
@@ -70,21 +67,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final Tracers tracers;
     private final StorageEngine storageEngine;
 
-    // End Tx Dependencies
-
-    /**
-     * Used to enumerate all transactions in the system, active and idle ones.
-     * <p>
-     * This data structure is *only* updated when brand-new transactions are created, or when transactions are disposed
-     * of. During normal operation (where all transactions come from and are returned to the pool), this will be left
-     * in peace, working solely as a collection of references to all transaction objects (idle and active) in the
-     * database.
-     * <p>
-     * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
-     * starting and committing transactions.
-     */
-    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
-            new ConcurrentHashMap<>() );
+    private final Set<KernelTransaction> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
     public KernelTransactions( Locks locks,
                                ConstraintIndexCreator constraintIndexCreator,
@@ -115,89 +98,61 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         this.storageEngine = storageEngine;
     }
 
-    /**
-     * This is the factory that actually builds brand-new instances.
-     */
-    private final Factory<KernelTransactionImplementation> factory = new Factory<KernelTransactionImplementation>()
-    {
-        @Override
-        public KernelTransactionImplementation newInstance()
-        {
-            Locks.Client locksClient = locks.newClient();
-            LegacyIndexTransactionState legacyIndexTransactionState =
-                    new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
-            KernelTransactionImplementation tx = new KernelTransactionImplementation(
-                    statementOperations, schemaWriteGuard,
-                    locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
-                    transactionCommitProcess, transactionMonitor, legacyIndexTransactionState,
-                    localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer, storageEngine );
-
-            allTransactions.add( tx );
-
-            return tx;
-        }
-    };
-
     @Override
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize( storageEngine.metaDataStore().getLastCommittedTransactionId() );
+
+        Locks.Client locksClient = locks.newClient();
+        LegacyIndexTransactionState legacyIndexTransactionState =
+                new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
+
+        long lastTransactionIdWhenStarted = storageEngine.metaDataStore().getLastCommittedTransactionId();
+
+        KernelTransactionImplementation tx = new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
+                locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
+                transactionCommitProcess, transactionMonitor, legacyIndexTransactionState,
+                this, Clock.SYSTEM_CLOCK, tracers.transactionTracer, storageEngine, lastTransactionIdWhenStarted );
+
+        allTransactions.add( tx );
+
+        return tx;
     }
 
     /**
-     * Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
+     * Signals that given transaction is closed and should be removed from the set of running transactions.
+     *
+     * @param tx the closed transaction.
+     * @throws IllegalStateException if given transaction is not in the set of active transactions.
      */
-    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool
-            = new LinkedQueuePool<KernelTransactionImplementation>( 8, factory )
+    public void transactionClosed( KernelTransaction tx )
     {
-        @Override
-        protected void dispose( KernelTransactionImplementation tx )
+        boolean removed = allTransactions.remove( tx );
+        if ( !removed )
         {
-            allTransactions.remove( tx );
-            tx.dispose();
-            super.dispose( tx );
+            throw new IllegalStateException( "Transaction: " + tx + " is not present in the " +
+                                             "set of known active transactions: " + allTransactions );
         }
-    };
-
-    /**
-     * Give an approximate list of all transactions currently running. This is not guaranteed to be exact, as
-     * transactions may stop and start while this list is gathered.
-     */
-    public List<KernelTransaction> activeTransactions()
-    {
-        List<KernelTransaction> output = new ArrayList<>();
-        for ( KernelTransactionImplementation tx : allTransactions )
-        {
-            if ( tx.isOpen() )
-            {
-                output.add( tx );
-            }
-        }
-
-        return output;
     }
 
     /**
-     * Pool of unused transactions.
+     * Give an approximate set of all transactions currently running.
+     * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
+     *
+     * @return the set of open transactions.
      */
-    private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
+    public Set<KernelTransaction> activeTransactions()
+    {
+        return Collections.unmodifiableSet( new HashSet<>( allTransactions ) );
+    }
 
     /**
-     * Dispose of all pooled transactions. This is done on shutdown or on internal events (like an HA mode switch) that
+     * Dispose of all active transactions. This is done on shutdown or on internal events (like an HA mode switch) that
      * require transactions to be re-created.
      */
     public void disposeAll()
     {
-        for ( KernelTransactionImplementation tx : allTransactions )
-        {
-            // we mark all transactions for termination since we want to make sure these transactions
-            // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
-            // certainly want to keep that from being reused from this point.
-            tx.markForTermination();
-        }
-        localTxPool.disposeAll();
-        globalTxPool.disposeAll();
+        allTransactions.forEach( KernelTransaction::markForTermination );
     }
 
     @Override

@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -46,17 +47,22 @@ public class KernelTransactionFactory
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
 
+        long lastTransactionIdWhenStarted = 0;
+
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.neoStores() ).thenReturn( mock( NeoStores.class ) );
+        when( storageEngine.storeReadLayer() ).thenReturn( mock( StoreReadLayer.class ) );
+
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),
                 null, new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( LegacyIndexTransactionState.class ),
-                mock(Pool.class),
+                mock( KernelTransactions.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                storageEngine );
+                storageEngine,
+                lastTransactionIdWhenStarted );
     }
 }

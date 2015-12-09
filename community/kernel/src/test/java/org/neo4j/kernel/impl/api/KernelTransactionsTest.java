@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,16 +46,18 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
 public class KernelTransactionsTest
 {
@@ -72,7 +75,7 @@ public class KernelTransactionsTest
         first.close();
 
         // Then
-        assertThat( asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
+        assertThat( registry.activeTransactions(), equalTo( asSet( second, third ) ) );
     }
 
     @Test
@@ -122,6 +125,67 @@ public class KernelTransactionsTest
         assertTrue( additionalHeader.length > 0 );
     }
 
+    @Test
+    public void transactionCloseRemovesTxFromActiveTransactions() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance();
+        KernelTransaction tx2 = kernelTransactions.newInstance();
+        KernelTransaction tx3 = kernelTransactions.newInstance();
+
+        kernelTransactions.transactionClosed( tx1 );
+        kernelTransactions.transactionClosed( tx3 );
+
+        assertEquals( asSet( tx2 ), kernelTransactions.activeTransactions() );
+    }
+
+    @Test
+    public void transactionRemovesItselfFromActiveTransactions() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance();
+        KernelTransaction tx2 = kernelTransactions.newInstance();
+        KernelTransaction tx3 = kernelTransactions.newInstance();
+
+        tx2.close();
+
+        assertEquals( asSet( tx1, tx3 ), kernelTransactions.activeTransactions() );
+    }
+
+    @Test
+    public void exceptionIsThrownWhenUnknownTxIsClosed() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        try
+        {
+            kernelTransactions.transactionClosed( mock( KernelTransactionImplementation.class ) );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void disposeAllMarksAllTransactionsForTermination() throws Exception
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+
+        KernelTransaction tx1 = kernelTransactions.newInstance();
+        KernelTransaction tx2 = kernelTransactions.newInstance();
+        KernelTransaction tx3 = kernelTransactions.newInstance();
+
+        kernelTransactions.disposeAll();
+
+        assertTrue( tx1.shouldBeTerminated() );
+        assertTrue( tx2.shouldBeTerminated() );
+        assertTrue( tx3.shouldBeTerminated() );
+    }
+
     private static KernelTransactions newKernelTransactions() throws Exception
     {
         return newKernelTransactions( mock( TransactionCommitProcess.class ) );
@@ -135,10 +199,13 @@ public class KernelTransactionsTest
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        StoreReadLayer readLayer = mock( StoreReadLayer.class );
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
         IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
         NeoStores neoStores = mock( NeoStores.class );
+
+        StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService() );
+        StoreReadLayer readLayer = mock( StoreReadLayer.class );
+        when( readLayer.acquireStatement() ).thenReturn( storeStatement );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );

@@ -42,20 +42,6 @@ public class CachingLegacyIndexTransactionState implements LegacyIndexTransactio
     }
 
     @Override
-    public void clear()
-    {
-        txState.clear();
-        if ( nodeLegacyIndexChanges != null && !nodeLegacyIndexChanges.isEmpty() )
-        {
-            nodeLegacyIndexChanges.clear();
-        }
-        if ( relationshipLegacyIndexChanges != null && !relationshipLegacyIndexChanges.isEmpty() )
-        {
-            relationshipLegacyIndexChanges.clear();
-        }
-    }
-
-    @Override
     public LegacyIndex nodeChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         if ( nodeLegacyIndexChanges == null )

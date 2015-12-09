@@ -241,23 +241,4 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     {
         return defineCommand != null;
     }
-
-    /** Set this data structure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
-    @Override
-    public void clear()
-    {
-        if ( !transactions.isEmpty() )
-        {
-            transactions.clear();
-        }
-        defineCommand = null;
-        if ( !nodeCommands.isEmpty() )
-        {
-            nodeCommands.clear();
-        }
-        if ( !relationshipCommands.isEmpty() )
-        {
-            relationshipCommands.clear();
-        }
-    }
 }
