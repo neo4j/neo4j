@@ -25,14 +25,14 @@ import java.net.URI;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.io.File.separator;
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.helpers.Settings.URI;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.URI;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  *

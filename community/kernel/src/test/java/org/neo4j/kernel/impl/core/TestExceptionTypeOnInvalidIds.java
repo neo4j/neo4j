@@ -36,7 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {

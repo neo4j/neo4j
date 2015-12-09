@@ -33,7 +33,7 @@ import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.web.ServerInternalSettings.legacy_db_config;
 

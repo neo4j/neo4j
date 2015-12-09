@@ -54,8 +54,8 @@ import static org.junit.Assert.fail;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
