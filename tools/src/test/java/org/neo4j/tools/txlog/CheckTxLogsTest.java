@@ -52,6 +52,8 @@ import org.neo4j.test.SuppressOutput;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.tools.txlog.checktypes.CheckTypes.NODE;
+import static org.neo4j.tools.txlog.checktypes.CheckTypes.PROPERTY;
 
 public class CheckTxLogsTest
 {
@@ -96,7 +98,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, CheckType.NODE, handler );
+        checker.scan( new File[]{log}, handler, NODE );
 
         // Then
         assertEquals( 1, handler.inconsistencies.size() );
@@ -155,7 +157,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, CheckType.NODE, handler );
+        checker.scan( new File[]{log1, log2, log3}, handler, NODE );
 
         // Then
         assertEquals( 2, handler.inconsistencies.size() );
@@ -209,7 +211,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, CheckType.PROPERTY, handler );
+        checker.scan( new File[]{log}, handler, PROPERTY );
 
         // Then
         assertEquals( 1, handler.inconsistencies.size() );
@@ -272,7 +274,7 @@ public class CheckTxLogsTest
         CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, CheckType.PROPERTY, handler );
+        checker.scan( new File[]{log1, log2, log3}, handler, PROPERTY );
 
         // Then
         assertEquals( 2, handler.inconsistencies.size() );

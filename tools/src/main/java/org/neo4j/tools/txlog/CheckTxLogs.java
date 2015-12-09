@@ -22,7 +22,6 @@ package org.neo4j.tools.txlog;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -35,18 +34,19 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.test.LogTestUtils;
+import org.neo4j.tools.txlog.checktypes.CheckType;
+import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 /**
  * Tool that verifies consistency of transaction logs.
- * <p/>
+ *
  * Transaction log is considered consistent when every command's before state is the same as after state for
  * corresponding record in previously committed transaction.
- * <p/>
+ * 
  * Tool expects a single argument - directory with transaction logs.
  * It then simply iterates over all commands in those logs, compares before state for current record with previously
  * seen after state and stores after state for current record, if before state is consistent.
  */
-//: TODO introduce abstract tool class as soon as we will have several tools in tools module
 public class CheckTxLogs
 {
     private static final String HELP_FLAG = "help";
@@ -72,12 +72,19 @@ public class CheckTxLogs
 
         CheckTxLogs tool = new CheckTxLogs( new DefaultFileSystemAbstraction() );
 
-        tool.scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler() );
-        tool.scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler() );
+        tool.scan( logs, new PrintingInconsistenciesHandler(), CheckTypes.CHECK_TYPES );
     }
 
-    <C extends Command, R extends Abstract64BitRecord> void scan( File[] logs, CheckType<C,R> check,
-            InconsistenciesHandler handler ) throws IOException
+    void scan( File[] logs, InconsistenciesHandler handler, CheckType<?,?>... checkTypes ) throws IOException
+    {
+        for ( CheckType<?,?> checkType : checkTypes )
+        {
+            scan( logs, handler, checkType );
+        }
+    }
+
+    private <C extends Command, R extends Abstract64BitRecord> void scan(
+            File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
 
@@ -144,15 +151,10 @@ public class CheckTxLogs
     private static File[] txLogsIn( File dir )
     {
         File[] logs = dir.listFiles( LogFiles.FILENAME_FILTER );
-        Arrays.sort( logs, new Comparator<File>()
-        {
-            @Override
-            public int compare( File f1, File f2 )
-            {
-                long f1Version = PhysicalLogFiles.getLogVersion( f1 );
-                long f2Version = PhysicalLogFiles.getLogVersion( f2 );
-                return Long.compare( f1Version, f2Version );
-            }
+        Arrays.sort( logs, ( f1, f2 ) -> {
+            long f1Version = PhysicalLogFiles.getLogVersion( f1 );
+            long f2Version = PhysicalLogFiles.getLogVersion( f2 );
+            return Long.compare( f1Version, f2Version );
         } );
         return logs;
     }
