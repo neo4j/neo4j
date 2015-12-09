@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
