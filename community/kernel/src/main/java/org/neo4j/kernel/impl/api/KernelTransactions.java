@@ -38,9 +38,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
-import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -59,7 +56,6 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
 {
     // Transaction dependencies
 
-    private final NeoStoreTransactionContextFactory neoStoreTransactionContextFactory;
     private final Locks locks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
@@ -90,8 +86,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
             new ConcurrentHashMap<>() );
 
-    public KernelTransactions( NeoStoreTransactionContextFactory neoStoreTransactionContextFactory,
-                               Locks locks,
+    public KernelTransactions( Locks locks,
                                ConstraintIndexCreator constraintIndexCreator,
                                StatementOperationParts statementOperations,
                                SchemaWriteGuard schemaWriteGuard,
@@ -105,7 +100,6 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                Tracers tracers,
                                StorageEngine storageEngine )
     {
-        this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
@@ -130,9 +124,6 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         public KernelTransactionImplementation newInstance()
         {
             Locks.Client locksClient = locks.newClient();
-            NeoStoreTransactionContext context = neoStoreTransactionContextFactory.newInstance( locksClient );
-            TransactionRecordState recordState = new TransactionRecordState(
-                    storageEngine.neoStores(), storageEngine.integrityValidator(), context );
             LegacyIndexTransactionState legacyIndexTransactionState =
                     new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
             KernelTransactionImplementation tx = new KernelTransactionImplementation(

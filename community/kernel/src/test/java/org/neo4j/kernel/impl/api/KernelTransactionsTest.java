@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -35,16 +34,11 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextFactory;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -57,10 +51,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -114,8 +106,7 @@ public class KernelTransactionsTest
         // Given
         TransactionRepresentation[] transactionRepresentation = new TransactionRepresentation[1];
 
-        KernelTransactions registry = newKernelTransactions(
-                newRememberingCommitProcess( transactionRepresentation ), newMockContextFactoryWithChanges() );
+        KernelTransactions registry = newKernelTransactions( newRememberingCommitProcess( transactionRepresentation ) );
 
         // When
         try ( KernelTransaction transaction = registry.newInstance() )
@@ -133,11 +124,10 @@ public class KernelTransactionsTest
 
     private static KernelTransactions newKernelTransactions() throws Exception
     {
-        return newKernelTransactions( mock( TransactionCommitProcess.class ), newMockContextFactory() );
+        return newKernelTransactions( mock( TransactionCommitProcess.class ) );
     }
 
-    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
-            NeoStoreTransactionContextFactory contextSupplier ) throws Exception
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -164,10 +154,8 @@ public class KernelTransactionsTest
                 anyLong() ) )
                 .thenReturn( sillyCommandList() );
 
-        return new KernelTransactions( contextSupplier, locks,
-                null, null, null, TransactionHeaderInformationFactory.DEFAULT,
-                commitProcess, null,
-                null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
+        return new KernelTransactions( locks, null, null, null, TransactionHeaderInformationFactory.DEFAULT,
+                commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 new Tracers( "null", NullLog.getInstance() ), storageEngine );
     }
 
@@ -194,34 +182,5 @@ public class KernelTransactionsTest
                 } );
 
         return commitProcess;
-    }
-
-    private static NeoStoreTransactionContextFactory newMockContextFactory()
-    {
-        NeoStoreTransactionContextFactory factory = mock( NeoStoreTransactionContextFactory.class );
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
-        when( factory.newInstance( any( Locks.Client.class ) ) ).thenReturn( context );
-        return factory;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static NeoStoreTransactionContextFactory newMockContextFactoryWithChanges()
-    {
-        NeoStoreTransactionContextFactory factory = mock( NeoStoreTransactionContextFactory.class );
-
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
-        when( context.hasChanges() ).thenReturn( true );
-
-        RecordAccess<Long,NodeRecord,Void> recordChanges = mock( RecordAccess.class );
-        when( recordChanges.changeSize() ).thenReturn( 1 );
-
-        RecordProxy<Long,NodeRecord,Void> recordChange = mock( RecordProxy.class );
-        when( recordChange.forReadingLinkage() ).thenReturn( new NodeRecord( 1, false, 1, 1 ) );
-
-        when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );
-        when( context.getNodeRecords() ).thenReturn( recordChanges );
-
-        when( factory.newInstance( any( Locks.Client.class ) ) ).thenReturn( context );
-        return factory;
     }
 }
