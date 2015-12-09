@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -75,6 +76,7 @@ import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
@@ -83,7 +85,6 @@ import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
 {
-
     private static final int RELATIONSHIP_COUNT = 10_000;
     private static final int NODE_COUNT = 100;
 
@@ -847,6 +848,83 @@ public class ImportToolTest
         finally
         {
             System.setErr( prevErr );
+        }
+    }
+
+    @Test
+    public void shouldAcceptRawAsciiCharacterCodeAsQuoteConfiguration() throws Exception
+    {
+        // GIVEN
+        char weirdDelimiter = 1; // not '1', just the character represented with code 1, which seems to be SOH
+        String name1 = weirdDelimiter + "Weird" + weirdDelimiter;
+        String name2 = "Start " + weirdDelimiter + "middle thing" + weirdDelimiter + " end!";
+        File data = data(
+                ":ID,name",
+                "1," + name1,
+                "2," + name2 );
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--quote", String.valueOf( weirdDelimiter ) );
+
+        // THEN
+        Set<String> names = asSet( "Weird", name2 );
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : at( db ).getAllNodes() )
+            {
+                String name = (String) node.getProperty( "name" );
+                assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
+            }
+            assertTrue( names.isEmpty() );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldAcceptSpecialTabCharacterAsDelimiterConfiguration() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--delimiter", "\\t",
+                "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+
+        // THEN
+        verifyData();
+    }
+
+    @Test
+    public void shouldReportBadDelimiterConfiguration() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--delimiter", "\\bogus",
+                    "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
+                    "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                    "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "bogus" ) );
         }
     }
 
