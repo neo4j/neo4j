@@ -25,6 +25,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -33,13 +37,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.CommunityBootstrapper.start;
-import static org.neo4j.server.web.ServerInternalSettings.legacy_db_location;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {
@@ -51,16 +53,18 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
     private Bootstrapper bootstrapper;
 
-    protected abstract Bootstrapper newBootstrapper();
+    protected abstract Bootstrapper newBootstrapper() throws IOException;
 
     @Test
-    public void shouldStartStopNeoServerWithoutAnyConfigFiles()
+    public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // Given
         bootstrapper = newBootstrapper();
 
         // When
-        int resultCode = start( bootstrapper, array( "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        String[] propertiesArray = getDefaultPropertiesArray();
+
+        int resultCode = start( bootstrapper, propertiesArray);
 
         // Then
         assertEquals( Bootstrapper.OK, resultCode );
@@ -74,14 +78,12 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         bootstrapper = newBootstrapper();
         File configFile = tempDir.newFile( "neo4j.config" );
 
-        store( stringMap(
-                forced_kernel_id.name(), "ourcustomvalue"
-        ), configFile );
+        Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        store( properties, configFile );
 
         // When
-        start( bootstrapper, array(
-                "-C", configFile.getAbsolutePath(),
-                "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+        start( bootstrapper, array( "-C", configFile.getAbsolutePath() ) );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -94,15 +96,14 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         bootstrapper = newBootstrapper();
         File configFile = tempDir.newFile( "neo4j.config" );
 
-        store( stringMap(
-                forced_kernel_id.name(), "thisshouldnotshowup"
-        ), configFile );
+        Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        store( properties, configFile );
 
         // When
         start( bootstrapper, array(
                 "-C", configFile.getAbsolutePath(),
-                "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ),
-                "-c", configOption( legacy_db_location.name(), tempDir.getRoot().getAbsolutePath() ) ) );
+                "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ) ) );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
@@ -115,6 +116,18 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         {
             bootstrapper.stop();
         }
+    }
+
+    private String[] getDefaultPropertiesArray() throws IOException
+    {
+        Map<String,String> properties = ServerTestUtils.getDefaultRelativeProperties();
+        List<String> values = new ArrayList<>();
+        for ( Map.Entry<String,String> entry : properties.entrySet() )
+        {
+            values.add( "-c" );
+            values.add( configOption( entry.getKey(), entry.getValue() ) );
+        }
+        return values.toArray( new String[values.size()] );
     }
 
     private String configOption( String key, String value )

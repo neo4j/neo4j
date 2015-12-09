@@ -24,16 +24,24 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.harness.extensionpackage.MyEnterpriseUnmanagedExtension;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
 public class EnterpriseNeo4jRuleTest
 {
     @Rule
-    public Neo4jRule neo4j = new EnterpriseNeo4jRule().withExtension( "/test", MyEnterpriseUnmanagedExtension.class );
+    public Neo4jRule neo4j = new EnterpriseNeo4jRule()
+            .withConfig( ServerSettings.tls_key_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
+            .withConfig( ServerSettings.tls_certificate_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
+            .withExtension( "/test", MyEnterpriseUnmanagedExtension.class );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

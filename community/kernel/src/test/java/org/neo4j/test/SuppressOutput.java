@@ -50,6 +50,8 @@ import static java.util.Arrays.asList;
  */
 public final class SuppressOutput implements TestRule
 {
+    private static final Suppressible java_util_logging = java_util_logging( new ByteArrayOutputStream(), null );
+
     public static SuppressOutput suppress( Suppressible... suppressibles )
     {
         return new SuppressOutput( suppressibles );
@@ -104,8 +106,6 @@ public final class SuppressOutput implements TestRule
 
         abstract PrintStream replace( PrintStream replacement );
     }
-
-    public static final Suppressible java_util_logging = java_util_logging( new ByteArrayOutputStream(), null );
 
     public static Suppressible java_util_logging( final ByteArrayOutputStream redirectTo, Level level )
     {
@@ -201,8 +201,6 @@ public final class SuppressOutput implements TestRule
         }
         return null;
     }
-
-
 
     @Override
     public Statement apply( final Statement base, Description description )

@@ -28,18 +28,19 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -301,7 +302,8 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     public void startServer( boolean authEnabled ) throws IOException
     {
-        FileUtils.deleteFile( new File( "neo4j-home/data/dbms/authorization" ) ); // TODO: Implement a common component for managing Neo4j file structure and use that here
+        File authStore = ServerTestUtils.getRelativeFile( ServerInternalSettings.auth_store );
+        FileUtils.deleteFile( authStore);
         server = CommunityServerBuilder.server()
                 .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();

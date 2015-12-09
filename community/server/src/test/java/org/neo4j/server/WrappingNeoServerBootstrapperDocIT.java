@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse.Status;
+import org.apache.commons.configuration.Configuration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -28,7 +29,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.Map;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Settings;
@@ -73,24 +74,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void usingWrappingNeoServerBootstrapper()
-    {
-        // START SNIPPET: usingWrappingNeoServerBootstrapper
-        // You provide the database, which must implement GraphDatabaseAPI.
-        // Both EmbeddedGraphDatabase and HighlyAvailableGraphDatabase do this.
-        GraphDatabaseAPI graphdb = myDb;
-
-        WrappingNeoServerBootstrapper srv;
-        srv = new WrappingNeoServerBootstrapper( graphdb );
-        srv.start();
-        // The server is now running
-        // until we stop it:
-        srv.stop();
-        // END SNIPPET: usingWrappingNeoServerBootstrapper
-    }
-
-    @Test
-    public void shouldAllowModifyingProperties()
+    public void shouldAllowModifyingProperties() throws IOException
     {
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
@@ -101,9 +85,11 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         ServerConfigurator config;
         config = new ServerConfigurator( graphdb );
         // let the server endpoint be on a custom port
-        config.configuration().setProperty(
-                Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7575" );
-        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
+        Configuration configuration = config.configuration();
+        addDefaultTestProperties( configuration );
+
+        configuration.setProperty(Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7575" );
+        configuration.setProperty( ServerSettings.auth_enabled.name(), "false" );
 
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb, config );
@@ -119,11 +105,22 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         srv.stop();
     }
 
+    private void addDefaultTestProperties( Configuration configuration ) throws IOException
+    {
+        Map<String,String> properties = ServerTestUtils.getDefaultRelativeProperties();
+        for ( Map.Entry<String,String> entry : properties.entrySet() )
+        {
+            configuration.setProperty( entry.getKey(), entry.getValue() );
+        }
+    }
+
     @Test
-    public void shouldAllowShellConsoleWithoutCustomConfig()
+    public void shouldAllowShellConsoleWithoutCustomConfig() throws IOException
     {
         ServerConfigurator config = new ServerConfigurator( myDb );
-        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
+        Configuration configuration = config.configuration();
+        addDefaultTestProperties( configuration );
+        configuration.setProperty( ServerSettings.auth_enabled.name(), "false" );
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
         srv.start();
         String response = gen.get().payload(
@@ -135,15 +132,16 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAllowModifyingListenPorts() throws UnknownHostException
+    public void shouldAllowModifyingListenPorts() throws IOException
     {
         ServerConfigurator config = new ServerConfigurator( myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
-        config.configuration().setProperty(
+        Configuration configuration = config.configuration();
+        addDefaultTestProperties( configuration );
+        configuration.setProperty(
                 Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress.toString() );
-        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
-        config.configuration().setProperty(
-                Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
+        configuration.setProperty( ServerSettings.auth_enabled.name(), "false" );
+        configuration.setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
 
 
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
@@ -167,11 +165,13 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldRespondAndBeAbleToModifyDb()
+    public void shouldRespondAndBeAbleToModifyDb() throws IOException
     {
         Configurator configurator = new ServerConfigurator(myDb);
 
-        configurator.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
+        Configuration configuration = configurator.configuration();
+        addDefaultTestProperties( configuration );
+        configuration.setProperty( ServerSettings.auth_enabled.name(), "false" );
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, configurator );
         srv.start();
 

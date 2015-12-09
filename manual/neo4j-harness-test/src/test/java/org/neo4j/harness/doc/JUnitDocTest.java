@@ -32,6 +32,11 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
+import org.neo4j.server.configuration.ServerSettings;
+
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
+
 import static org.junit.Assert.*;
 
 public class JUnitDocTest
@@ -42,6 +47,10 @@ public class JUnitDocTest
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (admin:Admin)" )
+            .withConfig( ServerSettings.tls_key_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
+            .withConfig( ServerSettings.tls_certificate_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
             .withFixture( new Function<GraphDatabaseService, Void>()
             {
                 @Override

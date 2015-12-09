@@ -30,6 +30,8 @@ import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.Response;
 import static org.neo4j.test.server.HTTP.withBaseUri;
@@ -40,6 +42,10 @@ public class BatchEndpointIT
     public final Neo4jRule neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
             .withConfig( ServerSettings.http_log_config_file, createDummyLogbackConfigFile() )
+            .withConfig( ServerSettings.tls_key_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
+            .withConfig( ServerSettings.tls_certificate_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
             .withConfig( ServerSettings.auth_enabled, "false" );
 
     @Test

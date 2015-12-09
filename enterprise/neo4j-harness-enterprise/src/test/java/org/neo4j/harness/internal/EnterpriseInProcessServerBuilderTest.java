@@ -27,6 +27,9 @@ import java.util.Arrays;
 
 import org.neo4j.harness.EnterpriseTestServerBuilders;
 import org.neo4j.harness.ServerControls;
+import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
@@ -49,7 +52,7 @@ public class EnterpriseInProcessServerBuilderTest
         workDir.mkdir();
 
         // When
-        try(ServerControls server = EnterpriseTestServerBuilders.newInProcessBuilder( workDir ).newServer())
+        try(ServerControls server = getTestServerBuilder( workDir ).newServer())
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
@@ -58,5 +61,15 @@ public class EnterpriseInProcessServerBuilderTest
 
         // And after it's been closed, it should've cleaned up after itself.
         assertThat( Arrays.toString( workDir.list() ), workDir.list().length, equalTo( 0 ) );
+    }
+
+    private TestServerBuilder getTestServerBuilder( File workDir )
+    {
+        TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder( workDir );
+        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
+        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        return serverBuilder;
     }
 }

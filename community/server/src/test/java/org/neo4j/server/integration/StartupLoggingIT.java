@@ -22,43 +22,50 @@ package org.neo4j.server.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
+    @Before
+    public void setUp() throws IOException
+    {
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerInternalSettings.legacy_db_location ) );
+    }
+
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable
     {
-        // Given
-        SuppressOutput suppressed = SuppressOutput.suppressAll();
+        CommunityBootstrapper boot = new CommunityBootstrapper();
+        Pair[] propertyPairs = getPropertyPairs();
 
-        // When
-        suppressed.call( new Callable<Object>()
-        {
-            @Override
-            public Object call() throws Exception
-            {
-                CommunityBootstrapper boot = new CommunityBootstrapper();
-                boot.start( null, Pair.of("allow_store_upgrade", "true") );
-                boot.stop();
-                return null;
-            }
-        });
+        boot.start( null, propertyPairs );
+        boot.stop();
 
         // Then
-        List<String> captured = suppressed.getOutputVoice().lines();
+        List<String> captured = suppressOutput.getOutputVoice().lines();
         // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
         //       This should be changed in 3.0.0.
         assertThat( captured, containsAtLeastTheseLines(
@@ -74,6 +81,18 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
                 info( "Successfully shutdown database" ),
                 info( "Successfully shutdown Neo Server on port \\[.+\\], database \\[.+\\]")
         ) );
+    }
+
+    private Pair[] getPropertyPairs() throws IOException
+    {
+        List<Pair> pairs = new ArrayList<>();
+        Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
+        for ( Map.Entry<String,String> entry : relativeProperties.entrySet() )
+        {
+            pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
+        }
+        pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+        return pairs.toArray( new Pair[pairs.size()] );
     }
 
     public static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String> ... expectedLinePatterns )

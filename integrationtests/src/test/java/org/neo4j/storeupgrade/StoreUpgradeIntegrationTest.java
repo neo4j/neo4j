@@ -68,8 +68,10 @@ import org.neo4j.register.Registers;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
@@ -163,6 +165,8 @@ public class StoreUpgradeIntegrationTest
         }
 
         @Rule
+        public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+        @Rule
         public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
         @Test
@@ -195,6 +199,7 @@ public class StoreUpgradeIntegrationTest
 
             File configFile = new File( dir, "neo4j.properties" );
             Properties props = new Properties();
+            props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath() );
             props.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );

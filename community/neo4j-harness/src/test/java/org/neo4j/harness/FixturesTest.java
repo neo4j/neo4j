@@ -23,12 +23,15 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
@@ -57,7 +60,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture ).newServer())
         {
             // Then
@@ -89,7 +92,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             // Then
@@ -115,7 +118,7 @@ public class FixturesTest
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture1 )
                 .withFixture( fixture2 )
                 .newServer())
@@ -135,7 +138,7 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( "CREATE (a:User)" )
                 .newServer())
         {
@@ -158,7 +161,7 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture2.cyp"), "", false);
 
         // When
-        try(ServerControls server = newInProcessBuilder( targetFolder )
+        try(ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             // Then
@@ -177,7 +180,7 @@ public class FixturesTest
         FileUtils.writeToFile( new File(targetFolder, "fixture1.cyp"), "this is not a valid cypher statement", false);
 
         // When
-        try(ServerControls ignore = newInProcessBuilder( targetFolder )
+        try(ServerControls ignore = getServerBuilder( targetFolder )
                 .withFixture( targetFolder ).newServer())
         {
             fail("Should have thrown exception");
@@ -196,7 +199,7 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
-        try ( ServerControls server = newInProcessBuilder( targetFolder )
+        try ( ServerControls server = getServerBuilder( targetFolder )
                 .withFixture( new Function<GraphDatabaseService, Void>()
                 {
                     @Override
@@ -219,4 +222,15 @@ public class FixturesTest
             assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 1 ) );
         }
     }
+
+    private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
+    {
+        TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder );
+        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
+        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        return serverBuilder;
+    }
+
 }
