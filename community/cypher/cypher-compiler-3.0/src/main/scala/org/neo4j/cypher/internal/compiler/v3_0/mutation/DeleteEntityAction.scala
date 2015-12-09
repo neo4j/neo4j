@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.mutation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ContainerIndex, Expression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
@@ -72,10 +72,15 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
 
   def localEffects(symbols: SymbolTable) = elementToDelete match {
-    case i: Variable => symbols.variables(i.entityName) match {
-      case _: NodeType         => Effects(DeletesNode)
-      case _: RelationshipType => Effects(DeletesRelationship)
-      case _: PathType         => Effects(DeletesNode, DeletesRelationship)
+    case i: Variable => effectsFromCypherType(symbols.variables(i.entityName))
+    case ContainerIndex(i: Variable, _) => symbols.variables(i.entityName) match {
+      case CollectionType(innerType) => effectsFromCypherType(innerType)
     }
+  }
+
+  private def effectsFromCypherType(cypherType: CypherType) = cypherType match {
+    case _: NodeType         => Effects(DeletesNode)
+    case _: RelationshipType => Effects(DeletesRelationship)
+    case _: PathType         => Effects(DeletesNode, DeletesRelationship)
   }
 }

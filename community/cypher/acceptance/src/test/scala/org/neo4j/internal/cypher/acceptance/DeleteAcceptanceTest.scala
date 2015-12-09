@@ -156,4 +156,37 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesDeleted = 0)
   }
+
+  test("should be able to delete a node from a collection") {
+    // Given
+    val user = createLabeledNode("User")
+    (0 to 3).foreach(_ => relate(user, createNode, "FRIEND"))
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[:FRIEND]->(n)
+        | WITH collect(n) AS friends
+        | DETACH DELETE friends[{friendIndex}]""".stripMargin,
+      "friendIndex" -> 1)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 1, relationshipsDeleted = 1)
+  }
+
+  test("should be able to delete a relationship from a collection") {
+    // Given
+    val user = createLabeledNode("User")
+    (0 to 3).foreach(_ => relate(user, createNode, "FRIEND"))
+
+    // When
+    val result = updateWithBothPlanners(
+      """ MATCH (:User)-[r:FRIEND]->()
+        | WITH collect(r) AS friendships
+        | DELETE friendships[{friendIndex}]""".stripMargin,
+      "friendIndex" -> 1)
+
+    // Then (no exception, and correct result)
+    assertStats(result, nodesDeleted = 0, relationshipsDeleted = 1)
+  }
+
 }
