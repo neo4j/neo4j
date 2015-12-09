@@ -86,7 +86,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
 
     public interface FullStoreChangeStream extends Iterable<NodeLabelUpdate>
     {
-        long highestNodeId();
+        long numberOfNodes();
     }
 
     public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoresSupplier neoStoresSupplier )
@@ -123,9 +123,9 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             }
 
             @Override
-            public long highestNodeId()
+            public long numberOfNodes()
             {
-                return neoStoresSupplier.get().getNodeStore().getHighestPossibleIdInUse();
+                return neoStoresSupplier.get().getNodeStore().getHighId();
             }
         };
     }

@@ -483,9 +483,9 @@ public class LuceneLabelScanStoreTest
             }
 
             @Override
-            public long highestNodeId()
+            public long numberOfNodes()
             {
-                return existingData.size(); // Well... not really
+                return existingData.size();
             }
         };
     }

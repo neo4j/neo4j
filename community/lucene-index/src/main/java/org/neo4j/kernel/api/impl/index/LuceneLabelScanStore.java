@@ -278,7 +278,7 @@ public class LuceneLabelScanStore
             // neostore has been properly started.
             monitor.rebuilding();
             write( fullStoreStream.iterator() );
-            monitor.rebuilt( fullStoreStream.highestNodeId() );
+            monitor.rebuilt( fullStoreStream.numberOfNodes() );
             needsRebuild = false;
         }
     }
