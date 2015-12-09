@@ -74,6 +74,8 @@ case object foldConstants extends Rewriter {
     case e@Divide(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
       DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position)
     case e@Divide(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      // standard 0.0 / 0.0 produces Double.NaN
+      if (lhs.value == 0.0 && rhs.value == 0.0) throw new ArithmeticException("/ by zero")
       DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position)
 
     case e@Modulo(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>

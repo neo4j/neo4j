@@ -311,13 +311,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       JavaConversionSupport.asScala(statement.readOperations().nodeGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      statement.readOperations().nodeGetProperty(id, propertyKeyId)
+      statement.readOperations().nodeGetProperty(id, propertyKeyId) match {
+        case null => null
+        case d: java.lang.Double if java.lang.Double.isNaN(d) => null
+        case f: java.lang.Float if java.lang.Float.isNaN(f) => null
+        case other => other
+      }
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null
     }
 
-    def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().nodeHasProperty(id, propertyKey)
+    def hasProperty(id: Long, propertyKey: Int) = getProperty(id, propertyKey) != null
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
@@ -360,10 +364,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       asScala(statement.readOperations().relationshipGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId) match {
+        case null => null
+        case d: java.lang.Double if java.lang.Double.isNaN(d) => null
+        case f: java.lang.Float if java.lang.Float.isNaN(f) => null
+        case other => other
+      }
 
-    def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().relationshipHasProperty(id, propertyKey)
+    def hasProperty(id: Long, propertyKey: Int) = getProperty(id, propertyKey) != null
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)

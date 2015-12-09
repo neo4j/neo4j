@@ -25,7 +25,13 @@ import pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName) match {
+    // this runtime check is necessary to enforce that Cypher never outputs a NaN
+    case d: Double if java.lang.Double.isNaN(d) => null
+    case f: Float if java.lang.Double.isNaN(f) => null
+    case other => other
+  }
 
   override def toString(): String = "{" + parameterName + "}"
 
