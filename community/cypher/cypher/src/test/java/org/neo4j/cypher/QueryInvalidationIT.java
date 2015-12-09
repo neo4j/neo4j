@@ -32,6 +32,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -39,6 +42,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class QueryInvalidationIT
 {
@@ -46,7 +50,16 @@ public class QueryInvalidationIT
     private static final int CONNECTIONS = 100;
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            builder.setConfig( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.5" );
+            builder.setConfig( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
+        }
+    };
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception
@@ -83,6 +96,10 @@ public class QueryInvalidationIT
     public void shouldRePlanAfterDataChangesFromAPopulatedDatabase() throws Exception
     {
         // GIVEN
+        Config config = db.getConfigCopy();
+        double divergenceThreshold = config.get( GraphDatabaseSettings.query_statistics_divergence_threshold );
+        long replanInterval = config.get( GraphDatabaseSettings.cypher_min_replan_interval );
+
         TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
         // - setup schema -
@@ -91,13 +108,18 @@ public class QueryInvalidationIT
         createData( 0, USERS, CONNECTIONS );
         executeDistantFriendsCountQuery( USERS );
 
-        long replanTime = System.currentTimeMillis() + 1_800;
+        long replanTime = System.currentTimeMillis() + replanInterval;
 
-        //create more date
-        createData( USERS, USERS, 2 * CONNECTIONS );
+        assertTrue( "Test does not work with edge setting for query_statistics_divergence_threshold: " + divergenceThreshold,
+                divergenceThreshold > 0.0 && divergenceThreshold < 1.0 );
+
+        int usersToCreate = ((int) (Math.ceil( ((double) USERS) / (1.0 - divergenceThreshold) ))) - USERS + 1;
+
+        //create more data
+        createData( USERS, usersToCreate, CONNECTIONS );
 
         // - after the query TTL has expired -
-        while ( System.currentTimeMillis() < replanTime )
+        while ( System.currentTimeMillis() <= replanTime )
         {
             Thread.sleep( 100 );
         }
