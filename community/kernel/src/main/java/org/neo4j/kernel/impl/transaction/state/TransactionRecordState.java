@@ -489,7 +489,7 @@ public class TransactionRecordState implements RecordState
                 {
                     return neoStoreRecord.clone();
                 }
-            }, true, new IntCounter() );
+            }, new IntCounter() );
         }
         return neoStoreRecord.getOrLoad( 0L, null );
     }

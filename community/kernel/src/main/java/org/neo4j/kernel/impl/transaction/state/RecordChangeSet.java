@@ -49,13 +49,7 @@ public class RecordChangeSet implements RecordAccessSet
 
     public RecordChangeSet( NeoStores neoStores )
     {
-        this( false, neoStores );
-    }
-
-    public RecordChangeSet( boolean beforeStateForAll, NeoStores neoStores )
-    {
-        this(   beforeStateForAll,
-                Loaders.nodeLoader( neoStores.getNodeStore() ),
+        this(   Loaders.nodeLoader( neoStores.getNodeStore() ),
                 Loaders.propertyLoader( neoStores.getPropertyStore() ),
                 Loaders.relationshipLoader( neoStores.getRelationshipStore() ),
                 Loaders.relationshipGroupLoader( neoStores.getRelationshipGroupStore() ),
@@ -66,7 +60,6 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     public RecordChangeSet(
-            boolean beforeStateForAll,
             Loader<Long,NodeRecord,Void> nodeLoader,
             Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
             Loader<Long,RelationshipRecord,Void> relationshipLoader,
@@ -76,14 +69,14 @@ public class RecordChangeSet implements RecordAccessSet
             Loader<Integer,LabelTokenRecord,Void> labelTokenLoader,
             Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
     {
-        this.nodeRecords = new RecordChanges<>( nodeLoader, true, changeCounter );
-        this.propertyRecords = new RecordChanges<>( propertyLoader, true, changeCounter );
-        this.relRecords = new RecordChanges<>( relationshipLoader, true, changeCounter );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, true, changeCounter );
-        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, true, changeCounter );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, true, changeCounter );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, true, changeCounter );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, true, changeCounter );
+        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter );
+        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter );
+        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter );
+        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter );
     }
 
     @Override

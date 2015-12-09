@@ -168,7 +168,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         TokenStore<RECORD,TOKEN> tokenStore = resolveStore();
         RecordAccess.Loader<Integer,RECORD,Void> recordLoader = resolveLoader( tokenStore );
 
-        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, true, new IntCounter() );
+        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, new IntCounter() );
         TokenCreator<RECORD,TOKEN> tokenCreator = new TokenCreator<>( tokenStore );
         tokenCreator.createToken( tokenName, (int) tokenId, recordAccess );
 

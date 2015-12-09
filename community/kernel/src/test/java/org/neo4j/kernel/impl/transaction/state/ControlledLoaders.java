@@ -73,7 +73,7 @@ public class ControlledLoaders
 
     public RecordAccessSet newAccessSet()
     {
-        return new RecordChangeSet( false, nodes, properties, relationships, relationshipGroups, schemaRules,
+        return new RecordChangeSet( nodes, properties, relationships, relationshipGroups, schemaRules,
                 propertyKeyTokens, labelTokens, relationshipTypeTokens );
     }
 
