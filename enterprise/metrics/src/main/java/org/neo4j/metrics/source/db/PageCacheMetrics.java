@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.db;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -51,88 +47,33 @@ public class PageCacheMetrics extends LifecycleAdapter
     public static final String PC_PAGE_FAULTS = name( PAGE_CACHE_PREFIX, "page_faults" );
 
     private final MetricRegistry registry;
-    private final Config config;
     private final PageCacheMonitor pageCacheCounters;
 
-    public PageCacheMetrics( MetricRegistry registry, Config config, PageCacheMonitor pageCacheCounters )
+    public PageCacheMetrics( MetricRegistry registry, PageCacheMonitor pageCacheCounters )
     {
         this.registry = registry;
-        this.config = config;
         this.pageCacheCounters = pageCacheCounters;
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
-        {
-            registry.register( PC_PAGE_FAULTS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countFaults();
-                }
-            } );
-
-            registry.register( PC_EVICTIONS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countEvictions();
-                }
-            } );
-
-            registry.register( PC_PINS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countPins();
-                }
-            } );
-
-            registry.register( PC_UNPINS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countUnpins();
-                }
-            } );
-
-            registry.register( PC_FLUSHES, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countFlushes();
-                }
-            } );
-
-            registry.register( PC_EVICTION_EXCEPTIONS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return pageCacheCounters.countEvictionExceptions();
-                }
-            } );
-        }
+        registry.register( PC_PAGE_FAULTS, (Gauge<Long>) pageCacheCounters::countFaults );
+        registry.register( PC_EVICTIONS, (Gauge<Long>) pageCacheCounters::countEvictions );
+        registry.register( PC_PINS, (Gauge<Long>) pageCacheCounters::countPins );
+        registry.register( PC_UNPINS, (Gauge<Long>) pageCacheCounters::countUnpins );
+        registry.register( PC_FLUSHES, (Gauge<Long>) pageCacheCounters::countFlushes );
+        registry.register( PC_EVICTION_EXCEPTIONS, (Gauge<Long>) pageCacheCounters::countEvictionExceptions );
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
-        if ( config.get( MetricsSettings.neoPageCacheEnabled ) )
-        {
-            registry.remove( PC_PAGE_FAULTS );
-            registry.remove( PC_EVICTIONS );
-            registry.remove( PC_PINS );
-            registry.remove( PC_UNPINS );
-            registry.remove( PC_FLUSHES );
-            registry.remove( PC_EVICTION_EXCEPTIONS );
-        }
+        registry.remove( PC_PAGE_FAULTS );
+        registry.remove( PC_EVICTIONS );
+        registry.remove( PC_PINS );
+        registry.remove( PC_UNPINS );
+        registry.remove( PC_FLUSHES );
+        registry.remove( PC_EVICTION_EXCEPTIONS );
     }
 }

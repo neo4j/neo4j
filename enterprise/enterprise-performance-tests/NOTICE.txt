@@ -27,7 +27,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   ConcurrentLinkedHashMap
-  Ganglia Integration for Metrics
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
@@ -49,10 +48,6 @@ BSD License
   ASM Core
   Scala Compiler
 
-GNU Lesser General Public License, Version 2.1
-  Remote Tea Runtime
-
 MIT License
-  gmetric4j
   SLF4J API Module
 

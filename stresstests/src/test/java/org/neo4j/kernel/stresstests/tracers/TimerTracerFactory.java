@@ -22,11 +22,13 @@ package org.neo4j.kernel.stresstests.tracers;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.TracerFactory;
 
 public class TimerTracerFactory implements TracerFactory
 {
-    private TimerTransactionTracer timerTransactionTracer  = new TimerTransactionTracer();;
+    private TimerTransactionTracer timerTransactionTracer = new TimerTransactionTracer();
 
     @Override
     public String getImplementationName()
@@ -35,19 +37,19 @@ public class TimerTracerFactory implements TracerFactory
     }
 
     @Override
-    public PageCacheTracer createPageCacheTracer()
+    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler )
     {
         return PageCacheTracer.NULL;
     }
 
     @Override
-    public TransactionTracer createTransactionTracer()
+    public TransactionTracer createTransactionTracer( Monitors monitors, JobScheduler jobScheduler )
     {
         return timerTransactionTracer;
     }
 
     @Override
-    public CheckPointTracer createCheckPointTracer()
+    public CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler )
     {
         return timerTransactionTracer;
     }

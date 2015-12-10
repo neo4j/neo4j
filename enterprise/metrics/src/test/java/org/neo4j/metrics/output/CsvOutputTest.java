@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,11 +35,9 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.fail;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvOutputTest
@@ -90,18 +89,18 @@ public class CsvOutputTest
     {
         // GIVEN
         File storeDir = directory.directory();
-        File file = File.createTempFile( "neo4j", "csvoutput" );
+        File outputFPath = Files.createTempDirectory( "output" ).toFile();
         CsvOutput output = life.add( new CsvOutput( config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), file.getAbsolutePath() ),
+                MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() ),
                 new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
 
         // WHEN
         life.start();
 
         // THEN
-        waitForFileToAppear( file );
+        waitForFileToAppear( outputFPath );
     }
 
     private KernelContext kerneContext( final File storeDir )

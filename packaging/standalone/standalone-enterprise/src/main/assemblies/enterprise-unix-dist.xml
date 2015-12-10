@@ -114,8 +114,6 @@
         <include>net.sf.opencsv:opencsv</include>
         <include>org.apache.commons:commons-lang3</include>
         <include>io.dropwizard.metrics:*</include>
-        <include>info.ganglia.gmetric4j:gmetric4j</include>
-        <include>org.acplt:oncrpc</include>
         <include>org.slf4j:slf4j-api</include>
       </includes>
       <excludes>
@@ -145,8 +143,6 @@
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
         <exclude>io.dropwizard.metrics:*</exclude>
-        <exclude>info.ganglia.gmetric4j:gmetric4j</exclude>
-        <exclude>org.acplt:oncrpc</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
       </excludes>
     </dependencySet>

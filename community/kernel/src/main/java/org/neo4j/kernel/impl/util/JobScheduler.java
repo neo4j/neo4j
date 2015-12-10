@@ -145,6 +145,11 @@ public interface JobScheduler extends Lifecycle
          * Network IO threads for the Bolt protocol.
          */
         public static final Group boltNetworkIO = new Group( "BoltNetworkIO", NEW_THREAD );
+
+        /**
+         * Reporting thread for Metrics events
+         */
+        public static final Group metricsEvent = new Group( "MetricsEvent", POOLED );
     }
 
     interface JobHandle

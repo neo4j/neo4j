@@ -21,114 +21,82 @@ package org.neo4j.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.TransactionCounters;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-import org.neo4j.metrics.output.CsvOutput;
-import org.neo4j.metrics.output.GangliaOutput;
-import org.neo4j.metrics.output.GraphiteOutput;
-import org.neo4j.metrics.source.Neo4jMetricsFactory;
+import org.neo4j.metrics.output.CompositeEventReporter;
+import org.neo4j.metrics.output.EventReporterBuilder;
+import org.neo4j.metrics.source.Neo4jMetricsBuilder;
 
 public class MetricsExtension implements Lifecycle
 {
-    private final LifeSupport life;
+    private final LifeSupport life = new LifeSupport();
+    private final MetricsKernelExtensionFactory.Dependencies dependencies;
     private final LogService logService;
     private final Config configuration;
-    private final Monitors monitors;
-    private final TransactionCounters transactionCounters;
-    private final PageCacheMonitor pageCacheCounters;
-    private final CheckPointerMonitor checkPointerMonitor;
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final LogRotationMonitor logRotationMonitor;
-    private final DataSourceManager dataSourceManager;
-    private final DependencyResolver dependencyResolver;
     private final KernelContext kernelContext;
+
 
     public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
     {
-        life = new LifeSupport();
-        logService = dependencies.logService();
-        configuration = dependencies.configuration();
-        monitors = dependencies.monitors();
-        dataSourceManager = dependencies.dataSourceManager();
-        transactionCounters = dependencies.transactionCounters();
-        pageCacheCounters = dependencies.pageCacheCounters();
-        checkPointerMonitor = dependencies.checkPointerCounters();
-        logRotationMonitor = dependencies.logRotationCounters();
-        idGeneratorFactory = dependencies.idGeneratorFactory();
-        dependencyResolver = dependencies.getDependencyResolver();
-        kernelContext = dependencies.kernelContext();
+        this.dependencies = dependencies;
+        this.logService = dependencies.logService();
+        this.configuration = dependencies.configuration();
+        this.kernelContext = dependencies.kernelContext();
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         Log logger = logService.getUserLog( getClass() );
+        logger.info( "Initiating metrics..." );
 
         // Setup metrics
         final MetricRegistry registry = new MetricRegistry();
 
-        logger.info( "Initiating metrics.." );
-
         // Setup output
-        String prefix = computePrefix( configuration );
-
-        life.add( new CsvOutput( configuration, registry, logger, kernelContext ) );
-        life.add( new GraphiteOutput( configuration, registry, logger, prefix ) );
-        life.add( new GangliaOutput( configuration, registry, logger, prefix ) );
+        CompositeEventReporter reporter =
+                new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
 
         // Setup metric gathering
-        Neo4jMetricsFactory factory = new Neo4jMetricsFactory( registry, configuration, monitors, dataSourceManager,
-                transactionCounters, pageCacheCounters, checkPointerMonitor, logRotationMonitor, idGeneratorFactory,
-                dependencyResolver, logService) ;
-        life.add( factory.newInstance() );
+        boolean metricsBuilt =
+                new Neo4jMetricsBuilder( registry, reporter, configuration, logService, dependencies, life ).build();
+
+        if ( metricsBuilt && reporter.isEmpty() )
+        {
+            logger.warn( "Several metrics were enabled but no exporting option was configured to report values to. " +
+                         "Disabling kernel metrics extension." );
+            life.clear();
+        }
+
+        if ( !reporter.isEmpty() && !metricsBuilt )
+        {
+            logger.warn( "Exporting tool have been configured to report values to but no metrics were enabled. " +
+                         "Disabling kernel metrics extension." );
+            life.clear();
+        }
 
         life.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
-    }
-
-    private String computePrefix( Config config )
-    {
-        String prefix = config.get( MetricsSettings.metricsPrefix );
-
-        if ( prefix.equals( MetricsSettings.metricsPrefix.getDefaultValue() ) )
-        {
-            // If default name and in HA, try to figure out a nicer name
-            if ( config.getParams().containsKey( ClusterSettings.server_id.name() ) )
-            {
-                prefix += "." + config.get( ClusterSettings.cluster_name );
-                prefix += "." + config.get( ClusterSettings.server_id );
-            }
-        }
-        return prefix;
     }
 }

@@ -67,7 +67,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     private NeoStoreDataSource dataSource;
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-                                             PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth )
+            PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
     {
         if ( dataSource != null )
         {
@@ -80,6 +80,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
+        JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
+        Monitors monitors = new Monitors();
         dataSource = new NeoStoreDataSource( storeDir, config, new DefaultIdGeneratorFactory( fs ),
                 NullLogService.getInstance(), mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
@@ -89,13 +91,14 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null,
                 new CommunityCommitProcessFactory(), pageCache,
-                new StandardConstraintSemantics(), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
+                new StandardConstraintSemantics(), monitors,
+                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ) );
 
         return dataSource;
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-                                             PageCache pageCache, Map<String, String> additionalConfig )
+            PageCache pageCache, Map<String,String> additionalConfig )
     {
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                 NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );

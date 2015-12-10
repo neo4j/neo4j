@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -46,6 +48,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class GraphDatabaseFacadeFactoryTest
 {
@@ -56,6 +59,12 @@ public class GraphDatabaseFacadeFactoryTest
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
             mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
+
+    @Before
+    public void setup()
+    {
+        when( deps.monitors() ).thenReturn( new Monitors() );
+    }
 
     @Test
     public void shouldThrowAppropriateExceptionIfStartFails()

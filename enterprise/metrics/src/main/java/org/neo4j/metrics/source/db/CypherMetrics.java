@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.db;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.IOException;
-
 import org.neo4j.cypher.PlanCacheMetricsMonitor;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.metrics.MetricsSettings;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -41,45 +37,28 @@ public class CypherMetrics extends LifecycleAdapter
     @Documented( "The total number of times Cypher has decided to re-plan a query" )
     public static final String REPLAN_EVENTS = name( NAME_PREFIX, "replan_events" );
 
-    private final Config config;
-    private final Monitors monitors;
     private final MetricRegistry registry;
+    private final Monitors monitors;
     private final PlanCacheMetricsMonitor cacheMonitor = new PlanCacheMetricsMonitor();
 
-    public CypherMetrics( Config config, Monitors monitors, MetricRegistry registry )
+    public CypherMetrics( MetricRegistry registry, Monitors monitors )
     {
-        this.config = config;
-        this.monitors = monitors;
         this.registry = registry;
+        this.monitors = monitors;
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        if ( config.get( MetricsSettings.cypherPlanningEnabled ) )
-        {
-            monitors.addMonitorListener( cacheMonitor );
-
-            registry.register( REPLAN_EVENTS, new Gauge<Long>()
-            {
-                @Override
-                public Long getValue()
-                {
-                    return cacheMonitor.numberOfReplans();
-                }
-            } );
-        }
+        monitors.addMonitorListener( cacheMonitor );
+        registry.register( REPLAN_EVENTS, (Gauge<Long>) cacheMonitor::numberOfReplans );
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
-        if ( config.get( MetricsSettings.cypherPlanningEnabled ) )
-        {
-            registry.remove( REPLAN_EVENTS );
-
-            monitors.removeMonitorListener( cacheMonitor );
-        }
+        registry.remove( REPLAN_EVENTS );
+        monitors.removeMonitorListener( cacheMonitor );
     }
 }
 

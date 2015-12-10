@@ -12,7 +12,6 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
-  Ganglia Integration for Metrics
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
@@ -1315,7 +1314,6 @@ GNU Lesser General Public License, Version 2.1
   Logback Access Module
   Logback Classic Module
   Logback Core Module
-  Remote Tea Runtime
 ------------------------------------------------------------------------------
 
                    GNU LESSER GENERAL PUBLIC LICENSE
@@ -1824,7 +1822,6 @@ That's all there is to it!
 
 ------------------------------------------------------------------------------
 MIT License
-  gmetric4j
   SLF4J API Module
 ------------------------------------------------------------------------------
 

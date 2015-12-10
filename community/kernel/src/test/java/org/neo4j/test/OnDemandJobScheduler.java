@@ -94,7 +94,10 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
 
     public void runJob()
     {
-        job.run();
+        if ( job != null )
+        {
+            job.run();
+        }
     }
 
     private class OnDemandJobHandle implements JobHandle
