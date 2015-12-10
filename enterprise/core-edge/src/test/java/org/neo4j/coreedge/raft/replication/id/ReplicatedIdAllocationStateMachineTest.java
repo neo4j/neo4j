@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.coreedge.server.CoreMember;
@@ -27,7 +26,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
@@ -155,11 +153,10 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    @Ignore
     public void shouldCorrectlyRestartWithPreviousState() throws Exception
     {
         // given
-        IdAllocationState idAllocationState = mock( IdAllocationState.class );
+        IdAllocationState idAllocationState = new InMemoryIdAllocationStateStore();
 
         ReplicatedIdAllocationStateMachine firstIdAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( me, idAllocationState );
@@ -172,8 +169,10 @@ public class ReplicatedIdAllocationStateMachineTest
                 new ReplicatedIdAllocationStateMachine( me, idAllocationState );
 
         // then
-        assertEquals( firstIdAllocationStateMachine.getHighestIdRange( me, someType ).getRangeStart(),
-                secondIdAllocationStateMachine.getHighestIdRange( me, someType ).getRangeStart() );
-    }
+        assertEquals( firstIdAllocationStateMachine.getHighestIdRange( me, someType ),
+                secondIdAllocationStateMachine.getHighestIdRange( me, someType ) );
 
+        assertEquals( firstIdAllocationStateMachine.getFirstNotAllocated( someType ),
+                secondIdAllocationStateMachine.getFirstNotAllocated( someType ) );
+    }
 }

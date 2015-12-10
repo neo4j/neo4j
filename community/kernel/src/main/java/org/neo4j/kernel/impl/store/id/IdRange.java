@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class IdRange
 {
@@ -53,5 +54,28 @@ public class IdRange
     public String toString()
     {
         return "IdRange[" + rangeStart + "-" + (rangeStart+rangeLength-1) + ", defrag " + Arrays.toString( defragIds ) + "]";
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        IdRange idRange = (IdRange) o;
+        return rangeStart == idRange.rangeStart &&
+                rangeLength == idRange.rangeLength &&
+                Arrays.equals( defragIds, idRange.defragIds );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( defragIds, rangeStart, rangeLength );
     }
 }
