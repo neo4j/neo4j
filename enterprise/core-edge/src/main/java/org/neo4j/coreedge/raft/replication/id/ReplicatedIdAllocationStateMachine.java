@@ -45,19 +45,17 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 public class ReplicatedIdAllocationStateMachine implements Replicator.ReplicatedContentListener
 {
     private final CoreMember me;
+    private final IdAllocationState idAllocationState;
 
-    private final long[] firstNotAllocated = new long[IdType.values().length];
-    private final long[] lastIdRangeStartForMe = new long[IdType.values().length];
-    private final int[] lastIdRangeLengthForMe = new int[IdType.values().length];
-
-    public ReplicatedIdAllocationStateMachine( CoreMember me )
+    public ReplicatedIdAllocationStateMachine( CoreMember me, IdAllocationState idAllocationState )
     {
         this.me = me;
+        this.idAllocationState = idAllocationState;
     }
 
     public synchronized long getFirstNotAllocated( IdType idType )
     {
-        return firstNotAllocated[idType.ordinal()];
+        return idAllocationState.firstNotAllocated(idType);
     }
 
     public synchronized IdRange getHighestIdRange( CoreMember owner, IdType idType )
@@ -68,12 +66,11 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
             throw new UnsupportedOperationException();
         }
 
-        int typeOrdinal = idType.ordinal();
-        int idRangeLength = lastIdRangeLengthForMe[typeOrdinal];
+        int idRangeLength = idAllocationState.lastIdRangeLengthForMe(idType);
 
         if ( idRangeLength > 0 )
         {
-            return new IdRange( EMPTY_LONG_ARRAY, lastIdRangeStartForMe[typeOrdinal], idRangeLength );
+            return new IdRange( EMPTY_LONG_ARRAY, idAllocationState.lastIdRangeStartForMe(idType), idRangeLength );
         }
         else
         {
@@ -81,9 +78,9 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
         }
     }
 
-    private synchronized void updateFirstNotAllocated( int typeOrdinal, long idRangeEnd )
+    private void updateFirstNotAllocated( IdType idType, long idRangeEnd )
     {
-        firstNotAllocated[typeOrdinal] = idRangeEnd;
+        idAllocationState.firstNotAllocated(idType, idRangeEnd);
         notifyAll();
     }
 
@@ -94,16 +91,16 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
         {
             ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
 
-            int typeOrdinal = request.idType().ordinal();
+            IdType idType = request.idType();
 
-            if ( request.idRangeStart() == firstNotAllocated[typeOrdinal] )
+            if ( request.idRangeStart() == idAllocationState.firstNotAllocated(idType) )
             {
                 if( request.owner().equals( me ) )
                 {
-                    lastIdRangeStartForMe[typeOrdinal] = request.idRangeStart();
-                    lastIdRangeLengthForMe[typeOrdinal] = request.idRangeLength();
+                    idAllocationState.lastIdRangeStartForMe(idType, request.idRangeStart());
+                    idAllocationState.lastIdRangeLengthForMe(idType, request.idRangeLength());
                 }
-                updateFirstNotAllocated( typeOrdinal, request.idRangeStart() + request.idRangeLength() );
+                updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
             }
         }
     }

@@ -54,6 +54,7 @@ import org.neo4j.coreedge.raft.replication.LocalReplicator;
 import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationStateStore;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
@@ -198,7 +199,7 @@ public class EnterpriseCoreEditionModule
 
         commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, dependencies, SYSTEM_CLOCK );
 
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself, new InMemoryIdAllocationStateStore() );
         replicator.subscribe( idAllocationStateMachine );
 
         // TODO: AllocationChunk should be configurable and per type. The retry timeout should also be configurable.

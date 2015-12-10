@@ -19,14 +19,17 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
-import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class ReplicatedIdAllocationStateMachineTest
 {
@@ -40,7 +43,8 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldNotHaveAnyIdsInitially()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
 
         // when
         IdRange myHighestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
@@ -55,7 +59,8 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldUpdateStateOnlyForTypeRequested()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -70,7 +75,8 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldUpdateHighestIdRangeForSelf()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -86,10 +92,11 @@ public class ReplicatedIdAllocationStateMachineTest
     public void severalDistinctRequestsShouldIncrementallyUpdate()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
 
         // when
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType,    0, 1024 ), 0 );
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), 0 );
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 );
 
@@ -101,7 +108,8 @@ public class ReplicatedIdAllocationStateMachineTest
     public void severalEqualRequestsShouldOnlyUpdateOnce()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
 
         // when
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -116,11 +124,13 @@ public class ReplicatedIdAllocationStateMachineTest
     public void outOfOrderRequestShouldBeIgnored()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
 
         // when
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType,    0, 1024 ), 0 );
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 ); // should be ignored - not adjacent to previous
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 ); //
+        // should be ignored - not adjacent to previous
 
         // then
         assertEquals( 1024, idAllocationStateMachine.getFirstNotAllocated( someType ) );
@@ -130,15 +140,40 @@ public class ReplicatedIdAllocationStateMachineTest
     public void requestLosingRaceShouldBeIgnored()
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
+                new InMemoryIdAllocationStateStore() );
 
         // when
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( someoneElse, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 ); // should be ignored - someone else took it first
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 ); //
+        // should be ignored - someone else took it first
 
         IdRange highestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
 
         // then
         assertEquals( null, highestIdRange );
     }
+
+    @Test
+    @Ignore
+    public void shouldCorrectlyRestartWithPreviousState() throws Exception
+    {
+        // given
+        IdAllocationState idAllocationState = mock( IdAllocationState.class );
+
+        ReplicatedIdAllocationStateMachine firstIdAllocationStateMachine =
+                new ReplicatedIdAllocationStateMachine( me, idAllocationState );
+
+        firstIdAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        firstIdAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), 1 );
+
+        // when
+        ReplicatedIdAllocationStateMachine secondIdAllocationStateMachine =
+                new ReplicatedIdAllocationStateMachine( me, idAllocationState );
+
+        // then
+        assertEquals( firstIdAllocationStateMachine.getHighestIdRange( me, someType ).getRangeStart(),
+                secondIdAllocationStateMachine.getHighestIdRange( me, someType ).getRangeStart() );
+    }
+
 }
