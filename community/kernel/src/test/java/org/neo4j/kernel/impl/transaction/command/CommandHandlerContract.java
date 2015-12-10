@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import java.io.IOException;
+import java.util.function.Function;
+
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -32,40 +38,48 @@ public class CommandHandlerContract
     @FunctionalInterface
     public interface ApplyFunction
     {
-        boolean apply( CommandHandler applier, TransactionRepresentation tx ) throws Exception;
+        boolean apply( TransactionApplier applier ) throws Exception;
     }
 
-    public static boolean apply( CommandHandler applier, TransactionToApply... transactions )
-            throws Exception
+    public static void apply( BatchTransactionApplier applier, TransactionToApply... transactions ) throws Exception
     {
-        return apply( new CommandApplierFacade( applier ), transactions );
+        for ( TransactionToApply tx : transactions )
+        {
+            try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
+            {
+                tx.transactionRepresentation().accept( txApplier );
+            }
+        }
+        applier.close();
     }
 
-    public static boolean apply( CommandApplierFacade applier, TransactionToApply... transactions )
-            throws Exception
-    {
-        return apply( applier, (handler,tx) -> {
-            tx.accept( applier );
-            return false;
-        }, transactions );
-    }
-
-    public static boolean apply( CommandHandler applier, ApplyFunction function, TransactionToApply... transactions )
-            throws Exception
+    public static boolean apply( BatchTransactionApplier applier, ApplyFunction function,
+            TransactionToApply... transactions ) throws Exception
     {
         boolean result = true;
         for ( TransactionToApply tx : transactions )
         {
-            applier.begin( tx, new LockGroup() );
-            try
+            try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
             {
-                result &= function.apply( applier, tx.transactionRepresentation() );
-            }
-            finally
-            {
-                applier.end();
+                result &= function.apply( txApplier );
             }
         }
+        applier.close();
+        return result;
+    }
+
+    /*public static boolean apply( BatchTransactionApplier applier, TransactionToApply... transactions )
+            throws Exception
+    {
+        for ( TransactionToApply tx : transactions )
+        {
+            try (TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ))
+            {
+                tx.transactionRepresentation().accept( txApplier );
+                        //function.apply( applier, tx.transactionRepresentation() );
+            }
+        }
+
         if ( !(applier instanceof CommandApplierFacade) )
         {
             // This is really odd... the whole apply/close bit. CommandApplierFacade is apparently
@@ -73,7 +87,8 @@ public class CommandHandlerContract
             // merge apply/close. We can't have it like this.
             applier.apply();
         }
+
         applier.close();
-        return result;
-    }
+        return false;
+    }*/
 }

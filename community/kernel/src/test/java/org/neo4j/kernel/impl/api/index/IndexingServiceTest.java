@@ -591,7 +591,7 @@ public class IndexingServiceTest
                 IndexUpdateMode.ONLINE ) )
         {
             Set<IndexDescriptor> affectedIndexes = new HashSet<>();
-            updates.flush( affectedIndexes );
+            updates.flush( affectedIndexes::add );
             assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), affectedIndexes );
         }
 
@@ -624,7 +624,7 @@ public class IndexingServiceTest
                 IndexUpdateMode.ONLINE ) )
         {
             verifyZeroInteractions( reservation );
-            updates.flush( new HashSet<>() );
+            updates.flush( indexDescriptor -> {} );
             verifyZeroInteractions( reservation );
         }
 
@@ -669,7 +669,7 @@ public class IndexingServiceTest
                 NodePropertyUpdate.add( 1, propertyKeyId, "foo", new long[]{labelId1} ),
                 NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ), IndexUpdateMode.ONLINE ) )
         {
-            updates.flush( new HashSet<>() );
+            updates.flush( indexDescriptor -> {} );
         }
 
         // Then

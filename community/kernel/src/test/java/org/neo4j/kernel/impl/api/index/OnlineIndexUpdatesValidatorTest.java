@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -172,10 +173,10 @@ public class OnlineIndexUpdatesValidatorTest
             validator.validate( tx );
             fail( "Should have thrown " + UnderlyingStorageException.class.getSimpleName() );
         }
-        catch ( UnderlyingStorageException e )
+        catch ( IOException e )
         {
             // Then
-            assertSame( error, e.getCause() );
+            assertSame( error, e.getCause().getCause() );
         }
     }
 
@@ -239,7 +240,8 @@ public class OnlineIndexUpdatesValidatorTest
     {
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
-        return new OnlineIndexUpdatesValidator( neoStores, null, propertyLoader, indexingService, ONLINE );
+        return new OnlineIndexUpdatesValidator( neoStores, mock( DatabaseHealth.class ), propertyLoader,
+                indexingService, ONLINE );
     }
 
     private static NodePropertyCommands createNodeWithLabelAndPropertyCommands( long nodeId, int label, int property )

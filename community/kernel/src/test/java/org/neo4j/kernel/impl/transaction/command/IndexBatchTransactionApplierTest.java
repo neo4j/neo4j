@@ -27,7 +27,10 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -36,6 +39,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -49,13 +53,19 @@ public class IndexBatchTransactionApplierTest
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 new WorkSync<>( singletonProvider( writer ) );
+        TransactionToApply tx = mock( TransactionToApply.class );
+        ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        when( tx.validatedIndexUpdates() ).thenReturn( indexUpdates );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync ) )
         {
-            // WHEN
-            applier.visitNodeCommand( node( 15 ) );
-            applier.visitNodeCommand( node( 20 ) );
-            applier.visitNodeCommand( node( 10 ) );
-            applier.apply();
+            try ( TransactionApplier txApplier = applier.startTx( tx ))
+            {
+                // WHEN
+                txApplier.visitNodeCommand( node( 15 ) );
+                txApplier.visitNodeCommand( node( 20 ) );
+                txApplier.visitNodeCommand( node( 10 ) );
+                //applier.apply();
+            }
         }
         // THEN all assertions happen inside the LabelScanWriter#write and #close
     }

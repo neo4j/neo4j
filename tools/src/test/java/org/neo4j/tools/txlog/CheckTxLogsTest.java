@@ -310,9 +310,9 @@ public class CheckTxLogsTest
 
         try ( StoreChannel channel = fs.open( log, "rw" );
               LogVersionedStoreChannel versionedChannel = new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 );
-              PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedChannel );
-              CommandWriter serializer = new CommandWriter( writableLogChannel ) )
+              PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedChannel ) )
         {
+            CommandWriter serializer = new CommandWriter( writableLogChannel );
             long offset = channel.size();
             channel.position( offset );
 

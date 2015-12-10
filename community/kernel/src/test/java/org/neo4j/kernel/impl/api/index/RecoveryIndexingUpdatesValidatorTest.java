@@ -63,7 +63,7 @@ public class RecoveryIndexingUpdatesValidatorTest
         // When
         try ( ValidatedIndexUpdates updates = validator.validate( tx ) )
         {
-            updates.flush( new HashSet<>() );
+            updates.flush( indexDescriptor -> {} );
         }
 
         // Then

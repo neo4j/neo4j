@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,11 +28,16 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -52,8 +58,16 @@ public class NeoTransactionIndexApplierTest
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
-            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>(
+            labelScanStore );
+    private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
+
+    @Before
+    public void setup()
+    {
+        when( transactionToApply.transactionId() ).thenReturn( 1L );
+        when( transactionToApply.validatedIndexUpdates() ).thenReturn( mock( ValidatedIndexUpdates.class ) );
+    }
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
@@ -71,15 +85,17 @@ public class NeoTransactionIndexApplierTest
         when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
 
         // when
-        final boolean result = applier.visitNodeCommand( command );
-        applier.apply();
-
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitNodeCommand( command );
+        }
         // then
         assertFalse( result );
     }
 
     @Test
-    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws IOException
+    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
@@ -91,8 +107,11 @@ public class NeoTransactionIndexApplierTest
         command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
 
         // When
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.apply();
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitSchemaRuleCommand( command );
+        }
 
         // Then
         assertFalse( result );
@@ -100,7 +119,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldDropIndexGivenDropSchemaRuleCommand() throws IOException
+    public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
@@ -112,8 +131,11 @@ public class NeoTransactionIndexApplierTest
         command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
 
         // When
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.apply();
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitSchemaRuleCommand( command );
+        }
 
         // Then
         assertFalse( result );

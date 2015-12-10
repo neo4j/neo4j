@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -74,18 +74,25 @@ public class LegacyBatchIndexApplierTest
         Map<String,Integer> names = MapUtil.genericMap( "first", 0, "second", 1 );
         Map<String,Integer> keys = MapUtil.genericMap( "key", 0 );
         String applierName = "test-applier";
+        Commitment commitment = mock( Commitment.class );
+        when( commitment.hasLegacyIndexChanges() ).thenReturn( true );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandVisitor.class ) );
         try ( LegacyBatchIndexApplier applier = new LegacyBatchIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
         {
-            // WHEN
-            IndexDefineCommand definitions = definitions( names, keys );
-            applier.visitIndexDefineCommand( definitions );
-            applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "first" ) );
-            applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "second" ) );
-            applier.visitIndexAddRelationshipCommand( addRelationshipToIndex( definitions, "second" ) );
-            applier.apply();
+            TransactionToApply tx = new TransactionToApply( null, 2 );
+            tx.commitment( commitment, 2 );
+            try ( TransactionApplier txApplier = applier.startTx( tx ) )
+            {
+                // WHEN
+                IndexDefineCommand definitions = definitions( names, keys );
+                txApplier.visitIndexDefineCommand( definitions );
+                txApplier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "first" ) );
+                txApplier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "second" ) );
+                txApplier.visitIndexAddRelationshipCommand( addRelationshipToIndex( definitions, "second" ) );
+                //applier.apply();
+            }
         }
 
         // THEN
@@ -100,7 +107,7 @@ public class LegacyBatchIndexApplierTest
         Map<String,Integer> keys = MapUtil.genericMap( "key", 0 );
         String applierName = "test-applier";
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandHandler.class ) );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandVisitor.class ) );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
 
         // WHEN multiple legacy index transactions are running, they should be done in order
@@ -118,9 +125,12 @@ public class LegacyBatchIndexApplierTest
                     FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
                     commitment.setHasLegacyIndexChanges( true );
                     txToApply.commitment( commitment, txId );
-                    applier.begin( txToApply, new LockGroup() );
-                    applier.end();
-                    applier.apply();
+                    try ( TransactionApplier txApplier = applier.startTx( txToApply ) )
+                    {
+                        //applier.begin( txToApply, new LockGroup() );
+                        //txApplier.end();
+                        //applier.apply();
+                    }
                     // Make sure threads are unordered
                     Thread.sleep( ThreadLocalRandom.current().nextInt( 5 ) );
                     // THEN
