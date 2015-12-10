@@ -188,6 +188,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def buildPlannerQuery(query: String) = {
+    buildPlannerUnionQuery(query).queries.head
+  }
+
+  def buildPlannerUnionQuery(query: String) = {
     val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))

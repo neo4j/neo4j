@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
-    val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
+    val query = buildPlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
     query.horizon should equal(RegularQueryProjection(
       projections = Map("n" -> varFor("n"))
     ))
@@ -40,7 +40,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("removing a node property should look like setting a property to null") {
-    val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
+    val query = buildPlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
     query.horizon should equal(RegularQueryProjection(
       projections = Map("n" -> varFor("n"))
     ))
@@ -52,7 +52,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("setting a relationship property: MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r") {
-    val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
+    val query = buildPlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
     query.horizon should equal(RegularQueryProjection(
       projections = Map("r" -> varFor("r"))
     ))
@@ -66,7 +66,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("removing a relationship property should look like setting a property to null") {
-    val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
+    val query = buildPlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
     query.horizon should equal(RegularQueryProjection(
       projections = Map("r" -> varFor("r"))
     ))
