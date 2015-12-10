@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
@@ -37,7 +38,8 @@ import static org.junit.Assert.assertTrue;
 
 public class VersionAwareLogEntryReaderTest
 {
-    private final VersionAwareLogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+    private final VersionAwareLogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+            new RecordStorageCommandReaderFactory() );
 
     @Test
     public void shouldReadAStartLogEntry() throws IOException

@@ -34,6 +34,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
@@ -309,8 +310,8 @@ public class MigrationTestUtils
             throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-        LatestCheckPointFinder finder =
-                new LatestCheckPointFinder( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
+        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystem,
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
         LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = finder.find( logFiles.getHighestLogVersion() );
 
         if ( latestCheckPoint.commitsAfterCheckPoint )

@@ -23,18 +23,12 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 public class LogEntryCursor implements IOCursor<LogEntry>
 {
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
     private final ReadableLogChannel channel;
     private LogEntry entry;
-
-    public LogEntryCursor( ReadableLogChannel channel )
-    {
-        this( new VersionAwareLogEntryReader<>(), channel );
-    }
 
     public LogEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader, ReadableLogChannel channel )
     {

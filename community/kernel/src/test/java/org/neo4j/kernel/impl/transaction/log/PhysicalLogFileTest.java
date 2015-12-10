@@ -190,7 +190,7 @@ public class PhysicalLogFileTest
         logFile.accept( new LogFileVisitor()
         {
             @Override
-            public boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException
+            public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
             {
                 for ( int i = 0; i < 5; i++ )
                 {

@@ -41,8 +41,8 @@ import static org.mockito.Mockito.when;
 
 public class TransactionPositionLocatorTest
 {
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );
-    private final ReadableVersionableLogChannel channel = mock( ReadableVersionableLogChannel.class );
+    private final LogEntryReader<ReadableLogChannel> logEntryReader = mock( LogEntryReader.class );
+    private final ReadableLogChannel channel = mock( ReadableLogChannel.class );
     private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 
     private final long txId = 42;
@@ -101,5 +101,4 @@ public class TransactionPositionLocatorTest
             assertEquals( "Unable to find transaction " + txId + " in any of my logical logs", e.getMessage() );
         }
     }
-
 }

@@ -27,6 +27,8 @@ import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.HaRequestType210;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -39,21 +41,24 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 public class MasterServer extends Server<Master, Void>
 {
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
-    private ConversationManager conversationManager;
+    private final ConversationManager conversationManager;
+    private final HaRequestType210 requestTypes;
 
     public MasterServer( Master requestTarget, LogProvider logProvider, Configuration config,
                          TxChecksumVerifier txVerifier, ByteCounterMonitor byteCounterMonitor,
-                         RequestMonitor requestMonitor, ConversationManager conversationManager )
+                         RequestMonitor requestMonitor, ConversationManager conversationManager,
+                         LogEntryReader<ReadableLogChannel> entryReader )
     {
         super( requestTarget, config, logProvider, FRAME_LENGTH, MasterClient214.PROTOCOL_VERSION, txVerifier,
                 SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
         this.conversationManager = conversationManager;
+        this.requestTypes = new HaRequestType210( entryReader );
     }
 
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
-        return HaRequestType210.values()[id];
+        return requestTypes.type( id );
     }
 
     @Override
@@ -61,5 +66,4 @@ public class MasterServer extends Server<Master, Void>
     {
         conversationManager.stop( context );
     }
-
 }

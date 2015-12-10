@@ -23,7 +23,20 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
+/**
+ * Reads {@link LogEntry} instances from a {@link ReadableLogChannel source}. Instances are expected to be
+ * immutable and handle concurrent calls from multiple threads.
+ *
+ * @param <S> source to read bytes from.
+ */
 public interface LogEntryReader<S extends ReadableLogChannel>
 {
+    /**
+     * Reads the next {@link LogEntry} from the given source.
+     *
+     * @param source {@link ReadableLogChannel} to read from.
+     * @return the read {@link LogEntry} or {@code null} if there were no more complete entries in the given source.
+     * @throws IOException if source throws exception.
+     */
     LogEntry readLogEntry( S source ) throws IOException;
 }

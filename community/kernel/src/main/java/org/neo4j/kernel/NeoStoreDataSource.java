@@ -451,17 +451,18 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
                     indexConfigStore,  updateableSchemaState::clear );
+            LogEntryReader<ReadableLogChannel> logEntryReader =
+                    new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );
 
             TransactionLogModule transactionLogModule =
-                    buildTransactionLogs( storeDir, config, logProvider, scheduler,
-                            fs,
-                            indexProviders.values(), storageEngine );
+                    buildTransactionLogs( storeDir, config, logProvider, scheduler, fs,
+                            indexProviders.values(), storageEngine, logEntryReader );
 
             buildRecovery( fs,
                     storageEngine.neoStores(),
                     monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
-                    storageEngine );
+                    storageEngine, logEntryReader );
 
             KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
@@ -490,6 +491,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             dependencies.satisfyDependency( storageEngine.schemaIndexProviderMap() );
             dependencies.satisfyDependency( storageEngine.legacyIndexApplierLookup() );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
+            dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
             satisfyDependencies( transactionLogModule, kernelModule );
         }
@@ -585,7 +587,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             JobScheduler scheduler,
             FileSystemAbstraction fileSystemAbstraction,
             Iterable<IndexImplementation> indexProviders,
-            StorageEngine storageEngine )
+            StorageEngine storageEngine, LogEntryReader<ReadableLogChannel> logEntryReader )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
@@ -607,9 +609,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 LogPosition position = LogPosition.start( version );
                 try ( ReadableVersionableLogChannel channel = logFile.getReader( position ) )
                 {
-                    final LogEntryReader<ReadableVersionableLogChannel> reader = new VersionAwareLogEntryReader<>();
                     LogEntry entry;
-                    while ( (entry = reader.readLogEntry( channel )) != null )
+                    while ( (entry = logEntryReader.readLogEntry( channel )) != null )
                     {
                         if ( entry instanceof LogEntryStart )
                         {
@@ -641,7 +642,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache );
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
 
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
@@ -730,15 +731,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             final PhysicalLogFiles logFiles,
             final StoreFlusher storeFlusher,
             final StartupStatisticsProvider startupStatistics,
-            StorageEngine storageEngine )
+            StorageEngine storageEngine,
+            LogEntryReader<ReadableLogChannel> logEntryReader )
     {
-        @SuppressWarnings( "resource" )
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-
-        @SuppressWarnings( "resource" )
         RecoveryVisitor recoveryVisitor = new RecoveryVisitor( metaDataStore, storageEngine, recoveryVisitorMonitor );
 
-        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final Visitor<LogVersionedStoreChannel,Exception> logFileRecoverer =
                 new LogFileRecoverer( logEntryReader, recoveryVisitor );
 

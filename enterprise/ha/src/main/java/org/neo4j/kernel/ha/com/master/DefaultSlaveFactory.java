@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.util.function.Supplier;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 public class DefaultSlaveFactory implements SlaveFactory
 {
@@ -33,12 +37,15 @@ public class DefaultSlaveFactory implements SlaveFactory
     private final Monitors monitors;
     private final int chunkSize;
     private StoreId storeId;
+    private final Supplier<LogEntryReader<ReadableLogChannel>> entryReader;
 
-    public DefaultSlaveFactory( LogProvider logProvider, Monitors monitors, int chunkSize )
+    public DefaultSlaveFactory( LogProvider logProvider, Monitors monitors, int chunkSize,
+            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
     {
         this.logProvider = logProvider;
         this.monitors = monitors;
         this.chunkSize = chunkSize;
+        this.entryReader = logEntryReader;
     }
 
     @Override
@@ -48,7 +55,7 @@ public class DefaultSlaveFactory implements SlaveFactory
                 clusterMember.getHAUri().getPort(), logProvider, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
                 chunkSize, monitors.newMonitor( ByteCounterMonitor.class, SlaveClient.class ),
-                monitors.newMonitor( RequestMonitor.class, SlaveClient.class ) ) );
+                monitors.newMonitor( RequestMonitor.class, SlaveClient.class ), entryReader.get() ) );
     }
 
     @Override

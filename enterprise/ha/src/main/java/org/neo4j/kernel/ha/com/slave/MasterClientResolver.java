@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.com.slave;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.ComExceptionHandler;
@@ -32,6 +33,8 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,9 +47,9 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
     private final Log log;
-
     private final ResponseUnpacker responseUnpacker;
     private final InvalidEpochExceptionHandler invalidEpochHandler;
+    private final Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader;
 
     @Override
     public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
@@ -64,8 +67,10 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     public MasterClientResolver( LogProvider logProvider, ResponseUnpacker responseUnpacker,
             InvalidEpochExceptionHandler invalidEpochHandler,
-            int readTimeout, int lockReadTimeout, int channels, int chunkSize )
+            int readTimeout, int lockReadTimeout, int channels, int chunkSize,
+            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
     {
+        this.logEntryReader = logEntryReader;
         this.log = logProvider.getLog( getClass() );
         this.responseUnpacker = responseUnpacker;
         this.invalidEpochHandler = invalidEpochHandler;
@@ -146,7 +151,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             return life.add( new MasterClient210( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
                     lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient210.class ),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient210.class ) ) );
+                    monitors.newMonitor( RequestMonitor.class, MasterClient210.class ), logEntryReader.get() ) );
         }
     }
 
@@ -165,7 +170,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             return life.add( new MasterClient214( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
                     lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                    monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader.get() ) );
         }
     }
 }

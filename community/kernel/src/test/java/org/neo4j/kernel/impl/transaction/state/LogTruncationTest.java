@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -72,7 +73,8 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 public class LogTruncationTest
 {
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
-    private final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+    private final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+            new RecordStorageCommandReaderFactory() );
     private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
     private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
