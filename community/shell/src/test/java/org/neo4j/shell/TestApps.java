@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
@@ -38,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -46,17 +49,18 @@ import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
+import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class TestApps extends AbstractShellTest
@@ -1193,27 +1197,30 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canTerminateAnActiveCommand() throws Exception
     {
-        final ShellServer server = this.shellServer;
-        final Serializable clientId = this.shellClient.getId();
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    Thread.sleep(1);
-                    server.terminate( clientId );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        });
-        thread.start();
+        TransactionStats txStats = db.getDependencyResolver().resolveDependency( TransactionStats.class );
+        assertEquals( 0, txStats.getNumberOfActiveTransactions() );
 
-        executeCommandExpectingException( "FOREACH(i IN range(0, 10000) | CREATE ());",
+        Serializable clientId = shellClient.getId();
+        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+            try
+            {
+                while ( txStats.getNumberOfActiveTransactions() == 0 )
+                {
+                    Thread.sleep( 10 );
+                }
+                assertEquals( 1, txStats.getNumberOfActiveTransactions() );
+
+                shellServer.terminate( clientId );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        executeCommandExpectingException( "FOREACH(i IN range(0, " + Integer.MAX_VALUE + ") | CREATE ());",
                 "has been terminated" );
+        assertNull( result.get() );
     }
 
     @Test
