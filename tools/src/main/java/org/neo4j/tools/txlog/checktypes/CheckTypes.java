@@ -28,10 +28,11 @@ public class CheckTypes
     public static final PropertyCheckType PROPERTY = new PropertyCheckType();
     public static final RelationshipCheckType RELATIONSHIP = new RelationshipCheckType();
     public static final RelationshipGroupCheckType RELATIONSHIP_GROUP = new RelationshipGroupCheckType();
+    public static final NeoStoreCheckType NEO_STORE = new NeoStoreCheckType();
 
     @SuppressWarnings( "unchecked" )
     public static final CheckType<? extends Command, ? extends Abstract64BitRecord>[] CHECK_TYPES =
-            new CheckType[]{NODE, PROPERTY, RELATIONSHIP, RELATIONSHIP_GROUP};
+            new CheckType[]{NODE, PROPERTY, RELATIONSHIP, RELATIONSHIP_GROUP, NEO_STORE};
 
     public static <C extends Command,R extends Abstract64BitRecord> CheckType<C,R> fromName( String name )
     {

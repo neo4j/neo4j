@@ -92,7 +92,6 @@ public class CheckTxLogs
             File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
-
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
         for ( File log : logs )

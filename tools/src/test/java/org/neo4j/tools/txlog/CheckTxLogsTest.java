@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -54,6 +55,7 @@ import org.neo4j.test.SuppressOutput;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.tools.txlog.checktypes.CheckTypes.NEO_STORE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.NODE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.PROPERTY;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.RELATIONSHIP;
@@ -533,6 +535,116 @@ public class CheckTxLogsTest
         assertTrue( seenRecord2.inUse() );
         assertEquals( 42, currentRecord2.getId() );
         assertFalse(currentRecord2.inUse() );
+    }
+
+    @Test
+    public void shouldReportNeoStoreInconsistenciesFromSingleLog() throws IOException
+    {
+        // Given
+        File log = logFile( 1 );
+
+        writeTxContent( log,
+                new Command.NeoStoreCommand().init(
+                        new NeoStoreRecord(),
+                        createNeoStoreRecord( 42 )
+                ),
+                new Command.PropertyCommand().init(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.NeoStoreCommand().init(
+                        createNeoStoreRecord( 42 ),
+                        createNeoStoreRecord( 21 )
+                )
+        );
+
+        writeTxContent( log,
+                new Command.NeoStoreCommand().init(
+                        createNeoStoreRecord( 42 ),
+                        createNeoStoreRecord( 33 )
+                )
+        );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+
+        // When
+        checker.scan( new File[]{log}, handler, NEO_STORE );
+
+        // Then
+        assertEquals( 1, handler.inconsistencies.size() );
+
+        NeoStoreRecord seenRecord = (NeoStoreRecord) handler.inconsistencies.get( 0 ).committed.record();
+        NeoStoreRecord currentRecord = (NeoStoreRecord) handler.inconsistencies.get( 0 ).current.record();
+
+        assertEquals( 21, seenRecord.getNextProp() );
+        assertEquals( 42, currentRecord.getNextProp() );
+    }
+
+    @Test
+    public void shouldReportNeoStoreInconsistenciesFromDifferentLogs() throws IOException
+    {
+        // Given
+        File log1 = logFile( 1 );
+        File log2 = logFile( 2 );
+        File log3 = logFile( 3 );
+
+        writeTxContent( log1,
+                new Command.NeoStoreCommand().init(
+                        new NeoStoreRecord(),
+                        createNeoStoreRecord( 42 )
+                ),
+                new Command.PropertyCommand().init(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.NeoStoreCommand().init(
+                        createNeoStoreRecord( 42 ),
+                        createNeoStoreRecord( 21 )
+                )
+        );
+
+        writeTxContent( log2,
+                new Command.NeoStoreCommand().init(
+                        createNeoStoreRecord( 12 ),
+                        createNeoStoreRecord( 21 )
+                )
+        );
+
+        writeTxContent( log3,
+                new Command.NeoStoreCommand().init(
+                        createNeoStoreRecord( 13 ),
+                        createNeoStoreRecord( 21 )
+                )
+        );
+
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+
+        // When
+        checker.scan( new File[]{log1, log2, log3}, handler, NEO_STORE );
+
+        // Then
+        assertEquals( 2, handler.inconsistencies.size() );
+
+        NeoStoreRecord seenRecord1 = (NeoStoreRecord) handler.inconsistencies.get( 0 ).committed.record();
+        NeoStoreRecord currentRecord1 = (NeoStoreRecord) handler.inconsistencies.get( 0 ).current.record();
+
+        assertEquals( 21, seenRecord1.getNextProp() );
+        assertEquals( 12, currentRecord1.getNextProp() );
+
+        NeoStoreRecord seenRecord2 = (NeoStoreRecord) handler.inconsistencies.get( 1 ).committed.record();
+        NeoStoreRecord currentRecord2 = (NeoStoreRecord) handler.inconsistencies.get( 1 ).current.record();
+
+        assertEquals( 21, seenRecord2.getNextProp() );
+        assertEquals( 13, currentRecord2.getNextProp() );
+    }
+
+    private NeoStoreRecord createNeoStoreRecord( int nextProp )
+    {
+        NeoStoreRecord neoStoreRecord = new NeoStoreRecord();
+        neoStoreRecord.setNextProp( nextProp );
+        return neoStoreRecord;
     }
 
     private static File logFile( long version )

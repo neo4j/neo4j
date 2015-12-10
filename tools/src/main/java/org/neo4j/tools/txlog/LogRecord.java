@@ -29,18 +29,18 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
  *
  * @param <R> the type of the record
  */
-class LogRecord<R extends Abstract64BitRecord>
+public class LogRecord<R extends Abstract64BitRecord>
 {
     private final R record;
     private final long logVersion;
 
-    LogRecord( R record, long logVersion )
+    public LogRecord( R record, long logVersion )
     {
         this.record = record;
         this.logVersion = logVersion;
     }
 
-    R record()
+    public R record()
     {
         return record;
     }
