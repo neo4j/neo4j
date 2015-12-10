@@ -60,34 +60,6 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     result should equal(expected)
   }
 
-  test("Should build plans with leaves for both sides if that is requested by using hints") {
-    (new given {
-      cardinality = mapCardinality {
-        // node index seek
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.nonEmpty => 1000.0
-        // expand from a
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("a")).nonEmpty => 100.0
-        // expand from b
-        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("b")).nonEmpty => 200.0
-        case _                                  => 10.0
-      }
-
-      indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
-      NodeHashJoin(
-        Set(IdName("b")),
-        Selection(
-          Seq(In(Property(varFor("b"), PropertyKeyName("name") _) _, Collection(Seq(StringLiteral("Andres") _)) _) _, HasLabels(varFor("b"), Seq(LabelName("Person") _)) _),
-          Expand(
-            NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Jakub") _), Set.empty)(solved),
-            "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-          )(solved)
-        )(solved),
-        NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres") _), Set.empty)(solved)
-      )(solved)
-    )
-  }
-
   test("should plan hash join when join hint is used") {
     val cypherQuery = """
                         |MATCH (a:A)-[r1:X]->(b)-[r2:X]->(c:C)

@@ -93,11 +93,6 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result.notifications should not contain PlannerUnsupportedNotification
   }
 
-  test("do not warn for cost unsupported when requesting GREEDY on a supported update query") {
-    val result = innerExecute("EXPLAIN CYPHER planner=greedy MATCH (n:Movie) SET n:Seen")
-    result.notifications should not contain PlannerUnsupportedNotification
-  }
-
   test("do not warn for cost unsupported when requesting IDP on a supported update query") {
     val result = innerExecute("EXPLAIN CYPHER planner=idp MATCH (n:Movie) SET n:Seen")
     result.notifications should not contain PlannerUnsupportedNotification

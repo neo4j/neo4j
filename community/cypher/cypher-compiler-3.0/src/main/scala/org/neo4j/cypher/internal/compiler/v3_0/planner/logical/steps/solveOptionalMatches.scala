@@ -20,61 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.{GreedyPlanTable, GreedyPlanTableTransformer}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2, _}
-
-import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2}
 
 object solveOptionalMatches {
   type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
 }
-
-case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: CandidateSelector) extends GreedyPlanTableTransformer[QueryGraph] {
-  override def apply(planTable: GreedyPlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): GreedyPlanTable = {
-
-    val p = if (planTable.isEmpty)
-      GreedyPlanTable.empty + context.logicalPlanProducer.planSingleRow()
-    else
-      planTable
-
-    p.plans.foldLeft(planTable) {
-      case (table: GreedyPlanTable, plan: LogicalPlan) =>
-        val optionalQGs: Seq[QueryGraph] = findQGsToSolve(plan, table, qg.optionalMatches)
-        val newPlan = optionalQGs.foldLeft(plan) {
-          case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
-            val plans = solvers.flatMap(_.apply(optionalQg, lhs))
-            assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
-            pickBest(plans).get
-        }
-        table + newPlan
-    }
-  }
-
-  /*
-    MATCH a->b WHERE b.foo = expr(p)
-    OM p = a
-   */
-  private def findQGsToSolve(plan: LogicalPlan, table: GreedyPlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {
-
-    @tailrec
-    def inner(in: Seq[QueryGraph], out: Seq[QueryGraph]): Seq[QueryGraph] = in match {
-      case hd :: tl if isSolved(table, hd)  => inner(tl, out)
-      case hd :: tl if applicable(plan, hd) => inner(tl, out :+ hd)
-      case _                                => out
-    }
-
-    inner(graphs, Seq.empty)
-  }
-
-  private def isSolved(table: GreedyPlanTable, optionalQG: QueryGraph) =
-    table.plans.exists(_.solved.lastQueryGraph.optionalMatches.contains(optionalQG))
-
-  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) =
-    optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
-}
-
 
 case object applyOptional extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {

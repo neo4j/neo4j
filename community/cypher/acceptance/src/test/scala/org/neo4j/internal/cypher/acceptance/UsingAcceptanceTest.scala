@@ -19,15 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v3_0.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeIndexSeek, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v3_0.{GreedyPlannerName, IDPPlannerName}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
-import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.scalatest.matchers.{MatchResult, Matcher}
 import org.neo4j.kernel.api.exceptions.Status
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
 
@@ -87,26 +86,6 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     // WHEN
     intercept[SyntaxException](
       executeWithAllPlanners("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
-  }
-
-  test("when failing to support all hints we should provide an understandable error message") {
-    // GIVEN
-    graph.createIndex("LocTag", "id")
-
-    // WHEN
-    val query = """CYPHER planner=greedy MATCH (t1:LocTag {id:1642})-[:Child*0..]->(:LocTag)
-                  |     <-[:Tagged]-(s1:Startup)<-[r1:Role]-(u:User)
-                  |     -[r2:Role]->(s2:Startup)-[:Tagged]->(:LocTag)
-                  |     <-[:Child*0..]-(t2:LocTag {id:1642})
-                  |USING INDEX t1:LocTag(id)
-                  |USING INDEX t2:LocTag(id)
-                  |RETURN count(u)""".stripMargin
-
-
-    val error = intercept[HintException](innerExecute(query))
-
-    error.getMessage should equal("The current planner cannot satisfy all hints in the query, please try removing hints or try with another planner")
-    error.status should equal(Status.Statement.ExecutionFailure)
   }
 
   test("correct status code when no index") {
@@ -366,7 +345,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     verifyJoinHintUnfulfillableOnRunWithConfig(initQuery, query, expectedResult = List(Map("res" -> "bar")))
   }
 
-  val plannersThatSupportJoinHints = Seq(GreedyPlannerName, IDPPlannerName)
+  val plannersThatSupportJoinHints = Seq(IDPPlannerName)
 
   plannersThatSupportJoinHints.foreach { planner =>
 

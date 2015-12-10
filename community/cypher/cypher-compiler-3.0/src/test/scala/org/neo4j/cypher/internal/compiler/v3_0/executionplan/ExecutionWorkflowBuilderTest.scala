@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
-  val PlannerName = GreedyPlannerName
+  val PlannerName = IDPPlannerName
 
   test("produces eager results for updating queries") {
     // GIVEN

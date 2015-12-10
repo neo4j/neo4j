@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.{GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 
@@ -45,11 +44,6 @@ object CostBasedPipeBuilderFactory {
 
       case DPPlannerName =>
         IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
-
-      case GreedyPlannerName =>
-        new CompositeQueryGraphSolver(
-          new GreedyQueryGraphSolver(expandsOrJoins),
-          new GreedyQueryGraphSolver(expandsOnly))
     }
 
     val actualPlannerName = plannerName.getOrElse(CostBasedPlannerName.default)

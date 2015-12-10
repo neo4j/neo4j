@@ -113,7 +113,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       GeneratedQueryStructure,
       new WrappedMonitors3_0(kernelMonitors),
       new StringInfoLogger3_0(NullLog.getInstance),
-      plannerName = Some(GreedyPlannerName),
+      plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating

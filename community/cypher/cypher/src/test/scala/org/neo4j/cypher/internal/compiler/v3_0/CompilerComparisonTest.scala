@@ -56,7 +56,6 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
-    "ronja (greedy)" -> ronjaCompiler(GreedyPlannerName),
     "ronja (idp)" -> ronjaCompiler(IDPPlannerName),
     "ronja (dp)" -> ronjaCompiler(DPPlannerName)
   )

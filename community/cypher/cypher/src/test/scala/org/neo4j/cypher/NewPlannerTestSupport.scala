@@ -146,22 +146,18 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T = {
     val ruleResult = self.executeScalar[T](s"CYPHER planner=rule $queryText", params: _*)
-    val greedyResult = monitoringNewPlanner(self.executeScalar[T](s"CYPHER planner=greedy $queryText", params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
     val idpResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
     assert(ruleResult === idpResult, "Diverging results between rule and cost planners")
-    assert(greedyResult === idpResult, "Diverging results between greedy and IDP planner")
 
     idpResult
   }
 
   def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val greedyResult = executeWithCostPlannerOnly(s"CYPHER planner=greedy $queryText", params: _*)
     val idpResult = executeWithCostPlannerOnly(queryText, params: _*)
 
     assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners")
-    assertResultsAreSame(greedyResult, idpResult, queryText, "Diverging results between IDP and greedy planner")
     ruleResult.close()
     idpResult
   }
@@ -191,12 +187,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
-    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
 
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
-    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", replaceNaNs = true)
+    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
     ruleResult.close()
-    costResult
+    idpResult
   }
 
 

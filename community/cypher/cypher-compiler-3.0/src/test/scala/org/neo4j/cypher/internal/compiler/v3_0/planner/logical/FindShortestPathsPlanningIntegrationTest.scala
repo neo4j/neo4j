@@ -32,8 +32,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").plan should equal(
       FindShortestPaths(
         CartesianProduct(
-          AllNodesScan("b", Set.empty)(solved),
-          AllNodesScan("a", Set.empty)(solved)
+          AllNodesScan("a", Set.empty)(solved),
+          AllNodesScan("b", Set.empty)(solved)
         )(solved),
         ShortestPathPattern(
           None,
@@ -48,8 +48,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").plan should equal(
       FindShortestPaths(
         CartesianProduct(
-          AllNodesScan("b", Set.empty)(solved),
-          AllNodesScan("a", Set.empty)(solved)
+          AllNodesScan("a", Set.empty)(solved),
+          AllNodesScan("b", Set.empty)(solved)
         )(solved),
         ShortestPathPattern(
           None,

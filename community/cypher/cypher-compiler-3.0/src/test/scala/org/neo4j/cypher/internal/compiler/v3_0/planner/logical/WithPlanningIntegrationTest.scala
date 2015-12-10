@@ -48,11 +48,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     result.toString should equal(
       """Limit(SignedDecimalIntegerLiteral(1)) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |    LHS -> Apply() {
-        |      LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
-        |        LHS -> AllNodesScan(IdName(a), Set()) {}
-        |      }
-        |      RHS -> Argument(Set(IdName(a))) {}
+        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |      LHS -> AllNodesScan(IdName(a), Set()) {}
         |    }
         |  }
         |}""".stripMargin)
@@ -63,12 +60,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result.toString should equal(
       """Selection(Vector(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
-        |  LHS -> Apply() {
+        |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}
-        |    }
-        |    RHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
-        |      LHS -> Argument(Set(IdName(a))) {}
         |    }
         |  }
         |}""".stripMargin)
@@ -79,11 +73,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result.toString should equal(
       """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
-        |  LHS -> Apply() {
-        |    LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
-        |      LHS -> AllNodesScan(IdName(a), Set()) {}
-        |    }
-        |    RHS -> Argument(Set(IdName(a))) {}
+        |  LHS -> Limit(SignedDecimalIntegerLiteral(1)) {
+        |    LHS -> AllNodesScan(IdName(a), Set()) {}
         |  }
         |}""".stripMargin)
   }

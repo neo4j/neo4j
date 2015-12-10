@@ -51,7 +51,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       clock, GeneratedQueryStructure,
       new WrappedMonitors3_0(kernelMonitors),
       new StringInfoLogger3_0(log),
-      plannerName = Some(GreedyPlannerName),
+      plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating

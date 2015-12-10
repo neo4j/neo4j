@@ -22,21 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.ast
-import org.neo4j.cypher.internal.compiler.v3_0.parser
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.{GreedyPlanTable, GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
@@ -113,10 +111,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,
                                       semanticTable: SemanticTable = newMockedSemanticTable,
-                                      strategy: QueryGraphSolver = new CompositeQueryGraphSolver(
-                                        new GreedyQueryGraphSolver(expandsOrJoins),
-                                        new GreedyQueryGraphSolver(expandsOnly)
-                                      ),
+                                      strategy: QueryGraphSolver = new IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor]),
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
@@ -194,9 +189,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val labelNameObj: LabelName = LabelName(labelName)_
     HasLabels(Variable(name)_, Seq(labelNameObj))_
   }
-
-  def greedyPlanTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
-    plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)

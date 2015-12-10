@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.docgen
 
-import java.util.concurrent.TimeUnit
-
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
@@ -28,11 +26,8 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v3_0.{DPPlannerName, IDPPlannerName, GreedyPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v3_0.{DPPlannerName, IDPPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.api.index.IndexingService
-import org.neo4j.kernel.impl.api.index.sampling.{IndexSamplingMode, IndexSamplingController}
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
 
@@ -193,8 +188,6 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     plannerArgument match {
       case Some(Planner(RulePlannerName.name)) =>
         assertThat(planDescription.toString, containsString(ruleString))
-      case Some(Planner(GreedyPlannerName.name)) =>
-        assertThat(planDescription.toString, containsString(costString))
       case Some(Planner(IDPPlannerName.name)) =>
         assertThat(planDescription.toString, containsString(costString))
       case Some(Planner(DPPlannerName.name)) =>

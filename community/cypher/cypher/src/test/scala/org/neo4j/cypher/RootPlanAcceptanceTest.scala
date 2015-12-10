@@ -161,7 +161,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(0)
   }
 
-  for(planner <- Seq(GreedyPlannerName, IDPPlannerName, DPPlannerName, RulePlannerName);
+  for(planner <- Seq(IDPPlannerName, DPPlannerName, RulePlannerName);
       runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)
       if !(planner == RulePlannerName && runtime == CompiledRuntimeName)) {
 

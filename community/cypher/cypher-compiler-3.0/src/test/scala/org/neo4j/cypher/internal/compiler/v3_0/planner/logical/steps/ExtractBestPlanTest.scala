@@ -72,10 +72,9 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
     val plan = newMockedLogicalPlan("b")
-    val planTable = greedyPlanTableWith(plan)
 
     a [CantHandleQueryException] should be thrownBy {
-      verifyBestPlan(planTable.uniquePlan, query)
+      verifyBestPlan(plan, query)
     }
   }
 
@@ -92,7 +91,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     )
 
     a [CantHandleQueryException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, query)
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), query)
     }
   }
 
@@ -105,7 +104,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
 
-    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, query).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), query).availableSymbols should equal(Set(IdName("a"), IdName("b")))
   }
 
   test("should throw when finding plan that contains unfulfillable index hint") {
@@ -113,7 +112,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = true)
 
     a [IndexHintException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint())
     }
   }
 
@@ -122,7 +121,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = true)
 
     a [JoinHintException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithJoinHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint())
     }
   }
 
@@ -132,7 +131,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("User", "name"))
   }
 
@@ -142,7 +141,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(false), useErrorsOverWarnings = false,
       notificationLogger = notificationLogger)
 
-    verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     val result = notificationLogger.notifications
     result should contain(JoinHintUnfulfillableNotification(Array("a")))
   }
@@ -154,7 +153,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       notificationLogger = notificationLogger)
     val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newIndexHint()))
 
-    verifyBestPlan(greedyPlanTableWith(plan).uniquePlan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithIdxHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should be(empty)
   }
 
@@ -165,7 +164,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       notificationLogger = notificationLogger)
     val plan: LogicalPlan = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), hints = Set[Hint](newJoinHint()))
 
-    verifyBestPlan(greedyPlanTableWith(plan).uniquePlan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
+    verifyBestPlan(plan, newQueryWithJoinHint()).availableSymbols should equal(Set(IdName("a"), IdName("b")))
     notificationLogger.notifications should be(empty)
   }
 
@@ -174,7 +173,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext = getPlanContext(true), useErrorsOverWarnings = false)
 
     a [CantHandleQueryException] should be thrownBy {
-      verifyBestPlan(greedyPlanTableWith(getSimpleLogicalPlanWithAandB()).uniquePlan, newQueryWithIdxHint())
+      verifyBestPlan(getSimpleLogicalPlanWithAandB(), newQueryWithIdxHint())
     }
   }
 }

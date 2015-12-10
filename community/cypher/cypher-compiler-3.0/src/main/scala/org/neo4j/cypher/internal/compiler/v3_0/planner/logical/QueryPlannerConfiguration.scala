@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.{defaultUpdateStrategy, UpdateStrategy}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.greedy.projectEndpoints
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
+import org.neo4j.cypher.internal.compiler.v3_0.{UpdateStrategy, defaultUpdateStrategy}
 
 object QueryPlannerConfiguration {
   val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
@@ -35,7 +34,6 @@ object QueryPlannerConfiguration {
       selectCovered,
       selectHasLabelWithJoin
     ),
-    projectAllEndpoints = projectEndpoints.all,
     optionalSolvers = Seq(
       applyOptional,
       outerHashJoin
@@ -70,7 +68,6 @@ object QueryPlannerConfiguration {
 
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
                                      applySelections: PlanTransformer[QueryGraph],
-                                     projectAllEndpoints: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
                                      pickBestCandidate: LogicalPlanningFunction0[CandidateSelector],
                                      updateStrategy: UpdateStrategy) {
@@ -78,7 +75,6 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def toKit()(implicit context: LogicalPlanningContext): QueryPlannerKit =
     QueryPlannerKit(
       select = (plan: LogicalPlan, qg: QueryGraph) => applySelections(plan, qg),
-      projectAllEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectAllEndpoints(plan, qg),
       pickBest = pickBestCandidate(context)
     )
 
@@ -88,7 +84,7 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
 }
 
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
-                           projectAllEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
+
                            pickBest: CandidateSelector) {
   def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
     plans.map(_.map(plan => select(plan, qg)))
