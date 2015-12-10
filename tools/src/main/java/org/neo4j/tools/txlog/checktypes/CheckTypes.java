@@ -31,5 +31,18 @@ public class CheckTypes
 
     @SuppressWarnings( "unchecked" )
     public static final CheckType<? extends Command, ? extends Abstract64BitRecord>[] CHECK_TYPES =
-            new CheckType[]{NODE, PROPERTY, RELATIONSHIP};
+            new CheckType[]{NODE, PROPERTY, RELATIONSHIP, RELATIONSHIP_GROUP};
+
+    public static <C extends Command,R extends Abstract64BitRecord> CheckType<C,R> fromName( String name )
+    {
+        for ( CheckType<?,?> checkType : CHECK_TYPES )
+        {
+            if ( checkType.name().equals( name ) )
+            {
+                //noinspection unchecked
+                return (CheckType<C,R>) checkType;
+            }
+        }
+        throw new IllegalArgumentException( "Unknown check named " + name );
+    }
 }
