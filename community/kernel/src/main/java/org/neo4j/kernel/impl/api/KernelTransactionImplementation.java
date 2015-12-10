@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Collection;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionHookException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
@@ -61,12 +60,6 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
-    /*
-     * IMPORTANT:
-     * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that the #initialize()
-     * method resets that state for re-use.
-     */
-
     private enum TransactionType
     {
         ANY,
@@ -105,36 +98,36 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts operations;
-    private final Pool<KernelTransactionImplementation> pool;
-    // State
+    private final KernelTransactions kernelTransactions;
+    private final StorageEngine storageEngine;
+    private final StoreStatement storeStatement;
+    private final Locks.Client locks;
+
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
-    private final StoreReadLayer storeLayer;
-    private final StorageEngine storageEngine;
     private final Clock clock;
+
+    // State
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
+    private KernelStatement currentStatement;
+    private CloseListener closeListener;
+
     private boolean beforeHookInvoked;
-    private Locks.Client locks;
-    private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
-    // Some header information
-    private long startTimeMillis;
-    private long lastTransactionIdWhenStarted;
-    /**
-     * Implements reusing the same underlying {@link KernelStatement} for overlapping statements.
-     */
-    private KernelStatement currentStatement;
+
+    // Header information
+    private final long startTimeMillis;
+    private final long lastTransactionIdWhenStarted;
+
     // Event tracing
-    private final TransactionTracer tracer;
-    private TransactionEvent transactionEvent;
-    private CloseListener closeListener;
+    private final TransactionEvent transactionEvent;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
             SchemaWriteGuard schemaWriteGuard,
@@ -145,10 +138,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor,
             LegacyIndexTransactionState legacyIndexTransactionState,
-            Pool<KernelTransactionImplementation> pool,
+            KernelTransactions kernelTransactions,
             Clock clock,
             TransactionTracer tracer,
-            StorageEngine storageEngine )
+            StorageEngine storageEngine,
+            long lastTransactionIdWhenStarted )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -158,30 +152,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.storeLayer = storageEngine.storeReadLayer();
+        this.storeStatement = storageEngine.storeReadLayer().acquireStatement();
         this.storageEngine = storageEngine;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
-        this.pool = pool;
+        this.kernelTransactions = kernelTransactions;
         this.clock = clock;
-        this.tracer = tracer;
-    }
-
-    /**
-     * Reset this transaction to a vanilla state, turning it into a logically new transaction.
-     */
-    public KernelTransactionImplementation initialize( long lastCommittedTx )
-    {
-        assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.closing = closed = failure = success = false;
-        this.transactionType = TransactionType.ANY;
-        this.beforeHookInvoked = false;
         this.startTimeMillis = clock.currentTimeMillis();
-        this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
         this.transactionEvent = tracer.beginTransaction();
-        assert transactionEvent != null : "transactionEvent was null!";
-        this.storeStatement = storeLayer.acquireStatement();
-        this.closeListener = null;
-        return this;
     }
 
     @Override
@@ -385,36 +363,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionEvent.setTransactionType( transactionType.name() );
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();
-                transactionEvent = null;
-                legacyIndexTransactionState.clear();
-                txState = null;
-                hooksState = null;
-                closeListener = null;
             }
             finally
             {
-                release();
+                locks.close();
+                storeStatement.close();
+                kernelTransactions.transactionClosed( this );
             }
-        }
-    }
-
-    protected void dispose()
-    {
-        if ( locks != null )
-        {
-            locks.close();
-        }
-
-        this.locks = null;
-        this.transactionType = null;
-        this.hooksState = null;
-        this.txState = null;
-        this.legacyIndexTransactionState = null;
-
-        if ( storeStatement != null )
-        {
-            this.storeStatement.close();
-            this.storeStatement = null;
         }
     }
 
@@ -429,10 +384,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
-                    if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                    hooksState = hooks.beforeCommit( txState, this, storageEngine.storeReadLayer() );
+                    if ( hooksState != null && hooksState.failed() )
                     {
-                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(),
-                                "" );
+                        TransactionHookException cause = hooksState.failure();
+                        throw new TransactionFailureException( Status.Transaction.HookFailed, cause, "" );
                     }
                 }
                 finally
@@ -522,13 +478,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         @Override
                         public void visitCreatedNode( long id )
                         {
-                            storeLayer.releaseNode( id );
+                            storageEngine.storeReadLayer().releaseNode( id );
                         }
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                         {
-                            storeLayer.releaseRelationship( id );
+                            storageEngine.storeReadLayer().releaseRelationship( id );
                         }
                     } );
                 }
@@ -574,30 +530,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             transactionMonitor.transactionFinished( false, hasTxStateWithChanges() );
-        }
-    }
-
-    /**
-     * Release resources held up by this transaction & return it to the transaction pool.
-     */
-    private void release()
-    {
-        locks.releaseAll();
-        if ( terminated )
-        {
-            // This transaction has been externally marked for termination.
-            // Just dispose of this transaction and don't return it to the pool.
-            dispose();
-        }
-        else
-        {
-            // Return this instance to the pool so that another transaction may use it.
-            pool.release( this );
-            if ( storeStatement != null )
-            {
-                storeStatement.close();
-                storeStatement = null;
-            }
         }
     }
 

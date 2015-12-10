@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.pool.Pool;
 import org.neo4j.function.Consumers;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.FakeClock;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -67,10 +68,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest
@@ -385,10 +383,8 @@ public class KernelTransactionImplementationTest
                 any( StoreStatement.class ),
                 anyLong() ) ).thenReturn( sillyCommandList() );
 
-        try ( KernelTransactionImplementation transaction = newTransaction() )
+        try ( KernelTransactionImplementation transaction = newTransaction( 5 ) )
         {
-            transaction.initialize( 5L );
-
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed
@@ -402,6 +398,28 @@ public class KernelTransactionImplementationTest
         assertEquals( startingTime + 5, commitProcess.transaction.getTimeCommitted() );
     }
 
+    @Test
+    public void successfulTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
+    {
+        KernelTransactionImplementation tx = newTransaction();
+
+        tx.success();
+        tx.close();
+
+        verify( kernelTransactions ).transactionClosed( tx );
+    }
+
+    @Test
+    public void failedTxShouldNotifyKernelTransactionsThatItIsClosed() throws TransactionFailureException
+    {
+        KernelTransactionImplementation tx = newTransaction();
+
+        tx.failure();
+        tx.close();
+
+        verify( kernelTransactions ).transactionClosed( tx );
+    }
+
     private void verifyExtraInteractionWithTheMonitor( TransactionMonitor transactionMonitor, boolean isWriteTx )
     {
         if ( isWriteTx )
@@ -409,20 +427,6 @@ public class KernelTransactionImplementationTest
             verify( this.transactionMonitor, times( 1 ) ).upgradeToWriteTransaction();
         }
         verifyNoMoreInteractions( transactionMonitor );
-    }
-
-    @Test
-    public void shouldNotReturnTransactionInstanceWithTerminationMarkToPool() throws Exception
-    {
-        // GIVEN
-        KernelTransactionImplementation transaction = newTransaction();
-
-        // WHEN
-        transaction.markForTermination();
-        transaction.close();
-
-        // THEN
-        verifyZeroInteractions( pool );
     }
 
     private final StorageEngine storageEngine = mock( StorageEngine.class );
@@ -437,7 +441,7 @@ public class KernelTransactionImplementationTest
     private final TransactionHeaderInformationFactory headerInformationFactory =
             mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
-    private final Pool<KernelTransactionImplementation> pool = mock( Pool.class );
+    private final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
 
     @Before
     public void before()
@@ -454,12 +458,14 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
+        return newTransaction( 0 );
+    }
 
-        KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, new NoOpClient(), hooks, null, headerInformationFactory, commitProcess, transactionMonitor,
-                legacyIndexState, pool, clock, TransactionTracer.NULL, storageEngine );
-        transaction.initialize( 0 );
-        return transaction;
+    private KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
+    {
+        return new KernelTransactionImplementation( null, null, new NoOpClient(), hooks, null, headerInformationFactory,
+                commitProcess, transactionMonitor, legacyIndexState, kernelTransactions, clock, TransactionTracer.NULL,
+                storageEngine, lastTransactionIdWhenStarted );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

@@ -32,7 +32,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -140,17 +139,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     public boolean hasChanges()
     {
         return !counts.isEmpty();
-    }
-
-    /**
-     * Set this counter up to a pristine state, as if it had just been initialized.
-     */
-    public void clear()
-    {
-        if ( !counts.isEmpty() )
-        {
-            counts.clear();
-        }
     }
 
     public static final class Difference

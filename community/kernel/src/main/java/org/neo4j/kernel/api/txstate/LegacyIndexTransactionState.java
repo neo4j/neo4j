@@ -34,8 +34,6 @@ import org.neo4j.kernel.impl.transaction.state.RecordState;
  */
 public interface LegacyIndexTransactionState extends RecordState
 {
-    void clear();
-
     LegacyIndex nodeChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 
     LegacyIndex relationshipChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
