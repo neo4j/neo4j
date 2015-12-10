@@ -90,7 +90,7 @@ public class ReplicatedIdRangeAcquirerTest
                                                                               int idRangeLength )
     {
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( member,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
 
         replicator.subscribe( idAllocationStateMachine );
 

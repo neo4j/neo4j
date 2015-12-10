@@ -23,13 +23,58 @@ import org.neo4j.kernel.IdType;
 
 public interface IdAllocationState
 {
-    int lastIdRangeLengthForMe( IdType idType );
-    void lastIdRangeLengthForMe( IdType idType, int idRangeLength );
+    /**
+     *
+     * @param idType the type of graph object whose ID is under allocation
+     * @return the first unallocated entry for idType
+     */
+    long firstUnallocated( IdType idType );
 
-    long firstNotAllocated( IdType idType );
-    void firstNotAllocated( IdType idType, long idRangeEnd );
+    /**
+     *
+     * @param idType the type of graph object whose ID is under allocation
+     * @param idRangeEnd the first unallocated entry for idType
+     */
+    void firstUnallocated( IdType idType, long idRangeEnd );
 
-    long lastIdRangeStartForMe( IdType idType );
-    void lastIdRangeStartForMe( IdType idType, long idRangeStart );
 
+    /**
+     *
+     * @param idType The type of graph object whose ID is under allocation
+     * @return start position of allocation
+     */
+    long lastIdRangeStart( IdType idType );
+
+    /**
+     *
+     * @param idType The type of graph object whose ID is under allocation
+     * @param idRangeStart start position of allocation
+     */
+    void lastIdRangeStart( IdType idType, long idRangeStart );
+
+    /**
+     *
+     * @param idType The type of graph object whose ID is under allocation
+     * @return the length of the last ID range allocated
+     */
+    int lastIdRangeLength( IdType idType );
+
+    /**
+     *
+     * @param idType The type of graph object whose ID is under allocation
+     * @param idRangeLength the length of the ID range to be allocated
+     */
+    void lastIdRangeLength( IdType idType, int idRangeLength );
+
+    /**
+     * @return The last set log index, which is the value last passed to {@link #logIndex(long)}
+     */
+    long logIndex();
+
+    /**
+     * Sets the last seen log index, which is the last log index at which a replicated value that updated this state
+     * was encountered.
+     * @param logIndex The value to set as the last log index at which this state was updated
+     */
+    void logIndex( long logIndex );
 }

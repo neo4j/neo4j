@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
@@ -30,17 +30,17 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 /**
  * This state machine keeps a track of all id-allocations for all id-types and allows a local
  * user to wait for any changes to the state.
- *
+ * <p>
  * The responsibilities of the state machine are to:
- *  - keep state
- *  - update state on events
- *  - support waiting for changes to the state
- *
- *  Users of this state machine should in general act in accordance with the following formula:
- *    1) trigger update of replicated state
- *    2) wait for change to propagate
- *    3) if state is not sufficient goto 1)
- *    4) state sufficient => done
+ * - keep state
+ * - update state on events
+ * - support waiting for changes to the state
+ * <p>
+ * Users of this state machine should in general act in accordance with the following formula:
+ * 1) trigger update of replicated state
+ * 2) wait for change to propagate
+ * 3) if state is not sufficient goto 1)
+ * 4) state sufficient => done
  */
 public class ReplicatedIdAllocationStateMachine implements Replicator.ReplicatedContentListener
 {
@@ -55,7 +55,7 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
 
     public synchronized long getFirstNotAllocated( IdType idType )
     {
-        return idAllocationState.firstNotAllocated(idType);
+        return idAllocationState.firstUnallocated( idType );
     }
 
     public synchronized IdRange getHighestIdRange( CoreMember owner, IdType idType )
@@ -66,11 +66,11 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
             throw new UnsupportedOperationException();
         }
 
-        int idRangeLength = idAllocationState.lastIdRangeLengthForMe(idType);
+        int idRangeLength = idAllocationState.lastIdRangeLength( idType );
 
         if ( idRangeLength > 0 )
         {
-            return new IdRange( EMPTY_LONG_ARRAY, idAllocationState.lastIdRangeStartForMe(idType), idRangeLength );
+            return new IdRange( EMPTY_LONG_ARRAY, idAllocationState.lastIdRangeStart( idType ), idRangeLength );
         }
         else
         {
@@ -80,28 +80,34 @@ public class ReplicatedIdAllocationStateMachine implements Replicator.Replicated
 
     private void updateFirstNotAllocated( IdType idType, long idRangeEnd )
     {
-        idAllocationState.firstNotAllocated(idType, idRangeEnd);
+        idAllocationState.firstUnallocated( idType, idRangeEnd );
         notifyAll();
     }
 
     @Override
     public synchronized void onReplicated( ReplicatedContent content, long logIndex )
     {
-        if ( content instanceof ReplicatedIdAllocationRequest )
+        if ( content instanceof ReplicatedIdAllocationRequest && logIndex > idAllocationState.logIndex() )
         {
             ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
 
             IdType idType = request.idType();
 
-            if ( request.idRangeStart() == idAllocationState.firstNotAllocated(idType) )
+            if ( request.idRangeStart() == idAllocationState.firstUnallocated( idType ) )
             {
-                if( request.owner().equals( me ) )
+                if ( request.owner().equals( me ) )
                 {
-                    idAllocationState.lastIdRangeStartForMe(idType, request.idRangeStart());
-                    idAllocationState.lastIdRangeLengthForMe(idType, request.idRangeLength());
+                    idAllocationState.lastIdRangeStart( idType, request.idRangeStart() );
+                    idAllocationState.lastIdRangeLength( idType, request.idRangeLength() );
                 }
                 updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
+
             }
+            /*
+             * We update regardless of whether this content was meant for us or not. Even if it isn't content we
+             * care about, any content before it has already been applied so it is safe to ignore.
+             */
+            idAllocationState.logIndex( logIndex );
         }
     }
 
