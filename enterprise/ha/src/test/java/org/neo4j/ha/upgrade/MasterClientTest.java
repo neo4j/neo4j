@@ -49,13 +49,17 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -88,6 +92,8 @@ public class MasterClientTest
     @Rule
     public final LifeRule life = new LifeRule( true );
     private final Monitors monitors = new Monitors();
+    private final LogEntryReader<ReadableLogChannel> logEntryReader =
+            new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
 
     @Test( expected = MismatchingStoreIdException.class )
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable
@@ -158,7 +164,7 @@ public class MasterClientTest
                 mock( TxChecksumVerifier.class ),
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient.class ), mock(
-                ConversationManager.class ) ) );
+                ConversationManager.class ), logEntryReader ) );
     }
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
@@ -166,7 +172,7 @@ public class MasterClientTest
         return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );
     }
 
     private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
@@ -174,7 +180,7 @@ public class MasterClientTest
         return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );
     }
 
     private static Response<Void> voidResponseWithTransactionLogs()

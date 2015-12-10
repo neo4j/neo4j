@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -60,8 +61,10 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLog;
@@ -190,8 +193,10 @@ class RebuildFromLogs
 
         long lastTransactionId = -1;
 
+        LogEntryReader<ReadableLogChannel> entryReader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      new PhysicalTransactionCursor<>( logChannel, new VersionAwareLogEntryReader<>() ) )
+                new PhysicalTransactionCursor<>( logChannel, entryReader ) )
         {
             while ( cursor.next() )
             {
@@ -237,8 +242,10 @@ class RebuildFromLogs
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
                     (tx) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
+            LogEntryReader<ReadableLogChannel> entryReader =
+                    new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                          new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
+                    new PhysicalTransactionCursor<>( channel, entryReader ) )
             {
                 while ( cursor.next() )
                 {

@@ -38,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -141,7 +142,8 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicBoolean recoveryRequiredCalled = new AtomicBoolean();
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, masterId,
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
-        final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(), visitor );
+        final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() ), visitor );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, transactionIdStore, mock( LogVersionRepository.class ), monitor, positionCache ) );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
@@ -258,11 +260,13 @@ public class PhysicalLogicalTransactionStoreTest
         life = new LifeSupport();
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, masterId,
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
-        final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(), visitor );
+        final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() ), visitor );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 transactionIdStore, mock( LogVersionRepository.class ), monitor,
                 positionCache ) );
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache,
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
 
         // WHEN
         life.start();
@@ -292,7 +296,8 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
 
         try
         {
@@ -324,7 +329,8 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
 
         try
         {

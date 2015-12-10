@@ -39,6 +39,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -135,7 +137,8 @@ public class IndexCreationTest
 
         final AtomicBoolean success = new AtomicBoolean( false );
 
-        try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
+        try ( IOCursor<LogEntry> cursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() ), logChannel ) )
         {
             List<Command> commandsInFirstEntry = new ArrayList<>();
             boolean startFound = false;

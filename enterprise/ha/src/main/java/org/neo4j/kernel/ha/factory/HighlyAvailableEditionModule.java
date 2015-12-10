@@ -138,8 +138,10 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -328,13 +330,24 @@ public class HighlyAvailableEditionModule
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
         InvalidEpochExceptionHandler invalidEpochHandler = () -> exceptionHandlerRef.get().forceElections();
 
+        // At the point in time the LogEntryReader hasn't been instantiated yet. The StorageEngine is responsible
+        // for instantiating the CommandReaderFactory, required by a LogEntryReader. The StorageEngine is
+        // created in the DataSourceModule, after this module.
+        //   That is OK though because all users of it, instantiated below, will not use it right away,
+        // but merely provide a way to get access to it. That's why this is a Supplier and will be asked
+        // later, after the data source module and all that have started.
+        @SuppressWarnings( {"deprecation", "unchecked"} )
+        Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader =
+                (Supplier) dependencies.provideDependency( LogEntryReader.class );
+
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
                 invalidEpochHandler,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
-                config.get( HaSettings.com_chunk_size ).intValue() );
+                config.get( HaSettings.com_chunk_size ).intValue(),
+                logEntryReader );
 
         LastUpdateTime lastUpdateTime = new LastUpdateTime();
 
@@ -355,7 +368,6 @@ public class HighlyAvailableEditionModule
                 slave -> new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
                         monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                         monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
-
 
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,
                 platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
@@ -398,7 +410,8 @@ public class HighlyAvailableEditionModule
                             masterServerConfig( config ),
                             new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
                             monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
+                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager,
+                            logEntryReader.get() );
                 };
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
@@ -455,7 +468,7 @@ public class HighlyAvailableEditionModule
 
         commitProcessFactory = createCommitProcessFactory( dependencies, logging, monitors, config, paxosLife,
                 clusterClient, members, platformModule.jobScheduler, master, requestContextFactory,
-                componentSwitcherContainer );
+                componentSwitcherContainer, logEntryReader );
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
@@ -508,10 +521,12 @@ public class HighlyAvailableEditionModule
     private CommitProcessFactory createCommitProcessFactory( Dependencies dependencies, LogService logging,
             Monitors monitors, Config config, LifeSupport paxosLife, ClusterClient clusterClient,
             ClusterMembers members, JobScheduler jobScheduler, Master master,
-            RequestContextFactory requestContextFactory, ComponentSwitcherContainer componentSwitcherContainer )
+            RequestContextFactory requestContextFactory, ComponentSwitcherContainer componentSwitcherContainer,
+            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
     {
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory(
-                logging.getInternalLogProvider(), monitors, config.get( HaSettings.com_chunk_size ).intValue() ) );
+                logging.getInternalLogProvider(), monitors, config.get( HaSettings.com_chunk_size ).intValue(),
+                logEntryReader ) );
 
         Slaves slaves = dependencies.satisfyDependency( paxosLife.add( new HighAvailabilitySlaves( members,
                 clusterClient, slaveFactory ) ) );

@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -1194,7 +1195,8 @@ public class TransactionRecordStateTest
     private CommittedTransactionRepresentation readFromChannel( ReadableVersionableLogChannel channel )
             throws IOException
     {
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> cursor = new PhysicalTransactionCursor<>(
                 channel, logEntryReader ) )
         {

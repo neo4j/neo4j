@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.storageengine;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 
 /**
- * Reads {@link LogEntry} instances from a {@link ReadableLogChannel source}. Instances are expected to be
- * immutable and handle concurrent calls from multiple threads.
- *
- * @param <S> source to read bytes from.
+ * Provides {@link CommandReader} instances for specific entry versions.
  */
-public interface LogEntryReader<S extends ReadableLogChannel>
+public interface CommandReaderFactory
 {
     /**
-     * Reads the next {@link LogEntry} from the given source.
+     * Given {@code version} give back a {@link CommandReader} capable of reading such commands.
      *
-     * @param source {@link ReadableLogChannel} to read from.
-     * @return the read {@link LogEntry} or {@code null} if there were no more complete entries in the given source.
-     * @throws IOException if source throws exception.
+     * @param version {@link LogEntry} version.
+     * @return {@link CommandReader} for reading commands of that version.
      */
-    LogEntry readLogEntry( S source ) throws IOException;
+    CommandReader byVersion( LogEntryVersion version );
 }

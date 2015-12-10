@@ -112,7 +112,7 @@ public interface StorageEngine
      */
     void apply( TransactionToApply batch, TransactionApplicationMode mode ) throws Exception;
 
-//     Stream<Command> deserialise( SequenceOfBytes source );
+    CommandReaderFactory commandReaderFactory();
 
     // ====================================================================
     // All these methods below are temporary while in the process of

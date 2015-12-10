@@ -22,9 +22,9 @@ package org.neo4j.com;
 public interface RequestType<M>
 {
     TargetCaller getTargetCaller();
-    
+
     ObjectSerializer getObjectSerializer();
-    
+
     byte id();
 
     boolean responseShouldBeUnpacked();
