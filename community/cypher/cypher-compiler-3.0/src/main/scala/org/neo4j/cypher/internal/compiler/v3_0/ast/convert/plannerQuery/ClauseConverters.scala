@@ -281,9 +281,6 @@ object ClauseConverters {
     }
   }
 
-  private implicit def returnItemsToIdName(s: Seq[ReturnItem]): Set[IdName] =
-    s.map(item => IdName(item.name)).toSet
-
   private def addWithToLogicalPlanInput(builder: PlannerQueryBuilder,
                                         clause: With): PlannerQueryBuilder = clause match {
 
