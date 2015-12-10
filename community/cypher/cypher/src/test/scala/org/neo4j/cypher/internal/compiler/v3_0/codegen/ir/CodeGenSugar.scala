@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function.Supplier
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
@@ -115,7 +114,7 @@ trait CodeGenSugar extends MockitoSugar {
                   graphdb: GraphDatabaseService = null,
                   nodeManager: NodeManager = null,
                   executionMode: ExecutionMode = null,
-                  supplier: Supplier[InternalPlanDescription] = null,
+                  supplier: org.neo4j.function.Supplier[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
     val generated = clazz.execute(taskCloser, statement, nodeManager,

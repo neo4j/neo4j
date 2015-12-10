@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 
-import java.util.function.Supplier
-
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
@@ -69,7 +67,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       }
     })
 
-    val supplier = new Supplier[InternalPlanDescription] {
+    val supplier = new org.neo4j.function.Supplier[InternalPlanDescription] {
       override def get(): InternalPlanDescription =
         PlanDescriptionImpl(id2, "accept", SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)), Seq.empty, Set.empty)
     }

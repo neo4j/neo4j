@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen
 
 import java.lang.Boolean.getBoolean
 import java.util
-import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeGenerator.SourceSink
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ir._
@@ -45,7 +44,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
   import CodeGenerator.generateCode
 
-  type PlanDescriptionProvider = (InternalPlanDescription) => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])
+  type PlanDescriptionProvider = (InternalPlanDescription) => (org.neo4j.function.Supplier[InternalPlanDescription], Option[QueryExecutionTracer])
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable, plannerName: PlannerName) = {
     plan match {

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import java.io.{PrintWriter, StringWriter}
 import java.util
-import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
@@ -51,7 +50,7 @@ trait SuccessfulCloseable {
 class CompiledExecutionResult(taskCloser: TaskCloser,
                               statement: Statement,
                               compiledCode: GeneratedQueryExecution,
-                              description: Supplier[InternalPlanDescription])
+                              description: org.neo4j.function.Supplier[InternalPlanDescription])
   extends InternalExecutionResult with SuccessfulCloseable  {
   self =>
 

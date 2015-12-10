@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import java.util.function.Supplier
-
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
@@ -38,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_0.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
@@ -232,12 +229,12 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
 }
 
 object ExecutionPlanBuilder {
-  type DescriptionProvider = (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer]))
+  type DescriptionProvider = (InternalPlanDescription => (org.neo4j.function.Supplier[InternalPlanDescription], Option[QueryExecutionTracer]))
 
   def tracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer()
-      (description: InternalPlanDescription) => (new Supplier[InternalPlanDescription] {
+      (description: InternalPlanDescription) => (new org.neo4j.function.Supplier[InternalPlanDescription] {
 
         override def get(): InternalPlanDescription = description.map {
           plan: InternalPlanDescription =>
@@ -248,6 +245,8 @@ object ExecutionPlanBuilder {
               addArgument(Arguments.Time(data.time()))
         }
       }, Some(tracer))
-    case _ => (description: InternalPlanDescription) => (singleton(description), None)
+    case _ => (description: InternalPlanDescription) => (new org.neo4j.function.Supplier[InternalPlanDescription] {
+      override def get(): InternalPlanDescription = description
+    }, None)
   }
 }
