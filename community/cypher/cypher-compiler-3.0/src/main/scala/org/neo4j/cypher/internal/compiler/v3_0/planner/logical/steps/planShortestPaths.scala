@@ -121,6 +121,6 @@ case object planShortestPaths {
     val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)
                                                                          .addPredicates(predicates: _*)))
 
-    lpp.planAntiConditionalApply(lhs, rhs, shortestPath.name.get).updateSolved(solved)
+    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get)).updateSolved(solved)
   }
 }

@@ -41,17 +41,18 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    assert(qg.patternNodes.size == 1)
 
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
-    val node = qg.patternNodes.head
 
-    val resultPlans = collectPlans(predicates, qg.argumentIds, labelPredicateMap, qg.hints)
 
-    if (resultPlans.size < 2) resultPlans
-    else Seq(resultPlans.reduce(context.logicalPlanProducer.planAssertSameNode(node, _, _)))
+    val allPlans = collectPlans(predicates, qg.argumentIds, labelPredicateMap, qg.hints)
+    val resultPlans = allPlans.flatMap(_._2)
+    val nodes = allPlans.map(_._1).toSet
+
+    if (resultPlans.size < 2 || nodes.size != 1) resultPlans
+    else Seq(resultPlans.reduce(context.logicalPlanProducer.planAssertSameNode(IdName(nodes.head), _, _)))
   }
 
   override def constructPlan(idName: IdName,

@@ -41,7 +41,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
       DynamicPropertyNotifier.process(findNonSeekableIdentifiers(predicates), IndexLookupUnfulfillableNotification, qg)
     }
 
-    resultPlans
+    resultPlans.flatMap(_._2)
   }
 
   protected def findNonSeekableIdentifiers(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
@@ -64,15 +64,15 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
   protected def collectPlans(predicates: Seq[Expression], argumentIds: Set[IdName],
                              labelPredicateMap: Map[IdName, Set[HasLabels]],
                              hints: Set[Hint])
-                            (implicit semanticTable: SemanticTable, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+                            (implicit semanticTable: SemanticTable, context: LogicalPlanningContext): Seq[(String, Set[LogicalPlan])]  = {
     val arguments: Set[Variable] = argumentIds.map(n => Variable(n.name)(null))
 
     predicates.collect {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable)
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-          producePlanFor(seekable.name, seekable.propertyKey, predicate,
-          seekable.args.asQueryExpression, labelPredicateMap, hints, argumentIds)
+        (seekable.name, producePlanFor(seekable.name, seekable.propertyKey, predicate,
+          seekable.args.asQueryExpression, labelPredicateMap, hints, argumentIds))
 
       // ... = n.prop
       // In some rare cases, we can't rewrite these predicates cleanly,
@@ -84,14 +84,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>
-          producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
-          seekable.asQueryExpression, labelPredicateMap, hints, argumentIds)
+        (seekable.name,producePlanFor(seekable.name, seekable.propertyKey, PartialPredicate(seekable.expr, predicate),
+          seekable.asQueryExpression, labelPredicateMap, hints, argumentIds))
 
       // n.prop <|<=|>|>= value
       case predicate@AsValueRangeSeekable(seekable) =>
-          producePlanFor(seekable.name, seekable.propertyKeyName, predicate,
-          seekable.asQueryExpression, labelPredicateMap, hints, argumentIds)
-    }.flatten
+        (seekable.name, producePlanFor(seekable.name, seekable.propertyKeyName, predicate,
+          seekable.asQueryExpression, labelPredicateMap, hints, argumentIds))
+    }
   }
 
   private def producePlanFor(name: String, propertyKeyName: PropertyKeyName,

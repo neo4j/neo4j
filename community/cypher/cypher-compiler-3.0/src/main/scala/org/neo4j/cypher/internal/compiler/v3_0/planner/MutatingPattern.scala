@@ -29,13 +29,12 @@ case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], propertie
 
 case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
                                      properties: Option[Expression], direction: SemanticDirection) extends  MutatingPattern {
-  assert(direction != SemanticDirection.BOTH)
-
   def startNode = inOrder._1
 
   def endNode = inOrder._2
 
-  def inOrder =  if (direction == SemanticDirection.OUTGOING) (leftNode, rightNode) else (rightNode, leftNode)
+  //WHEN merging we can have an undirected CREATE, it is interpreted left-to-right
+  def inOrder =  if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode) else (rightNode, leftNode)
 }
 
 sealed trait SetMutatingPattern extends MutatingPattern
@@ -54,4 +53,8 @@ case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends Mu
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern
 
-case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern
+case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
+                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern
+
+case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
+                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern

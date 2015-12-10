@@ -189,7 +189,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Merge Into",
       text =
         """When both the start and end node have already been found, merge-into is used to find all connecting relationships or creating a new relationship between the two nodes.""".stripMargin,
-      queryText = """MATCH (p:Person {name: "me"}), (f:Person {name: "Andres"}) MERGE (p)-[:FRIENDS_WITH]->(f)""",
+      queryText = """CYPHER planner=rule MATCH (p:Person {name: "me"}), (f:Person {name: "Andres"}) MERGE (p)-[:FRIENDS_WITH]->(f)""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Merge(Into)"))
     )
   }
