@@ -365,14 +365,26 @@ object ClauseConverters {
     }
   }
 
-    def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {
-      clause.items.foldLeft(acc) {
-        // REMOVE n:Foo
-        case (builder, RemoveLabelItem(identifier, labelNames)) =>
-          builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(identifier), labelNames)))
+  private def addRemoveToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Remove): PlannerQueryBuilder = {
+    clause.items.foldLeft(acc) {
+      // REMOVE n:Foo
+      case (builder, RemoveLabelItem(variable, labelNames)) =>
+        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(RemoveLabelPattern(IdName.fromVariable(variable), labelNames)))
 
-        case (builder, other) =>
-          throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")
-      }
+      // REMOVE n.prop
+      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isNode(variable) =>
+        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(
+          SetNodePropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
+        ))
+
+      // REMOVE rel.prop
+      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) if acc.semanticTable.isRelationship(variable) =>
+        builder.amendUpdateGraph(ug => ug.addMutatingPatterns(
+          SetRelationshipPropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
+        ))
+
+      case (builder, other) =>
+        throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")
     }
+  }
 }

@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{namePatternPredicatePatternElements, normalizeWithClauses, normalizeReturnClauses}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -183,6 +185,26 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
+  }
+
+  def buildPlannerQuery(query: String) = {
+    val parsedStatement = parser.parse(query.replace("\r\n", "\n"))
+    val mkException = new SyntaxExceptionCreator(query, Some(pos))
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
+    val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
+    val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
+    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
+
+    // This fakes pattern expression naming for testing purposes
+    // In the actual code path, this renaming happens as part of planning
+    //
+    // cf. QueryPlanningStrategy
+    //
+
+    val namedAst: Statement = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
+    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], semanticTable)
+    unionQuery
   }
 
   def identHasLabel(name: String, labelName: String): HasLabels = {

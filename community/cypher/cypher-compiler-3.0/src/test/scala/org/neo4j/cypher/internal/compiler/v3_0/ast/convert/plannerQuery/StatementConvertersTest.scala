@@ -43,32 +43,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   val nProp: Expression = Property( Variable( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
-  def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
-    val ast = parser.parse(query.replace("\r\n", "\n"))
-    val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val cleanedStatement: Statement =
-      if (cleanStatement)
-        ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-      else
-        ast
-
-    val semanticChecker = new SemanticChecker
-    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
-    val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
-    val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, RewriterStepSequencer.newValidating, semanticChecker, Set.empty, mock[AstRewritingMonitor])
-
-    // This fakes pattern expression naming for testing purposes
-    // In the actual code path, this renaming happens as part of planning
-    //
-    // cf. QueryPlanningStrategy
-    //
-
-    val namedAst = rewrittenAst.endoRewrite(namePatternPredicatePatternElements)
-    val unionQuery = toUnionQuery(namedAst.asInstanceOf[Query], semanticTable)
-    unionQuery
-  }
-
   test("RETURN 42") {
     val UnionQuery(query :: Nil, _, _) = buildPlannerQuery("RETURN 42")
     query.horizon should equal(RegularQueryProjection(Map("42" -> SignedDecimalIntegerLiteral("42")_)))
