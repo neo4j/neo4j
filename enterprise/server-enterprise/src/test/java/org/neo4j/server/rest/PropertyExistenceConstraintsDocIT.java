@@ -87,6 +87,7 @@ public class PropertyExistenceConstraintsDocIT implements GraphHolder
             {
                 CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.server( NullLogProvider.getInstance() )
                         .withProperty( EnterpriseServerSettings.mode.name(), "enterprise" );
+
                 PropertyExistenceConstraintsDocIT.server = ServerHelper.createNonPersistentServer( serverBuilder );
                 return null;
             }

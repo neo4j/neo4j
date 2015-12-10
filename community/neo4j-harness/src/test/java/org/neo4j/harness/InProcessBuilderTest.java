@@ -48,6 +48,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -80,7 +81,7 @@ public class InProcessBuilderTest
         workDir.mkdir();
 
         // When
-        try(ServerControls server = newInProcessBuilder( workDir ).newServer())
+        try(ServerControls server = getTestServerBuilder( workDir ).newServer())
         {
             // Then
             assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
@@ -91,6 +92,16 @@ public class InProcessBuilderTest
         assertThat( Arrays.toString( workDir.list() ), workDir.list().length, equalTo( 0 ) );
     }
 
+    private TestServerBuilder getTestServerBuilder( File workDir )
+    {
+        TestServerBuilder serverBuilder = newInProcessBuilder( workDir );
+        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
+        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        return serverBuilder;
+    }
+
     @Test
     public void shouldAllowCustomServerAndDbConfig() throws Exception
     {
@@ -98,7 +109,7 @@ public class InProcessBuilderTest
         trustAllSSLCerts();
 
         // When
-        try ( ServerControls server = newInProcessBuilder( testDir.directory() )
+        try ( ServerControls server = getTestServerBuilder( testDir.directory() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
                 .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
                 .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
@@ -116,7 +127,7 @@ public class InProcessBuilderTest
     public void shouldMountUnmanagedExtensionsByClass() throws Exception
     {
         // When
-        try(ServerControls server = newInProcessBuilder( testDir.directory() )
+        try(ServerControls server = getTestServerBuilder( testDir.directory() )
                 .withExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
                 .newServer())
         {
@@ -130,7 +141,7 @@ public class InProcessBuilderTest
     public void shouldMountUnmanagedExtensionsByPackage() throws Exception
     {
         // When
-        try(ServerControls server = newInProcessBuilder( testDir.directory() )
+        try(ServerControls server = getTestServerBuilder( testDir.directory() )
                 .withExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
                 .newServer())
         {
@@ -144,10 +155,10 @@ public class InProcessBuilderTest
     public void shouldFindFreePort() throws Exception
     {
         // Given one server is running
-        try(ServerControls firstServer = newInProcessBuilder( testDir.directory() ).newServer())
+        try(ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer())
         {
             // When I start a second server
-            try(ServerControls secondServer = newInProcessBuilder( testDir.directory() ).newServer())
+            try(ServerControls secondServer = getTestServerBuilder( testDir.directory() ).newServer())
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
@@ -175,7 +186,7 @@ public class InProcessBuilderTest
                 db.shutdown();
             }
 
-            try ( ServerControls server = newInProcessBuilder( testDir.directory() ).copyFrom( dir.toFile() )
+            try ( ServerControls server = getTestServerBuilder( testDir.directory() ).copyFrom( dir.toFile() )
                     .newServer() )
             {
                 // Then

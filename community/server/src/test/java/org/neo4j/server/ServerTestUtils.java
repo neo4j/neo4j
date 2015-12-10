@@ -27,25 +27,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.web.ServerInternalSettings;
 
 public class ServerTestUtils
 {
     public static File createTempDir() throws IOException
     {
-        File d = File.createTempFile( "neo4j-test", "dir" );
-        if ( !d.delete() )
+        return Files.createTempDirectory( "neo4j-test" ).toFile();
+    }
+
+    public static File getSharedTestTemporaryFolder()
+    {
+        try
         {
-            throw new RuntimeException( "temp config directory pre-delete failed" );
+            return createTempPropertyFile().getParentFile();
         }
-        if ( !d.mkdirs() )
+        catch ( Exception e )
         {
-            throw new RuntimeException( "temp config directory not created" );
+            throw new RuntimeException( e );
         }
-        d.deleteOnExit();
-        return d;
     }
 
     public static File createTempPropertyFile() throws IOException
@@ -53,6 +61,42 @@ public class ServerTestUtils
         File file = File.createTempFile( "neo4j", "properties" );
         file.delete();
         return file;
+    }
+
+    public static File getRelativeFile( Setting<File> setting ) throws IOException
+    {
+        return getSharedTestTemporaryFolder()
+                .toPath().resolve( setting.getDefaultValue() )
+                .toFile();
+    }
+
+    public static String getRelativePath( File folder, Setting<File> setting )
+    {
+        return folder.toPath().resolve( setting.getDefaultValue() ).toString();
+    }
+
+    public static Map<String,String> getDefaultRelativeProperties() throws IOException
+    {
+        File testFolder = getSharedTestTemporaryFolder();
+        Map<String,String> settings = new HashMap<>();
+        addDefaultRelativeProperties( settings, testFolder );
+        return settings;
+    }
+
+    public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
+    {
+        addRelativeProperty( temporaryFolder, properties, ServerInternalSettings.legacy_db_location );
+        addRelativeProperty( temporaryFolder, properties, ServerInternalSettings.auth_store );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.webserver_https_cert_path );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.webserver_https_key_path );
+    }
+
+    private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,
+            Setting<File> setting )
+    {
+        properties.put( setting.name(), getRelativePath( temporaryFolder, setting ) );
     }
 
     public static void writePropertiesToFile( String outerPropertyName, Map<String, String> properties,

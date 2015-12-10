@@ -40,6 +40,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.single;
 
+import org.neo4j.server.configuration.ServerSettings;
+
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
+
+
 public class JUnitDocTest
 {
     @Rule
@@ -47,7 +53,12 @@ public class JUnitDocTest
 
     // START SNIPPET: useEnterpriseJUnitRule
     @Rule
-    public Neo4jRule neo4j = new EnterpriseNeo4jRule().withFixture( "CREATE (admin:Admin)" )
+    public Neo4jRule neo4j = new EnterpriseNeo4jRule()
+            .withFixture( "CREATE (admin:Admin)" )
+            .withConfig( ServerSettings.tls_key_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
+            .withConfig( ServerSettings.tls_certificate_file.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
             .withFixture( new Function<GraphDatabaseService,Void>()
             {
                 @Override

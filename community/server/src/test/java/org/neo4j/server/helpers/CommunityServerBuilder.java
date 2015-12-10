@@ -138,8 +138,9 @@ public class CommunityServerBuilder
     public File createPropertiesFiles() throws IOException
     {
         File temporaryConfigFile = createTempPropertyFile();
+        File temporaryFolder = temporaryConfigFile.getParentFile();
 
-        createPropertiesFile( temporaryConfigFile );
+        createPropertiesFile( temporaryFolder, temporaryConfigFile );
         createTuningFile( temporaryConfigFile );
 
         return temporaryConfigFile;
@@ -151,11 +152,14 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private void createPropertiesFile( File temporaryConfigFile )
+    private void createPropertiesFile( File temporaryFolder, File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
                 Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
                 Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+
+        ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
+
         if ( dbDir != null )
         {
             properties.put( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir );
@@ -212,7 +216,6 @@ public class CommunityServerBuilder
         }
 
         properties.put( ServerSettings.auth_enabled.name(), "false" );
-        properties.put( ServerInternalSettings.auth_store.name(), "neo4j-home/data/dbms/authorization" );
 
         for ( Object key : arbitraryProperties.keySet() )
         {

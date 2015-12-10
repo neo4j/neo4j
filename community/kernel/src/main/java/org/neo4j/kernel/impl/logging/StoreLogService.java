@@ -145,7 +145,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     {
         if ( !internalLog.getParentFile().exists() )
         {
-            internalLog.getParentFile().mkdirs();
+            fileSystem.mkdirs( internalLog.getParentFile() );
         }
 
         final FormattedLogProvider.Builder internalLogBuilder = FormattedLogProvider.withUTCTimeZone()

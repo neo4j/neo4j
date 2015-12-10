@@ -46,6 +46,8 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
+    private CommunityNeoServer server;
+
     @Test
     public void serverConfigShouldBeVisibleInJMX() throws Throwable
     {
@@ -62,8 +64,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
         assertThat( getAttribute( name, ServerSettings.http_log_config_file.name() ), equalTo( (Object)configValue ) );
     }
-
-    private CommunityNeoServer server;
 
     @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable

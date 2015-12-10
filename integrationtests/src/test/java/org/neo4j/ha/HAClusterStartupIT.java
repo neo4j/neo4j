@@ -41,7 +41,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class HAClusterStartupIT
 {
-    public final @Rule TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
     private ClusterManager clusterManager;
     private ClusterManager.ManagedCluster cluster;
     private HighlyAvailableGraphDatabase master;

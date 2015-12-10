@@ -19,16 +19,20 @@
  */
 package org.neo4j.server.web;
 
+import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -40,11 +44,15 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestJetty9WebServer extends ExclusiveServerTestBase
 {
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
     private Jetty9WebServer webServer;
     private CommunityNeoServer server;
 
@@ -81,12 +89,12 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), stringMap(),
+        Map<String,String> properties = ServerTestUtils.getDefaultRelativeProperties();
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( new File( "path" ), properties,
                 GraphDatabaseDependencies.newDependencies() );
 
-        ServerConfigurator config = new ServerConfigurator( db );
-        config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
+        ServerConfigurator config = buildConfig( properties, db );
+
         WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
 
         // When
@@ -94,6 +102,19 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
         testBootstrapper.stop();
 
         // Then it should not have crashed
+    }
+
+    private ServerConfigurator buildConfig( Map<String,String> properties, ImpermanentGraphDatabase db )
+    {
+        ServerConfigurator config = new ServerConfigurator( db );
+        Configuration configuration = config.configuration();
+        Set<Map.Entry<String,String>> testSettings = properties.entrySet();
+        for ( Map.Entry<String,String> testSetting : testSettings )
+        {
+            configuration.setProperty( testSetting.getKey(), testSetting.getValue() );
+        }
+        configuration.setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, "1000s" );
+        return config;
     }
 
     @Test
@@ -125,12 +146,6 @@ public class TestJetty9WebServer extends ExclusiveServerTestBase
         assertEquals( 200, okResource.status() );
         assertEquals( 403, illegalResource.status() );
     }
-
-    @Rule
-    public SuppressOutput suppressOutput = suppressAll();
-
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     @After
     public void cleanup()

@@ -40,7 +40,8 @@ import static org.junit.Assert.assertEquals;
 
 public class PropertyKeyTest
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception

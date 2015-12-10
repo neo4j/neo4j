@@ -21,6 +21,7 @@ package org.neo4j.harness.enterprise.doc;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
@@ -31,12 +32,19 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.EnterpriseTestServerBuilders;
+import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
+
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.ServerTestUtils;
+
+import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
 public class ExtensionTestingDocTest
 {
@@ -58,7 +66,7 @@ public class ExtensionTestingDocTest
     public void testMyExtension() throws Exception
     {
         // Given
-        try ( ServerControls server = EnterpriseTestServerBuilders.newInProcessBuilder()
+        try ( ServerControls server = getServerBuilder()
                 .withExtension( "/myExtension", MyUnmanagedExtension.class )
                 .newServer() )
         {
@@ -74,7 +82,7 @@ public class ExtensionTestingDocTest
     public void testMyExtensionWithFunctionFixture() throws Exception
     {
         // Given
-        try ( ServerControls server = EnterpriseTestServerBuilders.newInProcessBuilder()
+        try ( ServerControls server = getServerBuilder()
                 .withExtension( "/myExtension", MyUnmanagedExtension.class )
                 .withFixture( new Function<GraphDatabaseService, Void>()
                 {
@@ -99,4 +107,15 @@ public class ExtensionTestingDocTest
         }
     }
     // END SNIPPET: testEnterpriseExtension
+
+
+    private TestServerBuilder getServerBuilder( ) throws IOException
+    {
+        TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder();
+        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
+                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) );
+        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
+                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) );
+        return serverBuilder;
+    }
 }
