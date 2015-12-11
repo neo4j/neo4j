@@ -197,7 +197,9 @@ public class EnterpriseCoreEditionModule
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, dependencies, SYSTEM_CLOCK );
+        ReplicatedLockStateMachine replicatedLockStateMachine = new ReplicatedLockStateMachine( myself, replicator );
+
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockStateMachine, dependencies, SYSTEM_CLOCK );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself, new InMemoryIdAllocationStateStore() );
         replicator.subscribe( idAllocationStateMachine );
@@ -252,7 +254,7 @@ public class EnterpriseCoreEditionModule
                 channelInitializer ) );
         channelInitializer.setOwner( coreToCoreClient );
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself, replicatedLockStateMachine ) );
 
         LocalDatabase localDatabase =
                 new LocalDatabase( platformModule.storeDir,
@@ -303,6 +305,7 @@ public class EnterpriseCoreEditionModule
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
                                                                    final LocalSessionPool localSessionPool,
+                                                                   CurrentReplicatedLockState currentReplicatedLockState,
                                                                    final Dependencies dependencies,
                                                                    final Clock clock )
     {
@@ -312,7 +315,7 @@ public class EnterpriseCoreEditionModule
             dependencies.satisfyDependencies( localCommit );
 
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
-                    localCommit, localSessionPool.getGlobalSession(), dependencies );
+                    localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 
@@ -414,11 +417,12 @@ public class EnterpriseCoreEditionModule
         return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
     }
 
-    protected Locks createLockManager( final Config config, final LogService logging )
+    protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
+                                       CoreMember myself, ReplicatedLockStateMachine replicatedLockStateMachine )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 
-        return local;
+        return new LeaderOnlyLockManager( myself, replicator, local, replicatedLockStateMachine );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

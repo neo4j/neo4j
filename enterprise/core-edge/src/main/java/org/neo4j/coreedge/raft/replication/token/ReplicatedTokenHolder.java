@@ -89,7 +89,6 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         {
             throw new IllegalStateException( "lastCommittedIndex must be set before start." );
         }
-        tokenCache.clear();
         replicator.subscribe( this );
     }
 
@@ -102,8 +101,8 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
     @Override
     public void setInitialTokens( List<TOKEN> tokens ) throws NonUniqueTokenException
     {
-        // TODO: There is no need to initialize tokens until we have implemented raft log compression.
-        // TODO: at the moment, we receive all token allocations since the beginning of time.
+        tokenCache.clear();
+        tokenCache.putAll( tokens );
     }
 
     @Override
