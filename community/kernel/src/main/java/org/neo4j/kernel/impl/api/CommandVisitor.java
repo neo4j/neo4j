@@ -41,7 +41,8 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCo
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 
 /**
- * An interface for dealing with commands, either reading or writing them.
+ * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
+ * methods in this class should almost always return false, unless something went wrong.
  */
 public interface CommandVisitor
 {
@@ -81,6 +82,11 @@ public interface CommandVisitor
 
     boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException;
 
+    /**
+     * An empty implementation of a {@link CommandVisitor}. Allows you to implement only the methods you are
+     * interested in. See also {@link TransactionApplier.Adapter} if need handle commands inside of a transaction, or
+     * have a lock.
+     */
     class Adapter implements CommandVisitor
     {
 
@@ -187,6 +193,10 @@ public interface CommandVisitor
         }
     }
 
+    /**
+     * Wraps a given {@link CommandVisitor}, allowing you to do some extra operations before/after/instead of the
+     * delegate executes.
+     */
     class Delegator implements CommandVisitor
     {
         private final CommandVisitor delegate;

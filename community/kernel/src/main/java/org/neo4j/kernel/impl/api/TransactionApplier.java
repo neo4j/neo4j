@@ -27,17 +27,31 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
 /**
- * Responsible for a single transaction. See also {@link BatchTransactionApplier} which returns an
- * implementation of this class.
+ * Responsible for a single transaction. See also {@link BatchTransactionApplier} which returns an implementation of
+ * this class. Should typically be used in a try-with-resources block, f.ex.:
+ * <pre>
+ * {@code
+ *     try ( TransactionApplier txApplier = batchTxApplier.startTx( txToApply )
+ *     {
+ *         // Apply the transaction
+ *         txToApply.transactionRepresentation().accept( txApplier );
+ *         // Or apply other commands
+ *         // txApplier.visit( command );
+ *     }
+ * }
+ * </pre>
  */
 public interface TransactionApplier extends Visitor<Command,IOException>, CommandVisitor, AutoCloseable
 {
+    /**
+     * A {@link TransactionApplier} which does nothing.
+     */
     TransactionApplier EMPTY = new Adapter();
 
     /**
-     * Wraps several {@link TransactionApplier}s. In this case, each individual visit-call will delegate
-     * to {@link #visit(Command)} instead, which will call each wrapped {@link TransactionApplier} in turn.
-     * In {@link #close()}, the appliers are closed in reversed order.
+     * Wraps several {@link TransactionApplier}s. In this case, each individual visit-call will delegate to {@link
+     * #visit(Command)} instead, which will call each wrapped {@link TransactionApplier} in turn. In {@link #close()},
+     * the appliers are closed in reversed order.
      */
     class TransactionApplierFacade extends TransactionApplier.Adapter
     {
@@ -176,7 +190,8 @@ public interface TransactionApplier extends Visitor<Command,IOException>, Comman
     }
 
     /**
-     * Delegates to individual visit methods which need to be implemented, as well as {@link #close()} if applicable.
+     * Delegates to individual visit methods (see {@link CommandVisitor}) which need to be implemented, as well as
+     * {@link #close()} if applicable.
      */
     class Adapter extends CommandVisitor.Adapter implements TransactionApplier
     {
