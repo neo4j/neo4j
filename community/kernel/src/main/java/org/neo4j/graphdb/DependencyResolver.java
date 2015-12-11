@@ -20,8 +20,7 @@
 package org.neo4j.graphdb;
 
 import java.util.Iterator;
-
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
 
 /**
  * Find a dependency given a type. This can be the exact type or a super type of
@@ -105,26 +104,12 @@ public interface DependencyResolver
 
         public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
         {
-            return new Supplier<T>()
-            {
-                @Override
-                public T get()
-                {
-                    return resolveDependency( type, selector );
-                }
-            };
+            return () -> resolveDependency( type, selector );
         }
 
         public <T> Supplier<T> provideDependency( final Class<T> type )
         {
-            return new Supplier<T>()
-            {
-                @Override
-                public T get()
-                {
-                    return resolveDependency( type );
-                }
-            };
+            return () -> resolveDependency( type );
         }
     }
 }

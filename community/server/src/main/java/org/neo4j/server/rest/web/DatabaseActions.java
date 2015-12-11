@@ -29,9 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -141,14 +141,7 @@ public class DatabaseActions
     }
 
     private final Function<ConstraintDefinition,Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
-            new Function<ConstraintDefinition,Representation>()
-            {
-                @Override
-                public Representation apply( ConstraintDefinition from )
-                {
-                    return new ConstraintDefinitionRepresentation( from );
-                }
-            };
+            ConstraintDefinitionRepresentation::new;
 
     public DatabaseActions( LeaseManager leaseManager, boolean enableScriptSandboxing,
             GraphDatabaseAPI graphDatabaseAPI )
@@ -1397,25 +1390,11 @@ public class DatabaseActions
         PathRepresentation<T> from( T path );
     }
 
-    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR = new
-            PathRepresentationCreator<Path>()
-            {
-                @Override
-                public PathRepresentation<Path> from( Path path )
-                {
-                    return new PathRepresentation<>( path );
-                }
-            };
+    private static final PathRepresentationCreator<Path> PATH_REPRESENTATION_CREATOR =
+            path -> new PathRepresentation<>( path );
 
-    private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR = new
-            PathRepresentationCreator<WeightedPath>()
-            {
-                @Override
-                public PathRepresentation<WeightedPath> from( WeightedPath path )
-                {
-                    return new WeightedPathRepresentation( path );
-                }
-            };
+    private static final PathRepresentationCreator<WeightedPath> WEIGHTED_PATH_REPRESENTATION_CREATOR =
+            path -> new WeightedPathRepresentation( path );
 
     private void assertIsLegalIndexName( String indexName )
     {
@@ -1653,65 +1632,34 @@ public class DatabaseActions
 
     private Iterable<ConstraintDefinition> filteredNodeConstraints( String labelName, final ConstraintType type )
     {
-        return filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition item )
-            {
-                return item.isConstraintType( type );
-            }
+        return filter( item -> {
+            return item.isConstraintType( type );
         }, graphDb.schema().getConstraints( label( labelName ) ) );
     }
 
     private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName, final ConstraintType type )
     {
-        return filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition item )
-            {
-                return item.isConstraintType( type );
-            }
+        return filter( item -> {
+            return item.isConstraintType( type );
         }, graphDb.schema().getConstraints( RelationshipType.withName( typeName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
     {
-        return new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition item )
-            {
-                return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
-                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
-            }
-        };
+        return item -> item.isConstraintType( ConstraintType.UNIQUENESS ) &&
+               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
     }
 
     private Predicate<ConstraintDefinition> nodePropertyExistenceFilter( final Set<String> propertyKeysSet )
     {
-        return new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition item )
-            {
-                return item.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) &&
-                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
-            }
-        };
+        return item -> item.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) &&
+               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
     }
 
     private Predicate<ConstraintDefinition> relationshipPropertyExistenceFilter( final Set<String> propertyKeysSet )
     {
-        return new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition item )
-            {
-                return item.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) &&
-                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
-            }
-        };
+        return item -> item.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) &&
+               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
     }
 
     public ListRepresentation getConstraints()

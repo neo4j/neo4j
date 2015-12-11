@@ -35,21 +35,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -199,10 +198,10 @@ public abstract class IteratorUtil
     /**
      * Iterates over the full iterators, and checks equality for each item in them. Note that this
      * will consume the iterators.
-     * 
+     *
      * @param first the first iterator
      * @param other the other iterator
-     * @return {@code true} if all items are equal; otherwise 
+     * @return {@code true} if all items are equal; otherwise
      */
     public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
@@ -525,14 +524,7 @@ public abstract class IteratorUtil
      */
     public static <T> Iterable<T> loop( final Iterator<T> iterator )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return iterator;
-            }
-        };
+        return () -> iterator;
     }
 
     /**
@@ -588,19 +580,6 @@ public abstract class IteratorUtil
     public static <T> int count( Iterable<T> iterable )
     {
         return count( iterable, Predicates.<T>alwaysTrue() );
-    }
-
-    /**
-     * Counts the number of items in the {@code iterable} by looping through it.
-     *
-     * @param <T> the type of items in the iterator.
-     * @param iterable the {@link Iterable} to count items in.
-     * @param filter the filter to apply
-     * @return the number of items found in {@code iterator}.
-     */
-    public static <T> int count( Iterable<T> iterable, org.neo4j.helpers.Predicate<T> filter )
-    {
-        return count( iterable.iterator(), org.neo4j.helpers.Predicates.upgrade( filter ) );
     }
 
     /**
@@ -725,7 +704,7 @@ public abstract class IteratorUtil
 
     /**
      * Alias for asSet()
-     * 
+     *
      * @param items the items to add to the set.
      * @param <T> the type of the items
      * @return the {@link Set} containing the items.
@@ -775,14 +754,7 @@ public abstract class IteratorUtil
      * Function for converting Enum to String
      */
     @SuppressWarnings( "rawtypes" )
-    public final static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
-    {
-        @Override
-        public String apply( Enum from )
-        {
-            return from.name();
-        }
-    };
+    public final static Function<Enum, String> ENUM_NAME = Enum::name;
 
     /**
      * Converts an {@link Iterable} of enums to {@link Set} of their names.
@@ -865,27 +837,13 @@ public abstract class IteratorUtil
 
     public static Iterable<Long> asIterable( final long... array )
     {
-        return new Iterable<Long>()
-        {
-            @Override
-            public Iterator<Long> iterator()
-            {
-                return asIterator( array );
-            }
-        };
+        return () -> asIterator( array );
     }
 
     @SafeVarargs
     public static <T> Iterable<T> asIterable( final T... array )
     {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return IteratorUtil.iterator( array );
-            }
-        };
+        return () -> iterator( array );
     }
 
     public static Iterator<Long> asIterator( final long... array )
@@ -1038,13 +996,8 @@ public abstract class IteratorUtil
 
     public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( new Function<T,T>()
-        {
-            @Override
-            public T apply( T from )
-            {
-                return itemClass.cast( from.clone() );
-            }
+        return Iterables.map( from -> {
+            return itemClass.cast( from.clone() );
         }, items );
     }
 
@@ -1185,14 +1138,7 @@ public abstract class IteratorUtil
 
     public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
     {
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                return resourceIterator( iterable.iterator(), Resource.EMPTY );
-            }
-        };
+        return () -> resourceIterator( iterable.iterator(), Resource.EMPTY );
     }
 
     @SafeVarargs

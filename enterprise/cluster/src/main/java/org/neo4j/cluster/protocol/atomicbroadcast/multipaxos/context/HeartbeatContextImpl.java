@@ -34,7 +34,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
@@ -200,14 +199,7 @@ class HeartbeatContextImpl
     @Override
     public Iterable<InstanceId> getAlive()
     {
-        return Iterables.filter( new Predicate<InstanceId>()
-        {
-            @Override
-            public boolean test( InstanceId item )
-            {
-                return !isFailed( item );
-            }
-        }, commonState.configuration().getMemberIds() );
+        return Iterables.filter( item -> !isFailed( item ), commonState.configuration().getMemberIds() );
     }
 
     @Override

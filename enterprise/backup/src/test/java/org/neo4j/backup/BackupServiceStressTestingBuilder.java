@@ -31,8 +31,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.function.BooleanSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,9 +54,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertTrue;
-
 import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertTrue;
 
 public class BackupServiceStressTestingBuilder
 {
@@ -69,14 +68,7 @@ public class BackupServiceStressTestingBuilder
     public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-        return new BooleanSupplier()
-        {
-            @Override
-            public boolean getAsBoolean()
-            {
-                return currentTimeMillis() <= endTimeInMilliseconds;
-            }
-        };
+        return () -> currentTimeMillis() <= endTimeInMilliseconds;
     }
 
     public BackupServiceStressTestingBuilder until( BooleanSupplier untilCondition )
@@ -187,10 +179,9 @@ public class BackupServiceStressTestingBuilder
                 dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
 
                 LifeSupport life = new LifeSupport();
-                OnlineBackupKernelExtension backup;
                 try
                 {
-                    backup = life.add( (OnlineBackupKernelExtension)
+                    life.add( (OnlineBackupKernelExtension)
                             new OnlineBackupExtensionFactory().newKernelExtension(
                                     DependenciesProxy.dependencies( dependencies,
                                             OnlineBackupExtensionFactory.Dependencies.class ) ) );
@@ -202,15 +193,10 @@ public class BackupServiceStressTestingBuilder
                 life.start();
 
                 ExecutorService executor = Executors.newFixedThreadPool( 2 );
-                executor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
+                executor.execute( () -> {
+                    while ( keepGoing.get() && until.getAsBoolean() )
                     {
-                        while ( keepGoing.get() && until.getAsBoolean() )
-                        {
-                            createSomeData( db );
-                        }
+                        createSomeData( db );
                     }
                 } );
 

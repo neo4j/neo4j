@@ -21,14 +21,16 @@ package org.neo4j.helpers;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.neo4j.function.BiFunction;
-import org.neo4j.function.Function;
+
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import org.neo4j.function.Functions;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.Functions.map;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.function.Functions.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FunctionsTest
@@ -62,23 +64,9 @@ public class FunctionsTest
     @Test
     public void testCompose2() throws Exception
     {
-        BiFunction<Integer, Integer, Integer> add = new BiFunction<Integer, Integer, Integer>()
-        {
-            @Override
-            public Integer apply( Integer from1, Integer from2 )
-            {
-                return from1 + from2;
-            }
-        };
+        BiFunction<Integer, Integer, Integer> add = ( from1, from2 ) -> from1 + from2;
 
-        BiFunction<Integer, Integer, Integer> mult = new BiFunction<Integer, Integer, Integer>()
-        {
-            @Override
-            public Integer apply( Integer from1, Integer from2 )
-            {
-                return from1 * from2;
-            }
-        };
+        BiFunction<Integer, Integer, Integer> mult = ( from1, from2 ) -> from1 * from2;
 
         assertThat( Functions.<Integer, Integer>compose2().apply( add, mult ).apply( 2, 3 ), equalTo( 9 ));
     }
@@ -86,15 +74,7 @@ public class FunctionsTest
     @Test
     public void testCompose() throws Exception
     {
-        Function<Integer, Integer> inc = new Function<Integer, Integer>()
-        {
-            @Override
-            public Integer apply( Integer value )
-            {
-                return value + 1;
-            }
-        };
-
+        Function<Integer, Integer> inc = value -> value + 1;
         assertThat( Functions.<String, Integer, Integer>compose().apply( Settings.INTEGER, inc ).apply( "3" ), equalTo( 4 ));
     }
 }

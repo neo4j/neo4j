@@ -30,12 +30,10 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
-
 import static org.neo4j.helpers.Exceptions.stringify;
 
 public class DebugUtil
@@ -82,63 +80,28 @@ public class DebugUtil
 
     public static Predicate<StackTraceElement> classNameIs( final String className )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean test( StackTraceElement item )
-            {
-                return item.getClassName().equals( className );
-            }
-        };
+        return item -> item.getClassName().equals( className );
     }
 
     public static Predicate<StackTraceElement> classNameContains( final String classNamePart )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean test( StackTraceElement item )
-            {
-                return item.getClassName().contains( classNamePart );
-            }
-        };
+        return item -> item.getClassName().contains( classNamePart );
     }
 
     public static Predicate<StackTraceElement> classIs( final Class<?> cls )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean test( StackTraceElement item )
-            {
-                return item.getClassName().equals( cls.getName() );
-            }
-        };
+        return item -> item.getClassName().equals( cls.getName() );
     }
 
     public static Predicate<StackTraceElement> classNameAndMethodAre( final String className,
             final String methodName )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean test( StackTraceElement item )
-            {
-                return item.getClassName().equals( className ) && item.getMethodName().equals( methodName );
-            }
-        };
+        return item -> item.getClassName().equals( className ) && item.getMethodName().equals( methodName );
     }
 
     public static Predicate<StackTraceElement> classAndMethodAre( final Class<?> cls, final String methodName )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean test( StackTraceElement item )
-            {
-                return item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
-            }
-        };
+        return item -> item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
     }
 
     public static class StackTracer

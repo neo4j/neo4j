@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
@@ -61,7 +60,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class StoreCopyClientTest
@@ -82,14 +80,7 @@ public class StoreCopyClientTest
         final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        CancellationRequest cancellationRequest = new CancellationRequest()
-        {
-            @Override
-            public boolean cancellationRequested()
-            {
-                return cancelStoreCopy.get();
-            }
-        };
+        CancellationRequest cancellationRequest = () -> cancelStoreCopy.get();
 
         StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
@@ -152,14 +143,7 @@ public class StoreCopyClientTest
         final File originalDir = new File( testDir.directory(), "original" );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
-        CancellationRequest cancellationRequest = new CancellationRequest()
-        {
-            @Override
-            public boolean cancellationRequested()
-            {
-                return cancelStoreCopy.get();
-            }
-        };
+        CancellationRequest cancellationRequest = () -> cancelStoreCopy.get();
 
         StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
@@ -237,14 +221,7 @@ public class StoreCopyClientTest
             StoreCopyClient copier =
                     new StoreCopyClient( backupStore, new Config(), loadKernelExtensions(), NullLogProvider
                             .getInstance(), fs, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
-            CancellationRequest falseCancellationRequest = new CancellationRequest()
-            {
-                @Override
-                public boolean cancellationRequested()
-                {
-                    return false;
-                }
-            };
+            CancellationRequest falseCancellationRequest = () -> false;
             StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( initialStore, (GraphDatabaseAPI)
                     initialDatabase );
 
@@ -303,14 +280,7 @@ public class StoreCopyClientTest
                                     .getMetaDataStore().getStoreId();
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
-                            transactionIdStore, new Supplier<StoreId>()
-                    {
-                        @Override
-                        public StoreId get()
-                        {
-                            return storeId;
-                        }
-                    } );
+                            transactionIdStore, () -> storeId );
 
 
                     response = spy(responsePacker.packTransactionStreamResponse( requestContext, null ));

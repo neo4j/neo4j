@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.LegacyIndexHits;

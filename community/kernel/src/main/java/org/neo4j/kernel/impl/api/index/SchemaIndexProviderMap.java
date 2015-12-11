@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public interface SchemaIndexProviderMap extends Function<SchemaIndexProvider.Descriptor, SchemaIndexProvider>

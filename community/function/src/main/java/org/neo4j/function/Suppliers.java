@@ -19,6 +19,10 @@
  */
 package org.neo4j.function;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 /**
  * Constructors for basic {@link Supplier} types
  */
@@ -33,14 +37,7 @@ public final class Suppliers
      */
     public static <T> Supplier<T> singleton( final T instance )
     {
-        return new Supplier<T>()
-        {
-            @Override
-            public T get()
-            {
-                return instance;
-            }
-        };
+        return () -> instance;
     }
 
     /**
@@ -119,13 +116,6 @@ public final class Suppliers
 
     public static <T> Supplier<Boolean> compose( final Supplier<T> input, final Predicate<T> predicate )
     {
-        return new Supplier<Boolean>()
-        {
-            @Override
-            public Boolean get()
-            {
-                return predicate.test( input.get() );
-            }
-        };
+        return () -> predicate.test( input.get() );
     }
 }

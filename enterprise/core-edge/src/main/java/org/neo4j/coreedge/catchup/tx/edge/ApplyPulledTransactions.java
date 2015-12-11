@@ -19,7 +19,8 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

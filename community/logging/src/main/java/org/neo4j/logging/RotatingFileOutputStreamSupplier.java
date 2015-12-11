@@ -31,9 +31,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
-import org.neo4j.function.LongSupplier;
-import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
@@ -65,14 +65,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
         }
     }
 
-    private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = new LongSupplier()
-    {
-        @Override
-        public long getAsLong()
-        {
-            return System.currentTimeMillis();
-        }
-    };
+    private static final LongSupplier DEFAULT_CURRENT_TIME_SUPPLIER = System::currentTimeMillis;
 
     private final LongSupplier currentTimeSupplier;
     private final FileSystemAbstraction fileSystem;
@@ -197,45 +190,40 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
             return;
         }
 
-        Runnable runnable = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable runnable = () -> {
+            OutputStream newStream;
+            try
             {
-                OutputStream newStream;
-                try
+                if ( fileSystem.fileExists( outputFile ) )
                 {
-                    if ( fileSystem.fileExists( outputFile ) )
-                    {
-                        shiftArchivedOutputFiles();
-                        fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
-                    }
-                    newStream = openOutputFile();
+                    shiftArchivedOutputFiles();
+                    fileSystem.renameFile( outputFile, archivedOutputFile( 1 ) );
                 }
-                catch ( Exception e )
-                {
-                    rotationListener.rotationError( e, outRef.get() );
-                    rotating.set( false );
-                    return;
-                }
-                OutputStream oldStream = outRef.get();
-                rotationListener.outputFileCreated( newStream, oldStream );
-                synchronized ( outRef )
-                {
-                    if ( !closed.get() )
-                    {
-                        outRef.set( newStream );
-                        removeCollectedReferences( archivedStreams );
-                        archivedStreams.add( new WeakReference<>( oldStream ) );
-                    }
-                }
-                if ( rotationDelay > 0 )
-                {
-                    earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
-                }
-                rotationListener.rotationCompleted( newStream, oldStream );
-                rotating.set( false );
+                newStream = openOutputFile();
             }
+            catch ( Exception e )
+            {
+                rotationListener.rotationError( e, outRef.get() );
+                rotating.set( false );
+                return;
+            }
+            OutputStream oldStream = outRef.get();
+            rotationListener.outputFileCreated( newStream, oldStream );
+            synchronized ( outRef )
+            {
+                if ( !closed.get() )
+                {
+                    outRef.set( newStream );
+                    removeCollectedReferences( archivedStreams );
+                    archivedStreams.add( new WeakReference<>( oldStream ) );
+                }
+            }
+            if ( rotationDelay > 0 )
+            {
+                earliestRotationTimeRef.set( currentTimeSupplier.getAsLong() + rotationDelay );
+            }
+            rotationListener.rotationCompleted( newStream, oldStream );
+            rotating.set( false );
         };
 
         try

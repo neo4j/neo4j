@@ -25,8 +25,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -197,7 +197,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .expectedStatus( 200 )
             .get( uri )
             .entity();
-        
+
         List<?> parsed = (List<?>) readJson( body );
         assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
@@ -288,15 +288,10 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
     private <T> Function<Object, T> getProperty( final String propertyKey, final Class<T> propertyType )
     {
-        return new Function<Object, T>()
-        {
-            @Override
-            public T apply( Object from )
-            {
-                Map<?, ?> node = (Map<?, ?>) from;
-                Map<?, ?> data = (Map<?, ?>) node.get( "data" );
-                return propertyType.cast( data.get( propertyKey ) );
-            }
+        return from -> {
+            Map<?, ?> node = (Map<?, ?>) from;
+            Map<?, ?> data1 = (Map<?, ?>) node.get( "data" );
+            return propertyType.cast( data1.get( propertyKey ) );
         };
     }
 }

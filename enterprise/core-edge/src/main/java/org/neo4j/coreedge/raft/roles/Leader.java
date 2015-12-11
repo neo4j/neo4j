@@ -33,7 +33,6 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.FollowerState;
 import org.neo4j.coreedge.raft.state.FollowerStates;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 
@@ -45,7 +44,7 @@ public class Leader implements RaftMessageHandler
 {
     public static <MEMBER> Iterable<MEMBER> replicationTargets( final ReadableRaftState<MEMBER> ctx )
     {
-        return new FilteringIterable<>( ctx.replicationMembers(), (Predicate<MEMBER>) member -> !member.equals( ctx.myself() ) );
+        return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
     static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws RaftStorageException

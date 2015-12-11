@@ -23,8 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -49,14 +49,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 class LegacyLogEntryWriter
 {
     private static final Function<WritableLogChannel, LogEntryWriter> defaultLogEntryWriterFactory =
-            new Function<WritableLogChannel, LogEntryWriter>()
-            {
-                @Override
-                public LogEntryWriter apply( WritableLogChannel channel )
-                {
-                    return new LogEntryWriter( channel, new CommandWriter( channel ) );
-                }
-            };
+            channel -> new LogEntryWriter( channel, new CommandWriter( channel ) );
 
     private final FileSystemAbstraction fs;
     private final Function<WritableLogChannel, LogEntryWriter> factory;

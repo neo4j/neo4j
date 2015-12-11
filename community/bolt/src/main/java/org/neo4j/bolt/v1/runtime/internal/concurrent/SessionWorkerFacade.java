@@ -20,11 +20,11 @@
 package org.neo4j.bolt.v1.runtime.internal.concurrent;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.Session;
-import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.function.Consumer;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
 /**
  * A session implementation that delegates work to a worker thread.
@@ -49,67 +49,32 @@ public class SessionWorkerFacade implements Session
     @Override
     public <A> void init( final String clientName, final A attachment, final Callback<Void,A> callback )
     {
-        queue( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.init( clientName, attachment, callback );
-            }
-        } );
+        queue( session -> session.init( clientName, attachment, callback ) );
     }
 
     @Override
     public <A> void run( final String statement, final Map<String,Object> params, final A attachment,
             final Callback<StatementMetadata,A> callback )
     {
-        queue( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.run( statement, params, attachment, callback );
-            }
-        } );
+        queue( session -> session.run( statement, params, attachment, callback ) );
     }
 
     @Override
     public <A> void pullAll( final A attachment, final Callback<RecordStream,A> callback )
     {
-        queue( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.pullAll( attachment, callback );
-            }
-        } );
+        queue( session -> session.pullAll( attachment, callback ) );
     }
 
     @Override
     public <A> void discardAll( final A attachment, final Callback<Void,A> callback )
     {
-        queue( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.discardAll( attachment, callback );
-            }
-        } );
+        queue( session -> session.discardAll( attachment, callback ) );
     }
 
     @Override
     public <A> void acknowledgeFailure( final A attachment, final Callback<Void,A> callback )
     {
-        queue( new Consumer<Session>()
-        {
-            @Override
-            public void accept( Session session )
-            {
-                session.acknowledgeFailure( attachment, callback );
-            }
-        } );
+        queue( session -> session.acknowledgeFailure( attachment, callback ) );
     }
 
     @Override

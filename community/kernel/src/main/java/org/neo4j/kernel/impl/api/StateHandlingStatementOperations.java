@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -29,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -690,14 +690,7 @@ public class StateHandlingStatementOperations implements
             Iterator<IndexDescriptor> descriptorIterator,
             final int propertyKey )
     {
-        Predicate<IndexDescriptor> predicate = new Predicate<IndexDescriptor>()
-        {
-            @Override
-            public boolean test( IndexDescriptor item )
-            {
-                return item.getPropertyKeyId() == propertyKey;
-            }
-        };
+        Predicate<IndexDescriptor> predicate = item -> item.getPropertyKeyId() == propertyKey;
         return filter( predicate, descriptorIterator );
     }
 

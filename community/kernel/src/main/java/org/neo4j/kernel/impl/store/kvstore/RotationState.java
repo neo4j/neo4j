@@ -24,16 +24,15 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
 {
     abstract ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
-                                           Consumer<Headers.Builder> headersUpdater )
-            throws IOException;
+            Consumer<Headers.Builder> headersUpdater ) throws IOException;
 
     @Override
     String stateName()

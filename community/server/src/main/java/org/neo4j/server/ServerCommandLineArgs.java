@@ -22,7 +22,6 @@ package org.neo4j.server;
 import java.io.File;
 import java.util.Collection;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.Converters;
@@ -77,20 +76,15 @@ public class ServerCommandLineArgs
     private static Pair<String,String>[] parseConfigOverrides( Args arguments )
     {
         Collection<Pair<String,String>> options = arguments.interpretOptions( "c",
-                Converters.<Pair<String,String>>optional(), new Function<String, Pair<String,String>>()
-                {
-                    @Override
-                    public Pair<String,String> apply( String s )
+                Converters.<Pair<String,String>>optional(), s -> {
+                    if ( s.contains( "=" ) )
                     {
-                        if ( s.contains( "=" ) )
-                        {
-                            String[] keyVal = s.split( "=", 2 );
-                            return pair( keyVal[0], keyVal[1] );
-                        }
-                        // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
-                        return pair( s, "true" );
+                        String[] keyVal = s.split( "=", 2 );
+                        return pair( keyVal[0], keyVal[1] );
                     }
-                });
+                    // Shortcut to specify boolean flags ("-c dbms.enableTheFeature")
+                    return pair( s, "true" );
+                } );
 
         return options.toArray( new Pair[options.size()] );
     }

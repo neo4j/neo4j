@@ -21,30 +21,16 @@ package org.neo4j.helpers;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 
 /**
  * Utility class for converting strings to and from UTF-8 encoded bytes.
  */
 public final class UTF8
 {
+    public static final Function<String, byte[]> encode = UTF8::encode;
 
-    public static final Function<String, byte[]> encode = new Function<String, byte[]>()
-    {
-        @Override
-        public byte[] apply( String s )
-        {
-            return encode( s );
-        }
-    };
-
-    public static final Function<byte[], String> decode = new Function<byte[], String>()
-    {
-        @Override
-        public String apply( byte[] bytes )
-        {
-            return decode( bytes );
-        }
-    };
+    public static final Function<byte[], String> decode = UTF8::decode;
 
     public static byte[] encode( String string )
     {
@@ -60,7 +46,7 @@ public final class UTF8
     {
         return new String( bytes, offset, length, StandardCharsets.UTF_8 );
     }
-    
+
     public static String getDecodedStringFrom( ByteBuffer source )
     {
         // Currently only one key is supported although the data format supports multiple

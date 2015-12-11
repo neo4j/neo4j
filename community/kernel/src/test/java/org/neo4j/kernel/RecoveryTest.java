@@ -26,8 +26,8 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -73,7 +73,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -270,19 +269,14 @@ public class RecoveryTest
         {
             writeLogHeader( writableLogChannel, logVersion, 2l );
 
-            Consumer<LogPositionMarker> consumer = new Consumer<LogPositionMarker>()
-            {
-                @Override
-                public void accept( LogPositionMarker marker )
+            Consumer<LogPositionMarker> consumer = marker -> {
+                try
                 {
-                    try
-                    {
-                        writableLogChannel.getCurrentPosition( marker );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    writableLogChannel.getCurrentPosition( marker );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
                 }
             };
             LogEntryWriter first = new LogEntryWriter( writableLogChannel, CommandHandler.EMPTY );

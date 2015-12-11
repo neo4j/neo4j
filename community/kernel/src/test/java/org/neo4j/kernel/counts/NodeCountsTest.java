@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.counts;
 
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.Supplier;
+import java.util.concurrent.Future;
+import java.util.function.Supplier;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;

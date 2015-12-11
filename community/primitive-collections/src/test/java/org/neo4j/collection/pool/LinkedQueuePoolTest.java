@@ -19,15 +19,13 @@
  */
 package org.neo4j.collection.pool;
 
+import org.junit.Test;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
-
-import org.neo4j.function.Factory;
-import org.neo4j.function.LongSupplier;
+import java.util.function.LongSupplier;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -302,14 +300,7 @@ public class LinkedQueuePoolTest
 
     private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
-        return new LinkedQueuePool<>( minSize, new Factory<Object>()
-            {
-                @Override
-                public Object newInstance()
-                {
-                    return new Object();
-                }
-            },
+        return new LinkedQueuePool<>( minSize, Object::new,
             new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
@@ -319,7 +310,7 @@ public class LinkedQueuePoolTest
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         for ( int i = 0; i < times; i++ )
         {
-            FlyweightHolder<R> holder = new FlyweightHolder<R>( pool );
+            FlyweightHolder<R> holder = new FlyweightHolder<>( pool );
             acquirers.add( holder );
             holder.run();
         }

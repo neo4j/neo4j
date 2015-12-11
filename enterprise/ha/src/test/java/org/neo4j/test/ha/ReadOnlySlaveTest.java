@@ -23,7 +23,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
@@ -48,14 +46,7 @@ public class ReadOnlySlaveTest
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( ReadOnlySlaveTest.class )
             .withSharedSetting( tx_push_factor, "2" )
-            .withInstanceSetting( read_only, new IntFunction<String>()
-            {
-                @Override
-                public String apply( int oneBasedServerId )
-                {
-                    return oneBasedServerId == 2 ? Settings.TRUE : null;
-                }
-            } );
+            .withInstanceSetting( read_only, oneBasedServerId -> oneBasedServerId == 2 ? Settings.TRUE : null );
 
     @Test
     public void givenClusterWithReadOnlySlaveWhenWriteTxOnSlaveThenCommitFails() throws Throwable

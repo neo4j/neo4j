@@ -23,8 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -70,14 +70,7 @@ public class OnDiskLastTxIdGetterTest
         final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         neoStores.close();
 
-        Supplier<NeoStores> neoStoresSupplier = new NeoStoresSupplier()
-        {
-            @Override
-            public NeoStores get()
-            {
-                return neoStores;
-            }
-        };
+        Supplier<NeoStores> neoStoresSupplier = () -> neoStores;
         OnDiskLastTxIdGetter diskLastTxIdGetter = new OnDiskLastTxIdGetter( neoStoresSupplier );
         assertEquals( TransactionIdStore.BASE_TX_ID, diskLastTxIdGetter.getLastTxId() );
     }

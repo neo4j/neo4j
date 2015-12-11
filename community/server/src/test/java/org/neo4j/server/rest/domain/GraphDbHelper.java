@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -365,23 +364,17 @@ public class GraphDbHelper
     {
         try ( Transaction tx = database.getGraph().beginTx() )
         {
-            Iterable<ConstraintDefinition> definitions = Iterables.filter( new Predicate<ConstraintDefinition>()
-            {
-
-                @Override
-                public boolean test( ConstraintDefinition item )
+            Iterable<ConstraintDefinition> definitions = Iterables.filter( item -> {
+                if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
                 {
-                    if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
-                    {
-                        Iterable<String> keys = item.getPropertyKeys();
-                        return single( keys ).equals( propertyKey );
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
+                    Iterable<String> keys = item.getPropertyKeys();
+                    return single( keys ).equals( propertyKey );
                 }
+                else
+                {
+                    return false;
+                }
+
             }, database.getGraph().schema().getConstraints( label( labelName ) ) );
             tx.success();
             return definitions;
@@ -459,18 +452,13 @@ public class GraphDbHelper
     private static Iterable<ConstraintDefinition> filterByConstraintTypeAndPropertyKey(
             Iterable<ConstraintDefinition> definitions, final ConstraintType type, final String propertyKey )
     {
-        return Iterables.filter( new Predicate<ConstraintDefinition>()
-        {
-            @Override
-            public boolean test( ConstraintDefinition definition )
+        return Iterables.filter( definition -> {
+            if ( definition.isConstraintType( type ) )
             {
-                if ( definition.isConstraintType( type ) )
-                {
-                    Iterable<String> keys = definition.getPropertyKeys();
-                    return single( keys ).equals( propertyKey );
-                }
-                return false;
+                Iterable<String> keys = definition.getPropertyKeys();
+                return single( keys ).equals( propertyKey );
             }
+            return false;
         }, definitions );
     }
 

@@ -26,9 +26,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -51,7 +50,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         private long internalLogRotationThreshold = 0L;
         private long internalLogRotationDelay = 0L;
         private int maxInternalLogArchives = 0;
-        private Consumer<LogProvider> rotationListener = Consumers.noop();
+        private Consumer<LogProvider> rotationListener = (logProvider) -> {};
         private Map<String, Level> logLevels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
 

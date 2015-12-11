@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
@@ -36,7 +37,6 @@ import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;

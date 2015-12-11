@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.IdType;
@@ -71,14 +70,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     int getNumberOfReservedLowIds();
 
-    Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
-    {
-        @Override
-        public boolean test( AbstractBaseRecord item )
-        {
-            return item.inUse();
-        }
-    };
+    Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
     {
@@ -271,34 +263,27 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final boolean forward, final Predicate<? super R>... filters )
         {
-            return new Iterable<R>()
+            return () -> new PrefetchingIterator<R>()
             {
-                @Override
-                public Iterator<R> iterator()
-                {
-                    return new PrefetchingIterator<R>()
-                    {
-                        final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
+                final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
 
-                        @Override
-                        protected R fetchNextOrNull()
+                @Override
+                protected R fetchNextOrNull()
+                {
+                    scan:
+                    while ( ids.hasNext() )
+                    {
+                        R record = store.forceGetRecord( ids.next() );
+                        for ( Predicate<? super R> filter : filters )
                         {
-                            scan:
-                            while ( ids.hasNext() )
+                            if ( !filter.test( record ) )
                             {
-                                R record = store.forceGetRecord( ids.next() );
-                                for ( Predicate<? super R> filter : filters )
-                                {
-                                    if ( !filter.test( record ) )
-                                    {
-                                        continue scan;
-                                    }
-                                }
-                                return record;
+                                continue scan;
                             }
-                            return null;
                         }
-                    };
+                        return record;
+                    }
+                    return null;
                 }
             };
         }

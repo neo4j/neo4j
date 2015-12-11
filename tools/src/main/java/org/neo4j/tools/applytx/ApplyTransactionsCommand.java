@@ -22,11 +22,11 @@ package org.neo4j.tools.applytx;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -57,9 +57,9 @@ import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 public class ApplyTransactionsCommand extends ArgsCommand
 {
     private final File from;
-    private final Provider<GraphDatabaseAPI> to;
+    private final Supplier<GraphDatabaseAPI> to;
 
-    public ApplyTransactionsCommand( File from, Provider<GraphDatabaseAPI> to )
+    public ApplyTransactionsCommand( File from, Supplier<GraphDatabaseAPI> to )
     {
         this.from = from;
         this.to = to;
@@ -68,7 +68,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
     @Override
     protected void run( Args args, PrintStream out ) throws Exception
     {
-        TransactionIdStore txIdStore = to.instance().getDependencyResolver().resolveDependency(
+        TransactionIdStore txIdStore = to.get().getDependencyResolver().resolveDependency(
                 TransactionIdStore.class );
         long fromTx = txIdStore.getLastCommittedTransaction().transactionId();
         long toTx;
@@ -91,7 +91,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
             toTx = Long.parseLong( whereTo );
         }
 
-        long lastApplied = applyTransactions( from, to.instance(), fromTx, toTx, out );
+        long lastApplied = applyTransactions( from, to.get(), fromTx, toTx, out );
         out.println( "Applied transactions up to and including " + lastApplied );
     }
 

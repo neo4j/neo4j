@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
+import java.util.function.Supplier;
+
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
 
@@ -59,15 +59,10 @@ public class TxPollingClient extends LifecycleAdapter
     {
         coreClient.addTxPullResponseListener( txPullResponseListener );
         final TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
-        jobScheduler.scheduleRecurring( pullUpdates, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                coreClient.pollForTransactions( first( edgeDiscoveryService.currentTopology().getMembers() )
-                        .getCoreAddress(), transactionIdStore.getLastCommittedTransactionId() );
-            }
-        }, pollingInterval, MILLISECONDS );
+        jobScheduler.scheduleRecurring( pullUpdates,
+                () -> coreClient.pollForTransactions(
+                        first( edgeDiscoveryService.currentTopology().getMembers() ).getCoreAddress(),
+                        transactionIdStore.getLastCommittedTransactionId() ), pollingInterval, MILLISECONDS );
     }
 
     @Override

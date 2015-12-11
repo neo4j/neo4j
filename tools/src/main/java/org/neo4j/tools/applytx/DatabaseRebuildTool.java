@@ -25,13 +25,13 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -188,22 +188,8 @@ public class DatabaseRebuildTool
         // should be restored. The commands has references to providers of things to accommodate for this.
         final AtomicReference<Store> store =
                 new AtomicReference<>( new Store( dbBuilder ) );
-        final Provider<StoreAccess> storeAccess = new Provider<StoreAccess>()
-        {
-            @Override
-            public StoreAccess instance()
-            {
-                return store.get().access;
-            }
-        };
-        final Provider<GraphDatabaseAPI> dbAccess = new Provider<GraphDatabaseAPI>()
-        {
-            @Override
-            public GraphDatabaseAPI instance()
-            {
-                return store.get().db;
-            }
-        };
+        final Supplier<StoreAccess> storeAccess = () -> store.get().access;
+        final Supplier<GraphDatabaseAPI> dbAccess = () -> store.get().db;
 
         ConsoleInput consoleInput = life.add( new ConsoleInput( in, out, prompt ) );
         consoleInput.add( "apply", new ApplyTransactionsCommand( fromPath, dbAccess ) );

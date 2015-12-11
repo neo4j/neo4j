@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 
@@ -116,14 +116,7 @@ public class Workers<R extends Runnable> implements Iterable<R>
     @Override
     public Iterator<R> iterator()
     {
-        return Iterables.map( new Function<Worker,R>()
-        {
-            @Override
-            public R apply( Worker worker ) throws RuntimeException
-            {
-                return worker.toRun;
-            }
-        }, workers.iterator() );
+        return Iterables.map( worker -> worker.toRun, workers.iterator() );
     }
 
     private class Worker extends Thread

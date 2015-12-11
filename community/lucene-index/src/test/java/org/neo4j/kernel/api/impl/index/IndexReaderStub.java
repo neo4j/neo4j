@@ -38,8 +38,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
-
-import org.neo4j.function.Function;
+import java.util.function.Function;
 
 public class IndexReaderStub extends LeafReader
 {
@@ -47,14 +46,7 @@ public class IndexReaderStub extends LeafReader
     private Fields fields;
     private boolean allDeleted;
     private String[] elements = new String[0];
-    private Function<String,NumericDocValues> ndvs = new Function<String,NumericDocValues>()
-    {
-        @Override
-        public NumericDocValues apply( String s )
-        {
-            return DocValues.emptyNumeric();
-        }
-    };
+    private Function<String,NumericDocValues> ndvs = s -> DocValues.emptyNumeric();
 
     private IOException throwOnFields;
     private static FieldInfo DummyFieldInfo =
@@ -74,30 +66,18 @@ public class IndexReaderStub extends LeafReader
 
     public IndexReaderStub( final NumericDocValues ndv )
     {
-        this.ndvs = new Function<String,NumericDocValues>()
-        {
-            @Override
-            public NumericDocValues apply( String s )
-            {
-                return ndv;
-            }
-        };
+        this.ndvs = s -> ndv;
     }
 
     public IndexReaderStub( final Map<String,NumericDocValues> ndvs )
     {
-        this.ndvs = new Function<String,NumericDocValues>()
-        {
-            @Override
-            public NumericDocValues apply( String s )
+        this.ndvs = s -> {
+            NumericDocValues dv = ndvs.get( s );
+            if ( dv == null )
             {
-                NumericDocValues dv = ndvs.get( s );
-                if ( dv == null )
-                {
-                    return DocValues.emptyNumeric();
-                }
-                return dv;
+                return DocValues.emptyNumeric();
             }
+            return dv;
         };
     }
 

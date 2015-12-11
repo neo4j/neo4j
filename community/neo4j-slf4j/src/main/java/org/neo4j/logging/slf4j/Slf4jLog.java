@@ -19,7 +19,8 @@
  */
 package org.neo4j.logging.slf4j;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
+
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.kernel.Traversal;
 
@@ -53,31 +55,19 @@ import org.neo4j.kernel.Traversal;
  * @deprecated because of the introduction of a new traversal framework,
  * see more information at {@link TraversalDescription} and
  * {@link Traversal} and the new traversal framework's equivalent
- * {@link org.neo4j.function.Predicate}.
+ * {@link Predicate}.
  */
 public interface ReturnableEvaluator
 {
     /**
      * A returnable evaluator that returns all nodes encountered.
      */
-    ReturnableEvaluator ALL = new ReturnableEvaluator()
-    {
-        public boolean isReturnableNode( final TraversalPosition currentPosition )
-        {
-            return true;
-        }
-    };
+    ReturnableEvaluator ALL = currentPosition -> true;
 
     /**
      * A returnable evaluator that returns all nodes except the start node.
      */
-    ReturnableEvaluator ALL_BUT_START_NODE = new ReturnableEvaluator()
-    {
-        public boolean isReturnableNode( final TraversalPosition currentPosition )
-        {
-            return currentPosition.notStartNode();
-        }
-    };
+    ReturnableEvaluator ALL_BUT_START_NODE = currentPosition -> currentPosition.notStartNode();
 
     /**
      * Method invoked by traverser to see if the current position is a

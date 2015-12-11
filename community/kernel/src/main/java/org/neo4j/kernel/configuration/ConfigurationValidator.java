@@ -23,8 +23,8 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 
 /**

@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;

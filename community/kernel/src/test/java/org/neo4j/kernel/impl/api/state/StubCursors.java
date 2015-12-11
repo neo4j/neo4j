@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Function;
-import org.neo4j.function.IntSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.DegreeItem;
@@ -369,45 +369,28 @@ public class StubCursors
 
     public static Cursor<LabelItem> asLabelCursor( final List<Integer> labels )
     {
-        return Cursors.<LabelItem>cursor( Iterables.map( new Function<Integer, LabelItem>()
-        {
-            @Override
-            public LabelItem apply( final Integer integer )
-            {
-                return new LabelItem()
-                {
-                    @Override
-                    public int getAsInt()
-                    {
-                        return integer;
-                    }
-                };
-            }
+        return Cursors.cursor( Iterables.map( integer -> {
+            return (LabelItem) () -> integer;
         }, labels ) );
     }
 
     public static Cursor<PropertyItem> asPropertyCursor( final DefinedProperty... properties )
     {
-        return Cursors.cursor( Iterables.map( new Function<DefinedProperty, PropertyItem>()
-        {
-            @Override
-            public PropertyItem apply( final DefinedProperty property )
+        return Cursors.cursor( Iterables.map( (Function<DefinedProperty,PropertyItem>) property -> {
+            return new PropertyItem()
             {
-                return new PropertyItem()
+                @Override
+                public int propertyKeyId()
                 {
-                    @Override
-                    public int propertyKeyId()
-                    {
-                        return property.propertyKeyId();
-                    }
+                    return property.propertyKeyId();
+                }
 
-                    @Override
-                    public Object value()
-                    {
-                        return property.value();
-                    }
-                };
-            }
+                @Override
+                public Object value()
+                {
+                    return property.value();
+                }
+            };
         }, Arrays.asList( properties ) ) );
     }
 }

@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.function.Predicate;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.function.Predicate;
 
 public class IndexSamplingJobQueue<T>
 {

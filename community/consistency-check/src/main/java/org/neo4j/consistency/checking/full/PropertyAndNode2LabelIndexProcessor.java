@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.function.Function;
+
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.PropertyRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -28,7 +30,6 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 

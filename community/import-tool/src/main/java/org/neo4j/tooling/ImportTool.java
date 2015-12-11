@@ -24,15 +24,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.function.BiFunction;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
@@ -68,7 +67,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
@@ -526,13 +524,7 @@ public class ImportTool
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
         // a specific exit code. On the other hand It's very inconvenient to have any System.exit
         // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler( new UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {   // Shhhh
-            }
-        } );
+        Thread.currentThread().setUncaughtExceptionHandler( ( t, e1 ) -> { /* Shhhh */ } );
         return launderedException( e ); // throw in order to have process exit with !0
     }
 
@@ -686,46 +678,27 @@ public class ImportTool
         };
     }
 
-    private static final Function<String,IdType> TO_ID_TYPE = new Function<String,IdType>()
-    {
-        @Override
-        public IdType apply( String from )
-        {
-            return IdType.valueOf( from.toUpperCase() );
-        }
-    };
+    private static final Function<String,IdType> TO_ID_TYPE = from -> IdType.valueOf( from.toUpperCase() );
 
     private static final Function<String,Character> DELIMITER_CONVERTER = new DelimiterConverter();
 
-    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
-            new BiFunction<Args,String,Collection<Option<File[]>>>()
-    {
-        @Override
-        public Collection<Option<File[]>> apply( Args args, String key )
+    static final Validator<File[]> FILES_EXISTS = files -> {
+        for ( File file : files )
         {
-            return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
-                    Validators.<File>atLeast( "--" + key, 1 ) );
+            if ( file.getName().startsWith( ":" ) )
+            {
+                warn( "It looks like you're trying to specify default label or relationship type (" +
+                      file.getName() + "). Please put such directly on the key, f.ex. " +
+                      Options.NODE_DATA.argument() + ":MyLabel" );
+            }
+            Validators.REGEX_FILE_EXISTS.validate( file );
         }
     };
 
-    static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
-    {
-        @Override
-        public void validate( File[] files )
-        {
-            for ( File file : files )
-            {
-                if ( file.getName().startsWith( ":" ) )
-                {
-                    warn( "It looks like you're trying to specify default label or relationship type (" +
-                            file.getName() + "). Please put such directly on the key, f.ex. " +
-                            Options.NODE_DATA.argument() + ":MyLabel" );
-                }
-                Validators.REGEX_FILE_EXISTS.validate( file );
-            }
-        }
-    };
+    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
+            ( args, key ) -> args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
+                    Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ), FILES_EXISTS,
+                    Validators.<File>atLeast( "--" + key, 1 ) );
 
     static void warn( String warning )
     {

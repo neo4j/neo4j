@@ -21,7 +21,7 @@ package org.neo4j.desktop.config.portable;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.Function;
+import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
 

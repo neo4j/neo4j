@@ -39,12 +39,11 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -84,15 +83,10 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_STRINGS;
 public class CacheLayer implements StoreReadLayer
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
-            new Function<SchemaRule, IndexDescriptor>()
-            {
-                @Override
-                public IndexDescriptor apply( SchemaRule from )
-                {
-                    IndexRule rule = (IndexRule) from;
-                    // We know that we only have int range of property key ids.
-                    return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
-                }
+            from -> {
+                IndexRule rule = (IndexRule) from;
+                // We know that we only have int range of property key ids.
+                return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
             };
 
     private final ProcedureCache procedureCache;
@@ -140,14 +134,7 @@ public class CacheLayer implements StoreReadLayer
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
             final SchemaRule.Kind kind )
     {
-        Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
-        {
-            @Override
-            public boolean test( SchemaRule item )
-            {
-                return item.getKind() == kind;
-            }
-        }, rules.iterator() );
+        Iterator<SchemaRule> filteredRules = filter( item -> item.getKind() == kind, rules.iterator() );
         return map( TO_INDEX_RULE, filteredRules );
     }
 

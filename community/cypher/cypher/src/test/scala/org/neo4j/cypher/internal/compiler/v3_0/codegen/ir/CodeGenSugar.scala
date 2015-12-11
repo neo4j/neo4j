@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
-import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
@@ -115,7 +114,7 @@ trait CodeGenSugar extends MockitoSugar {
                   graphdb: GraphDatabaseService = null,
                   nodeManager: NodeManager = null,
                   executionMode: ExecutionMode = null,
-                  supplier: Supplier[InternalPlanDescription] = null,
+                  supplier: org.neo4j.function.Supplier[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
     val generated = clazz.execute(taskCloser, statement, nodeManager,

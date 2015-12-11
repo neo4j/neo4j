@@ -35,8 +35,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.neo4j.function.Function;
+import java.util.function.Function;
 
 import static java.lang.String.format;
 

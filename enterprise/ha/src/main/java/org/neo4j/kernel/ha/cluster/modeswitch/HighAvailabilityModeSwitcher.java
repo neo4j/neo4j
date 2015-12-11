@@ -26,15 +26,15 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.function.Supplier;
+import org.neo4j.function.Functions;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
@@ -51,7 +51,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
-import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.function.Functions.withDefaults;
 import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.Uris.parameter;
 
@@ -206,7 +206,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         stateChanged( event );
     }
-    
+
     public void forceElections()
     {
         if ( canAskForElections.compareAndSet( true, false ) )
@@ -260,45 +260,40 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private void switchToMaster()
     {
         final CancellationHandle cancellationHandle = new CancellationHandle();
-        startModeSwitching( new Runnable()
-        {
-            @Override
-            public void run()
+        startModeSwitching( () -> {
+            if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
             {
-                if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
-                {
-                    return;
-                }
+                return;
+            }
 
-                // We just got scheduled. Maybe we are already obsolete - test
-                if ( cancellationHandle.cancellationRequested() )
-                {
-                    msgLog.info( "Switch to master cancelled on start." );
-                    return;
-                }
+            // We just got scheduled. Maybe we are already obsolete - test
+            if ( cancellationHandle.cancellationRequested() )
+            {
+                msgLog.info( "Switch to master cancelled on start." );
+                return;
+            }
 
-                componentSwitcher.switchToMaster();
+            componentSwitcher.switchToMaster();
 
-                if ( cancellationHandle.cancellationRequested() )
-                {
-                    msgLog.info( "Switch to master cancelled before ha communication started." );
-                    return;
-                }
+            if ( cancellationHandle.cancellationRequested() )
+            {
+                msgLog.info( "Switch to master cancelled before ha communication started." );
+                return;
+            }
 
-                haCommunicationLife.shutdown();
-                haCommunicationLife = new LifeSupport();
+            haCommunicationLife.shutdown();
+            haCommunicationLife = new LifeSupport();
 
-                try
-                {
-                    masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
-                    canAskForElections.set( true );
-                }
-                catch ( Throwable e )
-                {
-                    msgLog.error( "Failed to switch to master", e );
-                    // Since this master switch failed, elect someone else
-                    election.demote( instanceId );
-                }
+            try
+            {
+                masterHaURI = switchToMaster.switchToMaster( haCommunicationLife, me );
+                canAskForElections.set( true );
+            }
+            catch ( Throwable e )
+            {
+                msgLog.error( "Failed to switch to master", e );
+                // Since this master switch failed, elect someone else
+                election.demote( instanceId );
             }
         }, cancellationHandle );
     }
@@ -414,38 +409,33 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
-        startModeSwitching( new Runnable()
-        {
-            @Override
-            public void run()
+        startModeSwitching( () -> {
+            if ( cancellationHandle.cancellationRequested() )
             {
-                if ( cancellationHandle.cancellationRequested() )
-                {
-                    msgLog.info( "Switch to pending cancelled on start." );
-                    return;
-                }
-
-                if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                }
-                else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( MASTER );
-                }
-
-                componentSwitcher.switchToPending();
-                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
-
-                if ( cancellationHandle.cancellationRequested() )
-                {
-                    msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
-                    return;
-                }
-
-                haCommunicationLife.shutdown();
-                haCommunicationLife = new LifeSupport();
+                msgLog.info( "Switch to pending cancelled on start." );
+                return;
             }
+
+            if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
+            {
+                clusterMemberAvailability.memberIsUnavailable( SLAVE );
+            }
+            else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
+            {
+                clusterMemberAvailability.memberIsUnavailable( MASTER );
+            }
+
+            componentSwitcher.switchToPending();
+            neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
+
+            if ( cancellationHandle.cancellationRequested() )
+            {
+                msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                return;
+            }
+
+            haCommunicationLife.shutdown();
+            haCommunicationLife = new LifeSupport();
         }, new CancellationHandle() );
 
         try

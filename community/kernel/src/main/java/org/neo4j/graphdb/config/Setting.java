@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.config;
 
-import org.neo4j.helpers.Function;
+import java.util.function.Function;
 
 /**
  * Settings that can be provided in configurations are represented by instances of this interface, and are available
@@ -30,8 +30,7 @@ import org.neo4j.helpers.Function;
  * This interface is available only for use, not for implementing. Implementing this interface is not expected, and
  * backwards compatibility is not guaranteed for implementors.
  */
-public interface Setting<T>
-        extends Function<Function<String, String>, T>
+public interface Setting<T> extends Function<Function<String,String>,T>
 {
     /**
      * Get the name of the setting. This typically corresponds to a key in a properties file, or similar.

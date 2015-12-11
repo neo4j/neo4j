@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.configuration.Config;
@@ -309,14 +308,8 @@ public class TransactionPropagator implements Lifecycle
 
     private Iterator<Slave> filter( Iterator<Slave> slaves, final Integer externalAuthorServerId )
     {
-        return externalAuthorServerId == null ? slaves : new FilteringIterator<>( slaves, new Predicate<Slave>()
-        {
-            @Override
-            public boolean test( Slave item )
-            {
-                return item.getServerId() != externalAuthorServerId;
-            }
-        } );
+        return externalAuthorServerId == null ? slaves : new FilteringIterator<>( slaves,
+                item -> item.getServerId() != externalAuthorServerId );
     }
 
     private boolean isSuccessful( ReplicationContext context )

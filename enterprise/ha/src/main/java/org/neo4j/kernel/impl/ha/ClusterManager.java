@@ -40,7 +40,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -56,9 +58,6 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
-import org.neo4j.function.Function;
-import org.neo4j.function.IntFunction;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -92,7 +91,6 @@ import org.neo4j.logging.Log;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
-
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -143,14 +141,7 @@ public class ClusterManager
 
     public static IntFunction<String> constant( final String value )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int ignored )
-            {
-                return value;
-            }
-        };
+        return ignored -> value;
     }
 
     private final File root;
@@ -188,15 +179,10 @@ public class ClusterManager
      */
     public static Provider fromXml( final URI clustersXml )
     {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Exception
-            {
-                DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                Document clustersXmlDoc = documentBuilder.parse( clustersXml.toURL().openStream() );
-                return new ClustersXMLSerializer( documentBuilder ).read( clustersXmlDoc );
-            }
+        return () -> {
+            DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document clustersXmlDoc = documentBuilder.parse( clustersXml.toURL().openStream() );
+            return new ClustersXMLSerializer( documentBuilder ).read( clustersXmlDoc );
         };
     }
 
@@ -266,14 +252,7 @@ public class ClusterManager
 
     public static Provider provided( final Clusters clusters )
     {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Throwable
-            {
-                return clusters;
-            }
-        };
+        return () -> clusters;
     }
 
     /**
@@ -336,16 +315,9 @@ public class ClusterManager
             public boolean test( ManagedCluster cluster )
             {
                 Predicate<HighlyAvailableGraphDatabase> filterMasterPredicate =
-                        new Predicate<HighlyAvailableGraphDatabase>()
-                        {
-                            @Override
-                            public boolean test( HighlyAvailableGraphDatabase node )
-                            {
-                                return !excludedNodes.contains( node ) &&
-                                       node.isAvailable( 0 ) &&
-                                       node.isMaster();
-                            }
-                        };
+                        node -> !excludedNodes.contains( node ) &&
+                               node.isAvailable( 0 ) &&
+                               node.isMaster();
                 return Iterables.filter( filterMasterPredicate, cluster.getAllMembers() ).iterator().hasNext();
             }
 
@@ -465,61 +437,44 @@ public class ClusterManager
 
     public static Predicate<ManagedCluster> allAvailabilityGuardsReleased()
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster item )
+        return item -> {
+            for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
             {
-                for ( HighlyAvailableGraphDatabase member : item.getAllMembers())
+                try
                 {
-                    try
-                    {
-                        member.beginTx().close();
-                    }
-                    catch ( TransactionFailureException e )
-                    {
-                        return false;
-                    }
+                    member.beginTx().close();
                 }
-                return true;
+                catch ( TransactionFailureException e )
+                {
+                    return false;
+                }
             }
+            return true;
         };
     }
 
     public static Predicate<ManagedCluster> memberSeesOtherMemberAsFailed(
             final HighlyAvailableGraphDatabase observer, final HighlyAvailableGraphDatabase observed )
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster cluster )
+        return cluster -> {
+            InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
+                    .get( ClusterSettings.server_id );
+            for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
+                    ClusterMembers.class ).getMembers() )
             {
-                InstanceId observedServerId = observed.getDependencyResolver().resolveDependency( Config.class )
-                        .get( ClusterSettings.server_id );
-                for ( ClusterMember member : observer.getDependencyResolver().resolveDependency(
-                        ClusterMembers.class ).getMembers() )
+                if ( member.getInstanceId().equals( observedServerId ) )
                 {
-                    if ( member.getInstanceId().equals( observedServerId ) )
-                    {
-                        return !member.isAlive();
-                    }
+                    return !member.isAlive();
                 }
-                throw new IllegalStateException( observed + " not a member according to " + observer );
             }
+            throw new IllegalStateException( observed + " not a member according to " + observer );
         };
     }
 
     public static Predicate<ManagedCluster> memberThinksItIsRole(
             final HighlyAvailableGraphDatabase member, final String role )
     {
-        return new Predicate<ManagedCluster>()
-        {
-            @Override
-            public boolean test( ManagedCluster cluster )
-            {
-                return role.equals( member.role() );
-            }
-        };
+        return cluster -> role.equals( member.role() );
     }
 
     public static String stateToString( ManagedCluster cluster )
@@ -680,14 +635,7 @@ public class ClusterManager
         @Override
         public Builder withSeedDir( final File seedDir )
         {
-            return withStoreDirInitializer( new StoreDirInitializer()
-            {
-                @Override
-                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
-                {
-                    copyRecursively( seedDir, storeDir );
-                }
-            } );
+            return withStoreDirInitializer( ( serverId, storeDir ) -> copyRecursively( seedDir, storeDir ) );
         }
 
         @Override
@@ -756,14 +704,7 @@ public class ClusterManager
 
         public HighlyAvailableGraphDatabaseProxy( final GraphDatabaseBuilder graphDatabaseBuilder )
         {
-            Callable<GraphDatabaseService> starter = new Callable<GraphDatabaseService>()
-            {
-                @Override
-                public GraphDatabaseService call() throws Exception
-                {
-                    return graphDatabaseBuilder.newGraphDatabase();
-                }
-            };
+            Callable<GraphDatabaseService> starter = graphDatabaseBuilder::newGraphDatabase;
             executor = Executors.newFixedThreadPool( 1 );
             untilThen = executor.submit( starter );
         }
@@ -804,21 +745,16 @@ public class ClusterManager
         @Override
         public void init() throws Throwable
         {
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.init();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.init();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
@@ -826,21 +762,16 @@ public class ClusterManager
         public void start() throws Throwable
         {
             currentFuture.get();
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.start();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.start();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
@@ -848,42 +779,32 @@ public class ClusterManager
         public void stop() throws Throwable
         {
             currentFuture.get();
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.stop();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.stop();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
         }
 
         @Override
         public void shutdown() throws Throwable
         {
-            currentFuture = starter.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+            currentFuture = starter.submit( (Callable<Void>) () -> {
+                try
                 {
-                    try
-                    {
-                        wrapped.shutdown();
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        throw new RuntimeException( throwable );
-                    }
-                    return null;
+                    wrapped.shutdown();
                 }
+                catch ( Throwable throwable )
+                {
+                    throw new RuntimeException( throwable );
+                }
+                return null;
             } );
             currentFuture.get();
             starter.shutdownNow();
@@ -943,13 +864,8 @@ public class ClusterManager
          */
         public Iterable<HighlyAvailableGraphDatabase> getAllMembers()
         {
-            return Iterables.map( new Function<HighlyAvailableGraphDatabaseProxy,HighlyAvailableGraphDatabase>()
-            {
-                @Override
-                public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
-                {
-                    return from.get();
-                }
+            return Iterables.map( from -> {
+                return from.get();
             }, members.values() );
         }
 
@@ -1270,7 +1186,7 @@ public class ClusterManager
             }
         }
 
-        public void applyOnAll( org.neo4j.function.Function<GraphDatabaseService,Void> function )
+        public void applyOnAll( Function<GraphDatabaseService,Void> function )
         {
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
             {

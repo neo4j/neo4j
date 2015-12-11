@@ -23,7 +23,6 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -82,15 +81,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
                 new AsOneStartBranch( this, endNodes, end.initialState, start.uniqueness ), end.expander );
 
         this.selector = sideSelector.create( startSelector, endSelector, maxDepth );
-        this.collisionDetector = collisionPolicy.create( collisionEvaluator,
-                new Predicate<Path>()
-                {
-                    @Override
-                    public boolean test( Path path )
-                    {
-                        return uniqueness.checkFull( path );
-                    }
-                } );
+        this.collisionDetector = collisionPolicy.create( collisionEvaluator, uniqueness::checkFull );
     }
 
     private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription

@@ -26,8 +26,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -42,14 +42,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
  */
 class ClusterState
 {
-    public static final Predicate<ClusterInstance> HAS_TIMEOUTS = new Predicate<ClusterInstance>()
-    {
-        @Override
-        public boolean test( ClusterInstance item )
-        {
-            return item.hasPendingTimeouts();
-        }
-    };
+    public static final Predicate<ClusterInstance> HAS_TIMEOUTS = ClusterInstance::hasPendingTimeouts;
     private final Set<ClusterAction> pendingActions;
     private final List<ClusterInstance> instances = new ArrayList<>();
 

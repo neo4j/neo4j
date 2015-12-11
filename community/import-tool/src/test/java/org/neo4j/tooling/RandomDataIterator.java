@@ -20,9 +20,9 @@
 package org.neo4j.tooling;
 
 import java.util.Random;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.test.Randoms;

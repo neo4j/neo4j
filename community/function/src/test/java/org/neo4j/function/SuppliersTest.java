@@ -21,8 +21,11 @@ package org.neo4j.function;
 
 import org.junit.Test;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;

@@ -29,7 +29,6 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -65,14 +64,7 @@ public class StandardBranchCollisionDetectorTest
         when( alternativeBranch.startNode() ).thenReturn( startNode );
         when( evaluator.evaluate( Mockito.any( Path.class ) ) ).thenReturn( Evaluation.INCLUDE_AND_CONTINUE );
         StandardBranchCollisionDetector collisionDetector = new StandardBranchCollisionDetector( evaluator,
-                new Predicate<Path>()
-                {
-                    @Override
-                    public boolean test( Path path )
-                    {
-                        return alternativeEndNode.equals( path.endNode() ) && startNode.equals( path.startNode() );
-                    }
-                } );
+                path -> alternativeEndNode.equals( path.endNode() ) && startNode.equals( path.startNode() ) );
 
         Collection<Path> incoming = collisionDetector.evaluate( branch, Direction.INCOMING );
         Collection<Path> outgoing = collisionDetector.evaluate( branch, Direction.OUTGOING );

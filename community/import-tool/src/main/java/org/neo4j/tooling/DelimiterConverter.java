@@ -19,7 +19,8 @@
  */
 package org.neo4j.tooling;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 

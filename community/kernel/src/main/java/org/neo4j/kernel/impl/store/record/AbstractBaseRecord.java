@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.helpers.CloneableInPublic;
 
 public abstract class AbstractBaseRecord implements CloneableInPublic

@@ -35,10 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.function.IntPredicate;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -60,6 +60,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -67,12 +70,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
-import static org.neo4j.function.IntPredicates.alwaysTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -90,6 +87,7 @@ public class ImportToolTest
 {
     private static final int RELATIONSHIP_COUNT = 10_000;
     private static final int NODE_COUNT = 100;
+    private static final IntPredicate TRUE = i -> true;
 
     @Rule
     public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
@@ -127,8 +125,8 @@ public class ImportToolTest
         // WHEN
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -148,10 +146,10 @@ public class ImportToolTest
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
                 nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                nodeData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                nodeData( false, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships",
                 relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -173,10 +171,10 @@ public class ImportToolTest
                     "--delimiter", "TAB",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                            nodeData( false, config, nodeIds, alwaysTrue(), Charset.defaultCharset(), extraColumns )
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
                                     .getAbsolutePath(),
                     "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                            relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                            relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
             fail( "Should have thrown exception" );
         }
@@ -205,10 +203,10 @@ public class ImportToolTest
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                        nodeData( false, config, nodeIds, alwaysTrue(), Charset.defaultCharset(), extraColumns )
+                        nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
                                 .getAbsolutePath(),
                 "--relationships", relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                        relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                        relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
@@ -277,7 +275,7 @@ public class ImportToolTest
                 nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
                 relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                relationshipData( false, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -309,34 +307,24 @@ public class ImportToolTest
 
         // THEN
         verifyData(
-                new Validator<Node>()
-                {
-                    @Override
-                    public void validate( Node node )
+                node -> {
+                    if ( node.getId() < NODE_COUNT / 2 )
                     {
-                        if ( node.getId() < NODE_COUNT / 2 )
-                        {
-                            assertNodeHasLabels( node, firstLabels );
-                        }
-                        else
-                        {
-                            assertNodeHasLabels( node, secondLabels );
-                        }
+                        assertNodeHasLabels( node, firstLabels );
+                    }
+                    else
+                    {
+                        assertNodeHasLabels( node, secondLabels );
                     }
                 },
-                new Validator<Relationship>()
-                {
-                    @Override
-                    public void validate( Relationship relationship )
+                relationship -> {
+                    if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
                     {
-                        if ( relationship.getId() < RELATIONSHIP_COUNT / 2 )
-                        {
-                            assertEquals( firstType, relationship.getType().name() );
-                        }
-                        else
-                        {
-                            assertEquals( secondType, relationship.getType().name() );
-                        }
+                        assertEquals( firstType, relationship.getType().name() );
+                    }
+                    else
+                    {
+                        assertEquals( secondType, relationship.getType().name() );
                     }
                 } );
     }
@@ -351,7 +339,7 @@ public class ImportToolTest
         // WHEN
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() );
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath() );
         // no relationships
 
         // THEN
@@ -388,11 +376,11 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
-                           nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
+                           nodeData( false, config, groupOneNodeIds, TRUE ),
                 "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
-                           nodeData( false, config, groupTwoNodeIds, alwaysTrue() ),
+                           nodeData( false, config, groupTwoNodeIds, TRUE ),
                 "--relationships", relationshipHeader( config, groupOne, groupTwo, true ) + MULTI_FILE_DELIMITER +
-                                   relationshipData( false, config, rels.iterator(), alwaysTrue(), true ) );
+                                   relationshipData( false, config, rels.iterator(), TRUE, true ) );
 
         // THEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
@@ -424,9 +412,9 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                               nodeData( false, config, groupOneNodeIds, alwaysTrue() ).getAbsolutePath(),
+                               nodeData( false, config, groupOneNodeIds, TRUE ).getAbsolutePath(),
                     "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                               nodeData( false, config, groupTwoNodeIds, alwaysTrue() ).getAbsolutePath() );
+                               nodeData( false, config, groupTwoNodeIds, TRUE ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( Exception e )
@@ -446,10 +434,10 @@ public class ImportToolTest
         // WHEN
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 // there will be no :TYPE specified in the header of the relationships below
                 "--relationships:" + type,
-                relationshipData( true, config, nodeIds, alwaysTrue(), false ).getAbsolutePath() );
+                relationshipData( true, config, nodeIds, TRUE, false ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -527,7 +515,7 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE", "aa" ), //          line 2 of file1
@@ -563,7 +551,7 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
                 relationship( "a", "b", "TYPE" ), //          line 2 of file1
@@ -599,7 +587,7 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = asList( "a", "b", "c" );
         Configuration config = Configuration.COMMAS;
-        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
 
         List<RelationshipDataLine> relationships = Arrays.asList(
                 // header                                   line 1 of file1
@@ -641,18 +629,13 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--nodes:My First Label:My Other Label",
-                nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
-        verifyData( new Validator<Node>()
-        {
-            @Override
-            public void validate( Node node )
-            {
-                assertTrue( node.hasLabel( label1 ) );
-                assertTrue( node.hasLabel( label2 ) );
-            }
+        verifyData( node -> {
+            assertTrue( node.hasLabel( label1 ) );
+            assertTrue( node.hasLabel( label2 ) );
         }, Validators.<Relationship>emptyValidator() );
     }
 
@@ -668,8 +651,8 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--input-encoding", charset.name(),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue(), charset ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true, charset )
+                "--nodes", nodeData( true, config, nodeIds, TRUE, charset ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true, charset )
                         .getAbsolutePath() );
 
         // THEN
@@ -689,7 +672,7 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--relationships",
-                    relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                    relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -710,9 +693,9 @@ public class ImportToolTest
         // WHEN
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, relationshipData.iterator(),
-                        alwaysTrue(), true ).getAbsolutePath() );
+                        TRUE, true ).getAbsolutePath() );
 
         // THEN
         GraphDatabaseService db = dbRule.getGraphDatabaseService();
@@ -792,9 +775,9 @@ public class ImportToolTest
             // WHEN
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
-                    "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
                     "--relationships", relationshipData( true, config, relationshipDataLines,
-                            alwaysTrue(), true ).getAbsolutePath() );
+                            TRUE, true ).getAbsolutePath() );
             fail( " Should fail during import." );
         }
         catch ( Exception e )
@@ -944,8 +927,8 @@ public class ImportToolTest
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--delimiter", "\\t",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -965,8 +948,8 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--delimiter", "\\bogus",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                    "--nodes", nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                    "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+                    "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                    "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath() );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
@@ -991,14 +974,7 @@ public class ImportToolTest
 
     private Predicate<Node> nodeFilter( final String id )
     {
-        return new Predicate<Node>()
-        {
-            @Override
-            public boolean test( Node node )
-            {
-                return node.getProperty( "id", "" ).equals( id );
-            }
-        };
+        return node -> node.getProperty( "id", "" ).equals( id );
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
@@ -1403,14 +1379,7 @@ public class ImportToolTest
 
     private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
-        return new IntPredicate()
-        {
-            @Override
-            public boolean test( int line )
-            {
-                return line >= startingAt && line < endingAt;
-            }
-        };
+        return line -> line >= startingAt && line < endingAt;
     }
 
     private void importTool( String... arguments ) throws IOException

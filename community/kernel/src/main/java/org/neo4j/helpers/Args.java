@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.util.Validator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -113,16 +113,11 @@ public class Args
         }
     }
 
-    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = new Function<String,Option<String>>()
-    {
-        @Override
-        public Option<String> apply( String from )
-        {
-            int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
-            return metadataStartIndex == -1
-                    ? new Option<>( from, null )
-                    : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
-        }
+    private static final Function<String,Option<String>> DEFAULT_OPTION_PARSER = from -> {
+        int metadataStartIndex = from.indexOf( OPTION_METADATA_DELIMITER );
+        return metadataStartIndex == -1
+                ? new Option<>( from, null )
+                : new Option<>( from.substring( 0, metadataStartIndex ), from.substring( metadataStartIndex + 1 ) );
     };
 
     private final String[] args;

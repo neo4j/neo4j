@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.util.diffsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -190,14 +190,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
     {
         if ( filter == null )
         {
-            filter = new Predicate<T>()
-            {
-                @Override
-                public boolean test( T item )
-                {
-                    return !removed( false ).contains( item ) && !added( false ).contains( item );
-                }
-            };
+            filter = item -> !removed( false ).contains( item ) && !added( false ).contains( item );
         }
     }
 
@@ -209,7 +202,7 @@ abstract class SuperDiffSets<T,LONGITERATOR extends PrimitiveLongIterator>
 
     private Set<T> newSet()
     {
-        return newSetFromMap( new VersionedHashMap<T, Boolean>() );
+        return newSetFromMap( new VersionedHashMap<>() );
     }
 
     private Set<T> resultSet( Set<T> coll )

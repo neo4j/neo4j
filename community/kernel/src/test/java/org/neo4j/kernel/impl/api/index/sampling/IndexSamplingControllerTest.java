@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -113,33 +113,28 @@ public class IndexSamplingControllerTest
             }
         };
 
-        IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
-        {
-            @Override
-            public IndexSamplingJob create( IndexProxy indexProxy )
+        IndexSamplingJobFactory jobFactory = proxy -> {
+            // make sure we execute this once per thread
+            if ( hasRun.get() )
             {
-                // make sure we execute this once per thread
-                if ( hasRun.get() )
-                {
-                    return null;
-                }
-                hasRun.set( true );
-
-                if ( !concurrentCount.compareAndSet( 0, 1 ) )
-                {
-                    throw new IllegalStateException( "count !== 0 on create" );
-                }
-                totalCount.incrementAndGet();
-
-                jobLatch.awaitStart();
-                testLatch.start();
-                jobLatch.awaitFinish();
-
-                concurrentCount.decrementAndGet();
-
-                testLatch.finish();
                 return null;
             }
+            hasRun.set( true );
+
+            if ( !concurrentCount.compareAndSet( 0, 1 ) )
+            {
+                throw new IllegalStateException( "count !== 0 on create" );
+            }
+            totalCount.incrementAndGet();
+
+            jobLatch.awaitStart();
+            testLatch.start();
+            jobLatch.awaitFinish();
+
+            concurrentCount.decrementAndGet();
+
+            testLatch.finish();
+            return null;
         };
 
         final IndexSamplingController controller = new IndexSamplingController(
@@ -223,23 +218,18 @@ public class IndexSamplingControllerTest
         final DoubleLatch jobLatch = new DoubleLatch();
         final DoubleLatch testLatch = new DoubleLatch();
 
-        IndexSamplingJobFactory jobFactory = new IndexSamplingJobFactory()
-        {
-            @Override
-            public IndexSamplingJob create( IndexProxy indexProxy )
+        IndexSamplingJobFactory jobFactory = proxy -> {
+            if ( ! concurrentCount.compareAndSet( 0, 1 ) )
             {
-                if ( ! concurrentCount.compareAndSet( 0, 1 ) )
-                {
-                    throw new IllegalStateException( "count !== 0 on create" );
-                }
-                totalCount.incrementAndGet();
-                jobLatch.awaitStart();
-                testLatch.start();
-                jobLatch.awaitFinish();
-                concurrentCount.decrementAndGet();
-                testLatch.finish();
-                return null;
+                throw new IllegalStateException( "count !== 0 on create" );
             }
+            totalCount.incrementAndGet();
+            jobLatch.awaitStart();
+            testLatch.start();
+            jobLatch.awaitFinish();
+            concurrentCount.decrementAndGet();
+            testLatch.finish();
+            return null;
         };
 
         final IndexSamplingController controller = new IndexSamplingController(
@@ -352,8 +342,6 @@ public class IndexSamplingControllerTest
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
-
-
     private static final Predicate<IndexDescriptor> TRUE = Predicates.alwaysTrue();
     private static final Predicate<IndexDescriptor> FALSE = Predicates.alwaysFalse();
 
@@ -391,13 +379,6 @@ public class IndexSamplingControllerTest
 
     private Runnable runController( final IndexSamplingController controller, final IndexSamplingMode mode )
     {
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                controller.sampleIndexes( mode );
-            }
-        };
+        return () -> controller.sampleIndexes( mode );
     }
 }

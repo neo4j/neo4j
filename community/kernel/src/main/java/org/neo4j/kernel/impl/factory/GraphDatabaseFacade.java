@@ -23,11 +23,11 @@ import java.io.File;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.LongFunction;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.LongFunction;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -354,14 +354,9 @@ public class GraphDatabaseFacade
     public ResourceIterable<Node> getAllNodes()
     {
         threadToTransactionBridge.assertInUnterminatedTransaction();
-        return new ResourceIterable<Node>()
-        {
-            @Override
-            public ResourceIterator<Node> iterator()
-            {
-                Statement statement = threadToTransactionBridge.get();
-                return map2nodes( statement.readOperations().nodesGetAll(), statement );
-            }
+        return () -> {
+            Statement statement = threadToTransactionBridge.get();
+            return map2nodes( statement.readOperations().nodesGetAll(), statement );
         };
     }
 
@@ -369,28 +364,23 @@ public class GraphDatabaseFacade
     public ResourceIterable<Relationship> getAllRelationships()
     {
         threadToTransactionBridge.assertInUnterminatedTransaction();
-        return new ResourceIterable<Relationship>()
-        {
-            @Override
-            public ResourceIterator<Relationship> iterator()
+        return () -> {
+            final Statement statement = threadToTransactionBridge.get();
+            final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+            return new PrefetchingResourceIterator<Relationship>()
             {
-                final Statement statement = threadToTransactionBridge.get();
-                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
-                return new PrefetchingResourceIterator<Relationship>()
+                @Override
+                public void close()
                 {
-                    @Override
-                    public void close()
-                    {
-                        statement.close();
-                    }
+                    statement.close();
+                }
 
-                    @Override
-                    protected Relationship fetchNextOrNull()
-                    {
-                        return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
-                    }
-                };
-            }
+                @Override
+                protected Relationship fetchNextOrNull()
+                {
+                    return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
+                }
+            };
         };
     }
 
@@ -480,14 +470,7 @@ public class GraphDatabaseFacade
     public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
-        return new ResourceIterable<Node>()
-        {
-            @Override
-            public ResourceIterator<Node> iterator()
-            {
-                return nodesByLabelAndProperty( myLabel, key, value );
-            }
-        };
+        return () -> nodesByLabelAndProperty( myLabel, key, value );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
@@ -562,26 +545,14 @@ public class GraphDatabaseFacade
         }
 
         final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return ResourceClosingIterator.newResourceIterator( statement, map( new LongFunction<Node>()
-        {
-            @Override
-            public Node apply( long nodeId )
-            {
-                return nodeManager.newNodeProxyById( nodeId );
-            }
-        }, nodeIds ) );
+        return ResourceClosingIterator.newResourceIterator( statement, map(
+                (LongFunction<Node>) nodeId -> nodeManager.newNodeProxyById( nodeId ), nodeIds ) );
     }
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
     {
-        return ResourceClosingIterator.newResourceIterator( statement, map( new LongFunction<Node>()
-        {
-            @Override
-            public Node apply( long id )
-            {
-                return nodeManager.newNodeProxyById( id );
-            }
-        }, input ) );
+        return ResourceClosingIterator.newResourceIterator( statement, map(
+                (LongFunction<Node>) id -> nodeManager.newNodeProxyById( id ), input ) );
     }
 
     @Override

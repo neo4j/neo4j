@@ -22,14 +22,12 @@ package org.neo4j.collection.primitive;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.LongFunction;
+import java.util.function.LongPredicate;
 
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.LongPredicate;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
 
 /**
@@ -75,7 +73,7 @@ public class PrimitiveLongCollections
         protected abstract boolean fetchNext();
 
         /**
-         * Called from inside an implementation of {@link #computeNext()} if a next item was found.
+         * Called from inside an implementation of {@link #fetchNext()} if a next item was found.
          * This method returns {@code true} so that it can be used in short-hand conditionals
          * (TODO what are they called?), like:
          * <pre>
@@ -86,7 +84,6 @@ public class PrimitiveLongCollections
          * }
          * </pre>
          * @param nextItem the next item found.
-         * @see #end()
          */
         protected boolean next( long nextItem )
         {
@@ -242,28 +239,12 @@ public class PrimitiveLongCollections
         }
     }
 
-    /**
-     * @deprecated use {@link #filter(PrimitiveLongIterator, LongPredicate)} instead
-     */
-    @Deprecated
-    public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final PrimitiveLongPredicate filter )
-    {
-        return new PrimitiveLongFilteringIterator( source )
-        {
-            @Override
-            public boolean accept( long item )
-            {
-                return filter.accept( item );
-            }
-        };
-    }
-
     public static PrimitiveLongIterator filter( PrimitiveLongIterator source, final LongPredicate filter )
     {
         return new PrimitiveLongFilteringIterator( source )
         {
             @Override
-            public boolean accept( long item )
+            public boolean test( long item )
             {
                 return filter.test( item );
             }
@@ -277,7 +258,7 @@ public class PrimitiveLongCollections
             private final PrimitiveLongSet visited = Primitive.longSet();
 
             @Override
-            public boolean accept( long testItem )
+            public boolean test( long testItem )
             {
                 return visited.add( testItem );
             }
@@ -289,7 +270,7 @@ public class PrimitiveLongCollections
         return new PrimitiveLongFilteringIterator( source )
         {
             @Override
-            public boolean accept( long testItem )
+            public boolean test( long testItem )
             {
                 return testItem != disallowedValue;
             }
@@ -303,7 +284,7 @@ public class PrimitiveLongCollections
             private int skipped = 0;
 
             @Override
-            public boolean accept( long item )
+            public boolean test( long item )
             {
                 if ( skipped < skipTheFirstNItems )
                 {
@@ -316,7 +297,7 @@ public class PrimitiveLongCollections
     }
 
     public static abstract class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
-            implements PrimitiveLongPredicate
+            implements LongPredicate
     {
         private final PrimitiveLongIterator source;
 
@@ -331,7 +312,7 @@ public class PrimitiveLongCollections
             while ( source.hasNext() )
             {
                 long testItem = source.next();
-                if ( accept( testItem ) )
+                if ( test( testItem ) )
                 {
                     return next( testItem );
                 }
@@ -339,12 +320,8 @@ public class PrimitiveLongCollections
             return false;
         }
 
-        /**
-         * @deprecated use {@link LongPredicate} instead
-         */
-        @Deprecated
         @Override
-        public abstract boolean accept( long testItem );
+        public abstract boolean test( long testItem );
     }
 
     // Limitinglic
@@ -729,8 +706,7 @@ public class PrimitiveLongCollections
         return set;
     }
 
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
-            final PrimitiveLongIterator source )
+    public static <T> Iterator<T> map( final LongFunction<T> mapFunction, final PrimitiveLongIterator source )
     {
         return new Iterator<T>()
         {

@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -99,23 +98,18 @@ public class IndexCreationTest
             ExecutorService executor = newCachedThreadPool();
             for ( int thread = 0; thread < 10; thread++ )
             {
-                executor.submit( new Runnable()
-                {
-                    @Override
-                    public void run()
+                executor.submit( (Runnable) () -> {
+                    try ( Transaction tx = db.beginTx() )
                     {
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            latch.await();
-                            Index<Node> index = db.index().forNodes( "index" + r );
-                            Node node = db.createNode();
-                            index.add( node, "name", "Name" );
-                            tx.success();
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.interrupted();
-                        }
+                        latch.await();
+                        Index<Node> index = db.index().forNodes( "index" + r );
+                        Node node = db.createNode();
+                        index.add( node, "name", "Name" );
+                        tx.success();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.interrupted();
                     }
                 } );
             }
@@ -171,15 +165,7 @@ public class IndexCreationTest
                     assertFalse( "Index creation transaction wasn't the first one", commandsInFirstEntry.isEmpty() );
                     List<Command> createCommands = IteratorUtil.asList( new FilteringIterator<>(
                             commandsInFirstEntry.iterator(),
-                            new Predicate<Command>()
-                            {
-                                @Override
-                                public boolean test( Command item )
-                                {
-                                    return item instanceof IndexDefineCommand;
-
-                                }
-                            }
+                            item -> item instanceof IndexDefineCommand
                     ) );
                     assertEquals( 1, createCommands.size() );
                     success.set( true );

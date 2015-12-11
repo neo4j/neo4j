@@ -19,7 +19,7 @@
  */
 package org.neo4j.register;
 
-import org.neo4j.function.BiFunction;
+import java.util.function.BiFunction;
 
 public class Registers
 {

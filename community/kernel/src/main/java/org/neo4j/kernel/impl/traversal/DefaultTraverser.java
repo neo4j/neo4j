@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -26,7 +27,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 
 public class DefaultTraverser implements Traverser
@@ -35,7 +35,7 @@ public class DefaultTraverser implements Traverser
 
     private TraversalMetadata lastIterator;
 
-    DefaultTraverser(Factory<TraverserIterator> traverserIteratorFactory )
+    DefaultTraverser( Factory<TraverserIterator> traverserIteratorFactory )
     {
         this.traverserIteratorFactory = traverserIteratorFactory;
     }

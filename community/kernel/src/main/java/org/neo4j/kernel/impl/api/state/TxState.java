@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -31,9 +32,6 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -540,29 +538,12 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
 
     private static PropertyContainerState.Visitor relVisitor( final TxStateVisitor visitor )
     {
-        return new PropertyContainerState.Visitor()
-        {
-            @Override
-            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-                    throws ConstraintValidationKernelException
-            {
-                visitor.visitRelPropertyChanges( entityId, added, changed, removed );
-            }
-        };
+        return visitor::visitRelPropertyChanges;
     }
 
     private static PropertyContainerState.Visitor graphPropertyVisitor( final TxStateVisitor visitor )
     {
-        return new PropertyContainerState.Visitor()
-        {
-            @Override
-            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
-            {
-                visitor.visitGraphPropertyChanges( added, changed, removed );
-            }
-        };
+        return ( entityId, added, changed, removed ) -> visitor.visitGraphPropertyChanges( added, changed, removed );
     }
 
     @Override
@@ -1191,14 +1172,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             final int propertyKey )
     {
         return LABEL_STATE.get( this, labelId ).nodeConstraintsChanges().filterAdded(
-                new Predicate<NodePropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( NodePropertyConstraint item )
-                    {
-                        return item.propertyKey() == propertyKey;
-                    }
-                } );
+                item -> item.propertyKey() == propertyKey );
     }
 
     @Override
@@ -1223,14 +1197,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             int relTypeId, final int propertyKey )
     {
         return constraintsChangesForRelationshipType( relTypeId ).filterAdded(
-                new Predicate<RelationshipPropertyConstraint>()
-                {
-                    @Override
-                    public boolean test( RelationshipPropertyConstraint constraint )
-                    {
-                        return constraint.propertyKey() == propertyKey;
-                    }
-                }
+                constraint -> constraint.propertyKey() == propertyKey
         );
     }
 
@@ -1313,13 +1280,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
 
-            return map( new Function<UniquenessConstraint, IndexDescriptor>()
-            {
-                @Override
-                public IndexDescriptor apply( UniquenessConstraint constraint )
-                {
-                    return new IndexDescriptor( constraint.label(), constraint.propertyKey() );
-                }
+            return map( constraint -> {
+                return new IndexDescriptor( constraint.label(), constraint.propertyKey() );
             }, createdConstraintIndexesByConstraint.keySet() );
         }
         return Iterables.empty();

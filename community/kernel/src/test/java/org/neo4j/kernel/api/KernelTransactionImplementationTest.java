@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.function.Consumers;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -86,15 +85,10 @@ public class KernelTransactionImplementationTest
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(
-                new Object[]{Consumers.<KernelTransaction,Exception>throwingNoop(), false, "read"},
-                new Object[]{new ThrowingConsumer<KernelTransaction,Exception>()
-                {
-                    @Override
-                    public void accept( KernelTransaction kernelTransaction ) throws Exception
-                    {
-                        KernelStatement statement = (KernelStatement) kernelTransaction.acquireStatement();
-                        statement.txState().nodeDoCreate( 42 );
-                    }
+                new Object[]{(ThrowingConsumer<KernelTransaction,Exception>) (tx) -> {}, false, "read"},
+                new Object[]{(ThrowingConsumer<KernelTransaction,Exception>) kernelTransaction -> {
+                    KernelStatement statement = (KernelStatement) kernelTransaction.acquireStatement();
+                    statement.txState().nodeDoCreate( 42 );
                 }, true, "write"}
         );
     }

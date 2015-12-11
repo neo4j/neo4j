@@ -24,19 +24,17 @@ import org.junit.Test;
 import java.io.StringReader;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
 import org.neo4j.function.Suppliers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;

@@ -31,9 +31,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.LongFunction;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.function.LongFunction;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -150,7 +150,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -300,14 +299,7 @@ public class BatchInserterImpl implements BatchInserter
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore );
 
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, new NeoStoresSupplier()
-                        {
-                            @Override
-                            public NeoStores get()
-                            {
-                                return neoStores;
-                            }
-                        } );
+        deps.satisfyDependencies( fileSystem, config, logService, (NeoStoresSupplier) () -> neoStores );
 
         KernelContext kernelContext = new KernelContext()
         {
@@ -542,36 +534,31 @@ public class BatchInserterImpl implements BatchInserter
             populators[i].create();
         }
 
-        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = new Visitor<NodePropertyUpdate, IOException>()
-        {
-            @Override
-            public boolean visit( NodePropertyUpdate update ) throws IOException
+        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = update -> {
+            // Do a lookup from which property has changed to a list of indexes worried about that property.
+            int propertyKeyInQuestion = update.getPropertyKeyId();
+            for ( int i = 0; i < propertyKeyIds.length; i++ )
             {
-                // Do a lookup from which property has changed to a list of indexes worried about that property.
-                int propertyKeyInQuestion = update.getPropertyKeyId();
-                for ( int i = 0; i < propertyKeyIds.length; i++ )
+                if ( propertyKeyIds[i] == propertyKeyInQuestion )
                 {
-                    if ( propertyKeyIds[i] == propertyKeyInQuestion )
+                    if ( update.forLabel( labelIds[i] ) )
                     {
-                        if ( update.forLabel( labelIds[i] ) )
+                        try
                         {
-                            try
-                            {
-                                populators[i].add( update.getNodeId(), update.getValueAfter() );
-                            }
-                            catch ( IndexEntryConflictException conflict )
-                            {
-                                throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
-                            }
-                            catch ( IndexCapacityExceededException e )
-                            {
-                                throw new UnderlyingStorageException( e );
-                            }
+                            populators[i].add( update.getNodeId(), update.getValueAfter() );
+                        }
+                        catch ( IndexEntryConflictException conflict )
+                        {
+                            throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
+                        }
+                        catch ( IndexCapacityExceededException e )
+                        {
+                            throw new UnderlyingStorageException( e );
                         }
                     }
                 }
-                return true;
             }
+            return true;
         };
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();

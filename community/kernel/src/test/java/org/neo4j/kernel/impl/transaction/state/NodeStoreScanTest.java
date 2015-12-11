@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import org.neo4j.function.Supplier;
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;

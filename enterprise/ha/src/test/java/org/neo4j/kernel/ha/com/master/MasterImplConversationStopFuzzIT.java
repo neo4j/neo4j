@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -39,7 +40,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdType;
@@ -290,7 +290,7 @@ public class MasterImplConversationStopFuzzIT
         public Void call() throws Exception
         {
             for ( int i = 0; i < numberOfOperations; i++ )
-            { 
+            {
                 state = state.next( this );
             }
             return null;

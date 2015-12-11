@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Set;
+
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
-import org.neo4j.function.Supplier;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -42,12 +42,10 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.Assert.assertEventually;
 
 public class EdgeServerReplicationIT
@@ -101,7 +99,7 @@ public class EdgeServerReplicationIT
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
         {
-            Supplier<Boolean> availability = () -> edgeGraphDatabase.isAvailable( 0 );
+            ThrowingSupplier<Boolean, Exception> availability = () -> edgeGraphDatabase.isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
     }
@@ -141,7 +139,7 @@ public class EdgeServerReplicationIT
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {
-                Supplier<Long> nodeCount = () -> Iterables.count( GlobalGraphOperations.at( edgeDB ).getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> Iterables.count( edgeDB.getAllNodes() );
                 assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1l ),
                         2, MINUTES );
 

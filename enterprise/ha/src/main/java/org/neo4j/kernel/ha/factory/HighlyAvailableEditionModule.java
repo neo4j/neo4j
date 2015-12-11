@@ -25,6 +25,9 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -45,10 +48,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.function.BiFunction;
 import org.neo4j.function.Factory;
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -71,7 +71,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighAvailabilityDiagnostics;
 import org.neo4j.kernel.ha.HighAvailabilityLogger;
-import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
@@ -119,7 +118,6 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -231,14 +229,7 @@ public class HighlyAvailableEditionModule
                 new DefaultElectionCredentialsProvider(
                         config.get( ClusterSettings.server_id ),
                         new OnDiskLastTxIdGetter( platformModule.dependencies.provideDependency( NeoStores.class ) ),
-                        new HighAvailabilityMemberInfoProvider()
-                        {
-                            @Override
-                            public HighAvailabilityMemberState getHighAvailabilityMemberState()
-                            {
-                                return electionProviderRef.get().getCurrentState();
-                            }
-                        }
+                        () -> electionProviderRef.get().getCurrentState()
                 );
 
 
@@ -250,32 +241,27 @@ public class HighlyAvailableEditionModule
         ClusterClient clusterClient = clusterClientModule.clusterClient;
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging.getInternalLogProvider(),
-                new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
-                {
-                    @Override
-                    public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
+                item -> {
+                    for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                     {
-                        for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
+                        if ( member.getRoleUri().getScheme().equals( "ha" ) )
                         {
-                            if ( member.getRoleUri().getScheme().equals( "ha" ) )
+                            if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                    platformModule.config.get( ClusterSettings.server_id ) ) )
                             {
-                                if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
-                                        platformModule.config.get( ClusterSettings.server_id ) ) )
-                                {
-                                    logging.getInternalLog( PaxosClusterMemberEvents.class ).error(
-                                            String.format( "Instance " +
-                                                            "%s has" +
-                                                            " the same serverId as ours (%s) - will not " +
-                                                            "join this cluster",
-                                                    member.getRoleUri(),
-                                                    config.get( ClusterSettings.server_id ).toIntegerIndex()
-                                            ) );
-                                    return true;
-                                }
+                                logging.getInternalLog( PaxosClusterMemberEvents.class ).error(
+                                        String.format( "Instance " +
+                                                        "%s has" +
+                                                        " the same serverId as ours (%s) - will not " +
+                                                        "join this cluster",
+                                                member.getRoleUri(),
+                                                config.get( ClusterSettings.server_id ).toIntegerIndex()
+                                        ) );
+                                return true;
                             }
                         }
-                        return true;
                     }
+                    return true;
                 }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory,
                 platformModule.monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );
@@ -340,14 +326,7 @@ public class HighlyAvailableEditionModule
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
-        InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
-        {
-            @Override
-            public void handle()
-            {
-                exceptionHandlerRef.get().forceElections();
-            }
-        };
+        InvalidEpochExceptionHandler invalidEpochHandler = () -> exceptionHandlerRef.get().forceElections();
 
         MasterClientResolver masterClientResolver = new MasterClientResolver( logging.getInternalLogProvider(),
                 responseUnpacker,
@@ -372,16 +351,10 @@ public class HighlyAvailableEditionModule
 
         dependencies.satisfyDependency( paxosLife.add( pullerFactory.createObligationFulfiller( updatePullerProxy ) ) );
 
-        Function<Slave, SlaveServer> slaveServerFactory = new Function<Slave, SlaveServer>()
-        {
-            @Override
-            public SlaveServer apply( Slave slave ) throws RuntimeException
-            {
-                return new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
+        Function<Slave, SlaveServer> slaveServerFactory =
+                slave -> new SlaveServer( slave, slaveServerConfig( config ), logging.getInternalLogProvider(),
                         monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                         monitors.newMonitor( RequestMonitor.class, SlaveServer.class ) );
-            }
-        };
 
 
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( platformModule.storeDir, logging,
@@ -395,12 +368,8 @@ public class HighlyAvailableEditionModule
                 slaveServerFactory, updatePullerProxy, platformModule.pageCache,
                 monitors, platformModule.transactionMonitor );
 
-        final Factory<MasterImpl.SPI> masterSPIFactory = new Factory<MasterImpl.SPI>()
-        {
-            @Override
-            public MasterImpl.SPI newInstance()
-            {
-                return new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
+        final Factory<MasterImpl.SPI> masterSPIFactory =
+                () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
                         labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
@@ -408,54 +377,29 @@ public class HighlyAvailableEditionModule
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                         platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ),
                         platformModule.dependencies.resolveDependency( NeoStoreDataSource.class ));
-            }
-        };
 
-        final Factory<ConversationSPI> conversationSPIFactory = new Factory<ConversationSPI>()
-        {
-            @Override
-            public ConversationSPI newInstance()
-            {
-                return new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
-            }
-        };
-        Factory<ConversationManager> conversationManagerFactory = new Factory<ConversationManager>()
+        final Factory<ConversationSPI> conversationSPIFactory =
+                () -> new DefaultConversationSPI( lockManager, platformModule.jobScheduler );
+        Factory<ConversationManager> conversationManagerFactory =
+                () -> new ConversationManager( conversationSPIFactory.newInstance(), config );
 
-        {
-            @Override
-            public ConversationManager newInstance()
-            {
-                return new ConversationManager( conversationSPIFactory.newInstance(), config );
-            }
-        };
+        BiFunction<ConversationManager, LifeSupport, Master> masterFactory = ( conversationManager, life1 ) ->
+                life1.add( new MasterImpl( masterSPIFactory.newInstance(),
+                conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
 
-        BiFunction<ConversationManager, LifeSupport, Master> masterFactory = new BiFunction<ConversationManager, LifeSupport, Master>()
-        {
-            @Override
-            public Master apply( ConversationManager conversationManager, LifeSupport life )
-            {
-                return life.add( new MasterImpl( masterSPIFactory.newInstance(),
-                        conversationManager, monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ), config ) );
-            }
-        };
-
-        BiFunction<Master, ConversationManager, MasterServer> masterServerFactory = new BiFunction<Master, ConversationManager, MasterServer>()
-        {
-            @Override
-            public MasterServer apply( final Master master, ConversationManager conversationManager ) throws RuntimeException
-            {
-                TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                        platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
+        BiFunction<Master, ConversationManager, MasterServer> masterServerFactory =
+                ( master1, conversationManager ) -> {
+                    TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
+                            platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
+                            platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
 
 
-                return new MasterServer( master, logging.getInternalLogProvider(),
-                        masterServerConfig( config ),
-                        new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
-                        monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
-                        monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
-            }
-        };
+                    return new MasterServer( master1, logging.getInternalLogProvider(),
+                            masterServerConfig( config ),
+                            new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
+                            monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
+                            monitors.newMonitor( RequestMonitor.class, MasterServer.class ), conversationManager );
+                };
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, dependencies.provideDependency( SlaveFactory.class ),
@@ -515,19 +459,14 @@ public class HighlyAvailableEditionModule
 
         headerInformationFactory = createHeaderInformationFactory( memberContext );
 
-        schemaWriteGuard = new SchemaWriteGuard()
-        {
-            @Override
-            public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
+        schemaWriteGuard = () -> {
+            if ( !memberStateMachine.isMaster() )
             {
-                if ( !memberStateMachine.isMaster() )
-                {
-                    throw new InvalidTransactionTypeKernelException(
-                            "Modifying the database schema can only be done on the master server, " +
-                                    "this server is a slave. Please issue schema modification commands directly to " +
-                                    "the master."
-                    );
-                }
+                throw new InvalidTransactionTypeKernelException(
+                        "Modifying the database schema can only be done on the master server, " +
+                                "this server is a slave. Please issue schema modification commands directly to " +
+                                "the master."
+                );
             }
         };
 

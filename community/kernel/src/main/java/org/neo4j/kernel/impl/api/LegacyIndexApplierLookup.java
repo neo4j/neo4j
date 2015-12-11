@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 

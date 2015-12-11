@@ -27,8 +27,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
@@ -81,8 +81,7 @@ public abstract class StandardExpander implements Expander, PathExpander
             return createNew( expander.add( type ) );
         }
 
-        public StandardExpansion<T> including( RelationshipType type,
-                                               Direction direction )
+        public StandardExpansion<T> including( RelationshipType type, Direction direction )
         {
             return createNew( expander.add( type, direction ) );
         }
@@ -98,27 +97,13 @@ public abstract class StandardExpander implements Expander, PathExpander
         }
 
         @Override
-        public StandardExpansion<T> filterNodes( org.neo4j.helpers.Predicate<? super Node> filter )
-        {
-            return createNew( expander.addNodeFilter( filter ) );
-        }
-
-        @Override
         public StandardExpansion<T> filterNodes( Predicate<? super Node> filter )
         {
             return createNew( expander.addNodeFilter( filter ) );
         }
 
         @Override
-        public StandardExpansion<T> filterRelationships(
-                org.neo4j.helpers.Predicate<? super Relationship> filter )
-        {
-            return createNew( expander.addRelationshipFilter( filter ) );
-        }
-
-        @Override
-        public StandardExpansion<T> filterRelationships(
-                Predicate<? super Relationship> filter )
+        public StandardExpansion<T> filterRelationships( Predicate<? super Relationship> filter )
         {
             return createNew( expander.addRelationshipFilter( filter ) );
         }
@@ -441,17 +426,13 @@ public abstract class StandardExpander implements Expander, PathExpander
         Iterator<Relationship> doExpand( Path path, BranchState state )
         {
             final Node node = path.endNode();
-            return new FilteringIterator<Relationship>(
+            return new FilteringIterator<>(
                     node.getRelationships().iterator(),
-                    new Predicate<Relationship>()
-                    {
-                        public boolean test( Relationship rel )
-                        {
-                            Exclusion exclude = exclusion.get( rel.getType().name() );
-                            exclude = (exclude == null) ? defaultExclusion
-                                    : exclude;
-                            return exclude.accept( node, rel );
-                        }
+                    rel -> {
+                        Exclusion exclude = exclusion.get( rel.getType().name() );
+                        exclude = (exclude == null) ? defaultExclusion
+                                : exclude;
+                        return exclude.accept( node, rel );
                     } );
         }
 
@@ -663,21 +644,16 @@ public abstract class StandardExpander implements Expander, PathExpander
         @Override
         Iterator<Relationship> doExpand( final Path path, BranchState state )
         {
-            return new FilteringIterator<Relationship>(
-                    expander.doExpand( path, state ), new Predicate<Relationship>()
-            {
-                public boolean test( Relationship item )
+            return new FilteringIterator<>( expander.doExpand( path, state ), item -> {
+                Path extendedPath = extend( path, item );
+                for ( Filter filter : filters )
                 {
-                    Path extendedPath = extend( path, item );
-                    for ( Filter filter : filters )
+                    if ( filter.exclude( extendedPath ) )
                     {
-                        if ( filter.exclude( extendedPath ) )
-                        {
-                            return false;
-                        }
+                        return false;
                     }
-                    return true;
                 }
+                return true;
             } );
         }
 
@@ -823,9 +799,9 @@ public abstract class StandardExpander implements Expander, PathExpander
 
     private static final class NodeFilter extends Filter
     {
-        private final org.neo4j.function.Predicate<? super Node> predicate;
+        private final Predicate<? super Node> predicate;
 
-        NodeFilter( org.neo4j.function.Predicate<? super Node> predicate )
+        NodeFilter( Predicate<? super Node> predicate )
         {
             this.predicate = predicate;
         }
@@ -948,42 +924,17 @@ public abstract class StandardExpander implements Expander, PathExpander
     public abstract StandardExpander reversed();
 
     @Override
-    public StandardExpander addNodeFilter( org.neo4j.helpers.Predicate<? super Node> filter )
-    {
-        return new FilteringExpander( this, new NodeFilter( org.neo4j.helpers.Predicates.upgrade( filter ) ) );
-    }
-
-    @Override
     public StandardExpander addNodeFilter( Predicate<? super Node> filter )
     {
         return new FilteringExpander( this, new NodeFilter( filter ) );
     }
 
     @Override
-    public final Expander addRelationsipFilter( org.neo4j.helpers.Predicate<? super Relationship> filter )
-    {
-        return addRelationshipFilter( org.neo4j.helpers.Predicates.upgrade( filter ) );
-    }
-
-    @Override
-    public final Expander addRelationsipFilter( Predicate<? super Relationship> filter )
-    {
-        return addRelationshipFilter( filter );
-    }
-
-    @Override
-    public StandardExpander addRelationshipFilter(
-            org.neo4j.helpers.Predicate<? super Relationship> filter )
-    {
-        return new FilteringExpander( this, new RelationshipFilter( org.neo4j.helpers.Predicates.upgrade( filter ) ) );
-    }
-
-    @Override
-    public StandardExpander addRelationshipFilter(
-            Predicate<? super Relationship> filter )
+    public StandardExpander addRelationshipFilter( Predicate<? super Relationship> filter )
     {
         return new FilteringExpander( this, new RelationshipFilter( filter ) );
     }
+
 
     static StandardExpander wrap( RelationshipExpander expander )
     {
@@ -1048,7 +999,7 @@ public abstract class StandardExpander implements Expander, PathExpander
                 Collection<RelationshipType>>( Direction.class );
         for ( Direction direction : Direction.values() )
         {
-            map.put( direction, new ArrayList<RelationshipType>() );
+            map.put( direction, new ArrayList<>() );
         }
         return map;
     }

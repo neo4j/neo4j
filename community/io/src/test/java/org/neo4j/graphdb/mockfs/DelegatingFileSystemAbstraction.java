@@ -27,8 +27,8 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -67,7 +67,7 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
 
     @Override
     public <K extends FileSystemAbstraction.ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz,
-                                                                                                     Function<Class<K>, K> creator )
+            Function<Class<K>,K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
     }

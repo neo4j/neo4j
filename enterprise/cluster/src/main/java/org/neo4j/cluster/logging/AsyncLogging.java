@@ -21,10 +21,10 @@ package org.neo4j.cluster.logging;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import org.neo4j.concurrent.AsyncEventSender;
 import org.neo4j.concurrent.AsyncEvents;
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

@@ -19,9 +19,10 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.RaftTestMember;
+import java.util.function.Predicate;
+
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.function.Predicate;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
 

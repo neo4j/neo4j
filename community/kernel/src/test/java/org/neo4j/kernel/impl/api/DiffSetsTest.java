@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.junit.Test;
 
-import org.neo4j.function.Predicate;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.function.Predicate;
+
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -247,12 +245,5 @@ public class DiffSetsTest
         assertEquals( asSet( 0 ), diff.getRemoved() );
     }
 
-    private static final Predicate<Long> ODD_FILTER = new Predicate<Long>()
-    {
-        @Override
-        public boolean test( Long item )
-        {
-            return item % 2 == 1l;
-        }
-    };
+    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1l;
 }

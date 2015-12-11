@@ -40,8 +40,6 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.function.Function;
-import org.neo4j.function.Predicate;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
@@ -266,21 +264,8 @@ public class ElectionContextImpl
     @Override
     public Iterable<String> getRolesRequiringElection()
     {
-        return filter( new Predicate<String>() // Only include roles that are not elected
-        {
-            @Override
-            public boolean test( String role )
-            {
-                return clusterContext.getConfiguration().getElected( role ) == null;
-            }
-        }, map( new Function<ElectionRole, String>() // Convert ElectionRole to String
-        {
-            @Override
-            public String apply( ElectionRole role )
-            {
-                return role.getName();
-            }
-        }, roles ) );
+        return filter( role -> clusterContext.getConfiguration().getElected( role ) == null,
+                map( ElectionRole::getName, roles ) );
     }
 
     @Override
@@ -458,13 +443,7 @@ public class ElectionContextImpl
 
     public static List<Vote> removeBlankVotes( Collection<Vote> voteList )
     {
-        return toList( filter( new Predicate<Vote>()
-        {
-            @Override
-            public boolean test( Vote item )
-            {
-                return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-            }
-        }, voteList ) );
+        return toList( filter( item ->
+                !(item.getCredentials() instanceof NotElectableElectionCredentials), voteList ) );
     }
 }

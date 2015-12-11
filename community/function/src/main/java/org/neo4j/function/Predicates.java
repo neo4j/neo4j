@@ -24,39 +24,20 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Constructors for basic {@link Predicate} types
- * @deprecated This class relies on deprecated interfaces, and will be retrofitted to work with the {@code java.util.function} interfaces in 3.0.
  */
 public class Predicates
 {
-    private static final Predicate TRUE = new Predicate()
-    {
-        @Override
-        public boolean test( Object item )
-        {
-            return true;
-        }
-    };
+    private static final Predicate TRUE = item -> true;
 
-    private static final Predicate FALSE = new Predicate()
-    {
-        @Override
-        public boolean test( Object item )
-        {
-            return false;
-        }
-    };
+    private static final Predicate FALSE = item -> false;
 
-    private static final Predicate NOT_NULL = new Predicate()
-    {
-        @Override
-        public boolean test( Object item )
-        {
-            return item != null;
-        }
-    };
+    private static final Predicate NOT_NULL = item -> item != null;
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
@@ -84,20 +65,15 @@ public class Predicates
 
     public static <T> Predicate<T> all( final Iterable<Predicate<T>> predicates )
     {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
+        return item -> {
+            for ( Predicate<T> predicate : predicates )
             {
-                for ( Predicate<T> predicate : predicates )
+                if ( !predicate.test( item ) )
                 {
-                    if ( !predicate.test( item ) )
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
             }
+            return true;
         };
     }
 
@@ -109,78 +85,37 @@ public class Predicates
 
     public static <T> Predicate<T> any( final Iterable<Predicate<T>> predicates )
     {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
+        return item -> {
+            for ( Predicate<T> predicate : predicates )
             {
-                for ( Predicate<T> predicate : predicates )
+                if ( predicate.test( item ) )
                 {
-                    if ( predicate.test( item ) )
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                return false;
             }
-        };
-    }
-
-    public static <T> Predicate<T> not( final Predicate<T> other )
-    {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
-            {
-                return !other.test( item );
-            }
-        };
-    }
-
-    public static <T> Predicate<T> equalTo( final T other )
-    {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
-            {
-                return other == null ? item == null : other.equals( item );
-            }
+            return false;
         };
     }
 
     public static <T> Predicate<T> instanceOf( final Class clazz )
     {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
-            {
-                return item != null && clazz.isInstance( item );
-            }
-        };
+        return item -> item != null && clazz.isInstance( item );
     }
 
     public static <T> Predicate<T> instanceOfAny( final Class... classes )
     {
-        return new Predicate<T>()
-        {
-            @Override
-            public boolean test( T item )
+        return item -> {
+            if ( item != null )
             {
-                if ( item != null )
+                for ( Class clazz : classes )
                 {
-                    for ( Class clazz : classes )
+                    if ( clazz.isInstance( item ) )
                     {
-                        if ( clazz.isInstance( item ) )
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
-                return false;
             }
+            return false;
         };
     }
 
@@ -221,12 +156,12 @@ public class Predicates
     }
 
 
-    public static void awaitForever( Supplier<Boolean> condition, long checkInterval, TimeUnit unit ) throws InterruptedException
+    public static void awaitForever( BooleanSupplier condition, long checkInterval, TimeUnit unit ) throws InterruptedException
     {
         long sleep = unit.toMillis( checkInterval );
         do
         {
-            if ( condition.get() )
+            if ( condition.getAsBoolean() )
             {
                 return;
             }
@@ -234,4 +169,22 @@ public class Predicates
         }
         while ( true );
     }
-}
+
+    public static <T> Predicate<T> in( final T... allowed )
+    {
+        return in( Arrays.asList( allowed ) );
+    }
+
+    public static <T> Predicate<T> in( final Iterable<T> allowed )
+    {
+        return item -> {
+            for ( T allow : allowed )
+            {
+                if ( allow.equals( item ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }}

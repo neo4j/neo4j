@@ -30,9 +30,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
 
-import org.neo4j.function.IntFunction;
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -42,8 +42,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.Provider;
 import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Arrays.asList;
-
+import static java.util.Collections.singletonList;
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_level;
@@ -59,7 +58,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     private ClusterManager.Builder clusterManagerBuilder;
     private ClusterManager clusterManager;
     private File storeDirectory;
-    private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
+    private List<Predicate<ManagedCluster>> availabilityChecks = singletonList( allSeesAllAsAvailable() );
     private final TargetDirectory.TestDirectory testDirectory;
     private ManagedCluster cluster;
 
@@ -248,14 +247,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> intBase( final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return String.valueOf( oneBasedServerId + serverId );
-            }
-        };
+        return serverId -> String.valueOf( oneBasedServerId + serverId );
     }
 
     /**
@@ -272,13 +264,6 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public static IntFunction<String> stringWithIntBase( final String prefix, final int oneBasedServerId )
     {
-        return new IntFunction<String>()
-        {
-            @Override
-            public String apply( int serverId )
-            {
-                return prefix + (oneBasedServerId + serverId);
-            }
-        };
+        return serverId -> prefix + (oneBasedServerId + serverId);
     }
 }

@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
@@ -44,19 +45,7 @@ interface Expansion<T> extends Iterable<T>
 
     Expansion<T> excluding( RelationshipType type );
 
-    /**
-     * @deprecated use {@link #filterNodes(Predicate)} instead
-     */
-    @Deprecated
-    Expansion<T> filterNodes( org.neo4j.helpers.Predicate<? super Node> filter );
-
     Expansion<T> filterNodes( Predicate<? super Node> filter );
-
-    /**
-     * @deprecated use {@link #filterRelationships(Predicate)} instead
-     */
-    @Deprecated
-    Expansion<T> filterRelationships( org.neo4j.helpers.Predicate<? super Relationship> filter );
 
     Expansion<T> filterRelationships( Predicate<? super Relationship> filter );
 

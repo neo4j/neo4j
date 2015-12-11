@@ -23,11 +23,11 @@ import org.junit.Test;
 
 import java.io.StringReader;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.function.Function;
-import org.neo4j.function.Supplier;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
@@ -36,7 +36,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overriden;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -129,14 +128,7 @@ public class ExternalPropertiesDecoratorTest
 
     private Supplier<CharReadable> readable( final String data )
     {
-        return new Supplier<CharReadable>()
-        {
-            @Override
-            public CharReadable get()
-            {
-                return Readables.wrap( new StringReader( data ) );
-            }
-        };
+        return () -> Readables.wrap( new StringReader( data ) );
     }
 
     private Overriden config()

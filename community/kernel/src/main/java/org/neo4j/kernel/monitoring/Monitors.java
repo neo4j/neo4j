@@ -28,9 +28,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.collection.Iterables.append;
@@ -138,7 +137,7 @@ public class Monitors
             for ( final Method method : monitorInterface.getMethods() )
             {
                 monitorListeners.put(
-                        Predicates.equalTo( method ),
+                        Predicate.isEqual( method ),
                         monitorListenerInvocationHandler );
 
                 recalculateMethodListeners( method );

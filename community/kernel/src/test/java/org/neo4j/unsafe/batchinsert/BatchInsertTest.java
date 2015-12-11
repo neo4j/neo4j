@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -1721,14 +1720,7 @@ public class BatchInsertTest
 
     private Iterable<String> asNames( Iterable<Label> nodeLabels )
     {
-        return map( new Function<Label,String>()
-        {
-            @Override
-            public String apply( Label from )
-            {
-                return from.name();
-            }
-        }, nodeLabels );
+        return map( Label::name, nodeLabels );
     }
 
     private Pair<Label[],Set<String>> manyLabels( int count )

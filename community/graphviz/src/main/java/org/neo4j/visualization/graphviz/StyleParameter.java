@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -163,22 +162,17 @@ public interface StyleParameter
 	{
 		public final void configure( StyleConfiguration configuration )
 		{
-			ParameterGetter<Relationship> getter = new ParameterGetter<Relationship>()
-			{
-				public String getParameterValue( Relationship relationship,
-				    String key )
+			ParameterGetter<Relationship> getter = ( relationship, key ) -> {
+				if ( key.equals( "color" ) )
 				{
-                    if ( key.equals( "color" ) )
-                    {
-                        return getColor( relationship );
-                    }
-                    else
-                    {
-                        return getFontColor( relationship );
-                    }
+					return getColor( relationship );
+				}
+				else
+				{
+					return getFontColor( relationship );
 				}
 			};
-            configuration.setRelationshipParameterGetter( "color", getter );
+			configuration.setRelationshipParameterGetter( "color", getter );
             configuration.setRelationshipParameterGetter( "fontcolor", getter );
 		}
 
@@ -204,8 +198,8 @@ public interface StyleParameter
 	/** Apply a color to a relationship based on the type of the relationship. */
 	abstract class RelationshipTypeColor extends RelationshipColor
 	{
-		private final Map<String, String> colors = new HashMap<String, String>();
-		private final Map<String, String> fontColors = new HashMap<String, String>();
+		private final Map<String, String> colors = new HashMap<>();
+		private final Map<String, String> fontColors = new HashMap<>();
 
 		@Override
 		protected final String getColor( Relationship relationship )
@@ -267,22 +261,18 @@ public interface StyleParameter
 	{
 		public final void configure( StyleConfiguration configuration )
 		{
-			ParameterGetter<Node> getter = new ParameterGetter<Node>()
-			{
-				public String getParameterValue( Node node, String key )
+			ParameterGetter<Node> getter = ( node, key ) -> {
+				if ( key.equals( "color" ) )
 				{
-					if ( key.equals( "color" ) )
-					{
-						return getColor( node );
-					}
-					else if ( key.equals( "fontcolor" ) )
-					{
-						return getFontColor( node );
-					}
-					else
-					{
-						return getFillColor( node );
-					}
+					return getColor( node );
+				}
+				else if ( key.equals( "fontcolor" ) )
+				{
+					return getFontColor( node );
+				}
+				else
+				{
+					return getFillColor( node );
 				}
 			};
 			configuration.setDefaultNodeProperty( "style", "filled" );
@@ -332,13 +322,7 @@ public interface StyleParameter
     {
         public void configure( StyleConfiguration configuration )
         {
-            configuration.setRelationshipReverseOrderPredicate( new Predicate<Relationship>()
-            {
-                public boolean test( Relationship item )
-                {
-                    return reversedOrder( item );
-                }
-            } );
+            configuration.setRelationshipReverseOrderPredicate( item -> reversedOrder( item ) );
         }
 
         protected abstract boolean reversedOrder( Relationship edge );
@@ -508,14 +492,7 @@ public interface StyleParameter
 		public void configure( StyleConfiguration configuration )
 		{
 			configuration.setRelationshipParameterGetter( "headlabel",
-			    new ParameterGetter<Relationship>()
-			    {
-				    public String getParameterValue( Relationship container,
-				        String key )
-				    {
-					    return getHeadLabel( container );
-				    }
-			    } );
+					( container, key ) -> getHeadLabel( container ) );
 		}
 
 		/**
@@ -532,14 +509,7 @@ public interface StyleParameter
 		public void configure( StyleConfiguration configuration )
 		{
 			configuration.setRelationshipParameterGetter( "taillabel",
-			    new ParameterGetter<Relationship>()
-			    {
-				    public String getParameterValue( Relationship container,
-				        String key )
-				    {
-					    return getTailLabel( container );
-				    }
-			    } );
+					( container, key ) -> getTailLabel( container ) );
 		}
 
 		/**
@@ -562,13 +532,7 @@ public interface StyleParameter
 			public final void configure( StyleConfiguration configuration )
 			{
 				configuration
-				    .setRelationshipPropertyFilter( new PropertyFilter()
-				    {
-					    public boolean acceptProperty( String key )
-					    {
-						    return false;
-					    }
-				    } );
+				    .setRelationshipPropertyFilter( key -> false );
 			}
 		},
 		/** Don't render labels for relationships. */
@@ -586,15 +550,9 @@ public interface StyleParameter
 			@Override
 			public final void configure( final StyleConfiguration configuration )
 			{
-				PropertyFormatter format = new PropertyFormatter()
-				{
-					public String format( String key, PropertyType type,
-					    Object value )
-					{
-						return configuration.escapeLabel( key ) + " = " + configuration.escapeLabel(PropertyType.format( value ))
-						    + " : " + type.typeName;
-					}
-				};
+				PropertyFormatter format =
+						( key, type, value ) -> configuration.escapeLabel( key ) + " = " + configuration.escapeLabel(PropertyType.format( value ))
+												+ " : " + type.typeName;
 				configuration.setNodePropertyFomatter( format );
 				configuration.setRelationshipPropertyFomatter( format );
 			}
@@ -605,16 +563,9 @@ public interface StyleParameter
 			@Override
             public final void configure( final StyleConfiguration configuration )
 			{
-				PropertyFormatter format = new PropertyFormatter()
-				{
-					public String format( String key, PropertyType type,
-					    Object value )
-					{
-                        return configuration.escapeLabel( key )
-                               + " = "
-                               + configuration.escapeLabel( PropertyType.format( value ) );
-					}
-				};
+				PropertyFormatter format = ( key, type, value ) -> configuration.escapeLabel( key )
+                                                           + " = "
+                                                           + configuration.escapeLabel( PropertyType.format( value ) );
 				configuration.setNodePropertyFomatter( format );
 				configuration.setRelationshipPropertyFomatter( format );
 			}
@@ -625,15 +576,8 @@ public interface StyleParameter
 			@Override
             public final void configure( final StyleConfiguration configuration )
 			{
-				PropertyFormatter format = new PropertyFormatter()
-				{
-					public String format( String key, PropertyType type,
-					    Object value )
-					{
-                        return configuration.escapeLabel( key ) + " : "
-                               + type.typeName;
-					}
-				};
+				PropertyFormatter format = ( key, type, value ) -> configuration.escapeLabel( key ) + " : "
+                                                           + type.typeName;
 				configuration.setNodePropertyFomatter( format );
 				configuration.setRelationshipPropertyFomatter( format );
 			}

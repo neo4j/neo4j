@@ -26,9 +26,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 
 import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;

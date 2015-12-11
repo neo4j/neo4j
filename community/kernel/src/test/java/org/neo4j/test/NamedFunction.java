@@ -19,9 +19,9 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.function.Function;
+import org.neo4j.function.ThrowingFunction;
 
-public abstract class NamedFunction<FROM, TO> implements Function<FROM, TO>
+public abstract class NamedFunction<FROM, TO> implements ThrowingFunction<FROM, TO, RuntimeException>
 {
     private final String name;
 

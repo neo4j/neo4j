@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
@@ -130,21 +130,16 @@ public class SchemaImpl implements Schema
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
                                  Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
     {
-        addToCollection( map( new Function<IndexDescriptor,IndexDefinition>()
-        {
-            @Override
-            public IndexDefinition apply( IndexDescriptor rule )
+        addToCollection( map( (Function<IndexDescriptor,IndexDefinition>) rule -> {
+            try
             {
-                try
-                {
-                    Label label = label( statement.labelGetName( rule.getLabelId() ) );
-                    String propertyKey = statement.propertyKeyGetName( rule.getPropertyKeyId() );
-                    return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
-                }
-                catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                Label label = label( statement.labelGetName( rule.getLabelId() ) );
+                String propertyKey = statement.propertyKeyGetName( rule.getPropertyKeyId() );
+                return new IndexDefinitionImpl( actions, label, propertyKey, constraintIndex );
+            }
+            catch ( LabelNotFoundKernelException | PropertyKeyIdNotFoundKernelException e )
+            {
+                throw new RuntimeException( e );
             }
         }, indexes ), definitions );
     }

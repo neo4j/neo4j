@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import org.neo4j.function.Function;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -40,7 +40,6 @@ import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -147,18 +146,13 @@ public abstract class SchemaIndexProviderApprovalTest
 
     public static final String LABEL = "Person";
     public static final String PROPERTY_KEY = "name";
-    public static final Function<Node, Object> PROPERTY_EXTRACTOR = new Function<Node, Object>()
-    {
-        @Override
-        public Object apply( Node node )
+    public static final Function<Node, Object> PROPERTY_EXTRACTOR = node -> {
+        Object value = node.getProperty( PROPERTY_KEY );
+        if ( value.getClass().isArray() )
         {
-            Object value = node.getProperty( PROPERTY_KEY );
-            if ( value.getClass().isArray() )
-            {
-                return new ArrayEqualityObject( value );
-            }
-            return value;
+            return new ArrayEqualityObject( value );
         }
+        return value;
     };
 
     @Test

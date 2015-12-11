@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;

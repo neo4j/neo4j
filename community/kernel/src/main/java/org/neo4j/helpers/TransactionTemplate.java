@@ -20,9 +20,11 @@
 package org.neo4j.helpers;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Function;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -30,7 +32,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 
 import static org.neo4j.function.Predicates.any;
-import static org.neo4j.function.Predicates.not;
 
 /**
  * Neo4j transaction template that automates the retry-on-exception logic. It uses the builder
@@ -78,23 +79,17 @@ public class TransactionTemplate
     private final Monitor monitor;
     private final int retries;
     private final long backoff;
-    private final org.neo4j.function.Predicate<Throwable> retryPredicate;
+    private final Predicate<Throwable> retryPredicate;
 
     public TransactionTemplate()
     {
-        this( null, new Monitor.Adapter(), 0, 0, not( any(
-                org.neo4j.function.Predicates.<Throwable>instanceOf( Error.class ),
-                org.neo4j.function.Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ) ) );
+        this( null, new Monitor.Adapter(), 0, 0, any(
+                Predicates.<Throwable>instanceOf( Error.class ),
+                Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ).negate() );
     }
 
     public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,
                                 long backoff, Predicate<Throwable> retryPredicate )
-    {
-        this( gds, monitor, retries, backoff, Predicates.upgrade( retryPredicate ) );
-    }
-
-    public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,
-                                long backoff, org.neo4j.function.Predicate<Throwable> retryPredicate )
     {
         this.gds = gds;
         this.monitor = monitor;
@@ -123,32 +118,16 @@ public class TransactionTemplate
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
-    /**
-     * @deprecated use {@link #retryOn(org.neo4j.function.Predicate)} instead
-     * @param retryPredicate a predicate for deciding whether to retry
-     * @return a new {@link TransactionTemplate}
-     */
-    @Deprecated
     public TransactionTemplate retryOn( Predicate<Throwable> retryPredicate )
-    {
-        return retryOn( Predicates.upgrade( retryPredicate ) );
-    }
-
-    public TransactionTemplate retryOn( org.neo4j.function.Predicate<Throwable> retryPredicate )
     {
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
     public void execute( final Consumer<Transaction> txConsumer )
     {
-        execute( new Function<Transaction, Object>()
-        {
-            @Override
-            public Object apply( Transaction transaction )
-            {
-                txConsumer.accept( transaction );
-                return null;
-            }
+        execute( transaction -> {
+            txConsumer.accept( transaction );
+            return null;
         } );
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.management;
 
-import org.neo4j.helpers.Functions;
+import org.neo4j.function.Functions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;

@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
@@ -199,19 +197,15 @@ public class FixturesTest
         File targetFolder = testDir.directory();
 
         // When
+
         try ( ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( new Function<GraphDatabaseService, Void>()
-                {
-                    @Override
-                    public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+                .withFixture( graphDatabaseService -> {
+                    try ( Transaction tx = graphDatabaseService.beginTx() )
                     {
-                        try ( Transaction tx = graphDatabaseService.beginTx() )
-                        {
-                            graphDatabaseService.createNode( Label.label( "User" ) );
-                            tx.success();
-                        }
-                        return null;
+                        graphDatabaseService.createNode( Label.label( "User" ) );
+                        tx.success();
                     }
+                    return null;
                 } )
                 .newServer() )
         {

@@ -20,16 +20,16 @@
 
 package org.neo4j.logging.async;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.neo4j.concurrent.AsyncEventSender;
-import org.neo4j.function.Consumer;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;

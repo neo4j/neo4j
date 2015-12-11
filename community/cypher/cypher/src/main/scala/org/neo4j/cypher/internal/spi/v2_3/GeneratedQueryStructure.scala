@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, CypherExecutionException, ParameterNotFoundException, symbols}
-import org.neo4j.function.Supplier
 import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.MapUtil
@@ -73,7 +72,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         ro = clazz.field(typeRef[ReadOperations], "ro"),
         nodeManager = clazz.field(typeRef[NodeManager], "nodeManager"),
         executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
-        description = clazz.field(typeRef[Supplier[InternalPlanDescription]], "description"),
+        description = clazz.field(typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description"),
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
@@ -117,7 +116,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         param[Statement]("statement"),
         param[NodeManager]("nodeManager"),
         param[ExecutionMode]("executionMode"),
-        param[Supplier[InternalPlanDescription]]("description"),
+        param[org.neo4j.function.Supplier[InternalPlanDescription]]("description"),
         param[QueryExecutionTracer]("tracer"),
         param[util.Map[String, Object]]("params"))) { execute =>
         execute.returns(Expression.invoke(Expression.newInstance(execution), MethodReference.constructorReference(execution,
@@ -125,7 +124,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
           typeRef[Statement],
           typeRef[NodeManager],
           typeRef[ExecutionMode],
-          typeRef[Supplier[InternalPlanDescription]],
+          typeRef[org.neo4j.function.Supplier[InternalPlanDescription]],
           typeRef[QueryExecutionTracer],
           typeRef[util.Map[String, Object]]),
           execute.load("closer"),
@@ -849,13 +848,13 @@ private object Templates {
     param[Statement]("statement"),
     param[NodeManager]("nodeManager"),
     param[ExecutionMode]("executionMode"),
-    param[Supplier[InternalPlanDescription]]("description"),
+    param[org.neo4j.function.Supplier[InternalPlanDescription]]("description"),
     param[QueryExecutionTracer]("tracer"),
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[ReadOperations], "ro", invoke(load("statement"), method[Statement, ReadOperations]("readOperations"))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
-    put(self(), typeRef[Supplier[InternalPlanDescription]], "description", load("description")).
+    put(self(), typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
     put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
     put(self(), typeRef[NodeManager], "nodeManager", load("nodeManager")).
@@ -875,7 +874,7 @@ private object Templates {
     returns(get(self(), typeRef[ExecutionMode], "executionMode")).
     build()
   val EXECUTION_PLAN_DESCRIPTION = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
-    returns(invoke(get(self(), typeRef[Supplier[InternalPlanDescription]], "description"), method[Supplier[InternalPlanDescription], InternalPlanDescription]("get"))).
+    returns(invoke(get(self(), typeRef[org.neo4j.function.Supplier[InternalPlanDescription]], "description"), method[org.neo4j.function.Supplier[InternalPlanDescription], InternalPlanDescription]("get"))).
     build()
   val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
     returns(get(typeRef[util.List[String]], "COLUMNS")).

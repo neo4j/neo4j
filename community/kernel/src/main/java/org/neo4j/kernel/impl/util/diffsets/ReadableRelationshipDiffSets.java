@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.util.diffsets;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator>
@@ -32,7 +32,7 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
-    static final class Empty<T> implements ReadableRelationshipDiffSets<T>
+    final class Empty<T> implements ReadableRelationshipDiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
         public static <T> ReadableRelationshipDiffSets<T> ifNull( ReadableRelationshipDiffSets<T> diffSets )

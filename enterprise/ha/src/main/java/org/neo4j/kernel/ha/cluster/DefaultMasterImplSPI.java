@@ -27,7 +27,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -96,14 +95,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.neoStoreDataSource = neoStoreDataSource;
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
-        this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, new Supplier<StoreId>()
-        {
-            @Override
-            public StoreId get()
-            {
-                return graphDb.storeId();
-            }
-        } );
+        this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;
     }
 

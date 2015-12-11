@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -32,7 +29,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.function.Function;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -41,9 +41,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.test.DatabaseFunctions.addLabel;
@@ -167,18 +165,13 @@ public class UniqueIndexApplicationIT
     private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup(
             final Label label, final String propertyKey, final Object value )
     {
-        return new Function<GraphDatabaseService, List<Long>>()
-        {
-            @Override
-            public List<Long> apply( GraphDatabaseService graphDb )
+        return graphDb -> {
+            ArrayList<Long> ids = new ArrayList<>();
+            for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
             {
-                ArrayList<Long> ids = new ArrayList<>();
-                for ( Node node : loop( graphDb.findNodes( label, propertyKey, value ) ) )
-                {
-                    ids.add( node.getId() );
-                }
-                return ids;
+                ids.add( node.getId() );
             }
+            return ids;
         };
     }
 

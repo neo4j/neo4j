@@ -25,8 +25,8 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.net.URI;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.ServerControls;

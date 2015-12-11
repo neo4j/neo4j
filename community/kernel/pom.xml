@@ -196,79 +196,37 @@ the relevant Commercial Agreement.
           </groups>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>${clirr-check-phase}</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <failOnError>true</failOnError>
-          <logResults>true</logResults>
-          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
-           need to fix that.
-           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
-            -->
-          <comparisonVersion>2.0.4</comparisonVersion>
-          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-          <includes>
-            <include>org/neo4j/graphdb/**</include>
-          </includes>
-
-          <!-- Allowed breaking changes in Neo4j 2.0 -->
-          <!-- These rules should be looked over and modified appropriately in 2.1 -->
-          <excludeMessageCodes>
-            <param>6006</param><!-- Field was made final. -->
-            <param>7012</param><!-- Method added to interface -->
-          </excludeMessageCodes>
-          <excludes>
-            <!-- Ignore known breaking changes introduced in 2.0 -->
-
-            <!-- Remove reference node -->
-            <exclude>org/neo4j/graphdb/GraphDatabaseService</exclude>
-
-            <!-- Removal of JTA breaks old index implementations -->
-            <exclude>org/neo4j/graphdb/index/IndexImplementation</exclude>
-
-            <!-- Changes to isolate state per builder to avoid race conditions -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactory$1</exclude>
-
-            <!-- TransactionInterceptorProviders are not present anymore -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseFactoryState</exclude>
-
-            <!-- Prepping for last cleanup of public config stuff. -->
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
-            <exclude>org/neo4j/graphdb/factory/Title*</exclude>
-            <exclude>org/neo4j/graphdb/factory/Default*</exclude>
-
-            <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
-            <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>
-            <exclude>org/neo4j/graphdb/index/BatchInserterIndexProvider</exclude>
-
-            <!-- IndexProvider replaced by KernelExtension -->
-            <exclude>org/neo4j/graphdb/index/IndexProvider</exclude>
-            <exclude>org/neo4j/graphdb/index/IndexIterable</exclude>
-
-            <!-- #getPropertyValues() deprecated in favour of #getPropertyKeys() + #getProperty() -->
-            <exclude>org/neo4j/graphdb/PropertyContainer</exclude>
-
-            <!-- Traverser changed to be a ResourceIterable -->
-            <exclude>org/neo4j/graphdb/traversal/Traverser</exclude>
-
-            <!-- ResourceIterator extends Resource (which extends AutoCloseable), instead of Closeable -->
-            <exclude>org/neo4j/graphdb/ResourceIterator</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
+      <!-- TODO: reenable clirr plugin after 3.0.0 release -->
+      <!--<plugin>-->
+        <!--<groupId>org.neo4j.build.plugins</groupId>-->
+        <!--<artifactId>clirr-maven-plugin</artifactId>-->
+        <!--<executions>-->
+          <!--<execution>-->
+            <!--<id>default</id>-->
+            <!--<phase>${clirr-check-phase}</phase>-->
+            <!--<goals>-->
+              <!--<goal>check</goal>-->
+            <!--</goals>-->
+          <!--</execution>-->
+        <!--</executions>-->
+        <!--<configuration>-->
+          <!--<failOnError>true</failOnError>-->
+          <!--<logResults>true</logResults>-->
+          <!--&lt;!&ndash; This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll-->
+           <!--need to fix that.-->
+           <!--OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4-->
+            <!--&ndash;&gt;-->
+          <!--<comparisonVersion>3.0.0</comparisonVersion>-->
+          <!--<ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>-->
+          <!--<includes>-->
+            <!--<include>org/neo4j/graphdb/**</include>-->
+          <!--</includes>-->
+          <!--<excludeMessageCodes>-->
+            <!--<param>6006</param>&lt;!&ndash; Field was made final. &ndash;&gt;-->
+            <!--<param>7012</param>&lt;!&ndash; Method added to interface &ndash;&gt;-->
+          <!--</excludeMessageCodes>-->
+        <!--</configuration>-->
+      <!--</plugin>-->
     </plugins>
   </build>
 

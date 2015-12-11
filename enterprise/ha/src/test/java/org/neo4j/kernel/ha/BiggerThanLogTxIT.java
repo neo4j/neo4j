@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
@@ -159,24 +157,19 @@ public class BiggerThanLogTxIT
 
     private int commitLargeTx( final GraphDatabaseService db )
     {
-        return template.with( db ).execute( new Function<Transaction,Integer>()
-        {
-            @Override
-            public Integer apply( Transaction transaction ) throws RuntimeException
+        return template.with( db ).execute( transaction -> {
+            // We're not actually asserting that this transaction produces log data
+            // bigger than the threshold.
+            long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
+            int nodeCount = 100;
+            byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
+            for ( int i = 0; i < nodeCount; i++ )
             {
-                // We're not actually asserting that this transaction produces log data
-                // bigger than the threshold.
-                long rotationThreshold = parseLongWithUnit( ROTATION_THRESHOLD );
-                int nodeCount = 100;
-                byte[] arrayProperty = new byte[(int) (rotationThreshold / nodeCount)];
-                for ( int i = 0; i < nodeCount; i++ )
-                {
-                    Node node = db.createNode();
-                    node.setProperty( "name", "big" + i );
-                    node.setProperty( "data", arrayProperty );
-                }
-                return nodeCount;
+                Node node = db.createNode();
+                node.setProperty( "name", "big" + i );
+                node.setProperty( "data", arrayProperty );
             }
+            return nodeCount;
         } );
     }
 }

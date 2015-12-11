@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexImplementation;
@@ -236,14 +236,7 @@ public class LegacyIndexTransactionStateImplTest
         when( indexConfigStore.get( eq( Relationship.class ), anyString() ) )
                 .thenReturn( singletonMap( IndexManager.PROVIDER, "test" ) );
 
-        Function<String,IndexImplementation> providerLookup = new Function<String,IndexImplementation>()
-        {
-            @Override
-            public IndexImplementation apply( String s ) throws RuntimeException
-            {
-                return mock( IndexImplementation.class );
-            }
-        };
+        Function<String,IndexImplementation> providerLookup = s -> mock( IndexImplementation.class );
 
         return new LegacyIndexTransactionStateImpl( indexConfigStore, providerLookup );
     }

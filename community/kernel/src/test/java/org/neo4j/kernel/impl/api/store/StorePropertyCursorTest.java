@@ -35,10 +35,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -67,7 +66,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 @RunWith( Enclosed.class )
@@ -292,7 +290,7 @@ public class StorePropertyCursorTest
             pageCache.close();
         }
 
-        protected final Consumer<StorePropertyCursor> cache = Consumers.noop();
+        protected final Consumer<StorePropertyCursor> cache = (cursor) -> {};
 
         protected PropertyStore propertyStore;
         private NeoStores neoStores;

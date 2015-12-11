@@ -20,8 +20,7 @@
 package org.neo4j.graphalgo.impl.util;
 
 import java.util.Comparator;
-
-import org.neo4j.function.BiFunction;
+import java.util.function.BiFunction;
 
 /**
  * PathInterest decides if a path is of interest or not in priority based traversal such as
@@ -61,31 +60,19 @@ public interface PathInterest<P>
      */
     boolean stopAfterLowestCost();
 
-    public abstract class PriorityBasedPathInterest<P> implements PathInterest<P>
+    abstract class PriorityBasedPathInterest<P> implements PathInterest<P>
     {
         /**
-         * @return {@link org.neo4j.function.BiFunction} to be used when deciding if entity can be ruled out or not.
+         * @return {@link BiFunction} to be used when deciding if entity can be ruled out or not.
          */
         abstract BiFunction<P,P,Boolean> interestFunction();
 
-        /**
-         *
-         * @param numberOfVisits number of times a traversal branch ending on the same node has been traversed from.
-         * @param pathPriority priority of traversal branch currently considered.
-         * @param oldPriority priority of other traversal branch.
-         * @return
-         */
         @Override
         public boolean canBeRuledOut( int numberOfVisits, P pathPriority, P oldPriority )
         {
             return !interestFunction().apply( pathPriority, oldPriority );
         }
 
-        /**
-         *
-         * @param numberOfVisits
-         * @return
-         */
         @Override
         public boolean stillInteresting( int numberOfVisits )
         {
@@ -102,7 +89,7 @@ public interface PathInterest<P>
         }
     }
 
-    public abstract class VisitCountBasedPathInterest<P> implements PathInterest<P>
+    abstract class VisitCountBasedPathInterest<P> implements PathInterest<P>
     {
         abstract int numberOfWantedPaths();
 
@@ -120,21 +107,12 @@ public interface PathInterest<P>
             return numberOfVisits > numberOfWantedPaths();
         }
 
-        /**
-         *
-         * @param numberOfVisits
-         * @return numberOfVisits <= {@link #numberOfWantedPaths()}
-         */
         @Override
         public boolean stillInteresting( int numberOfVisits )
         {
             return numberOfVisits <= numberOfWantedPaths();
         }
 
-        /**
-         *
-         * @return false
-         */
         @Override
         public boolean stopAfterLowestCost()
         {

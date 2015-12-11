@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import static java.util.Arrays.copyOf;
 
@@ -410,8 +411,7 @@ public abstract class ArrayUtil
      * @param <TO> type of the converted items
      * @return a new array with all items from {@code from} converted into type {@code toClass}.
      */
-    public static <FROM,TO> TO[] map( FROM[] from, org.neo4j.function.Function<FROM,TO> transformer,
-            Class<TO> toClass )
+    public static <FROM, TO> TO[] map( FROM[] from, Function<FROM,TO> transformer, Class<TO> toClass )
     {
         @SuppressWarnings( "unchecked" )
         TO[] result = (TO[]) Array.newInstance( toClass, from.length );

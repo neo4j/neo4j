@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
@@ -126,14 +125,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     @Override
     public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
     {
-        return Iterables.filter( new Predicate<RecordProxy<KEY,RECORD,ADDITIONAL>>()
-        {
-            @Override
-            public boolean test( RecordProxy<KEY, RECORD, ADDITIONAL> item )
-            {
-                return item.isChanged();
-            }
-        }, recordChanges.values() );
+        return Iterables.filter( RecordProxy::isChanged, recordChanges.values() );
     }
 
     public static class RecordChange<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY, RECORD, ADDITIONAL>

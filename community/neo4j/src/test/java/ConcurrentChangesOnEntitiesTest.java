@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,10 +25,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -64,23 +65,9 @@ public class ConcurrentChangesOnEntitiesTest
 
         final long nodeId = initWithNode( db );
 
-        Thread t1 = newThreadForNodeAction( nodeId, new Consumer<Node>()
-        {
-            @Override
-            public void accept( Node node )
-            {
-                node.addLabel( Label.label( "A" ) );
-            }
-        } );
+        Thread t1 = newThreadForNodeAction( nodeId, node -> node.addLabel( Label.label( "A" ) ) );
 
-        Thread t2 = newThreadForNodeAction( nodeId, new Consumer<Node>()
-        {
-            @Override
-            public void accept( Node node )
-            {
-                node.addLabel( Label.label( "A" ) );
-            }
-        } );
+        Thread t2 = newThreadForNodeAction( nodeId, node -> node.addLabel( Label.label( "A" ) ) );
 
         startAndWait( t1, t2 );
 
@@ -94,23 +81,9 @@ public class ConcurrentChangesOnEntitiesTest
     {
         final long nodeId = initWithNode( db );
 
-        Thread t1 = newThreadForNodeAction( nodeId, new Consumer<Node>()
-        {
-            @Override
-            public void accept( Node node )
-            {
-                node.setProperty( "a", 0.788 );
-            }
-        } );
+        Thread t1 = newThreadForNodeAction( nodeId, node -> node.setProperty( "a", 0.788 ) );
 
-        Thread t2 = newThreadForNodeAction( nodeId, new Consumer<Node>()
-        {
-            @Override
-            public void accept( Node node )
-            {
-                node.setProperty( "a", new double[]{0.999, 0.77} );
-            }
-        } );
+        Thread t2 = newThreadForNodeAction( nodeId, node -> node.setProperty( "a", new double[]{0.999, 0.77} ) );
 
         startAndWait( t1, t2 );
 
@@ -124,23 +97,10 @@ public class ConcurrentChangesOnEntitiesTest
     {
         final long relId = initWithRel( db );
 
-        Thread t1 = newThreadForRelationshipAction( relId, new Consumer<Relationship>()
-        {
-            @Override
-            public void accept( Relationship relationship )
-            {
-                relationship.setProperty( "a", 0.788 );
-            }
-        } );
+        Thread t1 = newThreadForRelationshipAction( relId, relationship -> relationship.setProperty( "a", 0.788 ) );
 
-        Thread t2 = newThreadForRelationshipAction( relId, new Consumer<Relationship>()
-        {
-            @Override
-            public void accept( Relationship relationship )
-            {
-                relationship.setProperty( "a", new double[]{0.999, 0.77} );
-            }
-        } );
+        Thread t2 = newThreadForRelationshipAction( relId,
+                relationship -> relationship.setProperty( "a", new double[]{0.999, 0.77} ) );
 
         startAndWait( t1, t2 );
 

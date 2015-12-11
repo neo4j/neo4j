@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.function.Predicate;
+import java.util.function.Predicate;
+
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalBranch;
@@ -38,13 +39,13 @@ public class ShortestPathsBranchCollisionDetector extends StandardBranchCollisio
     {
         super( evaluator, pathPredicate );
     }
-    
+
     @Override
     protected boolean includePath( Path path, TraversalBranch startBranch, TraversalBranch endBranch )
     {
         if ( !super.includePath( path, startBranch, endBranch ) )
             return false;
-        
+
         if ( depth == -1 )
         {
             depth = path.length();

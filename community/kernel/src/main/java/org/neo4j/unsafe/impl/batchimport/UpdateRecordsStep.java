@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
 
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;

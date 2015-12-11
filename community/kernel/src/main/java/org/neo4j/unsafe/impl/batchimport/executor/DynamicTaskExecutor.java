@@ -24,12 +24,11 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 
 import static java.lang.Math.min;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**

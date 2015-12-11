@@ -19,23 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
-import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.Function;
 
-import org.junit.Test;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -51,6 +41,17 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
+import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class LegacyLogEntryWriterTest
 {
@@ -130,14 +131,7 @@ public class LegacyLogEntryWriterTest
 
     private Function<WritableLogChannel, LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )
     {
-        return new Function<WritableLogChannel, LogEntryWriter>()
-        {
-            @Override
-            public LogEntryWriter apply( WritableLogChannel ignored )
-            {
-                return logEntryWriter;
-            }
-        };
+        return ignored -> logEntryWriter;
     }
 
     private IOCursor<LogEntry> mockCursor( final LogEntry... entries )

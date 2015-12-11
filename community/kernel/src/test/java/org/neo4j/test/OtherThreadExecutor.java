@@ -24,15 +24,14 @@ import java.io.PrintStream;
 import java.lang.Thread.State;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
@@ -130,20 +129,15 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     {
         lastExecutionTrigger = new Exception();
         executionState = ExecutionState.REQUESTED_EXECUTION;
-        return commandExecutor.submit( new Callable<R>()
-        {
-            @Override
-            public R call() throws Exception
+        return commandExecutor.submit( () -> {
+            executionState = ExecutionState.EXECUTING;
+            try
             {
-                executionState = ExecutionState.EXECUTING;
-                try
-                {
-                    return cmd.doWork( state );
-                }
-                finally
-                {
-                    executionState = ExecutionState.EXECUTED;
-                }
+                return cmd.doWork( state );
+            }
+            finally
+            {
+                executionState = ExecutionState.EXECUTED;
             }
         } );
     }

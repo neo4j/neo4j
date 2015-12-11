@@ -20,17 +20,11 @@
 package org.neo4j.function;
 
 /**
- * Represents a supplier of results.
- *
- * @param <T> the type of results supplied by this supplier
- * @deprecated Usages will be replaced by corresponding {@code java.util.function} interface and classes in 3.0.
+ * Please do not use this interface but use {@link java.util.function.Supplier} instead.
+ * The only reason for this interface to be here is because cypher-compiler-{2.3,3.0} needs it
+ * when generating compile runtimes.
  */
-public interface Supplier<T> extends ThrowingSupplier<T,RuntimeException>
+@Deprecated
+public interface Supplier<T> extends java.util.function.Supplier<T>
 {
-    /**
-     * Gets a result.
-     *
-     * @return A result
-     */
-    T get();
 }

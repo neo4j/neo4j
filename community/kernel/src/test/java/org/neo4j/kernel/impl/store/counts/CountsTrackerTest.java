@@ -26,9 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import org.neo4j.function.Function;
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.Predicate;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -212,22 +211,17 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( new Function<CountsTracker, Void>()
-            {
-                @Override
-                public Void apply( CountsTracker tracker )
+            Future<Void> task = threading.execute( (ThrowingFunction<CountsTracker,Void,RuntimeException>) t -> {
+                try
                 {
-                    try
-                    {
-                        delta.update( tracker, secondTransaction );
-                        tracker.rotate( secondTransaction );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new AssertionError( e );
-                    }
-                    return null;
+                    delta.update( t, secondTransaction );
+                    t.rotate( secondTransaction );
                 }
+                catch ( IOException e )
+                {
+                    throw new AssertionError( e );
+                }
+                return null;
             }, tracker );
 
             // then
@@ -303,21 +297,16 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
+        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread -> {
+            switch ( thread.getState() )
             {
-                switch ( thread.getState() )
-                {
-                case BLOCKED:
-                case WAITING:
-                case TIMED_WAITING:
-                case TERMINATED:
-                    return true;
-                default:
-                    return false;
-                }
+            case BLOCKED:
+            case WAITING:
+            case TIMED_WAITING:
+            case TERMINATED:
+                return true;
+            default:
+                return false;
             }
         }, 10, SECONDS );
         try ( CountsAccessor.Updater tx = tracker.apply( 5 ).get() )

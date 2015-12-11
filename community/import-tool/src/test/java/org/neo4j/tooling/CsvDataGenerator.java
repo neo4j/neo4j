@@ -26,10 +26,10 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.function.Function;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.SourceTraceability;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -41,7 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 
 /**

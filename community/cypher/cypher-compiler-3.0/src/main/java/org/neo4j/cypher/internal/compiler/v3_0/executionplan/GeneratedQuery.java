@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v3_0.TaskCloser;
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer;
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.function.Supplier;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.NodeManager;
 
@@ -36,7 +35,7 @@ public interface GeneratedQuery
             Statement statement,
             NodeManager nodeManager,
             ExecutionMode executionMode,
-            Supplier<InternalPlanDescription> description,
+            org.neo4j.function.Supplier<InternalPlanDescription> description,
             QueryExecutionTracer tracer,
             Map<String,Object> params );
 }

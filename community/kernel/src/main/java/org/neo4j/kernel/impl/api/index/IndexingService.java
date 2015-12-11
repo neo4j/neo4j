@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.function.BiConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
@@ -65,7 +64,6 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -263,28 +261,23 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
-        indexMap.foreachIndexProxy( new BiConsumer<Long, IndexProxy>()
-        {
-            @Override
-            public void accept( Long indexId, IndexProxy proxy )
+        indexMap.foreachIndexProxy( ( indexId, proxy ) -> {
+            InternalIndexState state1 = proxy.getState();
+            IndexDescriptor descriptor = proxy.getDescriptor();
+            log.info( proxySetup.indexStateInfo( "start", indexId, state1, descriptor ) );
+            switch ( state1 )
             {
-                InternalIndexState state = proxy.getState();
-                IndexDescriptor descriptor = proxy.getDescriptor();
-                log.info( proxySetup.indexStateInfo( "start", indexId, state, descriptor ) );
-                switch ( state )
-                {
-                    case ONLINE:
-                        // Don't do anything, index is ok.
-                        break;
-                    case POPULATING:
-                        // Remember for rebuilding
-                        rebuildingDescriptors.put( indexId, new RebuildingIndexDescriptor(
-                                descriptor, proxy.getProviderDescriptor(), proxy.config() ) );
-                        break;
-                    case FAILED:
-                        // Don't do anything, the user needs to drop the index and re-create
-                        break;
-                }
+                case ONLINE:
+                    // Don't do anything, index is ok.
+                    break;
+                case POPULATING:
+                    // Remember for rebuilding
+                    rebuildingDescriptors.put( indexId, new RebuildingIndexDescriptor(
+                            descriptor, proxy.getProviderDescriptor(), proxy.config() ) );
+                    break;
+                case FAILED:
+                    // Don't do anything, the user needs to drop the index and re-create
+                    break;
             }
         } );
 

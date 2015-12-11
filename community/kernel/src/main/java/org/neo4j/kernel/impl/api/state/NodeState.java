@@ -23,13 +23,13 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;

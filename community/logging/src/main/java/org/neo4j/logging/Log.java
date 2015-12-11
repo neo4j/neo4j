@@ -19,7 +19,7 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 /**
  * A log into which various levels of messages can be written

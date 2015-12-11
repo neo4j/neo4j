@@ -33,7 +33,6 @@ import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
-import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
@@ -123,19 +122,14 @@ public class ConsistencyCheckService
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
-        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( new Supplier<PrintWriter>()
-        {
-            @Override
-            public PrintWriter get()
+        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
+            try
             {
-                try
-                {
-                    return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
+                return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
             }
         } ) );
 

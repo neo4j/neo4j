@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.traversal;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -31,7 +31,6 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.Factory;
 
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicies.STANDARD;
 import static org.neo4j.graphdb.traversal.BranchCollisionPolicy.CollisionPolicyWrapper;
@@ -79,7 +78,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     {
         this( NO_STATEMENT );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription startSide( TraversalDescription startSideDescription )
     {
@@ -97,7 +96,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
                 (MonoDirectionalTraversalDescription)endSideDescription,
                 this.collisionPolicy, this.collisionEvaluator, this.sideSelector, statementFactory, this.maxDepth );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription mirroredSides( TraversalDescription sideDescription )
     {
@@ -130,7 +129,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         return new BidirectionalTraversalDescriptionImpl( this.start, this.end, this.collisionPolicy,
                 addEvaluator( this.collisionEvaluator, collisionEvaluator ), this.sideSelector, statementFactory, maxDepth );
     }
-    
+
     @Override
     public BidirectionalTraversalDescription collisionEvaluator( Evaluator collisionEvaluator )
     {
@@ -153,15 +152,9 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public Traverser traverse( final Iterable<Node> startNodes, final Iterable<Node> endNodes )
     {
-        return new DefaultTraverser( new Factory<TraverserIterator>(){
-            @Override
-            public TraverserIterator newInstance()
-            {
-                return new BidirectionalTraverserIterator(
-                        statementFactory.get(),
-                        start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes);
-            }
-        });
+        return new DefaultTraverser( () -> new BidirectionalTraverserIterator(
+                statementFactory.get(),
+                start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth, startNodes, endNodes) );
     }
 
     /**

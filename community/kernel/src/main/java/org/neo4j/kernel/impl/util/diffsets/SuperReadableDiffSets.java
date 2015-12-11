@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 

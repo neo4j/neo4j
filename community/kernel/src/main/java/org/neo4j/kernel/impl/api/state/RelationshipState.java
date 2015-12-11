@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.cursor.PropertyItem;

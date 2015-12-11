@@ -28,7 +28,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.function.Function;
+import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;

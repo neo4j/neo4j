@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.Test;
-import org.neo4j.function.Predicate;
+
+import java.util.function.Predicate;
+
 import org.neo4j.function.Predicates;
 
 import static org.junit.Assert.assertArrayEquals;

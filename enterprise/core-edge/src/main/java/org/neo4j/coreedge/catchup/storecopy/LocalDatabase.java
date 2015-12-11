@@ -21,11 +21,11 @@ package org.neo4j.coreedge.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.function.Supplier;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.storemigration.legacylogs;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -56,14 +56,7 @@ class LegacyLogEntryReader
 
     LegacyLogEntryReader( FileSystemAbstraction fs )
     {
-        this( fs, new Function<LogHeader,LogEntryReader<ReadableVersionableLogChannel>>()
-        {
-            @Override
-            public LogEntryReader<ReadableVersionableLogChannel> apply( LogHeader from ) throws RuntimeException
-            {
-                return new VersionAwareLogEntryReader<>( from.logFormatVersion );
-            }
-        } );
+        this( fs, from -> new VersionAwareLogEntryReader<>( from.logFormatVersion ) );
     }
 
     public Pair<LogHeader, IOCursor<LogEntry>> openReadableChannel( File logFile ) throws IOException

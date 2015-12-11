@@ -25,7 +25,9 @@ import java.io.UnsupportedEncodingException;
 import java.lang.Thread.State;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.function.Predicate;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -114,30 +116,8 @@ public class Exceptions
      * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
      * to peel (i.e. remove), whereas the first {@code false} means stop and return.
      * @return the delegate cause of an exception, dictated by the predicate.
-     * @deprecated use {@link #peel(Throwable, org.neo4j.function.Predicate)} instead
      */
-    @Deprecated
     public static Throwable peel( Throwable exception, Predicate<Throwable> toPeel )
-    {
-        return peel( exception, Predicates.upgrade( toPeel ) );
-    }
-
-    /**
-     * Peels off layers of causes. For example:
-     *
-     * MyFarOuterException
-     *   cause: MyOuterException
-     *     cause: MyInnerException
-     *       cause: MyException
-     * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
-     * will return MyInnerException. If the predicate peels all exceptions null is returned.
-     *
-     * @param exception the outer exception to peel to get to an delegate cause.
-     * @param toPeel {@link org.neo4j.function.Predicate} for deciding what to peel. {@code true} means
-     * to peel (i.e. remove), whereas the first {@code false} means stop and return.
-     * @return the delegate cause of an exception, dictated by the predicate.
-     */
-    public static Throwable peel( Throwable exception, org.neo4j.function.Predicate<Throwable> toPeel )
     {
         while ( exception != null )
         {
@@ -150,54 +130,9 @@ public class Exceptions
         return exception;
     }
 
-    /**
-     * @deprecated use {@link org.neo4j.function.Predicates#instanceOfAny(Class[])} instead
-     * @param types the exception types to check against
-     * @return a predicate which determines if a {@link Throwable} is among the given types
-     */
-    @Deprecated
-    public static Predicate<Throwable> exceptionsOfType( final Class<? extends Throwable>... types )
-    {
-        return new Predicate<Throwable>()
-        {
-            @Override
-            public boolean accept( Throwable item )
-            {
-                for ( Class<? extends Throwable> type : types )
-                {
-                    if ( type.isAssignableFrom( item.getClass() ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
-    @Deprecated
-    public static Predicate<Throwable> exceptionWithMessage( final String message )
-    {
-        return new Predicate<Throwable>()
-        {
-            @Override
-            public boolean accept( Throwable item )
-            {
-                return item.getMessage() != null && item.getMessage().equals( message );
-            }
-        };
-    }
-
     public static Predicate<Throwable> exceptionsWithMessageContaining( final String message )
     {
-        return new Predicate<Throwable>()
-        {
-            @Override
-            public boolean accept( Throwable item )
-            {
-                return item.getMessage() != null && item.getMessage().contains( message );
-            }
-        };
+        return item -> item.getMessage() != null && item.getMessage().contains( message );
     }
 
     private Exceptions()
@@ -269,16 +204,9 @@ public class Exceptions
     @SuppressWarnings( "rawtypes" )
     public static boolean contains( final Throwable cause, final String containsMessage, final Class... anyOfTheseClasses )
     {
-        final org.neo4j.function.Predicate<Throwable> anyOfClasses = org.neo4j.function.Predicates.instanceOfAny( anyOfTheseClasses );
-        return contains( cause, new org.neo4j.function.Predicate<Throwable>()
-        {
-            @Override
-            public boolean test( Throwable item )
-            {
-                return item.getMessage() != null && item.getMessage().contains( containsMessage ) &&
-                        anyOfClasses.test( item );
-            }
-        } );
+        final Predicate<Throwable> anyOfClasses = Predicates.instanceOfAny( anyOfTheseClasses );
+        return contains( cause, item -> item.getMessage() != null && item.getMessage().contains( containsMessage ) &&
+                                anyOfClasses.test( item ) );
     }
 
     public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
@@ -286,19 +214,7 @@ public class Exceptions
         return contains( cause, org.neo4j.function.Predicates.<Throwable>instanceOfAny( anyOfTheseClasses ) );
     }
 
-    /**
-     * @deprecated use {@link #contains(Throwable, org.neo4j.function.Predicate)} instead
-     * @param cause the cause we have
-     * @param toLookFor predicate for the cause we are looking for
-     * @return {@code true} if the cause was found
-     */
-    @Deprecated
     public static boolean contains( Throwable cause, Predicate<Throwable> toLookFor )
-    {
-        return contains( cause, Predicates.upgrade( toLookFor ) );
-    }
-
-    public static boolean contains( Throwable cause, org.neo4j.function.Predicate<Throwable> toLookFor )
     {
         while ( cause != null )
         {
@@ -309,31 +225,6 @@ public class Exceptions
             cause = cause.getCause();
         }
         return false;
-    }
-
-    /**
-     * @deprecated use {@link org.neo4j.function.Predicates#instanceOfAny(Class[])} instead
-     * @param anyOfTheseClasses classes to match against
-     * @return a predicate which yields {@code true} if an item is an instance of any of the given classes
-     */
-    @Deprecated
-    public static Predicate<Throwable> isAnyOfClasses( final Class... anyOfTheseClasses )
-    {
-        return new Predicate<Throwable>()
-        {
-            @Override
-            public boolean accept( Throwable item )
-            {
-                for ( Class cls : anyOfTheseClasses )
-                {
-                    if ( cls.isInstance( item ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
     }
 
     public static <E extends Throwable> E combine( E first, E second )
@@ -387,26 +278,21 @@ public class Exceptions
     @Deprecated
     public static Predicate<StackTraceElement> classImplementingInterface( final Class<Client> cls )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean accept( StackTraceElement item )
+        return item -> {
+            try
             {
-                try
+                for ( Class<?> interfaceClass : Class.forName( item.getClassName() ).getInterfaces() )
                 {
-                    for ( Class<?> interfaceClass : Class.forName( item.getClassName() ).getInterfaces() )
+                    if ( interfaceClass.equals( cls ) )
                     {
-                        if ( interfaceClass.equals( cls ) )
-                        {
-                            return true;
-                        }
+                        return true;
                     }
-                    return false;
                 }
-                catch ( ClassNotFoundException e )
-                {
-                    return false;
-                }
+                return false;
+            }
+            catch ( ClassNotFoundException e )
+            {
+                return false;
             }
         };
     }
@@ -415,48 +301,25 @@ public class Exceptions
     public static boolean containsStackTraceElement( Throwable cause,
             final Predicate<StackTraceElement> predicate )
     {
-        return contains( cause, new org.neo4j.function.Predicate<Throwable>()
-        {
-            @Override
-            public boolean test( Throwable item )
+        return contains( cause, item -> {
+            for ( StackTraceElement element : item.getStackTrace() )
             {
-                for ( StackTraceElement element : item.getStackTrace() )
+                if ( predicate.test( element ) )
                 {
-                    if ( predicate.accept( element ) )
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                return false;
             }
+            return false;
         } );
     }
 
     @Deprecated
     public static Predicate<StackTraceElement> forMethod( final String name )
     {
-        return new Predicate<StackTraceElement>()
-        {
-            @Override
-            public boolean accept( StackTraceElement item )
-            {
-                return item.getMethodName().equals( name );
-            }
-        };
+        return item -> item.getMethodName().equals( name );
     }
 
-    /**
-     * @deprecated use {@link #briefOneLineStackTraceInformation(org.neo4j.function.Predicate)} instead
-     * @param toInclude predicate which decides which stack trace elements to include
-     * @return the filtered brief stack traces
-     */
-    @Deprecated
     public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
-    {
-        return briefOneLineStackTraceInformation( Predicates.upgrade( toInclude ) );
-    }
-
-    public static String briefOneLineStackTraceInformation( org.neo4j.function.Predicate<StackTraceElement> toInclude )
     {
         StringBuilder builder = new StringBuilder();
         for ( StackTraceElement element : Thread.currentThread().getStackTrace() )

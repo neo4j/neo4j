@@ -19,6 +19,10 @@
  */
 package org.neo4j.logging;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.StringDescription;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,12 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
-
-import org.neo4j.function.Consumer;
+import java.util.function.Consumer;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;

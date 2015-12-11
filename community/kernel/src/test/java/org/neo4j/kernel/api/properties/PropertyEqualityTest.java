@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.neo4j.function.Function;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -140,13 +138,8 @@ public class PropertyEqualityTest
                 shouldMatch( new String[]{"A", "B", "C"}, new char[]{'A', 'B', 'C'} ),
                 shouldMatch( new char[]{'A', 'B', 'C'},  new String[]{"A", "B", "C"} )
         );
-        return asCollection( map( new Function<Test, Object[]>()
-        {
-            @Override
-            public Object[] apply( Test testValue )
-            {
-                return new Object[]{testValue};
-            }
+        return asCollection( map( testValue -> {
+            return new Object[]{testValue};
         }, testValues ) );
     }
 
