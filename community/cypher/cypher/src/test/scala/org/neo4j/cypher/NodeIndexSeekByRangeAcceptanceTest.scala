@@ -1015,4 +1015,86 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result should (use("NodeIndexSeekByRange") and evaluateTo(List(Map("n.prop" -> 1), Map("n.prop" -> 5))))
   }
 
+  test("should not use index seek by range when rhs of > inequality depends on property") {
+    // Given
+    val size = createTestModelBigEnoughToConsiderPickingIndexSeek
+
+    // When
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
+    val result = executeWithAllPlanners(query)
+
+    println(result.executionPlanDescription())
+
+    // Then
+    result should evaluateTo(List(Map("c" -> size/2)))
+    result shouldNot use("NodeIndexSeekByRange")
+  }
+
+  test("should not use index seek by range when rhs of <= inequality depends on property") {
+    // Given
+    val size = createTestModelBigEnoughToConsiderPickingIndexSeek
+
+    // When
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result should evaluateTo(List(Map("c" -> size/2)))
+    result shouldNot use("NodeIndexSeekByRange")
+  }
+
+  test("should not use index seek by range when rhs of >= inequality depends on same property") {
+    // Given
+    val size = createTestModelBigEnoughToConsiderPickingIndexSeek
+
+    // When
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    result should evaluateTo(List(Map("c" -> size)))
+    result shouldNot use("NodeIndexSeekByRange")
+  }
+
+  test("should use index seek by range with literal on the lhs of inequality") {
+    // Given
+    val size = createTestModelBigEnoughToConsiderPickingIndexSeek
+
+    // When
+    val query = s"MATCH (a)-->(b:Label) WHERE ${size/2} < b.prop RETURN count(a) as c"
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    assert(size > 20)
+    result should use("NodeIndexSeekByRange")
+    result should evaluateTo(List(Map("c" -> (size/2))))
+  }
+
+  test("should use index seek by range with double inequalities") {
+    // Given
+    val size = createTestModelBigEnoughToConsiderPickingIndexSeek
+
+    // When
+    val query = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
+    val result = executeWithAllPlanners(query)
+
+    // Then
+    assert(size > 20)
+    result should use("NodeIndexSeekByRange")
+    result should evaluateTo(List(Map("c" -> (size - 20))))
+  }
+
+  private def createTestModelBigEnoughToConsiderPickingIndexSeek: Int = {
+    val size = 400
+
+    graph.createIndex("Label", "prop")
+
+    (1 to size).foreach { i =>
+      // Half of unlabeled nodes has prop = 0 (for even i:s prop = 0, for odd i:s prop = i)
+      val a = createNode(Map("prop" -> (i & 1) * i))
+      val b = createLabeledNode(Map("prop" -> i), "Label")
+      relate(a, b)
+    }
+    size
+  }
 }

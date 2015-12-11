@@ -19,20 +19,21 @@
  */
 package org.neo4j.server.rest.batch;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.junit.Test;
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -99,5 +100,15 @@ public class BatchOperationsTest {
         assertEquals( 2, req.getLocalPort());
         assertEquals( "129.0.0.1", req.getLocalAddr());
 
+    }
+
+    @Test
+    public void shouldIgnoreUnknownAndUnparseablePlaceholders() throws Throwable
+    {
+        // When/then
+        assertEquals("foo {00000000010001010001001100111000100101010111001101110111}",
+                ops.replaceLocationPlaceholders("foo {00000000010001010001001100111000100101010111001101110111}", Collections.<Integer,String>emptyMap() ));
+        assertEquals("foo {2147483648}",
+                ops.replaceLocationPlaceholders("foo {2147483648}", Collections.<Integer,String>emptyMap() ));
     }
 }

@@ -108,8 +108,9 @@ object AsStringRangeSeekable {
 
 object AsValueRangeSeekable {
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
-    case inequalities@AndedPropertyInequalities(ident, prop, _) =>
-      Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
+    case inequalities@AndedPropertyInequalities(ident, prop, innerInequalities)
+      if innerInequalities.forall( _.rhs.dependencies.isEmpty ) =>
+        Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
     case _ =>
       None
   }
