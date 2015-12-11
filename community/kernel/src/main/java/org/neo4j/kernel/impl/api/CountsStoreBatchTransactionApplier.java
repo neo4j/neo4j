@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -40,8 +41,11 @@ public class CountsStoreBatchTransactionApplier implements BatchTransactionAppli
     @Override
     public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
     {
-        countsTracker.apply( transaction.transactionId() ).map(
-                ( CountsTracker.Updater updater ) -> this.countsUpdater = updater );
+        Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
+        if ( result.isPresent() )
+        {
+            this.countsUpdater = result.get();
+        }
         assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
 
         return new CountsStoreTransactionApplier( mode, countsUpdater );

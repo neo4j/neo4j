@@ -135,25 +135,23 @@ public interface BatchTransactionApplier extends AutoCloseable
         @Override
         public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
         {
-            ArrayList<TransactionApplier> txAppliers = new ArrayList<>();
-            for ( BatchTransactionApplier applier : appliers )
+            TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
+            for ( int i = 0; i < appliers.length; i++ )
             {
-                txAppliers.add( applier.startTx( transaction ) );
+                txAppliers[i] = appliers[i].startTx( transaction );
             }
-            return new TransactionApplierFacade(
-                    txAppliers.toArray( new TransactionApplier[appliers.length] ) );
+            return new TransactionApplierFacade( txAppliers );
         }
 
         @Override
         public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
         {
-            ArrayList<TransactionApplier> txAppliers = new ArrayList<>();
-            for ( BatchTransactionApplier applier : appliers )
+            TransactionApplier[] txAppliers = new TransactionApplier[appliers.length];
+            for ( int i = 0; i < appliers.length; i++ )
             {
-                txAppliers.add( applier.startTx( transaction, lockGroup ) );
+                txAppliers[i] = appliers[i].startTx( transaction, lockGroup );
             }
-            return new TransactionApplierFacade(
-                    txAppliers.toArray( new TransactionApplier[appliers.length] ) );
+            return new TransactionApplierFacade( txAppliers );
         }
 
         @Override

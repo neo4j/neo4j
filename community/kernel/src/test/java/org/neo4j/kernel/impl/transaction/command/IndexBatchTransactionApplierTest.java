@@ -64,7 +64,6 @@ public class IndexBatchTransactionApplierTest
                 txApplier.visitNodeCommand( node( 15 ) );
                 txApplier.visitNodeCommand( node( 20 ) );
                 txApplier.visitNodeCommand( node( 10 ) );
-                //applier.apply();
             }
         }
         // THEN all assertions happen inside the LabelScanWriter#write and #close

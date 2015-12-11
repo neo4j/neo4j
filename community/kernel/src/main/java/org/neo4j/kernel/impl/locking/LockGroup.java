@@ -28,8 +28,9 @@ public class LockGroup implements AutoCloseable
 
     public final void add( Lock lock )
     {
-        if (lock == null) {
-            throw new NullPointerException( "Cannot add null locks. See LockService.NOLOCK instead." );
+        if ( lock == null )
+        {
+            throw new IllegalArgumentException( "Cannot add null locks. See LockService.NOLOCK instead." );
         }
         locks.add( lock );
     }

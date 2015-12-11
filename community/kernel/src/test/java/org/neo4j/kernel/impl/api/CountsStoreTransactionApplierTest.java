@@ -46,7 +46,8 @@ public class CountsStoreTransactionApplierTest
                 TransactionApplicationMode.INTERNAL );
 
         // WHEN
-        try (TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) )) {
+        try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
+        {
             txApplier.visitNodeCountsCommand( addNodeCommand() );
         }
 

@@ -118,7 +118,6 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     @Override
     public void close()
     {
-        // apply
         try
         {
             if ( definitions != null )
@@ -139,7 +138,6 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
 
-        // close
         if ( definitions != null )
         {
             dataSource.releaseWriteLock();

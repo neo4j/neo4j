@@ -91,7 +91,6 @@ public class LegacyBatchIndexApplierTest
                 txApplier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "first" ) );
                 txApplier.visitIndexAddNodeCommand( addNodeToIndex( definitions, "second" ) );
                 txApplier.visitIndexAddRelationshipCommand( addRelationshipToIndex( definitions, "second" ) );
-                //applier.apply();
             }
         }
 
@@ -125,12 +124,9 @@ public class LegacyBatchIndexApplierTest
                     FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
                     commitment.setHasLegacyIndexChanges( true );
                     txToApply.commitment( commitment, txId );
-                    try ( TransactionApplier txApplier = applier.startTx( txToApply ) )
-                    {
-                        //applier.begin( txToApply, new LockGroup() );
-                        //txApplier.end();
-                        //applier.apply();
-                    }
+                    TransactionApplier txApplier = applier.startTx( txToApply );
+                    // Closing manually instead of using try-with-resources since we have no additional work to do
+                    txApplier.close();
                     // Make sure threads are unordered
                     Thread.sleep( ThreadLocalRandom.current().nextInt( 5 ) );
                     // THEN

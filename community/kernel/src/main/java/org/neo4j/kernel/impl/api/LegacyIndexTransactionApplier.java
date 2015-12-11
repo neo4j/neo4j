@@ -148,7 +148,6 @@ public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
         if ( transactionId != -1 )
         {
             transactionOrdering.removeChecked( transactionId );
-            // transactionId = -1;
         }
     }
 
