@@ -264,6 +264,7 @@ startit() {
 
 console() {
 
+  detectos
   checkstatus
   checklimits
 
