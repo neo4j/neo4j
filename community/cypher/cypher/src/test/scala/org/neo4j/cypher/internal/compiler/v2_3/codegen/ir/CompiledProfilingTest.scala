@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.ProfileMode
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Provider}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -33,9 +34,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.frontend.v2_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v2_3.symbols
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.function.Supplier
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api._
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.ImpermanentGraphDatabase
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -53,8 +53,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val statement = mock[Statement]
     val readOps = mock[ReadOperations]
-    val nodeManager = mock[NodeManager]
-    when(nodeManager.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
+    val entityAccessor = mock[EntityAccessor]
+    when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[Node])
     when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
@@ -67,14 +67,14 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       }
     })
 
-    val supplier = new Supplier[InternalPlanDescription] {
+    val provider = new Provider[InternalPlanDescription] {
       override def get(): InternalPlanDescription =
         PlanDescriptionImpl(id2, "accept", SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)), Seq.empty, Set.empty)
     }
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, statement = statement, nodeManager = nodeManager, supplier = supplier, queryExecutionTracer = tracer).size
+    newInstance(compiled, statement = statement, entityAccessor = entityAccessor, provider = provider, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)

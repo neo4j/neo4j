@@ -52,7 +52,7 @@ trait SuccessfulCloseable {
 class CompiledExecutionResult(taskCloser: TaskCloser,
                               statement: Statement,
                               compiledCode: GeneratedQueryExecution,
-                              description: Supplier[InternalPlanDescription])
+                              description: Provider[InternalPlanDescription])
   extends InternalExecutionResult with SuccessfulCloseable  {
   self =>
 

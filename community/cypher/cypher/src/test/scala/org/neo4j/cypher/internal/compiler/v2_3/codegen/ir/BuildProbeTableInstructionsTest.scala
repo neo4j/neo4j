@@ -26,12 +26,11 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.frontend.v2_3.symbols
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.EntityAccessor
+import org.neo4j.cypher.internal.frontend.v2_3.{SemanticTable, symbols}
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{GraphDatabaseService, Node}
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.{ReadOperations, Statement}
-import org.neo4j.kernel.impl.core.{NodeProxy, NodeManager}
 
 import scala.collection.mutable
 
@@ -41,7 +40,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val buildTableMethodName = "buildProbeTable"
   private val resultRowKey = "resultKey"
 
-  private val nodeManager = mock[NodeManager]
+  private val entityAccessor = mock[EntityAccessor]
   private val statement = mock[Statement]
   private val readOps = mock[ReadOperations]
   private val allNodeIds = mutable.ArrayBuffer[Long]()
@@ -140,9 +139,9 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def setUpNodeMocks(ids: Long*): Unit = {
     ids.foreach { id =>
-      val nodeMock = mock[NodeProxy]
+      val nodeMock = mock[Node]
       when(nodeMock.getId).thenReturn(id)
-      when(nodeManager.newNodeProxyById(id)).thenReturn(nodeMock)
+      when(entityAccessor.newNodeProxyById(id)).thenReturn(nodeMock)
       allNodeIds += id
     }
   }
@@ -164,7 +163,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
-    evaluate(instructions, statement, nodeManager, Seq(resultRowKey), Map.empty[String, Object], ids)
+    evaluate(instructions, statement, entityAccessor, Seq(resultRowKey), Map.empty[String, Object], ids)
   }
 
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {

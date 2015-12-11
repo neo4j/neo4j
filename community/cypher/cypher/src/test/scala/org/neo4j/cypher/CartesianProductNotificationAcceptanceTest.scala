@@ -21,14 +21,18 @@ package org.neo4j.cypher
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.EntityAccessor
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
+import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -99,9 +103,12 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     verify(logger, never) += any()
   }
 
-  private def createCompiler() =
+  private def createCompiler() = {
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+
     CypherCompilerFactory.costBasedCompiler(
       graph,
+      new EntityAccessorWrapper2_3(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize = 128,
         statsDivergenceThreshold = 0.5,
@@ -117,4 +124,5 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       runtimeName = Some(CompiledRuntimeName),
       rewriterSequencer = RewriterStepSequencer.newValidating
     )
+  }
 }

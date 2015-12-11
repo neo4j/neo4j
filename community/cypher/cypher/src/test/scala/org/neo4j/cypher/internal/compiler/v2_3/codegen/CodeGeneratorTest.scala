@@ -24,19 +24,21 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, EntityAccessor}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, ParameterNotFoundException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v2_3.{ParameterNotFoundException, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -845,8 +847,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
-    compile(plan).
-    executionResultBuilder(statement, nodeManager, NormalMode, tracer(NormalMode), params, taskCloser)
+        compile(plan).executionResultBuilder(statement, new EntityAccessorWrapper2_3(nodeManager), NormalMode,
+      tracer(NormalMode), params, taskCloser)
   }
 
   /*

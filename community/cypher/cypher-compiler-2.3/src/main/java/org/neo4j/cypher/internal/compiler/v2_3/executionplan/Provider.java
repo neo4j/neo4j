@@ -19,22 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan;
 
-import java.util.Map;
-
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
-import org.neo4j.kernel.api.Statement;
-
-public interface GeneratedQuery
+public interface Provider<T>
 {
-    GeneratedQueryExecution execute(
-            TaskCloser closer,
-            Statement statement,
-            EntityAccessor entityAccessor,
-            ExecutionMode executionMode,
-            Provider<InternalPlanDescription> description,
-            QueryExecutionTracer tracer,
-            Map<String,Object> params );
+    T get();
 }

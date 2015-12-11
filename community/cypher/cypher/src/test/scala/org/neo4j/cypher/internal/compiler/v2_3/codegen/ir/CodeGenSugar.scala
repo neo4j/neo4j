@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_3.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper2_3
 import org.neo4j.cypher.internal.compiler.v2_3.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompiledPlan, GeneratedQuery, GeneratedQueryExecution, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
-import org.neo4j.function.Supplier
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -68,8 +68,10 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val nodeManager = graphDb.getDependencyResolver.resolveDependency(classOf[NodeManager])
-      val result = plan.executionResultBuilder(statement, nodeManager, mode, tracer(mode), params, taskCloser)
+      val nodeManager =
+        graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+      val result = plan.executionResultBuilder(statement, new EntityAccessorWrapper2_3(nodeManager), mode,
+        tracer(mode), params, taskCloser)
       tx.success()
       result.size
       result
@@ -80,12 +82,12 @@ trait CodeGenSugar extends MockitoSugar {
 
   def evaluate(instructions: Seq[Instruction],
                stmt: Statement = mock[Statement],
-               nodeManager: NodeManager = null,
-                columns: Seq[String] = Seq.empty,
+               entityAccessor: EntityAccessor = null,
+               columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns,  operatorIds)
-    val result = newInstance(clazz, statement = stmt, nodeManager = nodeManager, params = params)
+    val result = newInstance(clazz, statement = stmt, entityAccessor = entityAccessor, params = params)
     evaluate(result)
   }
 
@@ -113,14 +115,14 @@ trait CodeGenSugar extends MockitoSugar {
                   taskCloser: TaskCloser = new TaskCloser,
                   statement: Statement = mock[Statement],
                   graphdb: GraphDatabaseService = null,
-                  nodeManager: NodeManager = null,
+                  entityAccessor: EntityAccessor = null,
                   executionMode: ExecutionMode = null,
-                  supplier: Supplier[InternalPlanDescription] = null,
+                  provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
-    val generated = clazz.execute(taskCloser, statement, nodeManager,
-      executionMode, supplier, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
-    new CompiledExecutionResult(taskCloser, statement, generated, supplier)
+    val generated = clazz.execute(taskCloser, statement, entityAccessor,
+      executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
+    new CompiledExecutionResult(taskCloser, statement, generated, provider)
   }
 
   def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {
