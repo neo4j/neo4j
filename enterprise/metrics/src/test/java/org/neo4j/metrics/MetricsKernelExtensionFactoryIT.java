@@ -30,11 +30,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -46,9 +47,9 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -102,7 +103,8 @@ public class MetricsKernelExtensionFactoryIT
         // Awesome. Let's get some metric numbers.
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
-        long committedTransactions = readMonotonicIncreasingLongValue( metricsFile );
+        long committedTransactions = readLongValueAndAssert( metricsFile,
+                ( newValue, currentValue ) -> newValue >= currentValue );
         assertThat( committedTransactions, lessThanOrEqualTo( 1000L + 2L ) );
     }
 
@@ -131,7 +133,7 @@ public class MetricsKernelExtensionFactoryIT
 
         //now we should have one replan event
         File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
-        long events = readMonotonicIncreasingLongValue( metricFile );
+        long events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
         assertThat( events, is( 1L ) );
     }
 
@@ -152,8 +154,7 @@ public class MetricsKernelExtensionFactoryIT
             Thread.sleep( 1 );
         }
 
-        long events = readMonotonicIncreasingLongValue( metricFile );
-        assertThat( events, greaterThanOrEqualTo( 1L ) );
+        readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
     }
 
     private void addNodes( int numberOfNodes )
@@ -169,7 +170,7 @@ public class MetricsKernelExtensionFactoryIT
         }
     }
 
-    private long readMonotonicIncreasingLongValue( File metricFile ) throws IOException
+    private long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption ) throws IOException
     {
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
@@ -185,7 +186,8 @@ public class MetricsKernelExtensionFactoryIT
             {
                 String[] fields = line.split( "," );
                 int newValue = Integer.parseInt( fields[1] );
-                assertThat( newValue, greaterThanOrEqualTo( currentValue ) );
+                assertTrue( "assertion failed on " + newValue + " " + currentValue,
+                        assumption.test( newValue, currentValue ) );
                 currentValue = newValue;
             }
             return currentValue;
