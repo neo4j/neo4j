@@ -20,19 +20,18 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
 import org.neo4j.concurrent.CompletableFuture;
-import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTracker;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.coreedge.server.core.CurrentReplicatedLockState;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -40,9 +39,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
@@ -50,19 +47,19 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 {
     private final GlobalSessionTracker sessionTracker;
     private final GlobalSession myGlobalSession;
-    private final Dependencies dependencies;
+    private final CurrentReplicatedLockState currentReplicatedLockState;
     private final TransactionCommitProcess commitProcess;
     private final Map<LocalOperationId, FutureTxId> outstanding = new ConcurrentHashMap<>();
     private long lastCommittedIndex = -1;
     private long lastCommittedTxId; // Maintains the last committed tx id, used to set the next field
-    private long reignStartTxId; // Maintains the last txid committed under the previous service assignment
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
-                                              GlobalSession myGlobalSession, Dependencies dependencies )
+                                              GlobalSession myGlobalSession,
+                                              CurrentReplicatedLockState currentReplicatedLockState )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
-        this.dependencies = dependencies;
+        this.currentReplicatedLockState = currentReplicatedLockState;
         this.sessionTracker = new GlobalSessionTracker();
     }
 
@@ -80,26 +77,6 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
         {
             handleTransaction( (ReplicatedTransaction) content, logIndex );
         }
-        if ( content instanceof NewLeaderBarrier )
-        {
-            try
-            {
-                reignStartTxId = appendBarrierTx( logIndex );
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-    }
-
-    private long appendBarrierTx( long logIndex ) throws TransactionFailureException
-    {
-        PhysicalTransactionRepresentation dummyTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
-        // TODO we need to set the "-1"'s below to useful values
-        dummyTx.setHeader( encodeLogIndexAsTxHeader( logIndex ), -1, -1, -1, -1, -1, -1 );
-
-        return commitProcess.commit( new TransactionToApply( dummyTx ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
     }
 
     private void handleTransaction( ReplicatedTransaction replicatedTx, long logIndex )
@@ -121,10 +98,10 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
                     Optional.ofNullable( outstanding.remove( replicatedTx.localOperationId() ) ) :
                     Optional.<CompletableFuture<Long>>empty();
 
-            if ( tx.getLatestCommittedTxWhenStarted() < reignStartTxId )
+            if ( currentReplicatedLockState.currentLockSession().id() != tx.getLockSessionId() )
             {
                 future.ifPresent( txFuture -> txFuture.completeExceptionally( new TransientTransactionFailureException(
-                        "Attempt to commit transaction that was started on a different leader term. " +
+                        "Attempt to commit transaction that was started on a different leader. " +
                                 "Please retry the transaction." ) ) );
                 return;
             }

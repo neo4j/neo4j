@@ -35,6 +35,8 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.ReplicatedLockRequest;
 
 public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<ByteBuf>
 {
@@ -44,6 +46,7 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
     private static final byte SEED_STORE_ID_TYPE = 3;
     private static final byte TOKEN_REQUEST_TYPE = 4;
     private static final byte NEW_LEADER_BARRIER_TYPE = 5;
+    private static final byte LOCK_REQUEST = 6;
 
     @Override
     public void serialize( ReplicatedContent content, ByteBuf buffer ) throws MarshallingException
@@ -76,6 +79,11 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
         else if ( content instanceof NewLeaderBarrier )
         {
             buffer.writeByte( NEW_LEADER_BARRIER_TYPE );
+        }
+        else if( content instanceof ReplicatedLockRequest )
+        {
+            buffer.writeByte( LOCK_REQUEST );
+            ReplicatedLockRequestSerializer.serialize( (ReplicatedLockRequest<CoreMember>) content, buffer );
         }
         else
         {
@@ -112,6 +120,9 @@ public class CoreReplicatedContentMarshal implements ReplicatedContentMarshal<By
                 break;
             case NEW_LEADER_BARRIER_TYPE:
                 content = new NewLeaderBarrier();
+                break;
+            case LOCK_REQUEST:
+                content = ReplicatedLockRequestSerializer.deserialize( buffer );
                 break;
             default:
                 throw new MarshallingException( String.format( "Unknown content type 0x%x", type ) );

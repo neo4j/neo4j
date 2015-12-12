@@ -41,13 +41,19 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.util.Dependencies;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.createCommandBytes;
+import static org.neo4j.coreedge.raft.replication.token.TokenType.LABEL;
 
 public class ReplicatedTokenHolderTest
 {
@@ -111,6 +117,20 @@ public class ReplicatedTokenHolderTest
     }
 
     @Test
+    public void shouldStoreInitialTokens() throws Exception
+    {
+        // given
+        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder =
+                new ReplicatedLabelTokenHolder( null, null, dependencies );
+
+        // when
+        tokenHolder.setInitialTokens( asList( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
+
+        // then
+        assertThat( tokenHolder.getAllTokens(), hasItems( new Token( "name1", 1 ), new Token( "name2", 2 ) ) );
+    }
+
+    @Test
     public void shouldThrowExceptionIfLastCommittedIndexNotSet() throws Exception
     {
         // given
@@ -146,7 +166,8 @@ public class ReplicatedTokenHolderTest
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
-        tokenHolder.onReplicated( new ReplicatedTokenRequest( TokenType.LABEL, "Person", ReplicatedTokenRequestSerializer.createCommandBytes( expectedCommands ) ), 0 );
+        tokenHolder.onReplicated( new ReplicatedTokenRequest( LABEL, "Person", createCommandBytes(
+                expectedCommands ) ), 0 );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
@@ -172,8 +193,8 @@ public class ReplicatedTokenHolderTest
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
-        replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( TokenType.LABEL, "Person",
-                ReplicatedTokenRequestSerializer.createCommandBytes( injectedCommands ) ) );
+        replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( LABEL, "Person",
+                createCommandBytes( injectedCommands ) ) );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
@@ -200,8 +221,8 @@ public class ReplicatedTokenHolderTest
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
-        replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( TokenType.LABEL, "Dog",
-                ReplicatedTokenRequestSerializer.createCommandBytes( injectedCommands ) ) );
+        replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( LABEL, "Dog",
+                createCommandBytes( injectedCommands ) ) );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
