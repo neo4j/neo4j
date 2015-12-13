@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -63,7 +62,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
+public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
 {
     @Override
     protected Command read( byte commandType, ReadableLogChannel channel ) throws IOException
@@ -96,13 +95,13 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         byte valueType;
         byte entityType;
         boolean entityIdNeedsLong;
-        int indexNameId;
+        byte indexNameId;
         boolean startNodeNeedsLong;
         boolean endNodeNeedsLong;
-        int keyId;
+        byte keyId;
 
         IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
-                                int indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, int keyId )
+                                byte indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
         {
             this.valueType = valueType;
             this.entityType = entityType;
@@ -640,7 +639,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel );
-            int id = getUnsignedShort( channel );
+            int id = channel.get();
             if ( key == null )
             {
                 return null;
@@ -650,25 +649,19 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         return result;
     }
 
-    private int getUnsignedShort( ReadableLogChannel channel ) throws IOException
-    {
-        int result = channel.getShort() & 0xFFFF;
-        return result == 0xFFFF ? -1 : result;
-    }
-
     private IndexCommandHeader readIndexCommandHeader( ReadableLogChannel channel ) throws IOException
     {
-        byte firstHeaderByte = channel.get();
-        byte valueType = (byte) ((firstHeaderByte & 0x1C) >> 2);
-        byte entityType = (byte) ((firstHeaderByte & 0x2) >> 1);
-        boolean entityIdNeedsLong = (firstHeaderByte & 0x1) > 0;
+        byte[] headerBytes = new byte[3];
+        channel.get( headerBytes, headerBytes.length );
+        byte valueType = (byte) ((headerBytes[0] & 0x1C) >> 2);
+        byte entityType = (byte) ((headerBytes[0] & 0x2) >> 1);
+        boolean entityIdNeedsLong = (headerBytes[0] & 0x1) > 0;
+        byte indexNameId = (byte) (headerBytes[1] & 0x3F);
 
-        byte secondHeaderByte = channel.get();
-        boolean startNodeNeedsLong = (secondHeaderByte & 0x80) > 0;
-        boolean endNodeNeedsLong = (secondHeaderByte & 0x40) > 0;
+        boolean startNodeNeedsLong = (headerBytes[1] & 0x80) > 0;
+        boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
 
-        int indexNameId = getUnsignedShort( channel );
-        int keyId = getUnsignedShort( channel );
+        byte keyId = headerBytes[2];
         return new IndexCommandHeader().set( valueType, entityType, entityIdNeedsLong,
                 indexNameId, startNodeNeedsLong, endNodeNeedsLong, keyId );
     }

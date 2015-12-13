@@ -23,7 +23,18 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
+/**
+ * Reads {@link Command commands} from a {@link ReadableLogChannel channel}.
+ * Instances must handle concurrent threads calling it with potentially different channels.
+ */
 public interface CommandReader
 {
-    public Command read( ReadableLogChannel channel ) throws IOException;
+    /**
+     * Reads the next {@link Command} from {@link ReadableLogChannel channel}.
+     *
+     * @param channel {@link ReadableLogChannel} to read from.
+     * @return {@link Command} or {@code null} if end reached.
+     * @throws IOException if channel throws exception.
+     */
+    Command read( ReadableLogChannel channel ) throws IOException;
 }
