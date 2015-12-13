@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.store.PropertyType.STRING;
 
-public class PhysicalLogNeoCommandReaderV1Test
+public class PhysicalLogCommandReaderV2_1Test
 {
     @Test
     public void shouldReadPropertyCommandWithDeletedDynamicRecords() throws Exception

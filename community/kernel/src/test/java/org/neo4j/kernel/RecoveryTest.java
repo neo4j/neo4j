@@ -32,6 +32,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -139,7 +140,7 @@ public class RecoveryTest
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
-                    LogEntryVersion.CURRENT.byteCode() );
+                    LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
@@ -228,7 +229,7 @@ public class RecoveryTest
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
-                    LogEntryVersion.CURRENT.byteCode() );
+                    LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
