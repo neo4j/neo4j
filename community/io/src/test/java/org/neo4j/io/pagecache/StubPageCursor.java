@@ -63,7 +63,7 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public void rewind() throws IOException
+    public void rewind()
     {
         throw new UnsupportedOperationException();
     }

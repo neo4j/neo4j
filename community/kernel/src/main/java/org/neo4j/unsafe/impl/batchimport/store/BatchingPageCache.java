@@ -509,7 +509,7 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
-        public void rewind() throws IOException
+        public void rewind()
         {
             throw new UnsupportedOperationException(
                     "Unsupported in this batching page cache, since it's all about strictly sequential access" );
