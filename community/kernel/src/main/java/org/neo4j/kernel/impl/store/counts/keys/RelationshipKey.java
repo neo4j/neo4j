@@ -37,6 +37,21 @@ public final class RelationshipKey implements CountsKey
         this.endLabelId = endLabelId;
     }
 
+    public int getStartLabelId()
+    {
+        return startLabelId;
+    }
+
+    public int getTypeId()
+    {
+        return typeId;
+    }
+
+    public int getEndLabelId()
+    {
+        return endLabelId;
+    }
+
     @Override
     public String toString()
     {

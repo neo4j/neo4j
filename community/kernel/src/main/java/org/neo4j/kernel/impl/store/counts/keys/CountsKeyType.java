@@ -19,14 +19,34 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
+import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
+
 public enum CountsKeyType
 {
-    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
+    ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
 
     public final byte code;
 
     private CountsKeyType( int code )
     {
         this.code = (byte) code;
+    }
+
+    public static CountsKeyType value(byte val) throws UnknownKey
+    {
+
+        switch (val){
+
+        case 2:
+            return CountsKeyType.ENTITY_NODE;
+        case 3:
+            return CountsKeyType.ENTITY_RELATIONSHIP;
+        case 4:
+            return CountsKeyType.INDEX_STATISTICS;
+        case 5:
+            return CountsKeyType.INDEX_SAMPLE;
+        default:
+            throw new UnknownKey("Parsed key type from count store deserialization of unknown type.");
+        }
     }
 }

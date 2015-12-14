@@ -33,6 +33,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     private long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
     private long[] metaArray;
+    private long highestEverSeen = 0;
 
     public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize, long[] initialMeta )
     {
@@ -44,6 +45,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized boolean offer( long number, long[] meta )
     {
+        highestEverSeen = Math.max(highestEverSeen, number);
         if ( highestGapFreeNumber + 1 == number )
         {
             version++;
@@ -55,6 +57,11 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
 
         outOfOrderQueue.offer( highestGapFreeNumber, number, pack( meta ) );
         return false;
+    }
+
+    public long highestEverSeen()
+    {
+        return this.highestEverSeen;
     }
 
     private long[] pack( long[] meta )

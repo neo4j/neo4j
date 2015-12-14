@@ -36,9 +36,22 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
         {
         }
     };
-    private final byte[] bytes = new byte[1000];
-    private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
-    private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
+
+    private final byte[] bytes;
+    private final ByteBuffer asWriter;
+    private final ByteBuffer asReader;
+
+    public InMemoryLogChannel()
+    {
+        this(new byte[1000]);
+    }
+
+    public InMemoryLogChannel(byte[] bytes)
+    {
+        this.bytes = bytes;
+        this.asWriter = ByteBuffer.wrap( this.bytes );
+        this.asReader = ByteBuffer.wrap( this.bytes );
+    }
 
     public void reset()
     {
