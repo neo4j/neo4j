@@ -150,15 +150,15 @@ public class ConcurrentAccessIT
                 assertThat( client, eventuallyRecieves(
                         msgSuccess( map( "fields", asList() ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( map( "fields", asList(), "type", "w" ) ),
                         msgSuccess(),
-                        msgSuccess( map( "fields", asList() ) ),
+                        msgSuccess( map( "fields", asList()) ),
                         msgSuccess()) );
 
                 // Verify no visible data
                 client.send( matchAll );
                 assertThat( client, eventuallyRecieves(
-                        msgSuccess( map( "fields", asList( "n" ) ) ),
+                        msgSuccess( map( "fields", asList( "n" ), "type", "r" ) ),
                         msgSuccess() ) );
 
             }

@@ -125,7 +125,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
-                msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
+                msgSuccess( map( "fields", asList( "a", "a_squared" ), "type", "r") ),
                 msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
                 msgRecord( eqRecord( equalTo( 2l ), equalTo( 4l ) ) ),
                 msgRecord( eqRecord( equalTo( 3l ), equalTo( 9l ) ) ),
