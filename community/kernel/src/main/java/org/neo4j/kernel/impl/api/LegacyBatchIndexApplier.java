@@ -67,6 +67,7 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
         }
         catch ( InterruptedException e )
         {
+            Thread.currentThread().interrupt();
             throw new IOException( "Interrupted while waiting for applying tx:" + activeTransactionId +
                     " legacy index updates", e );
         }
