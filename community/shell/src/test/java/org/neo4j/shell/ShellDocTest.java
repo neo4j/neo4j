@@ -186,7 +186,7 @@ public class ShellDocTest
         doc.add( "dump", "begin" +
                 lineSeparator() + "create index on :`Person`(`name`)" +
                 lineSeparator() + "create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
-                lineSeparator() + "create _0-[:`KNOWS`]->_0" +
+                lineSeparator() + "create (_0)-[:`KNOWS`]->(_0)" +
                 lineSeparator() + ";" +
                 lineSeparator() + "commit", "Export the whole database including indexes" );
         doc.run();
@@ -247,16 +247,6 @@ public class ShellDocTest
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 2.2 start morpheus = node:node_auto_index(name='Morpheus') " +
-                "match (morpheus)-[:KNOWS]-(zionist) " +
-                "return zionist.name;",
-                "Cypher",
-                "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-//        doc.add( "profile start morpheus = node:node_auto_index(name='Morpheus') " +
-//                "match morpheus-[:KNOWS]-zionist " +
-//                "return zionist.name;",
-//                "ColumnFilter",
-//                "profile the query by displaying more query execution information" );
         doc.run(); // wrapping this in a tx will cause problems, so we don't
         server.shutdown();
 

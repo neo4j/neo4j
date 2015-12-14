@@ -168,14 +168,14 @@ public class SubGraphExporter
 
     private void appendRelationship( PrintWriter out, Relationship rel )
     {
-        out.print( "create " );
+        out.print( "create (" );
         out.print( identifier( rel.getStartNode() ) );
-        out.print( "-[:" );
+        out.print( ")-[:" );
         out.print( quote( rel.getType().name() ) );
         formatProperties( out, rel );
-        out.print( "]->" );
+        out.print( "]->(" );
         out.print( identifier( rel.getEndNode() ) );
-        out.println();
+        out.println( ")" );
     }
 
     private void appendNodes( PrintWriter out )

@@ -172,7 +172,7 @@ public class ExportTest
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
-                "create _0-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->_0" + lineSeparator(), doExportGraph( graph ) );
+                "create (_0)-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->(_0)" + lineSeparator(), doExportGraph( graph ) );
     }
 
     @Test
@@ -184,7 +184,7 @@ public class ExportTest
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
-                "create _0-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->_0" + lineSeparator(),
+                "create (_0)-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->(_0)" + lineSeparator(),
                 doExportGraph( graph ) );
     }
 
@@ -291,7 +291,7 @@ public class ExportTest
         final ExecutionResult result = result( "rel", rel );
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
-                "create _0-[:`REL`]->_0" + lineSeparator(), doExportGraph( graph ) );
+                "create (_0)-[:`REL`]->(_0)" + lineSeparator(), doExportGraph( graph ) );
     }
 
     @Test
@@ -305,7 +305,7 @@ public class ExportTest
         final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + lineSeparator() +
                 "create (_1)" + lineSeparator() +
-                "create _0-[:`REL`]->_1" + lineSeparator(), doExportGraph( graph ) );
+                "create (_0)-[:`REL`]->(_1)" + lineSeparator(), doExportGraph( graph ) );
     }
 
     @SuppressWarnings("unchecked")
@@ -373,6 +373,7 @@ public class ExportTest
         final SubGraph graph = DatabaseSubGraph.from( gdb );
         assertEquals( "create (_" + n0.getId() + ")" + lineSeparator() +
                 "create (_" + n1.getId() + " {`name`:\"Node1\"})" + lineSeparator() +
-                "create _" + n0.getId() + "-[:`REL` {`related`:true}]->_" + n1.getId() + lineSeparator(), doExportGraph( graph ) );
+                "create (_" + n0.getId() + ")-[:`REL` {`related`:true}]->(_" + n1.getId() + ")" +
+                    lineSeparator(), doExportGraph( graph ) );
     }
 }
