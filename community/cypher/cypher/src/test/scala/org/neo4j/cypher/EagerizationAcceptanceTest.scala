@@ -1576,7 +1576,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should be eager if removing label from not left-most node") {
+  test("should be eager if removing a label that's matched by an unstable iterator") {
     createLabeledNode("Lol")
     createLabeledNode("Lol")
     val query = "MATCH (m:Lol), (n:Lol) REMOVE m:Lol RETURN count(*)"

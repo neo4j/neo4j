@@ -89,6 +89,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = mock[Projection]
       when(plan.availableSymbols).thenReturn(Set.empty[IdName])
       when(plan.solved).thenReturn(plannerQuery)
+      when(plan.leaves).thenReturn(Seq.empty)
       plan
     }
 

@@ -101,8 +101,8 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
   /*
    * finds all label names being removed on given node, REMOVE a:L
    */
-  def labelsToRemoveForNode(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n == idName => labels
+  def labelsToRemoveFromOtherNodes(idName: IdName): Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) if n != idName => labels
   }.flatten.toSet
 
   /*
