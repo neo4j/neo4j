@@ -23,13 +23,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.stubbing.OngoingStubbing;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -38,7 +43,9 @@ import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -51,13 +58,14 @@ public class SlaveLocksClientTest
     private Master master;
     private Locks.Client local;
     private SlaveLocksClient client;
+    private AvailabilityGuard availabilityGuard;
 
     @Before
     public void setUp() throws Exception
     {
         master = mock( Master.class );
         RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( new FakeClock() );
+        availabilityGuard = new AvailabilityGuard( new FakeClock() );
 
         Locks lockManager = new CommunityLockManger();
         local = spy( lockManager.newClient() );
@@ -66,17 +74,27 @@ public class SlaveLocksClientTest
         TransactionStreamResponse<LockResult> responseOk =
                 new TransactionStreamResponse<>( lockResultOk, null, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
 
-        when( master.acquireSharedLock(
-                any( RequestContext.class ),
-                any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( responseOk );
+        whenMasterAcquireShared().thenReturn( responseOk );
 
-        when( master.acquireExclusiveLock(
-                any( RequestContext.class ),
-                any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( responseOk );
+        whenMasterAcquireExclusive().thenReturn( responseOk );
 
         client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard, 1000 );
+    }
+
+    private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
+    {
+        return when( master.acquireSharedLock(
+                any( RequestContext.class ),
+                any( Locks.ResourceType.class ),
+                Matchers.<long[]>anyVararg() ) );
+    }
+
+    private OngoingStubbing<Response<LockResult>> whenMasterAcquireExclusive()
+    {
+        return when( master.acquireExclusiveLock(
+                any( RequestContext.class ),
+                any( Locks.ResourceType.class ),
+                Matchers.<long[]>anyVararg() ) );
     }
 
     @After
@@ -200,7 +218,7 @@ public class SlaveLocksClientTest
         int lockSessionId = client.getLockSessionId();
 
         // Then
-        assertThat(lockSessionId, equalTo(-1));
+        assertThat( lockSessionId, equalTo( -1 ) );
     }
 
     @Test
@@ -214,5 +232,93 @@ public class SlaveLocksClientTest
 
         // Then
         assertThat( lockSessionId, equalTo( local.getLockSessionId() ) );
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void mustThrowIfStartingNewLockSessionOnMasterThrowsComException() throws Exception
+    {
+        when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow( new ComException() );
+
+        client.acquireShared( NODE, 1 );
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void mustThrowIfStartingNewLockSessionOnMasterThrowsTransactionFailureException() throws Exception
+    {
+        when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow(
+                new TransactionFailureException( Status.General.DatabaseUnavailable, "Not now" ) );
+
+        client.acquireShared( NODE, 1 );
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void acquireSharedMustThrowIfMasterThrows() throws Exception
+    {
+        whenMasterAcquireShared().thenThrow( new ComException() );
+
+        client.acquireShared( NODE, 1 );
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void acquireExclusiveMustThrowIfMasterThrows() throws Exception
+    {
+        whenMasterAcquireExclusive().thenThrow( new ComException() );
+
+        client.acquireExclusive( NODE, 1 );
+    }
+
+    @Test( expected = UnsupportedOperationException.class )
+    public void tryExclusiveMustBeUnsupported() throws Exception
+    {
+        client.tryExclusiveLock( NODE, 1 );
+    }
+
+    @Test( expected = UnsupportedOperationException.class )
+    public void trySharedMustBeUnsupported() throws Exception
+    {
+        client.trySharedLock( NODE, 1 );
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void releaseAllMustThrowIfMasterThrows() throws Exception
+    {
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
+
+        client.acquireExclusive( NODE, 1 ); // initialise
+        client.releaseAll();
+    }
+
+    @Test( expected = DistributedLockFailureException.class )
+    public void closeMustThrowIfMasterThrows() throws Exception
+    {
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
+
+        client.acquireExclusive( NODE, 1 ); // initialise
+        client.close();
+    }
+
+    @Test
+    public void mustCloseLocalClientEvenIfMasterThrows() throws Exception
+    {
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
+
+        try
+        {
+            client.acquireExclusive( NODE, 1 ); // initialise
+            client.close();
+            fail( "Expected client.close to throw" );
+        }
+        catch ( Exception ignore )
+        {
+        }
+        verify( local ).close();
+    }
+
+    @Test( expected = org.neo4j.graphdb.TransactionFailureException.class )
+    public void mustThrowTransientTransactionFailureIfDatabaseUnavailable() throws Exception
+    {
+        availabilityGuard.shutdown();
+
+        client.acquireExclusive( NODE, 1 );
     }
 }

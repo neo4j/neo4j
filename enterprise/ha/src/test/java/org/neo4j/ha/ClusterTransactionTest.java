@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
-import org.neo4j.com.ComException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HaSettings;
@@ -38,7 +37,7 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
+import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 
 public class ClusterTransactionTest
@@ -79,9 +78,9 @@ public class ClusterTransactionTest
                 {
                     tx.acquireWriteLock( slave.getNodeById( nodeId ) );
                 }
-                catch ( ComException e )
+                catch ( Exception e )
                 {
-                    return e.getCause() instanceof TransactionFailureException;
+                    return contains( e, TransactionFailureException.class );
                 }
                 // Fail otherwise
                 return false;
