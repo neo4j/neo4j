@@ -1,9 +1,0 @@
-{
-  "name": "modernizr",
-  "version": "2.6.2",
-  "main": [
-    "./modernizr.js"
-  ],
-  "dependencies": {
-  }
-}
