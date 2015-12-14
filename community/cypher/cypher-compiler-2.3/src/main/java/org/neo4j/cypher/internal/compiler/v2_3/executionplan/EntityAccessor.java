@@ -19,22 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan;
 
-import java.util.Map;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
-import org.neo4j.kernel.api.Statement;
-
-public interface GeneratedQuery
+public interface EntityAccessor
 {
-    GeneratedQueryExecution execute(
-            TaskCloser closer,
-            Statement statement,
-            EntityAccessor entityAccessor,
-            ExecutionMode executionMode,
-            Provider<InternalPlanDescription> description,
-            QueryExecutionTracer tracer,
-            Map<String,Object> params );
+    Node newNodeProxyById(long id);
+    Relationship newRelationshipProxyById(long id);
 }

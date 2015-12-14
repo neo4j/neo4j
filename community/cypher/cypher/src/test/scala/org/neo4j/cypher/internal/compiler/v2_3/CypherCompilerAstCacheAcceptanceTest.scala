@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
+import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
 import AssertableLogProvider.inLog
 
@@ -37,9 +40,11 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) =
+                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) = {
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
     CypherCompilerFactory.costBasedCompiler(
       graph,
+      new EntityAccessorWrapper2_3(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize,
         statsDivergenceThreshold,
@@ -53,7 +58,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       plannerName = Some(GreedyPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       rewriterSequencer = RewriterStepSequencer.newValidating
-     )
+    )
+  }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.{QueryStatistics, _}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult, EntityAccessor}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
@@ -37,11 +37,12 @@ import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSear
 import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -405,6 +406,12 @@ class StringInfoLogger2_3(log: Log) extends InfoLogger {
     log.info(message)
   }
 }
+
+class EntityAccessorWrapper2_3(nodeManager: NodeManager) extends EntityAccessor {
+  override def newNodeProxyById(id: Long): Node = nodeManager.newNodeProxyById(id)
+  override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)
+}
+
 case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
@@ -429,9 +436,10 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
 
-    CypherCompilerFactory.costBasedCompiler(
-      graph, config, clock, GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ),
-      new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName)
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    CypherCompilerFactory.costBasedCompiler( graph, new EntityAccessorWrapper2_3(nodeManager), config, clock,
+      GeneratedQueryStructure, new WrappedMonitors2_3( kernelMonitors ), new StringInfoLogger2_3( log ),
+      rewriterSequencer, plannerName, runtimeName)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -442,8 +450,11 @@ case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
-  protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, config, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+  protected val compiler = {
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    CypherCompilerFactory.ruleBasedCompiler( graph, new EntityAccessorWrapper2_3(nodeManager), config, clock,
+      new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
+  }
 
   override val queryCacheSize: Int = config.queryCacheSize
 }
