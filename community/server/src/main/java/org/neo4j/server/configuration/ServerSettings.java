@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
@@ -81,6 +82,8 @@ public interface ServerSettings
     Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
             INTEGER, ""+Math.min(Runtime.getRuntime().availableProcessors(),500), min( 1 ) );
 
+    @Deprecated
+    @Obsoleted( "Subsumed by transaction termination. Moreover it was based on an internal experimental feature in the kernel." )
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time." )
     Setting<Long> webserver_limit_execution_time = setting(
             "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
