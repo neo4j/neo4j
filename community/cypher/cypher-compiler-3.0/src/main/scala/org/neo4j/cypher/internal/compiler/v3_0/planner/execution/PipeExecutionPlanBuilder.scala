@@ -338,19 +338,25 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))()
 
     case DeleteNode(_, expression) =>
-      DeleteNodePipe(source, toCommandExpression(expression))()
+      DeletePipe(source, toCommandExpression(expression), forced = false)()
 
     case DetachDeleteNode(_, expression) =>
-      DetachDeleteNodePipe(source, toCommandExpression(expression))()
+      DeletePipe(source, toCommandExpression(expression), forced = true)()
 
     case DeleteRelationship(_, expression) =>
-      DeleteRelationshipPipe(source, toCommandExpression(expression))()
+      DeletePipe(source, toCommandExpression(expression), forced = false)()
 
     case DeletePath(_, expression) =>
-      DeletePathPipe(source, toCommandExpression(expression), forced = false)()
+      DeletePipe(source, toCommandExpression(expression), forced = false)()
 
     case DetachDeletePath(_, expression) =>
-      DeletePathPipe(source, toCommandExpression(expression), forced = true)()
+      DeletePipe(source, toCommandExpression(expression), forced = true)()
+
+    case DeleteExpression(_, expression) =>
+      DeletePipe(source, toCommandExpression(expression), forced = false)()
+
+    case DetachDeleteExpression(_, expression) =>
+      DeletePipe(source, toCommandExpression(expression), forced = true)()
 
     case Eager(_) =>
       EagerPipe(source)()

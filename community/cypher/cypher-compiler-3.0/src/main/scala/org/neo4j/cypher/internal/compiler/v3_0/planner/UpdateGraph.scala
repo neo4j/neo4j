@@ -56,12 +56,21 @@ case class UpdateGraph(mutatingPatterns: Seq[MutatingPattern] = Seq.empty) {
    */
   def identifiersToDelete = (deleteExpressions flatMap {
     // DELETE n
-    case DeleteExpression(identifier:Variable, _) => Seq(IdName.fromVariable(identifier))
+    case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
     // DELETE (n)-[r]-()
     case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
-    // DELETE many[{i}]
-    case DeleteExpression(ContainerIndex(identifier:Variable, _), _) => Seq(IdName.fromVariable(identifier))
+    // DELETE expr
+    case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
   }).toSet
+
+  @tailrec
+  private def findVariableInNestedStructure(e: Expression): IdName = e match {
+    case v: Variable => IdName.fromVariable(v)
+      // DELETE coll[i]
+    case ContainerIndex(expr, _) => findVariableInNestedStructure(expr)
+      // DELETE map.key
+    case Property(expr, _) => findVariableInNestedStructure(expr)
+  }
 
   /*
    * Finds all node properties being created with CREATE (:L)

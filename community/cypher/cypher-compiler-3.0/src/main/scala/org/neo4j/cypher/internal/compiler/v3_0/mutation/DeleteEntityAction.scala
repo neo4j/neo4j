@@ -76,6 +76,10 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
     case ContainerIndex(i: Variable, _) => symbols.variables(i.entityName) match {
       case CollectionType(innerType) => effectsFromCypherType(innerType)
     }
+    // There could be a nested map/collection expression here, so we'll
+    // just say that we don't know what type the entity has
+    case _ =>
+      Effects(DeletesNode, DeletesRelationship)
   }
 
   private def effectsFromCypherType(cypherType: CypherType) = cypherType match {
