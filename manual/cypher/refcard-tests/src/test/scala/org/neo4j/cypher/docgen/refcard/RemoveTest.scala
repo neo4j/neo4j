@@ -35,7 +35,7 @@ class RemoveTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, labelsRemoved = 1)
         assert(result.toList.size === 0)
       case "remove-prop" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 2)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 2)
         assert(result.toList.size === 0)
     }
   }

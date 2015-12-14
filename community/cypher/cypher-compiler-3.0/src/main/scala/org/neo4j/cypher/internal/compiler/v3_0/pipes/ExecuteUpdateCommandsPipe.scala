@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.mutation._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, ParameterWrongTypeException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, SyntaxException}
 import org.neo4j.graphdb.NotInTransactionException
 
 import scala.collection.mutable

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{QueryStatisticsTestSupport, NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
   test("should ignore nulls") {
@@ -61,7 +61,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN exists(n.prop) as still_there")
 
     //THEN
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("still_there" -> false)))
   }
 
@@ -73,7 +73,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop, n.a RETURN size(keys(n)) as props")
 
     //THEN
-    assertStats(result, propertiesSet = 2)
+    assertStats(result, propertiesWritten = 2)
     result.toList should equal(List(Map("props" -> 1)))
   }
 
@@ -85,7 +85,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = updateWithBothPlanners("MATCH ()-[r]->() REMOVE r.prop RETURN exists(r.prop) as still_there")
 
     //THEN
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("still_there" -> false)))
   }
 
@@ -97,7 +97,21 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = updateWithBothPlanners("MATCH ()-[r]->() REMOVE r.prop, r.a RETURN size(keys(r)) as props")
 
     //THEN
-    assertStats(result, propertiesSet = 2)
+    assertStats(result, propertiesWritten = 2)
     result.toList should equal(List(Map("props" -> 1)))
+  }
+
+  test("removing an missing property is a valid operation") {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN sum(size(keys(n))) as totalNumberOfProps")
+
+    //THEN
+    assertStats(result, propertiesWritten = 0)
+    result.toList should equal(List(Map("totalNumberOfProps" -> 0)))
   }
 }

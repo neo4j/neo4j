@@ -41,7 +41,7 @@ class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
       case "friends" =>
-        assertStats(result, nodesCreated = 0, propertiesSet = 1)
+        assertStats(result, nodesCreated = 0, propertiesWritten = 1)
         assert(result.toList.size === 0)
     }
   }

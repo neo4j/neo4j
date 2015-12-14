@@ -45,7 +45,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
     val result = updateWithBothPlanners("create (a {name : 'Andres'}) return a.name")
 
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     graph.inTx {
       graph.getAllNodes.asScala should have size before + 1
     }
@@ -58,7 +58,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
     val result = updateWithBothPlanners("match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
 
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
     result.toList should equal(List(Map("b.age" -> 30)))
   }
@@ -74,7 +74,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
     assertStats(result,
       nodesCreated = 1,
-      propertiesSet = 1
+      propertiesWritten = 1
     )
   }
 
@@ -140,7 +140,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
     val result = updateWithBothPlanners("MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
     assertStats(result,
-      propertiesSet = 1,
+      propertiesWritten = 1,
       nodesCreated = 1
     )
 
@@ -150,7 +150,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   test("set a property to an empty collection") {
     val result = updateWithBothPlanners("create (n {x : []}) return n.x")
     assertStats(result,
-      propertiesSet = 1,
+      propertiesWritten = 1,
       nodesCreated = 1
     )
     result.toComparableResult should equal (List(Map("n.x" -> List.empty)))
@@ -201,7 +201,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
 
     assertStats(result,
       nodesCreated = 3,
-      propertiesSet = 6
+      propertiesWritten = 6
     )
   }
 
@@ -304,7 +304,7 @@ return distinct center""")
     val q = "create (a{param}) return a.arrayProp"
     val result =  executeScalar[Array[String]](q, "param" -> map)
 
-    assertStats(updateWithBothPlanners(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
+    assertStats(updateWithBothPlanners(q, "param"->map), nodesCreated = 1, propertiesWritten = 1)
     result.toList should equal(List("foo","bar"))
   }
 
@@ -400,7 +400,7 @@ return distinct center""")
   test("create two rels in one command should work") {
     val result = updateWithBothPlanners("create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
 
-    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 1)
+    assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 1)
   }
 
   test("cant set properties after node is already created") {
@@ -444,7 +444,7 @@ return distinct center""")
                  MATCH (center)-[r]->()
                  DELETE center,r""")
 
-    assertStats(result, nodesCreated = 7, propertiesSet = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
+    assertStats(result, nodesCreated = 7, propertiesWritten = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
   }
 
   test("for each applied to null should never execute") {

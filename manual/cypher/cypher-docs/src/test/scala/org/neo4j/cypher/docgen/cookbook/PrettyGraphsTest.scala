@@ -97,11 +97,11 @@ class PrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
   }
 
   private def assertWheelGraph = ResultAssertions { p =>
-    assertStats(p, nodesCreated = 7, relationshipsCreated = 12, propertiesSet = 6)
+    assertStats(p, nodesCreated = 7, relationshipsCreated = 12, propertiesWritten = 6)
   }
 
   private def assertCompleteGraph = ResultAssertions { p =>
-    assertStats(p, nodesCreated = 6, relationshipsCreated = 15, propertiesSet = 6, labelsAdded = 6)
+    assertStats(p, nodesCreated = 6, relationshipsCreated = 15, propertiesWritten = 6, labelsAdded = 6)
   }
 
   private def assertFriendshipGraph = ResultAssertions { p =>

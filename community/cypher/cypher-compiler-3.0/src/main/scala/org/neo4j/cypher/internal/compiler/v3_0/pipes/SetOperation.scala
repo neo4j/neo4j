@@ -54,42 +54,6 @@ object SetOperation {
       SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
   }
 
-  private[pipes] def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState,
-                                                         ops: Operations[T],
-                                                         itemId: Long, propertyKey: LazyPropertyKey,
-                                                         expression: Expression) = {
-    val queryContext = state.query
-    val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
-    val propertyId = maybePropertyKey
-        .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
-
-    val value = makeValueNeoSafe(expression(context)(state))
-
-    if (value == null) ops.removeProperty(itemId, propertyId)
-    else ops.setProperty(itemId, propertyId, value)
-  }
-
-  private[pipes] def setPropertiesFromMap[T <: PropertyContainer](qtx: QueryContext, ops: Operations[T], itemId: Long,
-                              map: Map[Int, Any], removeOtherProps: Boolean) {
-
-    /*Set all map values on the property container*/
-    for ((k, v) <- map) {
-      if (v == null)
-        ops.removeProperty(itemId, k)
-      else
-        ops.setProperty(itemId, k, makeValueNeoSafe(v))
-    }
-
-    val properties = ops.propertyKeyIds(itemId).filterNot(map.contains).toSet
-
-    /*Remove all other properties from the property container ( SET n = {prop1: ...})*/
-    if (removeOtherProps) {
-      for (propertyKeyId <- properties) {
-        ops.removeProperty(itemId, propertyKeyId)
-      }
-    }
-  }
-
   private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression) = {
     /* Make the map expression look like a map */
     val qtx = state.query
@@ -129,14 +93,29 @@ abstract class SetPropertyOperation[T <: PropertyContainer](itemName: String, pr
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
       try {
-        SetOperation.setProperty(executionContext, state, ops, itemId, propertyKey,
-          expression)
+        setProperty(executionContext, state, ops, itemId, propertyKey, expression)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
 
   protected def id(item: Any): Long
   protected def operations(qtx: QueryContext): Operations[T]
+
+  private def setProperty(context: ExecutionContext, state: QueryState, ops: Operations[T],
+                          itemId: Long, propertyKey: LazyPropertyKey, expression: Expression) = {
+    val queryContext = state.query
+    val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
+    val propertyId = maybePropertyKey
+        .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
+
+    val value = makeValueNeoSafe(expression(context)(state))
+
+    if (value == null) {
+      if (ops.hasProperty(itemId, propertyId)) ops.removeProperty(itemId, propertyId)
+    }
+    else ops.setProperty(itemId, propertyId, value)
+  }
+
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
@@ -175,13 +154,33 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
       try {
         val map = SetOperation.toMap(executionContext, state, expression)
 
-        SetOperation.setPropertiesFromMap(state.query, ops, itemId, map, removeOtherProps)
-      }  finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
+        setPropertiesFromMap(state.query, ops, itemId, map, removeOtherProps)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
   protected def id(item: Any): Long
   protected def operations(qtx: QueryContext): Operations[T]
 
+  private def setPropertiesFromMap(qtx: QueryContext, ops: Operations[T], itemId: Long,
+                                                           map: Map[Int, Any], removeOtherProps: Boolean) {
+
+    /*Set all map values on the property container*/
+    for ((k, v) <- map) {
+      if (v == null)
+        ops.removeProperty(itemId, k)
+      else
+        ops.setProperty(itemId, k, makeValueNeoSafe(v))
+    }
+
+    val properties = ops.propertyKeyIds(itemId).filterNot(map.contains).toSet
+
+    /*Remove all other properties from the property container ( SET n = {prop1: ...})*/
+    if (removeOtherProps) {
+      for (propertyKeyId <- properties) {
+        ops.removeProperty(itemId, propertyKeyId)
+      }
+    }
+  }
 }
 
 case class SetNodePropertyFromMapOperation(nodeName: String, expression: Expression,
@@ -222,5 +221,3 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
 
   override def name = "SetLabels"
 }
-
-

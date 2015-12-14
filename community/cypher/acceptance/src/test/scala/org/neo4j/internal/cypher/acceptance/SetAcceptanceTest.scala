@@ -32,7 +32,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("MATCH (n) SET n.property = null RETURN count(*)")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     node should not(haveProperty("property"))
   }
 
@@ -44,7 +44,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("MATCH ()-[r]->() SET r.property = null RETURN count(*)")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     relationship should not(haveProperty("property"))
   }
 
@@ -56,7 +56,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = 'Michael'")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     a should haveProperty("name").withValue("Michael")
   }
 
@@ -68,7 +68,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("match (n) where n.name = 'Andres' set n.name = n.name + ' was here' return count(*)")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     a should haveProperty("name").withValue("Andres was here")
   }
 
@@ -80,7 +80,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("match (n) where n.name = 'Michael' set n.name = null return n.age")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     n should not(haveProperty("name"))
   }
 
@@ -167,7 +167,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {bar:'B'} RETURN count(*)")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     a should haveProperty("foo").withValue("A")
     a should haveProperty("bar").withValue("B")
   }
@@ -180,7 +180,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n += {foo:null} RETURN count(*)")
 
     // then
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     a should not(haveProperty("foo"))
     a should haveProperty("bar").withValue("B")
   }
@@ -210,7 +210,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     val result = updateWithBothPlanners("MATCH (n {foo:'A'}) SET n = {foo:'B', baz:'C'} RETURN count(*)")
 
-    assertStats(result, propertiesSet = 3)
+    assertStats(result, propertiesWritten = 3)
     // then
     a should not(haveProperty("bar"))
     a should haveProperty("foo").withValue("B")

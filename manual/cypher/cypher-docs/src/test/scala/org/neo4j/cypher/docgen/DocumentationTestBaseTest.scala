@@ -81,7 +81,7 @@ Use `UNWIND` to create multiple nodes from a parameter.
       ,
       queryText = "unwind {props} as properties create (n) set n = properties return n",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
 
     // ensure that the parameters are printed
     val resultSource = io.Source.fromFile("target/docs/dev/ql/internaltesting/create-multiple-nodes-with-parameters-for-properties.asciidoc", "utf-8")

@@ -863,7 +863,7 @@ order by a.COL1""")
                                CREATE (actor)-[:ACTED_IN]->(movie)""")
 
     // then
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, relationshipsCreated = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1, relationshipsCreated = 1)
   }
 
   test("should iterate all node id sets from start during matching") {

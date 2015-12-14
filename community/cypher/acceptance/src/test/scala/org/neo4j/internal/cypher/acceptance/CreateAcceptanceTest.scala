@@ -73,7 +73,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   test("create a single node with properties") {
     val result = updateWithBothPlanners("create (n {prop: 'foo'}) return n.prop as p")
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     // then
     result.toList should equal(List(Map("p" -> "foo")))
   }
@@ -85,7 +85,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("create node using null properties should just ignore those properties") {
     // when
     val result = updateWithBothPlanners("create (n {id: 12, property: null}) return n.id as id")
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
     // then
    result.toList should equal(List(Map("id" -> 12)))
@@ -94,7 +94,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("create relationship using null properties should just ignore those properties") {
     // when
     val result = updateWithBothPlanners("create ()-[r:X {id: 12, property: null}]->() return r.id")
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
 
     // then
     result.toList should equal(List(Map("r.id" -> 12)))
@@ -128,7 +128,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("create relationship with property") {
     val result = updateWithBothPlanners("CREATE (a)-[r:R {prop: 42}]->(b)")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
   test("creates relationship in correct direction") {
@@ -733,7 +733,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesSet = 564, labelsAdded = 171)
+    assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
 
   }
 }

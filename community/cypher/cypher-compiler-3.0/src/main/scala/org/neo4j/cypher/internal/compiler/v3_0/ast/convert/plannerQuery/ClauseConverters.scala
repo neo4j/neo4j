@@ -381,7 +381,7 @@ object ClauseConverters {
         ))
 
       case (builder, other) =>
-        throw new CantHandleQueryException(s"REMOVE $other not supported in cost planner yet")
+        throw new InternalException(s"REMOVE $other not supported in cost planner yet")
     }
   }
 }

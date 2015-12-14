@@ -33,19 +33,19 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 0)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 0)
         assert(result.toList.size === 1)
       case "all-nodes" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 4)
       case "single-node-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "multiple-nodes-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 2)
       case "multiple-start-nodes-by-id" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "index-match" =>
         assertStats(result)

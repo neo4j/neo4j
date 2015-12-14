@@ -38,10 +38,10 @@ class LabelsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, labelsAdded = 3)
         assert(result.toList.size === 1)
       case "create-rel" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "create" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, nodesDeleted = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1, nodesDeleted = 1)
         assert(result.toList.size === 1)
       case "remove-label" =>
         assertStats(result, labelsRemoved = 1)
