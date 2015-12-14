@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.edge;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.concurrent.CompletableFuture;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
 public class StoreCopyClient
@@ -37,7 +37,7 @@ public class StoreCopyClient
     {
         coreClient.setStoreFileStreams( storeFileStreams );
 
-        final CompletableFuture<Long> txId = new CompletableFuture<>();
+        CompletableFuture<Long> txId = new CompletableFuture<>();
         StoreFileStreamingCompleteListener fileStreamingCompleteListener = txId::complete;
 
         coreClient.addStoreFileStreamingCompleteListener( fileStreamingCompleteListener );

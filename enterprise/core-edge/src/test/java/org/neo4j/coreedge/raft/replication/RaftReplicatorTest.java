@@ -19,22 +19,20 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.concurrent.Future;
-
 import org.junit.Test;
 
-import org.neo4j.concurrent.CompletableFuture;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+
 import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftTestFixture;
+import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.ReplicatedString;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class RaftReplicatorTest
