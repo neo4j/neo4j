@@ -51,7 +51,6 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
     private final TransactionCommitProcess commitProcess;
     private final Map<LocalOperationId, FutureTxId> outstanding = new ConcurrentHashMap<>();
     private long lastCommittedIndex = -1;
-    private long lastCommittedTxId; // Maintains the last committed tx id, used to set the next field
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession,
@@ -108,9 +107,9 @@ public class ReplicatedTransactionStateMachine implements Replicator.ReplicatedC
 
             try
             {
-               lastCommittedTxId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
+               long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL,
                         TransactionApplicationMode.EXTERNAL );
-                future.ifPresent( txFuture -> txFuture.complete( lastCommittedTxId ) );
+                future.ifPresent( txFuture -> txFuture.complete( txId ) );
             }
             catch ( TransientFailureException e )
             {
