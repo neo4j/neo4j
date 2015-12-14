@@ -38,6 +38,10 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 
+/**
+ * Please use transaction termination feature instead.
+ */
+@Deprecated
 public class GuardingStatementOperations implements
         EntityWriteOperations,
         EntityReadOperations

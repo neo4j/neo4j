@@ -19,17 +19,26 @@
  */
 package org.neo4j.server.guard;
 
+import java.io.IOException;
+import java.util.Timer;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardException;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Timer;
-
 import static javax.servlet.http.HttpServletResponse.SC_REQUEST_TIMEOUT;
 
+/**
+ * Please use the transaction termination feature instead.
+ */
+@Deprecated
 public class GuardingRequestFilter implements Filter
 {
 
