@@ -39,7 +39,7 @@ These bytes should not be used, and encountering them in a stream should treated
 === Sized Values
 
 Some value types require variable length representations and, as such, have their size explicitly encoded.
-These values generally bgein with a single marker byte followed by a size followed by the data content itself.
+These values generally begin with a single marker byte followed by a size followed by the data content itself.
 Here, the marker denotes both type and scale and therefore determines the number of bytes used to represent the size of the data.
 The size itself is either an 8-bit, 16-bit or 32-bit big-endian unsigned integer.
 
@@ -201,10 +201,10 @@ Value: "a"
 .Regular string
 [source,bolt_packstream_type]
 ----
-Value: "abcdefghijklmonpqrstuvwxyz"
+Value: "abcdefghijklmnopqrstuvwxyz"
 
-D0 1A 61 62  63 64 65 66  67 68 69 6A  6B 6C 6D 6F
-6E 70 71 72  73 74 75 76  77 78 79 7A
+D0 1A 61 62  63 64 65 66  67 68 69 6A  6B 6C 6D 6E
+6F 70 71 72  73 74 75 76  77 78 79 7A
 ----
 
 .String with special characters
@@ -269,7 +269,7 @@ D4 14 01 02  03 04 05 06  07 08 09 00  01 02 03 04
 
 [[bolt-packstream-maps]]
 === Maps
-Maps are sized sequences of pairs of values and permit a mixture of types within the same map.
+Maps are sized sequences of pairs of keys and values and permit a mixture of types within the same map.
 The size of a map denotes the number of pairs within that map, not the total packed byte size.
 Keys are unique within a map, however the serialization format notably technically allows duplicate keys to be sent.
 Though if duplicate keys are sent, this is a violation of the bolt protocol and an error will occur.
@@ -422,7 +422,7 @@ Path (signature=0x50) {
 }
 ----
 
-The two lists `N` and `R` are defined as follows:
+The two lists `N` and `R` (short for `nodes` and `relationships` in the example above) are defined as follows:
 
 - `N` contains all the unique nodes in the path
 - `R` contains all the unique relationships in the path
@@ -432,10 +432,10 @@ The two lists `N` and `R` are defined as follows:
 - In `N`, the first element must _always_ be the first node in the path (thus having 0 as the index)
 - No other _explicit_ rules apply as to either (i) the ordering of the other nodes in `N`, or (ii) the ordering of any of the relationships in `R`. However, while not required, it is recommended that implementations aim to list entities (i.e. nodes and relationships) in the order in which they are first encountered while traversing the path. This may help with the efficiency of reading and writing
 
-When transmitting a path between a server and a client, the path is represented as a sequence of integers; we define `S` as the transmitted sequence, and `S'` as the full sequence.
+When transmitting a path between a server and a client, the path is represented as a sequence of integers; we define `S` (short for `sequence` in the example above) as the transmitted sequence, and `S'` as the full sequence.
 
 - `S` must always consist of an even number of integers, or be empty
-- The first, third, ... integer in `S` has a range encompassed by (..,-1] and [1,..). These represent the relationships in the path
+- The first, third, ... integer in `S` has a range encompassed by (..,-1] and [1,..). These represent the directed relationships in the path
 - The second, fourth, ... integer in `S` has a range encompassed by [0,..). These represent the nodes in the path
 - By definition, the first node in the path will _always_ have an index of 0, so we exclude this from `S` upon transmission. The idea is to construct `S'` by prepending 0 to `S` on the completion of a successful transmission
 - Let a path `P` be given by the following transmitted sequence [1, 1, -2, 2]. It follows that the corresponding full sequence, `S'`, is given by [0, 1, 1, -2, 2]
@@ -450,11 +450,11 @@ For 'loops' - i.e. a relationship beginning and ending at the same node - a posi
 
 Consider the following path:
 
-`(A)-[:X]\->(B)-[:Y]\->\(C)\<-[:Z]-(B)\<-[:X]-(A)`
+`(A)-[:X]->(B)-[:Y]->(C)<-[:Z]-(B)<-[:X]-(A)`
 
-The elements trasmitted would be as follows:
+The elements transmitted would be as follows:
 
-- `N`: `(A)`, `(B)`, `\(C)`
+- `N`: `(A)`, `(B)`, `(C)`
 - `R`: `[:X]`, `[:Y]`, `[:Z]`
 - `S`: [1, 1, 2, 2, -3, 1, -1, 0]
 
@@ -462,7 +462,7 @@ By definition, the following is also implied:
 
 - `S'`: [0, 1, 1, 2, 2, -3, 1, -1, 0]
 
-Similarily, consider the following zero-length path:
+Similarly, consider the following zero-length path:
 
 `(A)`
 
