@@ -203,7 +203,6 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertAuthorizationRequired( "POST", "db/data/transaction/commit", RawPayload.quotedJson(
                 "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ), 200 );
 
-        assertEquals(200, HTTP.GET( server.baseUri().resolve( "browser" ).toString() ).status());
         assertEquals(200, HTTP.GET( server.baseUri().resolve( "" ).toString() ).status() );
     }
 
