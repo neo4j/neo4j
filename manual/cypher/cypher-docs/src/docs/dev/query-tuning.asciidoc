@@ -66,3 +66,7 @@ The same goes for labels, where declaring labels on both the start and end nodes
 
 
 include::../parsed-graphgists/query-tuning/basic-query-tuning-example.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/query-using.adoc[]

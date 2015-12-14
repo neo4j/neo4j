@@ -25,9 +25,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  def shouldExitWhen = false
+  override def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
-  def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+  override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+  override def toString = {
+    predicates.foldLeft("") {
+      case (acc, next) if acc.isEmpty => next.toString
+      case (acc, next) => s"$acc AND $next"
+    }
+  }
 }
 
 object Ands {

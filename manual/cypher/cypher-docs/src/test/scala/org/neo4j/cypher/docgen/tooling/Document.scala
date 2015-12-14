@@ -278,4 +278,4 @@ class TablePlaceHolder(val assertions: QueryAssertions) extends Content with Que
 class GraphVizPlaceHolder(val options: String) extends Content with QueryResultPlaceHolder
 class ErrorPlaceHolder() extends Content with QueryResultPlaceHolder
 class ExecutionPlanPlaceHolder extends Content with QueryResultPlaceHolder
-class ProfileExecutionPlanPlaceHolder extends Content with QueryResultPlaceHolder
+class ProfileExecutionPlanPlaceHolder(val assertions: QueryAssertions) extends Content with QueryResultPlaceHolder
