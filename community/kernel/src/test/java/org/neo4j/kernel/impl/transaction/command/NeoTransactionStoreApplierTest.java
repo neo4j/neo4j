@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -655,8 +656,7 @@ public class NeoTransactionStoreApplierTest
         // given
         final BatchTransactionApplier base = newApplier( false );
         final BatchTransactionApplier indexApplier = newIndexApplier();
-        final BatchTransactionApplier.BatchTransactionApplierFacade applier = new BatchTransactionApplier
-                .BatchTransactionApplierFacade( base, indexApplier );
+        final BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -895,7 +895,7 @@ public class NeoTransactionStoreApplierTest
 
     private BatchTransactionApplier newApplierFacade( BatchTransactionApplier... appliers )
     {
-        return new BatchTransactionApplier.BatchTransactionApplierFacade( appliers );
+        return new BatchTransactionApplierFacade( appliers );
     }
 
     private BatchTransactionApplier newIndexApplier()

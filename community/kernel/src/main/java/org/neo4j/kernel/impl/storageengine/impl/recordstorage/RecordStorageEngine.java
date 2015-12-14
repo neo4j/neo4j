@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -310,13 +312,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     /**
-     * Creates a {@link BatchTransactionApplier.BatchTransactionApplierFacade} that is to be used for all transactions
-     * in a batch. Each transaction is handled by a {@link TransactionApplier.TransactionApplierFacade} which wraps the
+     * Creates a {@link BatchTransactionApplierFacade} that is to be used for all transactions
+     * in a batch. Each transaction is handled by a {@link TransactionApplierFacade} which wraps the
      * individual {@link TransactionApplier}s returned by the wrapped {@link BatchTransactionApplier}s.
      *
      * After all transactions have been applied the appliers are closed.
      */
-    private BatchTransactionApplier.BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+    private BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
@@ -342,7 +344,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
 
         // Perform the application
-        return new BatchTransactionApplier.BatchTransactionApplierFacade(
+        return new BatchTransactionApplierFacade(
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
     }
 
