@@ -79,7 +79,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(80L))
   }
 
-  test("should throw an exception when the label id can not be resolved") {
+  test("should return zero if rel-type is missing") {
     implicit val table = new SemanticTable()
 
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)), bothDirections = false)()
@@ -90,7 +90,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     when(mockedContext.getOptLabelId("A")).thenReturn(None)
     val queryState = QueryStateHelper.emptyWith(query = mockedContext)
 
-    a [IllegalArgumentException] should be thrownBy pipe.createResults(queryState)
+    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(0L))
   }
 
 }

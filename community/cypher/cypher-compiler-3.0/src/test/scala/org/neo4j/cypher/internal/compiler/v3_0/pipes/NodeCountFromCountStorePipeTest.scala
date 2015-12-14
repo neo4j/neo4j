@@ -41,7 +41,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(42L))
   }
 
-  test("should throw an exception when the label id can not be resolved") {
+  test("should return zero if label is missing") {
     implicit val table = new SemanticTable()
 
     val pipe = NodeCountFromCountStorePipe("count(n)", Some(LazyLabel(LabelName("A") _)))()
@@ -51,7 +51,7 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructio
     when(mockedContext.getOptLabelId("A")).thenReturn(None)
     val queryState = QueryStateHelper.emptyWith(query = mockedContext)
 
-    a [IllegalArgumentException] should be thrownBy pipe.createResults(queryState)
+    pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(0L))
   }
 
   test("should return a count for nodes without a label") {

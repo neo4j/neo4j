@@ -34,28 +34,36 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
                                                 (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val labelIds: Seq[Int] = Seq(startLabel, endLabel).map {
-      case Some(label) =>
-        val labelId: Int = label.id(state.query) match {
-          case Some(x) => x
-          case _ => throw new IllegalArgumentException("Cannot find id for label: " + label)
-        }
-        labelId
-      case _ => NameId.WILDCARD
+    val maybeStartLabelId = getLabelId(startLabel, state)
+    val maybeEndLabelId = getLabelId(endLabel, state)
+
+    val count = (maybeStartLabelId, bothDirections, maybeEndLabelId) match {
+      case (Some(startLabelId), false, Some(endLabelId)) =>
+        countOneDirection(state, typeNames, startLabelId, endLabelId)
+
+      case (Some(startLabelId), true, Some(endLabelId)) =>
+        countOneDirection(state, typeNames, startLabelId, endLabelId) +
+          countOneDirection(state, typeNames, endLabelId, startLabelId)
+
+      // If any of the specified labels does not exist the count is zero
+      case _ =>
+        0
     }
-    val count = if (bothDirections)
-      countOneDirection(state, typeNames, labelIds) + countOneDirection(state, typeNames, labelIds.reverse)
-    else
-      countOneDirection(state, typeNames, labelIds)
+
+    val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     Seq(baseContext.newWith1(ident, count)).iterator
   }
 
-  def countOneDirection(state: QueryState, typeNames: LazyTypes, labelIds: Seq[Int]) =
+  private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {
+      case Some(label) => label.id(state.query).map(_.id)
+      case _ => Some(NameId.WILDCARD)
+    }
+
+  private def countOneDirection(state: QueryState, typeNames: LazyTypes, startLabelId: Int, endLabelId: Int) =
     typeNames.types(state.query) match {
-      case None => state.query.relationshipCountByCountStore(labelIds.head, NameId.WILDCARD, labelIds(1))
+      case None => state.query.relationshipCountByCountStore(startLabelId, NameId.WILDCARD, endLabelId)
       case Some(types) => types.foldLeft(0L) { (count, typeId) =>
-        count + state.query.relationshipCountByCountStore(labelIds.head, typeId, labelIds(1))
+        count + state.query.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
       }
     }
 
