@@ -52,16 +52,11 @@ public class SharedServerTestBase
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
         if ( !useExternal )
         {
-            suppressAll().call( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
-                {
-                    ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
-                    server = ServerHolder.allocate();
-                    ServerHelper.cleanTheDatabase( server );
-                    return null;
-                }
+            suppressAll().call( (Callable<Void>) () -> {
+                ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
+                server = ServerHolder.allocate();
+                ServerHelper.cleanTheDatabase( server );
+                return null;
             } );
         }
     }
@@ -73,14 +68,9 @@ public class SharedServerTestBase
         {
             try
             {
-                suppressAll().call( new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
-                        ServerHolder.release( server );
-                        return null;
-                    }
+                suppressAll().call( (Callable<Void>) () -> {
+                    ServerHolder.release( server );
+                    return null;
                 } );
             }
             finally

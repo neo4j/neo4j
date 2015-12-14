@@ -79,7 +79,6 @@ public abstract class GraphDatabaseFacadeFactory
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<String> ephemeral_keep_logical_logs = setting( "keep_logical_logs", STRING, "1 " +
                 "files", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' " +

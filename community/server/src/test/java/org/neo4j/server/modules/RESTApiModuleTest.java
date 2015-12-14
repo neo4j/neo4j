@@ -29,7 +29,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 
@@ -55,10 +54,8 @@ public class RESTApiModuleTest
         Dependencies deps = new Dependencies();
         deps.satisfyDependency( new UsageData() );
 
-        Database db = mock(Database.class);
-
         // When
-        RESTApiModule module = new RESTApiModule( webServer, db, config, deps, NullLogProvider.getInstance() );
+        RESTApiModule module = new RESTApiModule( webServer, config, deps, NullLogProvider.getInstance() );
         module.start();
 
         // Then

@@ -451,9 +451,6 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
-    @Internal
-    public static final Setting<Boolean> execution_guard_enabled = setting("execution_guard_enabled", BOOLEAN, FALSE );
-
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
     @Internal
     public static final Setting<Long> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;

@@ -47,11 +47,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
-import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -302,7 +300,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final AtomicInteger recoveredCount = new AtomicInteger();
-    private final Guard guard;
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final ConstraintSemantics constraintSemantics;
@@ -345,7 +342,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             StartupStatisticsProvider startupStatistics,
             NodeManager nodeManager,
-            Guard guard,
             CommitProcessFactory commitProcessFactory,
             PageCache pageCache,
             ConstraintSemantics constraintSemantics,
@@ -373,7 +369,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
         this.nodeManager = nodeManager;
-        this.guard = guard;
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
@@ -794,7 +789,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
 
         StatementOperationParts statementOperations = dependencies.satisfyDependency( buildStatementOperations(
-                storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState, guard,
+                storeLayer, legacyPropertyTrackers, constraintIndexCreator, updateableSchemaState,
                 legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
@@ -1025,7 +1020,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private StatementOperationParts buildStatementOperations(
             StoreReadLayer storeReadLayer, LegacyPropertyTrackers legacyPropertyTrackers,
             ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
-            Guard guard, LegacyIndexStore legacyIndexStore )
+            LegacyIndexStore legacyIndexStore )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
@@ -1039,8 +1034,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 stateHandlingContext );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(), parts.entityReadOperations(),
-                        parts.schemaWriteOperations(), parts.schemaReadOperations() );
+                new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(),
+                        parts.entityReadOperations(), parts.schemaWriteOperations(), parts.schemaReadOperations() );
         // + Data integrity
         DataIntegrityValidatingStatementOperations dataIntegrityContext =
                 new DataIntegrityValidatingStatementOperations(
@@ -1053,14 +1048,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null );
-        // + Guard
-        if ( guard != null )
-        {
-            GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
-                    parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null,
-                    null, null, null );
-        }
 
         return parts;
     }
