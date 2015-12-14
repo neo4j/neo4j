@@ -17,26 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.kernel.impl.locking;
 
-import org.junit.Test;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.junit.Assert.assertNotSame;
-import static org.neo4j.kernel.impl.store.NeoStoresMocking.mockNeoStores;
-
-public class NeoStoreTransactionContextFactoryTest
+public class NoOpLocks extends LifecycleAdapter implements Locks
 {
-    @Test
-    public void shouldCreateNewInstances()
+    private boolean closed;
+
+    @Override
+    public void shutdown() throws Throwable
     {
-        // Given
-        NeoStoreTransactionContextFactory supplier = new NeoStoreTransactionContextFactory( mockNeoStores() );
+        closed = true;
+    }
 
-        // When
-        NeoStoreTransactionContext context1 = supplier.newInstance();
-        NeoStoreTransactionContext context2 = supplier.newInstance();
+    @Override
+    public Client newClient()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException();
+        }
+        return new NoOpClient();
+    }
 
-        // Then
-        assertNotSame( context1, context2 );
+    @Override
+    public void accept( Visitor visitor )
+    {
     }
 }

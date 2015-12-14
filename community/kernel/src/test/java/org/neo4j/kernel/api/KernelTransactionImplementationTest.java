@@ -38,15 +38,17 @@ import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -55,13 +57,15 @@ import org.neo4j.test.DoubleLatch;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class KernelTransactionImplementationTest
@@ -359,7 +363,7 @@ public class KernelTransactionImplementationTest
     }
 
     @Test
-    public void shouldNotReturnTransactionInstanceWithTerminationMarkToPool() throws Exception
+    public void shouldStillReturnTransactionInstanceWithTerminationMarkToPool() throws Exception
     {
         // GIVEN
         KernelTransactionImplementation transaction = newTransaction();
@@ -369,7 +373,43 @@ public class KernelTransactionImplementationTest
         transaction.close();
 
         // THEN
-        verifyZeroInteractions( pool );
+        verify( pool ).release( transaction );
+    }
+
+    @Test
+    public void shouldBeAbleToReuseTerminatedTransaction() throws Exception
+    {
+        // GIVEN
+        KernelTransactionImplementation transaction = newTransaction();
+        transaction.close();
+        transaction.markForTermination();
+
+        // WHEN
+        transaction.initialize( 10L );
+        transaction.txState().nodeDoCreate( 11L );
+        transaction.success();
+        transaction.close();
+
+        // THEN
+        verify( commitProcess ).commit( any( TransactionRepresentation.class ), any( LockGroup.class ),
+                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+    }
+
+    @Test
+    public void shouldAcquireNewLocksClientEveryTimeTransactionIsReused() throws Exception
+    {
+        // GIVEN
+        KernelTransactionImplementation transaction = newTransaction();
+        transaction.close();
+        verify( locks ).newClient();
+        reset( locks );
+
+        // WHEN
+        transaction.initialize( 10L );
+        transaction.close();
+
+        // THEN
+        verify( locks ).newClient();
     }
 
     private final NeoStores neoStores = mock( NeoStores.class );
@@ -378,12 +418,14 @@ public class KernelTransactionImplementationTest
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
     private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
-    private final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
+    private final CapturingCommitProcess commitProcess = spy( new CapturingCommitProcess() );
     private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
     private final TransactionHeaderInformationFactory headerInformationFactory =
             mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
     private final Pool<KernelTransactionImplementation> pool = mock( Pool.class );
+    private final Locks locks = spy( new NoOpLocks() );
+    private final StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
 
     @Before
     public void before()
@@ -395,13 +437,13 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newTransaction()
     {
-        StoreReadLayer readLayer = mock(StoreReadLayer.class);
-        when(readLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
+        when(storeReadLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, null, null, null, recordState, null, neoStores, new NoOpClient(),
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, readLayer, legacyIndexState,
-                pool, mock(ConstraintSemantics.class), clock, TransactionTracer.NULL, new ProcedureCache() );
+                null, null, null, null, null, recordState, null, neoStores, locks,
+                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer, legacyIndexState,
+                pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext
+                .class ) );
         transaction.initialize( 0 );
         return transaction;
     }

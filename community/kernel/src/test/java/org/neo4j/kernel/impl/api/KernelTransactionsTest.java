@@ -176,7 +176,7 @@ public class KernelTransactionsTest
     {
         NeoStoreTransactionContextFactory factory = mock( NeoStoreTransactionContextFactory.class );
         NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
-        when( factory.newInstance( any( Locks.Client.class ) ) ).thenReturn( context );
+        when( factory.newInstance() ).thenReturn( context );
         return factory;
     }
 
@@ -197,7 +197,7 @@ public class KernelTransactionsTest
         when( recordChanges.changes() ).thenReturn( Iterables.option( recordChange ) );
         when( context.getNodeRecords() ).thenReturn( recordChanges );
 
-        when( factory.newInstance( any( Locks.Client.class ) ) ).thenReturn( context );
+        when( factory.newInstance() ).thenReturn( context );
         return factory;
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStores;
 
 public class NeoStoreTransactionContextFactory
@@ -31,8 +30,8 @@ public class NeoStoreTransactionContextFactory
         this.neoStores = neoStores;
     }
 
-    public NeoStoreTransactionContext newInstance( Locks.Client locks )
+    public NeoStoreTransactionContext newInstance()
     {
-        return new NeoStoreTransactionContext( neoStores, locks );
+        return new NeoStoreTransactionContext( neoStores );
     }
 }

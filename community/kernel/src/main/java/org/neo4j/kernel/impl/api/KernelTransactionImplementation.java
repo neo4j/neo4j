@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
@@ -157,6 +158,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
+    private final Locks locksManager;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
@@ -178,6 +180,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionTracer tracer;
     private TransactionEvent transactionEvent;
     private CloseListener closeListener;
+    private final NeoStoreTransactionContext context;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -187,7 +190,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionRecordState recordState,
                                             SchemaIndexProviderMap providerMap,
                                             NeoStores neoStores,
-                                            Locks.Client locks,
+                                            Locks locks,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
@@ -199,7 +202,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             ConstraintSemantics constraintSemantics,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            ProcedureCache procedureCache )
+                                            ProcedureCache procedureCache,
+                                            NeoStoreTransactionContext context )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -208,14 +212,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState = recordState;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
+        this.locksManager = locks;
         this.hooks = hooks;
-        this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storeLayer;
         this.procedureCache = procedureCache;
+        this.context = context;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
         this.constraintSemantics = constraintSemantics;
@@ -229,8 +234,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
-        assert locks != null : "This transaction has been disposed off, it should not be used.";
-        this.closing = closed = failure = success = false;
+        this.locks = locksManager.newClient();
+        this.context.init( locks );
+        this.closing = closed = failure = success = terminated = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
@@ -664,22 +670,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void release()
     {
-        locks.releaseAll();
-        if ( terminated )
+        locks.close();
+        locks = null;
+        pool.release( this );
+        if ( storeStatement != null )
         {
-            // This transaction has been externally marked for termination.
-            // Just dispose of this transaction and don't return it to the pool.
-            dispose();
-        }
-        else
-        {
-            // Return this instance to the pool so that another transaction may use it.
-            pool.release( this );
-            if ( storeStatement != null )
-            {
-                storeStatement.close();
-                storeStatement = null;
-            }
+            storeStatement.close();
+            storeStatement = null;
         }
     }
 

@@ -21,8 +21,6 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -31,11 +29,14 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
@@ -53,7 +54,7 @@ public class KernelTransactionFactory
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ), null, null,
                 null, mock( TransactionRecordState.class ),
-                null, mock( NeoStores.class ), new NoOpClient(), new TransactionHooks(),
+                null, mock( NeoStores.class ),  new NoOpLocks(), new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformationFactory,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( StoreReadLayer.class ),
@@ -61,6 +62,8 @@ public class KernelTransactionFactory
                 mock(Pool.class),
                 mock( ConstraintSemantics.class ),
                 Clock.SYSTEM_CLOCK,
-                TransactionTracer.NULL, new ProcedureCache() );
+                TransactionTracer.NULL,
+                new ProcedureCache(),
+                mock( NeoStoreTransactionContext.class ));
     }
 }

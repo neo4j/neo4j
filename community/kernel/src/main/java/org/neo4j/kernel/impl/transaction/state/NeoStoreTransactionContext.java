@@ -23,7 +23,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -41,26 +41,30 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 
 public class NeoStoreTransactionContext
 {
-    private final RelationshipCreator relationshipCreator;
-    private final RelationshipDeleter relationshipDeleter;
+    private RelationshipCreator relationshipCreator;
+    private RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
     private final RecordAccessSet recordChangeSet;
     private final NeoStores neoStores;
 
-    public NeoStoreTransactionContext( NeoStores neoStores, Client locks )
+    public NeoStoreTransactionContext( NeoStores neoStores )
     {
         this.neoStores = neoStores;
 
         recordChangeSet = new RecordChangeSet( neoStores );
-        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( relationshipGroupStore );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStores.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator(
-                locks, relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
-        relationshipDeleter = new RelationshipDeleter( locks, relGroupGetter, propertyDeleter );
+    }
+
+    public void init( Locks.Client locksClient )
+    {
+        RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( relationshipGroupStore );
+        relationshipCreator =
+                new RelationshipCreator( locksClient, relGroupGetter, relationshipGroupStore.getDenseNodeThreshold() );
+        relationshipDeleter = new RelationshipDeleter( locksClient, relGroupGetter, propertyDeleter );
     }
 
     public void relationshipDelete( long relId )
@@ -119,6 +123,8 @@ public class NeoStoreTransactionContext
     public void clear()
     {
         recordChangeSet.close();
+        relationshipCreator = null;
+        relationshipDeleter = null;
     }
 
     public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
