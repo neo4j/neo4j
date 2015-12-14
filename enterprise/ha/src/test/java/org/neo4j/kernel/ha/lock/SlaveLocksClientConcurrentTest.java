@@ -60,6 +60,7 @@ public class SlaveLocksClientConcurrentTest
     private ForsetiLockManager lockManager;
     private RequestContextFactory requestContextFactory;
     private AvailabilityGuard availabilityGuard;
+    private long availabilityTimeoutMillis;
 
     @BeforeClass
     public static void initExecutor()
@@ -80,6 +81,7 @@ public class SlaveLocksClientConcurrentTest
         lockManager = new ForsetiLockManager( ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
+        availabilityTimeoutMillis = 100;
 
         when( requestContextFactory.newRequestContext( Mockito.anyInt() ) )
                 .thenReturn( RequestContext.anonymous( 1 ) );
@@ -112,7 +114,7 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, new TestConfiguration() );
+                requestContextFactory, availabilityGuard, availabilityTimeoutMillis );
     }
 
     private static class LockedOnMasterAnswer implements Answer
@@ -212,15 +214,6 @@ public class SlaveLocksClientConcurrentTest
             this.locksClient = locksClient;
             this.resourceType = resourceType;
             this.id = id;
-        }
-    }
-
-    private static class TestConfiguration implements SlaveLockManager.Configuration
-    {
-        @Override
-        public long getAvailabilityTimeout()
-        {
-            return 100;
         }
     }
 }

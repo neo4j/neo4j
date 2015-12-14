@@ -42,7 +42,7 @@ public class SlaveLockManagerTest
     private RequestContextFactory requestContextFactory;
     private Master master;
     private AvailabilityGuard availabilityGuard;
-    private SlaveLockManager.Configuration config;
+    private long availabilityTimeoutMillis;
 
     @Before
     public void setUp()
@@ -50,7 +50,7 @@ public class SlaveLockManagerTest
         requestContextFactory = new RequestContextFactory( 1, mock( DependencyResolver.class ) );
         master = mock( Master.class );
         availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
-        config = mock( SlaveLockManager.Configuration.class );
+        availabilityTimeoutMillis = 1000;
     }
 
     @Test
@@ -88,6 +88,6 @@ public class SlaveLockManagerTest
     {
         return new SlaveLockManager( localLocks, requestContextFactory,
                 master, availabilityGuard,
-                config );
+                availabilityTimeoutMillis );
     }
 }

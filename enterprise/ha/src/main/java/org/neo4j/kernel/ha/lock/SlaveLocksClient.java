@@ -53,7 +53,7 @@ class SlaveLocksClient implements Locks.Client
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
-    private final SlaveLockManager.Configuration config;
+    private final long availabilityTimeoutMillis;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
@@ -66,14 +66,14 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
-            SlaveLockManager.Configuration config )
+            long availabilityTimeoutMillis )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.config = config;
+        this.availabilityTimeoutMillis = availabilityTimeoutMillis;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -308,7 +308,7 @@ class SlaveLocksClient implements Locks.Client
 
     private void makeSureTxHasBeenInitialized()
     {
-        availabilityGuard.checkAvailability( config.getAvailabilityTimeout(), RuntimeException.class );
+        availabilityGuard.checkAvailability( availabilityTimeoutMillis, RuntimeException.class );
         if ( !initialized )
         {
             try ( Response<Void> ignored = master.newLockSession( newRequestContextFor( client ) ) )

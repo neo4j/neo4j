@@ -63,13 +63,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     {
         return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
                 availabilityGuard,
-                new SlaveLockManager.Configuration()
-                {
-                    @Override
-                    public long getAvailabilityTimeout()
-                    {
-                        return config.get( HaSettings.lock_read_timeout );
-                    }
-                } ) );
+                config.get( HaSettings.lock_read_timeout ) ) );
     }
 }

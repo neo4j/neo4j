@@ -60,8 +60,6 @@ public class SlaveLocksClientTest
     private RequestContextFactory requestContextFactory;
     @Mock
     private AvailabilityGuard availabilityGuard;
-    @Mock
-    private SlaveLockManager.Configuration config;
 
     @InjectMocks
     private SlaveLocksClient client;
