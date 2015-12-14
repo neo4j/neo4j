@@ -19,71 +19,70 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Matchers;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
-@RunWith( MockitoJUnitRunner.class )
 public class SlaveLocksClientTest
 {
-
-    @Mock
     private Master master;
-    @Mock
     private Locks.Client local;
-    @Mock
-    private Locks lockManager;
-    @Mock
-    private RequestContextFactory requestContextFactory;
-    @Mock
-    private AvailabilityGuard availabilityGuard;
-
-    @InjectMocks
     private SlaveLocksClient client;
 
     @Before
     public void setUp() throws Exception
     {
-        when( local.tryExclusiveLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
-        when( local.trySharedLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
+        master = mock( Master.class );
+        RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+        AvailabilityGuard availabilityGuard = new AvailabilityGuard( new FakeClock() );
 
-        when( lockManager.newClient() ).thenReturn( local );
+        Locks lockManager = new CommunityLockManger();
+        local = spy( lockManager.newClient() );
+
+        LockResult lockResultOk = new LockResult( LockStatus.OK_LOCKED );
+        TransactionStreamResponse<LockResult> responseOk =
+                new TransactionStreamResponse<>( lockResultOk, null, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
 
         when( master.acquireSharedLock(
                 any( RequestContext.class ),
                 any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( new TransactionStreamResponse<>( new LockResult( LockStatus.OK_LOCKED ),
-                null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
+                Matchers.<long[]>anyVararg() ) ).thenReturn( responseOk );
 
         when( master.acquireExclusiveLock(
                 any( RequestContext.class ),
                 any( Locks.ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) ).thenReturn( new TransactionStreamResponse<>( new LockResult( LockStatus.OK_LOCKED ),
-                null, TransactionStream.EMPTY, ResourceReleaser.NO_OP ) );
-        when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
+                Matchers.<long[]>anyVararg() ) ).thenReturn( responseOk );
+
+        client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard, 1000 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        local.close();
     }
 
     @Test
@@ -93,17 +92,13 @@ public class SlaveLocksClientTest
         client.acquireShared( NODE, 1 );
         client.acquireShared( NODE, 1 );
 
-        // Then only a single network roundtrip should be observed
+        // Then only a single network round-trip should be observed
         verify( master ).acquireSharedLock( null, NODE, 1 );
     }
 
     @Test
     public void shouldNotTakeSharedLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
     {
-        // Given the local locks do what they are supposed to do
-        when( local.trySharedLock( NODE, 1, 2 ) ).thenReturn( true );
-        when( local.trySharedLock( NODE, 2, 3 ) ).thenReturn( true );
-
         // When taking locks twice
         client.acquireShared( NODE, 1, 2 );
         client.acquireShared( NODE, 2, 3 );
@@ -127,10 +122,6 @@ public class SlaveLocksClientTest
     @Test
     public void shouldNotTakeExclusiveLockOnMasterIfWeAreAlreadyHoldingSaidLock_OverlappingBatch()
     {
-        // Given the local locks do what they are supposed to do
-        when( local.tryExclusiveLock( NODE, 1, 2 ) ).thenReturn( true );
-        when( local.tryExclusiveLock( NODE, 2, 3 ) ).thenReturn( true );
-
         // When taking locks twice
         client.acquireExclusive( NODE, 1, 2 );
         client.acquireExclusive( NODE, 2, 3 );
@@ -222,6 +213,6 @@ public class SlaveLocksClientTest
         int lockSessionId = client.getLockSessionId();
 
         // Then
-        assertThat(lockSessionId, equalTo(0));
+        assertThat( lockSessionId, equalTo( local.getLockSessionId() ) );
     }
 }
