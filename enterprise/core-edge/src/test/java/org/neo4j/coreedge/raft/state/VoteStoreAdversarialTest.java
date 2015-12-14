@@ -19,24 +19,21 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.state.DurableVoteStore;
-import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
 public class VoteStoreAdversarialTest
@@ -52,7 +49,7 @@ public class VoteStoreAdversarialTest
     public void shouldDiscardVoteIfChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                DurableVoteStore.class.getName() );
+                DurableVoteStore.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();

@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -97,7 +97,7 @@ public class RaftLogAdversarialTest
     public void shouldDiscardEntryIfEntryChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                NaiveDurableRaftLog.class.getName() );
+                NaiveDurableRaftLog.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
@@ -132,7 +132,7 @@ public class RaftLogAdversarialTest
     public void shouldDiscardEntryIfContentChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                NaiveDurableRaftLog.class.getName() );
+                NaiveDurableRaftLog.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();

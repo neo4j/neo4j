@@ -19,16 +19,14 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.log.RaftStorageException;
-import org.neo4j.coreedge.raft.state.DurableTermStore;
-import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,7 +47,7 @@ public class TermStoreAdversarialTest
     public void shouldDiscardTermIfChannelFails() throws Exception
     {
         ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
-                DurableTermStore.class.getName() );
+                DurableTermStore.class );
         adversary.disable();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();

@@ -19,9 +19,10 @@
  */
 package org.neo4j.adversaries;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * An adversary that delegates failure injection only when invoked through certain classes.
@@ -32,11 +33,10 @@ public class ClassGuardedAdversary implements Adversary
     private final Set<String> victimClasses;
     private volatile boolean enabled;
 
-    public ClassGuardedAdversary( Adversary delegate, String... victimClassNames )
+    public ClassGuardedAdversary( Adversary delegate, Class<?>... victimClasses )
     {
         this.delegate = delegate;
-        victimClasses = new HashSet<String>();
-        Collections.addAll( victimClasses, victimClassNames );
+        this.victimClasses = Stream.of( victimClasses ).map( Class::getName ).collect( toSet() );
         enabled = true;
     }
 

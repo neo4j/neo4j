@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -71,7 +72,7 @@ public class PartialTransactionFailureIT
     {
         final ClassGuardedAdversary adversary = new ClassGuardedAdversary(
                 new CountingAdversary( 1, false ),
-                "org.neo4j.kernel.impl.nioneo.xa.Command$RelationshipCommand" );
+                Command.RelationshipCommand.class );
         adversary.disable();
 
         File storeDir = dir.graphDbDir();
