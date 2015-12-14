@@ -1,4 +1,0 @@
-col1,col2,col3
-single'quote,"double""quote",""""
-empty is not null,,""
-unquoted,"comma,inside",spaced out
