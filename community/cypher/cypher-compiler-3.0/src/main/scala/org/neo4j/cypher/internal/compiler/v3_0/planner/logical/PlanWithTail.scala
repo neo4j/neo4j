@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.Rewriter
-
-import scala.annotation.tailrec
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
@@ -68,12 +66,13 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
     remaining match {
       case Some(query) =>
         val lhsContext = context.recurse(lhs)
+        // TODO: REV: Why is countStorePlanner not used here?
         val partPlan = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
         ///use eager if configured to do so
         val alwaysEager = context.config.updateStrategy.alwaysEager
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
-          if (alwaysEager || (query.updateGraph overlaps query.queryGraph))
+          if (alwaysEager || Eagerness.conflictInTail(partPlan, query))
             context.logicalPlanProducer.planRepeatableRead(partPlan)
           else partPlan
 
