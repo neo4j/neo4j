@@ -144,62 +144,62 @@ public class SlaveLocksClientTest
     public void shouldAllowAcquiringReleasingAndReacquiringExclusive() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireExclusive( NODE, 1l );
-        client.releaseExclusive( NODE, 1l );
+        client.acquireExclusive( NODE, 1L );
+        client.releaseExclusive( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireExclusive( NODE, 1l );
-        client.releaseExclusive( NODE, 1l );
+        client.acquireExclusive( NODE, 1L );
+        client.releaseExclusive( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 2 ) ).tryExclusiveLock( NODE, 1l );
-        verify( local, times( 2 ) ).releaseExclusive( NODE, 1l );
+        verify( local, times( 2 ) ).tryExclusiveLock( NODE, 1L );
+        verify( local, times( 2 ) ).releaseExclusive( NODE, 1L );
     }
 
     @Test
     public void shouldAllowAcquiringReleasingAndReacquiringShared() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireShared( NODE, 1l );
-        client.releaseShared( NODE, 1l );
+        client.acquireShared( NODE, 1L );
+        client.releaseShared( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireShared( NODE, 1l );
-        client.releaseShared( NODE, 1l );
+        client.acquireShared( NODE, 1L );
+        client.releaseShared( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 2 ) ).trySharedLock( NODE, 1l );
-        verify( local, times( 2 ) ).releaseShared( NODE, 1l );
+        verify( local, times( 2 ) ).trySharedLock( NODE, 1L );
+        verify( local, times( 2 ) ).releaseShared( NODE, 1L );
     }
 
     @Test
     public void shouldNotTalkToLocalLocksOnReentrancyExclusive() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireExclusive( NODE, 1l );
+        client.acquireExclusive( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireExclusive( NODE, 1l );
-        client.releaseExclusive( NODE, 1l );
+        client.acquireExclusive( NODE, 1L );
+        client.releaseExclusive( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 1 ) ).tryExclusiveLock( NODE, 1l );
-        verify( local, times( 0 ) ).releaseExclusive( NODE, 1l );
+        verify( local, times( 1 ) ).tryExclusiveLock( NODE, 1L );
+        verify( local, times( 0 ) ).releaseExclusive( NODE, 1L );
     }
 
     @Test
     public void shouldNotTalkToLocalLocksOnReentrancyShared() throws Exception
     {
         // Given we have grabbed and released a lock
-        client.acquireShared( NODE, 1l );
+        client.acquireShared( NODE, 1L );
 
         // When we grab and release that lock again
-        client.acquireShared( NODE, 1l );
-        client.releaseShared( NODE, 1l );
+        client.acquireShared( NODE, 1L );
+        client.releaseShared( NODE, 1L );
 
         // Then this should cause the local lock manager to hold the lock
-        verify( local, times( 1 ) ).trySharedLock( NODE, 1l );
-        verify( local, times( 0 ) ).releaseShared( NODE, 1l );
+        verify( local, times( 1 ) ).trySharedLock( NODE, 1L );
+        verify( local, times( 0 ) ).releaseShared( NODE, 1L );
     }
 
     @Test
@@ -216,7 +216,7 @@ public class SlaveLocksClientTest
     public void shouldReturnDelegateIdIfInitialized() throws Exception
     {
         // Given
-        client.acquireExclusive( ResourceTypes.NODE, 1l );
+        client.acquireExclusive( ResourceTypes.NODE, 1L );
 
         // When
         int lockSessionId = client.getLockSessionId();

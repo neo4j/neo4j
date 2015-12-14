@@ -53,8 +53,6 @@ public class SlaveLocksClientConcurrentTest
 {
 
     private static ExecutorService executor;
-    private SlaveLocksClient reader;
-    private SlaveLocksClient writer;
 
     private Master master;
     private ForsetiLockManager lockManager;
@@ -90,8 +88,8 @@ public class SlaveLocksClientConcurrentTest
     @Test( timeout = 1000 )
     public void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
     {
-        reader = createClient();
-        writer = createClient();
+        SlaveLocksClient reader = createClient();
+        SlaveLocksClient writer = createClient();
 
         CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
         CountDownLatch resourceLatch = new CountDownLatch( 1 );
