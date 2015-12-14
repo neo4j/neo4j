@@ -48,7 +48,7 @@ trait CypherCacheFlushingMonitor[T] {
 trait CypherCacheHitMonitor[T] {
   def cacheHit(key: T) {}
   def cacheMiss(key: T) {}
-  def cacheDiscard(key: T) {}
+  def cacheDiscard(key: T, userKey: String) {}
 }
 
 trait InfoLogger {
@@ -130,8 +130,8 @@ object CypherCompilerFactory {
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
-    override def cacheDiscard(key: Statement) {
-      log.info(s"Discarded stale query from the query cache: $key")
+    override def cacheDiscard(key: Statement, userKey: String) {
+      log.info(s"Discarded stale query from the query cache: $userKey")
     }
   }
 }
@@ -193,7 +193,7 @@ case class CypherCompiler(parser: CypherParser,
       })
     }.flatMap { plan =>
       if (!planned && plan.isStale(context.txIdProvider, context.statistics)) {
-        cacheAccessor.remove(cache)(parsedQuery.statement)
+        cacheAccessor.remove(cache)(parsedQuery.statement, parsedQuery.queryText)
         None
       } else {
         Some(plan)

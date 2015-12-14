@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class PlanCacheMetricsMonitor extends StringCacheMonitor {
   private val counter = new AtomicLong()
-  override def cacheDiscard(key: String): Unit = {
+  override def cacheDiscard(ignored1: String, ignored2: String): Unit = {
     counter.incrementAndGet()
   }
 
