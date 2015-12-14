@@ -70,7 +70,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = "When creating a new node with labels, you can add properties at the same time.",
       queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
       optionalResultExplanation = "Nothing is returned from this query.",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
 
   @Test def create_single_node_and_return_it() {
@@ -129,7 +129,7 @@ will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
       optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path variable, " +
         "and returns it.",
-      assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
+      assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 2))
   }
 
   @Test def create_relationship_with_properties() {
@@ -159,7 +159,7 @@ In this case we add a +Person+ label to the node as well.
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
@@ -171,6 +171,6 @@ In this case we add a +Person+ label to the node as well.
         Map("name" -> "Michael", "position" -> "Developer"))),
       queryText = "UNWIND {props} as map CREATE (n) SET n = map",
       optionalResultExplanation = "",
-      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
   }
 }

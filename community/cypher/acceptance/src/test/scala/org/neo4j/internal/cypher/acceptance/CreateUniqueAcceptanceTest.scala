@@ -67,8 +67,8 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val res2 = execute(query, "param" -> nodeProps2)
 
     //then
-    assertStats(res1, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1, labelsAdded = 1)
-    assertStats(res2, nodesCreated = 0, relationshipsCreated = 0, propertiesSet = 0, labelsAdded = 0)
+    assertStats(res1, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1, labelsAdded = 1)
+    assertStats(res2, nodesCreated = 0, relationshipsCreated = 0, propertiesWritten = 0, labelsAdded = 0)
   }
 
   test("create_new_node_with_labels_on_the_left") {
@@ -139,7 +139,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val result = execute("match (a) where id(a) = 0 create unique (a)-[r:X]->({p}) return r", "p" -> nodeProps)
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
-    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1)
 
     val r = graph.inTx(a.getRelationships.asScala.head)
 
@@ -157,7 +157,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
     val result = execute("match (a) where id(a) = 0 create unique path=(a)-[:X]->({p}) return last(nodes(path))", "p" -> nodeProps)
     val endNode = result.columnAs[Node]("last(nodes(path))").toList.head
 
-    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1)
     graph.inTx {
       endNode.getProperty("name") should equal("Lasse")
     }
@@ -170,7 +170,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
     val result = execute("match (n) where id(n) = 0 create unique (n)-[:REL]->(a {props1})-[:LER]->(b {props2}) return a,b", "props1"->props1, "props2"->props2)
 
-    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesWritten = 4)
     val resultMap = result.toList.head
 
     graph.inTx {
@@ -189,7 +189,7 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
     val result = execute("match (n) where id(n) = 0 create unique p=(n)-[:REL]->({props1})-[:LER]->({props2}) return p", "props1"->props1, "props2"->props2)
 
-    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesSet = 4)
+    assertStats(result, relationshipsCreated = 2, nodesCreated = 2, propertiesWritten = 4)
     val path = result.toList.head("p").asInstanceOf[Path]
 
     val lasse = path.endNode()
@@ -385,7 +385,7 @@ FOREACH(name in ['a','b','c'] |
 return book
 """)
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesWritten = 1)
 
     val book = result.toList.head("book").asInstanceOf[Node]
 
@@ -417,7 +417,7 @@ FOREACH(name in ['a','b','c'] |
 )
 """)
 
-    assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1)
 
     graph.inTx {
       val bookTags = tagRoot.getRelationships.asScala.map(_.getOtherNode(tagRoot)).map(_.getProperty("name")).toSet
@@ -438,7 +438,7 @@ CREATE UNIQUE
   (b)-[:X]->(x)
 RETURN x""")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesWritten = 1)
   }
 
   test("should_not_create_unnamed_parts_unnecessarily") {
@@ -466,7 +466,7 @@ CREATE UNIQUE
   (b)-[:X]->(x)-[:X]->(z {foo:'buzz'})
 RETURN x""")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 2)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesWritten = 2)
   }
 
   test("should_work_well_inside_foreach") {
@@ -521,7 +521,7 @@ RETURN value;""")
              v1
      */
 
-    assertStats(result, nodesCreated = 4, relationshipsCreated = 4, propertiesSet = 6)
+    assertStats(result, nodesCreated = 4, relationshipsCreated = 4, propertiesWritten = 6)
 
     val result2 = execute("""match (root) where id(root) = 0
 CREATE (value { year:2012, month:5, day:12 })
@@ -529,7 +529,7 @@ WITH root,value
 CREATE UNIQUE (root)-[:X]->(year {value:value.year})-[:X]->(month {value:value.month})-[:X]->(day {value:value.day})-[:X]->(value)
 RETURN value;""")
 
-    assertStats(result2, nodesCreated = 2, relationshipsCreated = 2, propertiesSet = 4)
+    assertStats(result2, nodesCreated = 2, relationshipsCreated = 2, propertiesWritten = 4)
 
     /*
              root

@@ -32,13 +32,13 @@ class ReturnTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "all-nodes" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 4)
       case "alias" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.dumpToString.contains("columnName"))
       case "unique" =>
-        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesSet = 0, relationshipsDeleted = 0)
+        assertStats(result, nodesDeleted = 0, relationshipsCreated = 0, propertiesWritten = 0, relationshipsDeleted = 0)
         assert(result.toList.size === 1)
       case "skip" =>
         assertStats(result, nodesDeleted = 0)

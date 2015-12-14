@@ -32,19 +32,19 @@ class CreateTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "create-node" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
       case "create-node-from-map" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
       case "create-nodes-from-maps" =>
-        assertStats(result, nodesCreated = 2, propertiesSet = 2)
+        assertStats(result, nodesCreated = 2, propertiesWritten = 2)
         assert(result.toList.size === 2)
       case "create-rel" =>
         assertStats(result, relationshipsCreated = 1)
         assert(result.dumpToString.contains("KNOWS"))
       case "create-rel-prop" =>
-        assertStats(result, relationshipsCreated = 1, propertiesSet = 1)
+        assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
     }
   }

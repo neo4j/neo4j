@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper3_0, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
+import org.neo4j.kernel.impl.core.NodeManager
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -94,7 +95,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   val qmul1 = "qmul1" ->
     """MATCH (a:Person)-->(m)-[r]->(n)-->(a)
-      |WHERE a.uid IN ['1195630902','1457065010'] AND EXISTS(m.location_lat) AND EXISTS(n.location_lat)
+      |WHERE a.uid IN ['1195630902','1457065010'] AND exists(m.location_lat) AND exists(n.location_lat)
       |RETURN count(r)""".stripMargin
 
   test("plans are built fast enough") {
@@ -168,8 +169,11 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   }
 
   def createCurrentCompiler = {
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+
     CypherCompilerFactory.costBasedCompiler(
       graph = graph,
+      new EntityAccessorWrapper3_0(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize = 1,
         statsDivergenceThreshold = DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD,

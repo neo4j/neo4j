@@ -32,13 +32,13 @@ class SetTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "set" =>
-        assertStats(result, propertiesSet = 2)
+        assertStats(result, propertiesWritten = 2)
         assert(result.dumpToString().contains("a value"))
       case "set-label" =>
         assertStats(result, nodesCreated = 1, labelsAdded = 1)
         assert(result.dumpToString().contains("Person"))
       case "map" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 1)
         assert(result.dumpToString().contains("a value"))
     }
   }

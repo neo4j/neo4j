@@ -51,23 +51,23 @@ trait QueryStatisticsTestSupport {
   }
 
   def assertStats(
-    result: InternalExecutionResult,
-    nodesCreated: Int = 0,
-    relationshipsCreated: Int = 0,
-    propertiesSet: Int = 0,
-    nodesDeleted: Int = 0,
-    relationshipsDeleted: Int = 0,
-    labelsAdded: Int = 0,
-    labelsRemoved: Int = 0,
-    indexesAdded: Int = 0,
-    indexesRemoved: Int = 0,
-    constraintsAdded: Int = 0,
-    constraintsRemoved: Int = 0
+                   result: InternalExecutionResult,
+                   nodesCreated: Int = 0,
+                   relationshipsCreated: Int = 0,
+                   propertiesWritten: Int = 0,
+                   nodesDeleted: Int = 0,
+                   relationshipsDeleted: Int = 0,
+                   labelsAdded: Int = 0,
+                   labelsRemoved: Int = 0,
+                   indexesAdded: Int = 0,
+                   indexesRemoved: Int = 0,
+                   constraintsAdded: Int = 0,
+                   constraintsRemoved: Int = 0
   ) = {
     assertStatsResult(
       nodesCreated,
       relationshipsCreated,
-      propertiesSet,
+      propertiesWritten,
       nodesDeleted,
       relationshipsDeleted,
       labelsAdded,
@@ -80,29 +80,29 @@ trait QueryStatisticsTestSupport {
   }
 
   // This api is more in line with scala test assertions which prefer the expectation before the actual
-  def assertStatsResult(
-    nodesCreated: Int = 0,
-    relationshipsCreated: Int = 0,
-    propertiesSet: Int = 0,
-    nodesDeleted: Int = 0,
-    relationshipsDeleted: Int = 0,
-    labelsAdded: Int = 0,
-    labelsRemoved: Int = 0,
-    indexesAdded: Int = 0,
-    indexesRemoved: Int = 0,
-    constraintsAdded: Int = 0,
-    constraintsRemoved: Int = 0
-  ): QueryStatisticsAssertions = QueryStatistics(
-    nodesCreated,
-    relationshipsCreated,
-    propertiesSet,
-    nodesDeleted,
-    relationshipsDeleted,
-    labelsAdded,
-    labelsRemoved,
-    indexesAdded,
-    indexesRemoved,
-    constraintsAdded,
-    constraintsRemoved
-  )
+  def assertStatsResult(nodesCreated: Int = 0,
+                        relationshipsCreated: Int = 0,
+                        propertiesWritten: Int = 0,
+                        nodesDeleted: Int = 0,
+                        relationshipsDeleted: Int = 0,
+                        labelsAdded: Int = 0,
+                        labelsRemoved: Int = 0,
+                        indexesAdded: Int = 0,
+                        indexesRemoved: Int = 0,
+                        constraintsAdded: Int = 0,
+                        constraintsRemoved: Int = 0
+                       ): QueryStatisticsAssertions =
+    QueryStatistics(
+      nodesCreated,
+      relationshipsCreated,
+      propertiesWritten,
+      nodesDeleted,
+      relationshipsDeleted,
+      labelsAdded,
+      labelsRemoved,
+      indexesAdded,
+      indexesRemoved,
+      constraintsAdded,
+      constraintsRemoved
+    )
 }

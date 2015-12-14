@@ -60,7 +60,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(2)
-    assertStats(result, relationshipsCreated = 2, propertiesSet = 2)
+    assertStats(result, relationshipsCreated = 2, propertiesWritten = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -72,7 +72,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.columnAs[Int]("count").next should equal(2)
-    assertStats(result, relationshipsCreated = 2, propertiesSet = 2)
+    assertStats(result, relationshipsCreated = 2, propertiesWritten = 2)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -113,7 +113,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
         |RETURN b2.deleted
       """.stripMargin
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 1, nodesDeleted = 2, propertiesSet = 1, labelsAdded = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, nodesDeleted = 2, propertiesWritten = 1, labelsAdded = 1)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -264,7 +264,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result should use("RepeatableRead", "Eager")
-    assertStats(result, nodesCreated = 10, propertiesSet = 10)
+    assertStats(result, nodesCreated = 10, propertiesWritten = 10)
     assertNumberOfEagerness(query, 2)
   }
 
@@ -308,7 +308,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (:L {id: 0}) CREATE (:L {id:0})"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1,  propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1,  propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -326,7 +326,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode("prop1" -> 42, "prop2" -> 42)
     val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop3: 42})"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesSet = 4)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesWritten = 4)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -335,7 +335,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode("prop1" -> 42, "prop2" -> 42)
     val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop1: 42, prop2: 42})"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesSet = 8)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 4, propertiesWritten = 8)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -344,7 +344,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MATCH (a), (b) CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 }"
 
-    assertStats(updateWithBothPlanners(query), relationshipsCreated = 4, propertiesSet = 4)
+    assertStats(updateWithBothPlanners(query), relationshipsCreated = 4, propertiesWritten = 4)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -701,7 +701,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   test("create directional relationship with property, match and delete relationship and nodes within same transaction should be eager and work") {
     val query = "CREATE ()-[:T {prop: 3}]->() WITH * MATCH (a)-[r {prop : 3}]->(b) DELETE r, a, b"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1, nodesDeleted = 2, relationshipsDeleted = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1, nodesDeleted = 2, relationshipsDeleted = 1)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -836,7 +836,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesSet = 36)
+    assertStats(result, propertiesWritten = 36)
 
     assertNumberOfEagerness(query, 1)
   }
@@ -849,7 +849,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesSet = 36)
+    assertStats(result, propertiesWritten = 36)
 
     assertNumberOfEagerness(query, 0)
   }
@@ -862,7 +862,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesSet = 0)
+    assertStats(result, propertiesWritten = 0)
 
     assertNumberOfEagerness(query, 1)
   }
@@ -875,7 +875,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query)
     result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesSet = 0)
+    assertStats(result, propertiesWritten = 0)
 
     assertNumberOfEagerness(query, 1)
   }
@@ -888,7 +888,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val result = updateWithBothPlanners(query, "map" -> Map("id" -> 0))
     result.toList should equal(List(Map("c" -> 36)))
-    assertStats(result, propertiesSet = 36)
+    assertStats(result, propertiesWritten = 36)
 
     assertNumberOfEagerness(query, 1)
   }
@@ -917,7 +917,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(a, b, "KNOWS")
 
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a.prop = 42"
-    assertStats(executeWithRulePlanner(query), propertiesSet = 1)
+    assertStats(executeWithRulePlanner(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1010,7 +1010,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   test("should not be eager when merging on two different labels") {
     val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 2, propertiesSet = 1, labelsAdded = 2)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 2, propertiesWritten = 1, labelsAdded = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1045,7 +1045,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine'"
 
-    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1077,7 +1077,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Node {prop:5}) SET n.value = 10 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1176,7 +1176,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     val query = "MATCH (n) SET n.prop = 5 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1184,7 +1184,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> 20))
     val query = "MATCH (n { prop: 20 }) SET n.prop = 10 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1192,7 +1192,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createLabeledNode("Node")
     val query = "MATCH (n:Node) SET n.prop = 10 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1217,7 +1217,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH (a), (b :Book {isbn : '123'}) SET a.isbn = '456' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1226,7 +1226,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("id" -> 0))
     val query = "MATCH (a),(b {id: 0}) SET a.id = 0 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1241,7 +1241,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode()
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}) SET b.id = 1 RETURN count(*)"
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1249,14 +1249,14 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> "Fooo"))
     val query = "MATCH (n) WHERE n.prop =~ 'Foo*' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using REPLACE and writing should be eager") {
     createNode(Map("prop" -> "baz"))
     val query = "MATCH (n) WHERE replace(n.prop, 'foo', 'bar') = 'baz' SET n.prop = 'qux' RETURN count(*)"
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1264,7 +1264,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> "aafooaaa"))
     val query = "MATCH (n) WHERE substring(n.prop, 2, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1272,7 +1272,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> "fooaaa"))
     val query = "MATCH (n) WHERE left(n.prop, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1280,7 +1280,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> "aaafoo"))
     val query = "MATCH (n) WHERE right(n.prop, 3) = 'foo' SET n.prop = 'bar' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1288,7 +1288,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     createNode(Map("prop" -> "foo,bar"))
     val query = "MATCH (n) WHERE split(n.prop, ',') = ['foo', 'bar'] SET n.prop = 'baz,qux' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1296,7 +1296,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-() SET r.prop = 6 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 1)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 1)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1304,7 +1304,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m.prop = 5 RETURN count(*)"
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 1)
@@ -1315,7 +1315,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH ()-[r {prop : 3}]-() SET r.prop = 6 RETURN count(*) AS c"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 2)
+    assertStats(result, propertiesWritten = 2)
     result.toList should equal(List(Map("c" -> 2)))
 
     assertNumberOfEagerness(query, 1)
@@ -1325,7 +1325,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop1" -> 3)
     val query = "MATCH ()-[r {prop1 : 3}]-() SET r.prop2 = 6"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1333,7 +1333,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(), createNode(), "prop" -> 3)
     val query = "MATCH (n)-[r {prop : 3}]-() SET n.prop = 6 RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1343,7 +1343,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo' RETURN count(*)"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1353,7 +1353,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
     val query = "MATCH ()-[r]-() WHERE exists(r.prop1) SET r.prop2 = 'foo'"
 
-    assertStats(updateWithBothPlanners(query), propertiesSet = 2)
+    assertStats(updateWithBothPlanners(query), propertiesWritten = 2)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1365,7 +1365,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop = 42 RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 8, nodesCreated = 4)
+    assertStats(result, propertiesWritten = 8, nodesCreated = 4)
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1377,7 +1377,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2 = 42 RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 8, nodesCreated = 4)
+    assertStats(result, propertiesWritten = 8, nodesCreated = 4)
     assertNumberOfEagerness(query, 0)
   }
 
@@ -1385,7 +1385,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 1)
@@ -1395,7 +1395,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 0)
@@ -1405,7 +1405,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {props} RETURN count(*)"
     val result = updateWithBothPlanners(query, "props" -> Map("prop" -> 5))
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 1)
@@ -1415,7 +1415,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     relate(createNode(Map("prop" -> 5)),createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
 
     assertNumberOfEagerness(query, 0)

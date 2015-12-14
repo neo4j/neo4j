@@ -40,7 +40,7 @@ class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
       case "empty" =>
         assert(result.toList.size === 0)
       case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
+        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesWritten = 1)
         assert(result.toList.size === 1)
     }
   }

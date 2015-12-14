@@ -38,7 +38,7 @@ class MapsTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
       case "returns-one-merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 3, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 3, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)

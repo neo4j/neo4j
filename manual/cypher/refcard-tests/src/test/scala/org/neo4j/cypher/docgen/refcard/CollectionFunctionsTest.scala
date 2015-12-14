@@ -41,7 +41,7 @@ class CollectionFunctionsTest extends RefcardTest with QueryStatisticsTestSuppor
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
       case "foreach" =>
-        assertStats(result, nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
+        assertStats(result, nodesCreated = 3, labelsAdded = 3, propertiesWritten = 3)
         assert(result.toList.size === 0)
     }
   }

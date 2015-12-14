@@ -50,7 +50,7 @@ trait SuccessfulCloseable {
 class CompiledExecutionResult(taskCloser: TaskCloser,
                               statement: Statement,
                               compiledCode: GeneratedQueryExecution,
-                              description: org.neo4j.function.Supplier[InternalPlanDescription])
+                              description: Provider[InternalPlanDescription])
   extends InternalExecutionResult with SuccessfulCloseable  {
   self =>
 

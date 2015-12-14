@@ -59,7 +59,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("merge (a:Label) on create set a.prop = 42 return a.prop")
 
     result.toList should equal(List(Map("a.prop" -> 42)))
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
   test("merge node with label when it exists") {
@@ -97,7 +97,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // Then
     result.toList should equal(List(Map("a.prop" -> 43)))
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
 
   test("merge node with prop and label") {
@@ -134,13 +134,13 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // Then
     result.toList should equal(List(Map("a.prop" -> 11)))
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
   }
 
   test("multiple merges after each other") {
     1 to 100 foreach { prop =>
       val result = updateWithBothPlanners(s"merge (a:Label {prop: $prop}) return a.prop")
-      assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+      assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     }
   }
 
@@ -177,7 +177,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // Then
     result.toList should equal(List(Map("a.prop" -> 42)))
-    assertStats(result, propertiesSet = 1)
+    assertStats(result, propertiesWritten = 1)
   }
 
   test("merge node should match properties given ad map") {
@@ -200,7 +200,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("merge (a:Label {prop:42}) return a.prop")
 
     // Then
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
     val props = result.columnAs[Node]("a.prop").toList
     props should equal(List(42))
   }
@@ -424,7 +424,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = executeWithRulePlanner("foreach(x in [1,2,3] | merge ({property: x}))")
 
     // then
-    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 3)
   }
 
   test("unrelated nodes with same property should not clash") {
@@ -446,7 +446,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse'}) RETURN person.name")
 
     // then does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
   test("works with index and constraint") {
@@ -458,7 +458,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")
 
     // then does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
   }
 
   test("works with indexed and unindexed property") {
@@ -469,7 +469,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")
 
     // then does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
   }
 
   test("works with two indexed properties") {
@@ -481,7 +481,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = updateWithBothPlanners("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")
 
     // then does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
   }
 
   test("works with property repeated in literal map in set") {
@@ -493,7 +493,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // then - does not throw
     result.toList should equal(List(Map("person.ssn" -> 42)))
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
   }
 
   test("works with property in map that gets set") {
@@ -506,7 +506,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // then - does not throw
     result.toList should equal(List(Map("person.ssn" -> 42)))
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
   }
 
   test("should work when finding multiple elements") {
@@ -520,7 +520,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
   test("should be able to merge using property from match") {
@@ -535,7 +535,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 3, labelsAdded = 3)
   }
 
   test("should be able to merge using property from match with index") {
@@ -552,7 +552,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 3, propertiesSet = 3, labelsAdded = 3)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 3, labelsAdded = 3)
   }
 
   test("should be able to use properties from match in ON CREATE") {
@@ -563,7 +563,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
   }
 
   test("should be able to use properties from match in ON MATCH") {
@@ -573,7 +573,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET city.name = person.bornIn RETURN person.bornIn"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
   }
 
   test("should be able to use properties from match in ON MATCH and ON CREATE") {
@@ -583,7 +583,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val query = "MATCH (person:Person) MERGE (city: City) ON MATCH SET city.name = person.bornIn ON CREATE SET city.name = person.bornIn RETURN person.bornIn"
 
     val result = updateWithBothPlanners(query)
-    assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1)
     executeWithAllPlanners("MATCH (n:City) WHERE NOT exists(n.name) RETURN n").toList shouldBe empty
   }
 
@@ -638,7 +638,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val result = executeWithRulePlanner("CREATE (a) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a")
 
     // then
-    assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesSet = 3)
+    assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesWritten = 3)
   }
 
   test("merge_should_see_variables_introduced_by_update_actions") {
@@ -663,7 +663,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners("merge (test:L:B {prop : 42}) return labels(test) as labels")
 
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 2)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 2)
     result.toList should equal(List(Map("labels" -> List("L", "B"))))
   }
 
@@ -673,7 +673,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners("merge (test:L:B {prop : 42}) return labels(test) as labels")
 
-    assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 2)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 2)
     result.toList should equal(List(Map("labels" -> List("L", "B"))))
   }
 
@@ -696,6 +696,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = updateWithBothPlanners(query)
 
-    assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 }

@@ -36,7 +36,7 @@ class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
       case "create" =>
-        assertStats(result, nodesCreated = 1, nodesDeleted = 1, propertiesSet = 3, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, nodesDeleted = 1, propertiesWritten = 3, labelsAdded = 1)
         assert(result.toList.size === 0)
     }
   }

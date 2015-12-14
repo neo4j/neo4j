@@ -32,13 +32,13 @@ class MergeTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "merge-rel" =>
         assertStats(result, relationshipsCreated = 1)
         assert(result.toList.size === 1)
       case "merge-sub" =>
-        assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
         assert(result.toList.size === 1)
     }
   }

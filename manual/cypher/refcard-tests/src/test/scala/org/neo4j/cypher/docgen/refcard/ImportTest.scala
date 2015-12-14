@@ -65,7 +65,7 @@ class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
       case "created" =>
-        assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesSet = 8)
+        assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 8)
     }
   }
 

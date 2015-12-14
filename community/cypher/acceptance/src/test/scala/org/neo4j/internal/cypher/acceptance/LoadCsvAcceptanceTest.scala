@@ -51,7 +51,7 @@ class LoadCsvAcceptanceTest
 
     for (url <- urls) {
       val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-      assertStats(result, nodesCreated = 3, propertiesSet = 3)
+      assertStats(result, nodesCreated = 3, propertiesWritten = 3)
     }
   }
 
@@ -65,7 +65,7 @@ class LoadCsvAcceptanceTest
     for (url <- urls) {
       val result =
         execute(s"LOAD CSV FROM '$url' AS line CREATE (a {number: line[0]}) RETURN a.number")
-      assertStats(result, nodesCreated = 3, propertiesSet = 3)
+      assertStats(result, nodesCreated = 3, propertiesWritten = 3)
 
       result.columnAs[Long]("a.number").toList === List("")
     }
@@ -80,7 +80,7 @@ class LoadCsvAcceptanceTest
     })
     for (url <- urls) {
       val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-      assertStats(result, nodesCreated = 3, propertiesSet = 3)
+      assertStats(result, nodesCreated = 3, propertiesWritten = 3)
     }
   }
 
@@ -97,7 +97,7 @@ class LoadCsvAcceptanceTest
         s"LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
       )
 
-      assertStats(result, nodesCreated = 3, propertiesSet = 6)
+      assertStats(result, nodesCreated = 3, propertiesWritten = 6)
     }
   }
 
@@ -255,7 +255,7 @@ class LoadCsvAcceptanceTest
     ).cypherEscape
 
     val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
 
   test("should be able to open relative paths with dotdot") {
@@ -265,7 +265,7 @@ class LoadCsvAcceptanceTest
     ).cypherEscape
 
     val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
 
   test("should handle null keys in maps as result value") {
@@ -444,7 +444,7 @@ class LoadCsvAcceptanceTest
     createNode(Map("prop" -> second))
 
     val result = execute(s"MATCH (n) WITH n, '$first' as prefix  LOAD CSV FROM prefix + n.prop AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 3)
   }
 
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {

@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{QueryStatisticsTestSupport, NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
   test("should ignore nulls") {
     val n = createNode("apa" -> 42)
 
-    val result = executeWithRulePlanner("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
+    val result = updateWithBothPlanners("MATCH (n) OPTIONAL MATCH (n)-[r]->() REMOVE r.apa RETURN n")
     result.toList should equal(List(Map("n" -> n)))
   }
 
@@ -51,5 +51,67 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     //THEN
     assertStats(result, labelsRemoved = 2)
     result.toList should equal(List(Map("labels(n)" -> List("L2"))))
+  }
+
+  test("remove a single node property") {
+    // GIVEN
+    createLabeledNode(Map("prop" -> 42), "L")
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN exists(n.prop) as still_there")
+
+    //THEN
+    assertStats(result, propertiesWritten = 1)
+    result.toList should equal(List(Map("still_there" -> false)))
+  }
+
+  test("remove multiple node properties") {
+    // GIVEN
+    createLabeledNode(Map("prop" -> 42, "a" -> "a", "b" -> "B"), "L")
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop, n.a RETURN size(keys(n)) as props")
+
+    //THEN
+    assertStats(result, propertiesWritten = 2)
+    result.toList should equal(List(Map("props" -> 1)))
+  }
+
+  test("remove a single relationship property") {
+    // GIVEN
+    relate(createNode(), createNode(), "X", Map("prop" -> 42))
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH ()-[r]->() REMOVE r.prop RETURN exists(r.prop) as still_there")
+
+    //THEN
+    assertStats(result, propertiesWritten = 1)
+    result.toList should equal(List(Map("still_there" -> false)))
+  }
+
+  test("remove multiple relationship properties") {
+    // GIVEN
+    relate(createNode(), createNode(), "X", Map("prop" -> 42, "a" -> "a", "b" -> "B"))
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH ()-[r]->() REMOVE r.prop, r.a RETURN size(keys(r)) as props")
+
+    //THEN
+    assertStats(result, propertiesWritten = 2)
+    result.toList should equal(List(Map("props" -> 1)))
+  }
+
+  test("removing an missing property is a valid operation") {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+
+    // WHEN
+    val result = updateWithBothPlanners("MATCH (n) REMOVE n.prop RETURN sum(size(keys(n))) as totalNumberOfProps")
+
+    //THEN
+    assertStats(result, propertiesWritten = 0)
+    result.toList should equal(List(Map("totalNumberOfProps" -> 0)))
   }
 }

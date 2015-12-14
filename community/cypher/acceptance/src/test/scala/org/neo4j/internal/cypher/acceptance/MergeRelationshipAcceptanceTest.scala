@@ -136,7 +136,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE {name:'Lola'}]->(b) RETURN r")
 
     // then
-    assertStats(result, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     graph.inTx {
       val r = result.toList.head("r").asInstanceOf[Relationship]
       r.getProperty("name") should equal("Lola")
@@ -155,7 +155,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'Lola' RETURN r")
 
     // then
-    assertStats(result, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     graph.inTx {
       val r = result.toList.head("r").asInstanceOf[Relationship]
       r.getProperty("name") should equal("Lola")
@@ -175,7 +175,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH SET r.name = 'Lola' RETURN r")
 
     // then
-    assertStats(result, relationshipsCreated = 0, propertiesSet = 1)
+    assertStats(result, relationshipsCreated = 0, propertiesWritten = 1)
     graph.inTx {
       val r = result.toList.head("r").asInstanceOf[Relationship]
       r.getProperty("name") should equal("Lola")
@@ -297,7 +297,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     relate(a, createNode("prop" -> 2), "FOO")
 
     val result = execute("match (a:Start) foreach(x in [1,2,3] | merge (a)-[:FOO]->({prop: x}) )")
-    assertStats(result, nodesCreated = 2, propertiesSet = 2, relationshipsCreated = 2)
+    assertStats(result, nodesCreated = 2, propertiesWritten = 2, relationshipsCreated = 2)
   }
 
   test("should_handle_two_merges_inside_foreach") {
@@ -305,7 +305,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val b = createLabeledNode(Map("prop" -> 42), "End")
 
     val result = execute("match (a:Start) foreach(x in [42] | merge (b:End {prop: x}) merge (a)-[:FOO]->(b) )")
-    assertStats(result, nodesCreated = 0, propertiesSet = 0, relationshipsCreated = 1)
+    assertStats(result, nodesCreated = 0, propertiesWritten = 0, relationshipsCreated = 1)
 
     graph.inTx {
       val rel = a.getRelationships.iterator().next()
@@ -318,7 +318,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     createNode("x" -> 1)
 
     val result = execute("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
-    assertStats(result, nodesCreated = 3, propertiesSet = 3, relationshipsCreated = 2)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 3, relationshipsCreated = 2)
   }
 
   test("should_handle_two_merges_inside_foreach_after_with") {
@@ -327,7 +327,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
       "merge (a {x: x, y: y}) " +
       "merge (b {x: x+1, y: y}) " +
       "merge (a)-[:FOO]->(b))")
-    assertStats(result, nodesCreated = 3, propertiesSet = 6, relationshipsCreated = 2)
+    assertStats(result, nodesCreated = 3, propertiesWritten = 6, relationshipsCreated = 2)
   }
 
   test("should_introduce_named_paths1") {
@@ -340,7 +340,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
 
   test("should_introduce_named_paths2") {
     val result = execute("merge (a { x:1 }) merge (b { x:2 }) merge p = (a)-[:R]->(b) return p")
-    assertStats(result, relationshipsCreated = 1, nodesCreated = 2, propertiesSet = 2)
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 2, propertiesWritten = 2)
     val resultList = result.toList
     result should have size 1
     resultList.head.head._2.isInstanceOf[Path] should be(true)
@@ -348,7 +348,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
 
   test("should_introduce_named_paths3") {
     val result = execute("merge p = (a { x:1 }) return p")
-    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     val resultList = result.toList
     result should have size 1
     resultList.head.head._2.isInstanceOf[Path] should be(true)
@@ -378,13 +378,13 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
         "  merge (b)-[:R]->(d)" +
         "  merge (c)-[:R]->(d)))")
 
-    assertStats(result, nodesCreated = 16, relationshipsCreated = 24, propertiesSet = 16 * 2)
+    assertStats(result, nodesCreated = 16, relationshipsCreated = 24, propertiesWritten = 16 * 2)
   }
 
   test("should_handle_merge_with_no_known_points") {
     val result = execute("merge ({name:'Andres'})-[:R]->({name:'Emil'})")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
   }
 
   test("should_handle_foreach_in_foreach_game_without_known_points") {
@@ -407,31 +407,31 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
         "  merge (a)-[:R]->(c)" +
         "  merge (b)-[:R]->(d)))")
 
-    assertStats(result, nodesCreated = 6*4, relationshipsCreated = 3*4+6*3, propertiesSet = 6*4*2)
+    assertStats(result, nodesCreated = 6*4, relationshipsCreated = 3*4+6*3, propertiesWritten = 6*4*2)
   }
 
   test("should_handle_on_create_on_created_nodes") {
     val result = execute("merge (a)-[:KNOWS]->(b) ON CREATE SET b.created = timestamp()")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
   test("should_handle_on_match_on_created_nodes") {
     val result = execute("merge (a)-[:KNOWS]->(b) ON MATCH SET b.created = timestamp()")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 0)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 0)
   }
 
   test("should_handle_on_create_on_created_rels") {
     val result = execute("merge (a)-[r:KNOWS]->(b) ON CREATE SET r.created = timestamp()")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
   test("should_handle_on_match_on_created_rels") {
     val result = execute("merge (a)-[r:KNOWS]->(b) ON MATCH SET r.created = timestamp()")
 
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 0)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 0)
   }
 
   test("should_use_left_to_right_direction_when_creating_based_on_pattern_with_undirected_relationship") {
@@ -480,12 +480,12 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
         |RETURN a,b,r""".stripMargin
 
     val result = execute(query)
-    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1, labelsAdded = 2)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1, labelsAdded = 2)
   }
 
   test("merge should handle array properties properly") {
     relate(createLabeledNode("A"), createLabeledNode("B"), "T", Map("prop" -> Array(42, 43)))
     val result = execute("MATCH (a:A),(b:B) MERGE (a)-[r:T {prop: [42,43]}]->(b) RETURN count(*)")
-    assertStats(result, nodesCreated = 0, relationshipsCreated = 0, propertiesSet = 0)
+    assertStats(result, nodesCreated = 0, relationshipsCreated = 0, propertiesWritten = 0)
   }
 }
