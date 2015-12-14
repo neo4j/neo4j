@@ -1,10 +1,6 @@
 [[tutorials-java-embedded-setup]]
 = Include Neo4j in your project
 
-:javadoc-graphdatabasefactory: javadocs/org/neo4j/graphdb/GraphDatabaseFactory.html
-:javadoc-slf4jlogprovider: javadocs/org/neo4j/logging/slf4j/Slf4jLogProvider.html
-:javadoc-neo4jlogging: javadocs/org/neo4j/logging
-
 After selecting the appropriate <<editions,edition>> for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
 The following sections will show how to do this by either altering the build path directly or by using dependency management.
 
@@ -214,71 +210,3 @@ tag=createReadOnlyInstance
 Obviously the database has to already exist in this case.
 
 NOTE: Concurrent access to the same database files by multiple (read-only or write) instances is not supported.
-
-[[tutorials-java-embedded-logging]]
-== Controlling Logging
-
-Neo4j provides logging via its own +link:{javadoc-neo4jlogging}/Log.html[org.neo4j.logging.Log]+
-layer, and does not natively use any existing Java logging framework. All
-logging events produced by Neo4j have a name, a level and a message. The name
-is a FQCN (fully qualified class name).
-
-[[log-levels]]
-Neo4j uses the following log levels:
-|===
-|ERROR | For serious errors that are almost always fatal
-|WARN  | For events that are serious, but not fatal
-|INFO  | Informational events
-|DEBUG | Debugging events
-|===
-
-[[enable-embedded-logging]]
-To enable logging, an implementation of +link:{javadoc-neo4jlogging}/LogProvider.html[org.neo4j.logging.LogProvider]+
-must be provided to the +link:{javadoc-graphdatabasefactory}[GraphDatabaseFactory]+,
-as follows:
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/EmbeddedNeo4jWithCustomLogging.java
-classifier=sources
-tag=startDbWithLogProvider
-----
-
-Neo4j also includes a binding for SLF4J, which is available in the neo4j-slf4j library
-jar. This can be obtained via maven:
-
-["source","xml","unnumbered","2",presubs="attributes"]
---------------------------------------------
-<project>
-...
- <dependencies>
-  <dependency>
-   <groupId>org.neo4j</groupId>
-   <artifactId>neo4j-slf4j</artifactId>
-   <version>{neo4j-version}</version>
-  </dependency>
-  <dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-api</artifactId>
-    <version>{slf4j-version}</version>
-  </dependency>
-  ...
- </dependencies>
-...
-</project>
---------------------------------------------
-
-To use this binding, simply pass an instance of +link:{javadoc-slf4jlogprovider}[org.neo4j.logging.slf4j.Slf4jLogProvider]+
-to the +link:{javadoc-graphdatabasefactory}[GraphDatabaseFactory]+,
-as follows:
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/EmbeddedNeo4jWithSLF4JLogging.java
-classifier=sources
-tag=startDbWithSlf4jLogProvider
-----
-
-All log output can then be controlled via SLF4J configuration.
