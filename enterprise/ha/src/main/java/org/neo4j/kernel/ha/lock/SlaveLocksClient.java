@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -333,8 +332,7 @@ class SlaveLocksClient implements Locks.Client
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
     {
-        return new UnsupportedOperationException( "At the time of adding \"try lock\" semantics there was no usage of " +
-                getClass().getSimpleName() + " calling it directly. It was designed to be called on a local " +
-                LockManager.class.getSimpleName() + " delegated to from within the waiting version" );
+        return new UnsupportedOperationException(
+                "Distributed tryLocks are not supported. They only work with local lock managers." );
     }
 }
