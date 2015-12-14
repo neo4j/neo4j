@@ -20,19 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.joinSolverStep._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.nodeJoinSolverStep._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
+import IDPQueryGraphSolver.RelOrJoin
 
-object joinSolverStep {
+object nodeJoinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class nodeJoinSolverStep(qg: QueryGraph) extends IDPSolverStep[RelOrJoin, LogicalPlan, LogicalPlanningContext] {
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
+  override def apply(registry: IdRegistry[RelOrJoin], goal: Goal, table: IDPCache[LogicalPlan])
                     (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
@@ -91,8 +92,11 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
   private def show(goal: Goal, symbols: Set[IdName]) =
     s"${showIds(goal.toSet)}: ${showNames(symbols)}"
 
-  private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
-    registry.explode(goal).flatMap(_.coveredIds)
+  private def goalSymbols(goal: Goal, registry: IdRegistry[RelOrJoin]) =
+    registry.explode(goal).flatMap {
+      case Left(p) => p.coveredIds
+      case Right(p) => None
+    }
 
   private def showIds(ids: Set[Int]) =
     ids.toSeq.sorted.mkString("{", ", ", "}")

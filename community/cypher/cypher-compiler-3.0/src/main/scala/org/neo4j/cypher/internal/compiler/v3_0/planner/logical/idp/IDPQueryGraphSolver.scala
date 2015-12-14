@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverS
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{applyOptional, outerHashJoin, planShortestPaths}
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-
+import org.neo4j.cypher.internal.frontend.v3_0.{ast, InternalException}
+import IDPQueryGraphSolver.RelOrJoin
 import scala.annotation.tailrec
 
 trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
@@ -42,6 +42,9 @@ trait IDPQueryGraphSolverMonitor extends IDPSolverMonitor {
 
 object IDPQueryGraphSolver {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
+
+  // A type alias to make it easy to change in the future
+  type RelOrJoin = Either[PatternRelationship, ast.Equals]
 }
 
 /**
@@ -54,7 +57,7 @@ object IDPQueryGraphSolver {
 case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                maxTableSize: Int = 256,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
-                               solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_), expandSolverStep(_)),
+                               solvers: Seq[QueryGraph => IDPSolverStep[RelOrJoin, LogicalPlan, LogicalPlanningContext]] = Seq(nodeJoinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
@@ -104,11 +107,11 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
 
-        val generators = solvers.map(_(qg))
+        val generators = solvers.map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+        val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[RelOrJoin, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
-        val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
+        val solver = new IDPSolver[RelOrJoin, LogicalPlan, LogicalPlanningContext](
           generator = generator,
           projectingSelector = kit.pickBest,
           maxTableSize = maxTableSize,
@@ -116,9 +119,9 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
         )
 
         monitor.initTableFor(qg, component)
-        val seed = initTable(qg, kit, leaves)
+        val seed = tableInitialiser(qg, kit, leaves)
         monitor.startIDPIterationFor(qg, component)
-        val solutions = solver(seed, qg.patternRelationships)
+        val solutions = solver(seed, qg.patternRelationships.map(Left.apply))
         val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
         monitor.endIDPIterationFor(qg, component, result)
 
@@ -138,33 +141,8 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     bestPlan
   }
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
-    for (pattern <- qg.patternRelationships)
-    yield {
-      val accessPlans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
-      val bestAccessor = kit.pickBest(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
-      Set(pattern) -> bestAccessor
-    }
-  }
-
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Set[LogicalPlan])
-                               (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
-
-    leaves.flatMap {
-      case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
-        Set(plan)
-      case plan if plan.solved.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
-        Set(planSingleProjectEndpoints(pattern, plan))
-      case plan =>
-        val (start, end) = pattern.nodes
-        val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
-        val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
-        leftExpand.toSet ++ rightExpand.toSet
-    }
-  }
-
   private def connectComponentsAndSolveOptionalMatch(plans: Set[LogicalPlan], qg: QueryGraph)
-    (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
+                                                    (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
 
 
     @tailrec

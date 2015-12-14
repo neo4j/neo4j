@@ -52,22 +52,28 @@ case object cartesianProductsOrValueJoins {
     plans - p1 - p2 + bestPlan
   }
 
-  private def produceCartesianProducts(plans: Set[LogicalPlan], qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Map[LogicalPlan, (LogicalPlan, LogicalPlan)] = {
+  private def produceCartesianProducts(plans: Set[LogicalPlan], qg: QueryGraph)
+                                      (implicit context: LogicalPlanningContext, kit: QueryPlannerKit)
+  : Map[LogicalPlan, (LogicalPlan, LogicalPlan)] = {
     (for (p1 <- plans; p2 <- plans if p1 != p2) yield {
       val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2), qg)
       (crossProduct, (p1, p2))
     }).toMap
   }
 
-  private def produceHashJoins(plans: Set[LogicalPlan], qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Map[LogicalPlan, (LogicalPlan, LogicalPlan)] = {
+  private def produceHashJoins(plans: Set[LogicalPlan], qg: QueryGraph)
+                              (implicit context: LogicalPlanningContext, kit: QueryPlannerKit)
+  : Map[LogicalPlan, (LogicalPlan, LogicalPlan)] = {
     (for {
       join <- qg.selections.valueJoins
       planA <- plans if planA.satisfiesExpressionDependencies(join.lhs)
       planB <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
       plans = planA -> planB
     } yield {
-      val AxB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join), qg) -> plans
-      val BxA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg) -> plans
+      val lpp = context.logicalPlanProducer
+      // We produce both sides of the join and allow the cost model to pick the best direction to join on
+      val AxB = kit.select(lpp.planValueHashJoin(planA, planB, join, join), qg) -> plans
+      val BxA = kit.select(lpp.planValueHashJoin(planB, planA, join.switchSides, join), qg) -> plans
       Set(AxB, BxA)
     }).flatten.toMap
   }
