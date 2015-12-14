@@ -214,20 +214,6 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void releaseAllShared()
-    {
-        sharedLocks.clear();
-        client.releaseAllShared();
-    }
-
-    @Override
-    public void releaseAllExclusive()
-    {
-        exclusiveLocks.clear();
-        client.releaseAllExclusive();
-    }
-
-    @Override
     public void releaseAll()
     {
         sharedLocks.clear();

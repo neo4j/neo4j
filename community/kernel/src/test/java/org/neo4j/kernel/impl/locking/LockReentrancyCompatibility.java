@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.concurrent.Future;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.concurrent.Future;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
@@ -196,56 +196,6 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
 
         // But when
         clientA.releaseExclusive( NODE, 1l );
-
-        // Then
-        assertNotWaiting( clientB, clientBLock );
-    }
-
-    @Test
-    public void releaseAllSharedLeavesExclusiveLocksInPlace() throws Exception
-    {
-        // When
-        clientA.acquireShared( NODE, 1l );
-        clientA.acquireShared( NODE, 1l );
-        clientA.acquireShared( NODE, 2l );
-        clientA.acquireExclusive( NODE, 1l );
-
-        // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAllShared();
-
-        // Then other thread should still wait
-        assertWaiting( clientB, clientBLock );
-
-        // But when
-        clientA.releaseExclusive( NODE, 1l );
-
-        // Then
-        assertNotWaiting( clientB, clientBLock );
-    }
-
-    @Test
-    public void releaseAllExclusiveLeavesSharedLocksInPlace() throws Exception
-    {
-        // When
-        clientA.acquireShared( NODE, 1l );
-        clientA.acquireExclusive( NODE, 1l );
-        clientA.acquireExclusive( NODE, 1l );
-        clientA.acquireExclusive( NODE, 2l );
-
-        // Then shared locks should wait
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1l ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAllExclusive();
-
-        // Then other thread should still wait
-        assertWaiting( clientB, clientBLock );
-
-        // But when
-        clientA.releaseShared( NODE, 1l );
 
         // Then
         assertNotWaiting( clientB, clientBLock );

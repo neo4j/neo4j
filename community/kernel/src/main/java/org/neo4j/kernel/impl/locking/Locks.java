@@ -98,12 +98,6 @@ public interface Locks extends Lifecycle
         /** Release a set of exclusive locks */
         void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
-        /** Release all shared locks. */
-        void releaseAllShared();
-
-        /** Release all exclusive locks. */
-        void releaseAllExclusive();
-
         /** Release all locks. */
         void releaseAll();
 
