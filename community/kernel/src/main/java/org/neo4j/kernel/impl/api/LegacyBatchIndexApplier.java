@@ -25,14 +25,19 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
+/**
+ *
+ */
 public class LegacyBatchIndexApplier implements BatchTransactionApplier
 {
     private final IdOrderingQueue transactionOrdering;
     private final TransactionApplicationMode mode;
     private final IndexConfigStore indexConfigStore;
     private final LegacyIndexApplierLookup applierLookup;
-    private long activeTransactionId = -1;
-    private boolean isLastTransactionInBatch = false;
+
+    // There are some expensive lookups made in the TransactionApplier, so cache it
+    private LegacyIndexTransactionApplier txApplier;
+    private long lastTransactionId = -1;
 
     public LegacyBatchIndexApplier( IndexConfigStore indexConfigStore, LegacyIndexApplierLookup applierLookup,
             IdOrderingQueue transactionOrdering, TransactionApplicationMode mode )
@@ -46,24 +51,34 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
     @Override
     public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
     {
-        if ( !transaction.commitment().hasLegacyIndexChanges() )
-        {
-            return TransactionApplier.EMPTY;
-        }
-
-        activeTransactionId = transaction.transactionId();
+        long activeTransactionId = transaction.transactionId();
         try
         {
-            transactionOrdering.waitFor( activeTransactionId );
-            // Need to know if this is the last transaction in this batch of legacy index changes in order to
-            // run apply before other batches are allowed to run, in order to preserve ordering.
-            if ( transaction.next() == null )
+            // Cache transactionApplier because it has some expensive lookups
+            if ( txApplier == null )
             {
-                isLastTransactionInBatch = true;
+                txApplier = new LegacyIndexTransactionApplier( applierLookup, indexConfigStore, mode,
+                        transactionOrdering );
             }
 
-            return new LegacyIndexTransactionApplier( isLastTransactionInBatch, applierLookup, indexConfigStore, mode,
-                    transactionOrdering, activeTransactionId );
+            if ( transaction.commitment().hasLegacyIndexChanges() )
+            {
+                // Index operations must preserve order so wait for previous tx to finish
+                transactionOrdering.waitFor( activeTransactionId );
+                // And set current tx so we can notify the next transaction when we are finished
+                if ( transaction.next() != null )
+                {
+                    // Let each transaction notify the next
+                    txApplier.setTransactionId( activeTransactionId );
+                }
+                else
+                {
+                    // except the last transaction, which notifies that it is done after appliers have been closed
+                    lastTransactionId = activeTransactionId;
+                }
+            }
+
+            return txApplier;
         }
         catch ( InterruptedException e )
         {
@@ -80,21 +95,24 @@ public class LegacyBatchIndexApplier implements BatchTransactionApplier
     }
 
     @Override
-    public void close()
+    public void close() throws Exception
     {
-        if ( isLastTransactionInBatch )
+        if ( txApplier == null )
         {
-            // Let other batches run
-            notifyLegacyIndexOperationQueue();
+            // Never started a transaction, so nothing to do
+            return;
         }
-    }
 
-    private void notifyLegacyIndexOperationQueue()
-    {
-        if ( activeTransactionId != -1 )
+        for ( TransactionApplier applier : txApplier.applierByProvider.values() )
         {
-            transactionOrdering.removeChecked( activeTransactionId );
-            activeTransactionId = -1;
+            applier.close();
+        }
+
+        // Allow other batches to run
+        if ( lastTransactionId != -1 )
+        {
+            transactionOrdering.removeChecked( lastTransactionId );
+            lastTransactionId = -1;
         }
     }
 }

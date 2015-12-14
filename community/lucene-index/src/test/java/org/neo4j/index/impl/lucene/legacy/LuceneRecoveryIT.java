@@ -42,7 +42,8 @@ public class LuceneRecoveryIT
     public void testHardCoreRecovery() throws Exception
     {
         String path = "target/hcdb";
-        FileUtils.deleteRecursively( new File( path ) );
+        File hcdb = new File( path );
+        FileUtils.deleteRecursively( hcdb );
 
 
         Process process = Runtime.getRuntime().exec( new String[]{
@@ -57,7 +58,7 @@ public class LuceneRecoveryIT
         process.destroy();
         process.waitFor();
 
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( hcdb );
         try ( Transaction transaction = db.beginTx() )
         {
             assertTrue( db.index().existsForNodes( "myIndex" ) );

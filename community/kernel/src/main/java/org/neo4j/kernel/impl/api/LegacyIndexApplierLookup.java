@@ -28,7 +28,7 @@ import org.neo4j.graphdb.index.IndexImplementation;
  */
 public interface LegacyIndexApplierLookup
 {
-    CommandVisitor newApplier( String providerName, boolean recovery );
+    TransactionApplier newApplier( String providerName, boolean recovery );
 
     /**
      * Looks up an {@link IndexImplementation} and calls {@link IndexImplementation#newApplier(boolean)} on it.
@@ -43,7 +43,7 @@ public interface LegacyIndexApplierLookup
         }
 
         @Override
-        public CommandVisitor newApplier( String providerName, boolean recovery )
+        public TransactionApplier newApplier( String providerName, boolean recovery )
         {
             return providerLookup.apply( providerName ).newApplier( recovery );
         }

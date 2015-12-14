@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -57,7 +58,7 @@ public interface IndexImplementation extends Lifecycle
      * @param recovery indicate recovery
      * @return an index applier that will get notifications about commands to apply.
      */
-    CommandVisitor newApplier( boolean recovery );
+    TransactionApplier newApplier( boolean recovery );
 
     /**
      * Fills in default configuration parameters for indexes provided from this

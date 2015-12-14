@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -78,7 +77,7 @@ public class LegacyBatchIndexApplierTest
         when( commitment.hasLegacyIndexChanges() ).thenReturn( true );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandVisitor.class ) );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( TransactionApplier.class ) );
         try ( LegacyBatchIndexApplier applier = new LegacyBatchIndexApplier( config, applierLookup, BYPASS, INTERNAL ) )
         {
             TransactionToApply tx = new TransactionToApply( null, 2 );
@@ -106,7 +105,7 @@ public class LegacyBatchIndexApplierTest
         Map<String,Integer> keys = MapUtil.genericMap( "key", 0 );
         String applierName = "test-applier";
         LegacyIndexApplierLookup applierLookup = mock( LegacyIndexApplierLookup.class );
-        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( CommandVisitor.class ) );
+        when( applierLookup.newApplier( anyString(), anyBoolean() ) ).thenReturn( mock( TransactionApplier.class ) );
         IndexConfigStore config = newIndexConfigStore( names, applierName );
 
         // WHEN multiple legacy index transactions are running, they should be done in order
@@ -125,13 +124,16 @@ public class LegacyBatchIndexApplierTest
                     commitment.setHasLegacyIndexChanges( true );
                     txToApply.commitment( commitment, txId );
                     TransactionApplier txApplier = applier.startTx( txToApply );
-                    // Closing manually instead of using try-with-resources since we have no additional work to do
-                    txApplier.close();
+
                     // Make sure threads are unordered
                     Thread.sleep( ThreadLocalRandom.current().nextInt( 5 ) );
+
                     // THEN
                     assertTrue( lastAppliedTxId.compareAndSet( txId - 1, txId ) );
-                    applier.close();
+
+                    // Closing manually instead of using try-with-resources since we have no additional work to do in
+                    // txApplier
+                    txApplier.close();
                 }
                 catch ( Exception e )
                 {

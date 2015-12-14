@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 
 /**
- * Applies changes from {@link IndexCommand commands} onto one ore more indexes from the same
+ * Applies changes from {@link IndexCommand commands} onto one or more indexes from the same
  * {@link IndexImplementation provider}.
  */
 public class LuceneCommandApplier extends TransactionApplier.Adapter
@@ -137,10 +137,12 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
         {
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
-
-        if ( definitions != null )
+        finally
         {
-            dataSource.releaseWriteLock();
+            if ( definitions != null )
+            {
+                dataSource.releaseWriteLock();
+            }
         }
     }
 

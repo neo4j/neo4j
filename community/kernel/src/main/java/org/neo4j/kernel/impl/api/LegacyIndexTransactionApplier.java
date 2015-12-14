@@ -28,52 +28,57 @@ import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
-
+/**
+ *
+ */
 public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
 {
 
     // We have these two maps here for "applier lookup" performance reasons. Every command that we apply we must
     // redirect to the correct applier, i.e. the _single_ applier for the provider managing the specific index.
     // Looking up provider for an index has a certain cost so those are cached in applierByIndex.
-    private Map<String/*indexName*/,CommandVisitor> applierByNodeIndex = Collections.emptyMap();
-    private Map<String/*indexName*/,CommandVisitor> applierByRelationshipIndex = Collections.emptyMap();
-    private Map<String/*providerName*/,CommandVisitor> applierByProvider = Collections.emptyMap();
-
+    private Map<String/*indexName*/,TransactionApplier> applierByNodeIndex = Collections.emptyMap();
+    private Map<String/*indexName*/,TransactionApplier> applierByRelationshipIndex = Collections.emptyMap();
+    Map<String/*providerName*/,TransactionApplier> applierByProvider = Collections.emptyMap();
 
     private final LegacyIndexApplierLookup applierLookup;
     private final IndexConfigStore indexConfigStore;
     private final TransactionApplicationMode mode;
-    private final boolean isLastTransactionInBatch;
-    private final long transactionId;
     private final IdOrderingQueue transactionOrdering;
     private IndexDefineCommand defineCommand;
+    private long transactionId = -1;
 
-    public LegacyIndexTransactionApplier( boolean isLastTransactionInBatch, LegacyIndexApplierLookup applierLookup,
-            IndexConfigStore indexConfigStore, TransactionApplicationMode mode, IdOrderingQueue transactionOrdering,
-            long transactionId )
+    public LegacyIndexTransactionApplier( LegacyIndexApplierLookup applierLookup,
+            IndexConfigStore indexConfigStore, TransactionApplicationMode mode, IdOrderingQueue transactionOrdering )
     {
         this.applierLookup = applierLookup;
-        this.isLastTransactionInBatch = isLastTransactionInBatch;
         this.indexConfigStore = indexConfigStore;
         this.mode = mode;
         this.transactionOrdering = transactionOrdering;
-        this.transactionId = transactionId;
+    }
+
+    /**
+     * Ability to set transaction id allows the applier instance to be cached.
+     * @param txId the currently active TransactionId
+     */
+    void setTransactionId( long txId )
+    {
+        this.transactionId = txId;
     }
 
     /**
      * Get an applier suitable for the specified IndexCommand.
      */
-    private CommandVisitor applier( IndexCommand command ) throws IOException
+    private TransactionApplier applier( IndexCommand command ) throws IOException
     {
         // Have we got an applier for this index?
         String indexName = defineCommand.getIndexName( command.getIndexNameId() );
-        Map<String,CommandVisitor> applierByIndex = applierByIndexMap( command );
-        CommandVisitor applier = applierByIndex.get( indexName );
+        Map<String,TransactionApplier> applierByIndex = applierByIndexMap( command );
+        TransactionApplier applier = applierByIndex.get( indexName );
         if ( applier == null )
         {
             // We don't. Have we got an applier for the provider of this index?
@@ -102,7 +107,7 @@ public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
     }
 
     // Some lazy creation of Maps for holding appliers per provider and index
-    private Map<String,CommandVisitor> applierByIndexMap( IndexCommand command )
+    private Map<String,TransactionApplier> applierByIndexMap( IndexCommand command )
     {
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
@@ -136,11 +141,11 @@ public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
     @Override
     public void close()
     {
-        if ( !isLastTransactionInBatch )
-        {
-            // Let other transactions in same batch run
-            notifyLegacyIndexOperationQueue();
-        }
+        // Let other transactions in same batch run
+        // Last transaction notifies on the batch level, to let appliers close before-hand.
+        // Internal appliers are closed on the batch level (LegacyIndexBatchApplier)
+        notifyLegacyIndexOperationQueue();
+
     }
 
     private void notifyLegacyIndexOperationQueue()
@@ -148,6 +153,7 @@ public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
         if ( transactionId != -1 )
         {
             transactionOrdering.removeChecked( transactionId );
+            transactionId = -1;
         }
     }
 
@@ -193,7 +199,7 @@ public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
         return false;
     }
 
-    private void forward( IndexDefineCommand definitions, Map<String,CommandVisitor> appliers ) throws IOException
+    private void forward( IndexDefineCommand definitions, Map<String,TransactionApplier> appliers ) throws IOException
     {
         for ( CommandVisitor applier : appliers.values() )
         {

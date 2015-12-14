@@ -30,7 +30,7 @@ import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class DummyIndexImplementation extends LifecycleAdapter implements IndexImplementation
@@ -218,10 +218,10 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
         };
     }
 
-    private static final CommandVisitor NO_APPLIER = new CommandVisitor.Adapter();
+    private static final TransactionApplier NO_APPLIER = new TransactionApplier.Adapter();
 
     @Override
-    public CommandVisitor newApplier( boolean recovery )
+    public TransactionApplier newApplier( boolean recovery )
     {
         return NO_APPLIER;
     }

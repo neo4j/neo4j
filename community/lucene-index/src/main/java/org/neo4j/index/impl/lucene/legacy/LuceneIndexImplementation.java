@@ -34,7 +34,7 @@ import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -171,7 +171,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public CommandVisitor newApplier( boolean recovery )
+    public TransactionApplier newApplier( boolean recovery )
     {
         return new LuceneCommandApplier( dataSource, recovery );
     }
