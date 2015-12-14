@@ -22,25 +22,29 @@ package org.neo4j.cypher.internal.compiler.v3_0
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_0, WrappedMonitors3_0}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper3_0, StringInfoLogger3_0, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
-import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
-import AssertableLogProvider.inLog
+import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.logging.AssertableLogProvider.inLog
+import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
 
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) =
+                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) = {
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val entityAccessor = new EntityAccessorWrapper3_0(nodeManager)
+
     CypherCompilerFactory.costBasedCompiler(
-      graph,
+      graph, entityAccessor,
       CypherCompilerConfiguration(
         queryCacheSize,
         statsDivergenceThreshold,
@@ -55,7 +59,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating
-     )
+    )
+  }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
@@ -79,7 +84,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     }
   }
 
-  override def databaseConfig(): Map[Setting[_],String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   test("should monitor cache misses") {
     val counter = new CacheCounter()

@@ -21,14 +21,15 @@ package org.neo4j.cypher
 
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
-import org.neo4j.cypher.internal.compatibility.{WrappedMonitors3_0, StringInfoLogger3_0, StringInfoLogger2_3, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -99,9 +100,12 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     verify(logger, never) += any()
   }
 
-  private def createCompiler() =
+  private def createCompiler() = {
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+
     CypherCompilerFactory.costBasedCompiler(
       graph,
+      new EntityAccessorWrapper3_0(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize = 128,
         statsDivergenceThreshold = 0.5,
@@ -118,4 +122,5 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating
     )
+  }
 }

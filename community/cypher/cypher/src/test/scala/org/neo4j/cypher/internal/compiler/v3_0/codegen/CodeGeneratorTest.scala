@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
@@ -32,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ParameterNotFoundException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
@@ -846,7 +847,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).
-    executionResultBuilder(statement, nodeManager, NormalMode, tracer(NormalMode), params, taskCloser)
+
+
+
+
+    executionResultBuilder(statement, new EntityAccessorWrapper3_0(nodeManager), NormalMode, tracer(NormalMode), params, taskCloser)
   }
 
   /*

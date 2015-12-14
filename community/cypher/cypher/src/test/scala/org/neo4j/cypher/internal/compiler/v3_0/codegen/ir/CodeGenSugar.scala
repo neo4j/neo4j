@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledExecutionResult, CompiledPlan, GeneratedQuery, GeneratedQueryExecution, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
@@ -67,8 +68,10 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val nodeManager = graphDb.getDependencyResolver.resolveDependency(classOf[NodeManager])
-      val result = plan.executionResultBuilder(statement, nodeManager, mode, tracer(mode), params, taskCloser)
+      val nodeManager =
+        graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+      val result = plan.executionResultBuilder(statement, new EntityAccessorWrapper3_0(nodeManager), mode,
+        tracer(mode), params, taskCloser)
       tx.success()
       result.size
       result
@@ -79,12 +82,12 @@ trait CodeGenSugar extends MockitoSugar {
 
   def evaluate(instructions: Seq[Instruction],
                stmt: Statement = mock[Statement],
-               nodeManager: NodeManager = null,
-                columns: Seq[String] = Seq.empty,
+               entityAccessor: EntityAccessor = null,
+               columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns,  operatorIds)
-    val result = newInstance(clazz, statement = stmt, nodeManager = nodeManager, params = params)
+    val result = newInstance(clazz, statement = stmt, entityAccessor = entityAccessor, params = params)
     evaluate(result)
   }
 
@@ -112,14 +115,14 @@ trait CodeGenSugar extends MockitoSugar {
                   taskCloser: TaskCloser = new TaskCloser,
                   statement: Statement = mock[Statement],
                   graphdb: GraphDatabaseService = null,
-                  nodeManager: NodeManager = null,
+                  entityAccessor: EntityAccessor = null,
                   executionMode: ExecutionMode = null,
-                  supplier: org.neo4j.function.Supplier[InternalPlanDescription] = null,
+                  provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
-    val generated = clazz.execute(taskCloser, statement, nodeManager,
-      executionMode, supplier, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
-    new CompiledExecutionResult(taskCloser, statement, generated, supplier)
+    val generated = clazz.execute(taskCloser, statement, entityAccessor,
+      executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
+    new CompiledExecutionResult(taskCloser, statement, generated, provider)
   }
 
   def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {

@@ -24,6 +24,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeGenerator.SourceSink
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ir._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledPlan, PlanFingerprint, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
@@ -36,15 +37,13 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.core.NodeManager
-
-import scala.collection.immutable
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
   import CodeGenerator.generateCode
 
-  type PlanDescriptionProvider = (InternalPlanDescription) => (org.neo4j.function.Supplier[InternalPlanDescription], Option[QueryExecutionTracer])
+  type PlanDescriptionProvider =
+          (InternalPlanDescription) => (Provider[InternalPlanDescription], Option[QueryExecutionTracer])
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable, plannerName: PlannerName) = {
     plan match {
@@ -69,13 +68,13 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         }
 
         val builder = new RunnablePlan {
-          def apply(statement: Statement, nodeManager: NodeManager, execMode: ExecutionMode,
-                    descriptionProvider: PlanDescriptionProvider,
-                    params: immutable.Map[String, Any], closer: TaskCloser): InternalExecutionResult = {
-            val (supplier, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.execute(closer, statement, nodeManager, execMode,
-              supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
-            new CompiledExecutionResult(closer, statement, execution, supplier)
+          def apply(statement: Statement, entityAccessor: EntityAccessor, execMode: ExecutionMode,
+                    descriptionProvider: DescriptionProvider, params: Map[String, Any],
+                    closer: TaskCloser): InternalExecutionResult = {
+            val (provider, tracer) = descriptionProvider(description)
+            val execution: GeneratedQueryExecution = query.execute(closer, statement, entityAccessor, execMode,
+              provider, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+            new CompiledExecutionResult(closer, statement, execution, provider)
           }
         }
 

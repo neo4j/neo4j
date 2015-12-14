@@ -39,14 +39,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement => KernelStatement}
-import org.neo4j.kernel.impl.core.NodeManager
 
 
 trait RunnablePlan {
   def apply(statement: KernelStatement,
-            nodeManager: NodeManager,
+            nodeManager: EntityAccessor,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
@@ -96,12 +94,9 @@ trait ExecutablePlanBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerConfiguration,
-                           clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
-  val nodeManager = {
-    val gdapi = graph.asInstanceOf[GraphDatabaseAPI]
-    gdapi.getDependencyResolver.resolveDependency(classOf[NodeManager])
-  }
+class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
+                           config: CypherCompilerConfiguration, clock: Clock, pipeBuilder: ExecutablePlanBuilder)
+  extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer=CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
     val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
@@ -128,7 +123,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
             new ExplainExecutionResult(compiledPlan.columns.toList,
               compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
           } else
-            compiledPlan.executionResultBuilder(kernelStatement, nodeManager, executionMode, tracer(executionMode), params, taskCloser)
+            compiledPlan.executionResultBuilder(kernelStatement, entityAccessor, executionMode,
+              tracer(executionMode), params, taskCloser)
         } catch {
           case (t: Throwable) =>
             taskCloser.close(success = false)
@@ -229,12 +225,13 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, config: CypherCompilerCo
 }
 
 object ExecutionPlanBuilder {
-  type DescriptionProvider = (InternalPlanDescription => (org.neo4j.function.Supplier[InternalPlanDescription], Option[QueryExecutionTracer]))
+  type DescriptionProvider =
+        (InternalPlanDescription => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
 
   def tracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer()
-      (description: InternalPlanDescription) => (new org.neo4j.function.Supplier[InternalPlanDescription] {
+      (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
 
         override def get(): InternalPlanDescription = description.map {
           plan: InternalPlanDescription =>
@@ -245,7 +242,7 @@ object ExecutionPlanBuilder {
               addArgument(Arguments.Time(data.time()))
         }
       }, Some(tracer))
-    case _ => (description: InternalPlanDescription) => (new org.neo4j.function.Supplier[InternalPlanDescription] {
+    case _ => (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
       override def get(): InternalPlanDescription = description
     }, None)
   }
