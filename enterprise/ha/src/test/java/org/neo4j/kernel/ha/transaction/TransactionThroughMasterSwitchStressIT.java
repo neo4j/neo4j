@@ -84,19 +84,19 @@ public class TransactionThroughMasterSwitchStressIT
     {
         // Duration of this test. If the timeout is hit in the middle of a round, the round will be completed
         // and exit after that.
+        ManagedCluster cluster = clusterRule.startCluster();
         long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "30s" ) );
         long endTime = currentTimeMillis() + duration;
         while ( currentTimeMillis() < endTime )
         {
-            oneRound();
+            oneRound( cluster );
         }
     }
 
-    private void oneRound() throws Throwable
+    private void oneRound( ManagedCluster cluster ) throws Throwable
     {
         // GIVEN a cluster and a node
         final String key = "key";
-        ManagedCluster cluster = clusterRule.startCluster();
         final GraphDatabaseService master = cluster.getMaster();
         final long nodeId = createNode( master );
         cluster.sync();

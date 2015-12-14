@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.CleanupRule;
@@ -37,6 +37,7 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
@@ -58,8 +59,7 @@ public class GraphDatabaseServiceTest
         catch ( Exception e )
         {
             // Then
-            Assert.assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class
-                    .getName() ) );
+            assertThat( e.getClass().getName(), CoreMatchers.equalTo( TransactionFailureException.class.getName() ) );
         }
     }
 
@@ -245,7 +245,7 @@ public class GraphDatabaseServiceTest
             }
         }
 
-        Assert.assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
+        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( TransactionFailureException.class ) );
     }
 
     @Test
@@ -296,6 +296,35 @@ public class GraphDatabaseServiceTest
             t2n2Wait.get();
             t2.execute( close( t2Tx ) );
             t2.close();
+        }
+    }
+
+    /**
+     * GitHub issue #5996
+     */
+    @Test
+    public void terminationOfClosedTransactionDoesNotInfluenceNextTransaction()
+    {
+        GraphDatabaseService db = cleanup.add( new TestGraphDatabaseFactory().newImpermanentDatabase() );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
+
+        Transaction transaction = db.beginTx();
+        try ( Transaction tx = transaction )
+        {
+            db.createNode();
+            tx.success();
+        }
+        transaction.terminate();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( 2, Iterables.count( db.getAllNodes() ) );
+            tx.success();
         }
     }
 
