@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{PatternException, UniquePathNotUniqueException}
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Node, PropertyContainer}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
@@ -48,13 +48,10 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
         executionContext = traverseNextStep(traversals, executionContext) //We've found some way to move forward. Let's use it
       } else if (updateCommands.nonEmpty) {
 
-        val lockingContext = state.query.upgradeToLockingQueryContext
+        val nodesToLock = extractNodesToLock(results, incomingExecContext)
+        state.query.lockNodes(nodesToLock.map(_.getId):_*)
 
-        try {
-          executionContext = tryAgain(linksToDo, executionContext, state.withQueryContext(lockingContext))
-        } finally {
-          lockingContext.releaseLocks()
-        }
+        executionContext = tryAgain(linksToDo, executionContext, state)
       } else {
         throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
       }
@@ -149,6 +146,17 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
     context
   }
+
+  private def extractNodesToLock(results: scala.Seq[(UniqueLink, CreateUniqueResult)], ctx: ExecutionContext): Seq[Node] =
+    results.flatMap {
+      case (UniqueLink(start, end, _, _, _), _) => Seq(start.name, end.name)
+      case _ => Seq.empty
+    }.collect {
+      case name if ctx.contains(name) => ctx(name) match {
+        case n: Node => Some(n)
+        case _ => None
+      }
+    }.flatten
 
   private def extractUpdateCommands(results: scala.Seq[(UniqueLink, CreateUniqueResult)]): Seq[Update] =
     results.flatMap {

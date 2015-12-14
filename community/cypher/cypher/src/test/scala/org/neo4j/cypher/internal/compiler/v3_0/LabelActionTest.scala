@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, LockingQueryContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
@@ -81,110 +81,100 @@ class SnitchingQueryContext extends QueryContext {
     ids.size
   }
 
-  def isOpen: Boolean = ???
+  override def isOpen: Boolean = ???
 
-  def isTopLevelTx: Boolean = ???
+  override def isTopLevelTx: Boolean = ???
 
-  def getOrCreateRelTypeId(relTypeName: String) = ???
+  override def getOrCreateRelTypeId(relTypeName: String) = ???
 
-  def getOrCreateLabelId(labelName: String) = labels(labelName)
+  override def getOrCreateLabelId(labelName: String) = labels(labelName)
 
-  def getLabelsForNode(node: Node) = Seq(12L)
+  override def close(success: Boolean) {???}
 
-  def close(success: Boolean) {???}
+  override def createNode() = ???
 
-  def createNode() = ???
+  override def createRelationship(start: Node, end: Node, relType: String) = ???
 
-  def createRelationship(start: Node, end: Node, relType: String) = ???
+  override def getLabelName(id: Int) = ???
 
-  def getLabelName(id: Int) = ???
+  override def getLabelsForNode(node: Long) = ???
 
-  def getLabelsForNode(node: Long) = ???
+  override def nodeOps = ???
 
-  def getRelationshipsFor(node: Node, dir: SemanticDirection, types: Seq[String]) = ???
+  override def relationshipOps = ???
 
-  def nodeOps = ???
+  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {???}
 
-  def relationshipOps = ???
+  override def getPropertiesForNode(node: Long) = ???
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {???}
+  override def getPropertiesForRelationship(relId: Long) = ???
 
-  def getTransaction = ???
+  override def getOrCreatePropertyKeyId(propertyKey: String) = ???
 
-  def getPropertiesForNode(node: Long) = ???
+  override def getOptPropertyKeyId(propertyKey: String): Option[Int] = ???
 
-  def getPropertiesForRelationship(relId: Long) = ???
+  override def getPropertyKeyId(propertyKey: String) = ???
 
-  def getOrCreatePropertyKeyId(propertyKey: String) = ???
+  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = ???
 
-  def getOptPropertyKeyId(propertyKey: String): Option[Int] = ???
+  override def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
 
-  def getPropertyKeyId(propertyKey: String) = ???
+  override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = ???
+  override def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
-  def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
+  override def indexScan(index: IndexDescriptor): Iterator[Node] = ???
 
-  def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = ???
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
 
-  def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node] = ???
+  override def getNodesByLabel(id: Int): Iterator[Node] = ???
 
-  def indexScan(index: IndexDescriptor): Iterator[Node] = ???
+  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 
-  def getNodesByLabel(id: Int): Iterator[Node] = ???
+  override def getOptLabelId(labelName: String): Option[Int] = labels.get(labelName)
 
-  def upgrade(context: QueryContext): LockingQueryContext = ???
+  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
 
-  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
+  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def schemaStateContains(key: String) = ???
+  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] = ???
 
-  def getOptLabelId(labelName: String): Option[Int] = labels.get(labelName)
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = ???
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
+  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
 
-  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
 
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] = ???
+  override def getLabelId(labelName: String): Int = ???
 
-  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = ???
+  override def getPropertyKeyName(id: Int): String = ???
 
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
+  override def commitAndRestartTx() { ??? }
 
-  def getLabelId(labelName: String): Int = ???
+  override def getRelTypeId(relType: String): Int = ???
 
-  def getPropertyKeyName(id: Int): String = ???
+  override def getOptRelTypeId(relType: String): Option[Int] = ???
 
-  def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
+  override def getRelTypeName(id: Int): String = ???
 
-  def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
+  override def relationshipStartNode(rel: Relationship) = ???
 
-  def commitAndRestartTx() { ??? }
+  override def relationshipEndNode(rel: Relationship) = ???
 
-  def getRelTypeId(relType: String): Int = ???
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = ???
 
-  def getOptRelTypeId(relType: String): Option[Int] = ???
+  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
 
-  def getRelTypeName(id: Int): String = ???
+  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
 
-  def relationshipStartNode(rel: Relationship) = ???
-
-  def relationshipEndNode(rel: Relationship) = ???
-
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = ???
-
-  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
-
-  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
-
-  def nodeIsDense(node: Long): Boolean = ???
+  override def nodeIsDense(node: Long): Boolean = ???
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = ???
 
-  def getImportURL(url: URL): Either[String,URL] = ???
+  override def getImportURL(url: URL): Either[String,URL] = ???
 
   override def createRelationship(start: Long, end: Long, relType: Int) = ???
 
@@ -193,4 +183,8 @@ class SnitchingQueryContext extends QueryContext {
   override def nodeCountByCountStore(labelId: Int): Long = ???
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = ???
+
+  override def lockNodes(nodeIds: Long*): Unit = ???
+
+  override def lockRelationships(relIds: Long*): Unit = ???
 }
