@@ -21,6 +21,21 @@ package org.neo4j.cypher
 
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("should understand symbols introduced by FOREACH") {
+    createLabeledNode("Label")
+    createLabeledNode("Label")
+    createLabeledNode("Label2")
+    val query =
+      """MATCH (a:Label)
+        |WITH collect(a) as nodes
+        |MATCH (b:Label2)
+        |FOREACH(n in nodes |
+        |  CREATE UNIQUE (n)-[:SELF]->(b))""".stripMargin
+
+    // should work
+    execute(query)
+  }
+
   test("nested foreach") {
     // given
     createLabeledNode("root")
@@ -31,7 +46,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite {
       |CREATE (r)-[:PARENT]->(c:child { id:i })
       |FOREACH (j IN range(1,10)|
       |CREATE (c)-[:PARENT]->(:child { id:c.id*10+j })))""".stripMargin
-    execute(query)
+    eengine.execute(query)
 
 
     // then
