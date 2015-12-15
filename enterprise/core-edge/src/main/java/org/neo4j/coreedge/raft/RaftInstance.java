@@ -38,6 +38,7 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.TermStore;
 import org.neo4j.coreedge.raft.state.VoteStore;
 import org.neo4j.coreedge.server.core.RaftStorageExceptionHandler;
+import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -86,6 +87,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private final long leaderWaitTimeout;
 
     private final RaftStorageExceptionHandler raftStorageExceptionHandler;
+    private Clock clock;
 
     private final Outbound<MEMBER> outbound;
     private final Log log;
@@ -99,7 +101,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
-                         RaftStorageExceptionHandler raftStorageExceptionHandler)
+                         RaftStorageExceptionHandler raftStorageExceptionHandler,
+                         Clock clock )
 
     {
         this.myself = myself;
@@ -113,6 +116,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.raftStorageExceptionHandler = raftStorageExceptionHandler;
+        this.clock = clock;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -178,8 +182,8 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     @Override
     public MEMBER getLeader() throws NoLeaderTimeoutException
     {
-        long leaderWaitEndTime = leaderWaitTimeout + System.currentTimeMillis();
-        while ( state.leader() == null && (System.currentTimeMillis() < leaderWaitEndTime) )
+        long leaderWaitEndTime = leaderWaitTimeout + clock.currentTimeMillis();
+        while ( state.leader() == null && (clock.currentTimeMillis() < leaderWaitEndTime) )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( electionTimeout ) / 2 );
         }

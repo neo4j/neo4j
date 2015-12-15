@@ -81,7 +81,13 @@ public class RaftInstanceBuilder<MEMBER>
 
         return new RaftInstance<>( member, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider, membershipManager, logShipping,
-                raftStorageExceptionHandler );
+                raftStorageExceptionHandler, clock );
+    }
+
+    public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
+    {
+        this.leaderWaitTimeout = leaderWaitTimeout;
+        return this;
     }
 
     public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
@@ -111,6 +117,12 @@ public class RaftInstanceBuilder<MEMBER>
     public RaftInstanceBuilder<MEMBER> raftStorageExceptionHandler( RaftStorageExceptionHandler raftStorageExceptionHandler)
     {
         this.raftStorageExceptionHandler = raftStorageExceptionHandler;
+        return this;
+    }
+
+    public RaftInstanceBuilder<MEMBER> clock(Clock clock)
+    {
+        this.clock = clock;
         return this;
     }
 }

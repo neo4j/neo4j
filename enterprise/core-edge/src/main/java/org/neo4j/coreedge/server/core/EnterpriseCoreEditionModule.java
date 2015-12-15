@@ -371,7 +371,7 @@ public class EnterpriseCoreEditionModule
                 myself, termStore, voteStore, raftLog, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
-                raftMembershipManager, logShipping, raftStorageExceptionHandler );
+                raftMembershipManager, logShipping, raftStorageExceptionHandler, Clock.SYSTEM_CLOCK );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 
