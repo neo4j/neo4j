@@ -140,19 +140,21 @@ public class MetricsKernelExtensionFactoryIT
     @Test
     public void shouldUseEventBasedReportingCorrectly() throws Throwable
     {
-        createCluster( "10m", "1s" );
+        createCluster( "10m", "100ms" );
         addNodes( 100 );
 
         CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
         checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test" ) );
-        cluster.stop();
 
+        // wait for the file to be written before shutting down the cluster
         File metricFile = new File( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION + ".csv" );
         // let's wait until the file is in place (since the reporting is async that might take a while)
         while ( !metricFile.exists() )
         {
-            Thread.sleep( 1 );
+            Thread.sleep( 10 );
         }
+
+        cluster.stop();
 
         readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
     }
