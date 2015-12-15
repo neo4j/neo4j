@@ -48,6 +48,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
+import static java.lang.String.format;
+
 public class RelationshipProxy
         extends PropertyContainerProxy
         implements Relationship, RelationshipVisitor<RuntimeException>
@@ -478,7 +480,8 @@ public class RelationshipProxy
     @Override
     public String toString()
     {
-        return "Relationship[" + this.getId() + "]";
+        return format( "(%d)-[%s,%d]->(%d)",
+                sourceId(), actions.getRelationshipTypeById( typeId() ).name(), getId(), targetId() );
     }
 
     private void assertInUnterminatedTransaction()

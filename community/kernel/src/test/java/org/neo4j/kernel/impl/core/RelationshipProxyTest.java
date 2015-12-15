@@ -25,7 +25,9 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 
 import static org.junit.Assert.assertEquals;
@@ -33,6 +35,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipProxyTest extends PropertyContainerProxyTest
@@ -100,6 +103,30 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             verifyIds( actions, id, nodeId1, type, nodeId2 );
             verifyIds( actions, id, nodeId2, type, nodeId1 );
         }
+    }
+
+    @Test
+    public void shouldPrintCypherEsqueRelationshipToString() throws Exception
+    {
+        // GIVEN
+        Node start, end;
+        RelationshipType type = RelationshipType.withName( "NICE" );
+        Relationship relationship;
+        try ( Transaction tx = db.beginTx() )
+        {
+            // GIVEN
+            start = db.createNode();
+            end = db.createNode();
+            relationship = start.createRelationshipTo( end, type );
+            tx.success();
+        }
+
+        // WHEN
+        String toString = relationship.toString();
+
+        // THEN
+        assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
+                toString );
     }
 
     private void verifyIds( RelationshipActions actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )
