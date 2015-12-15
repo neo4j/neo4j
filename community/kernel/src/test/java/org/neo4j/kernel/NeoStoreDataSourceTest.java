@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel;
 
-import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
@@ -39,8 +40,10 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceTest
@@ -52,7 +55,7 @@ public class NeoStoreDataSourceTest
     public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
 
     @Rule
-    public NeoStoreDataSourceRule ds = new NeoStoreDataSourceRule();
+    public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
@@ -66,7 +69,7 @@ public class NeoStoreDataSourceTest
             DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                     NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
 
-            theDataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            theDataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     stringMap(), databaseHealth );
 
             databaseHealth.panic( new Throwable() );
@@ -83,6 +86,59 @@ public class NeoStoreDataSourceTest
                 theDataSource.shutdown();
             }
         }
+    }
+
+    @Test
+    public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws IOException
+    {
+        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap() );
+
+        ds.init();
+        ds.start();
+        verify( pageCache, never() ).flushAndForce();
+
+        ds.stop();
+        ds.shutdown();
+        verify( pageCache ).flushAndForce();
+    }
+
+    @Test
+    public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws IOException
+    {
+        DatabaseHealth health = mock( DatabaseHealth.class );
+        when( health.isHealthy() ).thenReturn( true );
+
+        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
+
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+
+        ds.init();
+        ds.start();
+        verify( pageCache, never() ).flushAndForce();
+
+        ds.stop();
+        ds.shutdown();
+        verify( pageCache ).flushAndForce();
+    }
+
+    @Test
+    public void flushOfThePageCacheOnShutdownDoesNotHappenIfTheDbIsUnhealthy() throws IOException
+    {
+        DatabaseHealth health = mock( DatabaseHealth.class );
+        when( health.isHealthy() ).thenReturn( false );
+
+        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
+
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+
+        ds.init();
+        ds.start();
+        verify( pageCache, never() ).flushAndForce();
+
+        ds.stop();
+        ds.shutdown();
+        verify( pageCache, never() ).flushAndForce();
     }
 
     @Test

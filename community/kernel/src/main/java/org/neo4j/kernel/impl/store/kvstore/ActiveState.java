@@ -81,10 +81,6 @@ public abstract class ActiveState<Key> extends ProgressiveState<Key>
     @Override
     final ProgressiveState<Key> stop() throws IOException
     {
-        if ( hasChanges() )
-        {
-            throw new IllegalStateException( "Cannot stop while there are changes." );
-        }
         close();
         return new DeadState.Stopped<>( keyFormat(), factory() );
     }
