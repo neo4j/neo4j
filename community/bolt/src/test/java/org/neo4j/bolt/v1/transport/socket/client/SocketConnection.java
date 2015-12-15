@@ -71,7 +71,7 @@ public class SocketConnection implements Connection
 
         try
         {
-            while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
+            while ( left > 0 && (read = in.read( bytes, length - left, left )) != -1 )
             {
                 left -= read;
             }
