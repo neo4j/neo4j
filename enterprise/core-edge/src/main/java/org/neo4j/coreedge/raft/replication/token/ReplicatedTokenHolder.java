@@ -53,6 +53,8 @@ import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
+
 public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends TokenRecord> extends LifecycleAdapter
         implements TokenHolder<TOKEN>, Replicator.ReplicatedContentListener
 {
@@ -233,7 +235,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
                 try
                 {
                     Collection<Command> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
-                    tokenId = applyToStore( commands );
+                    tokenId = applyToStore( commands, logIndex );
                 }
                 catch ( NoSuchEntryException e )
                 {
@@ -247,12 +249,12 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         }
     }
 
-    private int applyToStore( Collection<Command> commands ) throws NoSuchEntryException
+    private int applyToStore( Collection<Command> commands, long logIndex ) throws NoSuchEntryException
     {
         int tokenId = extractTokenId( commands );
 
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
-        representation.setHeader( new byte[0], 0, 0, 0, 0L, 0L, 0 );
+        representation.setHeader( encodeLogIndexAsTxHeader(logIndex), 0, 0, 0, 0L, 0L, 0 );
 
         TransactionCommitProcess commitProcess = dependencies.resolveDependency(
                 TransactionRepresentationCommitProcess.class );

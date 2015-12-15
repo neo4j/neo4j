@@ -35,4 +35,21 @@ public class LogIndexTxHeaderEncodingTest
         byte[] bytes = encodeLogIndexAsTxHeader( index );
         assertEquals( index, decodeLogIndexFromTxHeader( bytes ) );
     }
+
+    @Test
+    public void shouldThrowExceptionForAnEmptyByteArray() throws Exception
+    {
+        // given
+        try
+        {
+            // when
+            decodeLogIndexFromTxHeader( new byte[0] );
+            fail( "Should have thrown an exception because there's no way to decode this " );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+            assertEquals( "Unable to decode RAFT log index from transaction header", e.getMessage() );
+        }
+    }
 }
