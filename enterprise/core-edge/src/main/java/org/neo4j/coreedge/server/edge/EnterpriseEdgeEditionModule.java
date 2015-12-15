@@ -149,8 +149,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 channelInitializer ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
+        Supplier<TransactionIdStore> transactionIdStoreSupplier =
+                () -> platformModule.dependencies.resolveDependency( TransactionIdStore.class ) ;
+
         ApplyPulledTransactions applyPulledTransactions =
-                new ApplyPulledTransactions( logProvider, transactionApplierSupplier );
+                new ApplyPulledTransactions( logProvider, transactionApplierSupplier, transactionIdStoreSupplier );
 
         TxPollingClient txPollingClient = life.add(
                 new TxPollingClient( platformModule.jobScheduler, config.get( HaSettings.pull_interval ),

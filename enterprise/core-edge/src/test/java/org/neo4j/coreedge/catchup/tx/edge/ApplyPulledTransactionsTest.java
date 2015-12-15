@@ -19,21 +19,23 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.function.Suppliers.singleton;
@@ -47,14 +49,20 @@ public class ApplyPulledTransactionsTest
         StoreId storeId = new StoreId( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
-        ApplyPulledTransactions handler = new ApplyPulledTransactions( mock( LogProvider.class ),
-                singleton( transactionApplier ) );
+
+        TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn( 2L );
+
+
+        CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
+        LogEntryCommit commitEntry = mock(LogEntryCommit.class);
+        when( commitEntry.getTxId() ).thenReturn( 3L );
+        when( tx.getCommitEntry() ).thenReturn( commitEntry );
 
         // when
-        ChannelHandlerContext channelHandlerContext = mock( ChannelHandlerContext.class );
-        when( channelHandlerContext.pipeline() ).thenReturn( mock( ChannelPipeline.class ) );
-
-        handler.onTxReceived( new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
+        ApplyPulledTransactions handler = new ApplyPulledTransactions(
+                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore) );
+        handler.onTxReceived( new TxPullResponse( storeId, tx ) );
 
         // then
         verify( transactionApplier ).appendToLogAndApplyToStore( any( CommittedTransactionRepresentation.class ) );
@@ -67,20 +75,54 @@ public class ApplyPulledTransactionsTest
         StoreId storeId = new StoreId( 1, 1, 1, 1 );
 
         TransactionApplier transactionApplier = mock( TransactionApplier.class );
+        TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         doThrow( TransactionFailureException.class ).when( transactionApplier ).appendToLogAndApplyToStore( any(
                 CommittedTransactionRepresentation.class ) );
-
 
         LogProvider logProvider = mock( LogProvider.class );
         Log log = mock( Log.class );
         when( logProvider.getLog( ApplyPulledTransactions.class ) ).thenReturn( log );
 
-        ApplyPulledTransactions handler = new ApplyPulledTransactions( logProvider, singleton( transactionApplier ) );
+
+        CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
+        LogEntryCommit commitEntry = mock(LogEntryCommit.class);
+        when( commitEntry.getTxId() ).thenReturn( 3L );
+        when( tx.getCommitEntry() ).thenReturn( commitEntry );
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn( 2L );
+
 
         // when
-        handler.onTxReceived( new TxPullResponse( storeId, mock( CommittedTransactionRepresentation.class ) ) );
+        ApplyPulledTransactions handler = new ApplyPulledTransactions(
+                logProvider, singleton( transactionApplier ), singleton(transactionIdStore) );
+        handler.onTxReceived( new TxPullResponse( storeId, tx ) );
 
         // then
         verify( log ).error( anyString(), any( Throwable.class ) );
+    }
+
+    @Test
+    public void shouldNotApplyTransactionsThatHaveAlreadyBeenApplied() throws Exception
+    {
+        // given
+        StoreId storeId = new StoreId( 1, 1, 1, 1 );
+
+        TransactionApplier transactionApplier = mock( TransactionApplier.class );
+
+        TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
+        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn( 3L );
+
+        CommittedTransactionRepresentation alreadyAppliedTx = mock( CommittedTransactionRepresentation.class );
+        LogEntryCommit commitEntry = mock(LogEntryCommit.class);
+        when( commitEntry.getTxId() ).thenReturn( 3L );
+        when( alreadyAppliedTx.getCommitEntry() ).thenReturn( commitEntry );
+
+        // when
+        ApplyPulledTransactions handler = new ApplyPulledTransactions(
+                NullLogProvider.getInstance(), singleton( transactionApplier ), singleton(transactionIdStore) );
+
+        handler.onTxReceived( new TxPullResponse( storeId, alreadyAppliedTx ) );
+
+        // then
+        verifyNoMoreInteractions( transactionApplier );
     }
 }
