@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.kernel.impl.store.StoreFailureException;
+import org.neo4j.graphdb.TransactionFailureException;
 
-public class IdGenerationException extends StoreFailureException
+public class IdGenerationException extends TransactionFailureException
 {
     public IdGenerationException( Throwable cause )
     {
