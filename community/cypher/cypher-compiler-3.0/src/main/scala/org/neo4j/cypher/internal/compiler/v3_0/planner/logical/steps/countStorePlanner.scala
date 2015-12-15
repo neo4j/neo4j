@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyTypes
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -51,7 +51,7 @@ case object countStorePlanner {
                     case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
                       if relId.name == countName && noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
 
-                      def planRelAggr(fromLabel: Option[LazyLabel], toLabel: Option[LazyLabel], bothDirections: Boolean = false) =
+                      def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName], bothDirections: Boolean = false) =
                         Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(query, IdName(aggregationIdent), fromLabel, LazyTypes(types.map(_.name)), toLabel, bothDirections, argumentIds)(context))
 
                       (findLabel(startNodeId, selections), direction, findLabel(endNodeId, selections)) match {
@@ -86,7 +86,7 @@ case object countStorePlanner {
     labelPredicates.size <= 1 && other.isEmpty
   }
 
-  def findLabel(nodeId: IdName, selections: Selections): Option[LazyLabel] = selections.predicates.collectFirst {
-    case Predicate(nIds, h: HasLabels) if nIds == Set(nodeId) && h.labels.size == 1 => LazyLabel(h.labels.head.name)
+  def findLabel(nodeId: IdName, selections: Selections): Option[LabelName] = selections.predicates.collectFirst {
+    case Predicate(nIds, h: HasLabels) if nIds == Set(nodeId) && h.labels.size == 1 => h.labels.head
   }
 }

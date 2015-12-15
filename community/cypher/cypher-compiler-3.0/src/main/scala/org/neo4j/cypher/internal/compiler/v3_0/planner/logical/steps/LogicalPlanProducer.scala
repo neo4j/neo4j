@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyType, LazyTypes, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Length
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, ast, symbols}
 
@@ -148,7 +147,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     NodeByIdSeek(idName, nodeIds, argumentIds)(solved)
   }
 
-  def planNodeByLabelScan(idName: IdName, label: LazyLabel, solvedPredicates: Seq[Expression],
+  def planNodeByLabelScan(idName: IdName, label: LabelName, solvedPredicates: Seq[Expression],
                           solvedHint: Option[UsingScanHint] = None, argumentIds: Set[IdName])
                          (implicit context: LogicalPlanningContext) = {
     val solved = PlannerQuery(queryGraph = QueryGraph.empty
@@ -358,14 +357,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Projection(inner, expressions)(solved)
   }
 
-  def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LazyLabel], argumentIds: Set[IdName])
+  def planCountStoreNodeAggregation(query: PlannerQuery, idName: IdName, label: Option[LabelName], argumentIds: Set[IdName])
                                    (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = PlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
     NodeCountFromCountStore(idName, label, argumentIds)(solved)
   }
 
-  def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LazyLabel],
-                                            typeNames: LazyTypes, endLabel: Option[LazyLabel], bothDirections: Boolean,
+  def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LabelName],
+                                            typeNames: LazyTypes, endLabel: Option[LabelName], bothDirections: Boolean,
                                             argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = PlannerQuery(query.queryGraph, query.updateGraph, query.horizon)
@@ -457,16 +456,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    CreateNode(inner, pattern.nodeName,
-      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
+    CreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
   }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNodePattern)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    MergeCreateNode(inner, pattern.nodeName,
-      pattern.labels.map(LazyLabel(_)(context.semanticTable)), pattern.properties)(solved)
+    MergeCreateNode(inner, pattern.nodeName, pattern.labels, pattern.properties)(solved)
   }
 
   def planCreateRelationship(inner: LogicalPlan, pattern: CreateRelationshipPattern)
@@ -523,7 +520,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    SetLabels(inner, pattern.idName, pattern.labels.map(LazyLabel(_)(context.semanticTable)))(solved)
+    SetLabels(inner, pattern.idName, pattern.labels)(solved)
   }
 
   def planSetNodeProperty(inner: LogicalPlan, pattern: SetNodePropertyPattern)
@@ -565,7 +562,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    RemoveLabels(inner, pattern.idName, pattern.labels.map(LazyLabel(_)(context.semanticTable)))(solved)
+    RemoveLabels(inner, pattern.idName, pattern.labels)(solved)
   }
 
   def planRepeatableRead(inner: LogicalPlan)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -67,7 +66,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)").plan should equal(
       EmptyResult(
-        CreateNode(SingleRow()(solved), IdName("a"), Seq(LazyLabel("A"), LazyLabel("B")), None)(solved))(solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq(lblName("A"), lblName("B")), None)(solved))(solved)
     )
   }
 

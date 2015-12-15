@@ -69,7 +69,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan(IdName("n"), LazyLabel("Foo"), Set.empty)_
+    val logicalPlan = NodeByLabelScan(IdName("n"), lblName("Foo"), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating

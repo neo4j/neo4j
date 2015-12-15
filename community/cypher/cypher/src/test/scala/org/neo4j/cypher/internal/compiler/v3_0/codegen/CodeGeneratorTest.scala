@@ -27,7 +27,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
@@ -72,7 +71,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("label scan") {// MATCH (a:T1) RETURN a
     //given
-    val plan = ProduceResult(List("a"), NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved))
+    val plan = ProduceResult(List("a"), NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -135,8 +134,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("cartesian product of two label scans") {
     //given
-    val lhs = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
-    val rhs = NodeByLabelScan(IdName("b"), LazyLabel("T2"), Set.empty)(solved)
+    val lhs = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val rhs = NodeByLabelScan(IdName("b"), lblName("T2"), Set.empty)(solved)
     val join = CartesianProduct(lhs, rhs)(solved)
     val plan = ProduceResult(List("a", "b"), join)
 
@@ -180,7 +179,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     //given
     val plan = ProduceResult(List("a", "b"),
         Expand(
-          NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+          NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
           SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
@@ -240,7 +239,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   //given
   val plan = ProduceResult(List("a", "b"),
                 Expand(
-                  NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+                  NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
                   SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
@@ -256,7 +255,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   //given
   val plan = ProduceResult(List("a", "b"),
                              OptionalExpand(
-                               NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+                               NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
                                SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll,
                                Seq(HasLabels(varFor("b"), Seq(LabelName("T1")(pos)))(pos)))(solved))
 
@@ -276,7 +275,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   //given
   val plan = ProduceResult(List("a", "b"),
       Expand(
-        NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), SemanticDirection.BOTH,
+        NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"), SemanticDirection.BOTH,
         Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
@@ -294,7 +293,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("expand into on top of expand all") {
     //given
-    val scanT1 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
     val expandAll = Expand(
       scanT1, IdName("a"), SemanticDirection.OUTGOING,
       Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -320,7 +319,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("optional expand into on top of expand all") {
     //given
-    val scanT1 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
     val expandAll = Expand(
       scanT1, IdName("a"), SemanticDirection.OUTGOING,
       Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -346,7 +345,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("expand into on top of expand all with relationship types") {
     //given
-    val scanT2 = NodeByLabelScan(IdName("a"), LazyLabel("T2"), Set.empty)(solved)
+    val scanT2 = NodeByLabelScan(IdName("a"), lblName("T2"), Set.empty)(solved)
     val expandAll = Expand(
       scanT2, IdName("a"), SemanticDirection.OUTGOING,
       Seq(RelTypeName("R2")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -371,7 +370,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("optional expand into on top of expand all with relationship types") {
     //given
-    val scanT2 = NodeByLabelScan(IdName("a"), LazyLabel("T2"), Set.empty)(solved)
+    val scanT2 = NodeByLabelScan(IdName("a"), lblName("T2"), Set.empty)(solved)
     val expandAll = Expand(
       scanT2, IdName("a"), SemanticDirection.OUTGOING,
       Seq(RelTypeName("R2")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -397,7 +396,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("expand into on top of expand all with a loop") {
     //given
-    val scanT3 = NodeByLabelScan(IdName("a"), LazyLabel("T3"), Set.empty)(solved)
+    val scanT3 = NodeByLabelScan(IdName("a"), lblName("T3"), Set.empty)(solved)
     val expandAll = Expand(
       scanT3, IdName("a"), SemanticDirection.OUTGOING,
       Seq(RelTypeName("R3")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -422,7 +421,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("optional expand into on top of expand all with a loop") {
     //given
-    val scanT3 = NodeByLabelScan(IdName("a"), LazyLabel("T3"), Set.empty)(solved)
+    val scanT3 = NodeByLabelScan(IdName("a"), lblName("T3"), Set.empty)(solved)
     val expandAll = Expand(
       scanT3, IdName("a"), SemanticDirection.OUTGOING,
       Seq(RelTypeName("R3")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -482,9 +481,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // MATCH (a:T1)-[r1]->(b)<-[r2]-(c:T2) RETURN b
 
     //given
-    val lhs = Expand(NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"),
+    val lhs = Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
       SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val rhs = Expand(NodeByLabelScan(IdName("c"), LazyLabel("T2"), Set.empty)(solved), IdName("c"),
+    val rhs = Expand(NodeByLabelScan(IdName("c"), lblName("T2"), Set.empty)(solved), IdName("c"),
       SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
     val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
     val plan = ProduceResult(List("a", "b", "c"), join)
@@ -505,9 +504,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("hash join on top of hash join") {
 
     //given
-    val scan1 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
-    val scan2 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
-    val scan3 = NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved)
+    val scan1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val scan2 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val scan3 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
     val join1 = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
     val join2 = NodeHashJoin(Set(IdName("a")), scan3, join1)(solved)
     val projection = Projection(join2, Map("a" -> varFor("a")))(solved)

@@ -176,13 +176,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       AllNodesScanPipe(id)()
 
     case NodeCountFromCountStore(IdName(id), label, _) =>
-      NodeCountFromCountStorePipe(id, label)()
+      NodeCountFromCountStorePipe(id, label.map(LazyLabel.apply))()
 
     case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
-      RelationshipCountFromCountStorePipe(id, startLabel, typeNames, endLabel, bothDirections)()
+      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), typeNames, endLabel.map(LazyLabel.apply), bothDirections)()
 
     case NodeByLabelScan(IdName(id), label, _) =>
-      NodeByLabelScanPipe(id, label)()
+      NodeByLabelScanPipe(id, LazyLabel(label))()
 
     case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
       NodeByIdSeekPipe(id, nodeIdExpr.asCommandSeekArgs)()
@@ -297,16 +297,16 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       ProduceResultsPipe(source, columns)()
 
     case CreateNode(_, idName, labels, props) =>
-      CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
+      CreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))()
 
     case MergeCreateNode(_, idName, labels, props) =>
-      MergeCreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
+      MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))()
 
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
-     SetPipe(source, SetLabelsOperation(name, labels))()
+     SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))()
 
     case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
       SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
@@ -325,7 +325,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
 
     case RemoveLabels(_, IdName(name), labels) =>
-      RemoveLabelsPipe(source, name, labels)()
+      RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))()
 
     case DeleteNode(_, expression) =>
       DeleteNodePipe(source, toCommandExpression(expression))()
