@@ -25,6 +25,9 @@ import static java.lang.String.format;
 
 public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
+    static final String MESSAGE_STARTED = "Starting upgrade of database";
+    static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
+
     private final Log log;
 
     public VisibleMigrationProgressMonitor( Log log )
@@ -35,21 +38,65 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     @Override
     public void started()
     {
-        log.info( "Starting upgrade of database store files" );
+        log.info( MESSAGE_STARTED );
     }
 
     @Override
-    public void percentComplete( int percent )
+    public Section startSection( String name )
     {
-        if (percent % 10 == 0)
+        log.info( "Migrating " + name + ":" );
+
+        return new ProgressSection();
+    }
+
+    @Override
+    public void completed()
+    {
+        log.info( MESSAGE_COMPLETED );
+    }
+
+    private class ProgressSection implements Section
+    {
+        private static final int STRIDE = 10;
+
+        private long current;
+        private int currentPercent;
+        private long max;
+
+        @Override
+        public void progress( long add )
         {
-            log.info( format( "Store upgrade %d%% complete", percent ) );
+            current += add;
+            int percent = max == 0 ? 100 : (int) (current*100/max);
+            ensurePercentReported( percent );
         }
-    }
 
-    @Override
-    public void finished()
-    {
-        log.info( "Finished upgrade of database store files" );
+        private void ensurePercentReported( int percent )
+        {
+            while ( currentPercent < percent )
+            {
+                reportPercent( ++currentPercent );
+            }
+        }
+
+        private void reportPercent( int percent )
+        {
+            if ( percent % STRIDE == 0 )
+            {
+                log.info( format( "  %d%% completed", percent ) );
+            }
+        }
+
+        @Override
+        public void start( long max )
+        {
+            this.max = max;
+        }
+
+        @Override
+        public void completed()
+        {
+            ensurePercentReported( 100 );
+        }
     }
 }

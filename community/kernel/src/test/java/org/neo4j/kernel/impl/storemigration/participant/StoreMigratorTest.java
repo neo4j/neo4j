@@ -112,7 +112,7 @@ public class StoreMigratorTest
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "Test" ), versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
@@ -143,7 +143,7 @@ public class StoreMigratorTest
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, new Config(), logService, schemaIndexProvider );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
-        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "Test" ), versionToMigrateFrom );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom );
 
         // WHEN simulating resuming the migration
@@ -177,7 +177,7 @@ public class StoreMigratorTest
         fs.mkdirs( migrationDir );
 
         // WHEN migrating
-        migrator.migrate( storeDirectory, migrationDir, progressMonitor, versionToMigrateFrom );
+        migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "Test" ), versionToMigrateFrom );
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );

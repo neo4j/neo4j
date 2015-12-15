@@ -114,7 +114,8 @@ public class StoreUpgraderInterruptionTestIT
         StoreMigrator failingStoreMigrator = new StoreMigrator(fs, pageCache, config, logService, schemaIndexProvider )
         {
             @Override
-            public void migrate( File sourceStoreDir, File targetStoreDir, MigrationProgressMonitor progressMonitor,
+            public void migrate( File sourceStoreDir, File targetStoreDir,
+                    MigrationProgressMonitor.Section progressMonitor,
                     String versionToMigrateFrom ) throws IOException
             {
                 super.migrate( sourceStoreDir, targetStoreDir, progressMonitor, versionToMigrateFrom );

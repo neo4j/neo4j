@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 public class SchemaIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
+    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
     private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
     private final LabelScanStoreProvider labelScanStoreProvider = mock( LabelScanStoreProvider.class );
     private final File storeDir = new File( "store" );

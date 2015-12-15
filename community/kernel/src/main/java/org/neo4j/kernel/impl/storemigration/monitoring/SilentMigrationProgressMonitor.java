@@ -21,15 +21,37 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 
 public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
 {
+    private static final Section SECTION = new Section()
+    {
+        @Override
+        public void progress( long add )
+        {
+        }
+
+        @Override
+        public void start( long max )
+        {
+        }
+
+        @Override
+        public void completed()
+        {
+        }
+    };
+
+    @Override
     public void started()
     {
     }
 
-    public void percentComplete( int percent )
+    @Override
+    public Section startSection( String name )
     {
+        return SECTION;
     }
 
-    public void finished()
+    @Override
+    public void completed()
     {
     }
 }

@@ -40,6 +40,8 @@ import org.neo4j.upgrade.loader.JarLoaderSupplier;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.upgrade.lucene.LuceneLegacyIndexUpgrader.NO_MONITOR;
+
 public class LuceneLegacyIndexUpgraderTest
 {
     @Rule
@@ -51,7 +53,7 @@ public class LuceneLegacyIndexUpgraderTest
         Path indexFolder = createPathForResource("indexPretender.txt");
         expectedException.expect( IllegalArgumentException.class );
 
-        new LuceneLegacyIndexUpgrader(indexFolder);
+        new LuceneLegacyIndexUpgrader( indexFolder, NO_MONITOR );
     }
 
     @Test
@@ -94,7 +96,7 @@ public class LuceneLegacyIndexUpgraderTest
     private class LegacyIndexMigrationExceptionBaseMatcher extends TypeSafeDiagnosingMatcher<LegacyIndexMigrationException>
     {
 
-        private String[] failedIndexNames;
+        private final String[] failedIndexNames;
 
         public LegacyIndexMigrationExceptionBaseMatcher(String... failedIndexNames)
         {
@@ -123,8 +125,8 @@ public class LuceneLegacyIndexUpgraderTest
 
     private class TrackingLuceneLegacyIndexUpgrader extends LuceneLegacyIndexUpgrader
     {
-        private Set<String> migratedIndexes = new HashSet<>( );
-        private boolean failIndexUpgrade;
+        private final Set<String> migratedIndexes = new HashSet<>( );
+        private final boolean failIndexUpgrade;
 
         public TrackingLuceneLegacyIndexUpgrader( Path indexRootPath)
         {
@@ -133,7 +135,7 @@ public class LuceneLegacyIndexUpgraderTest
 
         public TrackingLuceneLegacyIndexUpgrader( Path indexRootPath, boolean failIndexUpgrade )
         {
-            super( indexRootPath );
+            super( indexRootPath, NO_MONITOR );
             this.failIndexUpgrade = failIndexUpgrade;
         }
 
@@ -152,8 +154,8 @@ public class LuceneLegacyIndexUpgraderTest
     private class IndexUpgraderWrapperStub extends IndexUpgraderWrapper
     {
 
-        private Set<String> migratedIndexes;
-        private boolean failIndexUpgrade;
+        private final Set<String> migratedIndexes;
+        private final boolean failIndexUpgrade;
 
         public IndexUpgraderWrapperStub( Supplier<EmbeddedJarLoader> jarLoaderSupplier, Set<String> migratedIndexes,
                 boolean failIndexUpgrade )

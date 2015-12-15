@@ -38,25 +38,26 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
  * <p>
  * Since index format can be completely incompatible between version should be executed before {@link StoreMigrator}
  */
-public class SchemaIndexMigrator extends BaseStoreMigrationParticipant
+public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes = false;
     private File labelIndexDirectory;
     private File schemaIndexDirectory;
-    private SchemaIndexProvider schemaIndexProvider;
-    private LabelScanStoreProvider labelScanStoreProvider;
+    private final SchemaIndexProvider schemaIndexProvider;
+    private final LabelScanStoreProvider labelScanStoreProvider;
 
     public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider,
             LabelScanStoreProvider labelScanStoreProvider )
     {
+        super( "Indexes" );
         this.fileSystem = fileSystem;
         this.schemaIndexProvider = schemaIndexProvider;
         this.labelScanStoreProvider = labelScanStoreProvider;
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor progressMonitor,
+    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom ) throws IOException
     {
         switch ( versionToMigrateFrom )

@@ -551,7 +551,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         HighestSelectionStrategy.getInstance() );
 
         VisibleMigrationProgressMonitor progressMonitor =
-                new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrator.class ) );
+                new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigrator.class ) );
         new DatabaseMigrator(
                 progressMonitor,
                 fs,

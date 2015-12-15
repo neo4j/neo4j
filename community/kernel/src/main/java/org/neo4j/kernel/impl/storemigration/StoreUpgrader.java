@@ -31,8 +31,11 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -144,7 +147,7 @@ public class StoreUpgrader
 
         cleanup( participants, migrationDirectory );
 
-        progressMonitor.finished();
+        progressMonitor.completed();
     }
 
     private boolean isUpgradeAllowed()
@@ -223,9 +226,14 @@ public class StoreUpgrader
     {
         try
         {
+            int index = 1;
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.migrate( storeDir, migrationDirectory, progressMonitor, versionToMigrateFrom );
+                Section section = progressMonitor.startSection(
+                        format( "%s (%d/%d)", participant.getName(), index, participants.size() ) );
+                participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom );
+                section.completed();
+                index++;
             }
         }
         catch ( IOException e )
