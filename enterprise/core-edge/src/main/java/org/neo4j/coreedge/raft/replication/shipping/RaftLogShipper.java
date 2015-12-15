@@ -85,6 +85,7 @@ public class RaftLogShipper<MEMBER>
     }
 
     private final Outbound<MEMBER> outbound;
+    private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
@@ -114,6 +115,7 @@ public class RaftLogShipper<MEMBER>
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
+        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.raftLog = raftLog;
         this.clock = clock;
@@ -134,7 +136,7 @@ public class RaftLogShipper<MEMBER>
 
         try
         {
-            timeoutService = new DelayedRenewableTimeoutService();
+            timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
             timeoutService.init();
             timeoutService.start();
         }

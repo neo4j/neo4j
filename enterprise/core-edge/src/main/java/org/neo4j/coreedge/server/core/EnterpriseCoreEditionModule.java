@@ -168,7 +168,7 @@ public class EnterpriseCoreEditionModule
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshall, raftListenAddress, logProvider );
 
-        final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService();
+        final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, logProvider );
 
         File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
         NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
