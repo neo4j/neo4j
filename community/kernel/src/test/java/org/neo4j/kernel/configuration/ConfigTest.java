@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,14 +35,17 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class TestConfig
+public class ConfigTest
 {
 
     public static class MyMigratingSettings
@@ -204,5 +208,111 @@ public class TestConfig
         assertThat( config.get( setting("newer", STRING, "") ), equalTo( "new" ) );
         assertThat( config.get( setting("non-overlapping", STRING, "") ), equalTo( "huzzah" ) );
         assertThat( config.get( setting("unrelated", STRING, "") ), equalTo( "hello" ) );
+    }
+
+    @Test
+    public void shouldProvideViewOfGroups() throws Throwable
+    {
+        // Given
+        Config config = new Config( stringMap(
+                "my.users.0.user.name", "Bob",
+                "my.users.0.user.age", "81",
+                "my.users.1.user.name", "Greta",
+                "my.users.1.user.age", "82" ) );
+
+        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
+        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+
+        // When
+        List<ConfigView> views = config.view( Config.groups( "my.users" ) );
+
+        // Then
+        assertThat( views.size(), equalTo( 2 ) );
+
+        ConfigView bob = views.get( 0 );
+        assertThat( bob.get( name ), equalTo( "Bob" ) );
+        assertThat( bob.get( age ), equalTo( 81 ) );
+
+        ConfigView greta = views.get( 1 );
+        assertThat( greta.get( name ), equalTo( "Greta" ) );
+        assertThat( greta.get( age ), equalTo( 82 ) );
+
+        // however given the full name, the config could still be accessed outside the group
+        Setting<String> name0 = setting( "my.users.0.user.name", STRING, NO_DEFAULT );
+        assertThat( config.get( name0 ), equalTo( "Bob" ) );
+
+    }
+
+    @Test
+    public void shouldFindNoGroupViewWhenGroupNameIsMissing() throws Throwable
+    {
+        // Given
+        Config config = new Config( stringMap(
+                "0.user.name", "Bob",
+                "0.user.age", "81",
+                "1.user.name", "Greta",
+                "1.user.age", "82" ) );
+
+        Setting<String> name = setting( "user.name", STRING, NO_DEFAULT );
+        Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
+
+        // When
+        List<ConfigView> emptyStrViews = config.view( Config.groups( "" ) );
+        List<ConfigView> numViews = config.view( Config.groups( "0" ) );
+
+        // Then
+        assertThat( emptyStrViews.size(), equalTo( 0 ) );
+        assertThat( numViews.size(), equalTo( 0 ) );
+        assertThat( config.get( setting( "0.user.name", STRING, NO_DEFAULT ) ), equalTo( "Bob" ) );
+    }
+
+    @Test
+    public void shouldFindNoGroupViewWhenGroupNameIsWrong() throws Throwable
+    {
+        // Given
+        Config config = new Config( stringMap(
+                "my.users.0.name", "Bob",
+                "my.users.0.age", "81",
+                "my.users.1.name", "Greta",
+                "my.users.1.age", "82" ) );
+
+        // When
+        List<ConfigView> views = config.view( Config.groups( "my" ) );
+
+        // Then
+        assertThat( views.size(), equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldOnlyReadInsideGroupWhileAccessingSettingsInAGroup() throws Throwable
+    {
+        // Given
+        Config config = new Config( stringMap(
+                "name", "lemon",
+                "my.users.0.user.name", "Bob",
+                "my.users.0.user.age", "81",
+                "my.users.1.user.name", "Greta",
+                "my.users.1.user.age", "82" ) );
+
+        Setting<String> name = setting( "name", STRING, "No name given to this poor user" );
+        Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
+
+        // When
+        List<ConfigView> views = config.view( Config.groups( "my.users" ) );
+
+        // Then
+        assertThat( views.size(), equalTo( 2 ) );
+
+        ConfigView bob = views.get( 0 );
+        assertThat( bob.get( name ), equalTo( "No name given to this poor user" ) );
+        assertNull( bob.get( age ) );
+
+        ConfigView greta = views.get( 1 );
+        assertThat( greta.get( name ), equalTo( "No name given to this poor user" ) );
+        assertNull( greta.get( age ) );
+
+        assertThat( config.get( name ), equalTo( "lemon" ) );
+        assertNull( config.get( age ) );
+
     }
 }
