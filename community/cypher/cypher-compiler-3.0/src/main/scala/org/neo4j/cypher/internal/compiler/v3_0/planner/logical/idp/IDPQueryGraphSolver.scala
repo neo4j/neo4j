@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{applyOptional, outerHashJoin, planShortestPaths}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{leafPlanOptions, applyOptional, outerHashJoin, planShortestPaths}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 
 import scala.annotation.tailrec
@@ -53,7 +53,7 @@ object IDPQueryGraphSolver {
  */
 case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                maxTableSize: Int = 256,
-                               leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
+                               leafPlanFinder: LeafPlanFinder = leafPlanOptions,
                                solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {

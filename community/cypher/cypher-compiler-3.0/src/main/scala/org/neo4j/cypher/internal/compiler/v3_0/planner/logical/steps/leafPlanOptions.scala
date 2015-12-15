@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
-
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{LogicalLeafPlan, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LeafPlanFinder, LogicalPlanningContext, QueryPlannerConfiguration}
 
-object leafPlanOptions extends LogicalLeafPlan.Finder {
+object leafPlanOptions extends LeafPlanFinder {
 
   def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     val queryPlannerKit = config.toKit()
