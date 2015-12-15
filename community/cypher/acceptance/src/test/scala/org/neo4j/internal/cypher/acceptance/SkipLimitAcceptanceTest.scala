@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
 
 class SkipLimitAcceptanceTest extends ExecutionEngineFunSuite {
   test("SKIP should not allow variables") {
@@ -46,5 +46,14 @@ class SkipLimitAcceptanceTest extends ExecutionEngineFunSuite {
     val result = execute(query)
 
     result.toList should have size 2
+  }
+
+  test("ORDER BY LIMIT should use a TopPipe") {
+    1 to 3 foreach { _ => createNode() }
+
+    val query = "MATCH (n) RETURN n ORDER BY n.prop LIMIT 10"
+    val result = execute(query)
+
+    result.executionPlanDescription().find("Top") should not be empty
   }
 }

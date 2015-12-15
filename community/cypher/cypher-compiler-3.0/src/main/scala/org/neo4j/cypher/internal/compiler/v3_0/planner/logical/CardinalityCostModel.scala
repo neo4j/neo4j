@@ -67,7 +67,6 @@ object CardinalityCostModel extends CostModel {
          _: AbstractSemiApply |
          _: Skip |
          _: Sort |
-         _: SortedLimit |
          _: Union |
          _: Selection |
          _: ValueHashJoin |

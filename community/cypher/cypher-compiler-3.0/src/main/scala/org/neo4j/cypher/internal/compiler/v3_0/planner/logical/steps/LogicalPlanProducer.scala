@@ -392,26 +392,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Sort(inner, descriptions)(solved)
   }
 
-  def planSortedLimit(inner: LogicalPlan, limit: Expression, items: Seq[ast.SortItem])
-                     (implicit context: LogicalPlanningContext) = {
-    val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(
-      _.withLimitExpression(limit)
-        .withSortItems(items))))
-    SortedLimit(inner, limit, items)(solved)
-  }
-
-  def planSortedSkipAndLimit(inner: LogicalPlan, skip: Expression, limit: Expression, items: Seq[ast.SortItem])
-                            (implicit context: LogicalPlanningContext) = {
-    val solvedBySortedLimit = inner.solved.updateTailOrSelf(
-      _.updateQueryProjection(_.updateShuffle(_.withSkipExpression(skip)
-                                               .withLimitExpression(limit)
-                                               .withSortItems(items))
-      ))
-    val sortedLimit = SortedLimit(inner, ast.Add(limit, skip)(limit.position), items)(solvedBySortedLimit)
-
-    planSkip(sortedLimit, skip)
-  }
-
   def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression])
                       (implicit context: LogicalPlanningContext) = {
     val solved = inner.solved.amendQueryGraph(_.addShortestPath(shortestPaths).addPredicates(predicates: _*))
