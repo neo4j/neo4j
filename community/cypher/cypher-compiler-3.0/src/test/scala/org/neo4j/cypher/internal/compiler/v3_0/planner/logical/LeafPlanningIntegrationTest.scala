@@ -219,7 +219,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         case _ => Double.MaxValue
       }
     } planFor "MATCH (n:Awesome) RETURN n").plan should equal(
-      NodeByLabelScan("n", LazyLabel("Awesome"), Set.empty)(solved)
+      NodeByLabelScan("n", lblName("Awesome"), Set.empty)(solved)
     )
   }
 
@@ -235,7 +235,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) RETURN n"
 
     plan.plan should equal(
-      NodeByLabelScan("n", lazyLabel("Awesome"), Set.empty)(solved)
+      NodeByLabelScan("n", lblName("Awesome"), Set.empty)(solved)
     )
   }
 
@@ -421,7 +421,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         Seq(HasLabels(varFor("n"), Seq(LabelName("Foo")_))_, HasLabels(varFor("n"), Seq(LabelName("Baz")_))_),
-        NodeByLabelScan("n", LazyLabel("Bar"), Set.empty)(solved)
+        NodeByLabelScan("n", lblName("Bar"), Set.empty)(solved)
       )(solved)
     )
   }

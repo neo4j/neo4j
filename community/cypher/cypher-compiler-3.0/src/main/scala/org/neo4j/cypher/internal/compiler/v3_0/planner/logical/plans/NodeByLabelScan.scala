@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.LabelName
 
-case class NodeByLabelScan(idName: IdName, label: LazyLabel, argumentIds: Set[IdName])
+case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])
                           (val solved: PlannerQuery with CardinalityEstimation)
   extends NodeLogicalLeafPlan with LogicalPlanWithoutExpressions {
 

@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
+import org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst}
@@ -176,13 +178,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       AllNodesScanPipe(id)()
 
     case NodeCountFromCountStore(IdName(id), label, _) =>
-      NodeCountFromCountStorePipe(id, label)()
+      NodeCountFromCountStorePipe(id, label.map(LazyLabel.apply))()
 
     case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
-      RelationshipCountFromCountStorePipe(id, startLabel, typeNames, endLabel, bothDirections)()
+      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), typeNames, endLabel.map(LazyLabel.apply), bothDirections)()
 
     case NodeByLabelScan(IdName(id), label, _) =>
-      NodeByLabelScanPipe(id, label)()
+      NodeByLabelScanPipe(id, LazyLabel(label))()
 
     case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
       NodeByIdSeekPipe(id, nodeIdExpr.asCommandSeekArgs)()
@@ -256,7 +258,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       OptionalPipe(inner.availableSymbols.map(_.name), source)()
 
     case Sort(_, sortItems) =>
-      SortPipe(source, sortItems)()
+      SortPipe(source, sortItems.map(translateSortDescription))()
 
     case plans.Skip(_, count) =>
       SkipPipe(source, buildExpression(count))()
@@ -297,16 +299,16 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       ProduceResultsPipe(source, columns)()
 
     case CreateNode(_, idName, labels, props) =>
-      CreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
+      CreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))()
 
     case MergeCreateNode(_, idName, labels, props) =>
-      MergeCreateNodePipe(source, idName.name, labels, props.map(toCommandExpression))()
+      MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))()
 
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
       CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
-     SetPipe(source, SetLabelsOperation(name, labels))()
+     SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))()
 
     case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
       SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
@@ -325,7 +327,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
 
     case RemoveLabels(_, IdName(name), labels) =>
-      RemoveLabelsPipe(source, name, labels)()
+      RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))()
 
     case DeleteNode(_, expression) =>
       DeleteNodePipe(source, toCommandExpression(expression))()
@@ -455,5 +457,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
     toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+  }
+
+  private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
+    case logical.Ascending(IdName(name)) => pipes.Ascending(name)
+    case logical.Descending(IdName(name)) => pipes.Descending(name)
   }
 }

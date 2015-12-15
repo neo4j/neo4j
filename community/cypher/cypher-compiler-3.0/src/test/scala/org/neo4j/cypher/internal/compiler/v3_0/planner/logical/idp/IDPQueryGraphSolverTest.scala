@@ -111,7 +111,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")(solved)
+        Expand(NodeByLabelScan("b", lblName("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -149,7 +149,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         Selection(Seq(labelBPredicate),
           Expand(
-            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
+            NodeByLabelScan("a", lblName("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
         )(solved))
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -192,9 +192,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         NodeHashJoin(Set("c"),
           Expand(
-            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1")(solved),
+            NodeByLabelScan("a", lblName("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1")(solved),
           Expand(
-            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")(solved)
+            NodeByLabelScan("b", lblName("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")(solved)
         )(solved))
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -242,9 +242,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Selection(Seq(cfg.predicate),
           NodeHashJoin(Set("c"),
             Expand(
-              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1")(solved),
+              NodeByLabelScan("a", lblName("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "c", "r1")(solved),
             Expand(
-              NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")(solved)
+              NodeByLabelScan("b", lblName("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")(solved)
           )(solved)
         )(solved)
       )

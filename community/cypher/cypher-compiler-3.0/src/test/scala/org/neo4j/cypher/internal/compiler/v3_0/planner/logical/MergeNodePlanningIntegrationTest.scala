@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Collection, In, MapExpression, Property, PropertyKeyName, SignedDecimalIntegerLiteral, Variable}
@@ -44,9 +43,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
   test("should plan single merge node from a label scan") {
 
-    val labelScan = NodeByLabelScan(aId, LazyLabel("X"), Set.empty)(solved)
+    val labelScan = NodeByLabelScan(aId, lblName("X"), Set.empty)(solved)
     val optional = Optional(labelScan)(solved)
-    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq(LazyLabel("X")), None)(solved)
+    val onCreate = MergeCreateNode(SingleRow()(solved), aId, Seq(lblName("X")), None)(solved)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, aId)(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
@@ -136,7 +135,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val allNodesScan = AllNodesScan(aId, Set.empty)(solved)
     val optional = Optional(allNodesScan)(solved)
     val setLabels = SetLabels(SingleRow()(solved),
-      aId, Seq(LazyLabel("L")))(solved)
+      aId, Seq(lblName("L")))(solved)
     val onMatch = ConditionalApply(optional, setLabels, aId)(solved)
 
     val createAndOnCreate = SetNodeProperty(MergeCreateNode(SingleRow()(solved), aId, Seq.empty, None)(solved), aId, PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("1")(pos))(solved)

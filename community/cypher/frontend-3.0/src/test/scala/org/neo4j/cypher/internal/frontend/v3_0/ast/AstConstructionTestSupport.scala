@@ -29,8 +29,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def varFor(name: String): Variable = Variable(name)(pos)
 
+  def lblName(s: String) = LabelName(s)(pos)
+
   def hasLabels(v: String, label: String) =
-    HasLabels(varFor(v), Seq(LabelName(label)(pos)))(pos)
+    HasLabels(varFor(v), Seq(lblName(label)))(pos)
 
   def prop(variable: String, propKey: String) = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 

@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Ascending, SortDescription, Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_0.ast
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{AscSortItem, PatternExpression}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite

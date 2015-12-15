@@ -227,9 +227,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
 
-  implicit def lazyLabel(label: String)(implicit plan: SemanticPlan): LazyLabel =
-    LazyLabel(LabelName(label)(_))(plan.semanticTable)
-
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
 

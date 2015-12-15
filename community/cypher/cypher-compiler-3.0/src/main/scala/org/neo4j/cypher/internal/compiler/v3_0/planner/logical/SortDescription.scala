@@ -17,23 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, LabelName}
-
-case class CreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override def availableSymbols: Set[IdName] = {
-    source.availableSymbols + idName
-  }
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
+sealed trait SortDescription {
+  def id: IdName
 }
+
+case class Ascending(id: IdName) extends SortDescription
+
+case class Descending(id: IdName) extends SortDescription

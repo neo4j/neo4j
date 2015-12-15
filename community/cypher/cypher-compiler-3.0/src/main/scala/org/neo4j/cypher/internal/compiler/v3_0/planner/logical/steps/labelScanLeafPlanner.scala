@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, UsingScanHint}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{UsingScanHint, Variable}
 
 object labelScanLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
@@ -37,7 +36,7 @@ object labelScanLeafPlanner extends LeafPlanner {
         case hint@UsingScanHint(Variable(`identName`), `labelName`) => hint
       }
 
-      context.logicalPlanProducer.planNodeByLabelScan(idName, LazyLabel(labelName), Seq(labelPredicate), hint, qg.argumentIds)
+      context.logicalPlanProducer.planNodeByLabelScan(idName, labelName, Seq(labelPredicate), hint, qg.argumentIds)
     }
   }
 }

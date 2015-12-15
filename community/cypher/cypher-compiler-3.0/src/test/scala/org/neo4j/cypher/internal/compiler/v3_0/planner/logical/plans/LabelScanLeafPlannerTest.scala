@@ -65,7 +65,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Seq(
-      NodeByLabelScan(idName, LazyLabel("Awesome"), Set.empty)(solved))
+      NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved))
     )
   }
 
@@ -98,6 +98,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(
-      Seq(NodeByLabelScan(idName, LazyLabel(LabelName("Awesome")_), Set.empty)(solved)))
+      Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved)))
   }
 }
