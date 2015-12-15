@@ -297,9 +297,8 @@ public interface PageCursor extends AutoCloseable
      * an equivalent io() call. In other words, the next call to next() will
      * move the cursor to the starting page that was specified in the io() that
      * produced the cursor.
-     * @throws IOException
      */
-    void rewind() throws IOException;
+    void rewind();
 
     /**
      * Moves the cursor to the next page, if any, and returns true when it is
