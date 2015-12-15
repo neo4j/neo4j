@@ -22,6 +22,7 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -29,16 +30,25 @@ public class ApplyPulledTransactions implements TxPullResponseListener
 {
     private final Supplier<TransactionApplier> transactionApplierSupplier;
     private final Log log;
+    private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
 
-    public ApplyPulledTransactions( LogProvider logProvider, Supplier<TransactionApplier> transactionApplierSupplier )
+    public ApplyPulledTransactions( LogProvider logProvider,
+                                    Supplier<TransactionApplier> transactionApplierSupplier,
+                                    Supplier<TransactionIdStore> transactionIdStoreSupplier )
     {
         this.transactionApplierSupplier = transactionApplierSupplier;
+        this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void onTxReceived( TxPullResponse tx )
     {
+        if ( tx.tx().getCommitEntry().getTxId() <= transactionIdStoreSupplier.get().getLastCommittedTransactionId() )
+        {
+            return;
+        }
+
         try
         {
             transactionApplierSupplier.get().appendToLogAndApplyToStore( tx.tx() );
