@@ -634,9 +634,9 @@ public class TestApps extends AbstractShellTest
         finishTx();
         executeCommand( "dump match (n)-[r]->(m) where id(n) = 0 return n,r,m;",
                 "begin",
-                "create (_0)",
+                "create \\(_0\\)",
                 "create \\(_1\\)",
-                "(_0)-\\[:`KNOWS`\\]->(_1)",
+                "\\(_0\\)-\\[:`KNOWS`\\]->\\(_1\\)",
                 "commit" );
     }
 
@@ -654,7 +654,7 @@ public class TestApps extends AbstractShellTest
                 "begin",
                 "create \\(_0 \\{\\`f o o\\`:\"bar\"\\}\\)",
                 "create \\(_1 \\{`flags`:\\[true, false, true\\]\\}\\)",
-                "_0-\\[:`KNOWS` \\{`since`:2010\\}\\]->_1",
+                "\\(_0\\)-\\[:`KNOWS` \\{`since`:2010\\}\\]->\\(_1\\)",
                 "commit"
         );
     }
