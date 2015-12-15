@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{Ascending, Descending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, QueryProjection}
@@ -54,8 +53,8 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   }
 
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
-    case ast.AscSortItem(ast.Variable(key)) => Ascending(key)
-    case ast.DescSortItem(ast.Variable(key)) => Descending(key)
+    case ast.AscSortItem(ast.Variable(key)) => Ascending(IdName(key))
+    case ast.DescSortItem(ast.Variable(key)) => Descending(IdName(key))
     case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 

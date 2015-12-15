@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{SortDescription, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._

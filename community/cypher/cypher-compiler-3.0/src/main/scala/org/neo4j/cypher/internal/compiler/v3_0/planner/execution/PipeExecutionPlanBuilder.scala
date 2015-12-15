@@ -30,9 +30,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, PipeInfo, PlanFingerprint, ReadsAllNodes}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
+import org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst}
@@ -256,7 +258,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       OptionalPipe(inner.availableSymbols.map(_.name), source)()
 
     case Sort(_, sortItems) =>
-      SortPipe(source, sortItems)()
+      SortPipe(source, sortItems.map(translateSortDescription))()
 
     case plans.Skip(_, count) =>
       SkipPipe(source, buildExpression(count))()
@@ -455,5 +457,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
     toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+  }
+
+  private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
+    case logical.Ascending(IdName(name)) => pipes.Ascending(name)
+    case logical.Descending(IdName(name)) => pipes.Descending(name)
   }
 }
