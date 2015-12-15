@@ -41,7 +41,6 @@ import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -71,8 +70,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.execution_guard_enabled;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -160,10 +157,6 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Guard guard = config.get( execution_guard_enabled ) ?
-                      deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
-                      null;
-
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 
         DatabasePanicEventGenerator databasePanicEventGenerator = deps.satisfyDependency(
@@ -181,7 +174,7 @@ public class DataSourceModule
                 platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 platformModule.transactionMonitor, databaseHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
-                editionModule.headerInformationFactory, startupStatistics, nodeManager, guard,
+                editionModule.headerInformationFactory, startupStatistics, nodeManager,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
                 platformModule.monitors, platformModule.tracers ) );
         dataSourceManager.register( neoStoreDataSource );
