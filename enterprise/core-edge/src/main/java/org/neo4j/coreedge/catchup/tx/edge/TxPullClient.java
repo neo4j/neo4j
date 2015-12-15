@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.concurrent.CompletableFuture;
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFailedException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -40,9 +40,9 @@ public class TxPullClient
     {
         coreClient.addTxPullResponseListener( txPullResponseListener );
 
-        final CompletableFuture<Long> txId = new CompletableFuture<>();
+        CompletableFuture<Long> txId = new CompletableFuture<>();
 
-        TxStreamCompleteListener streamCompleteListener = lastTransactionId -> txId.complete( lastTransactionId );
+        TxStreamCompleteListener streamCompleteListener = txId::complete;
         coreClient.addTxStreamCompleteListener( streamCompleteListener );
 
         try
