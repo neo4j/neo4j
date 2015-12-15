@@ -21,13 +21,5 @@ package org.neo4j.com;
 
 public interface ComExceptionHandler
 {
-    static ComExceptionHandler NO_OP = new ComExceptionHandler()
-    {
-        @Override
-        public void handle( ComException exception )
-        {
-        }
-    };
-
     void handle( ComException exception );
 }
