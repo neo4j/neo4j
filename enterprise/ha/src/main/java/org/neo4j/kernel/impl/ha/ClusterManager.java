@@ -27,7 +27,9 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -83,6 +85,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.log.rotation.StoreFlusher;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -159,6 +162,8 @@ public class ClusterManager
     private final Provider clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
+    private final Listener<GraphDatabaseService> initialDatasetCreator;
+    private final List<Predicate<ManagedCluster>> availabilityChecks;
     LifeSupport life;
 
     private ClusterManager( Builder builder )
@@ -168,6 +173,8 @@ public class ClusterManager
         this.commonConfig = withDefaults( builder.commonConfig );
         this.dbFactory = builder.factory;
         this.storeDirInitializer = builder.initializer;
+        this.initialDatasetCreator = builder.initialDatasetCreator;
+        this.availabilityChecks = builder.availabilityChecks;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -556,6 +563,17 @@ public class ClusterManager
             ManagedCluster managedCluster = new ManagedCluster( cluster );
             clusterMap.put( cluster.getName(), managedCluster );
             life.add( managedCluster );
+
+            for ( Predicate<ManagedCluster> availabilityCheck : availabilityChecks )
+            {
+                managedCluster.await( availabilityCheck );
+            }
+
+            if ( initialDatasetCreator != null )
+            {
+                initialDatasetCreator.receive( managedCluster.getMaster() );
+                managedCluster.sync();
+            }
         }
     }
 
@@ -649,6 +667,20 @@ public class ClusterManager
          * {@link Setting} instance as key as well.
          */
         SELF withSharedSetting( Setting<?> setting, String value );
+
+        /**
+         * Initial dataset to be created once the cluster is up and running.
+         *
+         * @param transactor the {@link Listener} receiving a call to create the dataset on the master.
+         */
+        SELF withInitialDataset( Listener<GraphDatabaseService> transactor );
+
+        /**
+         * Checks that must pass before cluster is considered to be up.
+         *
+         * @param checks availability checks that must pass before considering the cluster online.
+         */
+        SELF withAvailabilityChecks( Predicate<ManagedCluster>... checks );
     }
 
     public static class Builder implements ClusterBuilder<Builder>
@@ -658,6 +690,8 @@ public class ClusterManager
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
+        private Listener<GraphDatabaseService> initialDatasetCreator;
+        private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
 
         public Builder( File root )
         {
@@ -740,6 +774,21 @@ public class ClusterManager
         public Builder withSharedSetting( Setting<?> setting, String value )
         {
             return withInstanceSetting( setting, constant( value ) );
+        }
+
+        @Override
+        public Builder withInitialDataset( Listener<GraphDatabaseService> transactor )
+        {
+            this.initialDatasetCreator = transactor;
+            return this;
+        }
+
+        @Override
+        @SafeVarargs
+        public final Builder withAvailabilityChecks( Predicate<ManagedCluster>... checks )
+        {
+            this.availabilityChecks = Arrays.asList( checks );
+            return this;
         }
 
         public ClusterManager build()
@@ -900,6 +949,7 @@ public class ClusterManager
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
+        private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -1025,7 +1075,7 @@ public class ClusterManager
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
-            return new StartDatabaseAgainKit( this, serverId );
+            return wrap( new StartDatabaseAgainKit( this, serverId ) );
         }
 
         private void assertMember( HighlyAvailableGraphDatabase db )
@@ -1073,7 +1123,27 @@ public class ClusterManager
                 networkSender.setPaused( true );
             }
 
-            return new StartNetworkAgainKit( db, networkReceiver, networkSender, flags );
+            return wrap( new StartNetworkAgainKit( db, networkReceiver, networkSender, flags ) );
+        }
+
+        private RepairKit wrap( final RepairKit actual )
+        {
+            pendingRepairs.add( actual );
+            return new RepairKit()
+            {
+                @Override
+                public HighlyAvailableGraphDatabase repair() throws Throwable
+                {
+                    try
+                    {
+                        return actual.repair();
+                    }
+                    finally
+                    {
+                        pendingRepairs.remove( actual );
+                    }
+                }
+            };
         }
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
@@ -1275,6 +1345,20 @@ public class ClusterManager
             {
                 function.apply( db );
             }
+        }
+
+        /**
+         * Repairs all {@link RepairKit} that haven't already been repaired.
+         *
+         * @throws Throwable if any repair throws.
+         */
+        public void repairAll() throws Throwable
+        {
+            for ( RepairKit repair : pendingRepairs )
+            {
+                repair.repair();
+            }
+            pendingRepairs.clear();
         }
     }
 
