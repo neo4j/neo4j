@@ -24,10 +24,11 @@ import java.lang.reflect.Array;
 import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.util.Collections.singletonMap;
 
@@ -88,7 +89,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
 
         int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
 
-        StoreStatement statement = state.getStoreStatement();
+        StorageStatement statement = state.getStoreStatement();
         for ( Object value : properties )
         {
             // given

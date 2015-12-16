@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -30,18 +31,18 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
-import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature.ProcedureName;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface SchemaReadOperations
 {
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey );
+    IndexDescriptor indexGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey );
 
     /**
      * Get all indexes for a label.
@@ -129,7 +130,8 @@ public interface SchemaReadOperations
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind constraint ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( KernelStatement state, IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
+            throws SchemaRuleNotFoundException;
 
     /** List all defined procedures, given the current transactional context
      * @param kernelStatement*/

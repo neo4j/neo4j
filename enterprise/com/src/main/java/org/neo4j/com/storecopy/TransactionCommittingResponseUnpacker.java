@@ -25,14 +25,14 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Receives and unpacks {@link Response responses}.

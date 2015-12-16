@@ -21,30 +21,26 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.index.IndexCommand;
+import org.neo4j.storageengine.api.StorageCommand;
 
-final class IndexCommandDetector extends CommandVisitor.Delegator
+final class IndexCommandDetector implements org.neo4j.helpers.collection.Visitor<StorageCommand,IOException>
 {
     private boolean hasWrittenAnyLegacyIndexCommand;
-
-    public IndexCommandDetector( CommandVisitor delegate )
-    {
-        super( delegate );
-    }
-
-    @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-    {
-        // If there's any legacy index command in this transaction, there's an index define command
-        // so it's enough to check this command type.
-        hasWrittenAnyLegacyIndexCommand = true;
-        return super.visitIndexDefineCommand( command );
-    }
 
     public void reset()
     {
         hasWrittenAnyLegacyIndexCommand = false;
+    }
+
+    @Override
+    public boolean visit( StorageCommand element ) throws IOException
+    {
+        if ( element instanceof IndexCommand )
+        {
+            hasWrittenAnyLegacyIndexCommand = true;
+        }
+        return false;
     }
 
     public boolean hasWrittenAnyLegacyIndexCommand()

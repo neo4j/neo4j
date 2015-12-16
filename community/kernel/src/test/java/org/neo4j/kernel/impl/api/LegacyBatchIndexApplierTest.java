@@ -56,8 +56,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 public class LegacyBatchIndexApplierTest
 {

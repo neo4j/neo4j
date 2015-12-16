@@ -26,6 +26,8 @@ import java.util.Map;
 
 import static java.util.Arrays.asList;
 
+import org.neo4j.storageengine.api.Token;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 

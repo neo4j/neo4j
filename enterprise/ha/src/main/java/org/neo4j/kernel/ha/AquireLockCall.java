@@ -26,8 +26,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 abstract class AquireLockCall implements TargetCaller<Master, LockResult>
 {
@@ -35,7 +35,7 @@ abstract class AquireLockCall implements TargetCaller<Master, LockResult>
     public Response<LockResult> call( Master master, RequestContext context,
                                       ChannelBuffer input, ChannelBuffer target )
     {
-        Locks.ResourceType type = ResourceTypes.fromId( input.readInt() );
+        ResourceType type = ResourceTypes.fromId( input.readInt() );
         long[] ids = new long[input.readInt()];
         for ( int i = 0; i < ids.length; i++ )
         {
@@ -44,6 +44,6 @@ abstract class AquireLockCall implements TargetCaller<Master, LockResult>
         return lock( master, context, type, ids );
     }
 
-    protected abstract Response<LockResult> lock( Master master, RequestContext context, Locks.ResourceType type,
+    protected abstract Response<LockResult> lock( Master master, RequestContext context, ResourceType type,
                                                   long... ids );
 }

@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -664,11 +663,10 @@ public class CheckTxLogsTest
               LogVersionedStoreChannel versionedChannel = new PhysicalLogVersionedStoreChannel( channel, 0, (byte) 0 );
               PhysicalWritableLogChannel writableLogChannel = new PhysicalWritableLogChannel( versionedChannel ) )
         {
-            CommandWriter serializer = new CommandWriter( writableLogChannel );
             long offset = channel.size();
             channel.position( offset );
 
-            LogEntryWriter writer = new LogEntryWriter( writableLogChannel, serializer );
+            LogEntryWriter writer = new LogEntryWriter( writableLogChannel );
             TransactionLogWriter txWriter = new TransactionLogWriter( writer );
 
             PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );

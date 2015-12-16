@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -70,8 +69,7 @@ public class StoreMigratorCheckPointer
             storeChannel.position( offset );
             try ( PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( storeChannel ) )
             {
-                final TransactionLogWriter writer =
-                        new TransactionLogWriter( new LogEntryWriter( channel, new CommandWriter( channel ) ) );
+                final TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
                 writer.checkPoint( new LogPosition( logVersion, offset ) );
             }
         }

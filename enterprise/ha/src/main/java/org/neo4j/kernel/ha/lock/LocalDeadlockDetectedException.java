@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.lang.String.format;
 
@@ -43,14 +44,14 @@ import static java.lang.String.format;
  */
 public class LocalDeadlockDetectedException extends DeadlockDetectedException
 {
-    public LocalDeadlockDetectedException( Locks.Client lockClient, Locks lockManager, Locks.ResourceType resourceType, long resourceId,
+    public LocalDeadlockDetectedException( Locks.Client lockClient, Locks lockManager, ResourceType resourceType, long resourceId,
             LockType type )
     {
         super( constructHelpfulDiagnosticsMessage( lockClient, lockManager, resourceType, resourceId, type ) );
     }
 
     private static String constructHelpfulDiagnosticsMessage( Locks.Client client, Locks lockManager,
-                                                  Locks.ResourceType resourceType, long resourceId, LockType type )
+                                                  ResourceType resourceType, long resourceId, LockType type )
     {
         StringWriter stringWriter = new StringWriter();
         stringWriter.append( format(

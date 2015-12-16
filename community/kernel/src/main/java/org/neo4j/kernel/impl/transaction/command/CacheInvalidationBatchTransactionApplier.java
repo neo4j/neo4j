@@ -23,12 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.CommandsToApply;
 
-public class CacheInvalidationBatchTransactionApplier implements BatchTransactionApplier
+public class CacheInvalidationBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
@@ -41,20 +40,8 @@ public class CacheInvalidationBatchTransactionApplier implements BatchTransactio
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         return new CacheInvalidationTransactionApplier( neoStores, cacheAccess );
-    }
-
-    @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-    {
-        return startTx( transaction );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-
     }
 }

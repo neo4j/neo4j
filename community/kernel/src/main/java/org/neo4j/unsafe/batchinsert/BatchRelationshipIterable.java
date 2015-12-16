@@ -21,7 +21,6 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Iterator;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
 
 public interface LogEntryParser<T extends LogEntry>
 {

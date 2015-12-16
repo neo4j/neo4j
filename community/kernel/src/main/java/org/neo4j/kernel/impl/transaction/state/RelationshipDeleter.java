@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -28,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.DirectionWrapper;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 import static org.neo4j.kernel.impl.transaction.state.RelationshipCreator.relCount;
 
@@ -50,7 +50,7 @@ public class RelationshipDeleter
      *
      * @param id The id of the relationship to delete.
      */
-    public void relDelete( long id, RecordAccessSet recordChanges, Locks.Client locks )
+    public void relDelete( long id, RecordAccessSet recordChanges, ResourceLocker locks )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
         propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
@@ -59,7 +59,7 @@ public class RelationshipDeleter
         record.setInUse( false );
     }
 
-    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet, Locks.Client locks )
+    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet, ResourceLocker locks )
     {
         disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelRecords(), locks );
         disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelRecords(), locks );
@@ -68,7 +68,7 @@ public class RelationshipDeleter
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
-            RecordAccess<Long, RelationshipRecord, Void> relChanges, Locks.Client locks )
+            RecordAccess<Long, RelationshipRecord, Void> relChanges, ResourceLocker locks )
     {
         long otherRelId = pointer.otherSide().get( rel );
         if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -98,7 +98,7 @@ public class RelationshipDeleter
     }
 
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
-            Locks.Client locks )
+            ResourceLocker locks )
     {
         RecordProxy<Long, NodeRecord, Void> startNodeChange =
                 recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
@@ -182,7 +182,7 @@ public class RelationshipDeleter
     }
 
     private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, Locks.Client locks )
+            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
         {

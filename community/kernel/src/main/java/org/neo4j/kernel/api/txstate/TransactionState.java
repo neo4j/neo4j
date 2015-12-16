@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import java.util.Map;
-
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.
  *
  * This interface defines the mutating methods for the transaction state, methods for reading are defined in
- * {@link ReadableTxState}. These mutating methods follow the rule that they all contain the word "Do" in the name.
+ * {@link ReadableTransactionState}. These mutating methods follow the rule that they all contain the word "Do" in the name.
  * This naming convention helps deciding where to set {@link #hasChanges()} in the
  * {@link org.neo4j.kernel.impl.api.state.TxState main implementation class}.
  */
-public interface TransactionState extends ReadableTxState
+public interface TransactionState extends ReadableTransactionState
 {
     // ENTITY RELATED
 
@@ -102,12 +101,6 @@ public interface TransactionState extends ReadableTxState
     boolean constraintDoUnRemove( NodePropertyConstraint constraint );
 
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
-
-    // <Legacy index>
-    void nodeLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
-
-    void relationshipLegacyIndexDoCreate( String indexName, Map<String, String> customConfig );
-    // </Legacy index>
 
     void indexDoUpdateProperty( IndexDescriptor descriptor, long nodeId, DefinedProperty before, DefinedProperty after );
 

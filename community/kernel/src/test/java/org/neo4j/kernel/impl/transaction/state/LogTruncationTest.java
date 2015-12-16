@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -60,6 +59,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
@@ -76,8 +76,7 @@ public class LogTruncationTest
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
     private final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
             new RecordStorageCommandReaderFactory() );
-    private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
-    private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel, serializer );
+    private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {
@@ -200,7 +199,7 @@ public class LogTruncationTest
         try
         {
             LogEntry logEntry = logEntryReader.readLogEntry( inMemoryChannel );
-            Command command = ((LogEntryCommand) logEntry).getXaCommand();
+            StorageCommand command = ((LogEntryCommand) logEntry).getXaCommand();
             assertEquals( cmd, command );
         }
         catch ( Exception e )

@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.storageengine.api.Token;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;

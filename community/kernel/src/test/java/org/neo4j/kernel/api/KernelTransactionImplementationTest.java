@@ -23,8 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -36,18 +37,13 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -56,18 +52,25 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest
@@ -369,13 +372,20 @@ public class KernelTransactionImplementationTest
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.currentTimeMillis();
         when( legacyIndexState.hasChanges() ).thenReturn( true );
-        when( storageEngine.createCommands(
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
+                commands.add( mock( Command.class ) );
+                return null;
+            }
+        } ).when( storageEngine ).createCommands(
+                any( Collection.class ),
                 any( TransactionState.class ),
-                any( LegacyIndexTransactionState.class ),
-                any( Locks.Client.class ),
-                any( StatementOperationParts.class ),
-                any( StoreStatement.class ),
-                anyLong() ) ).thenReturn( sillyCommandList() );
+                any( ResourceLocker.class ),
+                anyLong() );
 
         try ( KernelTransactionImplementation transaction = newTransaction( 5 ) )
         {
@@ -476,13 +486,5 @@ public class KernelTransactionImplementationTest
             transaction = batch.transactionRepresentation();
             return txId++;
         }
-    }
-
-    private static Collection<Command> sillyCommandList()
-    {
-        Collection<Command> commands = new ArrayList<>();
-        Command command = mock( Command.class );
-        commands.add( command );
-        return commands;
     }
 }

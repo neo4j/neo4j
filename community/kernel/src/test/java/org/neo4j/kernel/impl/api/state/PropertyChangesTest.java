@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

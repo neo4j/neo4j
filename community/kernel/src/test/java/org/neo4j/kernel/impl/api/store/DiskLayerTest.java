@@ -23,8 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -84,16 +85,17 @@ public class DiskLayerTest
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStores.getSchemaStore() ),
                 neoStores,
-                indexingService, new Factory<StoreStatement>()
+                indexingService, new Supplier<StorageStatement>()
                 {
                     @Override
-                    public StoreStatement newInstance()
+                    public StorageStatement get()
                     {
-                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE );
+                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE,
+                                new IndexReaderFactory.Caching( indexingService ),
+                                resolver.resolveDependency( LabelScanStore.class )::newReader );
                     }
                 } );
-        this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
-                resolver.resolveDependency( LabelScanStore.class ), null,
+        this.state = new KernelStatement( null, null,
                 null, null, disk.acquireStatement() );
     }
 
@@ -134,7 +136,7 @@ public class DiskLayerTest
         try ( Transaction ignored = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
-            return disk.indexesGetForLabelAndPropertyKey( disk.labelGetForName( label.name() ),
+            return disk.indexGetForLabelAndPropertyKey( disk.labelGetForName( label.name() ),
                     disk.propertyKeyGetForName( propertyKey ) );
         }
     }

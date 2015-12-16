@@ -60,7 +60,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -69,7 +68,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -79,6 +77,8 @@ import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
@@ -238,7 +238,7 @@ public class TransactionRecordStateTest
 
         // THEN
         PhysicalTransactionRepresentation representation = transactionRepresentationOf( recordState );
-        representation.accept( command -> command.handle( new CommandVisitor.Adapter()
+        representation.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
             public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
@@ -520,11 +520,11 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, 0, 101 );
 
         // WHEN
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
 
         // THEN
-        Iterator<Command> commandIterator = commands.iterator();
+        Iterator<StorageCommand> commandIterator = commands.iterator();
 
         assertCommand( commandIterator.next(), PropertyCommand.class );
         assertCommand( commandIterator.next(), RelationshipCommand.class );
@@ -557,11 +557,11 @@ public class TransactionRecordStateTest
         recordState.relAddProperty( relId1, 0, 123 );
 
         // WHEN
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
 
         // THEN
-        Iterator<Command> commandIterator = commands.iterator();
+        Iterator<StorageCommand> commandIterator = commands.iterator();
 
         // added rel property
         assertCommand( commandIterator.next(), PropertyCommand.class );
@@ -601,11 +601,11 @@ public class TransactionRecordStateTest
         recordState.nodeRemoveProperty( nodeId1, 0 );
 
         // WHEN
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
 
         // THEN
-        Iterator<Command> commandIterator = commands.iterator();
+        Iterator<StorageCommand> commandIterator = commands.iterator();
 
         // updated rel group to not point to the deleted one below
         assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
@@ -633,7 +633,7 @@ public class TransactionRecordStateTest
         recordState.createSchemaRule( uniquenessConstraintRule( constraintId, 1, 1, indexId ) );
 
         // WHEN
-        recordState.extractCommands( new ArrayList<Command>() );
+        recordState.extractCommands( new ArrayList<StorageCommand>() );
 
         // THEN
         verify( integrityValidator ).validateSchemaRule( any() );
@@ -654,7 +654,7 @@ public class TransactionRecordStateTest
 
         // WHEN
         recordState.nodeAddProperty( nodeId, propertyKey, value );
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
         PropertyCommand propertyCommand = singlePropertyCommand( commands );
 
@@ -815,7 +815,7 @@ public class TransactionRecordStateTest
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
 
-        ptx.accept( command -> command.handle( new CommandVisitor.Adapter()
+        ptx.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
             public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
@@ -853,7 +853,7 @@ public class TransactionRecordStateTest
         tx.createSchemaRule( rule );
         PhysicalTransactionRepresentation transactionCommands = transactionRepresentationOf( tx );
 
-        transactionCommands.accept( command -> command.handle( new CommandVisitor.Adapter()
+        transactionCommands.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
             public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
@@ -1178,14 +1178,14 @@ public class TransactionRecordStateTest
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState writeTransaction )
             throws TransactionFailureException
     {
-        List<Command> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         writeTransaction.extractCommands( commands );
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return tx;
     }
 
-    private void assertCommand( Command next, Class klass )
+    private void assertCommand( StorageCommand next, Class klass )
     {
         assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
     }
@@ -1205,8 +1205,7 @@ public class TransactionRecordStateTest
 
     private void writeToChannel( TransactionRepresentation transaction, WritableLogChannel channel ) throws IOException
     {
-        TransactionLogWriter writer = new TransactionLogWriter(
-                new LogEntryWriter( channel, new CommandWriter( channel ) ) );
+        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
         writer.append( transaction, 2 );
     }
 
@@ -1273,7 +1272,7 @@ public class TransactionRecordStateTest
     private TransactionRepresentation transaction( TransactionRecordState recordState )
             throws TransactionFailureException
     {
-        List<Command> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
@@ -1302,7 +1301,7 @@ public class TransactionRecordStateTest
         return result.toString();
     }
 
-    private PropertyCommand singlePropertyCommand( Collection<Command> commands )
+    private PropertyCommand singlePropertyCommand( Collection<StorageCommand> commands )
     {
         return (PropertyCommand) single( filter( t -> t instanceof PropertyCommand, commands ) );
     }

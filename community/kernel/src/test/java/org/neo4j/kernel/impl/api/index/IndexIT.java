@@ -75,7 +75,7 @@ public class IndexIT extends KernelIntegrationTest
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             assertEquals( asSet( expectedRule ),
                           asSet( statement.indexesGetForLabel( labelId ) ) );
-            assertEquals( expectedRule, statement.indexesGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
+            assertEquals( expectedRule, statement.indexGetForLabelAndPropertyKey( labelId, propertyKeyId ) );
             commit();
         }
     }

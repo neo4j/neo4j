@@ -32,7 +32,8 @@ import java.util.List;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -65,14 +66,15 @@ public class TxStateVisitorTest
         return equalTo(asList( change ));
     }
 
-    private GatheringVisitor.PropertyChange propChange( long relId, Collection<DefinedProperty> added, List<DefinedProperty> changed, Collection<Integer> removed )
+    private GatheringVisitor.PropertyChange propChange( long relId, Collection<StorageProperty> added,
+            List<StorageProperty> changed, Collection<Integer> removed )
     {
         return new GatheringVisitor.PropertyChange( relId, added, changed, removed );
     }
 
 
     private TransactionState state;
-    private final Collection<DefinedProperty> noProperty = Collections.emptySet();
+    private final Collection<StorageProperty> noProperty = Collections.emptySet();
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
     @Before
@@ -86,12 +88,12 @@ public class TxStateVisitorTest
         static class PropertyChange
         {
             final long entityId;
-            final List<DefinedProperty> added;
-            final List<DefinedProperty> changed;
+            final List<StorageProperty> added;
+            final List<StorageProperty> changed;
             final List<Integer> removed;
 
-            PropertyChange( long entityId, Collection<DefinedProperty> added, Collection<DefinedProperty> changed, Collection<Integer>
-                    removed )
+            PropertyChange( long entityId, Collection<StorageProperty> added, Collection<StorageProperty> changed,
+                    Collection<Integer> removed )
             {
                 this.entityId = entityId;
                 this.added = IteratorUtil.asList(added);
@@ -99,8 +101,8 @@ public class TxStateVisitorTest
                 this.removed = IteratorUtil.asList(removed);
             }
 
-            PropertyChange( long entityId, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer>
-                    removed )
+            PropertyChange( long entityId, Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
+                    Iterator<Integer> removed )
             {
                 this.entityId = entityId;
                 this.added = IteratorUtil.asList(added);
@@ -169,21 +171,21 @@ public class TxStateVisitorTest
         public List<PropertyChange> graphPropertyChanges = new ArrayList<>();
 
         @Override
-        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty>
+        public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
                 changed, Iterator<Integer> removed )
         {
             nodePropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty>
+        public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>
                 changed, Iterator<Integer> removed )
         {
             relPropertyChanges.add( new PropertyChange( id, added, changed, removed ) );
         }
 
         @Override
-        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+        public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
                                                Iterator<Integer> removed )
         {
             graphPropertyChanges.add( new PropertyChange( -1, added, changed, removed ) );

@@ -23,13 +23,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.Visitor;
 
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {
-    private final Collection<Command> commands;
+    private final Collection<StorageCommand> commands;
     private byte[] additionalHeader;
     private int masterId;
     private int authorId;
@@ -44,7 +44,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
      */
     private int lockSessionIdentifier;
 
-    public PhysicalTransactionRepresentation( Collection<Command> commands )
+    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands )
     {
         this.commands = commands;
     }
@@ -62,9 +62,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public void accept( Visitor<Command,IOException> visitor ) throws IOException
+    public void accept( Visitor<StorageCommand,IOException> visitor ) throws IOException
     {
-        for ( Command command : commands )
+        for ( StorageCommand command : commands )
         {
             if ( visitor.visit( command ) )
             {
@@ -180,7 +180,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         builder.append( "timeCommitted:" + timeCommitted + "," );
         builder.append( "lockSession:" + lockSessionIdentifier + "," );
         builder.append( "additionalHeader:" + Arrays.toString( additionalHeader ) );
-        for ( Command command : commands )
+        for ( StorageCommand command : commands )
         {
             builder.append( "\n" + command );
         }

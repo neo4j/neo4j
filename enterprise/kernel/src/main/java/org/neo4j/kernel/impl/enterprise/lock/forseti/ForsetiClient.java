@@ -27,12 +27,13 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 import static java.lang.String.format;
 
@@ -118,7 +119,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
@@ -227,7 +228,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
         // For details on how this works, refer to the acquireShared method call, as the two are very similar
 
@@ -286,7 +287,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
@@ -341,7 +342,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
@@ -421,7 +422,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long resourceId )
     {
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
@@ -448,7 +449,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long resourceId )
     {
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
@@ -666,7 +667,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     /** Release a lock locally, and return true if we still hold more references to that lock. */
-    private boolean releaseLocalLock( Locks.ResourceType type, long resourceId, PrimitiveLongIntMap localLocks )
+    private boolean releaseLocalLock( ResourceType type, long resourceId, PrimitiveLongIntMap localLocks )
     {
         int lockCount = localLocks.remove( resourceId );
         if(lockCount == -1)
@@ -684,7 +685,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     /** Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it. */
-    private boolean tryUpgradeSharedToExclusive( Locks.ResourceType resourceType, ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap,
+    private boolean tryUpgradeSharedToExclusive( ResourceType resourceType, ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap,
                                                  long resourceId, SharedLock sharedLock ) throws AcquireLockTimeoutException
     {
         int tries = 0;
@@ -723,7 +724,7 @@ public class ForsetiClient implements Locks.Client
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
     private boolean tryUpgradeToExclusiveWithShareLockHeld(
-            Locks.ResourceType resourceType,
+            ResourceType resourceType,
             long resourceId,
             SharedLock sharedLock,
             int tries ) throws AcquireLockTimeoutException
@@ -769,7 +770,7 @@ public class ForsetiClient implements Locks.Client
         waitList.put( clientId );
     }
 
-    private void markAsWaitingFor( ForsetiLockManager.Lock lock, Locks.ResourceType type, long resourceId )
+    private void markAsWaitingFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId )
     {
         clearWaitList();
         lock.copyHolderWaitListsInto( waitList );

@@ -29,9 +29,12 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.Primitive.intObjectMap;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -202,5 +205,26 @@ public class IndexDefineCommand extends Command
     public String toString()
     {
         return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
+    }
+
+    @Override
+    public void serialize( WritableChannel channel ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_DEFINE_COMMAND );
+        byte zero = 0;
+        IndexCommand.writeIndexCommandHeader( channel, zero, zero, zero, zero, zero, zero, zero );
+        writeMap( channel, getIndexNameIdRange() );
+        writeMap( channel, getKeyIdRange() );
+    }
+
+    private void writeMap( WritableChannel channel, Map<String,Integer> map ) throws IOException
+    {
+        channel.put( (byte) map.size() );
+        for ( Map.Entry<String,Integer> entry : map.entrySet() )
+        {
+            write2bLengthAndString( channel, entry.getKey() );
+            int id = entry.getValue();
+            channel.putShort( (short) id );
+        }
     }
 }

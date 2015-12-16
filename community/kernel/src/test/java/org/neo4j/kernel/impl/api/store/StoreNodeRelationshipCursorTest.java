@@ -28,12 +28,12 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -64,7 +64,7 @@ public class StoreNodeRelationshipCursorTest
                 NO_LOCK_SERVICE );
 
         // WHEN
-        cursor.init( true, NO_NEXT_RELATIONSHIP.intValue(), 0, BOTH );
+        cursor.init( true, NO_NEXT_RELATIONSHIP.intValue(), 0, Direction.BOTH );
 
         // THEN
         verifyNoMoreInteractions( relationshipGroupStore );

@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.KernelExceptionUserMessageMatcher;
 

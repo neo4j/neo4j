@@ -27,12 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntValue;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.cursor.DegreeItem;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.cursor.NodeItemHelper;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -45,6 +40,12 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.storageengine.api.DegreeItem;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -52,7 +53,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 /**
  * Base cursor for nodes.
  */
-public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper implements Cursor<NodeItem>, NodeItem
+public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements Cursor<NodeItem>, NodeItem
 {
     protected final NodeRecord nodeRecord;
     protected NodeStore nodeStore;

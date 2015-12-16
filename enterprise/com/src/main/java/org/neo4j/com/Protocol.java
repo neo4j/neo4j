@@ -37,14 +37,13 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -126,11 +125,10 @@ public abstract class Protocol
 
             int headerLength = channel.getInt();
             byte[] header = new byte[headerLength];
-
             channel.get( header, headerLength );
 
             LogEntryCommand entryRead;
-            List<Command> commands = new LinkedList<>();
+            List<StorageCommand> commands = new LinkedList<>();
             while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
                 commands.add( entryRead.getXaCommand() );
@@ -331,7 +329,7 @@ public abstract class Protocol
             channel.putLong( tx.getTimeCommitted() );
             channel.putInt( tx.additionalHeader().length );
             channel.put( tx.additionalHeader(), tx.additionalHeader().length );
-            new LogEntryWriter( channel, new CommandWriter( channel ) ).serialize( tx );
+            new LogEntryWriter( channel ).serialize( tx );
         }
     }
 }

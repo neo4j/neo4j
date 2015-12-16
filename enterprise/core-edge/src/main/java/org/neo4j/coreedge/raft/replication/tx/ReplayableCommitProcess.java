@@ -22,10 +22,10 @@ package org.neo4j.coreedge.raft.replication.tx;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * Counts transactions, and only applies new transactions once it has already seen enough transactions to reproduce

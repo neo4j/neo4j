@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.helpers.Clock;
@@ -37,21 +38,20 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon
@@ -100,7 +100,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StatementOperationParts operations;
     private final KernelTransactions kernelTransactions;
     private final StorageEngine storageEngine;
-    private final StoreStatement storeStatement;
     private final Locks.Client locks;
 
     // For committing
@@ -111,7 +110,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // State
     private TransactionState txState;
-    private LegacyIndexTransactionState legacyIndexTransactionState;
+    private final LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
     private KernelStatement currentStatement;
@@ -152,7 +151,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.storeStatement = storageEngine.storeReadLayer().acquireStatement();
         this.storageEngine = storageEngine;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.kernelTransactions = kernelTransactions;
@@ -206,9 +204,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         if ( currentStatement == null )
         {
-            IndexReaderFactory.Caching caching = new IndexReaderFactory.Caching( storageEngine.indexingService() );
-            currentStatement = new KernelStatement( this, caching, storageEngine.labelScanStore(), this, locks,
-                    operations, storeStatement );
+            currentStatement = new KernelStatement( this, this, locks, operations,
+                    storageEngine.storeReadLayer().acquireStatement() );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -367,7 +364,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             finally
             {
                 locks.close();
-                storeStatement.close();
                 kernelTransactions.transactionClosed( this );
             }
         }
@@ -401,13 +397,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( hasChanges() )
             {
                 // Gather up commands from the various sources
-                Collection<Command> extractedCommands = storageEngine.createCommands(
+                Collection<StorageCommand> extractedCommands = new ArrayList<>();
+                storageEngine.createCommands(
+                        extractedCommands,
                         txState,
-                        legacyIndexTransactionState,
                         locks,
-                        operations,
-                        storeStatement,
                         lastTransactionIdWhenStarted );
+                if ( legacyIndexTransactionState.hasChanges() )
+                {
+                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                }
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo

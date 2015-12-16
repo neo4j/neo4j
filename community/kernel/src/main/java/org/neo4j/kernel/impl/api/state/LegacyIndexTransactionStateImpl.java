@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Provides access to {@link LegacyIndex indexes}. Holds transaction state for all providers in a transaction.
@@ -108,7 +108,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     }
 
     @Override
-    public void extractCommands( Collection<Command> target )
+    public void extractCommands( Collection<StorageCommand> target )
     {
         if ( defineCommand != null )
         {
@@ -123,7 +123,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
         }
     }
 
-    private void extractCommands( Collection<Command> target, Map<String, List<IndexCommand>> commandMap )
+    private void extractCommands( Collection<StorageCommand> target, Map<String, List<IndexCommand>> commandMap )
     {
         if ( commandMap != null )
         {

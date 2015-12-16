@@ -23,11 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.CommandsToApply;
 
-public class HighIdBatchTransactionApplier implements BatchTransactionApplier
+public class HighIdBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final NeoStores neoStores;
 
@@ -37,20 +36,8 @@ public class HighIdBatchTransactionApplier implements BatchTransactionApplier
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         return new HighIdTransactionApplier( neoStores );
-    }
-
-    @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-    {
-        return startTx( transaction );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-
     }
 }

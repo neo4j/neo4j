@@ -32,14 +32,13 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplicatedTransactionFactory
 {
@@ -88,7 +87,7 @@ public class ReplicatedTransactionFactory
                 channel.putInt( 0 );
             }
 
-            new LogEntryWriter( channel, new CommandWriter( channel ) ).serialize( tx );
+            new LogEntryWriter( channel ).serialize( tx );
         }
     }
 
@@ -118,7 +117,7 @@ public class ReplicatedTransactionFactory
         channel.get( header, headerLength );
 
         LogEntryCommand entryRead;
-        List<Command> commands = new LinkedList<>();
+        List<StorageCommand> commands = new LinkedList<>();
 
         while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
         {
@@ -130,5 +129,4 @@ public class ReplicatedTransactionFactory
 
         return tx;
     }
-
 }

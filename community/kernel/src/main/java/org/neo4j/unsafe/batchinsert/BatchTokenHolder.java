@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.storageengine.api.Token;
 
 class BatchTokenHolder
 {

@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -44,7 +43,6 @@ public class PhysicalLogCommandReaderV2_1Test
         // GIVEN
         PhysicalLogCommandReaderV2_1 reader = new PhysicalLogCommandReaderV2_1();
         InMemoryLogChannel data = new InMemoryLogChannel();
-        CommandWriter writer = new CommandWriter( data );
         long id = 5;
         int keyId = 6;
         byte[] data1 = new byte[] {1, 2, 3, 4, 5};
@@ -57,7 +55,7 @@ public class PhysicalLogCommandReaderV2_1Test
         property.addDeletedRecord( dynamicRecord( false, null, STRING.intValue() ) );
 
         // WHEN
-        writer.visitPropertyCommand( new PropertyCommand( new PropertyRecord( id ), property ) );
+        new PropertyCommand( new PropertyRecord( id ), property ).serialize( data );
 
         // THEN
         PropertyCommand readCommand = (PropertyCommand) reader.read( data );

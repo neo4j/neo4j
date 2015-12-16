@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         implements IOCursor<CommittedTransactionRepresentation>
@@ -48,7 +48,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
         this.logEntryCursor = new LogEntryCursor( (LogEntryReader<ReadableLogChannel>) entryReader, channel );
     }
 
-    protected List<Command> commandList()
+    protected List<StorageCommand> commandList()
     {
         return new ArrayList<>();
     }
@@ -81,7 +81,7 @@ public class PhysicalTransactionCursor<T extends ReadableLogChannel>
             LogEntryStart startEntry = entry.as();
             LogEntryCommit commitEntry;
 
-            List<Command> entries = commandList();
+            List<StorageCommand> entries = commandList();
             while ( true )
             {
                 if ( !logEntryCursor.next() )

@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 
@@ -132,7 +132,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
 
                 {
                     int identifier = channel.getInt();
-                    Command command = commandReader.read( channel );
+                    StorageCommand command = commandReader.read( channel );
                     return command == null
                             ? null
                             : new IdentifiableLogEntry( new LogEntryCommand( version, command ), identifier );

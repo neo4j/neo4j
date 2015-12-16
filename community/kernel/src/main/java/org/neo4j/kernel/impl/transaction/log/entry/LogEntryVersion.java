@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.String.format;
 
@@ -53,12 +53,12 @@ import static java.lang.String.format;
  * about versioning of log entries and commands, such that if either log entry format (such as log entry types,
  * such as START, COMMIT and the likes, or data within them) change, or one or more command format change
  * the log entry verision will be bumped.
- *   The process of making an update to log entry or command format is to NOT change any existing class, but to:
+ * The process of making an update to log entry or command format is to:
  * <ol>
  * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy</li>
  * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
- * <li>Modify {@link CommandWriter} and {@link LogEntryWriter} with required changes</li>
+ * <li>Modify the appropriate {@link StorageCommand} and {@link LogEntryWriter} with required changes</li>
  * </ol>
  * Everything apart from that should just work and Neo4j should automatically support the new version as well.
  *
@@ -200,7 +200,12 @@ public enum LogEntryVersion
                 " and logHeaderFormatVersion " + logHeaderFormatVersion );
     }
 
-    byte logHeaderFormatVersion()
+    /**
+     * @return log header format version to break tie between those versions with {@link #byteCode()} {@code 0}.
+     * Will be obsolete when if there's <= 1 of those versions left supported.
+     */
+    @Deprecated
+    public byte logHeaderFormatVersion()
     {
         return logHeaderFormatVersion;
     }

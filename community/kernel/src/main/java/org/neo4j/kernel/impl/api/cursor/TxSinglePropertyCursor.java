@@ -23,10 +23,11 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 /**
  * Overlays transaction state on a {@link PropertyItem} cursors.
@@ -42,12 +43,9 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
     }
 
     public Cursor<PropertyItem> init( Cursor<PropertyItem> cursor,
-            VersionedHashMap<Integer, DefinedProperty> addedProperties,
-            VersionedHashMap<Integer, DefinedProperty> changedProperties,
-            VersionedHashMap<Integer, DefinedProperty> removedProperties,
-            int propertyKeyId )
+            PropertyContainerState state, int propertyKeyId )
     {
-        super.init( cursor, addedProperties, changedProperties, removedProperties );
+        super.init( cursor, state );
         this.propertyKeyId = propertyKeyId;
 
         return this;
@@ -64,29 +62,21 @@ public class TxSinglePropertyCursor extends TxAbstractPropertyCursor
         try
         {
             seekFoundIt = false;
-            if ( changedProperties != null )
+            StorageProperty changedProperty = state.getChangedProperty( propertyKeyId );
+            if ( changedProperty != null )
             {
-                Property property = changedProperties.get( propertyKeyId );
-
-                if ( property != null )
-                {
-                    this.property = (DefinedProperty) property;
-                    return true;
-                }
+                this.property = (DefinedProperty) changedProperty;
+                return true;
             }
 
-            if ( addedProperties != null )
+            StorageProperty addedProperty = state.getAddedProperty( propertyKeyId );
+            if ( addedProperty != null )
             {
-                Property property = addedProperties.get( propertyKeyId );
-
-                if ( property != null )
-                {
-                    this.property = (DefinedProperty) property;
-                    return true;
-                }
+                this.property = (DefinedProperty) addedProperty;
+                return true;
             }
 
-            if ( removedProperties != null && removedProperties.containsKey( propertyKeyId ) )
+            if ( state.isPropertyRemoved( propertyKeyId ) )
             {
                 this.property = null;
                 return false;

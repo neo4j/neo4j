@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import static org.neo4j.kernel.impl.locking.Locks.ResourceType;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface Locking
 {

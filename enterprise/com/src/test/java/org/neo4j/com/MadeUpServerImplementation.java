@@ -30,12 +30,12 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {
@@ -115,7 +115,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 
     private TransactionRepresentation transaction( long txId )
     {
-        Collection<Command> commands = new ArrayList<>();
+        Collection<StorageCommand> commands = new ArrayList<>();
         NodeRecord node = new NodeRecord( txId );
         node.setInUse( true );
         commands.add( new NodeCommand( new NodeRecord( txId ), node ) );

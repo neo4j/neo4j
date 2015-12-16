@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 import java.util.Optional;
 
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-public class CountsStoreBatchTransactionApplier implements BatchTransactionApplier
+public class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
-
     private final CountsTracker countsTracker;
     private CountsTracker.Updater countsUpdater;
     private final TransactionApplicationMode mode;
@@ -39,7 +39,7 @@ public class CountsStoreBatchTransactionApplier implements BatchTransactionAppli
     }
 
     @Override
-    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
         if ( result.isPresent() )
@@ -49,17 +49,5 @@ public class CountsStoreBatchTransactionApplier implements BatchTransactionAppli
         assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
 
         return new CountsStoreTransactionApplier( mode, countsUpdater );
-    }
-
-    @Override
-    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
-    {
-        return startTx( transaction );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        // Nothing to close, CountsUpdater is closed for each transaction
     }
 }

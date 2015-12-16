@@ -23,8 +23,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
 

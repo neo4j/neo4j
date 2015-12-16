@@ -22,25 +22,22 @@ package org.neo4j.kernel.impl.enterprise;
 import java.util.Iterator;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NodePropertyExistenceConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RelationshipPropertyExistenceConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.impl.api.StatementOperationParts;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
@@ -113,18 +110,19 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
-    public TxStateVisitor decorateTxStateVisitor( StatementOperationParts operations, StoreStatement storeStatement,
-            StoreReadLayer storeLayer, TxStateHolder holder, TxStateVisitor visitor )
+    public TxStateVisitor decorateTxStateVisitor( StoreReadLayer storeLayer, ReadableTransactionState txState,
+            TxStateVisitor visitor )
     {
         Iterator<PropertyConstraint> constraints = storeLayer.constraintsGetAll();
         while ( constraints.hasNext() )
         {
             PropertyConstraint constraint = constraints.next();
-            if ( constraint.type() == ConstraintType.NODE_PROPERTY_EXISTENCE ||
-                 constraint.type() == ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE )
+            // TODO checking instanceof isn't nice, we should instead introduce an internal type in addition
+            // to the public ConstraintType which we cannot have on this level.
+            if ( constraint instanceof NodePropertyExistenceConstraint ||
+                 constraint instanceof RelationshipPropertyExistenceConstraint )
             {
-                return new PropertyExistenceEnforcer( operations.entityReadOperations(), visitor,
-                        holder, storeLayer, storeStatement );
+                return new PropertyExistenceEnforcer( visitor, txState, storeLayer );
             }
         }
         return visitor;

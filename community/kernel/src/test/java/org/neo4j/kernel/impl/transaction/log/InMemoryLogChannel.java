@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {

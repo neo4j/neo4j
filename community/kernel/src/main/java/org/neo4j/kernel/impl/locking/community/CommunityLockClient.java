@@ -31,6 +31,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static java.lang.String.format;
 
@@ -60,7 +61,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId )
+    public void acquireShared( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -96,7 +97,7 @@ public class CommunityLockClient implements Locks.Client
 
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void acquireExclusive( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -130,7 +131,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -166,7 +167,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
+    public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -202,7 +203,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -228,7 +229,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long resourceId )
     {
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -321,7 +322,7 @@ public class CommunityLockClient implements Locks.Client
         return lockTransaction.getId();
     }
 
-    private PrimitiveLongObjectMap<LockResource> localShared( Locks.ResourceType resourceType )
+    private PrimitiveLongObjectMap<LockResource> localShared( ResourceType resourceType )
     {
         PrimitiveLongObjectMap<LockResource> map = sharedLocks.get( resourceType.typeId() );
         if(map == null)
@@ -332,7 +333,7 @@ public class CommunityLockClient implements Locks.Client
         return map;
     }
 
-    private PrimitiveLongObjectMap<LockResource> localExclusive( Locks.ResourceType resourceType )
+    private PrimitiveLongObjectMap<LockResource> localExclusive( ResourceType resourceType )
     {
         PrimitiveLongObjectMap<LockResource> map = exclusiveLocks.get( resourceType.typeId() );
         if(map == null)

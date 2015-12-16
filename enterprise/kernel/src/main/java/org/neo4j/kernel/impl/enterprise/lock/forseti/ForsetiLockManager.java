@@ -28,10 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
-import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 /**
  * <h1>Forseti, the Nordic god of justice</h1>

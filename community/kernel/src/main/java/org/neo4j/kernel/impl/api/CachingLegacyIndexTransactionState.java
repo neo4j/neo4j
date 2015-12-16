@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.storageengine.api.StorageCommand;
 
 public class CachingLegacyIndexTransactionState implements LegacyIndexTransactionState
 {
@@ -90,7 +90,7 @@ public class CachingLegacyIndexTransactionState implements LegacyIndexTransactio
     }
 
     @Override
-    public void extractCommands( Collection<Command> target ) throws TransactionFailureException
+    public void extractCommands( Collection<StorageCommand> target ) throws TransactionFailureException
     {
         txState.extractCommands( target );
     }

@@ -33,12 +33,13 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.util.Collections.newSetFromMap;
 
@@ -107,7 +108,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         LegacyIndexTransactionState legacyIndexTransactionState =
                 new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup );
 
-        long lastTransactionIdWhenStarted = storageEngine.metaDataStore().getLastCommittedTransactionId();
+        long lastTransactionIdWhenStarted = ((MetaDataStore)storageEngine.metaDataStore()).getLastCommittedTransactionId();
 
         KernelTransactionImplementation tx = new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
                 locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory,

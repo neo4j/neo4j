@@ -38,10 +38,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -198,10 +200,16 @@ public class TestCrashWithRebuildSlow
         final Map<IdType,Long> highIds = new HashMap<>();
         NeoStores neoStores = db.getDependencyResolver().resolveDependency(
                 DataSourceManager.class ).getDataSource().getNeoStores();
-        neoStores.visitStore( store -> {
-            highIds.put( store.getIdType(), store.getHighId() );
-            return true;
-        } );
+        Visitor<CommonAbstractStore,RuntimeException> visitor = new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                highIds.put( store.getIdType(), store.getHighId() );
+                return true;
+            }
+        };
+        neoStores.visitStore( visitor );
         return highIds;
     }
 

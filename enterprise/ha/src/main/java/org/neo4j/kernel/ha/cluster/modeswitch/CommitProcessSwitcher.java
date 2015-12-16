@@ -28,9 +28,9 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.storageengine.api.StorageEngine;
 
 public class CommitProcessSwitcher extends AbstractComponentSwitcher<TransactionCommitProcess>
 {

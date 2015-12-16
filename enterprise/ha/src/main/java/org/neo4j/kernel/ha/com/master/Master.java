@@ -28,9 +28,9 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Represents the master-side of the HA communication between master and slave.
@@ -77,9 +77,9 @@ public interface Master
 
     Response<Void> copyStore( RequestContext context, StoreWriter writer );
 
-    Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+    Response<LockResult> acquireExclusiveLock( RequestContext context, ResourceType type, long... resourceIds );
 
-    Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+    Response<LockResult> acquireSharedLock( RequestContext context, ResourceType type, long... resourceIds );
 
 
 }

@@ -40,7 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -240,7 +239,7 @@ public class StoreCopyClient
             // use a TransactionAppender, since it has checks for which transactions one can append.
             WritableLogChannel channel = logFile.getWriter();
             final TransactionLogWriter writer = new TransactionLogWriter(
-                    new LogEntryWriter( channel, new CommandWriter( channel ) ) );
+                    new LogEntryWriter( channel ) );
             final AtomicLong firstTxId = new AtomicLong( BASE_TX_ID );
 
             response.accept( new Response.Handler()

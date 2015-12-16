@@ -36,7 +36,6 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -49,8 +48,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -60,10 +57,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -74,6 +68,12 @@ import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
@@ -251,7 +251,7 @@ public class NeoStoresTest
     {
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noNodeProperty( nodeId, key );
-        try ( StoreStatement statement = storeLayer.acquireStatement();
+        try ( StorageStatement statement = storeLayer.acquireStatement();
                 Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
             if ( cursor.next() )
@@ -272,7 +272,7 @@ public class NeoStoresTest
     {
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
-        try ( StoreStatement statement = storeLayer.acquireStatement();
+        try ( StorageStatement statement = storeLayer.acquireStatement();
                 Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
         {
             if ( cursor.next() )
@@ -782,11 +782,11 @@ public class NeoStoresTest
 
     private void validateNodeRel1( final long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3, long rel1, long rel2,
-            final int relType1, final int relType2 ) throws IOException, EntityNotFoundException
+            final int relType1, final int relType2 ) throws IOException
     {
         assertTrue( nodeExists( node ) );
         ArrayMap<Integer,Pair<DefinedProperty,Long>> props = new ArrayMap<>();
-        PropertyReceiver receiver = newPropertyReceiver( props );
+        PropertyReceiver<DefinedProperty> receiver = newPropertyReceiver( props );
         propertyLoader.nodeLoadProperties( node, receiver );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -858,9 +858,9 @@ public class NeoStoresTest
         assertEquals( 2, count );
     }
 
-    private PropertyReceiver newPropertyReceiver( final ArrayMap<Integer,Pair<DefinedProperty,Long>> props )
+    private PropertyReceiver<DefinedProperty> newPropertyReceiver( final ArrayMap<Integer,Pair<DefinedProperty,Long>> props )
     {
-        return new PropertyReceiver()
+        return new PropertyReceiver<DefinedProperty>()
         {
             @Override
             public void receive( DefinedProperty property, long propertyRecordId )
@@ -950,7 +950,7 @@ public class NeoStoresTest
 
     private boolean nodeExists( long nodeId )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.acquireStatement() )
         {
             try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
             {
@@ -1149,7 +1149,7 @@ public class NeoStoresTest
         assertHasRelationships( secondNode );
     }
 
-    private static class CountingPropertyReceiver implements PropertyReceiver
+    private static class CountingPropertyReceiver implements PropertyReceiver<DefinedProperty>
     {
         private int count;
 
@@ -1320,7 +1320,7 @@ public class NeoStoresTest
 
     private void testGetRels( long relIds[] )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.acquireStatement() )
         {
             for ( long relId : relIds )
             {

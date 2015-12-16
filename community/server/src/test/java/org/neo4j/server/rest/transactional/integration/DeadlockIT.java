@@ -34,6 +34,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
+
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 

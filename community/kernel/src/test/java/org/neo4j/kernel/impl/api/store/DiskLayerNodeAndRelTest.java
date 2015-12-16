@@ -23,8 +23,9 @@ import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageStatement;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -87,7 +88,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
 
     private boolean nodeExists( long id )
     {
-        try (StoreStatement statement = disk.acquireStatement())
+        try (StorageStatement statement = disk.acquireStatement())
         {
             try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
             {
@@ -98,7 +99,7 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
 
     private boolean relationshipExists( long id )
     {
-        try (StoreStatement statement = disk.acquireStatement())
+        try (StorageStatement statement = disk.acquireStatement())
         {
             try ( Cursor<RelationshipItem> relationship = statement.acquireSingleRelationshipCursor( id ) )
             {
@@ -106,5 +107,4 @@ public class DiskLayerNodeAndRelTest extends DiskLayerTest
             }
         }
     }
-
 }

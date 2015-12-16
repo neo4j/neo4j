@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
@@ -221,7 +222,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long...
+    public Response<LockResult> acquireSharedLock( RequestContext context, ResourceType type, long...
             resourceIds )
     {
         return sendRequest( requestTypes.type( Type.ACQUIRE_SHARED_LOCK ), context,
@@ -229,7 +230,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
+    public Response<LockResult> acquireExclusiveLock( RequestContext context, ResourceType type, long...
             resourceIds )
     {
         return sendRequest( requestTypes.type( Type.ACQUIRE_EXCLUSIVE_LOCK ), context,
@@ -338,10 +339,10 @@ public class MasterClient210 extends Client<Master> implements MasterClient
 
     protected static class AcquireLockSerializer implements Serializer
     {
-        private final Locks.ResourceType type;
+        private final ResourceType type;
         private final long[] resourceIds;
 
-        AcquireLockSerializer( Locks.ResourceType type, long... resourceIds )
+        AcquireLockSerializer( ResourceType type, long... resourceIds )
         {
             this.type = type;
             this.resourceIds = resourceIds;

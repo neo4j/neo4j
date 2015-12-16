@@ -24,14 +24,16 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.DegreeItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.storageengine.api.DegreeItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
 import static org.neo4j.kernel.api.CountsRead.ANY_RELATIONSHIP_TYPE;
@@ -41,10 +43,10 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
     private final CountsRecordState counts;
     private final StoreReadLayer storeLayer;
-    private final TransactionState txState;
+    private final ReadableTransactionState txState;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StoreReadLayer storeLayer,
-            TransactionState txState, CountsRecordState counts )
+            ReadableTransactionState txState, CountsRecordState counts )
     {
         super( next );
         this.storeLayer = storeLayer;
@@ -62,7 +64,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitDeletedNode( long id )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.acquireStatement() )
         {
             counts.incrementNodeCount( ANY_LABEL, -1 );
             try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
@@ -133,7 +135,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
             throws ConstraintValidationKernelException
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.acquireStatement() )
         {
             // update counts
             if ( !(added.isEmpty() && removed.isEmpty()) )
@@ -203,7 +205,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private PrimitiveIntIterator labelsOf( long nodeId )
     {
-        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.acquireStatement() )
         {
             try ( Cursor<NodeItem> node = nodeCursor( statement, nodeId ) )
             {
@@ -211,15 +213,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
                 {
                     return node.get().getLabels();
                 }
-                else
-                {
-                    return PrimitiveIntCollections.emptyIterator();
-                }
+                return PrimitiveIntCollections.emptyIterator();
             }
         }
     }
 
-    private Cursor<NodeItem> nodeCursor( StoreStatement statement, long nodeId )
+    private Cursor<NodeItem> nodeCursor( StorageStatement statement, long nodeId )
     {
         Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId );
         return txState.augmentSingleNodeCursor( cursor, nodeId );

@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.function.Supplier;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -32,6 +35,11 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
  * Statement for store layer. This allows for acquisition of cursors on the store data.
@@ -41,8 +49,7 @@ import org.neo4j.kernel.impl.util.InstanceCache;
  * <p/>
  * {@link NeoStores} caches one of these per thread, so that they can be reused between statements/transactions.
  */
-public class StoreStatement
-        implements AutoCloseable
+public class StoreStatement implements StorageStatement
 {
     private final InstanceCache<StoreSingleNodeCursor> singleNodeCursor;
     private final InstanceCache<StoreIteratorNodeCursor> iteratorNodeCursor;
@@ -51,10 +58,18 @@ public class StoreStatement
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
+    private final IndexReaderFactory indexReaderFactory;
+    private final Supplier<LabelScanReader> labelScanReaderSupplier;
+    private LabelScanReader labelScanReader;
+    private boolean closed;
 
-    public StoreStatement( final NeoStores neoStores, final LockService lockService )
+    public StoreStatement( final NeoStores neoStores, final LockService lockService,
+            IndexReaderFactory indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier )
     {
         this.neoStores = neoStores;
+        this.indexReaderFactory = indexReaderFactory;
+        this.labelScanReaderSupplier = labelScanReaderSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
 
@@ -96,35 +111,41 @@ public class StoreStatement
         };
     }
 
+    @Override
     public Cursor<NodeItem> acquireSingleNodeCursor( long nodeId )
     {
         neoStores.assertOpen();
         return singleNodeCursor.get().init( nodeId );
     }
 
+    @Override
     public Cursor<NodeItem> acquireIteratorNodeCursor( PrimitiveLongIterator nodeIdIterator )
     {
         neoStores.assertOpen();
         return iteratorNodeCursor.get().init( nodeIdIterator );
     }
 
+    @Override
     public Cursor<RelationshipItem> acquireSingleRelationshipCursor( long relId )
     {
         neoStores.assertOpen();
         return singleRelationshipCursor.get().init( relId );
     }
 
+    @Override
     public Cursor<RelationshipItem> acquireIteratorRelationshipCursor( PrimitiveLongIterator iterator )
     {
         neoStores.assertOpen();
         return iteratorRelationshipCursor.get().init( iterator );
     }
 
+    @Override
     public Cursor<NodeItem> nodesGetAllCursor()
     {
         return acquireIteratorNodeCursor( new AllStoreIdIterator( nodeStore ) );
     }
 
+    @Override
     public Cursor<RelationshipItem> relationshipsGetAllCursor()
     {
         return acquireIteratorRelationshipCursor( new AllStoreIdIterator( relationshipStore ) );
@@ -133,6 +154,13 @@ public class StoreStatement
     @Override
     public void close()
     {
+        assert !closed;
+        indexReaderFactory.close();
+        if ( labelScanReader != null )
+        {
+            labelScanReader.close();
+        }
+        closed = true;
     }
 
     private class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
@@ -176,5 +204,27 @@ public class StoreStatement
             }
             return false;
         }
+    }
+
+    @Override
+    public LabelScanReader getLabelScanReader()
+    {
+        if ( labelScanReader == null )
+        {
+            labelScanReader = labelScanReaderSupplier.get();
+        }
+        return labelScanReader;
+    }
+
+    @Override
+    public IndexReader getIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory.newReader( descriptor );
+    }
+
+    @Override
+    public IndexReader getFreshIndexReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        return indexReaderFactory.newUnCachedReader( descriptor );
     }
 }

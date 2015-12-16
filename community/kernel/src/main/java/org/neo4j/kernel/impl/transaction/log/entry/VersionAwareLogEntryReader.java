@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -88,7 +88,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
 
                     version = byVersion( versionCode, logHeaderFormatVersion );
                     entryReader = version.entryParser( typeCode );
-                    commandReader = commandReaderFactory.byVersion( version );
+                    commandReader = commandReaderFactory.byVersion( version.byteCode(), logHeaderFormatVersion );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler

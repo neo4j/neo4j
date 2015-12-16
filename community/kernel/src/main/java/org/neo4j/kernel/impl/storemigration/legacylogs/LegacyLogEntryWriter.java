@@ -27,8 +27,6 @@ import java.util.function.Function;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -42,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -49,7 +48,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 class LegacyLogEntryWriter
 {
     private static final Function<WritableLogChannel, LogEntryWriter> defaultLogEntryWriterFactory =
-            channel -> new LogEntryWriter( channel, new CommandWriter( channel ) );
+            channel -> new LogEntryWriter( channel );
 
     private final FileSystemAbstraction fs;
     private final Function<WritableLogChannel, LogEntryWriter> factory;
@@ -82,7 +81,7 @@ class LegacyLogEntryWriter
         try ( PhysicalWritableLogChannel writable = new PhysicalWritableLogChannel( channel ) )
         {
             final LogEntryWriter writer = factory.apply( writable );
-            List<Command> commands = new ArrayList<>();
+            List<StorageCommand> commands = new ArrayList<>();
             while ( cursor.next() )
             {
                 LogEntry entry = cursor.get();

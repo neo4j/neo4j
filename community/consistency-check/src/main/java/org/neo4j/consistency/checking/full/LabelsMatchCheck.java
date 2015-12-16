@@ -26,8 +26,8 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LabelsMatchCheck implements
         RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport>

@@ -22,15 +22,16 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 
 class OnlineIndexSamplingJob implements IndexSamplingJob

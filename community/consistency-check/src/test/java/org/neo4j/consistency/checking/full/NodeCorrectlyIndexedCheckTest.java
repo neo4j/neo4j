@@ -39,7 +39,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;

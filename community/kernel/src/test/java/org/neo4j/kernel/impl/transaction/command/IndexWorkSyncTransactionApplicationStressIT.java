@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -32,26 +33,29 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngineRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
 import static org.junit.Assert.assertEquals;
+
 import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
@@ -89,7 +93,8 @@ public class IndexWorkSyncTransactionApplicationStressIT
         storageEngine.apply( tx( asList( createIndexRule(
                 InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, labelId, propertyKeyId ) ) ),
                 TransactionApplicationMode.EXTERNAL );
-        IndexProxy index = storageEngine.indexingService().getIndexProxy( new IndexDescriptor( labelId, propertyKeyId ) );
+        IndexProxy index = ((IndexingService)storageEngine.indexingService())
+                .getIndexProxy( new IndexDescriptor( labelId, propertyKeyId ) );
         awaitOnline( index );
 
         // WHEN
@@ -121,7 +126,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         return id + "_" + progress;
     }
 
-    private static TransactionToApply tx( Collection<Command> commands )
+    private static TransactionToApply tx( Collection<StorageCommand> commands )
     {
         TransactionToApply tx = new TransactionToApply( transactionRepresentation( commands ) );
         tx.commitment( NO_COMMITMENT, 0 );
@@ -145,7 +150,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.storageEngine = storageEngine;
             this.batchSize = batchSize;
             this.index = index;
-            NeoStores neoStores = this.storageEngine.neoStores();
+            NeoStores neoStores = (NeoStores) this.storageEngine.neoStores();
             this.nodeIds = neoStores.getNodeStore();
         }
 
@@ -183,7 +188,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoReplaceProperty( nodeId,
                     noNodeProperty( nodeId, propertyKeyId ),
                     property( propertyKeyId, propertyValue( id, progress ) ) );
-            return tx( storageEngine.createCommands( txState, null, null, null, null, 0 ) );
+            Collection<StorageCommand> commands = new ArrayList<>();
+            storageEngine.createCommands( commands, txState, null, 0 );
+            return tx( commands );
         }
 
         private void verifyIndex( TransactionToApply tx ) throws Exception
@@ -205,12 +212,12 @@ public class IndexWorkSyncTransactionApplicationStressIT
         }
     }
 
-    private static class NodeVisitor implements Visitor<Command,IOException>
+    private static class NodeVisitor implements Visitor<StorageCommand,IOException>
     {
         long nodeId;
 
         @Override
-        public boolean visit( Command element ) throws IOException
+        public boolean visit( StorageCommand element ) throws IOException
         {
             if ( element instanceof NodeCommand )
             {
@@ -219,7 +226,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             return false;
         }
 
-        public Visitor<Command,IOException> clear()
+        public NodeVisitor clear()
         {
             nodeId = -1;
             return this;

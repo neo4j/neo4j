@@ -40,8 +40,8 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertEquals;
 
@@ -91,7 +91,7 @@ public class RaftContentSerializerTest
     {
         // given
         RaftContentSerializer serializer = new RaftContentSerializer();
-        Collection<Command> commands = new ArrayList<>(  );
+        Collection<StorageCommand> commands = new ArrayList<>();
 
         IndexCommand.AddNodeCommand addNodeCommand = new IndexCommand.AddNodeCommand();
         addNodeCommand.init( 0, 0, 0, 0 );

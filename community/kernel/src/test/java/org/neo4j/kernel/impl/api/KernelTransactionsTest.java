@@ -20,25 +20,21 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -46,6 +42,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -56,7 +58,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -205,7 +209,8 @@ public class KernelTransactionsTest
         IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
         NeoStores neoStores = mock( NeoStores.class );
 
-        StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService() );
+        StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService(),
+                mock( IndexReaderFactory.class ), null );
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
         when( readLayer.acquireStatement() ).thenReturn( storeStatement );
 
@@ -214,14 +219,19 @@ public class KernelTransactionsTest
         when( storageEngine.neoStores() ).thenReturn( neoStores );
         when( storageEngine.metaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.integrityValidator() ).thenReturn( integrityValidator );
-        when( storageEngine.createCommands(
-                any( TransactionState.class ),
-                any( LegacyIndexTransactionState.class ),
-                any( Locks.Client.class ),
-                any( StatementOperationParts.class ),
-                any( StoreStatement.class ),
-                anyLong() ) )
-                .thenReturn( sillyCommandList() );
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
+                return null;
+            }
+        } ).when( storageEngine ).createCommands(
+                anyCollection(),
+                any( ReadableTransactionState.class ),
+                any( ResourceLocker.class ),
+                anyLong() );
 
         Tracers tracers =
                 new Tracers( "null", NullLog.getInstance(), mock( Monitors.class ), mock( JobScheduler.class ) );
@@ -230,14 +240,6 @@ public class KernelTransactionsTest
                 commitProcess, null,
                 null, new TransactionHooks(), mock( TransactionMonitor.class ), life,
                 tracers, storageEngine );
-    }
-
-    private static Collection<Command> sillyCommandList()
-    {
-        Collection<Command> commands = new ArrayList<>();
-        Command command = mock( Command.class );
-        commands.add( command );
-        return commands;
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

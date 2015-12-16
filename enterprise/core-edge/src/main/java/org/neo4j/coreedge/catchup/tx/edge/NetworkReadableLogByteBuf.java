@@ -24,8 +24,8 @@ import java.io.IOException;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 public class NetworkReadableLogByteBuf implements ReadableLogChannel
 {

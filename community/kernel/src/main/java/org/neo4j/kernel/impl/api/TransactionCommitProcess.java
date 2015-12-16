@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * This interface represents the contract for committing a batch of transactions. While the concept of a transaction is

@@ -26,11 +26,10 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,7 +39,8 @@ import static org.junit.Assert.assertTrue;
 public class LogEntryParserV2_1Test
 {
     private final LogEntryVersion version = LogEntryVersion.V2_1;
-    private final CommandReader commandReader = new RecordStorageCommandReaderFactory().byVersion( version );
+    private final CommandReader commandReader =
+            new RecordStorageCommandReaderFactory().byVersion( version.byteCode(), version.logHeaderFormatVersion() );
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 37 );
 
@@ -139,7 +139,7 @@ public class LogEntryParserV2_1Test
         // ignored data
         channel.putInt( 123 ); // identifier
         // actual read data
-        new CommandWriter( channel ).visitNodeCommand( nodeCommand );
+        nodeCommand.serialize( channel );
 
         channel.getCurrentPosition( marker );
 

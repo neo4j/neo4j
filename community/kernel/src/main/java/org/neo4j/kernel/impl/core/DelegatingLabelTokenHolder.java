@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.storageengine.api.Token;
+
 public class DelegatingLabelTokenHolder extends DelegatingTokenHolder<Token> implements LabelTokenHolder
 {
     public DelegatingLabelTokenHolder( TokenCreator tokenCreator )

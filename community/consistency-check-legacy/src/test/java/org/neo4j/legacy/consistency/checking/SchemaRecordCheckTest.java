@@ -28,10 +28,10 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
 import org.neo4j.legacy.consistency.store.RecordAccessStub;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

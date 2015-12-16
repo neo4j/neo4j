@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Wraps several {@link TransactionApplier}s. In this case, each individual visit-call will delegate to {@link
@@ -52,11 +53,11 @@ public class TransactionApplierFacade extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visit( Command element ) throws IOException
+    public boolean visit( StorageCommand element ) throws IOException
     {
         for ( TransactionApplier applier : appliers )
         {
-            if ( element.handle( applier ) )
+            if ( ((Command)element).handle( applier ) )
             {
                 return true;
             }

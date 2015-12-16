@@ -28,7 +28,8 @@ import java.lang.reflect.Type;
  * @param <E> the element type the visitor accepts.
  * @param <FAILURE> the type of exception the visitor might throw
  */
-public interface Visitor<E, FAILURE extends Exception>
+@FunctionalInterface
+public interface Visitor<E, FAILURE extends Exception> extends org.neo4j.storageengine.api.Visitor<E,FAILURE>
 {
     /**
      * Invoked for each element in a collection. Return <code>true</code> to
@@ -39,6 +40,7 @@ public interface Visitor<E, FAILURE extends Exception>
      *         to continue.
      * @throws FAILURE exception thrown by the visitor
      */
+    @Override
     boolean visit( E element ) throws FAILURE;
 
     final class SafeGenerics
@@ -51,7 +53,7 @@ public interface Visitor<E, FAILURE extends Exception>
          * visitor cast to compatible type parameters. If the passed in object is not an instance of {@link Visitor},
          * or if it is a {@link Visitor} but one that {@link Visitor#visit(Object) visits} another type of object, this
          * method returns {@code null}.
-         * 
+         *
          * @param eType element type of the visitor
          * @param fType failure type of the visitor
          * @param visitor the visitor

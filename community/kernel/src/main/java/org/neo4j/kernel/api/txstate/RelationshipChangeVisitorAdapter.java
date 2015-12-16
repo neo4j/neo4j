@@ -22,8 +22,9 @@ package org.neo4j.kernel.api.txstate;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.util.diffsets.DiffSetsVisitor;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Objects.requireNonNull;
 
@@ -31,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * A visitor implementation that makes visiting changed relationships of a transaction easier by facilitating accessing
  * the details of the visited relationships.
  *
- * By invoking a constructor that takes a {@linkplain ReadableTxState transaction state} parameter, the default
+ * By invoking a constructor that takes a {@linkplain ReadableTransactionState transaction state} parameter, the default
  * implementation of {@link #visitAddedRelationship(long)} will retrieve the details of the visited relationship and
  * supply that information to the {@link #visitAddedRelationship(long, int, long, long)}-method. If no details can be
  * found, the transaction state is inconsistent with itself, and an exception will be thrown. If no such details are
@@ -52,7 +53,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
     /**
      * Causes {@link #visitAddedRelationship(long, int, long, long)} to be invoked for added relationships.
      */
-    public RelationshipChangeVisitorAdapter( ReadableTxState txState )
+    public RelationshipChangeVisitorAdapter( ReadableTransactionState txState )
     {
         this.added = added( requireNonNull( txState, "ReadableTxState" ) );
         this.removed = null;
@@ -104,7 +105,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
                 throws ConstraintValidationKernelException;
     }
 
-    DetailVisitor added( final ReadableTxState txState )
+    DetailVisitor added( final ReadableTransactionState txState )
     {
         return new DetailVisitor()
         {

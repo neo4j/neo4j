@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongPeekingIterator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,6 +34,7 @@ import org.neo4j.legacy.consistency.checking.index.IndexAccessors;
 import org.neo4j.legacy.consistency.report.ConsistencyReport;
 import org.neo4j.legacy.consistency.store.DiffRecordAccess;
 import org.neo4j.legacy.consistency.store.RecordAccess;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {

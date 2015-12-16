@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
@@ -52,6 +52,8 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupComman
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Arrays.asList;
 
@@ -88,6 +90,7 @@ public class Commands
         before.setInUse( false );
         RelationshipRecord after = new RelationshipRecord( id, startNode, endNode, type );
         after.setInUse( true );
+        after.setCreated();
         return new RelationshipCommand( before, after );
     }
 
@@ -103,8 +106,11 @@ public class Commands
     {
         record.setInUse( true );
         record.setNameId( nameId );
+        record.setCreated();
         DynamicRecord dynamicRecord = new DynamicRecord( nameId );
         dynamicRecord.setInUse( true );
+        dynamicRecord.setData( new byte[10] );
+        dynamicRecord.setCreated();
         record.addNameRecord( dynamicRecord );
     }
 
@@ -129,6 +135,7 @@ public class Commands
         RelationshipGroupRecord before = new RelationshipGroupRecord( id, type );
         RelationshipGroupRecord after = new RelationshipGroupRecord( id, type );
         after.setInUse( true );
+        after.setCreated();
         return new RelationshipGroupCommand( before, after );
     }
 
@@ -137,7 +144,7 @@ public class Commands
     {
         SchemaRule rule = IndexRule.indexRule( id, label, property, provider );
         RecordSerializer serializer = new RecordSerializer();
-        serializer.append( rule );
+        serializer.append( (AbstractSchemaRule)rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
         record.setCreated();
@@ -149,6 +156,8 @@ public class Commands
             long... valueRecordIds )
     {
         PropertyRecord record = new PropertyRecord( id );
+        record.setInUse( true );
+        record.setCreated();
         PropertyBlock block = new PropertyBlock();
         if ( valueRecordIds.length == 0 )
         {
@@ -168,7 +177,7 @@ public class Commands
         return transactionRepresentation( Arrays.asList( commands ) );
     }
 
-    public static TransactionRepresentation transactionRepresentation( Collection<Command> commands )
+    public static TransactionRepresentation transactionRepresentation( Collection<StorageCommand> commands )
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );

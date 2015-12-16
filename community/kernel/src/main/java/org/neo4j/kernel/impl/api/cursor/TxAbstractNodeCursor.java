@@ -28,22 +28,23 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.GenericCursor;
 import org.neo4j.cursor.IntValue;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.DegreeItem;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.api.cursor.NodeItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.cursor.NodeItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.storageengine.api.DegreeItem;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.txstate.NodeState;
 
 /**
  * Overlays transaction state on a {@link NodeItem} cursor.
  */
 public abstract class TxAbstractNodeCursor
-        extends NodeItem.NodeItemHelper
+        extends NodeItemHelper
         implements Cursor<NodeItem>, NodeItem
 {
     protected final TransactionState state;
@@ -202,7 +203,7 @@ public abstract class TxAbstractNodeCursor
 
     private class RelationshipTypeCursor extends GenericCursor<IntSupplier>
     {
-        private PrimitiveIntIterator primitiveIntIterator;
+        private final PrimitiveIntIterator primitiveIntIterator;
 
         public RelationshipTypeCursor( PrimitiveIntIterator primitiveIntIterator )
         {
@@ -228,7 +229,7 @@ public abstract class TxAbstractNodeCursor
 
     private class DegreeCursor implements Cursor<DegreeItem>, DegreeItem
     {
-        private Cursor<IntSupplier> relTypeCursor;
+        private final Cursor<IntSupplier> relTypeCursor;
         private int type;
         private long outgoing;
         private long incoming;

@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * This class represents the concept of a TransactionRepresentation that has been
@@ -48,7 +47,7 @@ public class CommittedTransactionRepresentation
         this.commitEntry = commitEntry;
     }
 
-    public void accept( Visitor<Command, IOException> visitor ) throws IOException
+    public void accept( Visitor<StorageCommand, IOException> visitor ) throws IOException
     {
         transactionRepresentation.accept( visitor );
     }

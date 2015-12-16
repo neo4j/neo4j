@@ -24,12 +24,12 @@ import java.util.function.LongPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodeItem;
 
 /**
  * When looking up nodes by a property value, we have to do a two-stage check.

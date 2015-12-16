@@ -24,8 +24,8 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.LabelItem;
-import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.storageengine.api.LabelItem;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 /**
  * Overlays transaction state on a {@link LabelItem} cursor.

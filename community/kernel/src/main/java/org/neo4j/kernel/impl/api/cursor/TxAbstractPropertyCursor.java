@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api.cursor;
 import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.VersionedHashMap;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 
 /**
  * Overlays transaction state on a {@link PropertyItem} cursors.
@@ -34,26 +34,18 @@ public abstract class TxAbstractPropertyCursor implements Cursor<PropertyItem>, 
     private final Consumer<TxAbstractPropertyCursor> instanceCache;
 
     protected Cursor<PropertyItem> cursor;
-    protected VersionedHashMap<Integer, DefinedProperty> addedProperties;
-    protected VersionedHashMap<Integer, DefinedProperty> changedProperties;
-    protected VersionedHashMap<Integer, DefinedProperty> removedProperties;
-
     protected DefinedProperty property;
+    protected PropertyContainerState state;
 
     public TxAbstractPropertyCursor( Consumer<TxAbstractPropertyCursor> instanceCache )
     {
         this.instanceCache = instanceCache;
     }
 
-    public Cursor<PropertyItem> init( Cursor<PropertyItem> cursor,
-            VersionedHashMap<Integer, DefinedProperty> addedProperties,
-            VersionedHashMap<Integer, DefinedProperty> changedProperties,
-            VersionedHashMap<Integer, DefinedProperty> removedProperties )
+    public Cursor<PropertyItem> init( Cursor<PropertyItem> cursor, PropertyContainerState state )
     {
         this.cursor = cursor;
-        this.addedProperties = addedProperties;
-        this.changedProperties = changedProperties;
-        this.removedProperties = removedProperties;
+        this.state = state;
 
         return this;
     }

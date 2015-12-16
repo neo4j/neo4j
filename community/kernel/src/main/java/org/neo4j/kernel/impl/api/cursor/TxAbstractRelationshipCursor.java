@@ -23,19 +23,19 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.cursor.EntityItem;
-import org.neo4j.kernel.api.cursor.PropertyItem;
-import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.cursor.EntityItemHelper;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.Cursors;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 /**
  * Overlays transaction state on a {@link RelationshipItem} cursor.
  */
 public abstract class TxAbstractRelationshipCursor
-        extends EntityItem.EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem,
+        extends EntityItemHelper implements Cursor<RelationshipItem>, RelationshipItem,
         RelationshipVisitor<RuntimeException>
 {
     protected final TransactionState state;

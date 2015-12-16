@@ -23,7 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 

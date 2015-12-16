@@ -34,13 +34,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.test.ConstantRequestContextFactory;
 import org.neo4j.test.LongResponse;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -75,8 +75,8 @@ public class SlaveTransactionCommitProcessTest
         };
         response = new LongResponse( 42L );
         tx = new PhysicalTransactionRepresentation(
-                Collections.<Command>emptyList() );
-        tx.setHeader( new byte[]{}, 1, 1, 1, 1, 1, 1337 );
+                Collections.<StorageCommand>emptyList() );
+        tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         commitProcess = new SlaveTransactionCommitProcess( master, reqFactory );
     }

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.MessageHandler;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.bolt.v1.messaging.message.AcknowledgeFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
@@ -36,6 +35,7 @@ import org.neo4j.bolt.v1.messaging.message.RecordMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class RecordingMessageHandler implements MessageHandler<RuntimeException>
 {

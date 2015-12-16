@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
 
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.ObjectSerializer;
@@ -36,12 +36,12 @@ import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
 import static org.neo4j.com.Protocol.LONG_SERIALIZER;
@@ -92,7 +92,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         register( Type.ACQUIRE_EXCLUSIVE_LOCK, new AquireLockCall()
         {
             @Override
-            protected Response<LockResult> lock( Master master, RequestContext context, Locks.ResourceType type,
+            protected Response<LockResult> lock( Master master, RequestContext context, ResourceType type,
                     long... ids )
             {
                 return master.acquireExclusiveLock( context, type, ids );
@@ -101,7 +101,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         register( Type.ACQUIRE_SHARED_LOCK, new AquireLockCall()
         {
             @Override
-            protected Response<LockResult> lock( Master master, RequestContext context, Locks.ResourceType type,
+            protected Response<LockResult> lock( Master master, RequestContext context, ResourceType type,
                     long... ids )
             {
                 return master.acquireSharedLock( context, type, ids );

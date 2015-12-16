@@ -31,6 +31,7 @@ import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.management.LockManager;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class LockManagerBean extends ManagementBeanProvider
@@ -95,7 +96,7 @@ public final class LockManagerBean extends ManagementBeanProvider
             lockManager.accept( new Locks.Visitor()
             {
                 @Override
-                public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime,
+                public void visit( ResourceType resourceType, long resourceId, String description, long waitTime,
                         long lockIdentityHashCode )
                 {
                     locks.add( new LockInfo( resourceType.toString(), String.valueOf( resourceId ), description ) );

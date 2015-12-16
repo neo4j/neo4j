@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -39,26 +38,18 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
-import org.neo4j.kernel.api.procedures.ProcedureSignature;
-import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.index.IndexPopulationProgress;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -72,14 +63,21 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.procedure.ProcedureSignature;
+import org.neo4j.storageengine.api.schema.IndexPopulationProgress;
+import org.neo4j.storageengine.api.schema.IndexSchemaRule;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -104,7 +102,6 @@ public class DiskLayer implements StoreReadLayer
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTokenHolder;
-
     private final NeoStores neoStores;
     private final IndexingService indexService;
     private final NodeStore nodeStore;
@@ -112,12 +109,11 @@ public class DiskLayer implements StoreReadLayer
     private final SchemaStorage schemaStorage;
     private final CountsAccessor counts;
     private final PropertyLoader propertyLoader;
-
-    private final Factory<StoreStatement> statementProvider;
+    private final Supplier<StorageStatement> statementProvider;
 
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Factory<StoreStatement> statementProvider )
+            IndexingService indexService, Supplier<StorageStatement> statementProvider )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -133,9 +129,9 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public StoreStatement acquireStatement()
+    public StorageStatement acquireStatement()
     {
-        return statementProvider.newInstance();
+        return statementProvider.get();
     }
 
     @Override
@@ -180,63 +176,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    public PrimitiveLongIterator nodesGetForLabel( StorageStatement statement, int labelId )
     {
-        return state.getLabelScanReader().nodesWithLabel( labelId );
+        return statement.getLabelScanReader().nodesWithLabel( labelId );
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index,
-            Object value ) throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.seek( value );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromInclusiveNumericIndexRangeSeek( KernelStatement statement,
-            IndexDescriptor index,
-            Number lower,
-            Number upper )
-            throws IndexNotFoundKernelException
-
-    {
-        IndexReader reader = statement.getIndexReader( index );
-        return reader.rangeSeekByNumberInclusive( lower, upper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement statement,
-                                                                     IndexDescriptor index,
-                                                                     String lower, boolean includeLower,
-                                                                     String upper, boolean includeUpper )
-            throws IndexNotFoundKernelException
-
-    {
-        IndexReader reader = statement.getIndexReader( index );
-        return reader.rangeSeekByString( lower, includeLower, upper, includeUpper );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
-                                                                     IndexDescriptor index,
-                                                                     String prefix )
-            throws IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.rangeSeekByPrefix( prefix );
-    }
-
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
-            IndexNotFoundKernelException
-    {
-        IndexReader reader = state.getIndexReader( index );
-        return reader.scan();
-    }
-
-    @Override
-    public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
+    public IndexDescriptor indexGetForLabelAndPropertyKey( int labelId, int propertyKey )
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
     }
@@ -259,13 +205,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> uniquenessIndexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor> uniqueIndexesGetAll()
+    public Iterator<IndexDescriptor> uniquenessIndexesGetAll()
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
     }
@@ -307,13 +253,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public IndexSchemaRule indexRule( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
     {
-        throw new UnsupportedOperationException();
+        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() );
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+    public long indexGetCommittedId( IndexDescriptor index, Predicate<SchemaRule.Kind> filter )
             throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
@@ -401,19 +347,6 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor descriptor,
-            Object value ) throws IndexNotFoundKernelException, IndexBrokenKernelException
-    {
-        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
-         * since subsequent filtering will happen outside, but at the same time have the ability to
-         * close the IndexReader when done iterating over the lookup result. This is because we get
-         * a fresh reader that isn't associated with the current transaction and hence will not be
-         * automatically closed. */
-        IndexReader reader = state.getFreshIndexReader( descriptor );
-        return resourceIterator( reader.seek( value ), reader );
-    }
-
-    @Override
     public int propertyKeyGetOrCreateForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
@@ -440,7 +373,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
+    public PrimitiveIntIterator graphGetPropertyKeys()
     {
         return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() ) );
     }
@@ -452,7 +385,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public Iterator<DefinedProperty> graphGetAllProperties()
+    public Iterator<StorageProperty> graphGetAllProperties()
     {
         return propertyLoader.graphLoadProperties( new IteratingPropertyReceiver() );
     }
@@ -516,12 +449,6 @@ public class DiskLayer implements StoreReadLayer
             throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
         }
         relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
-    }
-
-    @Override
-    public long highestNodeIdInUse()
-    {
-        return nodeStore.getHighestPossibleIdInUse();
     }
 
     @Override

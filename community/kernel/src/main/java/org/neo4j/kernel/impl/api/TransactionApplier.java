@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Responsible for a single transaction. See also {@link BatchTransactionApplier} which returns an implementation of
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
  * }
  * </pre>
  */
-public interface TransactionApplier extends Visitor<Command,IOException>, CommandVisitor, AutoCloseable
+public interface TransactionApplier extends Visitor<StorageCommand,IOException>, CommandVisitor, AutoCloseable
 {
     /**
      * A {@link TransactionApplier} which does nothing.
@@ -59,9 +60,9 @@ public interface TransactionApplier extends Visitor<Command,IOException>, Comman
         }
 
         @Override
-        public boolean visit( Command element ) throws IOException
+        public boolean visit( StorageCommand element ) throws IOException
         {
-            return element.handle( this );
+            return ((Command)element).handle( this );
         }
     }
 }

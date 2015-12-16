@@ -40,7 +40,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -140,7 +140,7 @@ public class IndexCreationTest
         try ( IOCursor<LogEntry> cursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory() ), logChannel ) )
         {
-            List<Command> commandsInFirstEntry = new ArrayList<>();
+            List<StorageCommand> commandsInFirstEntry = new ArrayList<>();
             boolean startFound = false;
 
             while ( cursor.next() )
@@ -166,7 +166,7 @@ public class IndexCreationTest
                     // The first COMMIT
                     assertTrue( startFound );
                     assertFalse( "Index creation transaction wasn't the first one", commandsInFirstEntry.isEmpty() );
-                    List<Command> createCommands = IteratorUtil.asList( new FilteringIterator<>(
+                    List<StorageCommand> createCommands = IteratorUtil.asList( new FilteringIterator<>(
                             commandsInFirstEntry.iterator(),
                             item -> item instanceof IndexDefineCommand
                     ) );

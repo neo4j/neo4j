@@ -86,8 +86,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     public void start() throws Throwable
     {
         this.writer = logFile.getWriter();
-        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( writer ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer, indexCommandDetector ) );
+        this.indexCommandDetector = new IndexCommandDetector();
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
     }
 
     @Override
@@ -211,6 +211,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
                     transactionChecksum );
 
+            transaction.accept( indexCommandDetector );
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
             if ( hasLegacyIndexChanges )
             {

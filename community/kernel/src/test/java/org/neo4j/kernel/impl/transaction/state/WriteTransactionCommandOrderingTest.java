@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -47,13 +46,14 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -118,13 +118,13 @@ public class WriteTransactionCommandOrderingTest
 
         // Then
         final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
-        commands.accept( element -> element.handle( orderVerifyingCommandHandler ) );
+        commands.accept( element -> ((Command)element).handle( orderVerifyingCommandHandler ) );
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
             throws TransactionFailureException
     {
-        List<Command> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         tx.extractCommands( commands );
         return new PhysicalTransactionRepresentation( commands );
     }
@@ -313,6 +313,5 @@ public class WriteTransactionCommandOrderingTest
             }
             return false;
         }
-
     }
 }

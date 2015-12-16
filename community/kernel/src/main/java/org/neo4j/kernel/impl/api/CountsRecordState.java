@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
@@ -123,7 +124,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public void extractCommands( Collection<Command> target )
+    public void extractCommands( Collection<StorageCommand> target )
     {
         accept( new CommandCollector( target ) );
     }
@@ -236,9 +237,9 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
 
     private static class CommandCollector extends CountsVisitor.Adapter
     {
-        private final Collection<Command> commands;
+        private final Collection<StorageCommand> commands;
 
-        CommandCollector( Collection<Command> commands )
+        CommandCollector( Collection<StorageCommand> commands )
         {
             this.commands = commands;
         }

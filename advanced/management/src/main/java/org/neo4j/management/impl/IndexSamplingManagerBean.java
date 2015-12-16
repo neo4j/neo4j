@@ -29,9 +29,9 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.management.IndexSamplingManager;
+import org.neo4j.storageengine.api.StoreReadLayer;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class IndexSamplingManagerBean extends ManagementBeanProvider

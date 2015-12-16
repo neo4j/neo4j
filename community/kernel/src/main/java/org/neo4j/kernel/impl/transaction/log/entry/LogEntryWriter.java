@@ -23,11 +23,11 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
@@ -38,18 +38,18 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURREN
 public class LogEntryWriter
 {
     private final WritableLogChannel channel;
-    private final Visitor<Command,IOException> serializer;
+    private final Visitor<StorageCommand,IOException> serializer;
 
-    public LogEntryWriter( WritableLogChannel channel, final CommandVisitor commandWriter )
+    public LogEntryWriter( WritableLogChannel channel )
     {
         this.channel = channel;
-        this.serializer = new Visitor<Command,IOException>()
+        this.serializer = new Visitor<StorageCommand,IOException>()
         {
             @Override
-            public boolean visit( Command command ) throws IOException
+            public boolean visit( StorageCommand command ) throws IOException
             {
                 writeLogEntryHeader( COMMAND );
-                command.handle( commandWriter );
+                command.serialize( channel );
                 return false;
             }
         };

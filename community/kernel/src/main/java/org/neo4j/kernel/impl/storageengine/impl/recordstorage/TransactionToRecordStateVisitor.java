@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -31,19 +30,18 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.procedure.ProcedureDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
@@ -53,20 +51,17 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final SchemaIndexProviderMap schemaIndexProviderMap;
-    private final LegacyIndexTransactionState legacyIndexTransactionState;
     private final ProcedureCache procedureCache;
 
     public TransactionToRecordStateVisitor( TransactionRecordState recordState, Runnable schemaStateChangeCallback,
             SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
-            SchemaIndexProviderMap schemaIndexProviderMap, LegacyIndexTransactionState legacyIndexTransactionState,
-            ProcedureCache procedureCache )
+            SchemaIndexProviderMap schemaIndexProviderMap, ProcedureCache procedureCache )
     {
         this.recordState = recordState;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
         this.schemaStorage = schemaStorage;
         this.constraintSemantics = constraintSemantics;
         this.schemaIndexProviderMap = schemaIndexProviderMap;
-        this.legacyIndexTransactionState = legacyIndexTransactionState;
         this.procedureCache = procedureCache;
     }
 
@@ -113,8 +108,8 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
-            Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+    public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
+            Iterator<StorageProperty> changed, Iterator<Integer> removed )
     {
         while ( removed.hasNext() )
         {
@@ -122,19 +117,19 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = changed.next();
+            DefinedProperty prop = (DefinedProperty) changed.next();
             recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = added.next();
+            DefinedProperty prop = (DefinedProperty) added.next();
             recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
         }
     }
 
     @Override
-    public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
-            Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+    public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
+            Iterator<StorageProperty> changed, Iterator<Integer> removed )
     {
         while ( removed.hasNext() )
         {
@@ -142,18 +137,18 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = changed.next();
+            DefinedProperty prop = (DefinedProperty) changed.next();
             recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = added.next();
+            DefinedProperty prop = (DefinedProperty) added.next();
             recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
         }
     }
 
     @Override
-    public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+    public void visitGraphPropertyChanges( Iterator<StorageProperty> added, Iterator<StorageProperty> changed,
             Iterator<Integer> removed )
     {
         while ( removed.hasNext() )
@@ -162,12 +157,12 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         while ( changed.hasNext() )
         {
-            DefinedProperty prop = changed.next();
+            DefinedProperty prop = (DefinedProperty) changed.next();
             recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
         }
         while ( added.hasNext() )
         {
-            DefinedProperty prop = added.next();
+            DefinedProperty prop = (DefinedProperty) added.next();
             recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
         }
     }
@@ -334,18 +329,6 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     public void visitCreatedRelationshipTypeToken( String name, int id )
     {
         recordState.createRelationshipTypeToken( name, id );
-    }
-
-    @Override
-    public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
-    {
-        legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
-    }
-
-    @Override
-    public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
-    {
-        legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
     }
 
     @Override

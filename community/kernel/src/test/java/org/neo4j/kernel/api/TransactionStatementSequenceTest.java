@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 import static org.junit.Assert.assertEquals;
