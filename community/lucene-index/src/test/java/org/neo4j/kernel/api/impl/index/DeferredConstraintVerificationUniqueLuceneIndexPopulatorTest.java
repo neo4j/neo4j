@@ -37,8 +37,6 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -46,6 +44,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
@@ -513,7 +515,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
-                IndexWriterFactories.tracking(), searcherManagerFactory, directoryFactory, indexDirectory,
+                IndexWriterFactories.standard(), searcherManagerFactory, directoryFactory, indexDirectory,
                 failureStorage, INDEX_ID, descriptor );
 
         populator.create();

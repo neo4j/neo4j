@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 
 public final class SwallowingIndexUpdater implements IndexUpdater
 {
@@ -33,12 +32,6 @@ public final class SwallowingIndexUpdater implements IndexUpdater
 
     public SwallowingIndexUpdater()
     {
-    }
-
-    @Override
-    public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        return Reservation.EMPTY;
     }
 
     @Override

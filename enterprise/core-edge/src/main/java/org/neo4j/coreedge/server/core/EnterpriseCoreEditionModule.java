@@ -297,9 +297,9 @@ public class EnterpriseCoreEditionModule
                                                                    final Dependencies dependencies,
                                                                    final Clock clock )
     {
-        return ( appender, applier, indexUpdatesValidator, config ) -> {
+        return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
-                    new TransactionRepresentationCommitProcess( appender, applier, indexUpdatesValidator );
+                    new TransactionRepresentationCommitProcess( appender, applier );
             dependencies.satisfyDependencies( localCommit );
 
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(

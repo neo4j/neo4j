@@ -38,7 +38,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -144,8 +143,7 @@ public class LuceneLabelScanStore
     }
 
     @Override
-    public void updateDocument( Term documentTerm, Document document )
-            throws IOException, IndexCapacityExceededException
+    public void updateDocument( Term documentTerm, Document document ) throws IOException
     {
         writer.updateDocument( documentTerm, document );
     }
@@ -271,7 +269,7 @@ public class LuceneLabelScanStore
     }
 
     @Override
-    public void start() throws IOException, IndexCapacityExceededException
+    public void start() throws IOException
     {
         if ( needsRebuild )
         {   // we saw in init() that we need to rebuild the index, so do it here after the
@@ -283,7 +281,7 @@ public class LuceneLabelScanStore
         }
     }
 
-    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
+    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException
     {
         try ( LabelScanWriter writer = newWriter() )
         {

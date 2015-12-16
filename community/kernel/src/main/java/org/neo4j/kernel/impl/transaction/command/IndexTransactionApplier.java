@@ -20,56 +20,59 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.store.NodeLabels;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 
 public class IndexTransactionApplier extends TransactionApplier.Adapter
 {
     private final IndexingService indexingService;
-    private final ValidatedIndexUpdates indexUpdates;
-    private final Consumer<IndexDescriptor> affectedIndexesConsumer;
+    private final NodeStore nodeStore;
+    private final PropertyStore propertyStore;
+    private final PropertyLoader propertyLoader;
+    private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
+    private final Set<IndexDescriptor> affectedIndexesConsumer;
     private final Consumer<NodeLabelUpdate> labelUpdateConsumer;
 
-    public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-            Consumer<IndexDescriptor> affectedIndexesConsumer, Consumer<NodeLabelUpdate> labelUpdateConsumer )
+    public IndexTransactionApplier( IndexingService indexingService,
+            Consumer<NodeLabelUpdate> labelUpdateConsumer, Set<IndexDescriptor> affectedIndexesConsumer,
+            NodeStore nodeStore, PropertyStore propertyStore, PropertyLoader propertyLoader )
     {
         this.indexingService = indexingService;
-        this.indexUpdates = indexUpdates;
-        this.affectedIndexesConsumer = affectedIndexesConsumer;
         this.labelUpdateConsumer = labelUpdateConsumer;
+        this.affectedIndexesConsumer = affectedIndexesConsumer;
+        this.nodeStore = nodeStore;
+        this.propertyStore = propertyStore;
+        this.propertyLoader = propertyLoader;
     }
 
     @Override
     public void close() throws Exception
     {
-        if ( indexUpdates.hasChanges() )
+        if ( indexUpdatesExtractor.containsAnyNodeOrPropertyUpdate() )
         {
             // Write index updates. The setup should be that these updates doesn't do unnecessary
             // work that could be done after the whole batch, like f.ex. refreshing index readers.
-            indexUpdates.flush( affectedIndexesConsumer );
-            indexUpdates.close();
+            LazyIndexUpdates updates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
+                    indexUpdatesExtractor.propertyCommandsByNodeIds(), indexUpdatesExtractor.nodeCommandsById() );
+            indexingService.applyUpdates( updates, affectedIndexesConsumer, IndexUpdateMode.BATCHED );
         }
     }
 
@@ -94,7 +97,14 @@ public class IndexTransactionApplier extends TransactionApplier.Adapter
             }
         }
 
-        return false;
+        // for indexes
+        return indexUpdatesExtractor.visitNodeCommand( command );
+    }
+
+    @Override
+    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+    {
+        return indexUpdatesExtractor.visitPropertyCommand( command );
     }
 
     @Override
@@ -133,6 +143,4 @@ public class IndexTransactionApplier extends TransactionApplier.Adapter
         }
         return false;
     }
-
-
 }

@@ -17,17 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.transaction.state;
 
-public interface Reservation
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
+/**
+ * Provides direct access to updates.
+ */
+public class DirectIndexUpdates implements IndexUpdates
 {
-    Reservation EMPTY = new Reservation()
-    {
-        @Override
-        public void release()
-        {
-        }
-    };
+    private final Iterable<NodePropertyUpdate> updates;
 
-    void release();
+    public DirectIndexUpdates( Iterable<NodePropertyUpdate> updates )
+    {
+        this.updates = updates;
+    }
+
+    @Override
+    public Iterator<NodePropertyUpdate> iterator()
+    {
+        return updates.iterator();
+    }
+
+    @Override
+    public void collectUpdatedNodeIds( PrimitiveLongSet target )
+    {
+        throw new UnsupportedOperationException();
+    }
 }

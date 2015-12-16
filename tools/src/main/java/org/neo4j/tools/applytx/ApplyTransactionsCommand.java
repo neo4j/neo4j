@@ -34,7 +34,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -103,8 +102,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
         TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess(
                         resolver.resolveDependency( TransactionAppender.class ),
-                        resolver.resolveDependency( StorageEngine.class ),
-                        resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                        resolver.resolveDependency( StorageEngine.class ) );
         LifeSupport life = new LifeSupport();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )

@@ -31,24 +31,24 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class LuceneIndexIT
 {
-
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value";
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
@@ -63,7 +63,7 @@ public class LuceneIndexIT
     {
         dirFactory = DirectoryFactory.PERSISTENT;
         accessor = new NonUniqueLuceneIndexAccessor(
-                documentLogic, reserving(), dirFactory, testDir.directory(), 100_000
+                documentLogic, standard(), dirFactory, testDir.directory(), 100_000
         );
     }
 
@@ -117,7 +117,7 @@ public class LuceneIndexIT
     }
 
     private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

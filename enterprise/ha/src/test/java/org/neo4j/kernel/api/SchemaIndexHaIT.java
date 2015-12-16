@@ -45,7 +45,6 @@ import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -436,7 +435,7 @@ public class SchemaIndexHaIT
 
         @Override
         public void add( long nodeId, Object propertyValue )
-                throws IndexEntryConflictException, IOException, IndexCapacityExceededException
+                throws IndexEntryConflictException, IOException
         {
             delegate.add(nodeId, propertyValue);
             latch.startAndAwaitFinish();
@@ -456,7 +455,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
             delegate.close(populationCompletedSuccessfully);
             assertTrue( "Expected population to succeed :(", populationCompletedSuccessfully );

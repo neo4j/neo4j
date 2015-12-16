@@ -33,12 +33,13 @@ import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -225,7 +226,8 @@ public class SchemaRuleCommandTest
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
-            labelScanStoreSynchronizer );
+            labelScanStoreSynchronizer, mock( NodeStore.class ), mock( PropertyStore.class ),
+            mock( PropertyLoader.class ) );
     private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
@@ -257,7 +259,6 @@ public class SchemaRuleCommandTest
     {
         TransactionToApply tx = new TransactionToApply(
                 new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ), txId );
-        tx.validatedIndexUpdates( mock( ValidatedIndexUpdates.class ) );
         CommandHandlerContract.apply( applier, tx );
     }
 

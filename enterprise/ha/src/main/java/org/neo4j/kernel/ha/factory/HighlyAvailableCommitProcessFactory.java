@@ -25,7 +25,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
@@ -42,7 +41,7 @@ class HighlyAvailableCommitProcessFactory implements CommitProcessFactory
 
     @Override
     public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-            IndexUpdatesValidator indexUpdatesValidator, Config config )
+            Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {

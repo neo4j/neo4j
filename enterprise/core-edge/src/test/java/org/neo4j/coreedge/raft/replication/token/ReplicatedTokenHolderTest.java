@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -122,7 +121,7 @@ public class ReplicatedTokenHolderTest
         when( idGenerator.nextId() ).thenReturn( 1L );
         when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
 
-        StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null, null );
+        StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn(
                 commitProcess );
 
@@ -328,12 +327,11 @@ public class ReplicatedTokenHolderTest
 
     private class StubTransactionCommitProcess extends TransactionRepresentationCommitProcess
     {
-        private List<TransactionRepresentation> transactionsToApply = new ArrayList<>();
+        private final List<TransactionRepresentation> transactionsToApply = new ArrayList<>();
 
-        public StubTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine,
-                                             IndexUpdatesValidator indexUpdatesValidator )
+        public StubTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
         {
-            super( appender, storageEngine, indexUpdatesValidator );
+            super( appender, storageEngine );
         }
 
         @Override

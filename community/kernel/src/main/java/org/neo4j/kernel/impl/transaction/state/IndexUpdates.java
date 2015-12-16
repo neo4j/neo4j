@@ -17,13 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.IOException;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-
-public interface IndexUpdatesValidator
+/**
+ * Set of updates ({@link NodePropertyUpdate}) to apply to indexes.
+ */
+public interface IndexUpdates extends Iterable<NodePropertyUpdate>
 {
-    ValidatedIndexUpdates validate( TransactionRepresentation transaction ) throws IOException;
+    /**
+     * Exposed since we infer index updates from physical commands AND contents in store.
+     * This means that we cannot get to this information during recovery and so we merely need a way
+     * to jot down which nodes needs to be reindexed after recovery.
+     */
+    void collectUpdatedNodeIds( PrimitiveLongSet target );
 }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,11 +55,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -134,7 +129,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
-    private final IndexUpdatesValidator indexUpdatesValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
     private final DefaultSchemaIndexProviderMap providerMap;
@@ -143,7 +137,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final Runnable schemaStateChangeCallback;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
-    private final RecoveryIndexingUpdatesValidator indexUpdatesValidatorForRecovery;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
@@ -195,9 +188,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     indexingServiceMonitor, schemaStateChangeCallback );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
-            indexUpdatesValidator = new OnlineIndexUpdatesValidator(
-                    neoStores, databaseHealth, new PropertyLoader( neoStores ),
-                    indexingService, IndexUpdateMode.BATCHED );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
@@ -210,7 +200,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
             legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
-            indexUpdatesValidatorForRecovery = new RecoveryIndexingUpdatesValidator( indexingService );
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
             this.commandReaderFactory = new RecordStorageCommandReaderFactory();
@@ -305,7 +294,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             {
                 try ( LockGroup locks = new LockGroup() )
                 {
-                    ensureValidatedIndexUpdates( tx );
                     try ( TransactionApplier txApplier = batchApplier.startTx( tx, locks ) )
                     {
                         tx.transactionRepresentation().accept( txApplier );
@@ -343,7 +331,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
 
         // Schema index application
-        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync ) );
+        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync,
+                neoStores.getNodeStore(), neoStores.getPropertyStore(), new PropertyLoader( neoStores ) ) );
 
         // Legacy index application
         appliers.add(
@@ -356,25 +345,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // Perform the application
         return new BatchTransactionApplierFacade(
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
-    }
-
-    private void ensureValidatedIndexUpdates( TransactionToApply tx ) throws IOException
-    {
-        // This method is a hack needed because
-        // - we derive logical index updates from physical record changes + reading from store.
-        //   In a batching scenario we must do this validation before each transaction gets applied,
-        //   because data might rely on data applied by the previous transaction.
-        // - we do index validation up front like this and will be removed once we bust the lucene limits.
-        if ( tx.validatedIndexUpdates() == null )
-        {
-            tx.validatedIndexUpdates( indexUpdatesValidator.validate( tx.transactionRepresentation() ) );
-        }
-    }
-
-    @Override
-    public IndexUpdatesValidator indexUpdatesValidatorForRecovery()
-    {
-        return indexUpdatesValidatorForRecovery;
     }
 
     @Override
@@ -411,12 +381,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public IndexingService indexingService()
     {
         return indexingService;
-    }
-
-    @Override
-    public IndexUpdatesValidator indexUpdatesValidator()
-    {
-        return indexUpdatesValidator;
     }
 
     @Override

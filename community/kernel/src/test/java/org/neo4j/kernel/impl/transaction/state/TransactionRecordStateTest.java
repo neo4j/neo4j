@@ -44,8 +44,6 @@ import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -173,7 +171,6 @@ public class TransactionRecordStateTest
         // GIVEN
         long nodeId = 0;
         int labelId = 5, propertyKeyId = 7;
-        NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[]{labelId} );
 
         // -- an index
         long ruleId = 0;
@@ -192,16 +189,14 @@ public class TransactionRecordStateTest
 
         // WHEN
         PhysicalTransactionRepresentation transaction = transactionRepresentationOf( recordState );
-        Iterable<NodePropertyUpdate> updates = indexUpdatesOf( neoStores, transaction );
-
-        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-        RecoveryIndexingUpdatesValidator validator = new RecoveryIndexingUpdatesValidator( visitor );
-        ValidatedIndexUpdates recoveredUpdates = validator.validate( transaction );
-        recoveredUpdates.flush( ignored -> {} );
+        NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
+        transaction.accept( extractor );
 
         // THEN
         // -- later recovering that tx, there should be only one update
-        assertEquals( asSet( expectedUpdate ), asSet( updates ) );
+        assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
+        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
+        extractor.visitUpdatedNodeIds( visitor );
         verify( visitor, times( 1 ) ).visited( nodeId );
     }
 

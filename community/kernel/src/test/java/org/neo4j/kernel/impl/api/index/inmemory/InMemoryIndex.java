@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Register.DoubleLong;
 
@@ -248,12 +247,6 @@ class InMemoryIndex
         private InMemoryIndexUpdater( boolean applyIdempotently )
         {
             this.applyIdempotently = applyIdempotently;
-        }
-
-        @Override
-        public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-        {
-            return Reservation.EMPTY;
         }
 
         @Override

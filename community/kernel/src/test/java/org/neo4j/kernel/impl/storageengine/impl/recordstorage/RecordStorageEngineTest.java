@@ -65,7 +65,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -168,7 +168,7 @@ public class RecordStorageEngineTest
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
         // allow to build validated index updates but fail on actual tx application
-        doNothing().doThrow( error ).when( transaction ).accept( any() );
+        doThrow( error ).when( transaction ).accept( any() );
 
         long txId = ThreadLocalRandom.current().nextLong( 0, 1000 );
         TransactionToApply txToApply = new TransactionToApply( transaction );

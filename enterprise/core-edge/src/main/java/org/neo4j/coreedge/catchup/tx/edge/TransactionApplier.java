@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -53,8 +52,7 @@ public class TransactionApplier
     {
         commitProcess = new TransactionRepresentationCommitProcess(
                 resolver.resolveDependency( TransactionAppender.class ),
-                resolver.resolveDependency( StorageEngine.class ),
-                resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                resolver.resolveDependency( StorageEngine.class ) );
     }
 
     public void appendToLogAndApplyToStore( CommittedTransactionRepresentation tx ) throws TransactionFailureException

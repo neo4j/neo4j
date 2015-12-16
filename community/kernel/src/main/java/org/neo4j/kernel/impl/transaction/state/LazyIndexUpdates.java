@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -48,7 +49,10 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-public class LazyIndexUpdates implements Iterable<NodePropertyUpdate>
+/**
+ * Calculates the actual updates as late as possible, when {@link #iterator() requesting} them.
+ */
+public class LazyIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
@@ -78,6 +82,13 @@ public class LazyIndexUpdates implements Iterable<NodePropertyUpdate>
             updates = gatherPropertyAndLabelUpdates();
         }
         return updates.iterator();
+    }
+
+    @Override
+    public void collectUpdatedNodeIds( PrimitiveLongSet target )
+    {
+        target.addAll( nodeCommands.iterator() );
+        target.addAll( propCommands.iterator() );
     }
 
     private Collection<NodePropertyUpdate> gatherPropertyAndLabelUpdates()

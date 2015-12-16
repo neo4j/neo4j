@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
     private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
-    private final ReservingLuceneIndexWriter writer = mock( ReservingLuceneIndexWriter.class );
+    private final LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
     private final Directory directory = mock( Directory.class );
     private final File dir = mock( File.class );
 

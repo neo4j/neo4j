@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -352,8 +351,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( StorageEngine.class ),
-                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
+                            dependencyResolver.resolveDependency( StorageEngine.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();

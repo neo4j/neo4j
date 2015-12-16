@@ -22,22 +22,21 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -66,16 +65,13 @@ public class NeoTransactionIndexApplierTest
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
-        when( transactionToApply.validatedIndexUpdates() ).thenReturn( mock( ValidatedIndexUpdates.class ) );
     }
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
-
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, emptyDynamicRecords );
         final NodeRecord after = new NodeRecord( 12 );
@@ -94,14 +90,20 @@ public class NeoTransactionIndexApplierTest
         assertFalse( result );
     }
 
+    private IndexBatchTransactionApplier newIndexTransactionApplier()
+    {
+        return new IndexBatchTransactionApplier( indexingService,
+                labelScanStoreSynchronizer, mock( NodeStore.class ), mock( PropertyStore.class ), mock(
+                PropertyLoader.class ) );
+    }
+
     @Test
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
@@ -124,8 +126,7 @@ public class NeoTransactionIndexApplierTest
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );

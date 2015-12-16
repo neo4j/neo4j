@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -62,6 +62,8 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
@@ -514,48 +516,8 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void recordingOfRecoveredNodesShouldThrowIfServiceIsStarted() throws Exception
-    {
-        // Given
-        long recoveredNodeId = 1;
-
-        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-        life.start();
-
-        try
-        {
-            // When
-            indexingService.visited( recoveredNodeId );
-            fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Then
-            assertThat( e.getMessage(), startsWith( "Can't queue recovered node ids" ) );
-        }
-    }
-
-    @Test
-    public void validationOfIndexUpdatesShouldThrowIfServiceIsNotStarted() throws IOException
-    {
-        // Given
-        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-
-        try
-        {
-            // When
-            indexingService.validate( asSet( add( 1, "foo" ) ), IndexUpdateMode.ONLINE );
-            fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Then
-            assertThat( e.getMessage(), startsWith( "Can't validate index updates" ) );
-        }
-    }
-
-    @Test
-    public void validationOfIndexUpdatesShouldThrowIfServiceIsStopped() throws IOException
+    public void applicationOfIndexUpdatesShouldThrowIfServiceIsStopped()
+            throws IOException, IndexEntryConflictException
     {
         // Given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
@@ -565,18 +527,23 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.validate( asSet( add( 1, "foo" ) ), IndexUpdateMode.ONLINE );
+            indexingService.applyUpdates( updates( asSet( add( 1, "foo" ) ) ), new HashSet<>(), IndexUpdateMode.ONLINE );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
         {
             // Then
-            assertThat( e.getMessage(), startsWith( "Can't validate index updates" ) );
+            assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
         }
     }
 
+    private IndexUpdates updates( Iterable<NodePropertyUpdate> updates )
+    {
+        return new DirectIndexUpdates( updates );
+    }
+
     @Test
-    public void validatedUpdatesShouldFlush() throws Exception
+    public void applicationOfUpdatesShouldFlush() throws Exception
     {
         // Given
         when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
@@ -587,49 +554,16 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ) ).close( true );
 
         // When
-        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "foo" ), add( 2, "bar" ) ),
-                IndexUpdateMode.ONLINE ) )
-        {
-            Set<IndexDescriptor> affectedIndexes = new HashSet<>();
-            updates.flush( affectedIndexes::add );
-            assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), affectedIndexes );
-        }
+        Set<IndexDescriptor> affectedIndexes = new HashSet<>();
+        indexing.applyUpdates( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ), new HashSet<>(), IndexUpdateMode.ONLINE );
+        assertEquals( asSet( new IndexDescriptor( labelId, propertyKeyId ) ), affectedIndexes );
 
         // Then
         InOrder inOrder = inOrder( updater );
-        inOrder.verify( updater ).validate( asList( add( 1, "foo" ), add( 2, "bar" ) ) );
         inOrder.verify( updater ).process( add( 1, "foo" ) );
         inOrder.verify( updater ).process( add( 2, "bar" ) );
         inOrder.verify( updater ).close();
         inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    @SuppressWarnings( "unchecked" )
-    public void closingOfValidatedUpdatesShouldRemoveReservation() throws Exception
-    {
-        // Given
-        Reservation reservation = mock( Reservation.class );
-        when( updater.validate( any( Iterable.class ) ) ).thenReturn( reservation );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
-
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-        life.start();
-
-        indexing.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        verify( populator, timeout( 1000 ) ).close( true );
-
-        // When
-        try ( ValidatedIndexUpdates updates = indexing.validate( asList( add( 1, "1" ), add( 2, "2" ) ),
-                IndexUpdateMode.ONLINE ) )
-        {
-            verifyZeroInteractions( reservation );
-            updates.flush( indexDescriptor -> {} );
-            verifyZeroInteractions( reservation );
-        }
-
-        // Then
-        verify( reservation ).release();
     }
 
     @Test
@@ -665,12 +599,10 @@ public class IndexingServiceTest
         verify( populator, timeout( 1000 ).times( 2 ) ).close( true );
 
         // When
-        try ( ValidatedIndexUpdates updates = indexing.validate( asList(
+        indexing.applyUpdates( updates( asList(
                 NodePropertyUpdate.add( 1, propertyKeyId, "foo", new long[]{labelId1} ),
-                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ), IndexUpdateMode.ONLINE ) )
-        {
-            updates.flush( indexDescriptor -> {} );
-        }
+                NodePropertyUpdate.add( 2, propertyKeyId, "bar", new long[]{labelId2} ) ) ),
+                new HashSet<>(), IndexUpdateMode.ONLINE );
 
         // Then
         verify( updater1 ).close();
@@ -678,7 +610,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void recoveredUpdatesShouldBeApplied() throws IOException
+    public void recoveredUpdatesShouldBeApplied() throws Exception
     {
         // Given
         final long nodeId1 = 1;
@@ -719,12 +651,31 @@ public class IndexingServiceTest
         when( storeView.nodeAsUpdates( nodeId2 ) ).thenReturn( asSet( nodeUpdate2 ) );
 
         // When
-        nodeIds.visitKeys( indexing );
+        IndexUpdates updates = nodeIdsAsIndexUpdates( nodeIds );
+        indexing.applyUpdates( updates, new HashSet<>(), BATCHED );
         life.start();
 
         // Then
         assertTrue( "applyingRecoveredData was not called", applyingRecoveredDataCalled.get() );
         assertTrue( "appliedRecoveredData was not called", appliedRecoveredDataCalled.get() );
+    }
+
+    private IndexUpdates nodeIdsAsIndexUpdates( PrimitiveLongSet nodeIds )
+    {
+        return new IndexUpdates()
+        {
+            @Override
+            public Iterator<NodePropertyUpdate> iterator()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void collectUpdatedNodeIds( final PrimitiveLongSet target )
+            {
+                target.addAll( nodeIds.iterator() );
+            }
+        };
     }
 
     /*
@@ -755,7 +706,8 @@ public class IndexingServiceTest
         IndexRule otherIndex = indexRule( otherIndexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
         indexing.createIndex( otherIndex );
         indexing.dropIndex( otherIndex );
-        indexing.visited( nodeId );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( PrimitiveLongCollections.asSet(
+                PrimitiveLongCollections.iterator( nodeId ) ) ), new HashSet<>(), IndexUpdateMode.BATCHED );
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndex( index );
         reset( accessor );

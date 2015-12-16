@@ -36,15 +36,12 @@ import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
 
@@ -52,7 +49,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 {
     protected final LuceneDocumentStructure documentStructure;
     protected final LuceneReferenceManager<IndexSearcher> searcherManager;
-    protected final ReservingLuceneIndexWriter writer;
+    protected final LuceneIndexWriter writer;
 
     private final Directory dir;
     private final File dirFile;
@@ -115,7 +112,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     }
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
+            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
             DirectoryFactory dirFactory, File dirFile,
             int bufferSizeLimit ) throws IOException
     {
@@ -128,7 +125,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     }
 
     // test only
-    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, ReservingLuceneIndexWriter writer,
+    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriter writer,
             LuceneReferenceManager<IndexSearcher> searcherManager,
             Directory dir, File dirFile, int bufferSizeLimit )
     {
@@ -240,18 +237,18 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         return new LuceneSnapshotter().snapshot( this.dirFile, writer );
     }
 
-    private void addRecovered( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
+    private void addRecovered( long nodeId, Object value ) throws IOException
     {
         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.documentRepresentingProperty( nodeId, value ) );
     }
 
-    protected void add( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
+    protected void add( long nodeId, Object value ) throws IOException
     {
         writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, value ) );
     }
 
-    protected void change( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
+    protected void change( long nodeId, Object value ) throws IOException
     {
         writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.documentRepresentingProperty( nodeId, value ) );
@@ -279,43 +276,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public Reservation validate( Iterable<NodePropertyUpdate> updates )
-                throws IOException, IndexCapacityExceededException
-        {
-            int insertionsCount = 0;
-            for ( NodePropertyUpdate update : updates )
-            {
-                // Only count additions and updates, since removals will not affect the size of the index
-                // until it is merged. Each update is in fact atomic (delete + add).
-                if ( update.getUpdateMode() == UpdateMode.ADDED || update.getUpdateMode() == UpdateMode.CHANGED )
-                {
-                    insertionsCount++;
-                }
-            }
-
-            writer.reserveInsertions( insertionsCount );
-
-            final int insertions = insertionsCount;
-            return new Reservation()
-            {
-                boolean released;
-
-                @Override
-                public void release()
-                {
-                    if ( released )
-                    {
-                        throw new IllegalStateException( "Reservation was already released. " +
-                                                         "Previously reserved " + insertions + " insertions" );
-                    }
-                    writer.removeReservedInsertions( insertions );
-                    released = true;
-                }
-            };
-        }
-
-        @Override
-        public void process( NodePropertyUpdate update ) throws IOException, IndexCapacityExceededException
+        public void process( NodePropertyUpdate update ) throws IOException
         {
             switch ( update.getUpdateMode() )
             {

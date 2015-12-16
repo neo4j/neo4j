@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
@@ -122,9 +121,6 @@ public interface StorageEngine
     TransactionIdStore transactionIdStore();
 
     @Deprecated
-    IndexUpdatesValidator indexUpdatesValidatorForRecovery();
-
-    @Deprecated
     LogVersionRepository logVersionRepository();
 
     @Deprecated
@@ -138,9 +134,6 @@ public interface StorageEngine
 
     @Deprecated
     IndexingService indexingService();
-
-    @Deprecated
-    IndexUpdatesValidator indexUpdatesValidator();
 
     @Deprecated
     LabelScanStore labelScanStore();

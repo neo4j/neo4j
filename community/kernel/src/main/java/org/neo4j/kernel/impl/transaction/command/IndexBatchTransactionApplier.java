@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -34,9 +33,10 @@ import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier.*;
 
 /**
  * Gather node and property changes, converting them into logical updates to the indexes. {@link #close()} will actually
@@ -46,34 +46,34 @@ public class IndexBatchTransactionApplier implements BatchTransactionApplier
 {
     private final IndexingService indexingService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private final NodeStore nodeStore;
+    private final PropertyStore propertyStore;
+    private final PropertyLoader propertyLoader;
     private Set<IndexDescriptor> affectedIndexes;
     private List<NodeLabelUpdate> labelUpdates;
 
-
     public IndexBatchTransactionApplier( IndexingService indexingService,
-            WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
+            WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
+            NodeStore nodeStore, PropertyStore propertyStore, PropertyLoader propertyLoader )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
+        this.nodeStore = nodeStore;
+        this.propertyStore = propertyStore;
+        this.propertyLoader = propertyLoader;
 
     }
 
     @Override
     public TransactionApplier startTx( TransactionToApply transaction )
     {
-        return new IndexTransactionApplier( indexingService, transaction.validatedIndexUpdates(), indexDescriptor -> {
-            if ( affectedIndexes == null )
-            {
-                affectedIndexes = new HashSet<>();
-            }
-            affectedIndexes.add( indexDescriptor );
-        }, nodeLabelUpdate -> {
+        return new IndexTransactionApplier( indexingService, nodeLabelUpdate -> {
             if ( labelUpdates == null )
             {
                 labelUpdates = new ArrayList<>();
             }
             labelUpdates.add( nodeLabelUpdate );
-        } );
+        }, affectedIndexes, nodeStore, propertyStore, propertyLoader );
     }
 
     @Override
