@@ -50,7 +50,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
      */
     void close();
 
-    final DirectoryFactory PERSISTENT = new DirectoryFactory()
+    DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override

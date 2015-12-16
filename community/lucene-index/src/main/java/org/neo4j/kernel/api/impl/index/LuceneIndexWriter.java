@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 
@@ -55,6 +56,8 @@ public class LuceneIndexWriter implements Closeable
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
     protected final IndexWriter writer;
+
+    private final ReentrantLock commitCloseLock = new ReentrantLock();
 
     /**
      * Package private *only* for subclasses and testing.
@@ -110,19 +113,43 @@ public class LuceneIndexWriter implements Closeable
 
     public void commit() throws IOException
     {
-        writer.commit();
+        commitCloseLock.lock();
+        try
+        {
+            writer.commit();
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     public void commitAsOnline() throws IOException
     {
-        writer.setCommitData( ONLINE_COMMIT_USER_DATA );
-        writer.commit();
+        commitCloseLock.lock();
+        try
+        {
+            writer.setCommitData( ONLINE_COMMIT_USER_DATA );
+            writer.commit();
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     @Override
     public void close() throws IOException
     {
-        writer.close();
+        commitCloseLock.lock();
+        try
+        {
+            writer.close();
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
     }
 
     IndexDeletionPolicy getIndexDeletionPolicy()
