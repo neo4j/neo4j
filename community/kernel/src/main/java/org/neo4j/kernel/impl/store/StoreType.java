@@ -156,19 +156,13 @@ public enum StoreType
                 @Override
                 void close( NeoStores me, Object object )
                 {
-                    CountsTracker counts = (CountsTracker) object;
                     try
                     {
-                        counts.rotate( me.getMetaDataStore().getLastCommittedTransactionId() );
-                        counts.shutdown();
+                        ((CountsTracker) object).shutdown();
                     }
                     catch ( IOException e )
                     {
                         throw new UnderlyingStorageException( e );
-                    }
-                    finally
-                    {
-                        counts = null;
                     }
                 }
             },

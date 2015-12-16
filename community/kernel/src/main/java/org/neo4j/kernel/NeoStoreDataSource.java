@@ -884,7 +884,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             return;
         }
 
-        StoreFlusher storeFlusher = transactionLogModule.storeFlusher();
         CheckPointer checkPointer = transactionLogModule.checkPointing();
 
         // First kindly await all committing transactions to close. Do this without interfering with the
@@ -909,15 +908,13 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             // will be able to start committing at this point.
             awaitAllTransactionsClosed();
 
-            // Force all pending store changes to disk.
-            storeFlusher.forceEverything();
-
-            //Write new checkpoint in the log only if the kernel is healthy.
+            // Write new checkpoint in the log only if the kernel is healthy.
             // We cannot throw here since we need to shutdown without exceptions.
             if ( databaseHealth.isHealthy() )
             {
                 try
                 {
+                    // Flushing of neo stores happens as part of the checkpoint
                     checkPointer.forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
                 }
                 catch ( IOException e )

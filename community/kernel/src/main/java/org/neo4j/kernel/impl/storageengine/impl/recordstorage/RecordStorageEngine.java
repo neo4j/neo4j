@@ -295,8 +295,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     ensureValidatedIndexUpdates( tx );
                     applier.begin( tx, locks );
-                    tx.transactionRepresentation().accept( applier );
-                    applier.end();
+                    try
+                    {
+                        tx.transactionRepresentation().accept( applier );
+                    }
+                    finally
+                    {
+                        applier.end();
+                    }
                     tx = tx.next();
                 }
                 catch ( Throwable cause )

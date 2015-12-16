@@ -27,9 +27,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.adversaries.ClassGuardedAdversary;
+import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,6 +49,7 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -48,14 +58,18 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -175,7 +189,69 @@ public class CountsRotationTest
         db.shutdown();
     }
 
-    private CountsTracker createCountsTracker(PageCache pageCache)
+    @Test( timeout = 60_000 )
+    public void possibleToShutdownDbWhenItIsNotHealthyAndNotAllTransactionsAreApplied() throws Exception
+    {
+        // adversary that makes page cache throw exception when node store is used
+        ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
+                NodeStore.class );
+        adversary.disable();
+
+        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
+                .newEmbeddedDatabase( dir );
+
+        CountDownLatch txStartLatch = new CountDownLatch( 1 );
+        CountDownLatch txCommitLatch = new CountDownLatch( 1 );
+
+        Future<?> result = ForkJoinPool.commonPool().submit( () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                txStartLatch.countDown();
+                db.createNode();
+                await( txCommitLatch );
+                tx.success();
+            }
+        } );
+
+        await( txStartLatch );
+
+        adversary.enable();
+
+        txCommitLatch.countDown();
+
+        try
+        {
+            result.get();
+            fail( "Exception expected" );
+        }
+        catch ( ExecutionException ee )
+        {
+            // transaction is expected to fail because write through the page cache fails
+            assertThat( ee.getCause(), instanceOf( TransactionFailureException.class ) );
+        }
+        adversary.disable();
+
+        // shutdown should complete without any problems
+        db.shutdown();
+    }
+
+    private static void await( CountDownLatch latch )
+    {
+        try
+        {
+            boolean result = latch.await( 30, TimeUnit.SECONDS );
+            if ( !result )
+            {
+                throw new RuntimeException( "Count down did not happen. Current count: " + latch.getCount() );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private CountsTracker createCountsTracker( PageCache pageCache )
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, emptyConfig,
                 new File( dir.getPath(), COUNTS_STORE_BASE ) );
