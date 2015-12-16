@@ -42,6 +42,7 @@ public class ConnectionIT
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket();
 

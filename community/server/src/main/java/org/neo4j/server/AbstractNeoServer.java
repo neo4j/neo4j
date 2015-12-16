@@ -33,6 +33,9 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
+import org.neo4j.bolt.security.ssl.Certificates;
+import org.neo4j.bolt.security.ssl.KeyStoreFactory;
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -75,9 +78,6 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.ssl.Certificates;
-import org.neo4j.server.security.ssl.KeyStoreFactory;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;

@@ -45,6 +45,11 @@ public class SocketConnection implements Connection
         this.socket = socket;
     }
 
+    protected void setSocket( Socket socket )
+    {
+        this.socket = socket;
+    }
+
     @Override
     public Connection connect( HostnamePort address ) throws Exception
     {

@@ -22,13 +22,18 @@ package org.neo4j.bolt;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
 
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.neo4j.bolt.security.ssl.Certificates;
+import org.neo4j.bolt.security.ssl.KeyStoreFactory;
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.SocketTransport;
@@ -61,6 +66,10 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.ANY;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -85,6 +94,20 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         @Description( "Host and port for the Neo4j Bolt Protocol" )
         public static final Setting<HostnamePort> socket_address =
                 setting( "address", HOSTNAME_PORT, "localhost:7687" );
+
+        @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
+        public static Setting<File> tls_certificate_file = org.neo4j.kernel.configuration.Settings.setting(
+                "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
+
+        @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
+        public static final Setting<File> tls_key_file = org.neo4j.kernel.configuration.Settings.setting(
+                "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
+
+        @Description( "Hostname for the Neo4j REST API" )
+        public static final Setting<String> webserver_address = org.neo4j.kernel.configuration.Settings
+                .setting( "org.neo4j.server.webserver.address", STRING,
+                        "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration.Settings.matches( ANY ) ) );
+
 
         public static <T> Setting<T> connector( int i, Setting<T> setting )
         {
@@ -118,12 +141,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 @Override
                 public boolean equals( Object obj )
                 {
-                    if ( obj instanceof Setting<?> && ((Setting<?>) obj).name().equals( name() ) )
-                    {
-                        return true;
-
-                    }
-                    return false;
+                    return obj instanceof Setting<?> && ((Setting<?>) obj).name().equals( name() );
                 }
             };
         }
@@ -190,8 +208,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     requireEncryption = true;
                     // no break here
                 case OPTIONAL:
-                    SelfSignedCertificate ssc = new SelfSignedCertificate();
-                    sslCtx = SslContextBuilder.forServer( ssc.certificate(), ssc.privateKey() ).build();
+                    KeyStoreInformation keyStore = createKeyStore( connector, log );
+                    sslCtx = SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() ).build();
                     break;
                 default:
                     // case DISABLED:
@@ -232,5 +250,40 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ), channel )
         );
         return availableVersions;
+    }
+
+    private KeyStoreInformation createKeyStore( ConfigView connector, Log log )
+            throws GeneralSecurityException, IOException
+    {
+        File privateKeyPath = connector.get( Settings.tls_key_file ).getAbsoluteFile();
+        File certificatePath = connector.get( Settings.tls_certificate_file ).getAbsoluteFile();
+
+
+        // If neither file is specified
+        if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
+        {
+            log.info( "No SSL certificate found, generating a self-signed certificate.." );
+            Certificates certFactory = new Certificates();
+            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath,
+                    connector.get( Settings.webserver_address ) );
+        }
+
+        // Make sure both files were there, or were generated
+        if ( !certificatePath.exists() )
+        {
+            throw new IllegalStateException(
+                    String.format(
+                            "TLS private key found, but missing certificate at '%s'. Cannot start server without " +
+                            "certificate.",
+                            certificatePath ) );
+        }
+        if ( !privateKeyPath.exists() )
+        {
+            throw new IllegalStateException(
+                    String.format( "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
+                            privateKeyPath ) );
+        }
+
+        return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
     }
 }

@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.bolt.security.ssl;
 
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+
 
 public class KeyStoreFactory
 {
@@ -42,7 +43,7 @@ public class KeyStoreFactory
         KeyStore ks = createKeyStore( keyStorePassword, keyPassword,
                 privateKeyPath, certificatePath );
 
-        return new KeyStoreInformation( ks, keyStorePassword, keyPassword );
+        return new KeyStoreInformation( ks, keyStorePassword, keyPassword, privateKeyPath, certificatePath );
     }
 
     private KeyStore createKeyStore( char[] keyStorePassword, char[] keyPassword, File privateKeyFile, File certFile )

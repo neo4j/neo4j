@@ -60,6 +60,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.Config;
@@ -67,7 +68,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 
 import static java.lang.String.format;
