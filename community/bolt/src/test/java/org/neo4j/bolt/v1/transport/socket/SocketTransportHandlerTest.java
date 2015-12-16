@@ -25,7 +25,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.SocketTransportHandler;
@@ -101,10 +101,12 @@ public class SocketTransportHandlerTest
 
     private SocketTransportHandler.ProtocolChooser protocolChooser( final Session session )
     {
-        PrimitiveLongObjectMap<Function<Channel,BoltProtocol>> availableVersions = longObjectMap();
-        availableVersions.put( BoltProtocolV1.VERSION, channel -> new BoltProtocolV1( NullLogService.getInstance(), session, channel ) );
+        PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
+        availableVersions.put( BoltProtocolV1.VERSION,
+                ( channel, isSecure ) -> new BoltProtocolV1( NullLogService.getInstance(), session, channel )
+        );
 
-        return new SocketTransportHandler.ProtocolChooser( availableVersions );
+        return new SocketTransportHandler.ProtocolChooser( availableVersions, true );
     }
 
     private ByteBuf handshake()

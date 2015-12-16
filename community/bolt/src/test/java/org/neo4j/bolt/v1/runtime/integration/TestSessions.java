@@ -87,13 +87,13 @@ public class TestSessions implements TestRule, Sessions
     }
 
     @Override
-    public Session newSession()
+    public Session newSession( boolean isEncrypted )
     {
         if ( actual == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        Session session = actual.newSession();
+        Session session = actual.newSession( isEncrypted );
         startedSessions.add( session );
         return session;
     }

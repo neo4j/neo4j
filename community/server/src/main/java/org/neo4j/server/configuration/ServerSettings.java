@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.BoltKernelExtension.EncryptionLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
@@ -181,13 +182,9 @@ public interface ServerSettings
     @Description("Enable the Bolt protocol")
     Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
 
-    @Description("Enable TLS for Bolt")
-    Setting<Boolean> bolt_tls_enabled = BoltKernelExtension.Settings.tls_enabled;
+    @Description("Set the encryption level for Neo4j Bolt protocol ports")
+    Setting<EncryptionLevel> bolt_tls_level = BoltKernelExtension.Settings.tls_level;
 
-    @Description("Host and port for Bolt TCP transport")
+    @Description("Host and port for Bolt protocol")
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
-
-    @Description("Host and port for the Bolt Websocket transport")
-    Setting<HostnamePort> bolt_ws_address = BoltKernelExtension.Settings.websocket_address;
-
 }

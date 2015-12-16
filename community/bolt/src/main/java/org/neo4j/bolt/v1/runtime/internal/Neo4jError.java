@@ -136,6 +136,8 @@ public class Neo4jError
             return Status.Request.valueOf( error );
         case "Network":
             return Status.Network.valueOf( error );
+        case "Security":
+            return Status.Security.valueOf( error );
         default:
             return Status.General.UnknownFailure;
         }

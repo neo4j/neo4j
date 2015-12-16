@@ -17,17 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.v1.runtime.internal;
 
-/**
- * Manages sessions.
- */
-public interface Sessions
+import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.Sessions;
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class EncryptionRequiredSessions implements Sessions
 {
-    default Session newSession()
+    private final Sessions delegate;
+
+    public EncryptionRequiredSessions( Sessions sessions )
     {
-        return newSession( false );
+        this.delegate = sessions;
     }
 
-    Session newSession( boolean isEncrypted );
+    @Override
+    public Session newSession( boolean isEncrypted )
+    {
+        if ( !isEncrypted )
+        {
+            return new ErrorReportingSession(
+                    new Neo4jError( Status.Security.EncryptionRequired, "This server requires a TLS encrypted connection." ) );
+        }
+        return delegate.newSession( isEncrypted );
+    }
 }

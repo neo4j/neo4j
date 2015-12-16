@@ -66,15 +66,14 @@ public class BoltFullExchangesDocTest
         Collection<Object[]> mappings = new ArrayList<>();
 
         // Load the documented mappings
-        HostnamePort socketAddress = new HostnamePort( "localhost:7687" );
-        HostnamePort wsAddress = new HostnamePort( "localhost:7688" );
+        HostnamePort address = new HostnamePort( "localhost:7687" );
         for ( DocExchangeExample ex : DocsRepository.docs().read(
                 "dev/transport.asciidoc",
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), wsAddress} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         for ( DocExchangeExample ex : DocsRepository.docs().read(
@@ -82,8 +81,8 @@ public class BoltFullExchangesDocTest
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), socketAddress} );
-            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), wsAddress} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         return mappings;
