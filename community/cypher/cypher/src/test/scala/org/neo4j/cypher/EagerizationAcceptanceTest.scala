@@ -1679,13 +1679,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  // OTHER TESTS
-
-  test("should not be eager for LOAD CSV followed by MERGE") {
-    val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
-
-    assertNumberOfEagerness(query, 0)
-  }
+  // Tests with UNWIND
 
   test("eagerness should work with match - unwind - delete") {
     val a = createNode()
@@ -1701,7 +1695,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("eagerness should work with match - unwind - delete with preceeding projection") {
+  test("eagerness should work with match - unwind - delete with preceding projection") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "T")
@@ -1715,7 +1709,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 1)
   }
 
-  test("eagerness should work with match - unwind - delete with multiple preceeding projections") {
+  test("eagerness should work with match - unwind - delete with multiple preceding projections") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "T")
@@ -1727,6 +1721,86 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 2, relationshipsDeleted = 1)
     assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by empty UNWIND") {
+    createNode()
+    createNode()
+
+    val query = "MATCH (), () UNWIND [] AS i CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(0)
+    assertStats(result, nodesCreated = 0)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by UNWIND of one") {
+    createNode()
+    createNode()
+
+    val query = "MATCH (), () UNWIND [0] AS i CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by UNWIND of two") {
+    createNode()
+    createNode()
+
+    val query = "MATCH (), () UNWIND [0, 0] AS i CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(8)
+    assertStats(result, nodesCreated = 8)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by UNWIND between reads") {
+    createNode()
+    createNode()
+
+    val query = "MATCH () UNWIND [0] as i MATCH () CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by UNWIND between reads and writes -- MATCH") {
+    createNode()
+    createNode()
+
+    val query = "MATCH () UNWIND [0] as i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager between conflicting read/write separated by UNWIND between reads and writes -- MERGE") {
+    createNode()
+    createNode()
+
+    val query = "MERGE () WITH * UNWIND [0] as i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next() should equal(4)
+    assertStats(result, nodesCreated = 4)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  // OTHER TESTS
+
+  test("should not be eager for LOAD CSV followed by MERGE") {
+    val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
+
+    assertNumberOfEagerness(query, 0)
   }
 
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int) {
