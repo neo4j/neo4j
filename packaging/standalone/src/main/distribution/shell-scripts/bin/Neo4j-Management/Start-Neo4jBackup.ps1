@@ -161,7 +161,7 @@ Function Start-Neo4jBackup
     }
 
     # Get Java
-    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-backup' -StartingClass 'org.neo4j.backup.BackupTool' -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-backup' -StartingClass 'org.neo4j.backup.BackupTool'
     if ($JavaCMD -eq $null)
     {
       Write-Error 'Unable to locate Java'

@@ -107,7 +107,7 @@ Function Start-Neo4jImport
 
 
     # Get Java
-    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-import' -StartingClass 'org.neo4j.tooling.ImportTool' -ExtraClassPath (Join-Path -Path $thisServer.Home -ChildPath 'system\coordinator\lib')
+    $JavaCMD = Get-Java -Neo4jServer $thisServer -ForUtility -AppName 'neo4j-import' -StartingClass 'org.neo4j.tooling.ImportTool'
     if ($JavaCMD -eq $null)
     {
       Write-Error 'Unable to locate Java'
