@@ -107,7 +107,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public GraphDatabaseFactory setMonitors( Monitors monitors )
+    public TestGraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
         return this;
