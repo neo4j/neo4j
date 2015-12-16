@@ -85,12 +85,10 @@ TIMEOUT=20
 PID_FILE=${NEO4J_PIDFILE}
 
 buildclasspath() {
-  CLASSPATH="$NEO4J_HOME/lib/*:$NEO4J_HOME/system/lib/*:$NEO4J_CONFIG"
+  CLASSPATH="$NEO4J_HOME/lib/*:$NEO4J_HOME/system/lib/*"
 }
 
-
 startit() {
-
   detectos
   exitonnojava
   checkstatus
@@ -116,20 +114,20 @@ startit() {
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS \
-	  -DconfigFile=conf/arbiter-wrapper.conf \
-      -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
-	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
-      -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
-      org.neo4j.server.enterprise.StandaloneClusterClient >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo \$! > \"$PID_FILE\" "
-          else
+	      -DconfigFile=conf/arbiter-wrapper.conf \
+        -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+	      -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" \
+        org.neo4j.server.enterprise.StandaloneClusterClient >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo \$! > \"$PID_FILE\" "
+    else
       checkwriteaccess
       echo "WARNING: not changing user"
       $JAVACMD -cp ${CLASSPATH} $JAVA_OPTS \
-	    -DconfigFile=conf/arbiter-wrapper.conf \
-      -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
-	    -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
-      -Dneo4j.home="${NEO4J_HOME}" \
-      -Dneo4j.instance="${NEO4J_INSTANCE}" org.neo4j.server.enterprise.StandaloneClusterClient  >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo $! > "${PID_FILE}"
+	      -DconfigFile=conf/arbiter-wrapper.conf \
+        -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+	      -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
+        -Dneo4j.home="${NEO4J_HOME}" \
+        org.neo4j.server.enterprise.StandaloneClusterClient  >> "$NEO4J_LOG/arbiter-console.log" 2>&1 & echo $! > "${PID_FILE}"
     fi
     STARTED_PID=$( cat "$PID_FILE" )
 
@@ -151,7 +149,6 @@ startit() {
 }
 
 console() {
-
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
@@ -163,12 +160,11 @@ console() {
     checkandrepairenv
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf/arbiter-wrapper.conf \
-	  -DconfigFile=conf/arbiter-wrapper.conf \
+	    -DconfigFile=conf/arbiter-wrapper.conf \
       -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
-	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
-      -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+	    -Dorg.neo4j.cluster.logdirectory="${NEO4J_LOG}" \
+      -Dneo4j.home=\"${NEO4J_HOME}\" \
       org.neo4j.server.enterprise.StandaloneClusterClient
-
   else
     echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
     exit 1

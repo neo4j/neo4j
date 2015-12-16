@@ -128,15 +128,14 @@ checkstatus() {
 
 checkwriteaccess() {
     if [ $UID != 0 ] ; then
-    if [ ! -w "$NEO4J_LOG" ] ; then
-      echo "ERROR: No write access to $NEO4J_LOG directory, run either as user $NEO4J_USER or root"
-      exit 1
-    fi
+      if [ ! -w "$NEO4J_LOG" ] ; then
+        echo "ERROR: No write access to $NEO4J_LOG directory, run either as user $NEO4J_USER or root"
+        exit 1
+      fi
     fi
 }
 
 reportstatus() {
-
   checkstatus
   detectos
   exitonnojava
@@ -152,7 +151,7 @@ reportstatus() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "$FRIENDLY_NAME is not running"
-	exit 3
+  	exit 3
   else
     echo "$FRIENDLY_NAME is running at pid $NEO4J_PID"
   fi
@@ -213,7 +212,6 @@ getlaunchdpid() {
 }
 
 stopit() {
-
   detectos
   checkstatus
   checkwriteaccess

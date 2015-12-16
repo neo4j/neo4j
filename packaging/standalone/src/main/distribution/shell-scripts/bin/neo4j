@@ -75,7 +75,6 @@ JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 [ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
 [ -z "${wrapper_java_maxmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xmx${wrapper_java_maxmemory}m"
 
-#NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_CONFIG/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
 
 LAUNCHD_NAME="${LAUNCHD_NAME}.${NEO4J_SERVER_PORT}"
@@ -99,14 +98,12 @@ TIMEOUT=120
 
 PID_FILE=${NEO4J_PIDFILE}
 buildclasspath() {
-  # confirm library jars
   LIBDIR="$NEO4J_HOME"/lib
   if [ ! -e "$LIBDIR" ] ; then
     echo "Error: missing Neo4j Library, expected at $LIBDIR"
     exit 1
   fi
 
-  # confirm system jars
   SYSLIBDIR="$NEO4J_HOME"/system/lib
   if [ ! -e "$SYSLIBDIR" ] ; then
     echo "Error: missing Neo4j System Library, expected at $SYSLIBDIR"
@@ -118,14 +115,12 @@ buildclasspath() {
     [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
   done
 
-  # add any plugin jars
   for jar in "$NEO4J_HOME"/plugins/*.jar ; do
     if [ -e "$jar" ] ; then
       ALL_JARS="$ALL_JARS":"$jar"
     fi
   done
 
-  # add any plugin jars in nested folders
   for jar in "$NEO4J_HOME"/plugins/**/*.jar ; do
     if [ -e "$jar" ] ; then
       ALL_JARS="$ALL_JARS":"$jar"
@@ -133,9 +128,6 @@ buildclasspath() {
   done
 
   CLASSPATH=${ALL_JARS}
-
-  # add useful conf stuff to classpath - always a good idea
-  CLASSPATH="$CLASSPATH":"$NEO4J_CONFIG"
 }
 
 detectrunning() {
@@ -195,13 +187,13 @@ startit() {
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "\"$JAVACMD\" -cp '$CLASSPATH' $JAVA_OPTS \
-        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" \
         -Dfile.encoding=UTF-8 \
         #{neo4j.mainClass} >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       echo "WARNING: not changing user"
       "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
-        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        -Dneo4j.home="${NEO4J_HOME}" \
         -Dfile.encoding=UTF-8 \
         #{neo4j.mainClass} >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
     fi
@@ -276,7 +268,7 @@ console() {
     checkandrepairenv
 
     exec "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
-        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        -Dneo4j.home="${NEO4J_HOME}" \
         -Dfile.encoding=UTF-8 \
         #{neo4j.mainClass}
 
