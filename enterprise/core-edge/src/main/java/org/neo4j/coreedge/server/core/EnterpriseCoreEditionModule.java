@@ -30,9 +30,6 @@ import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
-import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
@@ -82,7 +79,6 @@ import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -255,14 +251,6 @@ public class EnterpriseCoreEditionModule
         channelInitializer.setOwner( coreToCoreClient );
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself, replicatedLockStateMachine ) );
-
-        LocalDatabase localDatabase =
-                new LocalDatabase( platformModule.storeDir,
-                        new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
-                                platformModule.pageCache ),
-                        new StoreFiles( new DefaultFileSystemAbstraction() ),
-                        dependencies.provideDependency( NeoStoreDataSource.class ),
-                        platformModule.dependencies.provideDependency( TransactionIdStore.class ) );
 
         CatchupServer catchupServer = new CatchupServer( logProvider,
                 new StoreIdSupplier( platformModule ),
