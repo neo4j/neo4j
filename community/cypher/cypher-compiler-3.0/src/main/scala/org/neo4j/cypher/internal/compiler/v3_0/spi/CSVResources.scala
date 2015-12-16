@@ -27,7 +27,7 @@ import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v3_0.TaskCloser
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalResource
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.frontend.v3_0.LoadExternalResourceException
 
 import scala.collection.mutable.ArrayBuffer
@@ -49,7 +49,7 @@ object CSVResources {
   }
 }
 
-class CSVResources(cleaner: TaskCloser) extends ExternalResource {
+class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val inputStream = openStream(url)

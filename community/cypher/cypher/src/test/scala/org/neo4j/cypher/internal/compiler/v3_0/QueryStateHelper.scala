@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
@@ -34,7 +34,7 @@ import scala.collection.mutable
 object QueryStateHelper {
   def empty: QueryState = newWith()
 
-  def newWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
+  def newWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalCSVResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 

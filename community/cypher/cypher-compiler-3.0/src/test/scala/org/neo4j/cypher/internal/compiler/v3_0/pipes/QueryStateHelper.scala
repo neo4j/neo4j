@@ -27,7 +27,7 @@ import scala.collection.mutable
 object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
-  def emptyWith(query: QueryContext = null, resources: ExternalResource = null,
+  def emptyWith(query: QueryContext = null, resources: ExternalCSVResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
