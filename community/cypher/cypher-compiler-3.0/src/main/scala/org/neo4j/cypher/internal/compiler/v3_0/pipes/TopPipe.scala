@@ -34,10 +34,10 @@ import scala.math._
 abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], estimatedCardinality: Option[Double])(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe with NoEffectsPipe {
 
-  val sortItems = sortDescription.toArray
-  val sortItemsCount = sortItems.length
+  val sortItems: Array[SortDescription] = sortDescription.toArray
+  private val sortItemsCount: Int = sortItems.length
 
-  type SortDataWithContext = (Array[Any],ExecutionContext)
+  type SortDataWithContext = (Array[Any], ExecutionContext)
 
   class LessThanComparator(comparer: Comparer)(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
@@ -65,11 +65,10 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription], est
   def symbols = source.symbols
 }
 
-
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
 (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
@@ -121,17 +120,16 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
     }
   }
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-  def planDescriptionWithoutCardinality =
+  override def planDescriptionWithoutCardinality =
     source.planDescription
       .andThen(this.id, "Top", variables, LegacyExpression(countExpression), KeyNames(sortItems.map(_.id)))
-
 }
 
 /*
@@ -142,7 +140,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],
+  protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -170,17 +168,74 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
     }
   }
 
-  def planDescriptionWithoutCardinality =
+  override def planDescriptionWithoutCardinality =
     source.planDescription
       .andThen(this.id, "Top1", variables, KeyNames(sortItems.map(_.id)))
 
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
 
+/*
+ * Special case for when we only want one element, and all others that have the same value (tied for first place)
+ */
+case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
+                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends TopPipe(source, sortDescription, estimatedCardinality)(pipeMonitor) {
 
+  protected override def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
+    implicit val s = state
+    if (input.isEmpty)
+      Iterator.empty
+    else {
+      val lessThan = new LessThanComparator(this)
+
+      val first = input.next()
+      var best = arrayEntry(first)
+      var matchingRows = init(best)
+
+      input.foreach {
+        ctx =>
+          val next = arrayEntry(ctx)
+          val comparison = lessThan.compare(next, best)
+          if (comparison < 0) { // Found a new best
+            best = next
+            matchingRows = init(next)
+          }
+
+          if (comparison == 0) {  // Found a tie
+            matchingRows += next._2
+          }
+      }
+      matchingRows.result().iterator
+    }
+  }
+
+  @inline
+  private def init(first: SortDataWithContext) = {
+    val builder = Vector.newBuilder[ExecutionContext]
+    builder += first._2
+    builder
+  }
+
+  override def planDescriptionWithoutCardinality =
+    source.planDescription
+      .andThen(this.id, "Top1(Ties)", variables, KeyNames(sortItems.map(_.id)))
+
+
+  override def dup(sources: List[Pipe]): Pipe = {
+    val (head :: Nil) = sources
+    copy(source = head)(estimatedCardinality)
+  }
+
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+}

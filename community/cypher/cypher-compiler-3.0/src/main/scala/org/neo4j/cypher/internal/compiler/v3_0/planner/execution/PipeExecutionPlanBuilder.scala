@@ -274,8 +274,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case plans.Limit(_, count, IncludeTies) =>
       (source, count) match {
-        case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) => ???
-//          Top1WithTiesPipe(inner, sortDescription.toList)()
+        case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
+          Top1WithTiesPipe(inner, sortDescription.toList)()
 
         case _ => throw new InternalException("Including ties is only supported for very specific plans")
       }
