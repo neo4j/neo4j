@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 
 public class NeoStoreFileListing
@@ -101,7 +101,7 @@ public class NeoStoreFileListing
     private void gatherNeoStoreFiles( final Collection<File> targetFiles, boolean includeTransactionLogs )
     {
         File neostoreFile = null;
-        for ( File dbFile : nonNull( storeDir.listFiles() ) )
+        for ( File dbFile : Objects.requireNonNull( storeDir.listFiles() ) )
         {
             String name = dbFile.getName();
             if ( dbFile.isFile() )

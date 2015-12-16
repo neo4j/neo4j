@@ -24,8 +24,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.helpers.SillyUtils.ignore;
-
 public class StartDbWithShell
 {
     public static void main( String[] args ) throws Exception
@@ -37,7 +35,7 @@ public class StartDbWithShell
             setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE).
             newGraphDatabase();
         System.out.println( "db " + path + " started, ENTER to quit" );
-        ignore( System.in.read() );
+        System.in.read();
         db.shutdown();
     }
 }
