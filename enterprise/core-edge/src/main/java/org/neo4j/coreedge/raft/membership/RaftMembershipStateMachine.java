@@ -85,7 +85,7 @@ public class RaftMembershipStateMachine<MEMBER>
         this.log = logProvider.getLog( getClass() );
     }
 
-    synchronized void handleState( RaftMembershipStateMachineEventHandler<MEMBER> newState )
+    private synchronized void handleState( RaftMembershipStateMachineEventHandler<MEMBER> newState )
     {
         RaftMembershipStateMachineEventHandler oldState = state;
         this.state = newState;
