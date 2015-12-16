@@ -1,15 +1,4 @@
 #!/usr/bin/env bash
-### BEGIN REDHAT INFO
-# chkconfig: 2345 99 20
-# description: The Neo4J graph database server. See http://neo4j.org
-### END REDHAT INFO
-### BEGIN INIT INFO
-# Provides:          neo4j-service
-# Required-Start:
-# Required-Stop:
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-### END INIT INFO
 # Copyright (c) 2002-2015 "Neo Technology,"
 
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -30,7 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 FRIENDLY_NAME="Neo4j Server"
-LAUNCHD_NAME="org.neo4j.server"
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -76,23 +64,6 @@ JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 [ -z "${wrapper_java_maxmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xmx${wrapper_java_maxmemory}m"
 
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
-
-LAUNCHD_NAME="${LAUNCHD_NAME}.${NEO4J_SERVER_PORT}"
-
-HEADLESS=false
-
-if [ -z "${wrapper_user}" ]; then
-  NEO4J_USER=`id -un`
-else
-  NEO4J_USER=${wrapper_user}
-fi
-
-# Username to propose for neo4j user, can be overridden by -u USERNAME option
-DEFAULT_USER='neo4j'
-
-SCRIPT_NAME="${NEO4J_HOME}/bin/neo4j"
-SERVICE_NAME=${wrapper_ntservice_name:=neo4j-service}
-LAUNCHD_DIR=~/Library/LaunchAgents/
 
 TIMEOUT=120
 
@@ -149,7 +120,6 @@ detectrunning() {
 }
 
 startit() {
-
   detectos
   exitonnojava
   checkstatus
@@ -163,19 +133,6 @@ startit() {
 	     exit 2;
   fi
 
-  if [ $DIST_OS = "macosx" ] ; then
-    getlaunchdpid
-    if [ $LAUNCHDPID -eq 0 ] ; then
-      echo "Detected installation in launchd, starting it..."
-      launchctl start $LAUNCHD_NAME
-      exit 0
-    elif [ $LAUNCHDPID -gt 0 ] ; then
-      echo "Instance already running via launchd with PID $LAUNCHDPID"
-      exit 1
-    fi
-    # We fall through here since if there is no launchd install we start manually
-  fi
-
   if [ -z $NEO4J_PID ] ; then
     printf "Starting $FRIENDLY_NAME..."
 
@@ -185,18 +142,10 @@ startit() {
 
     CONSOLE_LOG="$NEO4J_LOG/console.log"
 
-    if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "\"$JAVACMD\" -cp '$CLASSPATH' $JAVA_OPTS \
-        -Dneo4j.home=\"${NEO4J_HOME}\" \
-        -Dfile.encoding=UTF-8 \
-        #{neo4j.mainClass} >> \"${CONSOLE_LOG}\" 2>&1 & echo \$! > \"$PID_FILE\" "
-    else
-      echo "WARNING: not changing user"
-      "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
-        -Dneo4j.home="${NEO4J_HOME}" \
-        -Dfile.encoding=UTF-8 \
-        #{neo4j.mainClass} >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
-    fi
+    "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
+      -Dneo4j.home="${NEO4J_HOME}" \
+      -Dfile.encoding=UTF-8 \
+      #{neo4j.mainClass} >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
 
     STARTED_PID=$( cat "$PID_FILE" )
 
@@ -255,7 +204,6 @@ startit() {
 }
 
 console() {
-
   detectos
   checkstatus
   checklimits
@@ -278,24 +226,6 @@ console() {
   fi
 }
 
-# Modifies neo4j config to set the effective user when running as a service
-# usage: modify_user_config <username> [true|false]
-# pass in "true" for created to mark that the user was created (instead than pre-existing)
-modify_user_config() {
-  created=${2:-"false"}
-  if `grep -q "wrapper\.user=" "$NEO4J_CONFIG/neo4j-wrapper.conf"` ; then
-    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_CONFIG/neo4j-wrapper.conf"
-  else
-    echo "wrapper.user=$1" >> "$NEO4J_CONFIG/neo4j-wrapper.conf"
-  fi
-
-  if `grep -q "wrapper\.user\.created=" "$NEO4J_CONFIG/neo4j-wrapper.conf"` ; then
-    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_CONFIG/neo4j-wrapper.conf"
-  else
-    echo "wrapper.user.created=${created}" >> "$NEO4J_CONFIG/neo4j-wrapper.conf"
-  fi
-}
-
 showinfo() {
   reportstatus
 
@@ -313,29 +243,7 @@ showinfo() {
 # END FUNCTIONS
 # BEGIN MAIN
 
-# Parse option flags
-while getopts "u:h" opt; do
-  case $opt in
-    h)
-      echo "Running in headless (-h) mode" >&2
-      HEADLESS=true
-      ;;
-    u)
-      echo "Installing with user $OPTARG"
-      DEFAULT_USER=$OPTARG
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
-    :)
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
-  esac
-done
-
-case "${!OPTIND}" in
+case "$1" in
   console)
     console
     exit 0
@@ -372,14 +280,6 @@ case "${!OPTIND}" in
   info)
     showinfo
     exit 0
-    ;;
-  install)
-    echo "Legacy install now lives in the 'neo4j-installer' script"
-    exit 1
-    ;;
-  remove)
-    echo "Legacy remove now lives in the 'neo4j-installer' script"
-    exit 1
     ;;
   *)
     echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info }"
