@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Ascending, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, ShortestPathPattern}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -52,8 +52,7 @@ case object planShortestPaths {
       case _ => false
     }
 
-    // Only support fallback for shortestPath (not allShortestPaths, yet)
-    if (needFallbackPredicates.nonEmpty && shortestPaths.single) {
+    if (needFallbackPredicates.nonEmpty) {
       planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
     }
     else {
@@ -105,8 +104,6 @@ case object planShortestPaths {
     val rhsFiltered = context.logicalPlanProducer.planSelection(predicates, rhsProjection)
 
     // Plan Sort and Limit
-    // TODO: Make it work for allShortestPaths (i.e. group by the shortest length)
-    // TODO: Don't use null for InputPositions. (Can we get hold of the input positions of the original shortestPath expression AST?)
     val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName.name)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
@@ -117,7 +114,8 @@ case object planShortestPaths {
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, Map(columnName -> lengthOfPath))
     val sortDescription = Seq(Ascending(IdName(columnName)))
     val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
-    val rhs = lpp.planLimit(sorted, limitLiteral1)
+    val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
+    val rhs = lpp.planLimit(sorted, limitLiteral1, ties)
 
     // We have to force the plan to solve what we actually solve
     val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)

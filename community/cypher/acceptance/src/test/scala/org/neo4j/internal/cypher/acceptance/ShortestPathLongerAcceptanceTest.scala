@@ -332,7 +332,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   test("All shortest paths from first to last node via middle") {
     val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(
-      s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
+      s"""PROFILE MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          | WHERE ANY(n in nodes(p) WHERE n:$middle)
          | RETURN p""".stripMargin)
 
@@ -343,18 +343,17 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     ))
   }
 
-  // TODO: Support TOP by group in fallback
-  ignore("All shortest paths from first to last node via top right and bottom left (needs to be with fallback)") {
+  test("All shortest paths from first to last node via top right and bottom left (needs to be with fallback)") {
     val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(
-      s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
+      s"""PROFILE MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight) AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN p""".stripMargin)
 
     val expectedPathCount = Map(3 -> 2, 4 -> 8, 5 -> 30)
     evaluateAllShortestPathResults(result, "p", start, expectedPathCount(dim), Set(
-      row(0, min = 0, max = dMax / 2) ++ col(dMax / 2) ++ row(dMax, min = dMax / 2, max = dMax),
-      col(0, min = 0, max = dMax / 2) ++ row(dMax / 2) ++ col(dMax, min = dMax / 2, max = dMax)
+      row(0) ++ row(1) ++ col(0) ++ row(dMax),
+      col(0) ++ col(1) ++ row(0) ++ col(dMax)
     ))
     result should executeShortestPathFallbackWith(minRows = 1)
   }
@@ -745,7 +744,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     val duration = System.currentTimeMillis() - startMs
     dprintln(results.executionPlanDescription())
     dprintln(s"Query took ${duration / 1000.0}s")
-    resultList.length should be(expectedPathCount)
+    withClue("expected row count"){ resultList.length should be(expectedPathCount) }
     val matches = resultList.foldLeft(Map[Set[Node],Int]()) { (acc, row) =>
       if (row.isDefinedAt(identifier)) {
         val path: Path = row(identifier).asInstanceOf[Path]
@@ -753,7 +752,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
           dprintln(path)
           path.nodes().asScala.toList
         }
-        nodes.length should be(expectedNodes.head.size)
+        withClue("expected path length"){ nodes.length should be(expectedNodes.head.size) }
         debugResults(nodes)
         val nodeSet = nodes.toSet
         if (acc.isDefinedAt(nodeSet))
