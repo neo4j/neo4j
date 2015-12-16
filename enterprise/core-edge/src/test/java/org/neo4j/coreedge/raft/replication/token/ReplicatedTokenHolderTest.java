@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.replication.token;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,14 +32,22 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Arrays.asList;
@@ -54,39 +63,25 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.createCommandBytes;
 import static org.neo4j.coreedge.raft.replication.token.TokenType.LABEL;
+import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
 
 public class ReplicatedTokenHolderTest
 {
     final int EXPECTED_TOKEN_ID = 1;
     final int INJECTED_TOKEN_ID = 1024;
-
     Dependencies dependencies = mock( Dependencies.class );
-    Collection<Command> expectedCommands;
-    Collection<Command> injectedCommands;
 
     @Before
     public void setup()
     {
-        {
-            expectedCommands = new ArrayList<>();
-            Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
-            labelTokenCommand.init( new LabelTokenRecord( EXPECTED_TOKEN_ID ) );
-            expectedCommands.add( labelTokenCommand );
-        }
-
-        {
-            injectedCommands = new ArrayList<>();
-            Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
-            labelTokenCommand.init( new LabelTokenRecord( INJECTED_TOKEN_ID ) );
-            injectedCommands.add( labelTokenCommand );
-        }
-
         NeoStores neoStore = mock( NeoStores.class );
         LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
-        when (neoStore.getLabelTokenStore()).thenReturn( labelTokenStore );
-        when(labelTokenStore.allocateNameRecords( Matchers.<byte[]>any() )).thenReturn( singletonList( new DynamicRecord( 1l ) ) );
+        when( neoStore.getLabelTokenStore() ).thenReturn( labelTokenStore );
+        when( labelTokenStore.allocateNameRecords( Matchers.<byte[]>any() ) ).thenReturn( singletonList( new
+                DynamicRecord( 1l ) ) );
         when( dependencies.resolveDependency( NeoStores.class ) ).thenReturn( neoStore );
-        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
+        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn( mock(
+                TransactionRepresentationCommitProcess.class ) );
     }
 
     @Test
@@ -103,7 +98,7 @@ public class ReplicatedTokenHolderTest
         when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
                 .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
 
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
         tokenHolder.setLastCommittedIndex( -1 );
@@ -117,10 +112,40 @@ public class ReplicatedTokenHolderTest
     }
 
     @Test
+    public void shouldStoreRaftLogIndexInTransactionHeader() throws Exception
+    {
+        // given
+        int logIndex = 1;
+
+        IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
+        IdGenerator idGenerator = mock( IdGenerator.class );
+        when( idGenerator.nextId() ).thenReturn( 1L );
+        when( idGeneratorFactory.get( any( IdType.class ) ) ).thenReturn( idGenerator );
+
+        StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null, null );
+        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn(
+                commitProcess );
+
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder(
+                new StubReplicator(), idGeneratorFactory, dependencies );
+        tokenHolder.setLastCommittedIndex( -1 );
+
+        // when
+        ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( LABEL, "Person",
+                createCommandBytes( createCommands( EXPECTED_TOKEN_ID ) ) );
+        tokenHolder.onReplicated( tokenRequest, logIndex );
+
+        // then
+        List<TransactionRepresentation> transactions = commitProcess.transactionsToApply;
+        assertEquals(1, transactions.size());
+        assertEquals(logIndex, decodeLogIndexFromTxHeader( transactions.get( 0 ).additionalHeader()) );
+    }
+
+    @Test
     public void shouldStoreInitialTokens() throws Exception
     {
         // given
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder =
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder =
                 new ReplicatedLabelTokenHolder( null, null, dependencies );
 
         // when
@@ -134,7 +159,7 @@ public class ReplicatedTokenHolderTest
     public void shouldThrowExceptionIfLastCommittedIndexNotSet() throws Exception
     {
         // given
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( null,
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( null,
                 null, dependencies );
 
         // when
@@ -161,13 +186,13 @@ public class ReplicatedTokenHolderTest
 
         Replicator replicator = new StubReplicator();
 
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
         tokenHolder.onReplicated( new ReplicatedTokenRequest( LABEL, "Person", createCommandBytes(
-                expectedCommands ) ), 0 );
+                createCommands( EXPECTED_TOKEN_ID ) ) ), 0 );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
@@ -188,20 +213,19 @@ public class ReplicatedTokenHolderTest
 
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
         replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( LABEL, "Person",
-                createCommandBytes( injectedCommands ) ) );
+                createCommandBytes( createCommands( INJECTED_TOKEN_ID ) ) ) );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
 
         // then
         assertEquals( INJECTED_TOKEN_ID, tokenId );
-
     }
 
     @Test
@@ -216,20 +240,28 @@ public class ReplicatedTokenHolderTest
 
         RaceConditionSimulatingReplicator replicator = new RaceConditionSimulatingReplicator();
 
-        ReplicatedTokenHolder<Token,LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
+        ReplicatedTokenHolder<Token, LabelTokenRecord> tokenHolder = new ReplicatedLabelTokenHolder( replicator,
                 idGeneratorFactory, dependencies );
 
         tokenHolder.setLastCommittedIndex( -1 );
         tokenHolder.start();
         replicator.injectLabelTokenBeforeOtherOneReplicates( new ReplicatedTokenRequest( LABEL, "Dog",
-                createCommandBytes( injectedCommands ) ) );
+                createCommandBytes( createCommands( INJECTED_TOKEN_ID ) ) ) );
 
         // when
         int tokenId = tokenHolder.getOrCreateId( "Person" );
 
         // then
         assertEquals( EXPECTED_TOKEN_ID, tokenId );
+    }
 
+    private List<Command> createCommands( int tokenId )
+    {
+        List<Command> commands = new ArrayList<>();
+        Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
+        labelTokenCommand.init( new LabelTokenRecord( tokenId ) );
+        commands.add( labelTokenCommand );
+        return commands;
     }
 
     static class RaceConditionSimulatingReplicator implements Replicator
@@ -291,6 +323,25 @@ public class ReplicatedTokenHolderTest
         public void unsubscribe( ReplicatedContentListener listener )
         {
             this.listeners.remove( listener );
+        }
+    }
+
+    private class StubTransactionCommitProcess extends TransactionRepresentationCommitProcess
+    {
+        private List<TransactionRepresentation> transactionsToApply = new ArrayList<>();
+
+        public StubTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine,
+                                             IndexUpdatesValidator indexUpdatesValidator )
+        {
+            super( appender, storageEngine, indexUpdatesValidator );
+        }
+
+        @Override
+        public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
+                throws TransactionFailureException
+        {
+            transactionsToApply.add( batch.transactionRepresentation() );
+            return -1;
         }
     }
 }
