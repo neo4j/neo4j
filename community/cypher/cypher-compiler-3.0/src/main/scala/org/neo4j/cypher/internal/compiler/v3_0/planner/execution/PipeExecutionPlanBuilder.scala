@@ -260,7 +260,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case plans.Skip(_, count) =>
       SkipPipe(source, buildExpression(count))()
 
-    case plans.Limit(_, count) =>
+    case plans.Limit(_, count, DoNotIncludeTies) =>
       (source, count) match {
         case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
           Top1Pipe(inner, sortDescription.toList)()
@@ -270,6 +270,14 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
         case _ =>
           LimitPipe(source, buildExpression(count))()
+      }
+
+    case plans.Limit(_, count, IncludeTies) =>
+      (source, count) match {
+        case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) => ???
+//          Top1WithTiesPipe(inner, sortDescription.toList)()
+
+        case _ => throw new InternalException("Including ties is only supported for very specific plans")
       }
 
     case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>

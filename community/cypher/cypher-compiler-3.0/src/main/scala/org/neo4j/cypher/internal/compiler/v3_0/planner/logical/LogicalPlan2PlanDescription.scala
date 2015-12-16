@@ -80,7 +80,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
         val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
         PlanDescriptionImpl(id = idMap(plan), "CartesianProduct", children,Seq.empty, symbols)
 
-      case Limit(lhs, count) =>
+      case Limit(lhs, count, DoNotIncludeTies) =>
         PlanDescriptionImpl(id = idMap(plan), name = "Limit", children = SingleChild(apply(lhs, idMap)),
           Seq(Expression(count)), symbols)
 
