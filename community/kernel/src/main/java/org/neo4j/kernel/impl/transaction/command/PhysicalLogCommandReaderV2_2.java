@@ -69,24 +69,42 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
     {
         switch ( commandType )
         {
-        case NeoCommandType.NODE_COMMAND: return visitNodeCommand( channel );
-        case NeoCommandType.PROP_COMMAND: return visitPropertyCommand( channel );
-        case NeoCommandType.PROP_INDEX_COMMAND: return visitPropertyKeyTokenCommand( channel );
-        case NeoCommandType.REL_COMMAND: return visitRelationshipCommand( channel );
-        case NeoCommandType.REL_TYPE_COMMAND: return visitRelationshipTypeTokenCommand( channel );
-        case NeoCommandType.LABEL_KEY_COMMAND: return visitLabelTokenCommand( channel );
-        case NeoCommandType.NEOSTORE_COMMAND: return visitNeoStoreCommand( channel );
-        case NeoCommandType.SCHEMA_RULE_COMMAND: return visitSchemaRuleCommand( channel );
-        case NeoCommandType.REL_GROUP_COMMAND: return visitRelationshipGroupCommand( channel );
-        case NeoCommandType.INDEX_DEFINE_COMMAND: return visitIndexDefineCommand( channel );
-        case NeoCommandType.INDEX_ADD_COMMAND: return visitIndexAddNodeCommand( channel );
-        case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND: return visitIndexAddRelationshipCommand( channel );
-        case NeoCommandType.INDEX_REMOVE_COMMAND: return visitIndexRemoveCommand( channel );
-        case NeoCommandType.INDEX_DELETE_COMMAND: return visitIndexDeleteCommand( channel );
-        case NeoCommandType.INDEX_CREATE_COMMAND: return visitIndexCreateCommand( channel );
-        case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND: return visitRelationshipCountsCommand( channel );
-        case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND: return visitNodeCountsCommand( channel );
-        default: throw unknownCommandType( commandType, channel );
+        case NeoCommandType.NODE_COMMAND:
+            return visitNodeCommand( channel );
+        case NeoCommandType.PROP_COMMAND:
+            return visitPropertyCommand( channel );
+        case NeoCommandType.PROP_INDEX_COMMAND:
+            return visitPropertyKeyTokenCommand( channel );
+        case NeoCommandType.REL_COMMAND:
+            return visitRelationshipCommand( channel );
+        case NeoCommandType.REL_TYPE_COMMAND:
+            return visitRelationshipTypeTokenCommand( channel );
+        case NeoCommandType.LABEL_KEY_COMMAND:
+            return visitLabelTokenCommand( channel );
+        case NeoCommandType.NEOSTORE_COMMAND:
+            return visitNeoStoreCommand( channel );
+        case NeoCommandType.SCHEMA_RULE_COMMAND:
+            return visitSchemaRuleCommand( channel );
+        case NeoCommandType.REL_GROUP_COMMAND:
+            return visitRelationshipGroupCommand( channel );
+        case NeoCommandType.INDEX_DEFINE_COMMAND:
+            return visitIndexDefineCommand( channel );
+        case NeoCommandType.INDEX_ADD_COMMAND:
+            return visitIndexAddNodeCommand( channel );
+        case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
+            return visitIndexAddRelationshipCommand( channel );
+        case NeoCommandType.INDEX_REMOVE_COMMAND:
+            return visitIndexRemoveCommand( channel );
+        case NeoCommandType.INDEX_DELETE_COMMAND:
+            return visitIndexDeleteCommand( channel );
+        case NeoCommandType.INDEX_CREATE_COMMAND:
+            return visitIndexCreateCommand( channel );
+        case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
+            return visitRelationshipCountsCommand( channel );
+        case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
+            return visitNodeCountsCommand( channel );
+        default:
+            throw unknownCommandType( commandType, channel );
         }
     }
 
@@ -100,8 +118,8 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         boolean endNodeNeedsLong;
         byte keyId;
 
-        IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
-                                byte indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
+        IndexCommandHeader( byte valueType, byte entityType, boolean entityIdNeedsLong, byte indexNameId,
+                boolean startNodeNeedsLong, boolean endNodeNeedsLong, byte keyId )
         {
             this.valueType = valueType;
             this.entityType = entityType;
@@ -110,7 +128,6 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
             this.startNodeNeedsLong = startNodeNeedsLong;
             this.endNodeNeedsLong = endNodeNeedsLong;
             this.keyId = keyId;
-            return this;
         }
     }
 
@@ -325,8 +342,8 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
                 record.setCreated();
             }
         }
-        SchemaRule rule = first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter )
-                                                        : readSchemaRule( recordsBefore );
+        SchemaRule rule =
+                first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( recordsBefore, recordsAfter, rule );
         return command;
@@ -369,10 +386,8 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
             record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                     Record.NO_NEXT_PROPERTY.intValue() );
         }
-
         readDynamicRecords( channel, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
         record.setLabelField( labelField, dynamicLabelRecords );
-
         record.setInUse( inUse );
         return record;
     }
@@ -392,15 +407,11 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   +
-                                                                   " is not valid for a number of bytes field of " +
-                                                                   "a dynamic record";
+                    + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       +
-                                                                       " is not valid for a next record field of " +
-                                                                       "a dynamic record";
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                            + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte data[] = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -488,8 +499,7 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         }
         if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
         {
-            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is "
-                                             + record );
+            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is " + record );
         }
         return record;
     }
@@ -502,12 +512,10 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         // Read in blocks
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                                                + " longs were read in while i asked for what corresponds to " +
-                                                blockSize;
-        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed( blocks[0] ) ==
-               blocks.length : blocks.length
-                               + " is not a valid number of blocks for type " +
-                               PropertyType.getPropertyType( blocks[0], false );
+                + " longs were read in while i asked for what corresponds to " + blockSize;
+        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
+                blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
+                        + PropertyType.getPropertyType( blocks[0], false );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object
@@ -570,8 +578,8 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         Number startNode = header.startNodeNeedsLong ? channel.getLong() : channel.getInt();
         Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
         AddRelationshipCommand command = new AddRelationshipCommand();
-        command.init( header.indexNameId, entityId.longValue(), header.keyId, value,
-                startNode.longValue(), endNode.longValue() );
+        command.init( header.indexNameId, entityId.longValue(), header.keyId, value, startNode.longValue(),
+                endNode.longValue() );
         return command;
     }
 
@@ -657,13 +665,11 @@ public class PhysicalLogCommandReaderV2_2 extends BaseCommandReader
         byte entityType = (byte) ((headerBytes[0] & 0x2) >> 1);
         boolean entityIdNeedsLong = (headerBytes[0] & 0x1) > 0;
         byte indexNameId = (byte) (headerBytes[1] & 0x3F);
-
         boolean startNodeNeedsLong = (headerBytes[1] & 0x80) > 0;
         boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
-
         byte keyId = headerBytes[2];
-        return new IndexCommandHeader().set( valueType, entityType, entityIdNeedsLong,
-                indexNameId, startNodeNeedsLong, endNodeNeedsLong, keyId );
+        return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong, indexNameId, startNodeNeedsLong,
+                endNodeNeedsLong, keyId );
     }
 
     private Object readIndexValue( byte valueType, ReadableLogChannel channel ) throws IOException

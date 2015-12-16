@@ -57,16 +57,26 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
     {
         switch ( commandType )
         {
-        case NeoCommandType.NODE_COMMAND: return visitNodeCommand( channel );
-        case NeoCommandType.PROP_COMMAND: return visitPropertyCommand( channel );
-        case NeoCommandType.PROP_INDEX_COMMAND: return visitPropertyKeyTokenCommand( channel );
-        case NeoCommandType.REL_COMMAND: return visitRelationshipCommand( channel );
-        case NeoCommandType.REL_TYPE_COMMAND: return visitRelationshipTypeTokenCommand( channel );
-        case NeoCommandType.LABEL_KEY_COMMAND: return visitLabelTokenCommand( channel );
-        case NeoCommandType.NEOSTORE_COMMAND: return visitNeoStoreCommand( channel );
-        case NeoCommandType.SCHEMA_RULE_COMMAND: return visitSchemaRuleCommand( channel );
-        case NeoCommandType.REL_GROUP_COMMAND: return visitRelationshipGroupCommand( channel );
-        default: throw unknownCommandType( commandType, channel );
+        case NeoCommandType.NODE_COMMAND:
+            return visitNodeCommand( channel );
+        case NeoCommandType.PROP_COMMAND:
+            return visitPropertyCommand( channel );
+        case NeoCommandType.PROP_INDEX_COMMAND:
+            return visitPropertyKeyTokenCommand( channel );
+        case NeoCommandType.REL_COMMAND:
+            return visitRelationshipCommand( channel );
+        case NeoCommandType.REL_TYPE_COMMAND:
+            return visitRelationshipTypeTokenCommand( channel );
+        case NeoCommandType.LABEL_KEY_COMMAND:
+            return visitLabelTokenCommand( channel );
+        case NeoCommandType.NEOSTORE_COMMAND:
+            return visitNeoStoreCommand( channel );
+        case NeoCommandType.SCHEMA_RULE_COMMAND:
+            return visitSchemaRuleCommand( channel );
+        case NeoCommandType.REL_GROUP_COMMAND:
+            return visitRelationshipGroupCommand( channel );
+        default:
+            throw unknownCommandType( commandType, channel );
         }
     }
 
@@ -282,11 +292,9 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
                 record.setCreated();
             }
         }
-
         channel.getLong(); // txId - ignored
-
-        SchemaRule rule = first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter )
-                                                        : readSchemaRule( recordsBefore );
+        SchemaRule rule =
+                first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
         command.init( recordsBefore, recordsAfter, rule );
         return command;
@@ -349,15 +357,11 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   +
-                                                                   " is not valid for a number of bytes field of " +
-                                                                   "a dynamic record";
+                    + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       +
-                                                                       " is not valid for a next record field of " +
-                                                                       "a dynamic record";
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                            + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte data[] = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -371,7 +375,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
     {
         int numberOfRecords = channel.getInt();
         assert numberOfRecords >= 0;
-        for  ( int i = numberOfRecords; i > 0; i-- )
+        for ( int i = numberOfRecords; i > 0; i-- )
         {
             DynamicRecord read = readDynamicRecord( channel );
             if ( read == null )
@@ -434,8 +438,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         }
         if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
         {
-            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is "
-                                             + record );
+            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is " + record );
         }
         return record;
     }
@@ -448,12 +451,10 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         // Read in blocks
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                                                + " longs were read in while i asked for what corresponds to " +
-                                                blockSize;
-        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed( blocks[0] ) ==
-               blocks.length : blocks.length
-                               + " is not a valid number of blocks for type " +
-                               PropertyType.getPropertyType( blocks[0], false );
+                + " longs were read in while i asked for what corresponds to " + blockSize;
+        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
+                blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
+                        + PropertyType.getPropertyType( blocks[0], false );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object

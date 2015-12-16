@@ -20,11 +20,6 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-
-import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -35,12 +30,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
@@ -52,26 +44,31 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
     {
         switch ( commandType )
         {
-        case NeoCommandType.NODE_COMMAND: return visitNodeCommand( channel );
-        case NeoCommandType.PROP_COMMAND: return visitPropertyCommand( channel );
-        case NeoCommandType.PROP_INDEX_COMMAND: return visitPropertyKeyTokenCommand( channel );
-        case NeoCommandType.REL_COMMAND: return visitRelationshipCommand( channel );
-        case NeoCommandType.REL_TYPE_COMMAND: return visitRelationshipTypeTokenCommand( channel );
-        case NeoCommandType.NEOSTORE_COMMAND: return visitNeoStoreCommand( channel );
-        default: throw unknownCommandType( commandType, channel );
+        case NeoCommandType.NODE_COMMAND:
+            return visitNodeCommand( channel );
+        case NeoCommandType.PROP_COMMAND:
+            return visitPropertyCommand( channel );
+        case NeoCommandType.PROP_INDEX_COMMAND:
+            return visitPropertyKeyTokenCommand( channel );
+        case NeoCommandType.REL_COMMAND:
+            return visitRelationshipCommand( channel );
+        case NeoCommandType.REL_TYPE_COMMAND:
+            return visitRelationshipTypeTokenCommand( channel );
+        case NeoCommandType.NEOSTORE_COMMAND:
+            return visitNeoStoreCommand( channel );
+        default:
+            throw unknownCommandType( commandType, channel );
         }
     }
 
     private Command visitNodeCommand( ReadableLogChannel channel ) throws IOException
     {
         long id = channel.getLong();
-
         NodeRecord record = readNodeRecord( id, channel );
         if ( record == null )
         {
             return null;
         }
-
         Command.NodeCommand command = new Command.NodeCommand();
         command.init( record, record );
         return command;
@@ -100,7 +97,6 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record.setSecondPrevRel( channel.getLong() );
             record.setSecondNextRel( channel.getLong() );
             record.setNextProp( channel.getLong() );
-
             /*
              * Logs for version 1.9 do not contain the proper values for the following two flags. Also,
              * the defaults won't do, because the pointers for prev in the fist record will not be interpreted
@@ -127,13 +123,11 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
     {
         // ID
         long id = channel.getLong(); // 8
-
         PropertyRecord record = readPropertyRecord( id, channel );
         if ( record == null )
         {
             return null;
         }
-
         Command.PropertyCommand command = new Command.PropertyCommand();
         command.init( record, record );
         return command;
@@ -145,8 +139,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         int id = channel.getInt();
         byte inUseFlag = channel.get();
         boolean inUse = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) ==
-             Record.IN_USE.byteValue() )
+        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
         }
@@ -178,8 +171,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         int id = channel.getInt();
         byte inUseFlag = channel.get();
         boolean inUse = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE
-                .byteValue() )
+        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
         }
@@ -211,8 +203,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         return command;
     }
 
-    private NodeRecord readNodeRecord( long id, ReadableLogChannel channel )
-            throws IOException
+    private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException
     {
         byte inUseFlag = channel.get();
         boolean inUse = false;
@@ -234,22 +225,18 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                     Record.NO_NEXT_PROPERTY.intValue() );
         }
-
         record.setInUse( inUse );
         return record;
     }
-
 
     private DynamicRecord readDynamicRecord( ReadableLogChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
-        assert id >= 0 && id <= (1l << 36) - 1 : id
-                                                 + " is not a valid dynamic record id";
+        assert id >= 0 && id <= (1l << 36) - 1 : id + " is not a valid dynamic record id";
         int type = channel.getInt();
         byte inUseFlag = channel.get();
         boolean inUse = (inUseFlag & Record.IN_USE.byteValue()) != 0;
-
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( inUse, type );
         if ( inUse )
@@ -257,15 +244,11 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   +
-                                                                   " is not valid for a number of bytes field of " +
-                                                                   "a dynamic record";
+                    + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       +
-                                                                       " is not valid for a next record field of " +
-                                                                       "a dynamic record";
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                            + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte data[] = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -291,7 +274,6 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         }
         return numberOfRecords;
     }
-
 
     private PropertyRecord readPropertyRecord( long id, ReadableLogChannel channel ) throws IOException
     {
@@ -337,18 +319,13 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             }
             record.addPropertyBlock( block );
         }
-
         if ( readDynamicRecords( channel, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) == -1 )
         {
             return null;
         }
-
         if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
         {
-            throw new IllegalStateException( "Weird, inUse was read in as "
-                                             + inUse
-                                             + " but the record is "
-                                             + record );
+            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is " + record );
         }
         return record;
     }
@@ -357,24 +334,19 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
     {
         PropertyBlock toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
-        assert blockSize > 0 && blockSize % 8 == 0 : blockSize
-                                                     + " is not a valid block size value";
+        assert blockSize > 0 && blockSize % 8 == 0 : blockSize + " is not a valid block size value";
         // Read in blocks
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                                                + " longs were read in while i asked for what corresponds to "
-                                                + blockSize;
+                + " longs were read in while i asked for what corresponds to " + blockSize;
         assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
-                blocks[0] ) == blocks.length : blocks.length
-                                               + " is not a valid number of blocks for type "
-                                               + PropertyType.getPropertyType(
-                blocks[0], false );
+                blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
+                        + PropertyType.getPropertyType( blocks[0], false );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object
          */
         toReturn.setValueBlocks( blocks );
-
         /*
          * Read in existence of DynamicRecords. Remember, this has already been
          * read in the buffer with the blocks, above.
@@ -383,7 +355,6 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         {
             return null;
         }
-
         return toReturn;
     }
 
@@ -395,23 +366,5 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             result[i] = channel.getLong();
         }
         return result;
-    }
-
-    private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
-    {
-        assert first( recordsBefore ).inUse() : "Asked to deserialize schema records that were not in use.";
-
-        SchemaRule rule;
-        ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
-        try
-        {
-            rule = SchemaRule.Kind.deserialize( first( recordsBefore ).getId(), deserialized );
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            // TODO This is bad. We should probably just shut down if that happens
-            throw launderedException( e );
-        }
-        return rule;
     }
 }
