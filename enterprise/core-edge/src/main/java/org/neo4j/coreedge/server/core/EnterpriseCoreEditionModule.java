@@ -181,7 +181,8 @@ public class EnterpriseCoreEditionModule
         life.add( termStore );
         life.add( voteStore );
 
-        Supplier<DatabaseHealth> databaseHealthSupplier = (Supplier) () -> dependencies.provideDependency( DatabaseHealth.class );
+        Supplier databaseHealthSupplier =
+                () -> dependencies.provideDependency( DatabaseHealth.class );
 
 
         RaftStorageExceptionHandler raftStorageExceptionHandler =
@@ -197,9 +198,10 @@ public class EnterpriseCoreEditionModule
 
         LocalSessionPool localSessionPool = new LocalSessionPool( myself );
 
-        ReplicatedLockStateMachine replicatedLockStateMachine = new ReplicatedLockStateMachine( myself, replicator );
+        ReplicatedLockStateMachine<CoreMember> replicatedLockStateMachine = new ReplicatedLockStateMachine<>( myself, replicator );
 
-        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockStateMachine, dependencies, SYSTEM_CLOCK );
+        commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool, replicatedLockStateMachine,
+                dependencies, SYSTEM_CLOCK );
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = null;
         try
@@ -222,7 +224,7 @@ public class EnterpriseCoreEditionModule
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
-                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout*4, logProvider );
+                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider );
 
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
@@ -264,7 +266,8 @@ public class EnterpriseCoreEditionModule
                 channelInitializer ) );
         channelInitializer.setOwner( coreToCoreClient );
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself, replicatedLockStateMachine ) );
+        lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself,
+                replicatedLockStateMachine ) );
 
         LocalDatabase localDatabase =
                 new LocalDatabase( platformModule.storeDir,
@@ -283,13 +286,14 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ) );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( raftLog, logProvider ), raftServer,
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, new RaftLogReplay( raftLog,
+                        logProvider ), raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ),
                 new RecoverTransactionLogState( dependencies, logProvider,
                         relationshipTypeTokenHolder, propertyKeyTokenHolder, labelTokenHolder ),
                 tokenLife
-        ));
+        ) );
     }
 
     public boolean isLeader()
@@ -315,7 +319,8 @@ public class EnterpriseCoreEditionModule
 
     public static CommitProcessFactory createCommitProcessFactory( final Replicator replicator,
                                                                    final LocalSessionPool localSessionPool,
-                                                                   CurrentReplicatedLockState currentReplicatedLockState,
+                                                                   CurrentReplicatedLockState
+                                                                           currentReplicatedLockState,
                                                                    final Dependencies dependencies,
                                                                    final Clock clock )
     {
