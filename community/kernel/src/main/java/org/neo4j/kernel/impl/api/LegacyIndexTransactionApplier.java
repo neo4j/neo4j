@@ -33,7 +33,9 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
 /**
- *
+ * This class caches the appliers for different {@link IndexCommand}s for performance reasons. These appliers are then
+ * closed on the batch level in {@link LegacyBatchIndexApplier#close()}, together with the last transaction in the
+ * batch.
  */
 public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
 {

@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
- *
+ * This class reuses the same {@link LegacyIndexTransactionApplier} for all transactions in the batch for performance
+ * reasons. The {@link LegacyIndexTransactionApplier} contains appliers specific for each {@link IndexCommand} which
+ * are closed here on the batch level in {@link #close()}, before the last transaction locks are released.
  */
 public class LegacyBatchIndexApplier implements BatchTransactionApplier
 {
