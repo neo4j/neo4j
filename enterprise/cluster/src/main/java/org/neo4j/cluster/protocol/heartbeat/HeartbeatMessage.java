@@ -41,6 +41,8 @@ public enum HeartbeatMessage
     public static class IAmAliveState
             implements Serializable
     {
+        private static final long serialVersionUID = 6799806932628197123L;
+
         private final InstanceId server;
 
         public IAmAliveState( InstanceId server )

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.Test;
+
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
@@ -131,5 +131,6 @@ public class MultiPaxosTest
 
     private static final class DaPayload implements Serializable
     {
+        private static final long serialVersionUID = -2896543854010391900L;
     }
 }

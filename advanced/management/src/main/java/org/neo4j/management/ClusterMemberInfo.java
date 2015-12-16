@@ -24,7 +24,6 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Arrays;
-
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Pair;
@@ -35,7 +34,8 @@ import org.neo4j.helpers.Pair;
  */
 public class ClusterMemberInfo implements Serializable
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -514433972115185753L;
+
     private final String instanceId;
     private final boolean available;
     private final boolean alive;

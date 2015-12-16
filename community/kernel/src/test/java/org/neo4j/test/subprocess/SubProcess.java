@@ -61,9 +61,10 @@ import static org.neo4j.io.proc.ProcessUtil.getClassPath;
 import static org.neo4j.io.proc.ProcessUtil.getClassPathList;
 import static org.neo4j.io.proc.ProcessUtil.getJavaExecutable;
 
-@SuppressWarnings( "serial" )
 public abstract class SubProcess<T, P> implements Serializable
 {
+    private static final long serialVersionUID = -6084373832996850958L;
+
     private interface NoInterface
     {
         // Used when no interface is declared

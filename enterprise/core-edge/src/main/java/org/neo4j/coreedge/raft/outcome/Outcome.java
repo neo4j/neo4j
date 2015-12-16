@@ -40,6 +40,8 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
  */
 public class Outcome<MEMBER> implements Serializable
 {
+    private static final long serialVersionUID = 4288616769553581132L;
+
     /* Common */
     private Role newRole;
 

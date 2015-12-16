@@ -29,6 +29,8 @@ import org.neo4j.cluster.com.message.Message;
 public class InstanceId
         implements Serializable, Comparable<InstanceId>
 {
+    private static final long serialVersionUID = 2505002855546341672L;
+
     public static final String INSTANCE = "instance";
 
     long id;

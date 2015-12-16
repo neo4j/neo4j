@@ -23,6 +23,8 @@ import java.io.Serializable;
 
 public class Welcome implements Serializable
 {
+    private static final long serialVersionUID = -1737055318869376647L;
+    
     private final String message;
     private final Serializable id;
     private final String prompt;

@@ -25,5 +25,7 @@ import org.neo4j.coreedge.catchup.RequestMessageType;
 
 public class GetStoreRequest implements Serializable
 {
+    private static final long serialVersionUID = 1716269110109766232L;
+
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
 }

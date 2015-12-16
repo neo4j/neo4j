@@ -38,6 +38,8 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 public class HANewSnapshotFunction implements Serializable,
         BiFunction<Iterable<MemberIsAvailable>,MemberIsAvailable,Iterable<MemberIsAvailable>>
 {
+    private static final long serialVersionUID = -8065136460852260734L;
+
     @Override
     public Iterable<MemberIsAvailable> apply( Iterable<MemberIsAvailable> previousSnapshot,
             final MemberIsAvailable newMessage )

@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class DbRepresentation implements Serializable
 {
+    private static final long serialVersionUID = 2583375705754012263L;
+
     private final Map<Long, NodeRep> nodes = new TreeMap<>();
     private long highestNodeId;
     private long highestRelationshipId;
@@ -130,6 +132,8 @@ public class DbRepresentation implements Serializable
 
     private static class NodeRep implements Serializable
     {
+        private static final long serialVersionUID = 1872538739626903644L;
+
         private final PropertiesRep properties;
         private final Map<Long, PropertiesRep> outRelationships = new HashMap<>();
         private final long highestRelationshipId;
@@ -275,6 +279,8 @@ public class DbRepresentation implements Serializable
 
     private static class PropertiesRep implements Serializable
     {
+        private static final long serialVersionUID = 2493575327613330969L;
+
         private final Map<String, Serializable> props = new HashMap<>();
         private final String entityToString;
         private final long entityId;
