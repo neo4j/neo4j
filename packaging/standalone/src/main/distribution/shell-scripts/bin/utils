@@ -70,22 +70,17 @@ function getconfigquoted {
 
 # Detect java and set JAVACMD on successful find.
 findjava() {
-  # OS specific support.  $var _must_ be set to either true or false.
-  cygwin=false;
-  darwin=false;
-  case "`uname`" in
-    CYGWIN*) cygwin=true ;;
-    Darwin*) darwin=true
-           if [ -z "$JAVA_VERSION" ] ; then
-             JAVA_VERSION="CurrentJDK"
-           else
-             echo "Using Java version: $JAVA_VERSION"
-           fi
-           if [ -z "$JAVA_HOME" ] ; then
-             JAVA_HOME=`/usr/libexec/java_home -v 1.8`
-           fi
-           ;;
-  esac
+  detectos
+  if [ "${DIST_OS}" == "macosx" ] ; then
+     if [ -z "$JAVA_VERSION" ] ; then
+       JAVA_VERSION="CurrentJDK"
+     else
+       echo "Using Java version: $JAVA_VERSION"
+     fi
+     if [ -z "$JAVA_HOME" ] ; then
+       JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+     fi
+  fi
 
   if [ -z "$JAVA_HOME" ] ; then
     if [ -r /etc/gentoo-release ] ; then
@@ -93,8 +88,8 @@ findjava() {
     fi
   fi
 
-  # For Cygwin, ensure paths are in UNIX format before anything is touched
-  if $cygwin ; then
+  if [ "${DIST_OS}" == "cygwin" ] ; then
+    # ensure paths are in UNIX format
     [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
     [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
   fi
@@ -109,7 +104,7 @@ findjava() {
         JAVACMD="$JAVA_HOME/bin/java"
       fi
     else
-      if [ "`uname`" != "Darwin" ] ; then
+      if [ "${DIST_OS}" != "macosx" ] ; then
         # Don't use default java on Darwin because it displays a misleading dialog box
         JAVACMD=`which java`
       fi
@@ -126,7 +121,6 @@ checkstatus() {
 
 reportstatus() {
   checkstatus
-  detectos
   exitonnojava
 
   if [ -z $NEO4J_PID ] ; then
@@ -151,25 +145,10 @@ exitonnojava() {
 
 # Resolve the os
 detectos() {
-  DIST_OS=`uname -s | tr 'A-Z' 'a-z' | tr -d ' '`
-  case "$DIST_OS" in
-    'sunos')
-      DIST_OS="solaris"
-      ;;
-    'hp-ux' | 'hp-ux64')
-      # HP-UX needs the XPG4 version of ps (for -o args)
-      DIST_OS="hpux"
-      UNIX95=""
-      export UNIX95
-      ;;
+  DIST=`uname -s | tr 'A-Z' 'a-z' | tr -d ' '`
+  case "$DIST" in
     'darwin')
       DIST_OS="macosx"
-      ;;
-    'unix_sv')
-      DIST_OS="unixware"
-      ;;
-    'os/390')
-      DIST_OS="zos"
       ;;
     'cygwin')
       DIST_OS="cygwin"
@@ -178,7 +157,6 @@ detectos() {
 }
 
 stopit() {
-  detectos
   checkstatus
 
   if [ -z $NEO4J_PID ] ; then
@@ -222,13 +200,14 @@ checkandrepairenv() {
 
 # Checks system limits, warns if not proper
 checklimits() {
-    if [[ $DIST_OS != "macosx" ]] ; then
-      OPEN_FILES=`ulimit -n`
+  detectos
+  if [ $DIST_OS != "macosx" ] ; then
+    OPEN_FILES=`ulimit -n`
 
-      if [ $OPEN_FILES -lt 40000 ]; then
-        echo "WARNING: Max $OPEN_FILES open files allowed, minimum of 40 000 recommended. See the Neo4j manual."
-      fi
+    if [ $OPEN_FILES -lt 40000 ]; then
+      echo "WARNING: Max $OPEN_FILES open files allowed, minimum of 40 000 recommended. See the Neo4j manual."
     fi
+  fi
 }
 
 warn_about_java_runtime() {

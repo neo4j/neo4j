@@ -113,7 +113,6 @@ startit() {
 
   echo "Starting ${FRIENDLY_NAME}."
 
-  detectos
   checklimits
   buildclasspath
   checkclasspath
@@ -142,7 +141,6 @@ startit() {
 }
 
 console() {
-  detectos
   checkstatus
   checklimits
 

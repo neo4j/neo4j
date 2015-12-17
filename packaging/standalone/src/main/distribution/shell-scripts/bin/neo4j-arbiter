@@ -65,7 +65,6 @@ buildclasspath() {
 }
 
 startit() {
-  detectos
   exitonnojava
   checkstatus
 
