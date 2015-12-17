@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -108,7 +107,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 return super.newUpdater( mode );
 
             default:
-                throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+                throw new IllegalArgumentException( "Unsupported update mode: " + mode );
 
         }
     }

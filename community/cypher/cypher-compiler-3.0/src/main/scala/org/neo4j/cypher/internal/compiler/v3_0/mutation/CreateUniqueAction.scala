@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{PatternException, UniquePathNotUniqueException}
 import org.neo4j.graphdb.{Node, PropertyContainer}
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
@@ -53,7 +52,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
         executionContext = tryAgain(linksToDo, executionContext, state)
       } else {
-        throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
+        throw new AssertionError("There was something in that result list I don't know how to handle.")
       }
     }
 
@@ -78,15 +77,15 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
     val traversals = extractTraversals(results)
 
     if (results.isEmpty) {
-      throw new ThisShouldNotHappenError("Andres", "Second check should never return empty result set")
+      throw new AssertionError("Second check should never return empty result set")
     } else if (canNotAdvanced(results)) {
-      throw new ThisShouldNotHappenError("Andres", "Second check should never fail to move forward")
+      throw new AssertionError("Second check should never fail to move forward")
     } else if (traversals.nonEmpty) {
       traverseNextStep(traversals, context) //Ah, so this time we did find a traversal way forward. Great!
     } else if (updateCommands.nonEmpty) {
       runUpdateCommands(updateCommands.flatMap(_.cmds), context, state) //If we still can't find a way forward,
     } else {                                                            // let's build one
-      throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
+      throw new AssertionError("There was something in that result list I don't know how to handle.")
     }
   }
 

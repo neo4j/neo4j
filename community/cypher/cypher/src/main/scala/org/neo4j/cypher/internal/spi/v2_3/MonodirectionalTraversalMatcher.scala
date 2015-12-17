@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{TraversalMatcher, ExpanderStep, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.{Traversal, Uniqueness}
 
 import scala.collection.JavaConverters._
@@ -66,5 +65,5 @@ class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
       case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
     }
 
-  def evaluate(path: Path) = throw new ThisShouldNotHappenError("Andres", "This method should never be used")
+  def evaluate(path: Path) = throw new UnsupportedOperationException("This method should never be used")
 }

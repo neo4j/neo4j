@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Predicate(dependencies: Set[IdName], expr: Expression) extends PageDocFormatting { // with ToPrettyString[Predicate] {
 
@@ -84,7 +83,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) extends PageDocFor
       case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), labels))) =>
         // FIXME: remove when we have test for checking that we construct the expected plan
         if (labels.size > 1) {
-          throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
+          throw new IllegalStateException("Rewriting should introduce single label HasLabels predicates in the WHERE clause")
         }
         val idName = IdName(name)
         acc.updated(idName, acc.getOrElse(idName, Set.empty) + hasLabels)

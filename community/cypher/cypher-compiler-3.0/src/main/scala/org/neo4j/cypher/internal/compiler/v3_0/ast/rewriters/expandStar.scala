@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, replace}
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticState, replace}
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
@@ -50,7 +48,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
     val scope = state.scope(clause).getOrElse {
-      throw new ThisShouldNotHappenError("cleishm", s"${clause.name} should note its Scope in the SemanticState")
+      throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }
 
     val clausePos = clause.position

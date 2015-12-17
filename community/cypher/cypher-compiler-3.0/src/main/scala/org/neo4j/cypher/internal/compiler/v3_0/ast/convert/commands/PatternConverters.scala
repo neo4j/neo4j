@@ -24,9 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, SyntaxException, ast}
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection, SyntaxException, ast}
 
 object PatternConverters {
   implicit class PatternConverter(val pattern: ast.Pattern) extends AnyVal {
@@ -88,13 +86,13 @@ object PatternConverters {
       case part: ast.EveryPath =>
         EveryPathConverter(part).asLegacyCreates
       case part: ast.ShortestPaths =>
-        throw new ThisShouldNotHappenError("cleishm", "Unexpected conversion of ShortestPaths to UpdateAction")
+        throw new AssertionError("Unexpected conversion of ShortestPaths to UpdateAction")
     }
     def asAbstractPatterns(maybePathName: Option[String]): Seq[AbstractPattern] = part match {
       case part: ast.EveryPath =>
         EveryPathConverter(part).asAbstractPatterns(maybePathName)
       case part: ast.ShortestPaths =>
-        throw new ThisShouldNotHappenError("cleishm", "Unexpected conversion of ShortestPaths to AbstractPattern")
+        throw new AssertionError("Unexpected conversion of ShortestPaths to AbstractPattern")
     }
   }
 
@@ -120,7 +118,7 @@ object PatternConverters {
         case ast.RelationshipChain(leftNode: ast.NodePattern, relationshipPattern, rightNode) =>
           (leftNode.asLegacyNode, relationshipPattern, rightNode.asLegacyNode)
         case _                                                                        =>
-          throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
+          throw new IllegalStateException("This should be caught during semantic checking")
       }
       val reltypes = rel.types.map(_.name)
       val relIteratorName = rel.variable.map(_.name)

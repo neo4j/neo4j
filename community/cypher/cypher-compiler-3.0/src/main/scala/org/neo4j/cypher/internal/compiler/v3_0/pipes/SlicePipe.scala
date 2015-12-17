@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expression])
                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -54,7 +53,7 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
         sourceIter.slice(start, start + asInt(count))
 
       case (None, None) =>
-        throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
+        throw new AssertionError("A slice pipe that doesn't slice should never exist.")
     }
   }
 
@@ -64,7 +63,7 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
       case (None, Some(l)) => Seq("limit" -> l)
       case (Some(s), None) => Seq("skip" -> s)
       case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
-      case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
+      case (None, None) => throw new AssertionError("A slice pipe that doesn't slice should never exist.")
     }
     source
       .planDescription

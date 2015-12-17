@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -205,7 +204,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
           case (None, None) =>
             // If we get here, the non-empty list of range bounds was partitioned into two empty ones
-            throw new ThisShouldNotHappenError("Stefan", "Failed to partition range bounds")
+            throw new IllegalStateException("Failed to partition range bounds")
         }
       }
   }

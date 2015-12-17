@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.{Traversal, Uniqueness}
 
 import scala.collection.JavaConverters._
@@ -66,5 +65,5 @@ class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
       case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
     }
 
-  def evaluate(path: Path) = throw new ThisShouldNotHappenError("Andres", "This method should never be used")
+  def evaluate(path: Path) = throw new UnsupportedOperationException("This method should never be used")
 }

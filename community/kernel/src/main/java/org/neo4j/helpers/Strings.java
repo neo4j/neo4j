@@ -139,7 +139,7 @@ public final class Strings
         }
         catch ( IOException e )
         {
-            throw new ThisShouldNotHappenError( "Stefan", "IOException from using StringBuilder", e );
+            throw new AssertionError( "IOException from using StringBuilder", e );
         }
         return builder.toString();
     }

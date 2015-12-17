@@ -42,7 +42,6 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -371,8 +370,7 @@ public class NodeProxy
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Jake",
-                    "Property key retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
     }
 
@@ -438,8 +436,7 @@ public class NodeProxy
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Rickard",
-                    "Property key retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
     }
 
@@ -691,7 +688,7 @@ public class NodeProxy
         }
         catch ( LabelNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Label retrieved through kernel API should exist.", e );
         }
     }
 
@@ -804,8 +801,7 @@ public class NodeProxy
             }
             catch ( RelationshipTypeIdNotFoundKernelException e )
             {
-                throw new ThisShouldNotHappenError( "Jake",
-                        "Kernel API returned non-existent relationship type: " + id );
+                throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + id );
             }
         }, input ) );
     }

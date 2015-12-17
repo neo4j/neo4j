@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.cursor.LabelItem;
 import org.neo4j.kernel.api.cursor.NodeItem;
@@ -266,7 +265,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
         catch ( PropertyKeyIdNotFoundKernelException | LabelNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Jake", "An entity that does not exist was modified.", e );
+            throw new IllegalStateException( "An entity that does not exist was modified.", e );
         }
     }
 
@@ -288,7 +287,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             }
             catch ( EntityNotFoundException e )
             {
-                throw new ThisShouldNotHappenError( "Mattias",
+                throw new IllegalStateException(
                         "Getting deleted relationship data should have been covered by the tx state" );
             }
         }
