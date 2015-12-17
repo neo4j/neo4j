@@ -73,7 +73,8 @@ public class ExtensionTestingDocTest
                 .newServer() )
         {
             // When
-            HTTP.Response response = HTTP.GET( server.httpURI().resolve( "myExtension" ).toString() );
+            HTTP.Response response = HTTP.GET(
+                    HTTP.GET( server.httpURI().resolve( "myExtension" ).toString() ).location() );
 
             // Then
             assertEquals( 200, response.status() );
