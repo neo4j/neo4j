@@ -79,7 +79,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Statement): Unit = {
+    override def cacheDiscard(key: Statement, ignored: String): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -181,7 +181,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // then
     logProvider.assertExactly(
-      inLog(getClass).info( s"Discarded stale query from the query cache: $statement" )
+      inLog(getClass).info( s"Discarded stale query from the query cache: $query" )
     )
   }
 }

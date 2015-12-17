@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 trait CacheAccessor[K, T] {
   def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T
-  def remove(cache: LRUCache[K, T])(key: K)
+  def remove(cache: LRUCache[K, T])(key: K, userKey: String)
 }
 
 class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
@@ -41,8 +41,8 @@ class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends C
     value
   }
 
-  def remove(cache: LRUCache[K, T])(key: K): Unit = {
+  def remove(cache: LRUCache[K, T])(key: K, userKey: String): Unit = {
     cache.remove(key)
-    monitor.cacheDiscard(key)
+    monitor.cacheDiscard(key, userKey)
   }
 }

@@ -209,7 +209,7 @@ public class QueryInvalidationIT
         }
 
         @Override
-        public void cacheDiscard( Query key )
+        public void cacheDiscard( Query key, String ignored )
         {
             discards.incrementAndGet();
         }
