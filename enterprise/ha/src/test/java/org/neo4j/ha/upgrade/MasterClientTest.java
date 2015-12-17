@@ -48,6 +48,7 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -116,6 +117,7 @@ public class MasterClientTest
         Dependencies deps = mock( Dependencies.class );
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
         when( deps.commitProcess() ).thenReturn( commitProcess );
+        when( deps.logService() ).thenReturn( NullLogService.getInstance() );
 
         ResponseUnpacker unpacker = life.add(
                 new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE) );

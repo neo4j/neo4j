@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.Log;
 
 /**
  * {@link Handler Response handler} which commits received transactions (for transaction stream responses)
@@ -42,13 +43,15 @@ class BatchingResponseHandler implements Response.Handler,
     private final TransactionQueue queue;
     private final TxHandler txHandler;
     private final TransactionObligationFulfiller obligationFulfiller;
+    private final Log log;
 
     public BatchingResponseHandler( int maxBatchSize, TransactionQueue.Applier applier,
-            TransactionObligationFulfiller obligationFulfiller, TxHandler txHandler )
+            TransactionObligationFulfiller obligationFulfiller, TxHandler txHandler, Log log )
     {
         this.obligationFulfiller = obligationFulfiller;
         this.txHandler = txHandler;
         this.queue = new TransactionQueue( maxBatchSize, applier );
+        this.log = log;
     }
 
     @Override
@@ -65,7 +68,8 @@ class BatchingResponseHandler implements Response.Handler,
         }
         catch ( IllegalStateException e )
         {
-            throw new ComException( "Failed to pull updates", e );
+            throw new ComException( "Failed to pull updates", e )
+                    .traceComException( log, "BatchingResponseHandler.obligation" );
         }
         catch ( InterruptedException e )
         {

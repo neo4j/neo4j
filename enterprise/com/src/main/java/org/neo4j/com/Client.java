@@ -109,12 +109,35 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.comExceptionHandler = ComExceptionHandler.NO_OP;
+        this.comExceptionHandler = getNoOpComExceptionHandler();
         this.address = new InetSocketAddress( hostNameOrIp, port );
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + address );
+    }
+
+    private ComExceptionHandler getNoOpComExceptionHandler()
+    {
+        return new ComExceptionHandler()
+        {
+            @Override
+            public void handle( ComException exception )
+            {
+                if ( ComException.TRACE_HA_CONNECTIVITY )
+                {
+                    String noOpComExceptionHandler = "NoOpComExceptionHandler";
+                    //noinspection ThrowableResultOfMethodCallIgnored
+                    traceComException( exception, noOpComExceptionHandler );
+                }
+            }
+        };
+    }
+
+    private ComException traceComException( ComException exception, String tracePoint )
+    {
+        Log log = this.msgLog;
+        return exception.traceComException( log, tracePoint );
     }
 
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
@@ -149,7 +172,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
                 String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
                 msgLog.warn( msg );
-                throw new ComException( msg, channelFuture.getCause() );
+                throw traceComException( new ComException( msg, channelFuture.getCause() ), "Client.start" );
             }
 
             @Override
@@ -206,7 +229,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             channelPool = null;
         }
 
-        comExceptionHandler = ComExceptionHandler.NO_OP;
+        comExceptionHandler = getNoOpComExceptionHandler();
         msgLog.info( toString() + " shutdown", true );
     }
 
@@ -258,7 +281,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         {
             failure = e;
             comExceptionHandler.handle( e );
-            throw e;
+            throw traceComException( e, "Client.sendRequest" );
         }
         catch ( Throwable e )
         {
@@ -317,7 +340,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             if ( result == null )
             {
                 msgLog.error( "Unable to acquire new channel for " + type );
-                throw new ComException( "Unable to acquire new channel for " + type );
+                throw traceComException(
+                        new ComException( "Unable to acquire new channel for " + type ),
+                        "Client.acquireChannelContext" );
             }
             return result;
         }
@@ -350,7 +375,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     public void setComExceptionHandler( ComExceptionHandler handler )
     {
-        comExceptionHandler = (handler == null) ? ComExceptionHandler.NO_OP : handler;
+        comExceptionHandler = (handler == null) ? getNoOpComExceptionHandler() : handler;
     }
 
     protected byte getInternalProtocolVersion()

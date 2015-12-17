@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
@@ -49,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -65,6 +65,7 @@ public class TransactionCommittingResponseUnpackerTest
         Dependencies dependencies = mock( Dependencies.class );
         TransactionObligationFulfiller fulfiller = mock( TransactionObligationFulfiller.class );
         when( dependencies.obligationFulfiller() ).thenReturn( fulfiller );
+        when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
         TransactionCommittingResponseUnpacker unpacker =
                 life.add( new TransactionCommittingResponseUnpacker( dependencies, 10 ) );
 
@@ -82,6 +83,7 @@ public class TransactionCommittingResponseUnpackerTest
         Dependencies dependencies = mock( Dependencies.class );
         TransactionCountingTransactionCommitProcess commitProcess = new TransactionCountingTransactionCommitProcess();
         when( dependencies.commitProcess() ).thenReturn( commitProcess );
+        when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
         TransactionCommittingResponseUnpacker unpacker =
                 life.add( new TransactionCommittingResponseUnpacker( dependencies, 5 ) );
 
