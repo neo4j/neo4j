@@ -22,10 +22,12 @@ package org.neo4j.coreedge.raft.replication.id;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer.NUMBER_OF_BYTES_PER_WRITE;
 
@@ -34,7 +36,7 @@ import static org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.S
  * InMemoryIdAllocationState instances. The purpose of this persistent state is to remember the cumulative effects
  * of RAFT-ed ID allocation such that the RAFT log can be safely truncated.
  * <p>
- * It is log structured for convenience.
+ * It is log structured for convenience and ease of operational problem solving.
  */
 public class OnDiskIdAllocationState implements IdAllocationState
 {
@@ -43,6 +45,7 @@ public class OnDiskIdAllocationState implements IdAllocationState
     private final InMemoryIdAllocationState.Serializer serializer;
 
     private final int numberOfEntriesBeforeRotation;
+    private final Supplier<DatabaseHealth> databaseHealthSupplier;
 
     private final File storeA;
     private final File storeB;
@@ -53,10 +56,12 @@ public class OnDiskIdAllocationState implements IdAllocationState
     private StoreChannel currentStoreChannel;
 
     public OnDiskIdAllocationState( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-                                    int numberOfEntriesBeforeRotation ) throws IOException
+                                    int numberOfEntriesBeforeRotation, Supplier<DatabaseHealth> databaseHealthSupplier )
+            throws IOException
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.numberOfEntriesBeforeRotation = numberOfEntriesBeforeRotation;
+        this.databaseHealthSupplier = databaseHealthSupplier;
 
         this.serializer = new InMemoryIdAllocationState.Serializer();
         this.buffer = ByteBuffer.allocate( NUMBER_OF_BYTES_PER_WRITE );
@@ -159,7 +164,7 @@ public class OnDiskIdAllocationState implements IdAllocationState
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            databaseHealthSupplier.get().panic( e );
         }
     }
 

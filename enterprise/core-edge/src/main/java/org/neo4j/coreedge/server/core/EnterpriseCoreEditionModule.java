@@ -208,7 +208,7 @@ public class EnterpriseCoreEditionModule
         {
             idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( myself,
                     new OnDiskIdAllocationState( fileSystem, new File( storeDir, "id-alloc-store" ), config.get(
-                            CoreEdgeClusterSettings.id_alloc_store_size ) ) );
+                            CoreEdgeClusterSettings.id_alloc_store_size ), databaseHealthSupplier ) );
         }
         catch ( IOException e )
         {

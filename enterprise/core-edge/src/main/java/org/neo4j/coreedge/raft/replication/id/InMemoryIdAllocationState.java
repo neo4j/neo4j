@@ -26,6 +26,29 @@ import org.neo4j.kernel.IdType;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.
+ * Instances of this class are serialized to disk by
+ * @link{org.neo4j.coreedge.raft.replication.id.InMemoryIdAllocationState.Serializer}.
+ *
+ * The serialized form:
+ *
+ * +----------------------------------+
+ * |  8-byte length marker            |
+ * +----------------------------------+
+ * |  first unallocated               |
+ * |  15x 8-byte                      |
+ * +----------------------------------+
+ * |  8-byte length marker            |
+ * +----------------------------------+
+ * |  previous id range start         |
+ * |  15x 8-byte                      |
+ * +----------------------------------+
+ * |  8-byte length marker            |
+ * +----------------------------------+
+ * |  previous id range length        |
+ * |  15x 8-byte                      |
+ * +----------------------------------+
+ *
+ *
  */
 public class InMemoryIdAllocationState implements IdAllocationState, Serializable
 {
