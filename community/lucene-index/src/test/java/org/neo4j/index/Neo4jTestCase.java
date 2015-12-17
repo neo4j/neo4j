@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +37,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public abstract class Neo4jTestCase
 {
@@ -108,7 +108,7 @@ public abstract class Neo4jTestCase
         
         if ( file.isDirectory() )
         {
-            for ( File child : nonNull( file.listFiles() ) )
+            for ( File child : Objects.requireNonNull( file.listFiles() ) )
             {
                 deleteFileOrDirectory( child );
             }
