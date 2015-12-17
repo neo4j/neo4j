@@ -30,8 +30,10 @@ import java.util.Arrays;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -43,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -51,6 +53,9 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.any;
 
 public class ApplyRecoveredTransactionsTest
 {
@@ -97,10 +102,16 @@ public class ApplyRecoveredTransactionsTest
 
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
-        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ) );
+        LockService lockService = mock( LockService.class );
+        when( lockService.acquireNodeLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
+        when( lockService.acquireRelationshipLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
+        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
+                mock( CacheAccessBackDoor.class ), lockService );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
-        CommandHandlerContract.apply( applier, new TransactionToApply( tx ) );
+        CommandHandlerContract.apply( applier, txApplier -> {
+            tx.accept( txApplier );
+            return false;
+        }, new TransactionToApply( tx, transactionId ) );
     }
 
     @Rule

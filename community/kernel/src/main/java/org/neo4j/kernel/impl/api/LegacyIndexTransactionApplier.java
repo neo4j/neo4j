@@ -25,53 +25,62 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
-public class LegacyIndexApplier extends CommandHandler.Adapter
+/**
+ * This class caches the appliers for different {@link IndexCommand}s for performance reasons. These appliers are then
+ * closed on the batch level in {@link LegacyBatchIndexApplier#close()}, together with the last transaction in the
+ * batch.
+ */
+public class LegacyIndexTransactionApplier extends TransactionApplier.Adapter
 {
-    private final LegacyIndexApplierLookup applierLookup;
 
     // We have these two maps here for "applier lookup" performance reasons. Every command that we apply we must
     // redirect to the correct applier, i.e. the _single_ applier for the provider managing the specific index.
     // Looking up provider for an index has a certain cost so those are cached in applierByIndex.
-    private Map<String/*indexName*/,CommandHandler> applierByNodeIndex = Collections.emptyMap();
-    private Map<String/*indexName*/,CommandHandler> applierByRelationshipIndex = Collections.emptyMap();
-    private Map<String/*providerName*/,CommandHandler> applierByProvider = Collections.emptyMap();
+    private Map<String/*indexName*/,TransactionApplier> applierByNodeIndex = Collections.emptyMap();
+    private Map<String/*indexName*/,TransactionApplier> applierByRelationshipIndex = Collections.emptyMap();
+    Map<String/*providerName*/,TransactionApplier> applierByProvider = Collections.emptyMap();
 
+    private final LegacyIndexApplierLookup applierLookup;
     private final IndexConfigStore indexConfigStore;
-    private final IdOrderingQueue transactionOrdering;
     private final TransactionApplicationMode mode;
+    private final IdOrderingQueue transactionOrdering;
     private IndexDefineCommand defineCommand;
-    private long activeTransactionId = -1;
-    private boolean isLastTransactionInBatch = false;
+    private long transactionId = -1;
 
-    public LegacyIndexApplier( IndexConfigStore indexConfigStore, LegacyIndexApplierLookup applierLookup,
-            IdOrderingQueue transactionOrdering, TransactionApplicationMode mode )
+    public LegacyIndexTransactionApplier( LegacyIndexApplierLookup applierLookup,
+            IndexConfigStore indexConfigStore, TransactionApplicationMode mode, IdOrderingQueue transactionOrdering )
     {
-        this.indexConfigStore = indexConfigStore;
         this.applierLookup = applierLookup;
-        this.transactionOrdering = transactionOrdering;
+        this.indexConfigStore = indexConfigStore;
         this.mode = mode;
+        this.transactionOrdering = transactionOrdering;
     }
 
-    private CommandHandler applier( IndexCommand command ) throws IOException
+    /**
+     * Ability to set transaction id allows the applier instance to be cached.
+     * @param txId the currently active TransactionId
+     */
+    void setTransactionId( long txId )
+    {
+        this.transactionId = txId;
+    }
+
+    /**
+     * Get an applier suitable for the specified IndexCommand.
+     */
+    private TransactionApplier applier( IndexCommand command ) throws IOException
     {
         // Have we got an applier for this index?
         String indexName = defineCommand.getIndexName( command.getIndexNameId() );
-        Map<String,CommandHandler> applierByIndex = applierByIndexMap( command );
-        CommandHandler applier = applierByIndex.get( indexName );
+        Map<String,TransactionApplier> applierByIndex = applierByIndexMap( command );
+        TransactionApplier applier = applierByIndex.get( indexName );
         if ( applier == null )
         {
             // We don't. Have we got an applier for the provider of this index?
@@ -81,7 +90,7 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
             {
                 // This provider doesn't even exist, return an EMPTY handler, i.e. ignore these changes.
                 // Could be that the index provider is temporarily unavailable?
-                return CommandHandler.EMPTY;
+                return TransactionApplier.EMPTY;
             }
             String providerName = config.get( PROVIDER );
             applier = applierByProvider.get( providerName );
@@ -100,7 +109,7 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     }
 
     // Some lazy creation of Maps for holding appliers per provider and index
-    private Map<String,CommandHandler> applierByIndexMap( IndexCommand command )
+    private Map<String,TransactionApplier> applierByIndexMap( IndexCommand command )
     {
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
@@ -132,65 +141,50 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
+    public void close()
     {
-        if ( transaction.commitment().hasLegacyIndexChanges() )
+        // Let other transactions in same batch run
+        // Last transaction notifies on the batch level, to let appliers close before-hand.
+        // Internal appliers are closed on the batch level (LegacyIndexBatchApplier)
+        notifyLegacyIndexOperationQueue();
+
+    }
+
+    private void notifyLegacyIndexOperationQueue()
+    {
+        if ( transactionId != -1 )
         {
-            activeTransactionId = transaction.transactionId();
-            try
-            {
-                transactionOrdering.waitFor( activeTransactionId );
-                // Need to know if this is the last transaction in this batch of legacy index changes in order to
-                // run apply before other batches are allowed to run, in order to preserve ordering.
-                if ( transaction.next() == null )
-                {
-                    isLastTransactionInBatch = true;
-                }
-            }
-            catch ( InterruptedException e )
-            {
-                throw new IOException( "Interrupted while waiting for applying tx:" + activeTransactionId +
-                        " legacy index updates", e );
-            }
+            transactionOrdering.removeChecked( transactionId );
+            transactionId = -1;
         }
     }
 
     @Override
-    public void end()
-    {
-        if ( !isLastTransactionInBatch )
-        {
-            // Let other transactions in same batch run
-            notifyLegacyIndexOperationQueue();
-        }
-    }
-
-    @Override
-    public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
+    public boolean visitIndexAddNodeCommand( IndexCommand.AddNodeCommand command ) throws IOException
     {
         return applier( command ).visitIndexAddNodeCommand( command );
     }
 
     @Override
-    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+    public boolean visitIndexAddRelationshipCommand( IndexCommand.AddRelationshipCommand command ) throws IOException
     {
         return applier( command ).visitIndexAddRelationshipCommand( command );
     }
 
     @Override
-    public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
+    public boolean visitIndexRemoveCommand( IndexCommand.RemoveCommand command ) throws IOException
     {
         return applier( command ).visitIndexRemoveCommand( command );
     }
 
     @Override
-    public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
+    public boolean visitIndexDeleteCommand( IndexCommand.DeleteCommand command ) throws IOException
     {
         return applier( command ).visitIndexDeleteCommand( command );
     }
 
     @Override
-    public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
+    public boolean visitIndexCreateCommand( IndexCommand.CreateCommand command ) throws IOException
     {
         indexConfigStore.setIfNecessary( IndexEntityType.byId( command.getEntityType() ).entityClass(),
                 defineCommand.getIndexName( command.getIndexNameId() ), command.getConfig() );
@@ -207,43 +201,11 @@ public class LegacyIndexApplier extends CommandHandler.Adapter
         return false;
     }
 
-    private void forward( IndexDefineCommand definitions, Map<String,CommandHandler> appliers ) throws IOException
+    private void forward( IndexDefineCommand definitions, Map<String,TransactionApplier> appliers ) throws IOException
     {
-        for ( CommandHandler applier : appliers.values() )
+        for ( CommandVisitor applier : appliers.values() )
         {
             applier.visitIndexDefineCommand( definitions );
-        }
-    }
-
-    @Override
-    public void apply()
-    {
-        for ( CommandHandler applier : applierByProvider.values() )
-        {
-            applier.apply();
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        for ( CommandHandler applier : applierByProvider.values() )
-        {
-            applier.close();
-        }
-        if ( isLastTransactionInBatch )
-        {
-            // Let other batches run
-            notifyLegacyIndexOperationQueue();
-        }
-    }
-
-    private void notifyLegacyIndexOperationQueue()
-    {
-        if ( activeTransactionId != -1 )
-        {
-            transactionOrdering.removeChecked( activeTransactionId );
-            activeTransactionId = -1;
         }
     }
 }

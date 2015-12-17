@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.api;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 /**
- * Looks up a {@link LegacyIndexApplier} given a provider name.
+ * Looks up a {@link LegacyBatchIndexApplier} given a provider name.
  */
 public interface LegacyIndexApplierLookup
 {
-    CommandHandler newApplier( String providerName, boolean recovery );
+    TransactionApplier newApplier( String providerName, boolean recovery );
 
     /**
      * Looks up an {@link IndexImplementation} and calls {@link IndexImplementation#newApplier(boolean)} on it.
@@ -44,7 +43,7 @@ public interface LegacyIndexApplierLookup
         }
 
         @Override
-        public CommandHandler newApplier( String providerName, boolean recovery )
+        public TransactionApplier newApplier( String providerName, boolean recovery )
         {
             return providerLookup.apply( providerName ).newApplier( recovery );
         }

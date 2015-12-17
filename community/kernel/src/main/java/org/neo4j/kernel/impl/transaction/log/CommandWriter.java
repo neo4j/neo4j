@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
 
-public class CommandWriter extends CommandHandler.Adapter
+public class CommandWriter implements CommandVisitor
 {
     private final WritableLogChannel channel;
 
@@ -479,15 +479,5 @@ public class CommandWriter extends CommandHandler.Adapter
             writePropertyBlock( block );
         }
         writeDynamicRecords( record.getDeletedRecords() );
-    }
-
-    @Override
-    public void apply()
-    {   // Nothing to apply
-    }
-
-    @Override
-    public void close()
-    {   // Nothing to close
     }
 }

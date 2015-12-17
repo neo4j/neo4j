@@ -78,7 +78,6 @@ public class LuceneCommandApplierTest
                     MapUtil.<String,Integer>genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
-            applier.apply();
         }
 
         // THEN both those updates should have been directed to the same index

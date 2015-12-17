@@ -44,14 +44,17 @@ import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CommandApplierFacade;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
-import org.neo4j.kernel.impl.api.CountsStoreApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier;
+import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -83,13 +86,12 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
-import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
@@ -286,7 +288,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         // Have these command appliers as separate try-with-resource to have better control over
         // point between closing this and the locks above
-        try ( CommandApplierFacade applier = applier( mode ) )
+        try ( BatchTransactionApplier batchApplier = applier( mode ) )
         {
             TransactionToApply tx = batch;
             while ( tx != null )
@@ -294,14 +296,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 try ( LockGroup locks = new LockGroup() )
                 {
                     ensureValidatedIndexUpdates( tx );
-                    applier.begin( tx, locks );
-                    try
+                    try ( TransactionApplier txApplier = batchApplier.startTx( tx, locks ) )
                     {
-                        tx.transactionRepresentation().accept( applier );
-                    }
-                    finally
-                    {
-                        applier.end();
+                        tx.transactionRepresentation().accept( txApplier );
                     }
                     tx = tx.next();
                 }
@@ -315,37 +312,40 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     /**
-     * Creates a {@link CommandApplierFacade} that is to be used for all transactions in a batch.
-     * Before starting to apply contents of each transaction a call to {@link CommandHandler#begin(TransactionToApply)}
-     * is issued, otherwise the appliers all just gets visit-calls with contents from all transactions.
+     * Creates a {@link BatchTransactionApplierFacade} that is to be used for all transactions
+     * in a batch. Each transaction is handled by a {@link TransactionApplierFacade} which wraps the
+     * individual {@link TransactionApplier}s returned by the wrapped {@link BatchTransactionApplier}s.
      *
-     * After all transactions have been applied the appliers are closed (apply() then close()).
+     * After all transactions have been applied the appliers are closed.
      */
-    private CommandApplierFacade applier( TransactionApplicationMode mode )
+    private BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
     {
+        ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        CommandHandler storeApplier = new NeoStoreTransactionApplier( neoStores, cacheAccess, lockService );
+        appliers.add( new NeoStoreBatchTransactionApplier( neoStores, cacheAccess, lockService ) );
         if ( mode.needsHighIdTracking() )
         {
-            storeApplier = new HighIdTransactionApplier( storeApplier, neoStores );
+            appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
         }
         if ( mode.needsCacheInvalidationOnUpdates() )
         {
-            storeApplier = new CacheInvalidationTransactionApplier( storeApplier, neoStores, cacheAccess );
+            appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
 
         // Schema index application
-        CommandHandler indexApplier = new IndexTransactionApplier( indexingService, labelScanStoreSync );
+        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync ) );
 
         // Legacy index application
-        CommandHandler legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
-                legacyIndexApplierLookup, legacyIndexTransactionOrdering, mode );
+        appliers.add(
+                new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
+                        mode ) );
 
         // Counts store application
-        CommandHandler countsStoreApplier = new CountsStoreApplier( neoStores.getCounts(), mode );
+        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
 
         // Perform the application
-        return new CommandApplierFacade( storeApplier, indexApplier, legacyIndexApplier, countsStoreApplier );
+        return new BatchTransactionApplierFacade(
+                appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
     }
 
     private void ensureValidatedIndexUpdates( TransactionToApply tx ) throws IOException

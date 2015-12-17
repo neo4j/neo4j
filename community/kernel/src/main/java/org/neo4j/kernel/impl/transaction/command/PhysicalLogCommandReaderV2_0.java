@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -127,7 +128,7 @@ public class PhysicalLogCommandReaderV2_0 implements CommandReader
         return command;
     }
 
-    private class PhysicalNeoCommandReader extends CommandHandler.Adapter
+    private class PhysicalNeoCommandReader extends CommandVisitor.Adapter
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException

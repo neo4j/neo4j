@@ -17,38 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.store.NeoStores;
 
-final class IndexCommandDetector extends CommandVisitor.Delegator
+public class HighIdBatchTransactionApplier implements BatchTransactionApplier
 {
-    private boolean hasWrittenAnyLegacyIndexCommand;
+    private final NeoStores neoStores;
 
-    public IndexCommandDetector( CommandVisitor delegate )
+    public HighIdBatchTransactionApplier( NeoStores neoStores )
     {
-        super( delegate );
+        this.neoStores = neoStores;
     }
 
     @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+    public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
     {
-        // If there's any legacy index command in this transaction, there's an index define command
-        // so it's enough to check this command type.
-        hasWrittenAnyLegacyIndexCommand = true;
-        return super.visitIndexDefineCommand( command );
+        return new HighIdTransactionApplier( neoStores );
     }
 
-    public void reset()
+    @Override
+    public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
     {
-        hasWrittenAnyLegacyIndexCommand = false;
+        return startTx( transaction );
     }
 
-    public boolean hasWrittenAnyLegacyIndexCommand()
+    @Override
+    public void close() throws Exception
     {
-        return hasWrittenAnyLegacyIndexCommand;
+
     }
 }

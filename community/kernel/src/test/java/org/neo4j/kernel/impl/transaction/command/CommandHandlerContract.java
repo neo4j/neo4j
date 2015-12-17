@@ -19,60 +19,66 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.neo4j.kernel.impl.api.CommandApplierFacade;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
- * Serves as executor of transactions, i.e. the visit... methods and will invoke the other lifecycle methods
- * like {@link CommandHandler#begin(TransactionToApply, LockGroup)}, {@link CommandHandler#end()} a.s.o correctly.
+ * Serves as executor of transactions, i.e. the visit... methods and will invoke the other lifecycle methods like {@link
+ * BatchTransactionApplier#startTx(TransactionToApply, LockGroup)}, {@link TransactionApplier#close()} ()} a.s.o
+ * correctly. Note that {@link BatchTransactionApplier#close()} is also called at the end.
  */
 public class CommandHandlerContract
 {
     @FunctionalInterface
     public interface ApplyFunction
     {
-        boolean apply( CommandHandler applier, TransactionRepresentation tx ) throws Exception;
+        boolean apply( TransactionApplier applier ) throws Exception;
     }
 
-    public static boolean apply( CommandHandler applier, TransactionToApply... transactions )
-            throws Exception
+    /**
+     * Simply calls through to the {@link TransactionRepresentation#accept(Visitor)} method for each {@link
+     * TransactionToApply} given. This assumes that the {@link BatchTransactionApplier} will return {@link
+     * TransactionApplier}s which actually do the work and that the transaction has all the relevant data.
+     *
+     * @param applier to use
+     * @param transactions to apply
+     */
+    public static void apply( BatchTransactionApplier applier, TransactionToApply... transactions ) throws Exception
     {
-        return apply( new CommandApplierFacade( applier ), transactions );
+        for ( TransactionToApply tx : transactions )
+        {
+            try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
+            {
+                tx.transactionRepresentation().accept( txApplier );
+            }
+        }
+        applier.close();
     }
 
-    public static boolean apply( CommandApplierFacade applier, TransactionToApply... transactions )
-            throws Exception
-    {
-        return apply( applier, (handler,tx) -> {
-            tx.accept( applier );
-            return false;
-        }, transactions );
-    }
-
-    public static boolean apply( CommandHandler applier, ApplyFunction function, TransactionToApply... transactions )
-            throws Exception
+    /**
+     * In case the transactions do not have the commands to apply, use this method to apply any commands you want with a
+     * given {@link ApplyFunction} instead.
+     *
+     * @param applier to use
+     * @param function which knows what to do with the {@link TransactionApplier}.
+     * @param transactions are only used to create {@link TransactionApplier}s. The actual work is delegated to the
+     * function.
+     * @return the boolean-and result of all function operations.
+     */
+    public static boolean apply( BatchTransactionApplier applier, ApplyFunction function,
+            TransactionToApply... transactions ) throws Exception
     {
         boolean result = true;
         for ( TransactionToApply tx : transactions )
         {
-            applier.begin( tx, new LockGroup() );
-            try
+            try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
             {
-                result &= function.apply( applier, tx.transactionRepresentation() );
+                result &= function.apply( txApplier );
             }
-            finally
-            {
-                applier.end();
-            }
-        }
-        if ( !(applier instanceof CommandApplierFacade) )
-        {
-            // This is really odd... the whole apply/close bit. CommandApplierFacade is apparently
-            // owning the call of apply itself. We'll just have to figure out why this is and then
-            // merge apply/close. We can't have it like this.
-            applier.apply();
         }
         applier.close();
         return result;

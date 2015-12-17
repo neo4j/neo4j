@@ -21,16 +21,21 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,11 +46,10 @@ import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
@@ -176,7 +180,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
+        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -198,7 +202,7 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
+        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -217,11 +221,11 @@ public class SchemaRuleCommandTest
     private final IndexingService indexes = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
-    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
+    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
+    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
             labelScanStoreSynchronizer );
     private final PhysicalLogNeoCommandReaderV2_2 reader = new PhysicalLogNeoCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
@@ -250,11 +254,42 @@ public class SchemaRuleCommandTest
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 
-    private void visitSchemaRuleCommand( CommandHandler applier, SchemaRuleCommand command ) throws Exception
+    private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
     {
         TransactionToApply tx = new TransactionToApply(
                 new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ), txId );
         tx.validatedIndexUpdates( mock( ValidatedIndexUpdates.class ) );
         CommandHandlerContract.apply( applier, tx );
+    }
+
+    private class CommandWriterBatchWrapper extends CommandVisitor.Delegator implements BatchTransactionApplier,
+            TransactionApplier {
+
+        public CommandWriterBatchWrapper(InMemoryLogChannel buffer) {
+            super(new CommandWriter( buffer ));
+        }
+        @Override
+        public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+        {
+            return this;
+        }
+
+        @Override
+        public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
+        {
+            return this;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            // Nothing to do
+        }
+
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            return element.handle( this );
+        }
     }
 }

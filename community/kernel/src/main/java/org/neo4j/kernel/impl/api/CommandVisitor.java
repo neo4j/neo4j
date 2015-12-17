@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.kernel.impl.api;
+
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -41,60 +39,29 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsComma
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 
 /**
- * A CommandHandler has to handle all type of commands that a Neo4j transaction can generate. It provides
- * methods for handling each type of {@link Command} available through a callback pattern to avoid dynamic dispatching.
- * Implementations need to provide all these methods of course, but it is expected that they will delegate
- * the actual work to implementations that hold related functionality together, using a Facade pattern.
- * For example, it is conceivable that a {@link CommandWriter} would use a {@link CommandHandler}.
- * <p>
- * A CommandHandler must also be capable of visiting commands for a batch of transactions, the access pattern
- * goes like this:
- * <ol>
- * <li>{@link #begin(TransactionToApply)} called for the transaction to now visit commands for</li>
- * <li>...one or more commands for that transaction</li>
- * <li>{@link #end()}</li>
- * <li>{@link #begin(TransactionToApply)} called for the next transaction in the same batch</li>
- * <li>...one or more commands for that transaction</li>
- * <li>{@link #end()}</li>
- * <li>...same as above for every transaction in this batch</li>
- * <li>{@link #apply()}</li>
- * <li>{@link #close()}</li>
- * </ol>
- * The boolean returned from visit methods is false for continuing traversal, and true for breaking traversal.
+ * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
+ * methods in this class should almost always return false, unless something went wrong.
  */
-public interface CommandHandler extends AutoCloseable
+public interface CommandVisitor
 {
-    CommandHandler EMPTY = new CommandHandler.Adapter();
-
-    /**
-     * Called before each transaction in this batch.
-     */
-    void begin( TransactionToApply transaction, LockGroup locks ) throws IOException;
-
-    /**
-     * Called after each transaction in this batch.
-     */
-    void end() throws Exception;
-
     // Store commands
-    boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
+    boolean visitNodeCommand( NodeCommand command ) throws IOException;
 
-    boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
+    boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException;
 
-    boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException;
+    boolean visitPropertyCommand( PropertyCommand command ) throws IOException;
 
-    boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException;
+    boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException;
 
-    boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException;
+    boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException;
 
-    boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException;
+    boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException;
 
-    boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException;
+    boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException;
 
-    boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
+    boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException;
 
     boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException;
 
@@ -116,30 +83,12 @@ public interface CommandHandler extends AutoCloseable
     boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException;
 
     /**
-     * Applies pending changes that might have been accumulated when visiting the commands for all
-     * transaction in this batch. This method is called before {@link #close()} and after all commands
-     * for all transactions have been visited, also after all {@link #end()} calls.
-     * A command handler can expect a call to {@link #apply()} before {@link #close()}.
+     * An empty implementation of a {@link CommandVisitor}. Allows you to implement only the methods you are
+     * interested in. See also {@link TransactionApplier.Adapter} if need handle commands inside of a transaction, or
+     * have a lock.
      */
-    void apply();
-
-    /**
-     * Closes any resources acquired by this handler.
-     */
-    @Override
-    void close();
-
-    class Adapter implements CommandHandler
+    class Adapter implements CommandVisitor
     {
-        @Override
-        public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
-        {
-        }
-
-        @Override
-        public void end() throws Exception
-        {
-        }
 
         @Override
         public boolean visitNodeCommand( NodeCommand command ) throws IOException
@@ -202,8 +151,7 @@ public interface CommandHandler extends AutoCloseable
         }
 
         @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
-                throws IOException
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
         {
             return false;
         }
@@ -243,37 +191,19 @@ public interface CommandHandler extends AutoCloseable
         {
             return false;
         }
-
-        @Override
-        public void apply()
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
     }
 
-    class Delegator implements CommandHandler
+    /**
+     * Wraps a given {@link CommandVisitor}, allowing you to do some extra operations before/after/instead of the
+     * delegate executes.
+     */
+    class Delegator implements CommandVisitor
     {
-        private final CommandHandler delegate;
+        private final CommandVisitor delegate;
 
-        public Delegator( CommandHandler delegate )
+        public Delegator( CommandVisitor delegate )
         {
             this.delegate = delegate;
-        }
-
-        @Override
-        public void begin( TransactionToApply transaction, LockGroup locks ) throws IOException
-        {
-            delegate.begin( transaction, locks );
-        }
-
-        @Override
-        public void end() throws Exception
-        {
-            delegate.end();
         }
 
         @Override
@@ -376,35 +306,6 @@ public interface CommandHandler extends AutoCloseable
         public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
         {
             return delegate.visitRelationshipCountsCommand( command );
-        }
-
-        @Override
-        public void apply()
-        {
-            delegate.apply();
-        }
-
-        @Override
-        public void close()
-        {
-            delegate.close();
-        }
-    }
-
-    class HandlerVisitor implements Visitor<Command,IOException>
-    {
-        private final CommandHandler handler;
-
-        public HandlerVisitor( CommandHandler handler )
-        {
-            this.handler = handler;
-        }
-
-        @Override
-        public boolean visit( Command element ) throws IOException
-        {
-            element.handle( handler );
-            return false;
         }
     }
 }

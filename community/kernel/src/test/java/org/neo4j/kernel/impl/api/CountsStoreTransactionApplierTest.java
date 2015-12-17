@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
@@ -35,21 +33,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CountsStoreApplierTest
+public class CountsStoreTransactionApplierTest
 {
     @Test
-    public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws IOException
+    public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
     {
         // GIVEN
         final CountsTracker tracker = mock( CountsTracker.class );
         final CountsAccessor.Updater updater = mock( CountsAccessor.Updater.class );
         when( tracker.apply( anyLong() ) ).thenReturn( Optional.of( updater ) );
-        final CountsStoreApplier applier = new CountsStoreApplier( tracker, TransactionApplicationMode.INTERNAL );
+        final CountsStoreBatchTransactionApplier applier = new CountsStoreBatchTransactionApplier( tracker,
+                TransactionApplicationMode.INTERNAL );
 
         // WHEN
-        applier.begin( new TransactionToApply( null, 2L ), new LockGroup() );
-        applier.visitNodeCountsCommand( addNodeCommand() );
-        applier.apply();
+        try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
+        {
+            txApplier.visitNodeCountsCommand( addNodeCommand() );
+        }
 
         // THEN
         verify( updater, times( 1 ) ).incrementNodeCount( ReadOperations.ANY_LABEL, 1 );

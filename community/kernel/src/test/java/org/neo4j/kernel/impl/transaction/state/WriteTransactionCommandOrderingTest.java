@@ -29,8 +29,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -48,7 +50,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
@@ -116,7 +117,8 @@ public class WriteTransactionCommandOrderingTest
         PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
 
         // Then
-        commands.accept( new CommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
+        final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
+        commands.accept( element -> element.handle( orderVerifyingCommandHandler ) );
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
@@ -277,7 +279,7 @@ public class WriteTransactionCommandOrderingTest
         }
     }
 
-    private static class OrderVerifyingCommandHandler extends CommandHandler.Adapter
+    private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter
     {
         private boolean nodeVisited;
 
