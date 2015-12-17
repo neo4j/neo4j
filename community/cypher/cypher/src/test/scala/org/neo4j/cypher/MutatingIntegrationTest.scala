@@ -180,7 +180,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
+    intercept[ConstraintValidationException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
   }
 
   test("delete and return") {

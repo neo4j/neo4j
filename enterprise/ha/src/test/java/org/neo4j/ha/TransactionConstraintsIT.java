@@ -25,6 +25,7 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -66,6 +67,9 @@ public class TransactionConstraintsIT
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
             .withSharedSetting( HaSettings.pull_interval, "0" );
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -153,19 +157,16 @@ public class TransactionConstraintsIT
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
         Node node = createMiniTree( aSlave );
 
-        // WHEN
         Transaction tx = aSlave.beginTx();
-        try
-        {
-            // Deleting this node isn't allowed since it still has relationships
-            node.delete();
-            tx.success();
-        }
-        finally
-        {
-            // THEN
-            assertFinishGetsTransactionFailure( tx );
-        }
+        // Deleting this node isn't allowed since it still has relationships
+        node.delete();
+        tx.success();
+
+        // EXPECT
+        exception.expect( ConstraintViolationException.class );
+
+        // WHEN
+        tx.close();
     }
 
     @Test
@@ -175,19 +176,16 @@ public class TransactionConstraintsIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         Node node = createMiniTree( master );
 
-        // WHEN
         Transaction tx = master.beginTx();
-        try
-        {
-            // Deleting this node isn't allowed since it still has relationships
-            node.delete();
-            tx.success();
-        }
-        finally
-        {
-            // THEN
-            assertFinishGetsTransactionFailure( tx );
-        }
+        // Deleting this node isn't allowed since it still has relationships
+        node.delete();
+        tx.success();
+
+        // EXPECT
+        exception.expect( ConstraintViolationException.class );
+
+        // WHEN
+        tx.close();
     }
 
     @Test
