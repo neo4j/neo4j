@@ -63,8 +63,8 @@ JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 [ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
 [ -z "${wrapper_java_maxmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xmx${wrapper_java_maxmemory}m"
 
-NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
-
+NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:=7474}"
+NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:=localhost}"
 TIMEOUT=120
 
 PID_FILE=${NEO4J_PIDFILE}
@@ -101,105 +101,43 @@ buildclasspath() {
   CLASSPATH=${ALL_JARS}
 }
 
-detectrunning() {
-  if [ $DIST_OS = "solaris" ] ; then
-    ## SmartOS has a different lsof command line arguments
-    newpid=$(lsof -o $NEO4J_SERVER_PORT | grep '::' | head -n1 | cut -d ' ' -f 1)
-  else
-    LSOFVER=$(lsof -v 2>&1 | grep revision | grep -v latest | cut -d: -f2 | tr -d ' ' | tr -d .)
-    #Newer versions of lsof has the -sTCP:LISTEN flag, which is exactly what we need.
-    #This flag does not exist before 4.78, therefore grepping for TST=LISTEN worked there.
-    #Only in 4.89 did grepping begin to not work, as the output from lsof changed.
-    if [ "$LSOFVER" -ge 478 ]; then
-      newpid=$(lsof -i :"$NEO4J_SERVER_PORT" -sTCP:LISTEN -t)
-    else
-      newpid=$(lsof -i :"$NEO4J_SERVER_PORT" -F T -Ts | grep -i "TST=LISTEN" -B1 | head -n1)
-      newpid=${newpid:1}
-    fi
-  fi
-}
-
 startit() {
-  detectos
-  exitonnojava
   checkstatus
-  checklimits
+  if [ -n "${NEO4J_PID}" ] ; then
+    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
+    exit 0
+  fi
 
+  exitonnojava
   checkjvmcompatibility
 
-  detectrunning
-  if [ $newpid ] ; then
-	     echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."
-	     exit 2;
+  echo "Starting ${FRIENDLY_NAME}."
+
+  detectos
+  checklimits
+  buildclasspath
+  checkclasspath
+  checkandrepairenv
+
+  CONSOLE_LOG="${NEO4J_LOG}/console.log"
+  "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}" \
+    >>"${CONSOLE_LOG}" 2>&1 &
+  echo "$!" >"${PID_FILE}"
+
+  sleep 5
+  checkstatus
+  if [ -z "${NEO4J_PID}" ] ; then
+    echo "Unable to start. See ${CONSOLE_LOG} for details."
+    rm "$PID_FILE"
+    exit 1
   fi
 
-  if [ -z $NEO4J_PID ] ; then
-    printf "Starting $FRIENDLY_NAME..."
+  echo "Started at http://${NEO4J_SERVER_ADDRESS}:${NEO4J_SERVER_PORT} (pid ${NEO4J_PID})."
 
-    buildclasspath
-    checkclasspath
-    checkandrepairenv
-
-    CONSOLE_LOG="$NEO4J_LOG/console.log"
-
-    "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS  \
-      -Dneo4j.home="${NEO4J_HOME}" \
-      -Dfile.encoding=UTF-8 \
-      #{neo4j.mainClass} >> "${CONSOLE_LOG}" 2>&1 & echo $! > "${PID_FILE}"
-
-    STARTED_PID=$( cat "$PID_FILE" )
-
-    if [ "$org_neo4j_server_database_mode" = "HA" ] ; then
-      if kill -0 $STARTED_PID 2>/dev/null ; then
-        echo "HA instance started in process [$STARTED_PID]. Will be operational once connected to peers. See ${CONSOLE_LOG} for current status."
-        exit 0
-      else
-        echo "HA instance was unable to start. See ${CONSOLE_LOG}."
-        rm "$PID_FILE"
-        exit 1
-      fi
-    fi
-
-    echo -n "process [$STARTED_PID]"
-
-	  if [ $WAIT = "true" ] ; then
-	    echo -n "... waiting for server to be ready."
-	    while kill -0 $STARTED_PID 2> /dev/null ; do
-	      ## wait for start, pick up the server listening on the port
-	      detectrunning
-	      if [ $newpid ] ; then
-	         break
-	      fi
-
-	      printf "."
-	      sleep 1
-	    done
-
-	    if kill -0 $STARTED_PID 2>/dev/null ; then
-	      if [ "$newpid" != "$STARTED_PID" ] ; then
-		    rm "$PID_FILE"
-	        kill -9 $STARTED_PID
-	        echo " Failed to start within $TIMEOUT seconds."
-	        echo "$FRIENDLY_NAME failed to start, please check the logs for details."
-	        echo "If startup is blocked on a long recovery, use '$0 start-no-wait' to give the startup more time."
-	        exit 2
-	      fi
-
-	      echo " OK."
-        echo "http://localhost:$NEO4J_SERVER_PORT/ is ready."
-	      exit 0
-	    fi
-
-	    echo " Failed to start within $TIMEOUT seconds."
-	    echo "$FRIENDLY_NAME may have failed to start, please check the logs."
-	    rm "$PID_FILE"
-	    exit 1
-    else
-        echo "...Started the server in the background, returning..."
-    fi
+  if [ "${org_neo4j_server_database_mode}" = "HA" ] ; then
+    echo "This HA instance will be operational once connected to peers. See ${CONSOLE_LOG} for current status."
   else
-    echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
-    exit 0
+    echo "There may be a short delay until the server is ready."
   fi
 }
 
@@ -246,45 +184,32 @@ showinfo() {
 case "$1" in
   console)
     console
-    exit 0
     ;;
 
   start)
-    WAIT=true
     startit
-    ;;
-
-  start-no-wait)
-    WAIT=false
-    startit
-    exit 0
     ;;
 
   stop)
     stopit
-    exit 0
     ;;
 
   restart)
-    WAIT=true
     stopit
     startit
-    exit 0
     ;;
 
   status)
     reportstatus
-    exit 0
     ;;
 
   info)
     showinfo
-    exit 0
     ;;
-  *)
-    echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info }"
-    exit 0;;
 
+  *)
+    echo "Usage: neo4j { console | start | stop | restart | status | info }"
+    ;;
 esac
 
 exit $?

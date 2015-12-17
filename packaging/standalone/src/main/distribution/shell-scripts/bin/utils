@@ -120,7 +120,7 @@ findjava() {
 checkstatus() {
   if [ -e "$PID_FILE" ] ; then
     NEO4J_PID=$( cat "$PID_FILE" )
-    kill -0 $NEO4J_PID 2>/dev/null || NEO4J_PID=
+    kill -0 $NEO4J_PID 2>/dev/null || NEO4J_PID=""
   fi
 }
 
