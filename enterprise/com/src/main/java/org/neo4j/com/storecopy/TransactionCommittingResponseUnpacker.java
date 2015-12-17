@@ -304,7 +304,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             }
             catch ( IllegalStateException e )
             {
-                throw new ComException( "Failed to pull updates", e );
+                throw new ComException( "Failed to pull updates", e )
+                        .traceComException( log, "BatchingResponseHandler.obligation" );
             }
             catch ( InterruptedException e )
             {

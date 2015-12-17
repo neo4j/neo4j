@@ -80,6 +80,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     @Override
     public void handle( ComException exception )
     {
+        exception.traceComException( log, "MasterClientResolver.handle" );
         if ( exception instanceof IllegalProtocolVersionException )
         {
             log.info( "Handling " + exception + ", will pick new master client" );
@@ -94,6 +95,10 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
 
             invalidEpochHandler.handle();
+        }
+        else
+        {
+            log.debug( "Ignoring " + exception + "." );
         }
     }
 
