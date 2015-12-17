@@ -22,6 +22,7 @@ package org.neo4j.bolt;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -253,7 +254,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     private KeyStoreInformation createKeyStore( ConfigView connector, Log log )
-            throws GeneralSecurityException, IOException
+            throws GeneralSecurityException, IOException, OperatorCreationException
     {
         File privateKeyPath = connector.get( Settings.tls_key_file ).getAbsoluteFile();
         File certificatePath = connector.get( Settings.tls_certificate_file ).getAbsoluteFile();

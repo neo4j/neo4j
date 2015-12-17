@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,7 +65,6 @@ public class CertificatesIT
         connection.connect( new HostnamePort( "localhost:7687" ) )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
-
         // THEN
         Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
         assertThat(certificatesSeen, contains(loadCertificateFromDisk()));
@@ -80,14 +80,18 @@ public class CertificatesIT
     }
 
     @BeforeClass
-    public static void setUp() throws IOException, GeneralSecurityException
+    public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
     {
         certFactory = new Certificates();
         keyFile = File.createTempFile( "key", "pem" );
         certFile = File.createTempFile( "key", "pem" );
+        keyFile.deleteOnExit();
+        certFile.deleteOnExit();
+
         // make sure files are not there
         keyFile.delete();
         certFile.delete();
+
         certFactory.createSelfSignedCertificate( certFile, keyFile, "my.domain" );
     }
 
