@@ -163,8 +163,11 @@ case class PlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     recurse(in, this)
   }
 
-  //Returns list of querygraph of planner query and all of its tails
+  //Returns a list of query graphs from this plannerquery and all of its tails
   def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
+
+  //Returns a list of update graphs from this plannerquery and all of its tails
+  def allUpdateGraphs: Seq[UpdateGraph] = allPlannerQueries.map(_.updateGraph)
 
 
   //Returns list of planner query and all of its tails

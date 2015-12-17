@@ -42,8 +42,8 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withTail(newTail)))
   }
 
-  def currentlyAvailableVariables: Set[IdName] =
-    currentQueryGraph.allCoveredIds
+  def currentlyAvailableVariables: Set[IdName] = q.allPlannerQueries.flatMap(pq =>
+    pq.allQueryGraphs.flatMap(_.allCoveredIds) ++ pq.horizon.exposedSymbols(pq.queryGraph)).toSet
 
   def currentQueryGraph: QueryGraph = {
     var current = q

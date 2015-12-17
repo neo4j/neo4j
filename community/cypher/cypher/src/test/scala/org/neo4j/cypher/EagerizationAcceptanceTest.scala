@@ -20,12 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.graphdb.Node
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
 
 class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrivenPropertyChecks with QueryStatisticsTestSupport with NewPlannerTestSupport {
-  val VERBOSE = false
+  val VERBOSE = true
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
@@ -105,13 +106,15 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   // TESTS FOR DELETE AND MERGE
 
-  test("should introduce eagerness between DELETE and MERGE for node") {
+  test("should introduce eagerness between DELETE and MERGE for node also with UNWIND") {
     createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
     createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
     val query =
       """
         |MATCH (b:B)
         |DELETE b
+        |WITH *
+        |UNWIND [0] AS i
         |MERGE (b2:B { value: 1 })
         |RETURN count(*)
       """.stripMargin
@@ -119,6 +122,43 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     val result = updateWithBothPlanners(query)
     assertStats(result, nodesCreated = 1, nodesDeleted = 2, propertiesWritten = 1, labelsAdded = 1)
     result.columnAs[Long]("count(*)").next shouldBe 2
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should introduce eagerness between DELETE and MERGE for node") {
+    createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
+    createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
+    createLabeledNode(Map("value" -> 2, "deleted" -> true), "B")
+    val query =
+      """
+        |MATCH (b:B)
+        |DELETE b
+        |MERGE (b2:B { value: 1 }) // this is supposed to not be the first node matched by the label scan
+        |RETURN b2.deleted
+      """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 1, nodesDeleted = 3, propertiesWritten = 1, labelsAdded = 1)
+    result.columnAs[Node]("b2.deleted").toList should equal(List(null, null, null))
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should introduce eagerness between DELETE and MERGE for node with projection") {
+    createLabeledNode(Map("value" -> 0, "deleted" -> true), "B")
+    createLabeledNode(Map("value" -> 1, "deleted" -> true), "B")
+    val query =
+      """
+        |MATCH (b:B)
+        |WITH b.value AS v, b
+        |DELETE b
+        |WITH *
+        |MERGE (b2:B { value: v + 1 % 2 }) // the other node
+        |RETURN b2.deleted
+      """.stripMargin
+
+    val result = updateWithBothPlanners(query)
+    assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 2, labelsAdded = 2)
+    result.columnAs[Node]("b2.deleted").toList should equal(List(null, null))
     assertNumberOfEagerness(query, 1)
   }
 
@@ -1097,6 +1137,18 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
 
   // TESTS WITH MULTIPLE MERGES
 
+  test("THIS TEST SHOULD BE GREEN -- also other combinations where MERGE replaces MATCH and CREATE") {
+    createNode()
+    createNode()
+
+    val query = "profile UNWIND range(0, 9) AS i MATCH () MERGE (m {v: i % 2}) ON CREATE SET m:Merged CREATE ({v: i + 1 % 2}) RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+    result.columnAs[Long]("count(*)").next shouldBe 20
+    assertStats(result, nodesCreated = 22, propertiesWritten = 22, labelsAdded = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("should not be eager when merging on two different labels") {
     val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
@@ -1584,10 +1636,22 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
     assertNumberOfEagerness(query, 0)
   }
 
-  test("should be eager if removing a label that's matched by an unstable iterator") {
+  test("should be eager if removing a label that's matched by an unstable iterator, regardless of variable for the remove") {
     createLabeledNode("Lol")
     createLabeledNode("Lol")
     val query = "MATCH (m:Lol), (n:Lol) REMOVE m:Lol RETURN count(*)"
+
+    val result = updateWithBothPlanners(query)
+
+    assertStats(result, labelsRemoved = 2)
+    result.columnAs[Long]("count(*)").next shouldBe 4
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should be eager if removing a label that's matched by an unstable iterator") {
+    createLabeledNode("Lol")
+    createLabeledNode("Lol")
+    val query = "MATCH (m:Lol), (n:Lol) REMOVE n:Lol RETURN count(*)"
 
     val result = updateWithBothPlanners(query)
 

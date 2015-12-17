@@ -106,7 +106,7 @@ object Eagerness {
     val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
     val labelsToCreate = tail.updateGraph.createLabels
     val propertiesToCreate = tail.updateGraph.createNodeProperties
-    val labelsToRemove = tail.updateGraph.labelsToRemoveFromOtherNodes(currentNode)
+    val labelsToRemove = tail.updateGraph.labelsToRemove
 
     tail.updatesNodes &&
       (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tail.createsNodes || //MATCH () CREATE (...)?
@@ -115,8 +115,7 @@ object Eagerness {
 
         //MATCH (n:A), (m:B) REMOVE n:B
         //MATCH (n:A), (m:A) REMOVE m:A
-        (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
-        )
+        (labelsToRemove intersect labelsOnCurrentNode).nonEmpty)
   }
 
   /*

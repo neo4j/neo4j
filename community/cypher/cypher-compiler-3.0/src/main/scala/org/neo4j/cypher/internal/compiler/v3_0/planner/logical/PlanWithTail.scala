@@ -64,25 +64,26 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
 
   override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
-      case Some(query) =>
+      case Some(plannerQuery) =>
         val lhsContext = context.recurse(lhs)
         // TODO: REV: Why is countStorePlanner not used here?
-        val partPlan = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.queryGraph)))
+        val partPlan = planPart(plannerQuery, lhsContext, None)
         ///use eager if configured to do so
         val alwaysEager = context.config.updateStrategy.alwaysEager
         //If reads interfere with writes, make it a RepeatableRead
         val planWithEffects =
-          if (alwaysEager || Eagerness.conflictInTail(partPlan, query))
+          if (alwaysEager || Eagerness.conflictInTail(partPlan, plannerQuery))
             context.logicalPlanProducer.planRepeatableRead(partPlan)
           else partPlan
 
-        val planWithUpdates = planUpdates(query, planWithEffects)(context)
+        val planWithUpdates = planUpdates(plannerQuery, planWithEffects)(context)
 
-        //If previous update interferes with any of the reads here or in tail, make it an EagerApply
+        //If previous update interferes with any of the reads here or in tail, we need to be eager
         val applyPlan = {
           val lastPlannerQuery = lhs.solved.last
           val newLhs = if (alwaysEager ||
-            (!lastPlannerQuery.writeOnly && query.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps)))
+            (!lastPlannerQuery.writeOnly && plannerQuery.allQueryGraphs.exists(lastPlannerQuery.updateGraph.overlaps))
+            || plannerQuery.allUpdateGraphs.exists(lastPlannerQuery.updateGraph.deleteOverlapWithMergeNodeIn))
               context.logicalPlanProducer.planEager(lhs)
           else lhs
 
@@ -90,7 +91,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         }
 
         val applyContext = lhsContext.recurse(applyPlan)
-        val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
+        val projectedPlan = planEventHorizon(plannerQuery, applyPlan)(applyContext)
         val projectedContext = applyContext.recurse(projectedPlan)
 
         val completePlan = {
@@ -100,7 +101,7 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         }
 
         // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query.tail)(projectedContext)
+        apply(completePlan, plannerQuery.tail)(projectedContext)
 
       case None =>
         lhs

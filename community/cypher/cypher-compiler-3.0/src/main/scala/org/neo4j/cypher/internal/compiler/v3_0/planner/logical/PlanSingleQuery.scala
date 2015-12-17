@@ -45,12 +45,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
         context.logicalPlanProducer.planEager(partPlan)
       else partPlan
     val planWithUpdates = planUpdates(in, planWithEffect)(context)
-    val planWithUpdatesAndEffects =
-      if (alwaysEager || in.updateGraph.mergeNodeDeleteOverlap) // TODO: Verify that this exhausts all merge/update conflicts
-        context.logicalPlanProducer.planEager(planWithUpdates)
-      else planWithUpdates
 
-    val projectedPlan = planEventHorizon(in, planWithUpdatesAndEffects)
+    val projectedPlan = planEventHorizon(in, planWithUpdates)
     val projectedContext = context.recurse(projectedPlan)
     val expressionRewriter = expressionRewriterFactory(projectedContext)
     val completePlan = projectedPlan.endoRewrite(expressionRewriter)

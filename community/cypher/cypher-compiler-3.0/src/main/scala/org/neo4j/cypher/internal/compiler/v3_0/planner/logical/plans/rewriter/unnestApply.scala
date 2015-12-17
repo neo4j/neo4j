@@ -35,9 +35,13 @@ case object unnestApply extends Rewriter {
     LOJ: Left Outer Join
     SR : SingleRow - operator that produces single row with no columns
     CN : CreateNode
+    D : Delete
+    E : Eager
+    M : Merge
    */
 
   private val instance: Rewriter = Rewriter.lift {
+//    case x => x
     // SR Ax R => R iff Arg0 introduces no arguments
     case Apply(_: SingleRow, rhs) =>
       rhs
@@ -76,7 +80,33 @@ case object unnestApply extends Rewriter {
     // L Ax (CN R) => CN Ax (L R)
     case apply@Apply(lhs, create@CreateNode(rhs, name, labels, props)) =>
       CreateNode(Apply(lhs, rhs)(apply.solved), name, labels, props)(apply.solved)
+
+    // L Ax (D R) => D Ax (L R)
+    case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
+      DeleteNode(Apply(lhs, rhs)(apply.solved), expr)(apply.solved)
+
+    // L Ax (M R) => M Ax (L R)
+    case apply@Apply(lhs, merge@AsMergePlan(source, sourceReplacer)) =>
+      sourceReplacer(Apply(lhs, source)(apply.solved))
+
+    // L Ax (E R) => E Ax (L R)
+    case apply@Apply(lhs, eager@Eager(rhs)) =>
+      Eager(Apply(lhs, rhs)(apply.solved))(apply.solved)
   }
 
   override def apply(input: AnyRef) = bottomUp(instance).apply(input)
 }
+
+object AsMergePlan {
+  def unapply(v: Any): Option[(LogicalPlan, LogicalPlan => LogicalPlan)] = v match {
+      // Full merge plan pattern
+    case topMergePlan@AntiConditionalApply(condApply@ConditionalApply(apply@Apply(lhs, mergeRead), onMatch, name1), mergeCreate, name2) =>
+      Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(ConditionalApply(Apply(plan, mergeRead)(apply.solved), onMatch, name1)(condApply.solved), mergeCreate, name2)(topMergePlan.solved))
+      // Merge plan pattern when there is no ON MATCH part
+    case topMergePlan@AntiConditionalApply(apply@Apply(lhs, mergeRead), mergeCreate, name) =>
+      Some(lhs, (plan: LogicalPlan) => AntiConditionalApply(Apply(plan, mergeRead)(apply.solved), mergeCreate, name)(topMergePlan.solved))
+    case _ =>
+      None
+  }
+}
+
