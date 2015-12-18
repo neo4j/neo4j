@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+set -euo pipefail
+
 FRIENDLY_NAME="Neo4j Server"
 
 function findBaseDirAndCdThere {
@@ -24,27 +26,27 @@ function findBaseDirAndCdThere {
 # is the case, it should be fixed to be so, if possible.
   SCRIPT=$0
 
-  cd "`dirname "$SCRIPT"`"
-  SCRIPT=`basename "$SCRIPT"`
+  cd "$(dirname "${SCRIPT}")"
+  SCRIPT="$(basename "${SCRIPT}")"
 
-  while [ -L "$SCRIPT" ]
+  while [ -L "${SCRIPT}" ]
   do
-    SCRIPT=$( readlink "$SCRIPT" )
-    cd "$(dirname "$SCRIPT")"
-    SCRIPT=`basename "$SCRIPT"`
+    SCRIPT="$(readlink "${SCRIPT}")"
+    cd "$(dirname "${SCRIPT}")"
+    SCRIPT="$(basename "${SCRIPT}")"
   done
-  NEO4J_HOME=`cd $( dirname "$SCRIPT" )/.. && dirs -l +0`
-  NEO4J_INSTANCE=$NEO4J_HOME
-  [ -n "$NEO4J_CONFIG" ] || NEO4J_CONFIG=$NEO4J_HOME/conf
-  [ -n "$NEO4J_LOG" ] || NEO4J_LOG=$NEO4J_HOME/data/log
-  [ -n "$NEO4J_PIDFILE" ] || NEO4J_PIDFILE=$NEO4J_HOME/data/neo4j-service.pid
+  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
+  NEO4J_INSTANCE="${NEO4J_HOME}"
+  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
+  [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
+  [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
 
-  cd "$NEO4J_HOME"
+  cd "${NEO4J_HOME}"
 }
 
 function parseConfig {
-  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
-    if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
+  if [ "${BASH_VERSINFO[0]}" -eq 3 ] ; then
+    if [ "${BASH_VERSINFO[1]}" -lt 2 ] ; then
       getconfigquoted "${NEO4J_CONFIG}/neo4j-wrapper.conf"
       getconfigquoted "${NEO4J_CONFIG}/neo4j-server.properties"
       return
@@ -58,51 +60,55 @@ findBaseDirAndCdThere
 source bin/utils
 parseConfig
 
-JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
-[ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
-[ -z "${wrapper_java_maxmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xmx${wrapper_java_maxmemory}m"
+JAVA_OPTS="-server -XX:+DisableExplicitGC"
+[[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
+[[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
+[[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
 
 NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:=7474}"
 NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:=localhost}"
 TIMEOUT=120
-PID_FILE=${NEO4J_PIDFILE}
+PID_FILE="${NEO4J_PIDFILE}"
 
 buildclasspath() {
-  LIBDIR="$NEO4J_HOME"/lib
-  if [ ! -e "$LIBDIR" ] ; then
-    echo "Error: missing Neo4j Library, expected at $LIBDIR"
+  LIBDIR="${NEO4J_HOME}/lib"
+  if [ ! -e "${LIBDIR}" ] ; then
+    echo "Error: missing Neo4j Library, expected at ${LIBDIR}"
     exit 1
   fi
 
-  SYSLIBDIR="$NEO4J_HOME"/system/lib
-  if [ ! -e "$SYSLIBDIR" ] ; then
-    echo "Error: missing Neo4j System Library, expected at $SYSLIBDIR"
+  SYSLIBDIR="${NEO4J_HOME}/system/lib"
+  if [ ! -e "${SYSLIBDIR}" ] ; then
+    echo "Error: missing Neo4j System Library, expected at ${SYSLIBDIR}"
     exit 1
   fi
 
   ALL_JARS=""
-  for jar in "$LIBDIR"/*.jar "$SYSLIBDIR"/*.jar ; do
-    [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
+  for jar in "${LIBDIR}"/*.jar "${SYSLIBDIR}"/*.jar ; do
+    if [[ "${ALL_JARS:-}" ]] ; then
+      ALL_JARS="${ALL_JARS}:"
+    fi
+    ALL_JARS="${ALL_JARS}${jar}"
   done
 
-  for jar in "$NEO4J_HOME"/plugins/*.jar ; do
-    if [ -e "$jar" ] ; then
-      ALL_JARS="$ALL_JARS":"$jar"
+  for jar in "${NEO4J_HOME}"/plugins/*.jar ; do
+    if [ -e "${jar}" ] ; then
+      ALL_JARS="${ALL_JARS}:${jar}"
     fi
   done
 
-  for jar in "$NEO4J_HOME"/plugins/**/*.jar ; do
-    if [ -e "$jar" ] ; then
-      ALL_JARS="$ALL_JARS":"$jar"
+  for jar in "${NEO4J_HOME}"/plugins/**/*.jar ; do
+    if [ -e "${jar}" ] ; then
+      ALL_JARS="${ALL_JARS}:${jar}"
     fi
   done
 
-  CLASSPATH=${ALL_JARS}
+  CLASSPATH="${ALL_JARS}"
 }
 
 startit() {
   checkstatus
-  if [ -n "${NEO4J_PID}" ] ; then
+  if [[ "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 0
   fi
@@ -124,7 +130,7 @@ startit() {
 
   sleep 5
   checkstatus
-  if [ -z "${NEO4J_PID}" ] ; then
+  if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."
     rm "${PID_FILE}"
     exit 1
@@ -132,7 +138,7 @@ startit() {
 
   echo "Started at http://${NEO4J_SERVER_ADDRESS}:${NEO4J_SERVER_PORT} (pid ${NEO4J_PID})."
 
-  if [ "${org_neo4j_server_database_mode}" = "HA" ] ; then
+  if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
     echo "This HA instance will be operational once it has joined the cluster. See ${CONSOLE_LOG} for current status."
   else
     echo "There may be a short delay until the server is ready."
@@ -141,7 +147,7 @@ startit() {
 
 console() {
   checkstatus
-  if [ -n "${NEO4J_PID}" ] ; then
+  if [[ "${NEO4J_PID:-}" ]] ; then
     echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 1
   fi
@@ -165,12 +171,12 @@ showinfo() {
   exitonnojava
   buildclasspath
 
-  echo "NEO4J_HOME:        $NEO4J_HOME"
-  echo "NEO4J_SERVER_PORT: $NEO4J_SERVER_PORT"
-  echo "NEO4J_INSTANCE:    $NEO4J_INSTANCE"
-  echo "JAVA_HOME:         $JAVA_HOME"
-  echo "JAVA_OPTS:         $JAVA_OPTS"
-  echo "CLASSPATH:         $CLASSPATH"
+  echo "NEO4J_HOME:        ${NEO4J_HOME}"
+  echo "NEO4J_SERVER_PORT: ${NEO4J_SERVER_PORT}"
+  echo "NEO4J_INSTANCE:    ${NEO4J_INSTANCE}"
+  echo "JAVA_HOME:         ${JAVA_HOME}"
+  echo "JAVA_OPTS:         ${JAVA_OPTS}"
+  echo "CLASSPATH:         ${CLASSPATH}"
 }
 
 case "$1" in
