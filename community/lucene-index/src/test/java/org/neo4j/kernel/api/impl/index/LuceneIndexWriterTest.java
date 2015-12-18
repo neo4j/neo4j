@@ -32,6 +32,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.impl.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
 

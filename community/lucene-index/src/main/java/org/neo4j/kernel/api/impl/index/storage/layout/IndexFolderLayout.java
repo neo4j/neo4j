@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.storage.layout;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import static java.lang.Integer.parseInt;
 
-class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
+public class IndexFolderLayout implements FolderLayout
 {
-    NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                  IndexStorage indexStorage,
-                                  int bufferSizeLimit ) throws IOException
+    private final File indexFolder;
+
+    public IndexFolderLayout( File rootDirectory, long indexId )
     {
-        super( documentStructure, indexWriterFactory, indexStorage, bufferSizeLimit );
+        this.indexFolder = new File( rootDirectory, String.valueOf( indexId ) );
     }
 
+    @Override
+    public File getIndexFolder()
+    {
+        return indexFolder;
+    }
+
+    @Override
+    public File getPartitionFolder( int partition )
+    {
+        return new File( indexFolder, String.valueOf( partition ) );
+    }
 }

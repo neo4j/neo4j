@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -41,9 +41,9 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                      DirectoryFactory dirFactory, File dirFile ) throws IOException
+                                      IndexStorage indexStorage ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, dirFactory, dirFile, -1 /* unused */ );
+        super( documentStructure, indexWriterFactory, indexStorage, -1 /* unused */ );
     }
 
     @Override

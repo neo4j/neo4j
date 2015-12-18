@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLong;
@@ -70,12 +68,6 @@ public class DelegatingIndexReader implements IndexReader
     public int countIndexedNodes( long nodeId, Object propertyValue )
     {
         return delegate.countIndexedNodes( nodeId, propertyValue );
-    }
-
-    @Override
-    public Set<Class> valueTypesInIndex()
-    {
-        return delegate.valueTypesInIndex();
     }
 
     @Override

@@ -33,15 +33,12 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -159,45 +156,6 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    public Set<Class> valueTypesInIndex()
-    {
-        Set<Class> types = new HashSet<>();
-        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
-        {
-            try
-            {
-                Fields fields = readerContext.reader().fields();
-                for ( String field : fields )
-                {
-                    if ( !NODE_ID_KEY.equals( field ) )
-                    {
-                        switch ( ValueEncoding.fromKey( field ) )
-                        {
-                        case Number:
-                            types.add( Number.class );
-                            break;
-                        case String:
-                            types.add( String.class );
-                            break;
-                        case Array:
-                            types.add( Array.class );
-                            break;
-                        case Bool:
-                            types.add( Boolean.class );
-                            break;
-                        }
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-        return types;
     }
 
     @Override

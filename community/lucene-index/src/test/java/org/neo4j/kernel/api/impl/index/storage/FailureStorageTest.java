@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index.util;
+package org.neo4j.kernel.api.impl.index.storage;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,7 @@ public class FailureStorageTest
 {
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private FolderLayout folderLayout;
+    private IndexFolderLayout indexFolderLayout;
     private final long indexId = 1;
 
     @Before
@@ -45,20 +46,20 @@ public class FailureStorageTest
     {
         File rootDirectory = new File( "dir" );
         fs.get().mkdirs( rootDirectory );
-        folderLayout = new FolderLayout( rootDirectory );
+        indexFolderLayout = new IndexFolderLayout( rootDirectory, indexId );
     }
 
     @Test
     public void shouldReserveFailureFile() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), folderLayout );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
 
         // WHEN
-        storage.reserveForIndex( indexId );
+        storage.reserveForIndex();
 
         // THEN
-        File failureFile = storage.failureFile( indexId );
+        File failureFile = storage.failureFile();
         assertTrue( fs.get().fileExists( failureFile ) );
         assertTrue( fs.get().getFileSize( failureFile ) > 100 );
     }
@@ -67,34 +68,34 @@ public class FailureStorageTest
     public void shouldStoreFailure() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), folderLayout );
-        storage.reserveForIndex( indexId );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        storage.reserveForIndex();
         String failure = format( "A failure message%nspanning%nmultiple lines." );
 
         // WHEN
-        storage.storeIndexFailure( indexId, failure );
+        storage.storeIndexFailure( failure );
 
         // THEN
-        File failureFile = storage.failureFile( indexId );
+        File failureFile = storage.failureFile();
         assertTrue( fs.get().fileExists( failureFile ) );
         assertTrue( fs.get().getFileSize( failureFile ) > 100 );
-        assertEquals( failure, storage.loadIndexFailure( indexId ) );
+        assertEquals( failure, storage.loadIndexFailure() );
     }
 
     @Test
     public void shouldClearFailure() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), folderLayout );
-        storage.reserveForIndex( indexId );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        storage.reserveForIndex();
         String failure = format( "A failure message%nspanning%nmultiple lines." );
-        storage.storeIndexFailure( indexId, failure );
-        File failureFile = storage.failureFile( indexId );
+        storage.storeIndexFailure( failure );
+        File failureFile = storage.failureFile();
         assertTrue( fs.get().fileExists( failureFile ) );
         assertTrue( fs.get().getFileSize( failureFile ) > 100 );
 
         // WHEN
-        storage.clearForIndex( indexId );
+        storage.clearForIndex();
 
         // THEN
         assertFalse( fs.get().fileExists( failureFile ) );

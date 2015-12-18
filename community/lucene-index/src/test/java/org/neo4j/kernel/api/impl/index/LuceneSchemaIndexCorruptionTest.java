@@ -27,6 +27,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;

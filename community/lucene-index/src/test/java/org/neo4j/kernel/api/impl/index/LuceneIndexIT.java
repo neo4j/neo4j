@@ -31,17 +31,19 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -53,25 +55,26 @@ public class LuceneIndexIT
     private final Object value = "value";
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
     private LuceneIndexAccessor accessor;
-    private DirectoryFactory dirFactory;
 
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private IndexStorage indexStorage;
 
     @Before
     public void before() throws Exception
     {
-        dirFactory = DirectoryFactory.PERSISTENT;
-        accessor = new NonUniqueLuceneIndexAccessor(
-                documentLogic, standard(), dirFactory, testDir.directory(), 100_000
-        );
+
+        indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
+                testDir.directory(), 1 );
+        indexStorage.prepareIndexStorage();
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
     }
 
     @After
     public void after() throws IOException
     {
         accessor.close();
-        dirFactory.close();
+        indexStorage.close();
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,30 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.storage.layout;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.apache.lucene.store.Directory;
-
-import org.neo4j.io.fs.FileUtils.FileOperation;
-
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
-
-public class DirectorySupport
+public interface FolderLayout
 {
-    public static void deleteDirectoryContents( final Directory directory ) throws IOException
-    {
-        for ( final String fileName : directory.listAll() )
-        {
-            windowsSafeIOOperation( new FileOperation()
-            {
-                @Override
-                public void perform() throws IOException
-                {
-                    directory.deleteFile( fileName );
-                }
-            } );
-        }
-    }
+    File getIndexFolder();
+
+    File getPartitionFolder( int partition );
 }

@@ -27,12 +27,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -63,12 +67,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private static final int PROPERTY_KEY_ID = 2;
     private static final int INDEX_ID = 42;
 
-    private final FailureStorage failureStorage = mock( FailureStorage.class );
     private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
 
-    private final File indexDirectory = new File( "target/whatever" );
+    private final IndexFolderLayout indexFolderLayout = new IndexFolderLayout( new File( "target/whatever" ), INDEX_ID );
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+    private IndexStorage indexStorage;
 
     @Test
     public void shouldVerifyThatThereAreNoDuplicates() throws Exception
@@ -85,9 +89,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( directoryFactory, indexDirectory, "value3" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
+        assertEquals( asList( 3l ), getAllNodes( indexStorage.getDirectory(), "value3" ) );
     }
 
     @Test
@@ -106,8 +110,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( Collections.EMPTY_LIST, getAllNodes( directoryFactory, indexDirectory, "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
     }
 
     @Test
@@ -127,7 +131,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList(1l), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( asList(1l), getAllNodes( indexStorage.getDirectory(), "value1" ) );
     }
 
     @Test
@@ -146,7 +150,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( Collections.EMPTY_LIST, getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( indexStorage.getDirectory(), "value1" ) );
     }
 
     @Test
@@ -167,8 +171,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
+        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
     }
 
     @Test
@@ -320,9 +324,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( directoryFactory, indexDirectory, "value3" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
+        assertEquals( asList( 3l ), getAllNodes( indexStorage.getDirectory(), "value3" ) );
     }
 
     @Test
@@ -430,41 +434,26 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
          */
 
         // GIVEN an index updater that we close
-        OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<Void>( "Deferred", null ) );
-        executor.execute( new WorkerCommand<Void, Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
-                {   // Just open it and let it be closed
-                }
-                return null;
+        OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<>( "Deferred", null ) );
+        executor.execute( (WorkerCommand<Void,Void>) state -> {
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+            {   // Just open it and let it be closed
             }
+            return null;
         } );
         // ... and where we verify deferred constraints after
-        executor.execute( new WorkerCommand<Void, Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                populator.verifyDeferredConstraints( propertyAccessor );
-                return null;
-            }
+        executor.execute( (WorkerCommand<Void,Void>) state -> {
+            populator.verifyDeferredConstraints( propertyAccessor );
+            return null;
         } );
 
         // WHEN doing more index updating after that
         // THEN it should be able to complete within a very reasonable time
-        executor.execute( new WorkerCommand<Void, Void>()
-        {
-            @Override
-            public Void doWork( Void state ) throws Exception
-            {
-                try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
-                {   // Just open it and let it be closed
-                }
-                return null;
+        executor.execute( (WorkerCommand<Void,Void>) state -> {
+            try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
+            {   // Just open it and let it be closed
             }
+            return null;
         }, 5, SECONDS );
     }
 
@@ -513,10 +502,10 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator(
             SearcherManagerFactory searcherManagerFactory ) throws IOException
     {
+        indexStorage = new IndexStorage( directoryFactory, new EphemeralFileSystemAbstraction(), indexFolderLayout );
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
-                IndexWriterFactories.standard(), searcherManagerFactory, directoryFactory, indexDirectory,
-                failureStorage, INDEX_ID, descriptor );
+                IndexWriterFactories.standard(), searcherManagerFactory, indexStorage, descriptor );
 
         populator.create();
 

@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
@@ -36,8 +35,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -50,17 +49,14 @@ public class LuceneLabelScanStore
         implements LabelScanStore, LabelScanStorageStrategy.StorageService
 {
     private final LabelScanStorageStrategy strategy;
-    private final DirectoryFactory directoryFactory;
     private final IndexWriterFactory<LuceneIndexWriter> writerFactory;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
-    private Directory directory;
+    private final IndexStorage indexStorage;
     private SearcherManager searcherManager;
     private LuceneIndexWriter writer;
     private boolean needsRebuild;
-    private final File directoryLocation;
-    private final FileSystemAbstraction fs;
     private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
@@ -122,14 +118,12 @@ public class LuceneLabelScanStore
         };
     }
 
-    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, DirectoryFactory directoryFactory,
-            File directoryLocation, FileSystemAbstraction fs, IndexWriterFactory<LuceneIndexWriter> writerFactory,
+    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, IndexStorage indexStorage,
+            IndexWriterFactory<LuceneIndexWriter> writerFactory,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
         this.strategy = strategy;
-        this.directoryFactory = directoryFactory;
-        this.directoryLocation = directoryLocation;
-        this.fs = fs;
+        this.indexStorage = indexStorage;
         this.writerFactory = writerFactory;
         this.fullStoreStream = fullStoreStream;
         this.monitor = monitor;
@@ -227,29 +221,28 @@ public class LuceneLabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        return new LuceneSnapshotter().snapshot( directoryLocation, writer );
+        return new LuceneSnapshotter().snapshot( indexStorage.getIndexFolder(), writer );
     }
 
     @Override
     public void init() throws IOException
     {
         monitor.init();
-        directory = directoryFactory.open( directoryLocation );
 
         try
         {
-            // Try to open it, this will throw exception if index is corrupt.
-            // Opening it directly using the writer may hide corruption problems.
-            DirectoryReader.open( directory ).close();
+            indexStorage.openDirectory();
+            // TODO: NOT sure that we still need it?
+            DirectoryReader.open( indexStorage.getDirectory() ).close();
 
-            writer = writerFactory.create( directory );
+            writer = writerFactory.create( indexStorage.getDirectory() );
         }
         catch ( IndexNotFoundException e )
         {
             // No index present, create one
             monitor.noIndex();
             prepareRebuildOfIndex();
-            writer = writerFactory.create( directory );
+            writer = writerFactory.create( indexStorage.getDirectory() );
         }
         catch ( LockObtainFailedException e )
         {
@@ -262,7 +255,7 @@ public class LuceneLabelScanStore
             monitor.corruptIndex( e );
             throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
                     "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
-                    directoryLocation.getAbsolutePath() + "', and then start the database again." );
+                    indexStorage.getIndexFolder() + "', and then start the database again." );
         }
         searcherManager = writer.createSearcherManager();
     }
@@ -306,11 +299,7 @@ public class LuceneLabelScanStore
             writer.close();
             writer = null;
         }
-        if ( directory != null )
-        {
-            directory.close();
-            directory = null;
-        }
+        indexStorage.close();
     }
 
     @Override
@@ -324,10 +313,8 @@ public class LuceneLabelScanStore
 
     private void prepareRebuildOfIndex() throws IOException
     {
-        directory.close();
-        fs.deleteRecursively( directoryLocation );
-        fs.mkdirs( directoryLocation );
+        indexStorage.cleanupStorage();
+        indexStorage.prepareIndexStorage();
         needsRebuild = true;
-        directory = directoryFactory.open( directoryLocation );
     }
 }

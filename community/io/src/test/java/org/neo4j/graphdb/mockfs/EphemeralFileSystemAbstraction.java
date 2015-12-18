@@ -78,7 +78,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         void pos( long position );
     }
 
-    private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<File,Boolean>() );
+    private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<>() );
     private final Map<File,EphemeralFileData> files;
     private final Map<Class<? extends ThirdPartyFileSystem>,ThirdPartyFileSystem> thirdPartyFileSystems =
             new HashMap<>();

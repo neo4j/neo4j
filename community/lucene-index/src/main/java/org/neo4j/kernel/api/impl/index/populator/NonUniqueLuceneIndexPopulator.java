@@ -17,37 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.populator;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.register.Register;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    static final int DEFAULT_QUEUE_THRESHOLD = 10000;
-    private final int queueThreshold;
+    private final int queueThreshold = FeatureToggles.getInteger( NonUniqueLuceneIndexPopulator.class,
+            "queueThreshold", 10000 );
     private final NonUniqueIndexSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
-    NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
-                                   IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                   DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage,
-                                   long indexId, IndexSamplingConfig samplingConfig )
+    public NonUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
+            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
+            IndexStorage indexStorage,
+            IndexSamplingConfig samplingConfig )
     {
-        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
-        this.queueThreshold = queueThreshold;
+        super( documentStructure, indexWriterFactory, indexStorage );
         this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }
 

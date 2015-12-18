@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.populator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
@@ -32,7 +32,6 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,19 +41,23 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.SearcherManagerFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
-class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
@@ -62,14 +65,12 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     private final SearcherManagerFactory searcherManagerFactory;
     private ReferenceManager<IndexSearcher> searcherManager;
 
-    DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
-                                                              IndexWriterFactory<LuceneIndexWriter> writers,
-                                                              SearcherManagerFactory searcherManagerFactory,
-                                                              DirectoryFactory dirFactory, File dirFile,
-                                                              FailureStorage failureStorage, long indexId,
-                                                              IndexDescriptor descriptor )
+    public DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
+            IndexWriterFactory<LuceneIndexWriter> writers,
+            SearcherManagerFactory searcherManagerFactory,
+            IndexStorage indexStorage, IndexDescriptor descriptor )
     {
-        super( documentStructure, writers, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, writers, indexStorage );
         this.descriptor = descriptor;
         this.sampler = new UniqueIndexSampler();
         this.searcherManagerFactory = searcherManagerFactory;
@@ -353,7 +354,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     /**
      * A small struct of arrays of nodeId + property value pairs, with a next pointer.
      * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
-     *
+     * <p>
      * NOTE: Must always call reset() before use!
      */
     private static class EntrySet
@@ -366,7 +367,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
         EntrySet()
         {
-	       Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
+            Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
         }
     }
 }

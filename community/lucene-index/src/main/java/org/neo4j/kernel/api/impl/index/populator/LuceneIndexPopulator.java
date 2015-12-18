@@ -17,48 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.populator;
 
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.Directory;
-
-import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.util.FailureStorage;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected final LuceneDocumentStructure documentStructure;
     private final IndexWriterFactory<LuceneIndexWriter> indexWriterFactory;
-    private final DirectoryFactory dirFactory;
-    private final File dirFile;
-    private final FailureStorage failureStorage;
-    private final long indexId;
+    private final IndexStorage indexStorage;
 
     protected LuceneIndexWriter writer;
-    private Directory directory;
 
-    LuceneIndexPopulator(
-            LuceneDocumentStructure documentStructure, IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage, long indexId )
+
+    LuceneIndexPopulator( LuceneDocumentStructure documentStructure,
+            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory, IndexStorage indexStorage )
     {
         this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
-        this.dirFactory = dirFactory;
-        this.dirFile = dirFile;
-        this.failureStorage = failureStorage;
-        this.indexId = indexId;
+        this.indexStorage = indexStorage;
     }
 
     @Override
     public void create() throws IOException
     {
-        this.directory = dirFactory.open( dirFile );
-        DirectorySupport.deleteDirectoryContents( directory );
-        failureStorage.reserveForIndex( indexId );
-        writer = indexWriterFactory.create( directory );
+        indexStorage.prepareIndexStorage();
+        writer = indexWriterFactory.create( indexStorage.getDirectory() );
     }
 
     @Override
@@ -69,22 +59,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             writer.close();
         }
 
-        try
-        {
-            DirectorySupport.deleteDirectoryContents( directory = directory == null ? dirFactory.open( dirFile ) : directory );
-        }
-        catch ( AlreadyClosedException e )
-        {   // It was closed, open again just to be able to delete the files
-            DirectorySupport.deleteDirectoryContents( directory = dirFactory.open( dirFile ) );
-        }
-        finally
-        {
-            if ( directory != null )
-            {
-                directory.close();
-            }
-        }
-        failureStorage.clearForIndex( indexId );
+        indexStorage.cleanupStorage();
     }
 
     @Override
@@ -104,17 +79,14 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             {
                 writer.close();
             }
-            if ( directory != null )
-            {
-                directory.close();
-            }
+            indexStorage.close();
         }
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        failureStorage.storeIndexFailure( indexId, failure );
+        indexStorage.storeIndexFailure( failure );
     }
 
     protected abstract void flush() throws IOException;

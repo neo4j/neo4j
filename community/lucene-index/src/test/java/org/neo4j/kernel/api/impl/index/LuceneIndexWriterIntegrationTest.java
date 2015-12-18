@@ -46,6 +46,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipOutputStream;
 
+
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
 

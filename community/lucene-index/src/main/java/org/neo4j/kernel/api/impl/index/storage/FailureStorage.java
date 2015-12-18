@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index.util;
+package org.neo4j.kernel.api.impl.index.storage;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
 
 /**
  * Helper class for storing a failure message that happens during an OutOfDisk situation in
@@ -61,13 +62,12 @@ public class FailureStorage
      *
      * This will overwrite any pre-existing failure file.
      *
-     * @param indexId id of the index
      * @throws IOException if the failure file could not be created
      */
-    public synchronized void reserveForIndex( long indexId ) throws IOException
+    public synchronized void reserveForIndex() throws IOException
     {
-        fs.mkdirs( folderLayout.getFolder( indexId ) );
-        File failureFile = failureFile( indexId );
+        fs.mkdirs( folderLayout.getIndexFolder() );
+        File failureFile = failureFile();
         try ( StoreChannel channel = fs.create( failureFile ) )
         {
             channel.write( ByteBuffer.wrap( new byte[MAX_FAILURE_SIZE] ) );
@@ -79,19 +79,18 @@ public class FailureStorage
     /**
      * Delete failure file for the given index id
      *
-     * @param indexId of the index that failed
      */
-    public synchronized void clearForIndex( long indexId )
+    public synchronized void clearForIndex()
     {
-        fs.deleteFile( failureFile( indexId ) );
+        fs.deleteFile( failureFile() );
     }
 
     /**
      * @return the failure, if any. Otherwise {@code null} marking no failure.
      */
-    public synchronized String loadIndexFailure( long indexId )
+    public synchronized String loadIndexFailure()
     {
-        File failureFile = failureFile( indexId );
+        File failureFile = failureFile();
         try
         {
             if ( !fs.fileExists( failureFile ) || !isFailed( failureFile ) )
@@ -109,13 +108,12 @@ public class FailureStorage
     /**
      * Store failure in failure file for index with the given id
      *
-     * @param indexId of the index that failed
      * @param failure message describing the failure that needs to be stored
      * @throws IOException if the failure could not be stored
      */
-    public synchronized void storeIndexFailure( long indexId, String failure ) throws IOException
+    public synchronized void storeIndexFailure( String failure ) throws IOException
     {
-        File failureFile = failureFile( indexId );
+        File failureFile = failureFile();
         try ( StoreChannel channel = fs.open( failureFile, "rw" ) )
         {
             byte[] data = UTF8.encode( failure );
@@ -126,9 +124,9 @@ public class FailureStorage
         }
     }
 
-    File failureFile( long indexId )
+    File failureFile()
     {
-        File folder = folderLayout.getFolder( indexId );
+        File folder = folderLayout.getIndexFolder();
         return new File( folder, failureFileName );
     }
 
@@ -139,19 +137,18 @@ public class FailureStorage
             byte[] data = new byte[(int) channel.size()];
             int readData = channel.read( ByteBuffer.wrap( data ) );
             channel.close();
-
             return readData <= 0 ? "" : UTF8.decode( withoutZeros( data ) );
         }
     }
 
-    private byte[] withoutZeros( byte[] data )
+    private static byte[] withoutZeros( byte[] data )
     {
         byte[] result = new byte[ lengthOf(data) ];
         System.arraycopy( data, 0, result, 0, result.length );
         return result;
     }
 
-    private int lengthOf( byte[] data )
+    private static int lengthOf( byte[] data )
     {
         for (int i = 0; i < data.length; i++ )
         {
@@ -174,7 +171,7 @@ public class FailureStorage
         }
     }
 
-    private boolean allZero( byte[] data )
+    private static boolean allZero( byte[] data )
     {
         for ( byte b : data )
         {

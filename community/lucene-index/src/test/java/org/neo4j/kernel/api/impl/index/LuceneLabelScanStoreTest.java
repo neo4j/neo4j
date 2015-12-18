@@ -47,6 +47,9 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -55,6 +58,8 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -65,10 +70,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -86,12 +87,8 @@ public class LuceneLabelScanStoreTest
     public static List<Object[]> parameterizedWithStrategies()
     {
         return asList(
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                BitmapDocumentFormat._32 )},
-                new Object[]{
-                        new NodeRangeDocumentLabelScanStorageStrategy(
-                                BitmapDocumentFormat._64 )}
+                new Object[]{new NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat._32 )},
+                new Object[]{new NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat._64 )}
         );
     }
 
@@ -460,10 +457,12 @@ public class LuceneLabelScanStoreTest
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
-        store = life.add( new LuceneLabelScanStore(
-                strategy,
-                directoryFactory, dir, new DefaultFileSystemAbstraction(), standard(), asStream( existingData ),
-                monitor ) );
+        IndexStorageFactory indexStorageFactory =
+                new IndexStorageFactory( directoryFactory, new DefaultFileSystemAbstraction(), dir );
+        IndexStorage indexStorage = indexStorageFactory.labelScanStorage();
+        store = life.add( new LuceneLabelScanStore( strategy, indexStorage, standard(),
+                asStream( existingData ), monitor ) );
+
         life.start();
         assertTrue( monitor.initCalled );
     }

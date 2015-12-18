@@ -31,75 +31,76 @@ import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.index.populator.NonUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
-    private final DirectoryFactory directoryFactory;
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-    private final FailureStorage failureStorage;
-    private final FolderLayout folderLayout;
-    private final Map<Long, String> failures = new HashMap<>();
+    private final Map<Long,String> failures = new HashMap<>();
+    private final IndexStorageFactory indexStorageFactory;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
             File storeDir )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
-        this.directoryFactory = directoryFactory;
-        File rootDirectory = getSchemaIndexStoreDirectory( storeDir );
-        this.folderLayout = new FolderLayout( rootDirectory );
-        this.failureStorage = new FailureStorage( fileSystem, folderLayout );
+        File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
+        this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
-                                        IndexConfiguration config, IndexSamplingConfig samplingConfig )
+            IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
+        IndexStorage populatorStorage = getIndexStorage( indexId );
         if ( config.isUnique() )
         {
-            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, IndexWriterFactories.standard(), SearcherManagerFactories.standard() ,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
+            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( documentStructure,
+                    IndexWriterFactories.standard(), SearcherManagerFactories.standard(),
+                    populatorStorage, descriptor );
         }
         else
         {
-            return new NonUniqueLuceneIndexPopulator(
-                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure,
-                    IndexWriterFactories.standard(), directoryFactory, folderLayout.getFolder( indexId ),
-                    failureStorage, indexId, samplingConfig );
+            return new NonUniqueLuceneIndexPopulator( documentStructure, IndexWriterFactories.standard(),
+                    populatorStorage, samplingConfig );
         }
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
-                                            IndexSamplingConfig samplingConfig ) throws IOException
+            IndexSamplingConfig samplingConfig ) throws IOException
     {
+        IndexStorage indexStorage = getIndexStorage( indexId );
+        indexStorage.openDirectory();
         if ( config.isUnique() )
         {
             return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
-                    directoryFactory, folderLayout.getFolder( indexId ) );
+                    indexStorage );
         }
         else
         {
             return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
-                    directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
+                    indexStorage, samplingConfig.bufferSize() );
         }
     }
 
     @Override
     public void shutdown() throws Throwable
     {   // Nothing to shut down
+        indexStorageFactory.shutdown();
     }
 
     @Override
@@ -107,29 +108,31 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            String failure = failureStorage.loadIndexFailure( indexId );
+            IndexStorage indexStorage = getIndexStorage( indexId );
+            String failure = indexStorage.getStoredIndexFailure();
             if ( failure != null )
             {
                 failures.put( indexId, failure );
                 return InternalIndexState.FAILED;
             }
 
-            try ( Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) ) )
+            indexStorage.openDirectory();
+            try ( Directory directory = indexStorage.getDirectory() )
             {
                 boolean status = LuceneIndexWriter.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
         }
-        catch( CorruptIndexException e )
+        catch ( CorruptIndexException e )
         {
             return InternalIndexState.FAILED;
         }
-        catch( FileNotFoundException e )
+        catch ( FileNotFoundException e )
         {
             failures.put( indexId, "File not found: " + e.getMessage() );
             return InternalIndexState.FAILED;
         }
-        catch( EOFException e )
+        catch ( EOFException e )
         {
             failures.put( indexId, "EOF encountered: " + e.getMessage() );
             return InternalIndexState.FAILED;
@@ -150,7 +153,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String failure = failureStorage.loadIndexFailure( indexId );
+        String failure = getIndexStorage( indexId ).getStoredIndexFailure();
         if ( failure == null )
         {
             failure = failures.get( indexId );
@@ -160,5 +163,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );
         }
         return failure;
+    }
+
+    private IndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId );
     }
 }

@@ -247,36 +247,6 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public Set<Class> valueTypesInIndex()
-    {
-        if ( data == null )
-        {
-            return Collections.emptySet();
-        }
-        Set<Class> result = new HashSet<>();
-        for ( Object value : data.keySet() )
-        {
-            if ( value instanceof Number )
-            {
-                result.add( Number.class );
-            }
-            else if ( value instanceof String )
-            {
-                result.add( String.class );
-            }
-            else if ( value instanceof Boolean )
-            {
-                result.add( Boolean.class );
-            }
-            else if ( value instanceof ArrayKey )
-            {
-                result.add( Array.class );
-            }
-        }
-        return result;
-    }
-
-    @Override
     public long sampleIndex( final DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         if ( data == null )
@@ -286,19 +256,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
         final long[] uniqueAndSize = {0, 0};
         try
         {
-            iterateAll( new IndexEntryIterator()
-            {
-                @Override
-                public void visitEntry( Object value, Set<Long> nodeIds )
+            iterateAll( ( value, nodeIds ) -> {
+                int ids = nodeIds.size();
+                if ( ids > 0 )
                 {
-                    int ids = nodeIds.size();
-                    if ( ids > 0 )
-                    {
-                        uniqueAndSize[0] += 1;
-                        uniqueAndSize[1] += ids;
-                    }
+                    uniqueAndSize[0] += 1;
+                    uniqueAndSize[1] += ids;
                 }
-            });
+            } );
         }
         catch ( Exception ex )
         {

@@ -49,7 +49,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 
 public class LuceneDocumentStructure
 {
-    static final String NODE_ID_KEY = "id";
+    public static final String NODE_ID_KEY = "id";
 
     //  Absolute hard maximum length for a term, in bytes once
     //  encoded as UTF8.  If a term arrives from the analyzer

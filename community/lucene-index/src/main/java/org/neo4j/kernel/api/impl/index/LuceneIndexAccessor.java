@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -36,13 +35,13 @@ import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
 
 abstract class LuceneIndexAccessor implements IndexAccessor
 {
@@ -50,8 +49,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected final LuceneReferenceManager<IndexSearcher> searcherManager;
     protected final LuceneIndexWriter writer;
 
-    private final Directory dir;
-    private final File dirFile;
+    private final IndexStorage indexStorage;
     private final int bufferSizeLimit;
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
@@ -112,27 +110,24 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
             IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            DirectoryFactory dirFactory, File dirFile,
-            int bufferSizeLimit ) throws IOException
+            IndexStorage indexStorage, int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
-        this.dirFile = dirFile;
+        this.indexStorage = indexStorage;
         this.bufferSizeLimit = bufferSizeLimit;
-        this.dir = dirFactory.open( dirFile );
-        this.writer = indexWriterFactory.create( dir );
+        this.writer = indexWriterFactory.create( indexStorage.getDirectory() );
         this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
     }
 
     // test only
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriter writer,
             LuceneReferenceManager<IndexSearcher> searcherManager,
-            Directory dir, File dirFile, int bufferSizeLimit )
+            IndexStorage indexStorage, int bufferSizeLimit )
     {
         this.documentStructure = documentStructure;
         this.writer = writer;
         this.searcherManager = searcherManager;
-        this.dir = dir;
-        this.dirFile = dirFile;
+        this.indexStorage = indexStorage;
         this.bufferSizeLimit = bufferSizeLimit;
     }
 
@@ -165,7 +160,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         {
             throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
-        deleteDirectoryContents( dir );
+        indexStorage.cleanupStorage();
     }
 
     @Override
@@ -185,7 +180,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public void close() throws IOException
     {
         closeIndexResources();
-        dir.close();
+        indexStorage.close();
     }
 
     private void closeIndexResources() throws IOException
@@ -233,7 +228,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return new LuceneSnapshotter().snapshot( this.dirFile, writer );
+        return new LuceneSnapshotter().snapshot( indexStorage.getIndexFolder(), writer );
     }
 
     private void addRecovered( long nodeId, Object value ) throws IOException

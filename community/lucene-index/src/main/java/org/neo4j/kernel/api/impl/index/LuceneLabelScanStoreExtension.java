@@ -24,6 +24,9 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -77,10 +80,11 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
 
+        IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, context.fileSystem(),
+                LabelScanStoreProvider.getStoreDirectory(context.storeDir() ) );
+        IndexStorage indexStorage = storageFactory.labelScanStorage();
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
-                new NodeRangeDocumentLabelScanStorageStrategy(),
-                directoryFactory, LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
-                context.fileSystem(), standard(),
+                new NodeRangeDocumentLabelScanStorageStrategy(), indexStorage, standard(),
                 fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
 

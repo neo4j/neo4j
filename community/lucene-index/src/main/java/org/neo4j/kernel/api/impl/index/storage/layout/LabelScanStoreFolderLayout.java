@@ -17,42 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index.util;
+package org.neo4j.kernel.api.impl.index.storage.layout;
 
 import java.io.File;
-import java.io.FileFilter;
 
-import static java.lang.Integer.parseInt;
-
-public class FolderLayout implements FileFilter
+public class LabelScanStoreFolderLayout implements  FolderLayout
 {
-    private final File rootDirectory;
+    private final File indexFolder;
 
-    public FolderLayout( File rootDirectory )
+    public LabelScanStoreFolderLayout( File rootDirectory )
     {
-        this.rootDirectory = rootDirectory;
+        this.indexFolder = rootDirectory;
     }
 
-    public File getFolder( long indexId )
+    public File getIndexFolder()
     {
-        return new File( rootDirectory, "" + indexId );
+        return indexFolder;
     }
 
     @Override
-    public boolean accept( File path )
+    public File getPartitionFolder( int partition )
     {
-        if ( !path.isDirectory() )
-        {
-            return false;
-        }
-        try
-        {
-            parseInt( path.getName() );
-            return true;
-        }
-        catch ( NumberFormatException e )
-        {
-            return false;
-        }
+        throw new UnsupportedOperationException( "Label scan store storage does not support partitions." );
     }
 }

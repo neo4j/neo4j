@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 
 public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTestSuite

@@ -275,12 +275,6 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
-                public Set<Class> valueTypesInIndex()
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
                 public long sampleIndex( Register.DoubleLong.Out sampler )
                 {
                     throw new UnsupportedOperationException();

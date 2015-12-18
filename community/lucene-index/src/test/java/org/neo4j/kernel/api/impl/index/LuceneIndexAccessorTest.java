@@ -36,9 +36,13 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -46,13 +50,11 @@ import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.ThreadingRule;
 
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -73,6 +75,8 @@ public class LuceneIndexAccessorTest
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
 
+
+
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
     {
@@ -85,7 +89,8 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, standard(), dirFactory, dir, 100_000 );
+                        IndexStorage indexStorage = getIndexStorage( dirFactory, dir );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
                     }
 
                     @Override
@@ -100,7 +105,8 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, standard(), dirFactory, dir );
+                        IndexStorage indexStorage = getIndexStorage( dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage );
                     }
 
                     @Override
@@ -111,6 +117,14 @@ public class LuceneIndexAccessorTest
                 } )
         );
     }
+
+    private static IndexStorage getIndexStorage( DirectoryFactory dirFactory, File dir ) throws IOException
+    {
+        IndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
+        indexStorage.prepareIndexStorage();
+        return indexStorage;
+    }
+
 
     private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )

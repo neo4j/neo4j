@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,12 +28,15 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 class AllNodesCollector extends SimpleCollector
 {
-    static List<Long> getAllNodes( DirectoryFactory dirFactory, File indexDir, Object propertyValue ) throws IOException
+    static List<Long> getAllNodes( Directory directory, Object propertyValue ) throws IOException
     {
-        try ( Directory directory = dirFactory.open( indexDir );
-              SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ))
+        try ( SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ) )
         {
             IndexSearcher searcher = manager.acquire();
             List<Long> nodes = new ArrayList<>();

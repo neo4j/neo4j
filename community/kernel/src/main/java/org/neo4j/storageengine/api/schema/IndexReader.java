@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Collections;
-import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -85,11 +83,6 @@ public interface IndexReader extends Resource
     int countIndexedNodes( long nodeId, Object propertyValue );
 
     /**
-     * @return the set of value types present in the index
-     */
-    Set<Class> valueTypesInIndex();
-
-    /**
      * Sample this index (on the current thread)
      * @param result contains the unique values and the sampled size
      * @return the index size
@@ -135,12 +128,6 @@ public interface IndexReader extends Resource
         public int countIndexedNodes( long nodeId, Object propertyValue )
         {
             return 0;
-        }
-
-        @Override
-        public Set<Class> valueTypesInIndex()
-        {
-            return Collections.emptySet();
         }
 
         @Override

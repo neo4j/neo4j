@@ -25,16 +25,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
@@ -47,80 +49,92 @@ public class UniqueLuceneIndexAccessorTest
     public void shouldAddUniqueEntries() throws Exception
     {
         // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
+        IndexStorage indexStorage = getIndexStorage();
+        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
-        updateAndCommit( accessor,  asList( add( 3l, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 3l, "value3" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value1" ) );
     }
 
     @Test
     public void shouldUpdateUniqueEntries() throws Exception
     {
         // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
+        IndexStorage indexStorage = getIndexStorage();
+        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor, asList( change( 1l, "value1", "value2" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value1" ) );
     }
 
     @Test
     public void shouldRemoveAndAddEntries() throws Exception
     {
         // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
+        IndexStorage indexStorage = getIndexStorage();
+        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
-        updateAndCommit( accessor,  asList( add( 3l, "value3" ) ) );
-        updateAndCommit( accessor,  asList( add( 4l, "value4" ) ) );
-        updateAndCommit( accessor,  asList( remove( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( remove( 2l, "value2" ) ) );
-        updateAndCommit( accessor,  asList( remove( 3l, "value3" ) ) );
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( add( 3l, "value3b" ) ) );
+        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 2l, "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 3l, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 4l, "value4" ) ) );
+        updateAndCommit( accessor, asList( remove( 1l, "value1" ) ) );
+        updateAndCommit( accessor, asList( remove( 2l, "value2" ) ) );
+        updateAndCommit( accessor, asList( remove( 3l, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 3l, "value3b" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( "value1" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value3" ) );
-        assertEquals( asList( 3l ), getAllNodes( "value3b" ) );
-        assertEquals( asList( 4l ), getAllNodes( "value4" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value3" ) );
+        assertEquals( asList( 3l ), getAllNodes( indexStorage, "value3b" ) );
+        assertEquals( asList( 4l ), getAllNodes( indexStorage, "value4" ) );
     }
 
     @Test
     public void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
     {
         // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
+        IndexStorage indexStorage = getIndexStorage();
+        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
-        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 2l, "value2" ) ) );
+        updateAndCommit( accessor, asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 2l ), getAllNodes( "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( "value2" ) );
+        assertEquals( asList( 2l ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
     }
 
-    private UniqueLuceneIndexAccessor createAccessor() throws IOException
+    private UniqueLuceneIndexAccessor createAccessor( IndexStorage indexStorage ) throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(),
-                directoryFactory, indexDirectory );
+        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), indexStorage );
+    }
+
+    private IndexStorage getIndexStorage() throws IOException
+    {
+        IndexStorageFactory storageFactory =
+                new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
+        IndexStorage indexStorage = storageFactory.indexStorageOf( 1 );
+        indexStorage.prepareIndexStorage();
+        return indexStorage;
     }
 
     private NodePropertyUpdate add( long nodeId, Object propertyValue )
@@ -133,14 +147,14 @@ public class UniqueLuceneIndexAccessorTest
         return NodePropertyUpdate.change( nodeId, 100, oldValue, new long[]{1000}, newValue, new long[]{1000} );
     }
 
-    private NodePropertyUpdate remove( long nodeId, Object oldValue)
+    private NodePropertyUpdate remove( long nodeId, Object oldValue )
     {
         return NodePropertyUpdate.remove( nodeId, 100, oldValue, new long[]{1000} );
     }
 
-    private List<Long> getAllNodes( String propertyValue ) throws IOException
+    private List<Long> getAllNodes( IndexStorage indexStorage, String propertyValue ) throws IOException
     {
-        return AllNodesCollector.getAllNodes( directoryFactory, indexDirectory, propertyValue );
+        return AllNodesCollector.getAllNodes( indexStorage.getDirectory(), propertyValue );
     }
 
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )

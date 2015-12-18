@@ -29,19 +29,22 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
     private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
+
     private final LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
-    private final Directory directory = mock( Directory.class );
-    private final File dir = mock( File.class );
+    private final File dir = new File( "testFile" );
 
     private final AtomicLong count = new AtomicLong( 0 );
     private final LuceneReferenceManagerAdapter<IndexSearcher> manager =
@@ -193,7 +196,9 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
 
     private LuceneIndexAccessor createAccessor( LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> manager )
     {
-        return new LuceneIndexAccessor( structure, writer, manager, directory, dir, 42 )
+        IndexStorage indexStorage =
+                new PartitionedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
+        return new LuceneIndexAccessor( structure, writer, manager, indexStorage, 42 )
         {
         };
     }
