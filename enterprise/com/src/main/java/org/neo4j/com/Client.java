@@ -43,6 +43,8 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
@@ -90,12 +92,16 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final ResponseUnpacker responseUnpacker;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
+    private final LogEntryReader<ReadableLogChannel> entryReader;
 
     public Client( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, int frameLength,
             ProtocolVersion protocolVersion, long readTimeout, int maxConcurrentChannels, int chunkSize,
             ResponseUnpacker responseUnpacker,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+            ByteCounterMonitor byteCounterMonitor,
+            RequestMonitor requestMonitor,
+            LogEntryReader<ReadableLogChannel> entryReader )
     {
+        this.entryReader = entryReader;
         assert byteCounterMonitor != null;
         assert requestMonitor != null;
 
@@ -255,7 +261,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
             // Response
             Response<R> response = protocol.deserializeResponse( extractBlockingReadHandler( channelContext ),
-                    channelContext.input(), getReadTimeout( type, readTimeout ), deserializer, resourcePoolReleaser );
+                    channelContext.input(), getReadTimeout( type, readTimeout ), deserializer, resourcePoolReleaser,
+                    entryReader );
 
             if ( type.responseShouldBeUnpacked() )
             {

@@ -23,9 +23,14 @@ import org.junit.Test;
 
 import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -40,8 +45,11 @@ public class MasterClientResolverTest
     public void shouldResolveMasterClientFactory() throws Exception
     {
         // Given
+        LogEntryReader<ReadableLogChannel> logEntryReader =
+                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
         MasterClientResolver resolver = new MasterClientResolver( NullLogProvider.getInstance(),
-                ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, mock( InvalidEpochExceptionHandler.class ), 1, 1, 1, 1024 );
+                ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, mock( InvalidEpochExceptionHandler.class ), 1, 1, 1, 1024,
+                Suppliers.singleton( logEntryReader ) );
 
         LifeSupport life = new LifeSupport();
         try

@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -86,7 +87,8 @@ public class ReplicatedTokenRequestSerializer
         ByteBuf txBuffer = Unpooled.wrappedBuffer( commandBytes );
         NetworkReadableLogChannelNetty4 channel = new NetworkReadableLogChannelNetty4( txBuffer );
 
-        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
 
         LogEntryCommand entryRead;
         List<Command> commands = new LinkedList<>();

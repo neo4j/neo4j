@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -146,6 +147,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IdOrderingQueue legacyIndexTransactionOrdering;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private final CommandReaderFactory commandReaderFactory;
 
     public RecordStorageEngine(
             File storeDir,
@@ -210,6 +212,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             indexUpdatesValidatorForRecovery = new RecoveryIndexingUpdatesValidator( indexingService );
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
+
+            this.commandReaderFactory = new RecordStorageCommandReaderFactory();
         }
         catch ( Throwable failure )
         {
@@ -230,6 +234,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public CommandReaderFactory commandReaderFactory()
+    {
+        return commandReaderFactory;
     }
 
     @SuppressWarnings( "resource" )
