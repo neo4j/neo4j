@@ -119,7 +119,7 @@ startit() {
   checkandrepairenv
 
   CONSOLE_LOG="${NEO4J_LOG}/console.log"
-  "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}" \
+  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${PID_FILE}"
 
