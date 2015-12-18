@@ -93,10 +93,9 @@ public class LogEntryParserDispatcherV6Test
     public void shouldParserCommandsUsingAGivenFactory() throws IOException
     {
         // given
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
         // The record, it will be used as before and after
         NodeRecord theRecord = new NodeRecord( 1 );
-        nodeCommand.init( theRecord, theRecord );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( theRecord, theRecord );
 
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();

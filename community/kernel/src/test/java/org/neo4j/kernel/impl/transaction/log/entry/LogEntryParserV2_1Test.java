@@ -132,8 +132,7 @@ public class LogEntryParserV2_1Test
     public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
-        final Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
+        final Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 

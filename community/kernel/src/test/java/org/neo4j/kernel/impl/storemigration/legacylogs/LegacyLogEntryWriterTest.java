@@ -28,6 +28,8 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
@@ -56,6 +58,8 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 public class LegacyLogEntryWriterTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private final NodeRecord nodeRecord = new NodeRecord( 42L );
+    private final RelationshipRecord relRecord = new RelationshipRecord( 42L );
 
     @Test
     public void shouldWriteTheHeaderInTheFile() throws IOException
@@ -83,7 +87,7 @@ public class LegacyLogEntryWriterTest
         final LogEntryWriter logEntryWriter = mock( LogEntryWriter.class );
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs, liftToFactory( logEntryWriter ) );
         final LogEntryStart start = new LogEntryStart( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
-        final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand() );
+        final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand( nodeRecord, nodeRecord ) );
         final LogEntryCommit commit = new OnePhaseCommit( 42l, 43l );
 
         // when
@@ -106,10 +110,10 @@ public class LegacyLogEntryWriterTest
         final LogEntryWriter logEntryWriter = mock( LogEntryWriter.class );
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs, liftToFactory( logEntryWriter ) );
         final LogEntryStart start1 = new LogEntryStart( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
-        final LogEntryCommand command1 = new LogEntryCommand( new Command.NodeCommand() );
+        final LogEntryCommand command1 = new LogEntryCommand( new Command.NodeCommand( nodeRecord, nodeRecord ) );
         final LogEntryCommit commit1 = new OnePhaseCommit( 42l, 43l );
         final LogEntryStart start2 = new LogEntryStart( 9, 8, 7l, 6l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
-        final LogEntryCommand command2 = new LogEntryCommand( new Command.RelationshipCommand() );
+        final LogEntryCommand command2 = new LogEntryCommand( new Command.RelationshipCommand( relRecord, relRecord ) );
         final LogEntryCommit commit2 = new OnePhaseCommit( 84l, 85l );
 
         // when

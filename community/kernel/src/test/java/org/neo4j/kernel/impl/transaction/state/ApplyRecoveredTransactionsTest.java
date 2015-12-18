@@ -65,13 +65,14 @@ public class ApplyRecoveredTransactionsTest
         long relationshipId = neoStores.getRelationshipStore().nextId();
         int type = 1;
         applyExternalTransaction( 1,
-                nodeCommand( node( nodeId ), inUse( created( node( nodeId ) ) ) ),
-                relationshipCommand( inUse( created( with( relationship( relationshipId ), nodeId, nodeId, type ) ) ) ) );
+                new NodeCommand( new NodeRecord( nodeId ), inUse( created( new NodeRecord( nodeId ) ) ) ),
+                new RelationshipCommand( null,
+                        inUse( created( with( new RelationshipRecord( relationshipId ), nodeId, nodeId, type ) ) ) ) );
 
         // and when, later on, recovering a transaction deleting some of those
         applyExternalTransaction( 2,
-                nodeCommand( inUse( created( node( nodeId ) ) ), node( nodeId ) ),
-                relationshipCommand( relationship( relationshipId ) ) );
+                new NodeCommand( inUse( created( new NodeRecord( nodeId ) ) ), new NodeRecord( nodeId ) ),
+                new RelationshipCommand( null, new RelationshipRecord( relationshipId ) ) );
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
         assertEquals( nodeId+1, neoStores.getNodeStore().getHighId() );
@@ -84,18 +85,6 @@ public class ApplyRecoveredTransactionsTest
         relationship.setSecondNode( endNode );
         relationship.setType( type );
         return relationship;
-    }
-
-    private Command relationshipCommand( RelationshipRecord record )
-    {
-        RelationshipCommand command = new RelationshipCommand();
-        command.init( null, record );
-        return command;
-    }
-
-    private RelationshipRecord relationship( long relationshipId )
-    {
-        return new RelationshipRecord( relationshipId );
     }
 
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
@@ -134,13 +123,6 @@ public class ApplyRecoveredTransactionsTest
         neoStores.close();
     }
 
-    private Command nodeCommand( NodeRecord before, NodeRecord after )
-    {
-        NodeCommand command = new NodeCommand();
-        command.init( before, after );
-        return command;
-    }
-
     private <RECORD extends Abstract64BitRecord> RECORD inUse( RECORD record )
     {
         record.setInUse( true );
@@ -153,8 +135,4 @@ public class ApplyRecoveredTransactionsTest
         return record;
     }
 
-    private NodeRecord node( long id )
-    {
-        return new NodeRecord( id );
-    }
 }

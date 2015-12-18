@@ -90,8 +90,7 @@ public class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 11 ), new NodeRecord( 11 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 11 ), new NodeRecord( 11 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
@@ -320,8 +319,7 @@ public class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.V2_1;
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 10 ), new NodeRecord( 10 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 10 ), new NodeRecord( 10 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 

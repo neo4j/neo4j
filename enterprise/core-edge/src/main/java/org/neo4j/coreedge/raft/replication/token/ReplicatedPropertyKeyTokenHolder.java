@@ -51,8 +51,9 @@ public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Toke
         return dependencies.resolveDependency( NeoStores.class ).getPropertyKeyTokenStore();
     }
 
-    protected Command.TokenCommand<PropertyKeyTokenRecord> createCommand()
+    protected Command.TokenCommand<PropertyKeyTokenRecord> createCommand( PropertyKeyTokenRecord before,
+            PropertyKeyTokenRecord after )
     {
-        return new Command.PropertyKeyTokenCommand();
+        return new Command.PropertyKeyTokenCommand( before, after );
     }
 }

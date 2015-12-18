@@ -248,7 +248,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.NodeCountsCommand().init( labelId, count ) );
+                commands.add( new Command.NodeCountsCommand( labelId, count ) );
             }
         }
 
@@ -257,7 +257,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+                commands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, count ) );
             }
         }
     }

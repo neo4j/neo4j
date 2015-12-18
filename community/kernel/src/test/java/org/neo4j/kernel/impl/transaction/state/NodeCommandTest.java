@@ -77,9 +77,7 @@ public class NodeCommandTest
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -91,9 +89,7 @@ public class NodeCommandTest
         after.setCreated();
         after.setInUse( true );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -105,9 +101,7 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -121,9 +115,7 @@ public class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -140,9 +132,7 @@ public class NodeCommandTest
             nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
         }
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -161,8 +151,7 @@ public class NodeCommandTest
                 0, false, true, -1l, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
-        Command.NodeCommand cmd = new Command.NodeCommand();
-        cmd.init( before, after );
+        Command.NodeCommand cmd = new Command.NodeCommand( before, after );
         cmd.handle( commandWriter );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then

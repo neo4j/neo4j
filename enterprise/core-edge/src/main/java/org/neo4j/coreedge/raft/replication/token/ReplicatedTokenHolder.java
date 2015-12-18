@@ -175,9 +175,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         Collection<Command> commands = new ArrayList<>();
         for ( RecordAccess.RecordProxy<Integer,RECORD, Void> record : recordAccess.changes() )
         {
-            Command.TokenCommand<RECORD> command = createCommand();
-            command.init( record.getBefore(), record.forReadingLinkage() );
-            commands.add( command );
+            commands.add( createCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
 
         return ReplicatedTokenRequestSerializer.createCommandBytes( commands );
@@ -288,7 +286,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     protected abstract TokenStore<RECORD,TOKEN> resolveStore();
 
-    protected abstract Command.TokenCommand<RECORD> createCommand();
+    protected abstract Command.TokenCommand<RECORD> createCommand( RECORD before, RECORD after );
 
     public void setLastCommittedIndex( long lastCommittedIndex )
     {

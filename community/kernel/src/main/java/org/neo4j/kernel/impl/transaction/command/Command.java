@@ -129,10 +129,10 @@ public abstract class Command
 
     public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
     {
-        protected RECORD before;
-        protected RECORD after;
+        private final RECORD before;
+        protected final RECORD after;
 
-        protected void initialize( RECORD before, RECORD after )
+        public BaseCommand( RECORD before, RECORD after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
@@ -158,10 +158,9 @@ public abstract class Command
 
     public static class NodeCommand extends BaseCommand<NodeRecord>
     {
-        public NodeCommand init( NodeRecord before, NodeRecord after )
+        public NodeCommand( NodeRecord before, NodeRecord after )
         {
-            initialize( before, after );
-            return this;
+            super( before, after );
         }
 
         @Override
@@ -173,10 +172,9 @@ public abstract class Command
 
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
     {
-        public RelationshipCommand init( RelationshipRecord before, RelationshipRecord after )
+        public RelationshipCommand( RelationshipRecord before, RelationshipRecord after )
         {
-            initialize( before, after );
-            return this;
+            super( before, after );
         }
 
         @Override
@@ -188,10 +186,9 @@ public abstract class Command
 
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
-        public RelationshipGroupCommand init( RelationshipGroupRecord before, RelationshipGroupRecord after )
+        public RelationshipGroupCommand( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            initialize( before, after );
-            return this;
+            super( before, after );
         }
 
         @Override
@@ -203,10 +200,9 @@ public abstract class Command
 
     public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
     {
-        public NeoStoreCommand init( NeoStoreRecord before, NeoStoreRecord after )
+        public NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
         {
-            initialize( before, after );
-            return this;
+            super( before, after );
         }
 
         @Override
@@ -218,12 +214,9 @@ public abstract class Command
 
     public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange
     {
-        // TODO as optimization the deserialized key/values could be passed in here
-        // so that the cost of deserializing them only applies in recovery/HA
-        public PropertyCommand init( PropertyRecord before, PropertyRecord after )
+        public PropertyCommand( PropertyRecord before, PropertyRecord after )
         {
-            initialize( before, after );
-            return this;
+            super( before, after );
         }
 
         @Override
@@ -245,15 +238,14 @@ public abstract class Command
 
     public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
     {
-        protected RECORD after;
-        private RECORD before;
+        private final RECORD before;
+        private final RECORD after;
 
-        public TokenCommand<RECORD> init( RECORD before, RECORD after )
+        public TokenCommand( RECORD before, RECORD after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
-            return this;
         }
 
         public RECORD getBefore()
@@ -275,6 +267,11 @@ public abstract class Command
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
+        public PropertyKeyTokenCommand( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
+        {
+            super( before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -284,6 +281,12 @@ public abstract class Command
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
+        public RelationshipTypeTokenCommand( RelationshipTypeTokenRecord before,
+                RelationshipTypeTokenRecord after )
+        {
+            super( before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -293,6 +296,11 @@ public abstract class Command
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
+        public LabelTokenCommand( LabelTokenRecord before, LabelTokenRecord after )
+        {
+            super( before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -302,18 +310,17 @@ public abstract class Command
 
     public static class SchemaRuleCommand extends Command
     {
-        private Collection<DynamicRecord> recordsBefore;
-        private Collection<DynamicRecord> recordsAfter;
-        private SchemaRule schemaRule;
+        private final Collection<DynamicRecord> recordsBefore;
+        private final Collection<DynamicRecord> recordsAfter;
+        private final SchemaRule schemaRule;
 
-        public SchemaRuleCommand init( Collection<DynamicRecord> recordsBefore,
-                Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule )
+        public SchemaRuleCommand( Collection<DynamicRecord> recordsBefore, Collection<DynamicRecord> recordsAfter,
+                SchemaRule schemaRule )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
             this.recordsBefore = recordsBefore;
             this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
-            return this;
         }
 
         @Override
@@ -350,16 +357,15 @@ public abstract class Command
 
     public static class NodeCountsCommand extends Command
     {
-        private int labelId;
-        private long delta;
+        private final int labelId;
+        private final long delta;
 
-        public NodeCountsCommand init( int labelId, long delta )
+        public NodeCountsCommand( int labelId, long delta )
         {
             setup( labelId, Mode.UPDATE );
             assert delta != 0 : "Tried to create a NodeCountsCommand for something that didn't change any count";
             this.labelId = labelId;
             this.delta = delta;
-            return this;
         }
 
         @Override
@@ -388,12 +394,12 @@ public abstract class Command
 
     public static class RelationshipCountsCommand extends Command
     {
-        private int startLabelId;
-        private int typeId;
-        private int endLabelId;
-        private long delta;
+        private final int startLabelId;
+        private final int typeId;
+        private final int endLabelId;
+        private final long delta;
 
-        public RelationshipCountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
+        public RelationshipCountsCommand( int startLabelId, int typeId, int endLabelId, long delta )
         {
             setup( typeId, Mode.UPDATE );
             assert delta !=
@@ -402,7 +408,6 @@ public abstract class Command
             this.typeId = typeId;
             this.endLabelId = endLabelId;
             this.delta = delta;
-            return this;
         }
 
         @Override

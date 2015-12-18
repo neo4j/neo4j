@@ -145,21 +145,15 @@ public class TransactionRecordState implements RecordState
 
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
-            Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-            command.init( record.getBefore(), record.forReadingLinkage() );
-            commands.add( command );
+            commands.add( new Command.LabelTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
         for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record : context.getRelationshipTypeTokenRecords().changes() )
         {
-            Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-            command.init( record.getBefore(), record.forReadingLinkage() );
-            commands.add( command );
+            commands.add( new Command.RelationshipTypeTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
         for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record : context.getPropertyKeyTokenRecords().changes() )
         {
-            Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-            command.init( record.getBefore(), record.forReadingLinkage() );
-            commands.add( command );
+            commands.add( new Command.PropertyKeyTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
 
         // Collect nodes, relationships, properties
@@ -168,36 +162,28 @@ public class TransactionRecordState implements RecordState
         {
             NodeRecord record = change.forReadingLinkage();
             integrityValidator.validateNodeRecord( record );
-            Command.NodeCommand command = new Command.NodeCommand();
-            command.init( change.getBefore(), record );
-            nodeCommands.add( command );
+            nodeCommands.add( new Command.NodeCommand( change.getBefore(), record ) );
         }
         Collections.sort( nodeCommands, COMMAND_SORTER );
 
         List<Command> relCommands = new ArrayList<>( context.getRelRecords().changeSize() );
         for ( RecordProxy<Long, RelationshipRecord, Void> change : context.getRelRecords().changes() )
         {
-            Command.RelationshipCommand command = new Command.RelationshipCommand();
-            command.init( change.getBefore(), change.forReadingLinkage() );
-            relCommands.add( command );
+            relCommands.add( new Command.RelationshipCommand( change.getBefore(), change.forReadingLinkage() ) );
         }
         Collections.sort( relCommands, COMMAND_SORTER );
 
         List<Command> propCommands = new ArrayList<>( context.getPropertyRecords().changeSize() );
         for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
-            Command.PropertyCommand command = new Command.PropertyCommand();
-            command.init( change.getBefore(), change.forReadingLinkage() );
-            propCommands.add( command );
+            propCommands.add( new Command.PropertyCommand( change.getBefore(), change.forReadingLinkage() ) );
         }
         Collections.sort( propCommands, COMMAND_SORTER );
 
         List<Command> relGroupCommands = new ArrayList<>( context.getRelGroupRecords().changeSize() );
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
-            Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-            command.init( change.getBefore(), change.forReadingData() );
-            relGroupCommands.add( command );
+            relGroupCommands.add( new Command.RelationshipGroupCommand( change.getBefore(), change.forReadingData() ) );
         }
         Collections.sort( relGroupCommands, COMMAND_SORTER );
 
@@ -209,17 +195,14 @@ public class TransactionRecordState implements RecordState
         {
             for ( RecordProxy<Long,NeoStoreRecord, Void> change : neoStoreRecord.changes() )
             {
-                Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-                command.init( change.getBefore(), change.forReadingData() );
-                commands.add( command );
+                commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
             }
         }
         for ( RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-            command.init( change.getBefore(), change.forChangingData(), change.getAdditionalData() );
-            commands.add( command );
+            commands.add( new Command.SchemaRuleCommand(
+                    change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
         assert commands.size() == noOfCommands : "Expected " + noOfCommands + " final commands, got "
                 + commands.size() + " instead";

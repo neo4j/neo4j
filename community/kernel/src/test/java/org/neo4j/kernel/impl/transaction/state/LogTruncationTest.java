@@ -84,31 +84,31 @@ public class LogTruncationTest
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
         permutations.put( Command.NeoStoreCommand.class,
-                new Command[] { new Command.NeoStoreCommand().init( new NeoStoreRecord(), after ) } );
-        permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand().init( new NodeRecord(
-                12l, false, 13l, 13l ), new NodeRecord( 0, false, 0, 0 ) ) } );
+                new Command[] { new Command.NeoStoreCommand( new NeoStoreRecord(), after ) } );
+        permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand(
+                new NodeRecord( 12l, false, 13l, 13l ), new NodeRecord( 0, false, 0, 0 ) ) } );
         permutations.put( Command.RelationshipCommand.class,
-                new Command[] { new Command.RelationshipCommand().init( new RelationshipRecord( 1l ),
+                new Command[] { new Command.RelationshipCommand( new RelationshipRecord( 1l ),
                         new RelationshipRecord( 1l, 2l, 3l, 4 ) ) } );
-        permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand().init(
+        permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand(
                 new PropertyRecord( 1, new NodeRecord( 12l, false, 13l, 13 ) ), new PropertyRecord( 1, new NodeRecord(
                         12l, false, 13l, 13 ) ) ) } );
         permutations.put( Command.RelationshipGroupCommand.class,
-                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ),
+                new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand().init(
+        permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
                 asList( dynamicRecord( 1l, false, true, -1l, 1, "hello".getBytes() ) ),
                 asList( dynamicRecord( 1l, true, true, -1l, 1, "hello".getBytes() ) ), new IndexRule( 1, 3, 4,
                         new SchemaIndexProvider.Descriptor( "1", "2" ), null ) ) } );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
-                        new Command[] { new Command.RelationshipTypeTokenCommand()
-                                .init( new RelationshipTypeTokenRecord( 1 ), createRelationshipTypeTokenRecord( 1 ) ) } );
+                        new Command[] { new Command.RelationshipTypeTokenCommand(
+                                new RelationshipTypeTokenRecord( 1 ), createRelationshipTypeTokenRecord( 1 ) ) } );
         permutations.put( Command.PropertyKeyTokenCommand.class,
-                new Command[] { new Command.PropertyKeyTokenCommand().init( new PropertyKeyTokenRecord( 1 ),
+                new Command[] { new Command.PropertyKeyTokenCommand( new PropertyKeyTokenRecord( 1 ),
                         createPropertyKeyTokenRecord( 1 ) ) } );
         permutations.put( Command.LabelTokenCommand.class,
-                new Command[] { new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ),
+                new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
 
         // Index commands
@@ -138,12 +138,9 @@ public class LogTruncationTest
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
 
         // Counts commands
-        NodeCountsCommand nodeCounts = new NodeCountsCommand();
-        nodeCounts.init( 42, 11 );
-        permutations.put( NodeCountsCommand.class, new Command[]{nodeCounts} );
-        RelationshipCountsCommand relationshipCounts = new RelationshipCountsCommand();
-        relationshipCounts.init( 17, 2, 13, -2 );
-        permutations.put( RelationshipCountsCommand.class, new Command[]{relationshipCounts} );
+        permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( 42, 11 )} );
+        permutations.put( RelationshipCountsCommand.class,
+                new Command[]{new RelationshipCountsCommand( 17, 2, 13, -2 )} );
     }
 
     @Test

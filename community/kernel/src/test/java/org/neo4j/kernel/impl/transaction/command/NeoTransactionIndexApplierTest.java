@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -40,13 +40,11 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Collections.singleton;
-
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
@@ -78,7 +76,7 @@ public class NeoTransactionIndexApplierTest
         before.setLabelField( 17, emptyDynamicRecords );
         final NodeRecord after = new NodeRecord( 12 );
         after.setLabelField( 18, emptyDynamicRecords );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
 
@@ -107,8 +105,8 @@ public class NeoTransactionIndexApplierTest
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
+        final Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
 
         // When
         boolean result;
@@ -130,8 +128,8 @@ public class NeoTransactionIndexApplierTest
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
+                singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
 
         // When
         boolean result;

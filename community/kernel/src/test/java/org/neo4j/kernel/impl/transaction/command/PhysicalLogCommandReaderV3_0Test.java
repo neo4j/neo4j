@@ -40,7 +40,7 @@ public class PhysicalLogCommandReaderV3_0Test
         CommandWriter writer = new CommandWriter( channel );
         RelationshipRecord before = new RelationshipRecord( 42, -1, -1, -1 );
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
-        writer.visitRelationshipCommand( new Command.RelationshipCommand().init( before, after ) );
+        writer.visitRelationshipCommand( new Command.RelationshipCommand( before, after ) );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
@@ -64,7 +64,7 @@ public class PhysicalLogCommandReaderV3_0Test
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 3, 4, 5, 6, 7, 8, true );
         after.setCreated();
 
-        writer.visitRelationshipGroupCommand( new Command.RelationshipGroupCommand().init( before, after ) );
+        writer.visitRelationshipGroupCommand( new Command.RelationshipGroupCommand( before, after ) );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
@@ -88,7 +88,7 @@ public class PhysicalLogCommandReaderV3_0Test
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
 
-        writer.visitNeoStoreCommand( new Command.NeoStoreCommand().init( before, after ) );
+        writer.visitNeoStoreCommand( new Command.NeoStoreCommand( before, after ) );
 
         // When
         PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();

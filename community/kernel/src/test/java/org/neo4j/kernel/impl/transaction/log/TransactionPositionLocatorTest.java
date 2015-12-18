@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
+import java.io.IOException;
+
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -49,7 +50,8 @@ public class TransactionPositionLocatorTest
     private final LogPosition startPosition = new LogPosition( 1, 128 );
 
     private final LogEntryStart start = new LogEntryStart( 0, 0, 0, 0, null, startPosition );
-    private final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand() );
+    private final LogEntryCommand command = new LogEntryCommand(
+            new Command.NodeCommand( new NodeRecord( 42 ), new NodeRecord( 42 ) ) );
     private final LogEntryCommit commit = new OnePhaseCommit( txId, 0 );
 
     @Test

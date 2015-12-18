@@ -71,8 +71,8 @@ public class TxPullResponseEncodeDecodeTest
     private CommittedTransactionRepresentation newCommittedTransactionRepresentation()
     {
         final long arbitraryRecordId = 27l;
-        Command.NodeCommand command = new Command.NodeCommand();
-        command.init( new NodeRecord( arbitraryRecordId ), new NodeRecord( arbitraryRecordId ) );
+        Command.NodeCommand command =
+                new Command.NodeCommand( new NodeRecord( arbitraryRecordId ), new NodeRecord( arbitraryRecordId ) );
 
         PhysicalTransactionRepresentation physicalTransactionRepresentation =
                 new PhysicalTransactionRepresentation( asList( new LogEntryCommand( command ).getXaCommand() ) );

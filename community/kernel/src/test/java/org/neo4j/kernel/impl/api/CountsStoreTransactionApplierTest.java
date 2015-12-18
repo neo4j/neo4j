@@ -48,17 +48,10 @@ public class CountsStoreTransactionApplierTest
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
         {
-            txApplier.visitNodeCountsCommand( addNodeCommand() );
+            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ReadOperations.ANY_LABEL, 1 ) );
         }
 
         // THEN
         verify( updater, times( 1 ) ).incrementNodeCount( ReadOperations.ANY_LABEL, 1 );
-    }
-
-    private Command.NodeCountsCommand addNodeCommand()
-    {
-        final Command.NodeCountsCommand command = new Command.NodeCountsCommand();
-        command.init( ReadOperations.ANY_LABEL, 1 );
-        return command;
     }
 }

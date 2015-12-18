@@ -44,9 +44,7 @@ public class RelationshipGroupCommandTest
         after.setInUse( false );
 
         // When
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( before, after );
-        assertSerializationWorksFor( command );
+        assertSerializationWorksFor( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     @Test
@@ -59,9 +57,7 @@ public class RelationshipGroupCommandTest
         after.setCreated();
 
         // When
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( before, after );
-        assertSerializationWorksFor( command );
+        assertSerializationWorksFor( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     private void assertSerializationWorksFor( Command.RelationshipGroupCommand cmd ) throws IOException

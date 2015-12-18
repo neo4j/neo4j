@@ -255,9 +255,8 @@ public class ReplicatedTokenHolderTest
     private List<Command> createCommands( int tokenId )
     {
         List<Command> commands = new ArrayList<>();
-        Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
-        labelTokenCommand.init( new LabelTokenRecord( tokenId ), new LabelTokenRecord( tokenId ) );
-        commands.add( labelTokenCommand );
+        commands.add(
+                new Command.LabelTokenCommand( new LabelTokenRecord( tokenId ), new LabelTokenRecord( tokenId ) ) );
         return commands;
     }
 

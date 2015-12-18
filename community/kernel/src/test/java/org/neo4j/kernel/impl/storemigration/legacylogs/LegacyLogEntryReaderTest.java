@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
@@ -110,7 +111,8 @@ public class LegacyLogEntryReaderTest
     {
         // given
         final LogEntry start = new LogEntryStart( 0, 1, 2, 3, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
-        final LogEntry command = new LogEntryCommand( new Command.NodeCommand() );
+        NodeRecord record = new NodeRecord( 42 );
+        final LogEntry command = new LogEntryCommand( new Command.NodeCommand( record, record ) );
         final LogEntry commit = new OnePhaseCommit( 42, 43 );
 
         final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = mock( LogEntryReader.class );

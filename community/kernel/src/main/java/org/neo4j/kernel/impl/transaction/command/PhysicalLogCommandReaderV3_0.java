@@ -148,9 +148,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             after.setCreated();
         }
-        Command.NodeCommand command = new Command.NodeCommand();
-        command.init( before, after );
-        return command;
+        return new Command.NodeCommand( before, after );
     }
 
     private Command visitRelationshipCommand( ReadableLogChannel channel ) throws IOException
@@ -174,10 +172,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             after.setCreated();
         }
-
-        Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( before, after );
-        return command;
+        return new Command.RelationshipCommand( before, after );
     }
 
     private Command visitPropertyCommand( ReadableLogChannel channel ) throws IOException
@@ -196,9 +191,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyCommand command = new Command.PropertyCommand();
-        command.init( before, after );
-        return command;
+        return new Command.PropertyCommand( before, after );
     }
 
     private Command visitRelationshipGroupCommand( ReadableLogChannel channel ) throws IOException
@@ -206,9 +199,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         long id = channel.getLong();
         RelationshipGroupRecord before = readRelationshipGroupRecord( id, channel );
         RelationshipGroupRecord after = readRelationshipGroupRecord( id, channel );
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( before, after );
-        return command;
+        return new Command.RelationshipGroupCommand( before, after );
     }
 
     private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableLogChannel channel )
@@ -246,9 +237,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             return null;
         }
 
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( before, after );
-        return command;
+        return new Command.RelationshipTypeTokenCommand( before, after );
     }
 
     private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableLogChannel channel )
@@ -296,9 +285,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             return null;
         }
 
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( before, after );
-        return command;
+        return new Command.LabelTokenCommand( before, after );
     }
 
     private LabelTokenRecord readLabelTokenRecord( int id, ReadableLogChannel channel ) throws IOException
@@ -345,9 +332,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             return null;
         }
 
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( before, after );
-        return command;
+        return new Command.PropertyKeyTokenCommand( before, after );
     }
 
     private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableLogChannel channel ) throws IOException
@@ -388,20 +373,17 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
                 record.setCreated();
             }
         }
-        SchemaRule rule =
-                first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( recordsBefore, recordsAfter, rule );
-        return command;
+        SchemaRule rule = first( recordsAfter ).inUse()
+                          ? readSchemaRule( recordsAfter )
+                          : readSchemaRule( recordsBefore );
+        return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
     }
 
     private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
     {
         NeoStoreRecord before = readNeoStoreRecord( channel );
         NeoStoreRecord after = readNeoStoreRecord( channel );
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( before, after );
-        return command;
+        return new Command.NeoStoreCommand( before, after );
     }
 
     private NeoStoreRecord readNeoStoreRecord( ReadableLogChannel channel ) throws IOException
@@ -716,9 +698,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     {
         int labelId = channel.getInt();
         long delta = channel.getLong();
-        Command.NodeCountsCommand command = new Command.NodeCountsCommand();
-        command.init( labelId, delta );
-        return command;
+        return new Command.NodeCountsCommand( labelId, delta );
     }
 
     private Command visitRelationshipCountsCommand( ReadableLogChannel channel ) throws IOException
@@ -727,9 +707,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         int typeId = channel.getInt();
         int endLabelId = channel.getInt();
         long delta = channel.getLong();
-        Command.RelationshipCountsCommand command = new Command.RelationshipCountsCommand();
-        command.init( startLabelId, typeId, endLabelId, delta );
-        return command;
+        return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
     }
 
     private Map<String,Integer> readMap( ReadableLogChannel channel ) throws IOException

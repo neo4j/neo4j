@@ -137,14 +137,12 @@ public class CoreReplicatedContentMarshalTest
         ByteBuf buffer = Unpooled.buffer();
 
         ArrayList<Command> commands = new ArrayList<>();
-        Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
         LabelTokenRecord before = new LabelTokenRecord( 0 );
         LabelTokenRecord after = new LabelTokenRecord( 0 );
         after.setInUse( true );
         after.setCreated();
         after.setNameId( 3232 );
-        labelTokenCommand.init( before, after );
-        commands.add( labelTokenCommand );
+        commands.add( new Command.LabelTokenCommand( before, after ) );
         ReplicatedContent message = new ReplicatedTokenRequest( TokenType.LABEL, "theLabel",
                 ReplicatedTokenRequestSerializer.createCommandBytes( commands ) );
 
