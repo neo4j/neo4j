@@ -24,8 +24,10 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -188,6 +190,14 @@ public class HaIdGeneratorFactoryTest
 
         // THEN
         assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
+    }
+
+    @Test( expected = TransientTransactionFailureException.class )
+    public void shouldTranslateComExceptionsIntoTransientTransactionFailures() throws Exception
+    {
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenThrow( new ComException() );
+        IdGenerator generator = switchToSlave();
+        generator.nextId();
     }
 
     private Master master;
