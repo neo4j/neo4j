@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Copyright (c) 2002-2015 "Neo Technology,"
-
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -66,8 +65,8 @@ JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:=7474}"
 NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:=localhost}"
 TIMEOUT=120
-
 PID_FILE=${NEO4J_PIDFILE}
+
 buildclasspath() {
   LIBDIR="$NEO4J_HOME"/lib
   if [ ! -e "$LIBDIR" ] ; then
@@ -134,7 +133,7 @@ startit() {
   echo "Started at http://${NEO4J_SERVER_ADDRESS}:${NEO4J_SERVER_PORT} (pid ${NEO4J_PID})."
 
   if [ "${org_neo4j_server_database_mode}" = "HA" ] ; then
-    echo "This HA instance will be operational once connected to peers. See ${CONSOLE_LOG} for current status."
+    echo "This HA instance will be operational once it has joined the cluster. See ${CONSOLE_LOG} for current status."
   else
     echo "There may be a short delay until the server is ready."
   fi
@@ -173,9 +172,6 @@ showinfo() {
   echo "JAVA_OPTS:         $JAVA_OPTS"
   echo "CLASSPATH:         $CLASSPATH"
 }
-
-# END FUNCTIONS
-# BEGIN MAIN
 
 case "$1" in
   console)
