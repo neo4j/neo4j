@@ -106,16 +106,7 @@ public class Version extends Service
             result.append( build ).append( '/' );
         }
         result.append( getCommitId() );
-        if ( getCommitDescription().endsWith( "-dirty" ) )
-        {
-            result.append( "-dirty" );
-        }
         return result.toString();
-    }
-
-    protected String getCommitDescription()
-    {
-        return "{CommitDescription}";
     }
 
     protected String getBuildNumber()
