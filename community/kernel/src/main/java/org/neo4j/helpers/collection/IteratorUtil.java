@@ -19,9 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -778,61 +775,6 @@ public abstract class IteratorUtil
     public static <E extends Enum<E>> Set<String> asEnumNameSet( Class<E> clazz)
     {
         return asSet( map( ENUM_NAME, allOf( clazz ) ) );
-    }
-
-    /**
-     * Creates an {@link Iterable} for iterating over the lines of a text file.
-     * @param file the file to get the lines for.
-     * @param charset file charset
-     * @return an {@link Iterable} for iterating over the lines of a text file.
-     */
-    public static ClosableIterable<String> asIterable( final File file, final Charset charset )
-    {
-        return new ClosableIterable<String>()
-        {
-            private ClosableIterator<String> mostRecentIterator;
-
-            @Override
-            public Iterator<String> iterator()
-            {
-                try
-                {
-                    if ( mostRecentIterator != null )
-                    {
-                        mostRecentIterator.close();
-                    }
-                    mostRecentIterator = asIterator( file, charset );
-                    return mostRecentIterator;
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                if ( mostRecentIterator != null )
-                {
-                    mostRecentIterator.close();
-                }
-            }
-        };
-    }
-
-    /**
-     * Creates an {@link Iterator} for iterating over the lines of a text file.
-     * The opened file is closed if an exception occurs during reading or when
-     * the files has been read through all the way.
-     * @param file the file to get the lines for.
-     * @param charset to be used for reading the file
-     * @return an {@link Iterator} for iterating over the lines of a text file.
-     * @throws IOException from underlying I/O operations
-     */
-    public static ClosableIterator<String> asIterator( File file, Charset charset ) throws IOException
-    {
-        return new LinesOfFileIterator( file, charset );
     }
 
     public static Iterable<Long> asIterable( final long... array )

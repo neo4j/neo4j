@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -41,7 +42,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 public class HaLoggingIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule(getClass());
+    public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -49,9 +50,9 @@ public class HaLoggingIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                  .withProvider( clusterWithAdditionalClients( 2, 1 ) )
-                  .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
-                  .startCluster();
+                .withProvider( clusterWithAdditionalClients( 2, 1 ) )
+                .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
+                .startCluster();
     }
 
     @Test
@@ -74,21 +75,14 @@ public class HaLoggingIT
         logService.getInternalLog( getClass() ).info( logMessage );
 
         // THEN
-        int count = findLoggingLines( db, logMessage );
-        Assert.assertEquals( 2, count );
+        assertEquals( 2, countLoggingLines( db, logMessage ) );
     }
 
-    private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
+    private long countLoggingLines( HighlyAvailableGraphDatabase db, String suffix ) throws IOException
     {
-        int count = 0;
-        for ( String line : asIterable( new File( cluster.getStoreDir( db ), StoreLogService.INTERNAL_LOG_NAME ),
-                StandardCharsets.UTF_8 ) )
-        {
-            if ( line.endsWith( toLookFor ) )
-            {
-                count++;
-            }
-        }
-        return count;
+        Path logFile = Paths.get( cluster.getStoreDir( db ).getAbsolutePath(), StoreLogService.INTERNAL_LOG_NAME );
+        return Files.lines( logFile )
+                .filter( line -> line.endsWith( suffix ) )
+                .count();
     }
 }
