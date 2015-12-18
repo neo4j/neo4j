@@ -72,7 +72,7 @@ public class PullerFactory
     public UpdatePuller createUpdatePuller( LifeSupport life )
     {
         return life.add( new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler ) );
+                availabilityGuard, invalidEpochHandler, jobScheduler ) );
     }
 
     public TransactionObligationFulfiller createObligationFulfiller( LifeSupport life, UpdatePuller updatePuller )
