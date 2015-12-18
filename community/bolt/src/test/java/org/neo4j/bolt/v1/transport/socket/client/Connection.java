@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.helpers.HostnamePort;
 
-public interface Connection extends AutoCloseable
+public interface Connection
 {
     Connection connect( HostnamePort address ) throws Exception;
 
