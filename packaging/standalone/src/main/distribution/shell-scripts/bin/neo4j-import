@@ -36,10 +36,8 @@ done
 BASEDIR=`cd "$( dirname $SCRIPT_LOCATION )"/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
-cygwin=false;
 darwin=false;
 case "`uname`" in
-  CYGWIN*) cygwin=true ;;
   Darwin*) darwin=true
            if [ -z "$JAVA_VERSION" ] ; then
              JAVA_VERSION="CurrentJDK"
@@ -56,12 +54,6 @@ if [ -z "$JAVA_HOME" ] ; then
   if [ -r /etc/gentoo-release ] ; then
     JAVA_HOME=`java-config --jre-home`
   fi
-fi
-
-# For Cygwin, ensure paths are in UNIX format before anything is touched
-if $cygwin ; then
-  [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
-  [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
 fi
 
 # If a specific java binary isn't specified search for the standard 'java' binary
@@ -107,15 +99,6 @@ done
 CLASSPATH=$CLASSPATH_PREFIX${LIBRARY_JARS}
 
 EXTRA_JVM_ARGUMENTS="-Dfile.encoding=UTF-8"
-
-# For Cygwin, switch paths to Windows format before running java
-if $cygwin; then
-  [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
-  [ -n "$JAVA_HOME" ] && JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
-  [ -n "$HOME" ] && HOME=`cygpath --path --windows "$HOME"`
-  [ -n "$BASEDIR" ] && BASEDIR=`cygpath --path --windows "$BASEDIR"`
-  [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
-fi
 
 # Return to working dir
 cd "$RUN_FROM"

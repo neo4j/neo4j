@@ -88,12 +88,6 @@ findjava() {
     fi
   fi
 
-  if [ "${DIST_OS}" == "cygwin" ] ; then
-    # ensure paths are in UNIX format
-    [ -n "${JAVA_HOME}" ] && JAVA_HOME="$(cygpath --unix "${JAVA_HOME}")"
-    [ -n "${CLASSPATH}" ] && CLASSPATH="$(cygpath --path --unix "${CLASSPATH}")"
-  fi
-
   # If a specific java binary isn't specified search for the standard 'java' binary
   if [[ ! "${JAVACMD:-}" ]] ; then
     if [[ "${JAVA_HOME:-}" ]] ; then
@@ -149,9 +143,6 @@ detectos() {
   case "${DIST}" in
     'darwin')
       DIST_OS="macosx"
-      ;;
-    'cygwin')
-      DIST_OS="cygwin"
       ;;
     *)
       DIST_OS="other"
