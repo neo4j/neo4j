@@ -127,7 +127,7 @@ startit() {
   checkstatus
   if [ -z "${NEO4J_PID}" ] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."
-    rm "$PID_FILE"
+    rm "${PID_FILE}"
     exit 1
   fi
 
@@ -142,24 +142,22 @@ startit() {
 
 console() {
   checkstatus
-  checklimits
-
-  if [ -z $NEO4J_PID ] ; then
-    echo "Starting $FRIENDLY_NAME console-mode..."
-
-    exitonnojava
-    buildclasspath
-    checkandrepairenv
-
-    exec "$JAVACMD" -cp "${CLASSPATH}" $JAVA_OPTS \
-        -Dneo4j.home="${NEO4J_HOME}" \
-        -Dfile.encoding=UTF-8 \
-        #{neo4j.mainClass}
-
-  else
-    echo "$FRIENDLY_NAME already running with pid $NEO4J_PID"
+  if [ -n "${NEO4J_PID}" ] ; then
+    echo "${FRIENDLY_NAME} is already running (pid ${NEO4J_PID})."
     exit 1
   fi
+
+  exitonnojava
+  checkjvmcompatibility
+
+  echo "Starting ${FRIENDLY_NAME}."
+
+  checklimits
+  buildclasspath
+  checkclasspath
+  checkandrepairenv
+
+  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}"
 }
 
 showinfo() {
