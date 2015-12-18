@@ -83,7 +83,6 @@ startit() {
   echo "Starting ${FRIENDLY_NAME}."
 
   buildclasspath
-  checkclasspath
   checkandrepairenv
 
   CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"
@@ -117,7 +116,6 @@ console() {
   echo "Starting ${FRIENDLY_NAME}."
 
   buildclasspath
-  checkclasspath
   checkandrepairenv
 
   exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 \
