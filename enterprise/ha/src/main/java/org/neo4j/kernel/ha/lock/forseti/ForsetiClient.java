@@ -399,56 +399,6 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void releaseAllShared()
-    {
-        for ( int i = 0; i < sharedLockCounts.length; i++ )
-        {
-            PrimitiveLongIntMap localLocks = sharedLockCounts[i];
-            if(localLocks != null)
-            {
-                int size = localLocks.size();
-                localLocks.visitKeys( releaseSharedLockVisitor.initialize( exclusiveLockCounts[i], lockMaps[i] ) );
-                if(size <= 32)
-                {
-                    // If the map is small, its fast and nice to GC to clear it. However, if its large, it is
-                    // 1) Faster to simply allocate a new one and
-                    // 2) Safer, because we guard against clients getting giant maps over time
-                    localLocks.clear();
-                }
-                else
-                {
-                    sharedLockCounts[i] = Primitive.longIntMap();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void releaseAllExclusive()
-    {
-        for ( int i = 0; i < exclusiveLockCounts.length; i++ )
-        {
-            PrimitiveLongIntMap localLocks = exclusiveLockCounts[i];
-            if(localLocks != null)
-            {
-                int size = localLocks.size();
-                localLocks.visitKeys( releaseExclusiveLockVisitor.initialize( sharedLockCounts[i], lockMaps[i] ) );
-                if(size <= 32)
-                {
-                    // If the map is small, its fast and nice to GC to clear it. However, if its large, it is
-                    // 1) Faster to simply allocate a new one and
-                    // 2) Safer, because we guard against clients getting giant maps over time
-                    localLocks.clear();
-                }
-                else
-                {
-                    exclusiveLockCounts[i] = Primitive.longIntMap();
-                }
-            }
-        }
-    }
-
-    @Override
     public void releaseAll()
     {
         // Force the release of all locks held.
@@ -708,34 +658,9 @@ public class ForsetiClient implements Locks.Client
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)
 
-    private class ReleaseSharedLocksVisitor implements PrimitiveLongVisitor<RuntimeException>
-    {
-        private PrimitiveLongIntMap exclusiveLockCounts;
-        private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
-
-        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap exclusiveLockCounts,
-                                                 ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
-        {
-            this.exclusiveLockCounts = exclusiveLockCounts;
-            this.lockMap = lockMap;
-            return this;
-        }
-
-        @Override
-        public boolean visited( long resourceId )
-        {
-            if(!exclusiveLockCounts.containsKey( resourceId ))
-            {
-                releaseGlobalLock( lockMap, resourceId );
-            }
-            return false;
-        }
-    }
-
     /**
-     * This differs from {@link org.neo4j.kernel.ha.lock.forseti.ForsetiClient.ReleaseSharedLocksVisitor} in that
-     * this operates under the guarantee that there will be no exclusive locks held by this client, and so it can remove
-     * a check otherwise needed. It is used when releasing all locks.
+     * Release all shared locks, assuming that there will be no exclusive locks held by this client, such that there
+     * is no need to check for those. It is used when releasing all locks.
      */
     private class ReleaseSharedDontCheckExclusiveVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
@@ -755,39 +680,9 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    private class ReleaseExclusiveLocksVisitor implements PrimitiveLongVisitor<RuntimeException>
-    {
-        private PrimitiveLongIntMap sharedLockCounts;
-        private ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap;
-
-        private PrimitiveLongVisitor<RuntimeException> initialize( PrimitiveLongIntMap sharedLockCounts,
-                                                 ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap )
-        {
-            this.sharedLockCounts = sharedLockCounts;
-            this.lockMap = lockMap;
-            return this;
-        }
-
-        @Override
-        public boolean visited( long resourceId )
-        {
-            if(sharedLockCounts.containsKey( resourceId ))
-            {
-                lockMap.put( resourceId, new SharedLock( ForsetiClient.this ) );
-            }
-            else
-            {
-                releaseGlobalLock( lockMap, resourceId );
-            }
-            return false;
-        }
-    }
-
     /**
-     * This differs from {@link org.neo4j.kernel.ha.lock.forseti.ForsetiClient.ReleaseExclusiveLocksVisitor} in that
-     * this will not downgrade exclusive locks to shared locks (if the user holds both), instead, it will release the
-     * exclusive lock and remove any local reference to the shared lock. This is an optimization used when releasing
-     * all locks.
+     * Release exclusive locks and remove any local reference to the shared lock.
+     * This is an optimization used when releasing all locks.
      */
     private class ReleaseExclusiveLocksAndClearSharedVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
@@ -817,8 +712,6 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    private final ReleaseSharedLocksVisitor releaseSharedLockVisitor = new ReleaseSharedLocksVisitor();
-    private final ReleaseExclusiveLocksVisitor releaseExclusiveLockVisitor = new ReleaseExclusiveLocksVisitor();
     private final ReleaseExclusiveLocksAndClearSharedVisitor releaseExclusiveAndClearSharedVisitor = new ReleaseExclusiveLocksAndClearSharedVisitor();
     private final ReleaseSharedDontCheckExclusiveVisitor releaseSharedDontCheckExclusiveVisitor = new ReleaseSharedDontCheckExclusiveVisitor();
 }

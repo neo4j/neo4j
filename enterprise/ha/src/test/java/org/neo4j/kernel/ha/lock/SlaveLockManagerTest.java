@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -38,6 +39,20 @@ import static org.mockito.Mockito.verify;
 
 public class SlaveLockManagerTest
 {
+    private RequestContextFactory requestContextFactory;
+    private Master master;
+    private AvailabilityGuard availabilityGuard;
+    private long availabilityTimeoutMillis;
+
+    @Before
+    public void setUp()
+    {
+        requestContextFactory = new RequestContextFactory( 1, mock( DependencyResolver.class ) );
+        master = mock( Master.class );
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
+        availabilityTimeoutMillis = 1000;
+    }
+
     @Test
     public void shutsDownLocalLocks() throws Throwable
     {
@@ -69,10 +84,10 @@ public class SlaveLockManagerTest
         }
     }
 
-    private static SlaveLockManager newSlaveLockManager( Locks localLocks )
+    private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        return new SlaveLockManager( localLocks, new RequestContextFactory( 1, mock( DependencyResolver.class ) ),
-                mock( Master.class ), new AvailabilityGuard( Clock.SYSTEM_CLOCK ),
-                mock( SlaveLockManager.Configuration.class ) );
+        return new SlaveLockManager( localLocks, requestContextFactory,
+                master, availabilityGuard,
+                availabilityTimeoutMillis );
     }
 }

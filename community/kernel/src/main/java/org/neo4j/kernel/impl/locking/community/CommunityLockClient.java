@@ -165,15 +165,13 @@ public class CommunityLockClient implements Locks.Client
         }
     }
 
-    @Override
-    public void releaseAllShared()
+    private void releaseAllShared()
     {
         sharedLocks.visitEntries( typeReadReleaser );
         sharedLocks.clear();
     }
 
-    @Override
-    public void releaseAllExclusive()
+    private void releaseAllExclusive()
     {
         exclusiveLocks.visitEntries( typeWriteReleaser );
         exclusiveLocks.clear();

@@ -54,16 +54,6 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public void releaseAllShared()
-    {
-    }
-
-    @Override
-    public void releaseAllExclusive()
-    {
-    }
-
-    @Override
     public void releaseAll()
     {
     }
