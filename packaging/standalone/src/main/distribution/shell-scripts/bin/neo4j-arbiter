@@ -45,12 +45,6 @@ function findBaseDirAndCdThere {
 }
 
 function parseConfig {
-  if [ "${BASH_VERSINFO[0]}" -eq 3 ] ; then
-    if [ "${BASH_VERSINFO[1]}" -lt 2 ] ; then
-      getconfigquoted "${NEO4J_CONFIG}/arbiter-wrapper.conf"
-      return
-    fi
-  fi
   getconfig "${NEO4J_CONFIG}/arbiter-wrapper.conf"
 }
 

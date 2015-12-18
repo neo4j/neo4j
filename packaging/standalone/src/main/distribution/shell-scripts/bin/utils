@@ -49,25 +49,6 @@ function getconfig {
   fi
 }
 
-function getconfigquoted {
-  if [ -e "$1" ]; then
-    while read line ; do
-      if [[ "${line}" =~ "^([^#\s][^=]+)=(.+)$" ]]; then
-        key="${BASH_REMATCH[1]//./_}"
-        value="${BASH_REMATCH[2]}"
-        if [[ "${key}" =~ "^(.*)(_[0-9]+)?$" ]]; then
-          key="${BASH_REMATCH[1]}"
-        fi
-        if [[ ${!key} ]]; then
-          export ${key}="${!key} ${value}"
-        else
-          export ${key}="$value"
-        fi
-      fi
-    done <"$1"
-  fi
-}
-
 # Detect java and set JAVACMD on successful find.
 findjava() {
   detectos
