@@ -44,8 +44,8 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     @Override
     public Client newClient()
     {
-        return new SlaveLocksClient(
-                master, local.newClient(), local, requestContextFactory, availabilityGuard );
+        Client client = local.newClient();
+        return new SlaveLocksClient( master, client, local, requestContextFactory, availabilityGuard );
     }
 
     @Override
