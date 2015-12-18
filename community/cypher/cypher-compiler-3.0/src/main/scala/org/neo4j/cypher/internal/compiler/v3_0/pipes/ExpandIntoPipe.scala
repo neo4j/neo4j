@@ -19,20 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
-import java.util.concurrent.ThreadLocalRandom
-
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.ExpandExpression
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.helpers.collection.PrefetchingIterator
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import org.neo4j.graphdb.Node
 
 /**
  * Expand when both end-points are known, find all relationships of the given
@@ -71,14 +63,13 @@ case class ExpandIntoPipe(source: Pipe,
                 .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
               if (relationships.isEmpty) Iterator.empty
-              else relationships.map(row.newWith2(relName, _, toName, toNode))
+              else relationships.map(row.newWith1(relName, _))
             }
 
           case null =>
             Iterator.empty
         }
     }
-
   }
 
   def planDescriptionWithoutCardinality =

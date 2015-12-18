@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case object unnestOptional extends Rewriter {
@@ -31,13 +31,13 @@ case object unnestOptional extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
     case apply@Apply(lhs,
       Optional(
-      e@Expand(_: Argument, _, _, _, _, _, ExpandAll))) =>
+      e@Expand(_: Argument, _, _, _, _, _, _))) =>
         optionalExpand(e, lhs)(Seq.empty)(apply.solved)
 
     case apply@Apply(lhs,
       Optional(
       Selection(predicates,
-      e@Expand(_: Argument, _, _, _, _, _, ExpandAll)))) =>
+      e@Expand(_: Argument, _, _, _, _, _, _)))) =>
         optionalExpand(e, lhs)(predicates)(apply.solved)
   }
 
