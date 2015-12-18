@@ -1,0 +1,23 @@
+lib-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+*.swp
+*.swo
+.DS_Store
+
+pids
+logs
+results
+dist
+# test coverage files
+coverage/
+
+node_modules
+npm-debug.log
+
+template/**/*.js

@@ -1,0 +1,2 @@
+// System info
+GET /db/manage/server/jmx/domain/org.neo4j

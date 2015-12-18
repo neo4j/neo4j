@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="453px" height="243px" viewBox="0 0 302 162" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <title>query-plan-operator-cost</title>
+    <description>Created with Sketch (http://www.bohemiancoding.com/sketch)</description>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="plan-(7)-copy" sketch:type="MSLayerGroup" transform="translate(13.000000, 0.000000)">
+            <g id="Group" transform="translate(55.000000, 0.000000)" fill="#DFE1E3" sketch:type="MSShapeGroup">
+                <path d="M71.9784376,-0.0677290837 C71.9784376,40.8477652 71.8098399,40.8477652 71.8098399,49.9322709 L0.388828037,49.9322709 C0.388828037,9.01677661 0.55742573,9.01677661 0.55742573,-0.0677290837 L71.9784376,-0.0677290837 Z" id="Shape"></path>
+            </g>
+            <g id="Group" transform="translate(48.000000, 113.000000)" fill="#DFE1E3" sketch:type="MSShapeGroup">
+                <path d="M86.099334,-0.114209827 C86.099334,8.97029586 86.1189086,8.97029586 86.1189086,49.8857902 L0.118908602,49.8857902 C0.118908602,40.8012845 0.0993339515,40.8012845 0.0993339515,-0.114209827 L86.099334,-0.114209827 Z" id="Shape"></path>
+            </g>
+            <g id="Group" transform="translate(0.099335, 49.932281)">
+                <g>
+                    <path d="M177,0 C179.209139,1.3527075e-16 181,1.790861 181,4 L181,14 C181.714531,15.2376043 181.714531,16.7623957 181,18 L1,18 C0.28546882,16.7623957 0.28546882,15.2376043 1,14 L1,4 C1,1.790861 2.790861,4.05812251e-16 5,0 L177,0 Z" id="Shape" fill="#08519C" sketch:type="MSShapeGroup"></path>
+                    <path d="M7.5,4 L14.33,9 L7.5,14 L7.5,4 Z" id="Shape" fill="#FFFFFF" sketch:type="MSShapeGroup"></path>
+                    <text id="Expand(All)" fill="#FFFFFF" sketch:type="MSTextLayer" font-family="Helvetica" font-size="11" font-weight="normal">
+                        <tspan x="19" y="13">Expand(All)</tspan>
+                    </text>
+                </g>
+                <rect id="Rectangle" stroke="#05386D" sketch:type="MSShapeGroup" x="1" y="0" width="180" height="62.9535193" rx="4"></rect>
+                <path d="M1,18 L181,18 L181,58.9535193 C181,61.1626583 179.209139,62.9535193 177,62.9535193 L5,62.9535193 C2.790861,62.9535193 1,61.1626583 1,58.9535193 L1,18 Z" id="Shape" fill="#F25A29" sketch:type="MSShapeGroup"></path>
+                <text id="677" fill="#FFFFFF" sketch:type="MSTextLayer" font-family="Helvetica" font-size="10" font-weight="normal">
+                    <tspan x="72" y="32">677</tspan>
+                </text>
+                <text id="db-hits" fill="#FFFFFF" sketch:type="MSTextLayer" font-family="Helvetica" font-size="10" font-weight="normal">
+                    <tspan x="91" y="32">db hits</tspan>
+                </text>
+            </g>
+        </g>
+        <text id="height-indicates" fill="#000000" sketch:type="MSTextLayer" font-family="Helvetica" font-size="10" font-weight="normal">
+            <tspan x="218.625" y="87.8857902">height indicates</tspan>
+            <tspan x="218.625" y="99.8857902">number of db hits</tspan>
+        </text>
+        <path d="M209.5,67.5 L209.5,113.5" id="Line-copy" stroke="#000000" fill="#000000" sketch:type="MSShapeGroup"></path>
+        <path id="Line-copy-decoration-1" d="M212.5,67.5000001 C210.4,67.5 208.6,67.5 206.5,67.4999999" stroke="#000000" fill="#000000"></path>
+        <path id="Line-copy-decoration-2" d="M212.5,113.5 C210.4,113.5 208.6,113.5 206.5,113.5" stroke="#000000" fill="#000000"></path>
+    </g>
+</svg>

@@ -1,0 +1,35 @@
+<div ng-controller="TooltipDemoCtrl">
+    <div class="form-group">
+      <label>Dynamic Tooltip Text</label>
+      <input type="text" ng-model="dynamicTooltipText" class="form-control">
+    </div>
+    <div class="form-group">
+      <label>Dynamic Tooltip Popup Text</label>
+      <input type="text" ng-model="dynamicTooltip" class="form-control">
+    </div>
+    <p>
+      Pellentesque <a href="#" tooltip="{{dynamicTooltip}}">{{dynamicTooltipText}}</a>,
+      sit amet venenatis urna cursus eget nunc scelerisque viverra mauris, in
+      aliquam. Tincidunt lobortis feugiat vivamus at 
+      <a href="#" tooltip-placement="left" tooltip="On the Left!">left</a> eget
+      arcu dictum varius duis at consectetur lorem. Vitae elementum curabitur
+      <a href="#" tooltip-placement="right" tooltip="On the Right!">right</a> 
+      nunc sed velit dignissim sodales ut eu sem integer vitae. Turpis egestas 
+      <a href="#" tooltip-placement="bottom" tooltip="On the Bottom!">bottom</a> 
+      pharetra convallis posuere morbi leo urna, 
+      <a href="#" tooltip-animation="false" tooltip="I don't fade. :-(">fading</a>
+      at elementum eu, facilisis sed odio morbi quis commodo odio. In cursus
+      <a href="#" tooltip-popup-delay='1000' tooltip='appears with delay'>delayed</a> turpis massa tincidunt dui ut.
+    </p>
+
+    <p>
+      I can even contain HTML. <a href="#" tooltip-html-unsafe="{{htmlTooltip}}">Check me out!</a>
+    </p>
+
+    <form role="form">
+      <div class="form-group">
+        <label>Or use custom triggers, like focus: </label>
+        <input type="text" value="Click me!" tooltip="See? Now click away..."  tooltip-trigger="focus" tooltip-placement="right" class="form-control" />
+      </div>
+    </form>
+</div>
