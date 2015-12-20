@@ -471,7 +471,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    CreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
+    CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
       pattern.endNode, pattern.properties)(solved)
   }
 
