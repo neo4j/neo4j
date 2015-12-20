@@ -104,10 +104,4 @@ public class SocketConnection implements Connection
             socket.close();
         }
     }
-
-    @Override
-    public void close() throws Exception
-    {
-        disconnect();
-    }
 }

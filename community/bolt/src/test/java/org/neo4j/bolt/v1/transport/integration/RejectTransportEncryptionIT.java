@@ -66,8 +66,7 @@ public class RejectTransportEncryptionIT
         return asList(
                 new Object[]{
                         (Factory<Connection>) SecureWebSocketConnection::new,
-                        new IOException( "Failed to connect to the server within 30 seconds" )
-                        // TODO shutdown ssl connections properly
+                        new IOException( "Failed to connect to the server within 10 seconds" )
                 },
                 new Object[]{
                         (Factory<Connection>) SecureSocketConnection::new,

@@ -43,6 +43,8 @@ public class WebSocketConnection implements Connection, WebSocketListener
     private final Supplier<WebSocketClient> clientSupplier;
     private final Function<HostnamePort,URI> uriGenerator;
 
+    private final byte[] POISON_PILL = "poison".getBytes();
+
     private WebSocketClient client;
     private RemoteEndpoint server;
 
@@ -50,10 +52,10 @@ public class WebSocketConnection implements Connection, WebSocketListener
     private final LinkedBlockingQueue<byte[]> received = new LinkedBlockingQueue<>();
 
     // Current input data being handled, popped off of 'received' queue
-    private byte[] currentRecieveBuffer = null;
+    private byte[] currentReceiveBuffer = null;
 
     // Index into the current receive buffer
-    private int currentRecieveIndex = 0;
+    private int currentReceiveIndex = 0;
 
     public WebSocketConnection()
     {
@@ -64,6 +66,12 @@ public class WebSocketConnection implements Connection, WebSocketListener
     {
         this.clientSupplier = clientSupplier;
         this.uriGenerator = uriGenerator;
+    }
+
+    WebSocketConnection( WebSocketClient client )
+    {
+        this( null, null );
+        this.client = client;
     }
 
     @Override
@@ -77,12 +85,13 @@ public class WebSocketConnection implements Connection, WebSocketListener
         Session session = null;
         try
         {
-            session = client.connect( this, target ).get( 30, SECONDS );
+            session = client.connect( this, target ).get( 10, SECONDS );
         }
         catch ( Exception e )
         {
-            throw new IOException( "Failed to connect to the server within 30 seconds", e );
+            throw new IOException( "Failed to connect to the server within 10 seconds", e );
         }
+
         server = session.getRemote();
         return this;
     }
@@ -105,9 +114,9 @@ public class WebSocketConnection implements Connection, WebSocketListener
         while ( remaining > 0 )
         {
             waitForRecievedData( length, remaining, target );
-            for ( int i = 0; i < Math.min( remaining, currentRecieveBuffer.length - currentRecieveIndex ); i++ )
+            for ( int i = 0; i < Math.min( remaining, currentReceiveBuffer.length - currentReceiveIndex ); i++ )
             {
-                target[length - remaining] = currentRecieveBuffer[currentRecieveIndex++];
+                target[length - remaining] = currentReceiveBuffer[currentReceiveIndex++];
                 remaining--;
             }
         }
@@ -124,19 +133,21 @@ public class WebSocketConnection implements Connection, WebSocketListener
             throws InterruptedException, IOException
     {
         long start = System.currentTimeMillis();
-        while ( currentRecieveBuffer == null || currentRecieveIndex >= currentRecieveBuffer.length )
+        while ( currentReceiveBuffer == null || currentReceiveIndex >= currentReceiveBuffer.length )
         {
-            currentRecieveIndex = 0;
-            currentRecieveBuffer = received.poll( 10, MILLISECONDS );
+            currentReceiveIndex = 0;
+            currentReceiveBuffer = received.poll( 10, MILLISECONDS );
 
-            if( client.isStopped() || client.isStopping() )
+            if( (currentReceiveBuffer == null && ( client.isStopped() || client.isStopping() ) ) ||
+                currentReceiveBuffer == POISON_PILL )
             {
+                // no data received
                 throw new IOException( "Connection closed while waiting for data from the server." );
             }
             if ( System.currentTimeMillis() - start > 30_000 )
             {
                 throw new IOException( "Waited 30 seconds for " + remaining + " bytes, " +
-                                       "" + (length - remaining) + " was recieved: " +
+                                       "" + (length - remaining) + " was received: " +
                                        HexPrinter.hex( ByteBuffer.wrap( target ), 0, length - remaining ) );
             }
         }
@@ -145,17 +156,9 @@ public class WebSocketConnection implements Connection, WebSocketListener
     @Override
     public void disconnect() throws Exception
     {
-        close();
+        client.stop();
     }
 
-    @Override
-    public void close() throws Exception
-    {
-        if ( client != null )
-        {
-            client.stop();
-        }
-    }
 
     @Override
     public void onWebSocketBinary( byte[] bytes, int i, int i2 )
@@ -166,14 +169,7 @@ public class WebSocketConnection implements Connection, WebSocketListener
     @Override
     public void onWebSocketClose( int i, String s )
     {
-        try
-        {
-            close();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        received.add( POISON_PILL );
     }
 
     @Override

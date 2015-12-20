@@ -91,7 +91,7 @@ public class BoltFullExchangesDocTest
     @After
     public void shutdown() throws Exception
     {
-        client.close();
+        client.disconnect();
     }
 
     @Test
