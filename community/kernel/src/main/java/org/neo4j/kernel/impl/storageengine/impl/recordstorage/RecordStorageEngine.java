@@ -248,39 +248,39 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // Create objects to be populated with command-friendly changes
         Collection<Command> commands = new ArrayList<>();
 
-        if ( txState == null )
+        if ( txState != null )
         {
-            // Bypass creating commands for record transaction state if we have no transaction state
+            NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
+            TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
+            recordState.initialize( lastTransactionIdWhenStarted );
+
+            // Visit transaction state and populate these record state objects
+            TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
+                    schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap,
+                    legacyIndexTransactionState, procedureCache );
+            CountsRecordState countsRecordState = new CountsRecordState();
+            txStateVisitor = constraintSemantics.decorateTxStateVisitor(
+                    operations,
+                    storeStatement,
+                    storeLayer,
+                    new DirectTxStateHolder( txState, legacyIndexTransactionState ),
+                    txStateVisitor );
+            txStateVisitor = new TransactionCountingStateVisitor(
+                    txStateVisitor, storeLayer, txState, countsRecordState );
+            try ( TxStateVisitor visitor = txStateVisitor )
+            {
+                txState.accept( txStateVisitor );
+            }
+
+            // Convert record state into commands
+            recordState.extractCommands( commands );
+            countsRecordState.extractCommands( commands );
+        }
+
+        if ( legacyIndexTransactionState != null )
+        {
             legacyIndexTransactionState.extractCommands( commands );
-            return commands;
         }
-
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
-        TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
-        recordState.initialize( lastTransactionIdWhenStarted );
-
-        // Visit transaction state and populate these record state objects
-        TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState,
-                schemaStateChangeCallback, schemaStorage, constraintSemantics, providerMap,
-                legacyIndexTransactionState, procedureCache );
-        CountsRecordState countsRecordState = new CountsRecordState();
-        txStateVisitor = constraintSemantics.decorateTxStateVisitor(
-                operations,
-                storeStatement,
-                storeLayer,
-                new DirectTxStateHolder( txState, legacyIndexTransactionState ),
-                txStateVisitor );
-        txStateVisitor = new TransactionCountingStateVisitor(
-                txStateVisitor, storeLayer, txState, countsRecordState );
-        try ( TxStateVisitor visitor = txStateVisitor )
-        {
-            txState.accept( txStateVisitor );
-        }
-
-        // Convert record state into commands
-        recordState.extractCommands( commands );
-        legacyIndexTransactionState.extractCommands( commands );
-        countsRecordState.extractCommands( commands );
 
         return commands;
     }
@@ -472,5 +472,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.shutdown();
         indexingService.shutdown();
+        neoStores.close();
     }
 }
