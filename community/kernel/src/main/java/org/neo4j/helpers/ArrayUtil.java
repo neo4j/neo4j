@@ -30,22 +30,6 @@ import static java.util.Arrays.copyOf;
  */
 public abstract class ArrayUtil
 {
-    /**
-     * Convert an array to a {@link String}.
-     * I can't believe this method is missing from {@link Arrays}.
-     *
-     * @see Arrays#toString(byte[]) for similar functionality.
-     * @deprecated use {@link ObjectUtil#toString(Object)} instead.
-     * @param array Array to convert.
-     * @return A String representing the array.
-     */
-    @Deprecated
-    public static String toString( Object array )
-    {
-        assert array.getClass().isArray() : array + " is not an array";
-        return ObjectUtil.arrayToString( array );
-    }
-
     public static int hashCode( Object array )
     {
         assert array.getClass().isArray() : array + " is not an array";

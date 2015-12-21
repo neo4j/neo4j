@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.net.URI;
 import java.util.Objects;
 
@@ -40,12 +42,12 @@ public class HostnamePort
         String[] parts = splitHostAndPort( hostnamePort );
         if ( parts.length == 1 )
         {
-            host = Strings.defaultIfBlank( parts[0], null );
+            host = StringUtils.defaultIfBlank( parts[0], null );
             ports = new int[]{0, 0};
         }
         else if ( parts.length == 2 )
         {
-            host = Strings.defaultIfBlank( parts[0], null );
+            host = StringUtils.defaultIfBlank( parts[0], null );
 
             String[] portStrings = parts[1].split( "-" );
             ports = new int[2];
@@ -208,7 +210,7 @@ public class HostnamePort
 
             String host = hostnamePort.substring( 0, splitIndex );
             String port = hostnamePort.substring( splitIndex );
-            if ( !Strings.isBlank( port ) )
+            if ( StringUtils.isNotBlank( port ) )
             {
                 port = port.substring( 1 ); // remove ':'
                 return new String[]{host, port};

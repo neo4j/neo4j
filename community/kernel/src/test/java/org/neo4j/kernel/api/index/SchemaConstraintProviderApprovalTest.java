@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -219,7 +219,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         @Override
         public String toString()
         {
-            return ObjectUtil.toString( array );
+            return Strings.prettyPrint( array );
         }
     }
 }

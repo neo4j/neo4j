@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -157,7 +157,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
             assertIndexOnline( state, indexDescriptor );
             state.locks().acquireExclusive( INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyKeyId, ObjectUtil.toString( value ) ) );
+                    indexEntryResourceId( labelId, propertyKeyId, Strings.prettyPrint( value ) ) );
 
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )

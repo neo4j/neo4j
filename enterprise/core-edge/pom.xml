@@ -21,7 +21,7 @@
 
 
     <scm>
-        <url>https://github.com/neo4j/neo4j/tree/master/enterprise/ha</url>
+      <url>https://github.com/neo4j/neo4j/tree/3.0/enterprise/core-edge</url>
     </scm>
 
     <licenses>
@@ -43,32 +43,6 @@
             </comments>
         </license>
     </licenses>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-source-based-documentation-ha</id>
-                        <phase>${generate-config-docs-phase}</phase>
-                        <configuration>
-                            <target>
-                                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                                      classpathref="maven.compile.classpath" failonerror="true">
-                                    <arg value="org.neo4j.kernel.ha.HaSettings"/>
-                                    <arg value="${project.build.directory}/docs/ops/ha-configuration-attributes.asciidoc"/>
-                                </java>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
