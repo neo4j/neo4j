@@ -33,7 +33,6 @@ public class RequestContextFactory extends LifecycleAdapter
     private final DependencyResolver resolver;
     private TransactionIdStore txIdStore;
 
-    public static final int VOID_EVENT_IDENTIFIER = -3;
     public static final int DEFAULT_EVENT_IDENTIFIER = -1;
 
     public RequestContextFactory( int serverId, DependencyResolver resolver )

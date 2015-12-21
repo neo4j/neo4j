@@ -30,6 +30,7 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -126,7 +128,8 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     };
 
     private volatile boolean halted;
-    private final AtomicInteger targetTicket = new AtomicInteger(), currentTicket = new AtomicInteger();
+    private final AtomicInteger targetTicket = new AtomicInteger();
+    private final AtomicInteger currentTicket = new AtomicInteger();
     private final RequestContextFactory requestContextFactory;
     private final Master master;
     private final StringLogger logger;
@@ -135,11 +138,19 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
     private InvalidEpochExceptionHandler invalidEpochHandler;
-    private Thread me;
+    private final JobScheduler jobScheduler;
+    private volatile Thread updatePullingThread;
+    private volatile BinaryLatch shutdownLatch; // Store under synchronised(this), load in update puller thread
 
-    SlaveUpdatePuller( RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
-            Logging logging, InstanceId instanceId, AvailabilityGuard availabilityGuard,
-            InvalidEpochExceptionHandler invalidEpochHandler )
+    SlaveUpdatePuller(
+            RequestContextFactory requestContextFactory,
+            Master master,
+            LastUpdateTime lastUpdateTime,
+            Logging logging,
+            InstanceId instanceId,
+            AvailabilityGuard availabilityGuard,
+            InvalidEpochExceptionHandler invalidEpochHandler,
+            JobScheduler jobScheduler )
     {
         this.requestContextFactory = requestContextFactory;
         this.master = master;
@@ -147,6 +158,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.instanceId = instanceId;
         this.availabilityGuard = availabilityGuard;
         this.invalidEpochHandler = invalidEpochHandler;
+        this.jobScheduler = jobScheduler;
         this.logger = logging.getMessagesLog( getClass() );
         this.cappedLogger = new CappedOperation<Pair<String,? extends Exception>>(
                 CappedOperation.count( 10 ) )
@@ -161,6 +173,23 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
 
     @Override
     public void run()
+    {
+        updatePullingThread = Thread.currentThread();
+        String oldName = updatePullingThread.getName();
+        updatePullingThread.setName( UPDATE_PULLER_THREAD_PREFIX + instanceId );
+        try
+        {
+            periodicallyPullUpdates();
+        }
+        finally
+        {
+            updatePullingThread.setName( oldName );
+            updatePullingThread = null;
+            shutdownLatch.release();
+        }
+    }
+
+    private void periodicallyPullUpdates()
     {
         while ( !halted )
         {
@@ -177,25 +206,30 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     }
 
     @Override
-    public void init() throws Throwable
+    public synchronized void init() throws Throwable
     {
-        // TODO Don't do this. This is just to satisfy LockSupport park/unpark
-        // And we cannot have this class extend Thread since there's a naming clash with Lifecycle for stop()
-        me = new Thread( this, UPDATE_PULLER_THREAD_PREFIX + instanceId );
-        me.start();
+        if ( shutdownLatch != null )
+        {
+            return; // This SlaveUpdatePuller has already been initialised
+        }
+
+        shutdownLatch = new BinaryLatch();
+        jobScheduler.schedule( JobScheduler.Group.pullUpdates, this );
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public synchronized void shutdown() throws Throwable
     {
-        halted = true;
-        while ( me.getState() != Thread.State.TERMINATED )
+        if ( shutdownLatch == null )
         {
-            Thread.sleep( 1 );
-            Thread.yield();
+            return; // This SlaveUpdatePuller has already been shut down
         }
-        invalidEpochHandler = null;
-        me = null;
+
+        Thread thread = updatePullingThread;
+        halted = true;
+        LockSupport.unpark( thread );
+        shutdownLatch.await();
+        shutdownLatch = null;
     }
 
     @Override
@@ -282,7 +316,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private int poke()
     {
         int result = this.targetTicket.incrementAndGet();
-        LockSupport.unpark( me );
+        LockSupport.unpark( updatePullingThread );
         return result;
     }
 

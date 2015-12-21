@@ -24,7 +24,9 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -335,6 +337,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                     IdAllocation allocation = response.response();
                     logger.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
                     nextId = storeLocally( allocation );
+                }
+                catch ( ComException e )
+                {
+                    throw new TransientTransactionFailureException(
+                            "Cannot allocate new entity ids from the cluster master. " +
+                            "The master instance is either down, or we have network connectivity problems", e );
                 }
             }
             return nextId;
