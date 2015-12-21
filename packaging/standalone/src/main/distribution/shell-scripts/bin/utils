@@ -169,7 +169,7 @@ checkandrepairenv() {
     # Create log directory if missing, change owner if created.
     if [ ! -d "${NEO4J_LOG}" ]; then
       echo "${NEO4J_LOG} was missing, recreating..."
-      mkdir "${NEO4J_LOG}"
+      mkdir -p "${NEO4J_LOG}"
     fi
 }
 
