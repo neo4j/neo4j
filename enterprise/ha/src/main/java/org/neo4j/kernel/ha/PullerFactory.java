@@ -74,7 +74,8 @@ public class PullerFactory
     public SlaveUpdatePuller createSlaveUpdatePuller()
     {
         return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler, monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
+                availabilityGuard, invalidEpochHandler, jobScheduler,
+                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
     }
 
     public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )
