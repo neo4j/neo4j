@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.test.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 
 public class HighIdTransactionApplierTest
 {
@@ -70,8 +67,10 @@ public class HighIdTransactionApplierTest
         tracker.visitRelationshipGroupCommand( Commands.createRelationshipGroup( 20, 2 ) );
 
         // Schema rules
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule( 10, 0, 1 ) );
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule( 20, 1, 2 ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, 0, 1 ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, 1, 2 ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );

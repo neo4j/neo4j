@@ -141,13 +141,25 @@ public class IndexBatchTransactionApplier implements BatchTransactionApplier
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
-                indexUpdates = mode == TransactionApplicationMode.RECOVERY ?
-                        new RecoveryIndexUpdates() : new OnlineIndexUpdates( nodeStore, propertyStore, propertyLoader );
-
-                indexUpdates.feed( indexUpdatesExtractor.propertyCommandsByNodeIds(),
+                indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(),
                         indexUpdatesExtractor.nodeCommandsById() );
                 indexUpdatesExtractor.close();
             }
+        }
+
+        private IndexUpdates indexUpdates()
+        {
+            if ( indexUpdates == null )
+            {
+                indexUpdates = createIndexUpdates();
+            }
+            return indexUpdates;
+        }
+
+        private IndexUpdates createIndexUpdates()
+        {
+            return mode == TransactionApplicationMode.RECOVERY ?
+                    new RecoveryIndexUpdates() : new OnlineIndexUpdates( nodeStore, propertyStore, propertyLoader );
         }
 
         @Override

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -54,8 +55,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-
 public class Commands
 {
     public static NodeCommand createNode( long id, long... dynamicLabelRecordIds )
@@ -63,6 +62,7 @@ public class Commands
         NodeCommand command = new NodeCommand();
         NodeRecord record = new NodeRecord( id );
         record.setInUse( true );
+        record.setCreated();
         if ( dynamicLabelRecordIds.length > 0 )
         {
             Collection<DynamicRecord> dynamicRecords = dynamicRecords( dynamicLabelRecordIds );
@@ -138,14 +138,16 @@ public class Commands
         return command;
     }
 
-    public static SchemaRuleCommand createIndexRule( long id, int label, int property )
+    public static SchemaRuleCommand createIndexRule( SchemaIndexProvider.Descriptor provider,
+            long id, int label, int property )
     {
         SchemaRuleCommand command = new SchemaRuleCommand();
-        SchemaRule rule = IndexRule.indexRule( id, label, property, NO_INDEX_PROVIDER.getProviderDescriptor() );
+        SchemaRule rule = IndexRule.indexRule( id, label, property, provider );
         RecordSerializer serializer = new RecordSerializer();
         serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
+        record.setCreated();
         record.setData( serializer.serialize() );
         command.init( Collections.<DynamicRecord>emptyList(), asList( record ), rule );
         return command;
