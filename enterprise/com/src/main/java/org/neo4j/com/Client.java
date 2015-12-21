@@ -170,7 +170,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 }
 
                 String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
-                msgLog.warn( msg );
+                msgLog.debug( msg, true );
                 throw traceComException( new ComException( msg, channelFuture.getCause() ), "Client.start" );
             }
 
