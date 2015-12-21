@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
@@ -37,13 +38,11 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -174,7 +173,7 @@ public class UniqueConstraintHaIT
             slaveTx.finish();
             fail( "Expected this commit to fail :(" );
         }
-        catch( TransactionFailureException e )
+        catch( TransactionFailureException | TransientTransactionFailureException e )
         {
             assertThat(e.getCause().getCause(), instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ));
         }

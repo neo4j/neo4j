@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.OtherThreadExecutor;
@@ -47,7 +48,6 @@ import org.neo4j.test.ha.ClusterRule;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
@@ -371,7 +371,7 @@ public class UniqueConstraintStressIT
                         }
                     }
                 }
-                catch ( TransactionFailureException e )
+                catch ( TransactionFailureException | TransientTransactionFailureException e )
                 {
                     // Swallowed on purpose, we except it to fail sometimes due to either
                     //  - constraint violation on master
@@ -380,11 +380,6 @@ public class UniqueConstraintStressIT
                 catch ( ConstraintViolationException e )
                 {
                     // Constraint violation detected on slave while building transaction
-                }
-                catch ( ComException e )
-                {
-                    // Happens sometimes, cause:
-                    // - The lock session requested to start is already in use. Please retry your request in a few seconds.
                 }
                 return i;
             }
