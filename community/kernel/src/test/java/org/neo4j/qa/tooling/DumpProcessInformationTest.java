@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.proc.ProcessUtil;
@@ -84,16 +85,19 @@ public class DumpProcessInformationTest
     private boolean fileContains( File file, String... expectedStrings ) throws IOException
     {
         Set<String> expectedStringSet = asSet( expectedStrings );
-        Files.lines( file.toPath() ).forEach( line -> {
-            Iterator<String> expectedStringIterator = expectedStringSet.iterator();
-            while ( expectedStringIterator.hasNext() )
-            {
-                if ( line.contains( expectedStringIterator.next() ) )
+        try ( Stream<String> lines = Files.lines( file.toPath() ) )
+        {
+            lines.forEach( line -> {
+                Iterator<String> expectedStringIterator = expectedStringSet.iterator();
+                while ( expectedStringIterator.hasNext() )
                 {
-                    expectedStringIterator.remove();
+                    if ( line.contains( expectedStringIterator.next() ) )
+                    {
+                        expectedStringIterator.remove();
+                    }
                 }
-            }
-        } );
+            } );
+        }
         return expectedStringSet.isEmpty();
     }
 

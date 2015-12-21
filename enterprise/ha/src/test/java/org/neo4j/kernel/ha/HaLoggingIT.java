@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -81,8 +82,9 @@ public class HaLoggingIT
     private long countLoggingLines( HighlyAvailableGraphDatabase db, String suffix ) throws IOException
     {
         Path logFile = Paths.get( cluster.getStoreDir( db ).getAbsolutePath(), StoreLogService.INTERNAL_LOG_NAME );
-        return Files.lines( logFile )
-                .filter( line -> line.endsWith( suffix ) )
-                .count();
+        try ( Stream<String> lines = Files.lines( logFile ) )
+        {
+            return lines.filter( line -> line.endsWith( suffix ) ).count();
+        }
     }
 }

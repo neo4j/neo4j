@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -107,8 +108,9 @@ public class GraphDatabaseInternalLogIT
 
     private static long countOccurrences( File file, String substring ) throws IOException
     {
-        return Files.lines( file.toPath() )
-                .filter( line -> line.contains( substring ) )
-                .count();
+        try ( Stream<String> lines = Files.lines( file.toPath() ) )
+        {
+            return lines.filter( line -> line.contains( substring ) ).count();
+        }
     }
 }
