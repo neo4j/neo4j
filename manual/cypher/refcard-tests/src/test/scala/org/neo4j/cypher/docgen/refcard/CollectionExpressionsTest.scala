@@ -23,10 +23,10 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 
-class CollectionFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
+class CollectionExpressionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
-  val title = "Collection Functions"
-  val css = "general c3-3 c4-3 c5-4 c6-6"
+  val title = "Collection Expressions"
+  val css = "general c3-2 c4-4 c5-2 c6-6"
   override val linkId = "query-function"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -81,9 +81,9 @@ of the collection. +tail+ returns all but the first element.
 All return `NULL` for an empty collection.
 
 ###assertion=returns-one parameters=value
-MATCH path=(n)-->(m)
+MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
-WITH nodes(path) as coll
+WITH nodes(path) AS coll
 RETURN
 
 [x IN coll WHERE x.prop <> {value} | x.prop]
@@ -92,18 +92,18 @@ RETURN
 Combination of filter and extract in a concise notation.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) = %A%
-WITH [n] as coll
+MATCH (n) WHERE id(n) = %A%
+WITH [n] AS coll
 RETURN
 
 extract(x IN coll | x.prop)
 ###
 
-A collection of the value of the expression for each element in the orignal collection.
+A collection of the value of the expression for each element in the original collection.
 
 ###assertion=returns-one parameters=value
-MATCH n WHERE id(n) = %A%
-WITH [n] as coll
+MATCH (n) WHERE id(n) = %A%
+WITH [n] AS coll
 RETURN
 
 filter(x IN coll WHERE x.prop <> {value})
@@ -112,22 +112,13 @@ filter(x IN coll WHERE x.prop <> {value})
 A filtered collection of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one
-MATCH n WHERE id(n) = %A%
-WITH [n] as coll
+MATCH (n) WHERE id(n) = %A%
+WITH [n] AS coll
 RETURN
 
 reduce(s = "", x IN coll | s + x.prop)
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
-
-###assertion=foreach
-WITH ["Alice","Bob","Charlie"] AS coll
-
-FOREACH (value IN coll |
- CREATE (:Person {name:value}))
-###
-
-Execute a mutating operation for each element in a collection.
              """
 }

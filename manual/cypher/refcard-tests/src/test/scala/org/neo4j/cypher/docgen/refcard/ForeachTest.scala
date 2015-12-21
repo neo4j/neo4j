@@ -19,69 +19,55 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.junit.Ignore
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 
-@Ignore
-class ExamplesTest extends RefcardTest with QueryStatisticsTestSupport {
-  val graphDescription = List("ROOT:Person FRIEND A:Person", "A:Person FRIEND B:Person", "B:Person FRIEND C:Person", "C:Person FRIEND ROOT:Person")
-  val title = "Query Structure"
-  val css = "general c2-2 c3-2 c4-2 c5-2"
+class ForeachTest extends RefcardTest with QueryStatisticsTestSupport {
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
+  val title = "FOREACH"
+  val css = "write c4-3 c5-5 c6-2"
+  override val linkId = "query-foreach"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
-      case "friends" =>
-        assertStats(result, nodesCreated = 0)
+      case "foreach" =>
+        assertStats(result, nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
         assert(result.toList.size === 0)
-      case "create" =>
-        assertStats(result, nodesCreated = 1, nodesDeleted = 1, propertiesSet = 3, labelsAdded = 1)
+      case "friends" =>
+        assertStats(result, nodesCreated = 0, propertiesSet = 1)
         assert(result.toList.size === 0)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=name" =>
-        Map("name" -> "Andreas", "city" -> "Malmö", "skipNumber" -> 10)
-      case _ => Map()
+      case "" =>
+        Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Andreas"),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("prop" -> "Andrés"),
+    "B" -> Map("prop" -> "Tobias"),
+    "C" -> Map("prop" -> "Chris")
+  )
 
   def text = """
-###assertion=friends parameters=name
-//
+###assertion=friends
+MATCH path = (begin)-[*]->(end)
+WHERE id(begin) = %A% AND id(end) = %B%
 
-MATCH (user:Person)-[:FRIEND]-(friend)
-WHERE user.city = {city}
-WITH user, count(friend) AS friendCount
-WHERE friendCount > 10
-RETURN user.name
-ORDER BY friendCount DESC
-SKIP {skipNumber}
-LIMIT 10
-
+FOREACH (r IN rels(path) |
+  SET r.marked = TRUE)
 ###
+Execute a mutating operation for each relationship of a path.
 
-A query that only reads data.
-See the `WITH` section for additional options on its usage.
+###assertion=foreach
+WITH ["Alice", "Bob", "Charlie"] AS coll
 
-###assertion=create parameters=name
-//
-
-CREATE (user:Person {name: {name}})
-SET user.city = {city}
-FOREACH (n IN [user] : SET n.marked = true)
-DELETE user
+FOREACH (value IN coll |
+ CREATE (:Person {name:value}))
 ###
-
-Basic write query.
-Note that there can be multiple `CREATE`, `SET`, `FOREACH` or `DELETE` statements.
-
+Execute a mutating operation for each element in a collection.
 """
 }

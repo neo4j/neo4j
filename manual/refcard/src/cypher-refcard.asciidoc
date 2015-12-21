@@ -1,7 +1,9 @@
-= Neo4j Cypher Refcard {neo4j-version} =
+= Neo4j Cypher Refcard {neo4j-version}
 :sources: ../docs/neo4j-cypher-refcard-tests-docs-jar/dev/ql/refcard
+:docs-home: http://neo4j.com/docs
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
+
 
 Key principles and capabilities of Cypher are as follows:
 
@@ -18,11 +20,14 @@ or read the full Cypher documentation in the
 For live graph models using Cypher check out <a href="http://gist.neo4j.org" target="_blank">GraphGist</a>.</p></div>
 ++++
 
+The Cypher Refcard is also link:{docs-home}/pdf/neo4j-cypher-refcard-{neo4j-version}.pdf[available as PDF].
+
 Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
 Neo4j properties can be strings, numbers, booleans or arrays thereof.
 Cypher also supports maps and collections.
 
-== Syntax ==
+
+== Syntax
 
 .Read Query Structure
 ["refcard", cardcss="read c2-2 c3-2 c4-2 c5-2"]
@@ -46,7 +51,7 @@ include::{sources}/with.asciidoc[]
 include::{sources}/union.asciidoc[]
 
 .Write-Only Query Structure
-["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
+["refcard", cardcss="write c2-2 c4-3 c5-4 c6-1"]
 ----
 (CREATE [UNIQUE] | MERGE)*
 [SET|DELETE|REMOVE|FOREACH]*
@@ -54,7 +59,7 @@ include::{sources}/union.asciidoc[]
 ----
 
 .Read-Write Query Structure
-["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
+["refcard", cardcss="write c2-2 c4-3 c5-4 c6-1"]
 ----
 [MATCH WHERE]
 [OPTIONAL MATCH WHERE]
@@ -74,6 +79,8 @@ include::{sources}/delete.asciidoc[]
 
 include::{sources}/remove.asciidoc[]
 
+include::{sources}/foreach.asciidoc[]
+
 include::{sources}/index.asciidoc[]
 
 include::{sources}/constraint.asciidoc[]
@@ -81,7 +88,7 @@ include::{sources}/constraint.asciidoc[]
 include::{sources}/import.asciidoc[]
 
 ++++
-<div class="col cardgeneral c3-2 c6-1"><div class="blk">
+<div class="col cardgeneral c3-1 c6-2"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -101,7 +108,7 @@ include::{sources}/import.asciidoc[]
 ++++
 
 ++++
-<div class="col cardgeneral c3-2 c6-1"><div class="blk">
+<div class="col cardgeneral c3-1 c6-3"><div class="blk">
 ++++
 
 [options="header", cols="a"]
@@ -112,9 +119,9 @@ include::{sources}/import.asciidoc[]
 * +NULL+ is not equal to +NULL+.
   Not knowing two values does not imply that they are the same value.
   So the expression `NULL = NULL` yields +NULL+ and not +TRUE+.
-  To check if an expressoin is +NULL+, use +IS NULL+.
+  To check if an expression is +NULL+, use +IS NULL+.
 * Arithmetic expressions, comparisons and function calls (except +coalesce+) will return +NULL+ if any argument is +NULL+.
-* Missing elements like a property that doesn't exist or accessing elements that don't exist in a collection yields +NULL+.
+* An attempt to access a missing element in a collection or a property that doesn't exist yields +NULL+.
 * In +OPTIONAL MATCH+ clauses, ++NULL++s will be used for missing parts of the pattern.
 |===
 
@@ -140,7 +147,7 @@ include::{sources}/functions.asciidoc[]
 
 include::{sources}/path-functions.asciidoc[]
 
-include::{sources}/collection-functions.asciidoc[]
+include::{sources}/collection-expressions.asciidoc[]
 
 include::{sources}/mathematical-functions.asciidoc[]
 
@@ -156,7 +163,7 @@ include::{sources}/create-unique.asciidoc[]
 
 
 ++++
-<div class="col cardperformance c2-2 c3-3 c5-4 c6-6"><div class="blk">
+<div class="col cardperformance c2-2 c3-3 c4-4 c5-1 c6-6"><div class="blk">
 ++++
 
 [options="header", cols="a"]

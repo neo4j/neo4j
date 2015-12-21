@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person:Swedish KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Patterns"
-  val css = "general c2-2 c3-2 c6-2"
+  val css = "general c2-2 c3-2 c6-4"
   override val linkId = "introduction-pattern"
 
   override def assert(name: String, result: InternalExecutionResult) {
@@ -64,23 +64,11 @@ class PatternsTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=related
 MATCH
 
-(n)-->(m)
-
-WHERE id(n) = %A% AND id(m) = %B%
-
-RETURN n,m###
-
-A relationship from `n` to `m` exists.
-
-###assertion=related
-MATCH
-
 (n:Person)
 
 RETURN n###
 
-Matches nodes with the label `Person`.
-
+Node with `Person` label.
 
 ###assertion=related
 MATCH
@@ -89,7 +77,7 @@ MATCH
 
 RETURN n###
 
-Matches nodes which have both `Person` and `Swedish` labels.
+Node with both `Person` and `Swedish` labels.
 
 ###assertion=related parameters=alice
 MATCH
@@ -98,16 +86,18 @@ MATCH
 
 RETURN n###
 
-Matches nodes with the declared properties.
+Node with the declared properties.
 
 ###assertion=related
 MATCH
 
-(n:Person)-->(m)
+(n)-->(m)
 
-RETURN n,m###
+WHERE id(n) = %A% AND id(m) = %B%
 
-Node `n` labeled `Person` has a relationship to `m`.
+RETURN n, m###
+
+Relationship from `n` to `m`.
 
 ###assertion=related
 MATCH
@@ -116,9 +106,18 @@ MATCH
 
 WHERE id(n) = %A% AND id(m) = %B%
 
-RETURN n,m###
+RETURN n, m###
 
-A relationship in any direction between `n` and `m`.
+Relationship in any direction between `n` and `m`.
+
+###assertion=related
+MATCH
+
+(n:Person)-->(m)
+
+RETURN n, m###
+
+Node `n` labeled `Person` with relationship to `m`.
 
 ###assertion=related
 MATCH
@@ -127,20 +126,20 @@ MATCH
 
 WHERE id(n) = %A% AND id(m) = %B%
 
-RETURN n,m###
+RETURN n, m###
 
-A relationship from `n` to `m` of type `KNOWS` exists.
+Relationship of type `KNOWS` from `n` to `m`.
 
 ###assertion=related
 MATCH
 
-(n)-[:KNOWS|LOVES]->(m)
+(n)-[:KNOWS|:LOVES]->(m)
 
 WHERE id(n) = %A% AND id(m) = %B%
 
-RETURN n,m###
+RETURN n, m###
 
-A relationship from `n` to `m` of type `KNOWS` or `LOVES` exists.
+Relationship of type `KNOWS` or of type `LOVES` from `n` to `m`.
 
 ###assertion=related
 MATCH
@@ -151,7 +150,7 @@ WHERE id(n) = %A% AND id(m) = %B%
 
 RETURN r###
 
-Bind an identifier to the relationship.
+Bind the relationship to identifier `r`.
 
 ###assertion=related
 MATCH
@@ -160,9 +159,9 @@ MATCH
 
 WHERE id(n) = %A% AND id(m) = %B%
 
-RETURN n,m###
+RETURN n, m###
 
-Variable length paths.
+Variable length path of between 1 and 5 relationships from `n` to `m`.
 
 ###assertion=related
 MATCH
@@ -171,20 +170,20 @@ MATCH
 
 WHERE id(n) = %A% AND id(m) = %B%
 
-RETURN n,m###
+RETURN n, m###
 
-Any depth.
-See the performance tips.
+Veriable lenth path of any number of relationships from `n` to `m`.
+(Please see the performance tips.)
 
 ###assertion=create parameters=aname
-MATCH n WHERE id(n) = %A%
+MATCH (n) WHERE id(n) = %A%
 CREATE UNIQUE
 
 (n)-[:KNOWS]->(m {property: {value}})
 
 RETURN m###
 
-Match or set properties in `MATCH`, `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
+A relationship of type `KNOWS` from `n` to an `m` that has the declared property.
 
 ###assertion=empty
 MATCH p =
@@ -214,7 +213,7 @@ size((n)-->()-->())
 
 AS fof###
 
-Count the number of rows matching the pattern expression.
+Count the paths matching the pattern.
 """
 }
 /* confirm this, then add.

@@ -52,10 +52,10 @@ class WhereTest extends RefcardTest with QueryStatisticsTestSupport {
 ###assertion=returns-one parameters=aname
 MATCH (n)-->(m)
 
-WHERE  n.property <> {value}
+WHERE n.property <> {value}
 
 AND id(n) = %A% AND id(m) = %B%
-RETURN n,m###
+RETURN n, m###
 
 Use a predicate to filter.
 Note that +WHERE+ is always part of a  +MATCH+, +OPTIONAL MATCH+, +WITH+ or +START+ clause.
