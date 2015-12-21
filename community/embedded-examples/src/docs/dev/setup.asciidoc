@@ -1,11 +1,10 @@
 [[tutorials-java-embedded-setup]]
-Include Neo4j in your project
-=============================
+= Include Neo4j in your project
 
 After selecting the appropriate <<editions,edition>> for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
 The following sections will show how to do this by either altering the build path directly or by using dependency management.
 
-== Add Neo4j to the build path ==
+== Add Neo4j to the build path
 
 Get the Neo4j libraries from one of these sources:
 
@@ -28,7 +27,7 @@ NetBeans::
 
 
 [[editions]]
-== Editions == 
+== Editions
 
 The following table outlines the available editions and their names for use with dependency management tools.
 
@@ -48,13 +47,13 @@ For more information regarding licensing, see the http://www.neo4j.org/learn/lic
 
 Javadocs can be downloaded packaged in jar files from Maven Central or read at link:javadocs/[javadocs].
 
-== Add Neo4j as a dependency ==
+== Add Neo4j as a dependency
 
 
 You can either go with the top-level artifact from the table above or include the individual components directly.
 The examples included here use the top-level artifact approach.
 
-=== Maven ===
+=== Maven
 
 Add the dependency to your project along the lines of the snippet below.
 This is usually done in the `pom.xml` file found in the root directory of the project.
@@ -77,12 +76,12 @@ This is usually done in the `pom.xml` file found in the root directory of the pr
 --------------------------------------------
 _Where the +artifactId+ is found in the editions table._
 
-=== Eclipse and Maven ===
+=== Eclipse and Maven
 
 For development in http://www.eclipse.org[Eclipse], it is recommended to install the http://www.eclipse.org/m2e/[m2e plugin] and let Maven manage the project build classpath instead, see above.
 This also adds the possibility to build your project both via the command line with Maven and have a working Eclipse setup for development.
 
-=== Ivy ===
+=== Ivy
 
 Make sure to resolve dependencies from Maven Central, for example using this configuration in your 'ivysettings.xml' file:
 
@@ -115,7 +114,7 @@ With that in place you can add Neo4j to the mix by having something along these 
 ----
 _Where the +name+ is found in the editions table above_
 
-=== Gradle ===
+=== Gradle
 
 The example below shows an example gradle build script for including the Neo4j libraries.
 
@@ -134,7 +133,7 @@ _Where the coordinates (+org.neo4j:neo4j+ in the example) are found in the editi
 
 
 [[tutorials-java-embedded-setup-startstop]]
-== Starting and stopping ==
+== Starting and stopping
 
 To create a new database or open an existing one you instantiate a +link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html[GraphDatabaseService]+.
 
@@ -171,7 +170,7 @@ tag=shutdownHook
 ----
 
 [[tutorials-java-embedded-setup-config]]
-=== Starting an embedded database with configuration settings ===
+=== Starting an embedded database with configuration settings
 
 To start Neo4j with configuration settings, a Neo4j properties file can be loaded like this:
 
@@ -196,7 +195,7 @@ tag=startDbWithMapConfig
 For configuration settings, see <<configuration>>.
 
 [[tutorials-java-embedded-setup-readonly]]
-=== Starting an embedded read-only instance ===
+=== Starting an embedded read-only instance
 
 If you want a _read-only view_ of the database, create an instance this way:
 
@@ -211,71 +210,3 @@ tag=createReadOnlyInstance
 Obviously the database has to already exist in this case.
 
 NOTE: Concurrent access to the same database files by multiple (read-only or write) instances is not supported.
-
-[[tutorials-java-embedded-logging]]
-== Controlling Logging ==
-
-Neo4j provides logging via its own +link:javadocs/org/neo4j/logging/Log.html[org.neo4j.logging.Log]+
-layer, and does not natively use any existing Java logging framework. All
-logging events produced by Neo4j have a name, a level and a message. The name
-is a FQCN (fully qualified class name).
-
-[[log-levels]]
-Neo4j uses the following log levels:
-|===
-|ERROR | For serious errors that are almost always fatal
-|WARN  | For events that are serious, but not fatal
-|INFO  | Informational events
-|DEBUG | Debugging events
-|===
-
-[[enable-embedded-logging]]
-To enable logging, an implementation of +link:javadocs/org/neo4j/logging/LogProvider.html[org.neo4j.logging.LogProvider]+
-must be provided to the +link:javadocs/org/neo4j/graphdb/GraphDatabaseFactory.html[GraphDatabaseFactory]+,
-as follows:
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/EmbeddedNeo4jWithCustomLogging.java
-classifier=sources
-tag=startDbWithLogProvider
-----
-
-Neo4j also includes a binding for SLF4J, which is available in the neo4j-slf4j library
-jar. This can be obtained via maven:
-
-["source","xml","unnumbered","2",presubs="attributes"]
---------------------------------------------
-<project>
-...
- <dependencies>
-  <dependency>
-   <groupId>org.neo4j</groupId>
-   <artifactId>neo4j-slf4j</artifactId>
-   <version>{neo4j-version}</version>
-  </dependency>
-  <dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-api</artifactId>
-    <version>{slf4j-version}</version>
-  </dependency>
-  ...
- </dependencies>
-...
-</project>
---------------------------------------------
-
-To use this binding, simply pass an instance of +link:javadocs/org/neo4j/logging/slf4j/Slf4jLogProvider.html[org.neo4j.logging.slf4j.Slf4jLogProvider]+
-to the +link:javadocs/org/neo4j/graphdb/GraphDatabaseFactory.html[GraphDatabaseFactory]+,
-as follows:
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/EmbeddedNeo4jWithSLF4JLogging.java
-classifier=sources
-tag=startDbWithSlf4jLogProvider
-----
-
-All log output can then be controlled via SLF4J configuration.
