@@ -25,7 +25,7 @@ import org.neo4j.cluster.InstanceId;
 
 /**
  * This event represents a change in the cluster members internal state. The possible states
- * are enumerated in ClusterMemberState.
+ * are enumerated in {@link HighAvailabilityMemberState}.
  */
 public class HighAvailabilityMemberChangeEvent
 {
