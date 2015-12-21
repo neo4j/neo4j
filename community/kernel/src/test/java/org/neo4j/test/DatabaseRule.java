@@ -95,24 +95,11 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return transaction( function, false );
     }
 
-    public <FROM, TO> AlgebraicFunction<FROM, TO> tx( final Function<FROM, TO> function )
+    public <FROM, TO> Function<FROM,TO> tx( Function<FROM,TO> function )
     {
-        return new AlgebraicFunction<FROM, TO>()
-        {
-            @Override
-            public TO apply( final FROM from )
-            {
-                return executeAndCommit( graphDb -> {
-                    return function.apply( from );
-                } );
-            }
-
-            @Override
-            public String toString()
-            {
-                return "tx( " + function + " )";
-            }
-        };
+        return from -> executeAndCommit( graphDb -> {
+            return function.apply( from );
+        } );
     }
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )

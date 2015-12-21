@@ -86,7 +86,7 @@ public class UniqueIndexApplicationIT
     public void tx_createNode_addLabel_setProperty() throws Exception
     {
         db.when( db.tx(
-                createNode().then( addLabel( label( "Label1" ) ).then( setProperty( "key1", "value1" ) ) )
+                createNode().andThen( addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) ) )
         ) );
     }
 
@@ -95,8 +95,8 @@ public class UniqueIndexApplicationIT
     {
         db.when( db.tx(
                 createNode()
-        ).then( db.tx(
-                addLabel( label( "Label1" ) ).then( setProperty( "key1", "value1" ) )
+        ).andThen( db.tx(
+                addLabel( label( "Label1" ) ).andThen( setProperty( "key1", "value1" ) )
         ) ) );
     }
 
@@ -104,8 +104,8 @@ public class UniqueIndexApplicationIT
     public void tx_createNode_addLabel_tx_setProperty() throws Exception
     {
         db.when( db.tx(
-                createNode().then( addLabel( label( "Label1" ) ) )
-        ).then( db.tx(
+                createNode().andThen( addLabel( label( "Label1" ) ) )
+        ).andThen( db.tx(
                 setProperty( "key1", "value1" )
         ) ) );
     }
@@ -114,8 +114,8 @@ public class UniqueIndexApplicationIT
     public void tx_createNode_setProperty_tx_addLabel() throws Exception
     {
         db.when( db.tx(
-                createNode().then( setProperty( "key1", "value1" ) )
-        ).then( db.tx(
+                createNode().andThen( setProperty( "key1", "value1" ) )
+        ).andThen( db.tx(
                 addLabel( label( "Label1" ) )
         ) ) );
     }
@@ -125,9 +125,9 @@ public class UniqueIndexApplicationIT
     {
         db.when( db.tx(
                 createNode()
-        ).then( db.tx(
+        ).andThen( db.tx(
                 addLabel( label( "Label1" ) )
-        ).then( db.tx(
+        ).andThen( db.tx(
                 setProperty( "key1", "value1" ) )
         ) ) );
     }
@@ -137,9 +137,9 @@ public class UniqueIndexApplicationIT
     {
         db.when( db.tx(
                 createNode()
-        ).then( db.tx(
+        ).andThen( db.tx(
                 setProperty( "key1", "value1" )
-        ).then( db.tx(
+        ).andThen( db.tx(
                 addLabel( label( "Label1" ) )
         ) ) ) );
     }
