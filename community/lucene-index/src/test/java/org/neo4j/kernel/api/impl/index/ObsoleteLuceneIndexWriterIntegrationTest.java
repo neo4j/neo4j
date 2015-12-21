@@ -46,14 +46,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipOutputStream;
 
-
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
 
-public class LuceneIndexWriterIntegrationTest
+public class ObsoleteLuceneIndexWriterIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
     @Rule
@@ -84,7 +83,7 @@ public class LuceneIndexWriterIntegrationTest
     {
         CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
         Directory writerDirectory = directoryFactory.open( testDir.directory(), closeRaceSignal );
-        LuceneIndexWriter indexWriter = IndexWriterFactories.standard().create( writerDirectory );
+        ObsoleteLuceneIndexWriter indexWriter = IndexWriterFactories.standard().create( writerDirectory );
 
         generateIndexData( indexWriter );
         List<Future> closeFutures = submitCloseTasks( indexWriter, closeRaceSignal );
@@ -97,7 +96,7 @@ public class LuceneIndexWriterIntegrationTest
         assertFalse( indexWriter.writer.isOpen() );
     }
 
-    private List<Future> submitCloseTasks( LuceneIndexWriter indexWriter, CountDownLatch closeRaceSignal )
+    private List<Future> submitCloseTasks( ObsoleteLuceneIndexWriter indexWriter, CountDownLatch closeRaceSignal )
     {
         List<Future> closeFutures = new ArrayList<>( THREAD_NUMBER );
         closeFutures.add( workers.submit( createMainCloseTask( indexWriter ) ) );
@@ -108,7 +107,7 @@ public class LuceneIndexWriterIntegrationTest
         return closeFutures;
     }
 
-    private void generateIndexData( LuceneIndexWriter indexWriter ) throws IOException
+    private void generateIndexData( ObsoleteLuceneIndexWriter indexWriter ) throws IOException
     {
         for ( int i = 0; i < 10; i++ )
         {
@@ -116,7 +115,7 @@ public class LuceneIndexWriterIntegrationTest
         }
     }
 
-    private Runnable createConcurrentCloseTask( LuceneIndexWriter writer, CountDownLatch closeRaceSignal )
+    private Runnable createConcurrentCloseTask( ObsoleteLuceneIndexWriter writer, CountDownLatch closeRaceSignal )
     {
         return () -> {
             try
@@ -131,7 +130,7 @@ public class LuceneIndexWriterIntegrationTest
         };
     }
 
-    private Runnable createMainCloseTask( LuceneIndexWriter writer )
+    private Runnable createMainCloseTask( ObsoleteLuceneIndexWriter writer )
     {
         return () -> {
             try

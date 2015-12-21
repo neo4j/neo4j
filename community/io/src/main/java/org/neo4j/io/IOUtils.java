@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.io;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+
+/**
+ * IO helper methods.
+ */
+public final class IOUtils
+{
+    private IOUtils()
+    {
+    }
+
+    /**
+     * Closes given {@link Collection collection} of {@link Closeable closeables}.
+     *
+     * @param closeables the closeables to close
+     * @param <T> the type of closeable
+     * @throws IOException
+     * @see #closeAll(Closeable[])
+     */
+    public static <T extends Closeable> void closeAll( Collection<T> closeables ) throws IOException
+    {
+        closeAll( closeables.toArray( new Closeable[closeables.size()] ) );
+    }
+
+    /**
+     * Closes given array of {@link Closeable closeables}. If any {@link Closeable#close()}
+     * call throws {@link IOException} than it will be rethrown to the caller after calling {@link Closeable#close()}
+     * on other given resources. If more than one {@link Closeable#close()} throw than resulting exception will have
+     * suppressed exceptions. See {@link Exception#addSuppressed(Throwable)}
+     *
+     * @param closeables the closeables to close
+     * @param <T> the type of closeable
+     * @throws IOException
+     */
+    @SafeVarargs
+    public static <T extends Closeable> void closeAll( T... closeables ) throws IOException
+    {
+        Exception closeException = null;
+        for ( T closeable : closeables )
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch ( Exception e )
+            {
+                if ( closeException == null )
+                {
+                    closeException = e;
+                }
+                else
+                {
+                    closeException.addSuppressed( e );
+                }
+            }
+        }
+        if ( closeException != null )
+        {
+            throw new IOException( "Exception closing multiple resources", closeException );
+        }
+    }
+}

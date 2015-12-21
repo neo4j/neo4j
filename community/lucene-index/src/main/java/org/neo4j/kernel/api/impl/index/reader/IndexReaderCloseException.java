@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.heuristics;
+package org.neo4j.kernel.api.impl.index.reader;
 
-public interface StatisticsData
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
+public class IndexReaderCloseException extends UncheckedIOException
 {
-    long totalNumberOfNodes();
-
-    long nodesWithLabel( int labelId );
+    public IndexReaderCloseException( IOException cause )
+    {
+        super( cause );
+    }
 }

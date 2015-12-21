@@ -33,9 +33,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.populator.NonUniqueLuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.index.storage.AbstractIndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -65,17 +66,15 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
             IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
-        IndexStorage populatorStorage = getIndexStorage( indexId );
+        PartitionedIndexStorage populatorStorage = getIndexStorage( indexId );
+        LuceneIndex luceneIndex = new LuceneIndex( populatorStorage );
         if ( config.isUnique() )
         {
-            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( documentStructure,
-                    IndexWriterFactories.standard(), SearcherManagerFactories.standard(),
-                    populatorStorage, descriptor );
+            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( luceneIndex, descriptor );
         }
         else
         {
-            return new NonUniqueLuceneIndexPopulator( documentStructure, IndexWriterFactories.standard(),
-                    populatorStorage, samplingConfig );
+            return new NonUniqueLuceneIndexPopulator( luceneIndex, samplingConfig );
         }
     }
 
@@ -83,8 +82,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexStorage indexStorage = getIndexStorage( indexId );
-        indexStorage.openDirectory();
+        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
         if ( config.isUnique() )
         {
             return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
@@ -108,7 +106,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            IndexStorage indexStorage = getIndexStorage( indexId );
+            AbstractIndexStorage indexStorage = getIndexStorage( indexId );
             String failure = indexStorage.getStoredIndexFailure();
             if ( failure != null )
             {
@@ -116,10 +114,10 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                 return InternalIndexState.FAILED;
             }
 
-            indexStorage.openDirectory();
-            try ( Directory directory = indexStorage.getDirectory() )
+            File partitionFolder = indexStorage.getPartitionFolder( 1 );
+            try ( Directory directory = indexStorage.openDirectory( partitionFolder ) )
             {
-                boolean status = LuceneIndexWriter.isOnline( directory );
+                boolean status = ObsoleteLuceneIndexWriter.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
         }
@@ -165,7 +163,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         return failure;
     }
 
-    private IndexStorage getIndexStorage( long indexId )
+    private PartitionedIndexStorage getIndexStorage( long indexId )
     {
         return indexStorageFactory.indexStorageOf( indexId );
     }

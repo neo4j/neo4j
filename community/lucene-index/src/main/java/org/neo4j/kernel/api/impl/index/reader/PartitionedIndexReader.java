@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,90 +17,95 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index.reader;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-public class DelegatingIndexReader implements IndexReader
+public class PartitionedIndexReader implements IndexReader
 {
-    private final IndexReader delegate;
 
-    public DelegatingIndexReader( IndexReader delegate )
+    private List<PartitionSearcher> partitionSearchers;
+
+    public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers )
     {
-        this.delegate = delegate;
+        this.partitionSearchers = partitionSearchers;
     }
 
     @Override
     public PrimitiveLongIterator seek( Object value )
     {
-        return delegate.seek( value );
+        return null;
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
-        return delegate.rangeSeekByNumberInclusive( lower, upper );
+        return null;
     }
 
     @Override
-    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                    String upper, boolean includeUpper )
+    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper,
+            boolean includeUpper )
     {
-        return delegate.rangeSeekByString( lower, includeLower, upper, includeUpper );
+        return null;
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
-        return delegate.rangeSeekByPrefix( prefix );
+        return null;
     }
 
     @Override
     public PrimitiveLongIterator scan()
     {
-        return delegate.scan();
+        return null;
     }
 
     @Override
     public int countIndexedNodes( long nodeId, Object propertyValue )
     {
-        return delegate.countIndexedNodes( nodeId, propertyValue );
+        return 0;
     }
 
     @Override
-    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
-        return delegate.sampleIndex( result );
+        return 0;
     }
 
     @Override
     public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
             throws Exception
     {
-        delegate.verifyDeferredConstraints( accessor, propertyKeyId );
+
     }
 
     @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
-            throws Exception
+    public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
+            List<Object> updatedPropertyValues ) throws Exception
     {
-        delegate.verifyDeferredConstraints( accessor, propertyKeyId, updatedPropertyValues );
+
     }
 
     @Override
     public void close()
     {
-        delegate.close();
-    }
-
-    @Override
-    public String toString()
-    {
-        return delegate.toString();
+        try
+        {
+            IOUtils.closeAll( partitionSearchers );
+        }
+        catch ( IOException e )
+        {
+            throw new IndexReaderCloseException( e );
+        }
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -35,7 +36,7 @@ import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -47,12 +48,13 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 {
     protected final LuceneDocumentStructure documentStructure;
     protected final LuceneReferenceManager<IndexSearcher> searcherManager;
-    protected final LuceneIndexWriter writer;
+    protected final ObsoleteLuceneIndexWriter writer;
 
-    private final IndexStorage indexStorage;
+    private final Directory directory;
+    private final PartitionedIndexStorage indexStorage;
     private final int bufferSizeLimit;
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
     private final PrimitiveLongVisitor<IOException> removeFromLucene = new PrimitiveLongVisitor<IOException>()
     {
         @Override
@@ -109,25 +111,27 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     }
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            IndexStorage indexStorage, int bufferSizeLimit ) throws IOException
+            IndexWriterFactory<ObsoleteLuceneIndexWriter> indexWriterFactory,
+            PartitionedIndexStorage indexStorage, int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.indexStorage = indexStorage;
         this.bufferSizeLimit = bufferSizeLimit;
-        this.writer = indexWriterFactory.create( indexStorage.getDirectory() );
+        this.directory = indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) );
+        this.writer = indexWriterFactory.create( directory );
         this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
     }
 
     // test only
-    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriter writer,
+    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, ObsoleteLuceneIndexWriter writer,
             LuceneReferenceManager<IndexSearcher> searcherManager,
-            IndexStorage indexStorage, int bufferSizeLimit )
+            PartitionedIndexStorage indexStorage, int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.writer = writer;
         this.searcherManager = searcherManager;
         this.indexStorage = indexStorage;
+        this.directory = indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) );
         this.bufferSizeLimit = bufferSizeLimit;
     }
 
@@ -160,7 +164,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         {
             throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
-        indexStorage.cleanupStorage();
+        indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
     }
 
     @Override
@@ -180,7 +184,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public void close() throws IOException
     {
         closeIndexResources();
-        indexStorage.close();
+        directory.close();
     }
 
     private void closeIndexResources() throws IOException

@@ -28,9 +28,9 @@ import org.neo4j.index.lucene.QueryContext;
 
 abstract class TxData
 {
-    final LuceneIndex index;
+    final LuceneLegacyIndex index;
 
-    TxData( LuceneIndex index )
+    TxData( LuceneLegacyIndex index )
     {
         this.index = index;
     }

@@ -29,10 +29,10 @@ import org.neo4j.index.lucene.QueryContext;
 
 class TxDataHolder implements Closeable
 {
-    final LuceneIndex index;
+    final LuceneLegacyIndex index;
     private TxData data;
 
-    TxDataHolder( LuceneIndex index, TxData initialData )
+    TxDataHolder( LuceneLegacyIndex index, TxData initialData )
     {
         this.index = index;
         this.data = initialData;

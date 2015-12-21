@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -49,7 +50,7 @@ public class UniqueLuceneIndexAccessorTest
     public void shouldAddUniqueEntries() throws Exception
     {
         // given
-        IndexStorage indexStorage = getIndexStorage();
+        PartitionedIndexStorage indexStorage = getIndexStorage();
         UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
@@ -65,7 +66,7 @@ public class UniqueLuceneIndexAccessorTest
     public void shouldUpdateUniqueEntries() throws Exception
     {
         // given
-        IndexStorage indexStorage = getIndexStorage();
+        PartitionedIndexStorage indexStorage = getIndexStorage();
         UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
@@ -82,7 +83,7 @@ public class UniqueLuceneIndexAccessorTest
     public void shouldRemoveAndAddEntries() throws Exception
     {
         // given
-        IndexStorage indexStorage = getIndexStorage();
+        PartitionedIndexStorage indexStorage = getIndexStorage();
         UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
@@ -109,7 +110,7 @@ public class UniqueLuceneIndexAccessorTest
     public void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
     {
         // given
-        IndexStorage indexStorage = getIndexStorage();
+        PartitionedIndexStorage indexStorage = getIndexStorage();
         UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
@@ -123,17 +124,17 @@ public class UniqueLuceneIndexAccessorTest
         assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
     }
 
-    private UniqueLuceneIndexAccessor createAccessor( IndexStorage indexStorage ) throws IOException
+    private UniqueLuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
         return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), indexStorage );
     }
 
-    private IndexStorage getIndexStorage() throws IOException
+    private PartitionedIndexStorage getIndexStorage() throws IOException
     {
         IndexStorageFactory storageFactory =
                 new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
-        IndexStorage indexStorage = storageFactory.indexStorageOf( 1 );
-        indexStorage.prepareIndexStorage();
+        PartitionedIndexStorage indexStorage = storageFactory.indexStorageOf( 1 );
+//        indexStorage.prepareIndexStorage();
         return indexStorage;
     }
 
@@ -152,9 +153,10 @@ public class UniqueLuceneIndexAccessorTest
         return NodePropertyUpdate.remove( nodeId, 100, oldValue, new long[]{1000} );
     }
 
-    private List<Long> getAllNodes( IndexStorage indexStorage, String propertyValue ) throws IOException
+    private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
-        return AllNodesCollector.getAllNodes( indexStorage.getDirectory(), propertyValue );
+        return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
+                propertyValue );
     }
 
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )

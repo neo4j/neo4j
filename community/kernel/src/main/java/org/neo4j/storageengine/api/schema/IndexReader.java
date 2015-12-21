@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
+import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -90,6 +91,12 @@ public interface IndexReader extends Resource
      */
     long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
 
+    //TODO:
+    void verifyDeferredConstraints( Object accessor, int propertyKeyId ) throws Exception;
+
+    void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+            throws Exception;
+
     IndexReader EMPTY = new IndexReader()
     {
         @Override
@@ -135,6 +142,18 @@ public interface IndexReader extends Resource
         {
             result.write( 0l, 0l );
             return 0;
+        }
+
+        @Override
+        public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
+                throws Exception
+        {
+        }
+
+        @Override
+        public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
+                List<Object> updatedPropertyValues ) throws Exception
+        {
         }
 
         @Override

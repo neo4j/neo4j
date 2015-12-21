@@ -39,9 +39,9 @@ public class IndexStorageFactory
         this.indexRootFolder = indexRootFolder;
     }
 
-    public IndexStorage indexStorageOf(long indexId)
+    public PartitionedIndexStorage indexStorageOf(long indexId)
     {
-        return new ShardedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexId );
+        return new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexId );
     }
 
     public IndexStorage labelScanStorage()

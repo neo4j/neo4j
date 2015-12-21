@@ -451,7 +451,7 @@ public class LuceneDataSource extends LifecycleAdapter
         List<IndexableField> fields = document.getFields();
         for ( IndexableField field : fields )
         {
-            if ( !(LuceneIndex.KEY_DOC_ID.equals( field.name() ) || LuceneIndex.KEY_END_NODE_ID.equals( field.name() ) || LuceneIndex.KEY_START_NODE_ID
+            if ( !(LuceneLegacyIndex.KEY_DOC_ID.equals( field.name() ) || LuceneLegacyIndex.KEY_END_NODE_ID.equals( field.name() ) || LuceneLegacyIndex.KEY_START_NODE_ID
                     .equals( field.name() )) )
             {
                 return false;

@@ -48,7 +48,7 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
-import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.ObsoleteLuceneIndexWriter;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
@@ -60,7 +60,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private final IndexIdentifier identifier;
     private final IndexType type;
 
-    private LuceneIndexWriter writer;
+    private ObsoleteLuceneIndexWriter writer;
     private SearcherManager searcherManager;
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<EntityId>>> cache;
@@ -250,7 +250,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private LuceneIndexWriter instantiateWriter( File directory )
+    private ObsoleteLuceneIndexWriter instantiateWriter( File directory )
     {
         try
         {
@@ -272,7 +272,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         return Math.min( result, 700 );
     }
 
-    private static SearcherManager instantiateSearcherManager( LuceneIndexWriter writer )
+    private static SearcherManager instantiateSearcherManager( ObsoleteLuceneIndexWriter writer )
     {
         try
         {

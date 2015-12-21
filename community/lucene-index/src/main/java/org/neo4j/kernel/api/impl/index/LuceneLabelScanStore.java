@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
@@ -49,15 +50,16 @@ public class LuceneLabelScanStore
         implements LabelScanStore, LabelScanStorageStrategy.StorageService
 {
     private final LabelScanStorageStrategy strategy;
-    private final IndexWriterFactory<LuceneIndexWriter> writerFactory;
+    private final IndexWriterFactory<ObsoleteLuceneIndexWriter> writerFactory;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
     private final IndexStorage indexStorage;
     private SearcherManager searcherManager;
-    private LuceneIndexWriter writer;
+    private ObsoleteLuceneIndexWriter writer;
     private boolean needsRebuild;
     private final Lock lock = new ReentrantLock( true );
+    private Directory directory;
 
     public interface Monitor
     {
@@ -119,7 +121,7 @@ public class LuceneLabelScanStore
     }
 
     public LuceneLabelScanStore( LabelScanStorageStrategy strategy, IndexStorage indexStorage,
-            IndexWriterFactory<LuceneIndexWriter> writerFactory,
+            IndexWriterFactory<ObsoleteLuceneIndexWriter> writerFactory,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
         this.strategy = strategy;
@@ -231,18 +233,18 @@ public class LuceneLabelScanStore
 
         try
         {
-            indexStorage.openDirectory();
+            directory = indexStorage.openDirectory( indexStorage.getIndexFolder() );
             // TODO: NOT sure that we still need it?
-            DirectoryReader.open( indexStorage.getDirectory() ).close();
+            DirectoryReader.open( indexStorage.getIndexDirectory() ).close();
 
-            writer = writerFactory.create( indexStorage.getDirectory() );
+            writer = writerFactory.create( indexStorage.getIndexDirectory() );
         }
         catch ( IndexNotFoundException e )
         {
             // No index present, create one
             monitor.noIndex();
             prepareRebuildOfIndex();
-            writer = writerFactory.create( indexStorage.getDirectory() );
+            writer = writerFactory.create( indexStorage.getIndexDirectory() );
         }
         catch ( LockObtainFailedException e )
         {
@@ -299,7 +301,7 @@ public class LuceneLabelScanStore
             writer.close();
             writer = null;
         }
-        indexStorage.close();
+        directory.close();
     }
 
     @Override
@@ -313,8 +315,8 @@ public class LuceneLabelScanStore
 
     private void prepareRebuildOfIndex() throws IOException
     {
-        indexStorage.cleanupStorage();
-        indexStorage.prepareIndexStorage();
+        indexStorage.cleanupFolder(indexStorage.getIndexFolder());
+        indexStorage.prepareFolder( indexStorage.getIndexFolder() );
         needsRebuild = true;
     }
 }

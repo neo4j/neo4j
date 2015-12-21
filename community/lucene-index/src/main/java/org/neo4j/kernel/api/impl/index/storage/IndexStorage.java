@@ -19,83 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
 
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
-
-public class IndexStorage
+public class IndexStorage extends AbstractIndexStorage
 {
-    protected final DirectoryFactory directoryFactory;
-    protected final FolderLayout folderLayout;
-    protected final FailureStorage failureStorage;
-
-    private Directory directory;
-
     public IndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
             FolderLayout folderLayout )
     {
-        this.folderLayout = folderLayout;
-        this.directoryFactory = directoryFactory;
-        this.failureStorage = new FailureStorage( fileSystem, folderLayout );
+        super( directoryFactory, fileSystem, folderLayout );
     }
 
-    public void close() throws IOException
+    public Directory getIndexDirectory() throws IOException
     {
-        if ( directory != null )
-        {
-            directory.close();
-        }
+        return openDirectory( folderLayout.getIndexFolder() );
     }
 
-    public Directory getDirectory()
-    {
-        return directory;
-    }
-
-    public void prepareIndexStorage() throws IOException
-    {
-        openDirectory();
-        cleanupStorage( directory );
-        failureStorage.reserveForIndex();
-    }
-
-    public void storeIndexFailure( String failure ) throws IOException
-    {
-        failureStorage.storeIndexFailure( failure );
-    }
-
-    public File getIndexFolder()
-    {
-        return folderLayout.getIndexFolder();
-    }
-
-    public String getStoredIndexFailure()
-    {
-        return failureStorage.loadIndexFailure();
-    }
-
-    public void cleanupStorage() throws IOException
-    {
-        cleanupStorage( getDirectory() );
-    }
-
-    public static void cleanupStorage( final Directory directory ) throws IOException
-    {
-        for ( final String fileName : directory.listAll() )
-        {
-            windowsSafeIOOperation( () -> directory.deleteFile( fileName ) );
-        }
-    }
-
-    public void openDirectory() throws IOException
-    {
-        directory = directoryFactory.open( folderLayout.getIndexFolder() );
-    }
 }

@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -276,6 +275,18 @@ public class NodeCorrectlyIndexedCheckTest
                 public long sampleIndex( Register.DoubleLong.Out sampler )
                 {
                     throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
+                        throws Exception
+                {
+                }
+
+                @Override
+                public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
+                        List<Object> updatedPropertyValues ) throws Exception
+                {
                 }
 
                 @Override

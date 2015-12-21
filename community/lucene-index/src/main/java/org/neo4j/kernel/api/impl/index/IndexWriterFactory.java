@@ -24,7 +24,7 @@ import org.apache.lucene.store.Directory;
 import java.io.IOException;
 
 @FunctionalInterface
-public interface IndexWriterFactory<W extends LuceneIndexWriter>
+public interface IndexWriterFactory<W extends ObsoleteLuceneIndexWriter>
 {
     W create( Directory directory ) throws IOException;
 }

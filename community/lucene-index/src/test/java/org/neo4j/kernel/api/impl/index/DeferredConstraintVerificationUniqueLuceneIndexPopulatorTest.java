@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.Directory;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -30,8 +30,7 @@ import java.util.Collections;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -41,17 +40,12 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
@@ -59,7 +53,6 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
-
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
@@ -70,9 +63,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
 
-    private final IndexFolderLayout indexFolderLayout = new IndexFolderLayout( new File( "target/whatever" ), INDEX_ID );
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-    private IndexStorage indexStorage;
+    private PartitionedIndexStorage indexStorage;
 
     @Test
     public void shouldVerifyThatThereAreNoDuplicates() throws Exception
@@ -89,9 +81,15 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( indexStorage.getDirectory(), "value3" ) );
+        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 3l ), getAllNodes( getDirectory(), "value3" ) );
+    }
+
+    private Directory getDirectory() throws IOException
+    {
+        File partitionFolder = indexStorage.getPartitionFolder( 1 );
+        return indexStorage.openDirectory( partitionFolder );
     }
 
     @Test
@@ -110,8 +108,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( Collections.EMPTY_LIST, getAllNodes( indexStorage.getDirectory(), "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -131,7 +129,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList(1l), getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( asList(1l), getAllNodes( getDirectory(), "value1" ) );
     }
 
     @Test
@@ -150,7 +148,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( Collections.EMPTY_LIST, getAllNodes( indexStorage.getDirectory(), "value1" ) );
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
     }
 
     @Test
@@ -171,8 +169,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
+        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -218,10 +216,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.add( 3, 1 );
 
 
-        when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn(
-                intProperty( PROPERTY_KEY_ID, 1 ) );
-        when( propertyAccessor.getProperty( 3, PROPERTY_KEY_ID ) ).thenReturn(
-                intProperty( PROPERTY_KEY_ID, 1 ) );
+        when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn( intProperty( PROPERTY_KEY_ID, 1 ) );
+        when( propertyAccessor.getProperty( 3, PROPERTY_KEY_ID ) ).thenReturn( intProperty( PROPERTY_KEY_ID, 1 ) );
 
         // when
         try
@@ -324,9 +320,9 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( indexStorage.getDirectory(), "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( indexStorage.getDirectory(), "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( indexStorage.getDirectory(), "value3" ) );
+        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 3l ), getAllNodes( getDirectory(), "value3" ) );
     }
 
     @Test
@@ -457,55 +453,13 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         }, 5, SECONDS );
     }
 
-    @Test
-    @SuppressWarnings( "unchecked" )
-    public void shouldCloseSearcherWhenIndexHasBeenDropped() throws IOException
-    {
-        // Given
-        SearcherManagerFactory searcherManagerFactory = mock( SearcherManagerFactory.class );
-        SearcherManagerStub searcherManager = spy( new SearcherManagerStub( mock( IndexSearcher.class ) ) );
-        when( searcherManagerFactory.create( any( LuceneIndexWriter.class ) ) ).thenReturn( searcherManager );
-
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator( searcherManagerFactory );
-
-        // When
-        populator.drop();
-
-        // Then
-        verify( searcherManager ).afterClose();
-    }
-
-    @Test
-    @SuppressWarnings( "unchecked" )
-    public void shouldCloseSearcherWhenPopulatorIsClosed() throws Exception
-    {
-        // Given
-        SearcherManagerFactory searcherManagerFactory = mock( SearcherManagerFactory.class );
-        SearcherManagerStub searcherManager = spy( new SearcherManagerStub( mock( IndexSearcher.class ) ) );
-        when( searcherManagerFactory.create( any( LuceneIndexWriter.class ) ) ).thenReturn( searcherManager );
-
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator( searcherManagerFactory );
-
-        // When
-        populator.close( true );
-
-        // Then
-        verify( searcherManager ).afterClose();
-    }
-
-
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator() throws IOException
     {
-        return newPopulator( SearcherManagerFactories.standard() );
-    }
-
-    private DeferredConstraintVerificationUniqueLuceneIndexPopulator newPopulator(
-            SearcherManagerFactory searcherManagerFactory ) throws IOException
-    {
-        indexStorage = new IndexStorage( directoryFactory, new EphemeralFileSystemAbstraction(), indexFolderLayout );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, new File(
+                "/target/whatever" ), INDEX_ID );
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
-                IndexWriterFactories.standard(), searcherManagerFactory, indexStorage, descriptor );
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneIndex( indexStorage ), descriptor );
 
         populator.create();
 

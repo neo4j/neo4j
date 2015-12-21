@@ -35,13 +35,13 @@ class LuceneTransactionState implements Closeable
 {
     private final Map<IndexIdentifier, TxDataBoth> txData = new HashMap<>();
 
-    void add( LuceneIndex index, EntityId entity, String key, Object value )
+    void add( LuceneLegacyIndex index, EntityId entity, String key, Object value )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, value, data.added( true ), data.removed( false ) );
     }
 
-    TxDataBoth getTxData( LuceneIndex index,
+    TxDataBoth getTxData( LuceneLegacyIndex index,
             boolean createIfNotExists )
     {
         IndexIdentifier identifier = index.getIdentifier();
@@ -54,25 +54,25 @@ class LuceneTransactionState implements Closeable
         return data;
     }
 
-    void remove( LuceneIndex index, EntityId entity, String key, Object value )
+    void remove( LuceneLegacyIndex index, EntityId entity, String key, Object value )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, value, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, EntityId entity, String key )
+    void remove( LuceneLegacyIndex index, EntityId entity, String key )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, key, null, data.removed( true ), data.added( false ) );
     }
 
-    void remove( LuceneIndex index, EntityId entity )
+    void remove( LuceneLegacyIndex index, EntityId entity )
     {
         TxDataBoth data = getTxData( index, true );
         insert( entity, null, null, data.removed( true ), data.added( false ) );
     }
 
-    void delete( LuceneIndex index )
+    void delete( LuceneLegacyIndex index )
     {
         IndexIdentifier identifier = index.getIdentifier();
         txData.put( identifier, new DeletedTxDataBoth( index ) );
@@ -88,7 +88,7 @@ class LuceneTransactionState implements Closeable
         insertInto.add( entity, key, value );
     }
 
-    Collection<EntityId> getRemovedIds( LuceneIndex index, Query query )
+    Collection<EntityId> getRemovedIds( LuceneLegacyIndex index, Query query )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
         if ( removed == null )
@@ -99,7 +99,7 @@ class LuceneTransactionState implements Closeable
         return ids != null ? ids : Collections.<EntityId>emptySet();
     }
 
-    Collection<EntityId> getRemovedIds( LuceneIndex index,
+    Collection<EntityId> getRemovedIds( LuceneLegacyIndex index,
             String key, Object value )
     {
         TxDataHolder removed = removedTxDataOrNull( index );
@@ -139,7 +139,7 @@ class LuceneTransactionState implements Closeable
         }
     }
 
-    Collection<EntityId> getAddedIds( LuceneIndex index, String key, Object value )
+    Collection<EntityId> getAddedIds( LuceneLegacyIndex index, String key, Object value )
     {
         TxDataHolder added = addedTxDataOrNull( index );
         if ( added == null )
@@ -150,13 +150,13 @@ class LuceneTransactionState implements Closeable
         return ids != null ? ids : Collections.<EntityId>emptySet();
     }
 
-    TxDataHolder addedTxDataOrNull( LuceneIndex index )
+    TxDataHolder addedTxDataOrNull( LuceneLegacyIndex index )
     {
         TxDataBoth data = getTxData( index, false );
         return data != null ? data.added( false ) : null;
     }
 
-    TxDataHolder removedTxDataOrNull( LuceneIndex index )
+    TxDataHolder removedTxDataOrNull( LuceneLegacyIndex index )
     {
         TxDataBoth data = getTxData( index, false );
         return data != null ? data.removed( false ) : null;
@@ -177,9 +177,9 @@ class LuceneTransactionState implements Closeable
     {
         private TxDataHolder add;
         private TxDataHolder remove;
-        final LuceneIndex index;
+        final LuceneLegacyIndex index;
 
-        public TxDataBoth( LuceneIndex index )
+        public TxDataBoth( LuceneLegacyIndex index )
         {
             this.index = index;
         }
@@ -219,7 +219,7 @@ class LuceneTransactionState implements Closeable
 
     private class DeletedTxDataBoth extends TxDataBoth
     {
-        public DeletedTxDataBoth( LuceneIndex index )
+        public DeletedTxDataBoth( LuceneLegacyIndex index )
         {
             super( index );
         }
@@ -243,7 +243,7 @@ class LuceneTransactionState implements Closeable
         }
     }
 
-    IndexSearcher getAdditionsAsSearcher( LuceneIndex index,
+    IndexSearcher getAdditionsAsSearcher( LuceneLegacyIndex index,
             QueryContext context )
     {
         TxDataHolder data = addedTxDataOrNull( index );

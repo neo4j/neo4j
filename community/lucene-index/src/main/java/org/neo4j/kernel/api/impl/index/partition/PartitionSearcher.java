@@ -17,14 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.partition;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.search.SearcherManager;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-public interface SearcherManagerFactory
+public class PartitionSearcher implements Closeable
 {
-    ReferenceManager<IndexSearcher> create( LuceneIndexWriter indexWriter ) throws IOException;
+    private IndexSearcher indexSearcher;
+    private SearcherManager searcherManager;
+
+    public PartitionSearcher( SearcherManager searcherManager ) throws IOException
+    {
+        this.searcherManager = searcherManager;
+        this.indexSearcher = searcherManager.acquire();
+    }
+
+    public IndexSearcher getIndexSearcher()
+    {
+        return indexSearcher;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        searcherManager.release( indexSearcher );
+    }
 }

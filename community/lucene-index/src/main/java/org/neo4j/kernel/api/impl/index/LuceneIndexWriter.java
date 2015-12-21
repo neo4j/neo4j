@@ -20,141 +20,22 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SearcherFactory;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.store.Directory;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static java.util.Collections.singletonMap;
 
 /**
  * A thin wrapper around {@link org.apache.lucene.index.IndexWriter} that exposes only some part of it's
- * functionality that it really needed.
+ * functionality that it really needed and hides a fact that index is partitioned.
  */
-public class LuceneIndexWriter implements Closeable
+public interface LuceneIndexWriter
 {
-    // Lucene cannot allocate a full MAX_INT of documents, the deviation differs from JVM to JVM, but according to
-    // their source in future versions, the deviation can never be bigger than 128.
-    private static final long MAX_DOC_LIMIT = Integer.MAX_VALUE - 128;
+    void addDocument( Document document ) throws IOException;
 
-    private static final String KEY_STATUS = "status";
-    private static final String ONLINE = "online";
-    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
+    void updateDocument( Term term, Document document ) throws IOException;
 
-    protected final IndexWriter writer;
+    void deleteDocuments( Term term ) throws IOException;
 
-    private final ReentrantLock commitCloseLock = new ReentrantLock();
-
-    /**
-     * Package private *only* for subclasses and testing.
-     */
-    LuceneIndexWriter( Directory dir, IndexWriterConfig conf ) throws IOException
-    {
-        this.writer = new IndexWriter( dir, conf );
-    }
-
-    public static boolean isOnline( Directory directory ) throws IOException
-    {
-        if ( !DirectoryReader.indexExists( directory ) )
-        {
-            return false;
-        }
-
-        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
-        {
-            Map<String,String> userData = reader.getIndexCommit().getUserData();
-            return ONLINE.equals( userData.get( KEY_STATUS ) );
-        }
-    }
-
-    public void addDocument( Document document ) throws IOException
-    {
-        writer.addDocument( document );
-    }
-
-    public void updateDocument( Term term, Document document ) throws IOException
-    {
-        writer.updateDocument( term, document );
-    }
-
-    public void deleteDocuments( Term term ) throws IOException
-    {
-        writer.deleteDocuments( term );
-    }
-
-    public void deleteDocuments( Query query ) throws IOException
-    {
-        writer.deleteDocuments( query );
-    }
-
-    public void optimize() throws IOException
-    {
-        writer.forceMerge( 1, true );
-    }
-
-    public SearcherManager createSearcherManager() throws IOException
-    {
-        return new SearcherManager( writer, true, new SearcherFactory() );
-    }
-
-    public void commit() throws IOException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            writer.commit();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    public void commitAsOnline() throws IOException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            writer.setCommitData( ONLINE_COMMIT_USER_DATA );
-            writer.commit();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            writer.close();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    IndexDeletionPolicy getIndexDeletionPolicy()
-    {
-        return writer.getConfig().getIndexDeletionPolicy();
-    }
-
-    long maxDocLimit()
-    {
-        return MAX_DOC_LIMIT;
-    }
+    void deleteDocuments( Query query ) throws IOException;
 }

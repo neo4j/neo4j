@@ -22,12 +22,13 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                  IndexStorage indexStorage,
+                                  IndexWriterFactory<ObsoleteLuceneIndexWriter> indexWriterFactory,
+                                  PartitionedIndexStorage indexStorage,
                                   int bufferSizeLimit ) throws IOException
     {
         super( documentStructure, indexWriterFactory, indexStorage, bufferSizeLimit );

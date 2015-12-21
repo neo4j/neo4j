@@ -70,7 +70,7 @@ public class DocToIdIterator extends AbstractLegacyIndexHits
 
     static long idFromDoc( Document doc )
     {
-        return Long.parseLong( doc.get( LuceneIndex.KEY_DOC_ID ) );
+        return Long.parseLong( doc.get( LuceneLegacyIndex.KEY_DOC_ID ) );
     }
 
     protected boolean endReached()

@@ -34,8 +34,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -58,14 +57,15 @@ public class LuceneIndexIT
 
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
-    private IndexStorage indexStorage;
+    private PartitionedIndexStorage indexStorage;
 
     @Before
     public void before() throws Exception
     {
-        indexStorage = new ShardedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
+        indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
                 testDir.directory(), 1 );
-        indexStorage.prepareIndexStorage();
+
+//        indexStorage.prepareIndexStorage();
         accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
     }
 
@@ -73,7 +73,7 @@ public class LuceneIndexIT
     public void after() throws IOException
     {
         accessor.close();
-        indexStorage.close();
+//        indexStorage.close();
     }
 
     @Test

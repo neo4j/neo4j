@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.impl.lucene.legacy.LuceneDataSource.KEYWORD_ANALYZER;
 
-public class LuceneIndexWriterTest
+public class ObsoleteLuceneIndexWriterTest
 {
     private Directory directory;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
@@ -59,7 +59,7 @@ public class LuceneIndexWriterTest
     public void forceShouldSetOnlineStatus() throws Exception
     {
         // GIVEN
-        LuceneIndexWriter writer = newWriter();
+        ObsoleteLuceneIndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
         writer.commitAsOnline();
 
@@ -67,14 +67,14 @@ public class LuceneIndexWriterTest
         writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
+        assertTrue( "Should have had online status set", ObsoleteLuceneIndexWriter.isOnline( directory ) );
     }
 
     @Test
     public void forceShouldKeepOnlineStatus() throws Exception
     {
         // GIVEN
-        LuceneIndexWriter writer = newWriter();
+        ObsoleteLuceneIndexWriter writer = newWriter();
         writer.commitAsOnline();
 
         // WHEN
@@ -83,14 +83,14 @@ public class LuceneIndexWriterTest
         writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
+        assertTrue( "Should have had online status set", ObsoleteLuceneIndexWriter.isOnline( directory ) );
     }
 
     @Test
     public void otherWriterSessionShouldKeepOnlineStatusEvenIfNotForcingBeforeClosing() throws Exception
     {
         // GIVEN
-        LuceneIndexWriter writer = newWriter();
+        ObsoleteLuceneIndexWriter writer = newWriter();
         writer.commitAsOnline();
         writer.close();
 
@@ -100,12 +100,12 @@ public class LuceneIndexWriterTest
         writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
+        assertTrue( "Should have had online status set", ObsoleteLuceneIndexWriter.isOnline( directory ) );
     }
 
-    private LuceneIndexWriter newWriter() throws IOException
+    private ObsoleteLuceneIndexWriter newWriter() throws IOException
     {
-        return new LuceneIndexWriter( directory, new IndexWriterConfig( KEYWORD_ANALYZER ) );
+        return new ObsoleteLuceneIndexWriter( directory, new IndexWriterConfig( KEYWORD_ANALYZER ) );
     }
 
     private Document newDocument()

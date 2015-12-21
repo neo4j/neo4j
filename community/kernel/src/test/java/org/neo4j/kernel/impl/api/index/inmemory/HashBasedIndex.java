@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -272,5 +271,18 @@ class HashBasedIndex extends InMemoryIndexImplementation
 
         result.write( uniqueAndSize[0], uniqueAndSize[1] );
         return uniqueAndSize[1];
+    }
+
+    @Override
+    public void verifyDeferredConstraints( Object accessor, int propertyKeyId ) throws Exception
+    {
+        // TODO:
+    }
+
+    @Override
+    public void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+            throws Exception
+    {
+        // TODO:
     }
 }

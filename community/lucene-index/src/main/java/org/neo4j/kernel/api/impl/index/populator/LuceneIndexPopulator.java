@@ -21,45 +21,34 @@ package org.neo4j.kernel.api.impl.index.populator;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.index.LuceneIndex;
 import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.index.IndexPopulator;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
-    protected final LuceneDocumentStructure documentStructure;
-    private final IndexWriterFactory<LuceneIndexWriter> indexWriterFactory;
-    private final IndexStorage indexStorage;
-
+    protected LuceneIndex luceneIndex;
     protected LuceneIndexWriter writer;
+    protected final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
 
-
-    LuceneIndexPopulator( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory, IndexStorage indexStorage )
+    LuceneIndexPopulator( LuceneIndex luceneIndex )
     {
-        this.documentStructure = documentStructure;
-        this.indexWriterFactory = indexWriterFactory;
-        this.indexStorage = indexStorage;
+        this.luceneIndex = luceneIndex;
     }
 
     @Override
     public void create() throws IOException
     {
-        indexStorage.prepareIndexStorage();
-        writer = indexWriterFactory.create( indexStorage.getDirectory() );
+        luceneIndex.prepare();
+        luceneIndex.open();
+        writer = luceneIndex.getIndexWriter();
     }
 
     @Override
     public void drop() throws IOException
     {
-        if ( writer != null )
-        {
-            writer.close();
-        }
-
-        indexStorage.cleanupStorage();
+        luceneIndex.drop();
     }
 
     @Override
@@ -70,23 +59,19 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             if ( populationCompletedSuccessfully )
             {
                 flush();
-                writer.commitAsOnline();
+                luceneIndex.markAsOnline();
             }
         }
         finally
         {
-            if ( writer != null )
-            {
-                writer.close();
-            }
-            indexStorage.close();
+            luceneIndex.close();
         }
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        indexStorage.storeIndexFailure( failure );
+        luceneIndex.markAsFailed( failure );
     }
 
     protected abstract void flush() throws IOException;

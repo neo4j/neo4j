@@ -46,12 +46,12 @@ public class LuceneSnapshotterTest
     private SnapshotDeletionPolicy snapshotPolicy;
 
     private IndexCommit luceneSnapshot;
-    private LuceneIndexWriter writer;
+    private ObsoleteLuceneIndexWriter writer;
 
     @Before
     public void setup() throws IOException
     {
-        writer = mock( LuceneIndexWriter.class );
+        writer = mock( ObsoleteLuceneIndexWriter.class );
         snapshotPolicy = mock(SnapshotDeletionPolicy.class);
         luceneSnapshot = mock(IndexCommit.class);
 

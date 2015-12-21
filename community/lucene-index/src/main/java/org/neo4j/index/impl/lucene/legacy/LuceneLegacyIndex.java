@@ -56,7 +56,7 @@ import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
 
-public abstract class LuceneIndex implements LegacyIndex
+public abstract class LuceneLegacyIndex implements LegacyIndex
 {
     static final String KEY_DOC_ID = "_id_";
     static final String KEY_START_NODE_ID = "_start_node_id_";
@@ -72,7 +72,7 @@ public abstract class LuceneIndex implements LegacyIndex
     private final LuceneDataSource dataSource;
     protected final IndexCommandFactory commandFactory;
 
-    LuceneIndex( LuceneDataSource dataSource, IndexIdentifier identifier, LuceneTransactionState transaction,
+    LuceneLegacyIndex( LuceneDataSource dataSource, IndexIdentifier identifier, LuceneTransactionState transaction,
             IndexType type, IndexCommandFactory commandFactory )
     {
         this.dataSource = dataSource;
@@ -311,7 +311,7 @@ public abstract class LuceneIndex implements LegacyIndex
         if ( docValuesCollector != null )
         {
             // Add from fulltext tx state
-            PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneIndex.KEY_DOC_ID );
+            PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneLegacyIndex.KEY_DOC_ID );
             while (valuesIterator.hasNext()) {
                 set.add( valuesIterator.next() );
             }
@@ -372,9 +372,9 @@ public abstract class LuceneIndex implements LegacyIndex
 
     protected abstract void addRemoveCommand( long entity, String key, Object value );
 
-    static class NodeIndex extends LuceneIndex
+    static class NodeLegacyIndex extends LuceneLegacyIndex
     {
-        NodeIndex( LuceneDataSource dataSource, IndexIdentifier identifier,
+        NodeLegacyIndex( LuceneDataSource dataSource, IndexIdentifier identifier,
                 LuceneTransactionState transaction, IndexType type, IndexCommandFactory commandFactory )
         {
             super( dataSource, identifier, transaction, type, commandFactory );
@@ -429,9 +429,9 @@ public abstract class LuceneIndex implements LegacyIndex
         }
     }
 
-    static class RelationshipIndex extends LuceneIndex
+    static class RelationshipLegacyIndex extends LuceneLegacyIndex
     {
-        RelationshipIndex( LuceneDataSource dataSource, IndexIdentifier identifier,
+        RelationshipLegacyIndex( LuceneDataSource dataSource, IndexIdentifier identifier,
                 LuceneTransactionState transaction, IndexType type, IndexCommandFactory commandFactory )
         {
             super( dataSource, identifier, transaction, type, commandFactory );

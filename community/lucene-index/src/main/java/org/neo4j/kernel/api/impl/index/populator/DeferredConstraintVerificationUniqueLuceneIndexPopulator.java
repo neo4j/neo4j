@@ -20,83 +20,38 @@
 package org.neo4j.kernel.api.impl.index.populator;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
-import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
-import org.neo4j.kernel.api.impl.index.SearcherManagerFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.LuceneIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
-
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
 
-    private final SearcherManagerFactory searcherManagerFactory;
-    private ReferenceManager<IndexSearcher> searcherManager;
-
-    public DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<LuceneIndexWriter> writers,
-            SearcherManagerFactory searcherManagerFactory,
-            IndexStorage indexStorage, IndexDescriptor descriptor )
+    public DeferredConstraintVerificationUniqueLuceneIndexPopulator(LuceneIndex index, IndexDescriptor descriptor )
     {
-        super( documentStructure, writers, indexStorage );
+        super( index );
         this.descriptor = descriptor;
         this.sampler = new UniqueIndexSampler();
-        this.searcherManagerFactory = searcherManagerFactory;
     }
 
     @Override
     public void create() throws IOException
     {
         super.create();
-        searcherManager = searcherManagerFactory.create( writer );
-    }
-
-    @Override
-    public void drop() throws IOException
-    {
-        try
-        {
-            if ( searcherManager != null )
-            {
-                searcherManager.close();
-            }
-        }
-        finally
-        {
-            super.drop();
-        }
     }
 
     @Override
@@ -117,53 +72,18 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
-        searcherManager.maybeRefresh();
-        IndexSearcher searcher = searcherManager.acquire();
-
+        luceneIndex.maybeRefresh();
+        IndexReader indexReader;
         try
         {
-            DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
-            for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
-            {
-                Fields fields = leafReaderContext.reader().fields();
-                for ( String field : fields )
-                {
-                    if ( NODE_ID_KEY.equals( field ) )
-                    {
-                        continue;
-                    }
-
-                    TermsEnum terms = fields.terms( field ).iterator();
-                    BytesRef termsRef;
-                    while ( (termsRef = terms.next()) != null )
-                    {
-                        if ( terms.docFreq() > 1 )
-                        {
-                            collector.reset();
-                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
-                        }
-                    }
-                }
-            }
+            indexReader = luceneIndex.getIndexReader();
+            indexReader.verifyDeferredConstraints(accessor, descriptor.getPropertyKeyId());
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            Throwable cause = e.getCause();
-            if ( cause instanceof IndexEntryConflictException )
-            {
-                throw (IndexEntryConflictException) cause;
-            }
-            throw e;
+            throw new IOException( e );
         }
-        finally
-        {
-            searcherManager.release( searcher );
-        }
-    }
-
-    private DuplicateCheckingCollector duplicateCheckingCollector( PropertyAccessor accessor )
-    {
-        return new DuplicateCheckingCollector( accessor, documentStructure, descriptor.getPropertyKeyId() );
+        indexReader.close();
     }
 
     @Override
@@ -209,30 +129,15 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
             @Override
             public void close() throws IOException, IndexEntryConflictException
             {
-                searcherManager.maybeRefresh();
-                IndexSearcher searcher = searcherManager.acquire();
-                try
+                luceneIndex.maybeRefresh();
+                try ( IndexReader indexReader = luceneIndex.getIndexReader() )
                 {
-                    DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
-                    for ( Object propertyValue : updatedPropertyValues )
-                    {
-                        collector.reset();
-                        Query query = documentStructure.newSeekQuery( propertyValue );
-                        searcher.search( query, collector );
-                    }
+                    indexReader.verifyDeferredConstraints( accessor, descriptor.getPropertyKeyId(),
+                            updatedPropertyValues );
                 }
-                catch ( IOException e )
+                catch ( Exception e )
                 {
-                    Throwable cause = e.getCause();
-                    if ( cause instanceof IndexEntryConflictException )
-                    {
-                        throw (IndexEntryConflictException) cause;
-                    }
-                    throw e;
-                }
-                finally
-                {
-                    searcherManager.release( searcher );
+                    throw new IOException( e );
                 }
             }
 
@@ -248,126 +153,5 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     public long sampleResult( DoubleLong.Out result )
     {
         return sampler.result( result );
-    }
-
-    @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
-    {
-        try
-        {
-            searcherManager.close();
-        }
-        finally
-        {
-            super.close( populationCompletedSuccessfully );
-        }
-    }
-
-    private static class DuplicateCheckingCollector extends SimpleCollector
-    {
-        private final PropertyAccessor accessor;
-        private final LuceneDocumentStructure documentStructure;
-        private final int propertyKeyId;
-        private EntrySet actualValues;
-        private LeafReader reader;
-
-        public DuplicateCheckingCollector(
-                PropertyAccessor accessor,
-                LuceneDocumentStructure documentStructure,
-                int propertyKeyId )
-        {
-            this.accessor = accessor;
-            this.documentStructure = documentStructure;
-            this.propertyKeyId = propertyKeyId;
-            actualValues = new EntrySet();
-        }
-
-        @Override
-        public void collect( int doc ) throws IOException
-        {
-            try
-            {
-                doCollect( doc );
-            }
-            catch ( KernelException e )
-            {
-                throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
-            }
-            catch ( PreexistingIndexEntryConflictException e )
-            {
-                throw new IOException( e );
-            }
-        }
-
-        private void doCollect( int doc ) throws IOException, KernelException, PreexistingIndexEntryConflictException
-        {
-            Document document = reader.document( doc );
-            long nodeId = documentStructure.getNodeId( document );
-            Property property = accessor.getProperty( nodeId, propertyKeyId );
-
-            // We either have to find the first conflicting entry set element,
-            // or append one for the property we just fetched:
-            EntrySet current = actualValues;
-            scan:do {
-                for ( int i = 0; i < EntrySet.INCREMENT; i++ )
-                {
-                    Object value = current.value[i];
-
-                    if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
-                    {
-                        current.value[i] = property.value();
-                        current.nodeId[i] = nodeId;
-                        if ( i == EntrySet.INCREMENT - 1 )
-                        {
-                            current.next = new EntrySet();
-                        }
-                        break scan;
-                    }
-                    else if ( property.valueEquals( value ) )
-                    {
-                        throw new PreexistingIndexEntryConflictException(
-                                value, current.nodeId[i], nodeId );
-                    }
-                }
-                current = current.next;
-            } while ( current != null );
-        }
-
-        @Override
-        protected void doSetNextReader( LeafReaderContext context ) throws IOException
-        {
-            this.reader = context.reader();
-        }
-
-        @Override
-        public boolean needsScores()
-        {
-            return false;
-        }
-
-        public void reset()
-        {
-            actualValues = new EntrySet();
-        }
-    }
-
-    /**
-     * A small struct of arrays of nodeId + property value pairs, with a next pointer.
-     * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
-     * <p>
-     * NOTE: Must always call reset() before use!
-     */
-    private static class EntrySet
-    {
-        static final int INCREMENT = 10000;
-
-        Object[] value = new Object[INCREMENT];
-        long[] nodeId = new long[INCREMENT];
-        EntrySet next;
-
-        EntrySet()
-        {
-            Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
-        }
     }
 }

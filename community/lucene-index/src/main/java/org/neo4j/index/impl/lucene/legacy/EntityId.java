@@ -105,8 +105,8 @@ public interface EntityId
         @Override
         public void enhance( Document document )
         {
-            document.add( new StringField( LuceneIndex.KEY_START_NODE_ID, "" + startNode, Store.YES ) );
-            document.add( new StringField( LuceneIndex.KEY_END_NODE_ID, "" + endNode, Store.YES ) );
+            document.add( new StringField( LuceneLegacyIndex.KEY_START_NODE_ID, "" + startNode, Store.YES ) );
+            document.add( new StringField( LuceneLegacyIndex.KEY_END_NODE_ID, "" + endNode, Store.YES ) );
         }
     }
 

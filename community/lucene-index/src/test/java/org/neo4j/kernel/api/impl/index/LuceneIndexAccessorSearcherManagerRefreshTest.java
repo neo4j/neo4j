@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
@@ -41,8 +41,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
     private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
-
-    private final LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
+    private final ObsoleteLuceneIndexWriter writer = mock( ObsoleteLuceneIndexWriter.class );
     private final File dir = new File( "testFile" );
 
     private final AtomicLong count = new AtomicLong( 0 );
@@ -194,9 +193,10 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     }
 
     private LuceneIndexAccessor createAccessor( LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> manager )
+            throws IOException
     {
-        IndexStorage indexStorage =
-                new ShardedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
+        PartitionedIndexStorage indexStorage =
+                new PartitionedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
         return new LuceneIndexAccessor( structure, writer, manager, indexStorage, 42 )
         {
         };

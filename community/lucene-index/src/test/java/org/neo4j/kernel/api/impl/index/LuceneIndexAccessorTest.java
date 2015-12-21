@@ -41,8 +41,7 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -89,7 +88,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        IndexStorage indexStorage = getIndexStorage( dirFactory, dir );
+                        PartitionedIndexStorage indexStorage = getIndexStorage( dirFactory, dir );
                         return new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
                     }
 
@@ -105,7 +104,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        IndexStorage indexStorage = getIndexStorage( dirFactory, dir );
+                        PartitionedIndexStorage indexStorage = getIndexStorage( dirFactory, dir );
                         return new UniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage );
                     }
 
@@ -118,10 +117,10 @@ public class LuceneIndexAccessorTest
         );
     }
 
-    private static IndexStorage getIndexStorage( DirectoryFactory dirFactory, File dir ) throws IOException
+    private static PartitionedIndexStorage getIndexStorage( DirectoryFactory dirFactory, File dir ) throws IOException
     {
-        IndexStorage indexStorage = new ShardedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
-        indexStorage.prepareIndexStorage();
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
+        indexStorage.prepareFolder( indexStorage.getPartitionFolder( 1 ) );
         return indexStorage;
     }
 

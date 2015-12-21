@@ -34,7 +34,7 @@ public final class IndexWriterFactories
     private static final int MERGE_POLICY_MERGE_FACTOR =
             FeatureToggles.getInteger( IndexWriterFactories.class, "merge.factor", 2 );
     private static final double MERGE_POLICY_NO_CFS_RATIO =
-            FeatureToggles.getDouble( IndexWriterFactories.class, "nocfs.ratio.", 1.0 );
+            FeatureToggles.getDouble( IndexWriterFactories.class, "nocfs.ratio", 1.0 );
     private static final double MERGE_POLICY_MIN_MERGE_MB =
             FeatureToggles.getDouble( IndexWriterFactories.class, "min.merge", 0.1 );
 
@@ -43,17 +43,18 @@ public final class IndexWriterFactories
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static IndexWriterFactory<LuceneIndexWriter> standard()
+
+    public static IndexWriterFactory<ObsoleteLuceneIndexWriter> standard()
     {
-        return directory -> new LuceneIndexWriter( directory, standardConfig() );
+        return directory -> new ObsoleteLuceneIndexWriter( directory, standardConfig() );
     }
 
-    public static IndexWriterFactory<LuceneIndexWriter> batchInsert( final IndexWriterConfig config )
+    public static IndexWriterFactory<ObsoleteLuceneIndexWriter> batchInsert( final IndexWriterConfig config )
     {
-        return directory -> new LuceneIndexWriter( directory, config );
+        return directory -> new ObsoleteLuceneIndexWriter( directory, config );
     }
 
-    private static IndexWriterConfig standardConfig()
+    public static IndexWriterConfig standardConfig()
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
 

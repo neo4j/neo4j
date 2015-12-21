@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.reader;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -31,93 +31,106 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
-import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.kernel.api.impl.index.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
-class LuceneIndexAccessorReader implements IndexReader
+public class SimpleIndexReader implements IndexReader
 {
-    private final IndexSearcher searcher;
-    private final LuceneDocumentStructure documentLogic;
-    private final Closeable onClose;
-    private final CancellationRequest cancellation;
-    private final int bufferSizeLimit;
+    private PartitionSearcher partitionSearcher;
+    private LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
-    LuceneIndexAccessorReader( IndexSearcher searcher, LuceneDocumentStructure documentLogic, Closeable onClose,
-                               CancellationRequest cancellation, int bufferSizeLimit )
+    public SimpleIndexReader( PartitionSearcher partitionSearcher )
     {
-        this.searcher = searcher;
-        this.documentLogic = documentLogic;
-        this.onClose = onClose;
-        this.cancellation = cancellation;
-        this.bufferSizeLimit = bufferSizeLimit;
+        this.partitionSearcher = partitionSearcher;
     }
 
     @Override
-    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
-        NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
-
-        for ( LeafReaderContext readerContext : luceneIndexReader().leaves() )
-        {
-            try
-            {
-                Set<String> fieldNames = getFieldNamesToSample( readerContext );
-                for ( String fieldName : fieldNames )
-                {
-                    Terms terms = readerContext.reader().terms( fieldName );
-                    if ( terms != null )
-                    {
-                        TermsEnum termsEnum = terms.iterator();
-                        BytesRef termsRef;
-                        while ( (termsRef = termsEnum.next()) != null )
-                        {
-                            sampler.include( termsRef.utf8ToString(), termsEnum.docFreq());
-                            checkCancellation();
-                        }
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        return sampler.result( result );
+        return -1;
     }
 
     @Override
     public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
             throws Exception
     {
-        // TODO: to remove!
+        try
+        {
+            PropertyAccessor propertyAccessor = (PropertyAccessor) accessor;
+            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( propertyAccessor, documentLogic,
+                    propertyKeyId );
+            IndexSearcher searcher = partitionSearcher.getIndexSearcher();
+            for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
+            {
+                Fields fields = leafReaderContext.reader().fields();
+                for ( String field : fields )
+                {
+                    if ( NODE_ID_KEY.equals( field ) )
+                    {
+                        continue;
+                    }
+
+                    TermsEnum terms = fields.terms( field ).iterator();
+                    BytesRef termsRef;
+                    while ( (termsRef = terms.next()) != null )
+                    {
+                        if ( terms.docFreq() > 1 )
+                        {
+                            collector.reset();
+                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                        }
+                    }
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            Throwable cause = e.getCause();
+            if ( cause instanceof IndexEntryConflictException )
+            {
+                throw (IndexEntryConflictException) cause;
+            }
+            throw e;
+        }
     }
 
     @Override
     public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
             List<Object> updatedPropertyValues ) throws Exception
     {
-        // TODO: to remove!
-    }
-
-    private Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
-    {
-        Fields fields = readerContext.reader().fields();
-        Set<String> fieldNames = Iterables.toSet( fields );
-        assert fieldNames.remove( NODE_ID_KEY );
-        return fieldNames;
+        try
+        {
+            PropertyAccessor propertyAccessor = (PropertyAccessor) accessor;
+            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( propertyAccessor, documentLogic,
+                    propertyKeyId );
+            for ( Object propertyValue : updatedPropertyValues )
+            {
+                collector.reset();
+                Query query = documentLogic.newSeekQuery( propertyValue );
+                getIndexSearcher().search( query, collector );
+            }
+        }
+        catch ( IOException e )
+        {
+            Throwable cause = e.getCause();
+            if ( cause instanceof IndexEntryConflictException )
+            {
+                throw (IndexEntryConflictException) cause;
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -134,7 +147,7 @@ class LuceneIndexAccessorReader implements IndexReader
 
     @Override
     public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
-                                                    String upper, boolean includeUpper )
+            String upper, boolean includeUpper )
     {
         return query( documentLogic.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
     }
@@ -162,7 +175,7 @@ class LuceneIndexAccessorReader implements IndexReader
         try
         {
             TotalHitCountCollector collector = new TotalHitCountCollector();
-            searcher.search( nodeIdAndValueQuery.build(), collector );
+            getIndexSearcher().search( nodeIdAndValueQuery.build(), collector );
             // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
             return collector.getTotalHits();
         }
@@ -177,39 +190,30 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         try
         {
-            onClose.close();
+            partitionSearcher.close();
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new IndexReaderCloseException( e );
         }
     }
-
-    protected void checkCancellation() throws IndexNotFoundKernelException
-    {
-        if ( cancellation.cancellationRequested() )
-        {
-            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
-        }
-    }
-
-    protected org.apache.lucene.index.IndexReader luceneIndexReader()
-    {
-        return searcher.getIndexReader();
-    }
-
 
     protected PrimitiveLongIterator query( Query query )
     {
         try
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector();
-            searcher.search( query, docValuesCollector );
+            getIndexSearcher().search( query, docValuesCollector );
             return docValuesCollector.getValuesIterator( NODE_ID_KEY );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private IndexSearcher getIndexSearcher()
+    {
+        return partitionSearcher.getIndexSearcher();
     }
 }

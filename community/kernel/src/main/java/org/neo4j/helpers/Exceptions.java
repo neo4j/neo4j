@@ -28,7 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -128,11 +127,6 @@ public class Exceptions
             exception = exception.getCause();
         }
         return exception;
-    }
-
-    public static Predicate<Throwable> exceptionsWithMessageContaining( final String message )
-    {
-        return item -> item.getMessage() != null && item.getMessage().contains( message );
     }
 
     private Exceptions()
@@ -276,28 +270,6 @@ public class Exceptions
     }
 
     @Deprecated
-    public static Predicate<StackTraceElement> classImplementingInterface( final Class<Client> cls )
-    {
-        return item -> {
-            try
-            {
-                for ( Class<?> interfaceClass : Class.forName( item.getClassName() ).getInterfaces() )
-                {
-                    if ( interfaceClass.equals( cls ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            catch ( ClassNotFoundException e )
-            {
-                return false;
-            }
-        };
-    }
-
-    @Deprecated
     public static boolean containsStackTraceElement( Throwable cause,
             final Predicate<StackTraceElement> predicate )
     {
@@ -317,24 +289,5 @@ public class Exceptions
     public static Predicate<StackTraceElement> forMethod( final String name )
     {
         return item -> item.getMethodName().equals( name );
-    }
-
-    public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
-        {
-            if ( toInclude.test( element ) )
-            {
-                builder.append( builder.length() > 0 ? "," : "" )
-                        .append( simpleClassName( element.getClassName() ) + "#" + element.getMethodName() );
-            }
-        }
-        return builder.toString();
-    }
-
-    private static String simpleClassName( String className )
-    {
-        return className.substring( className.lastIndexOf( '.' ) );
     }
 }

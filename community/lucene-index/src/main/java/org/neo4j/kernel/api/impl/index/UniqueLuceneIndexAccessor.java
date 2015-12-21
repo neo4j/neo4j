@@ -27,7 +27,7 @@ import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.api.index.updater.UniquePropertyIndexUpdater;
 class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                      IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                      IndexStorage indexStorage ) throws IOException
+                                      IndexWriterFactory<ObsoleteLuceneIndexWriter> indexWriterFactory,
+                                      PartitionedIndexStorage indexStorage ) throws IOException
     {
         super( documentStructure, indexWriterFactory, indexStorage, -1 /* unused */ );
     }

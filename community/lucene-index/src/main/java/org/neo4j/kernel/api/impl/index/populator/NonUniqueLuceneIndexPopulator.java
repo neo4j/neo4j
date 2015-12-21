@@ -25,10 +25,7 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactory;
-import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
+import org.neo4j.kernel.api.impl.index.LuceneIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -44,12 +41,9 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final NonUniqueIndexSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
-    public NonUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            IndexStorage indexStorage,
-            IndexSamplingConfig samplingConfig )
+    public NonUniqueLuceneIndexPopulator( LuceneIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
-        super( documentStructure, indexWriterFactory, indexStorage );
+        super( luceneIndex );
         this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }
 
