@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{FreshIdNameGenerator, PartialFunctionSupport}
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, Vector[Expression]]
@@ -77,7 +76,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
-    case Nil           => throw new ThisShouldNotHappenError("Davide", "There should be at least one predicate to be rewritten")
+    case Nil           => throw new IllegalArgumentException("There should be at least one predicate to be rewritten")
     case expr +: Nil   => expr
     case expr +: tail  => And(expr, conjunct(tail))(expr.position)
   }

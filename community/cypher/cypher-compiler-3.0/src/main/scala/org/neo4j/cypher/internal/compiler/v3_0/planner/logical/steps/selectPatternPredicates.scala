@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -78,7 +77,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
         (plan, solvedPredicates ++ Set(p) ++ expressions)
 
       case _ =>
-        throw new ThisShouldNotHappenError("Davide", "There should be at least one pattern expression")
+        throw new IllegalArgumentException("There should be at least one pattern expression")
     }
   }
 

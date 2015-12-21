@@ -35,7 +35,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -323,11 +322,11 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             IndexProxy proxy;
             try
             {
-                proxy = getIndexProxy( entry.getKey().longValue() );
+                proxy = getIndexProxy( entry.getKey() );
             }
             catch ( IndexNotFoundKernelException e )
             {
-                throw new ThisShouldNotHappenError( "Mattias",
+                throw new IllegalStateException(
                         "What? This index was seen during recovery just now, why isn't it available now?" );
             }
 

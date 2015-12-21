@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 final class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
@@ -57,7 +56,7 @@ final class PathValueBuilder {
   def addUndirectedRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
     if (rel.getStartNode == previousNode) addOutgoingRelationship(rel)
     else if (rel.getEndNode == previousNode) addIncomingRelationship(rel)
-    else throw new ThisShouldNotHappenError("pontus", s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
+    else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
   }
 
   def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {

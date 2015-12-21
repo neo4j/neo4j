@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -300,8 +299,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             }
             catch ( KernelException e )
             {
-                throw new ThisShouldNotHappenError(
-                        "Chris", "Indexed node should exist and have the indexed property.", e );
+                throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
             }
             catch ( PreexistingIndexEntryConflictException e )
             {

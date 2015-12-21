@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -244,10 +243,9 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         catch ( SchemaRuleNotFoundException e )
         {
-            throw new ThisShouldNotHappenError(
-                    "Tobias Lindaaker",
-                    "Constraint to be removed should exist, since its existence should " +
-                            "have been validated earlier and the schema should have been locked." );
+            throw new IllegalStateException(
+                    "Constraint to be removed should exist, since its existence should have been validated earlier " +
+                    "and the schema should have been locked." );
         }
         catch ( DuplicateSchemaRuleException de )
         {

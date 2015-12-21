@@ -28,8 +28,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -41,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
@@ -147,7 +146,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             if ( transactionId != expectedTransactionId )
             {
-                throw new ThisShouldNotHappenError( "Zhen Li and Mattias Persson",
+                throw new IllegalStateException(
                         "Received " + tx.transactionRepresentation() + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
             }

@@ -34,7 +34,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -152,7 +151,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
             return new LuceneIndexUpdater( true );
 
         default:
-            throw new ThisShouldNotHappenError( "Stefan", "Unsupported update mode" );
+            throw new IllegalArgumentException( "Unsupported update mode: " + mode );
         }
     }
 

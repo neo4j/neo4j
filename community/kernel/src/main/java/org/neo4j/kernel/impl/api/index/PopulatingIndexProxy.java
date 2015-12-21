@@ -25,7 +25,6 @@ import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -104,7 +103,7 @@ public class PopulatingIndexProxy implements IndexProxy
                     @Override
                     public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                     {
-                        throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+                        throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }
                 };
         }

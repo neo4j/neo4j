@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
@@ -114,7 +113,8 @@ public class SchemaStorage implements SchemaRuleAccess
             {
                 if ( foundRule != null )
                 {
-                    throw new ThisShouldNotHappenError( "Jake", String.format("Found more than one matching index rule, %s and %s", foundRule, candidate) );
+                    throw new IllegalStateException( String.format(
+                            "Found more than one matching index rule, %s and %s", foundRule, candidate ) );
                 }
                 foundRule = candidate;
             }

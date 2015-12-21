@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
@@ -50,8 +49,9 @@ public final class TransactionCountThreshold implements Threshold
             long lastTx = source.getFirstCommittedTxId( version + 1 );
             if ( lastTx == -1 )
             {
-                throw new ThisShouldNotHappenError( "ChrisG", "The next version should always exist, since this is " +
-                        "called after rotation and the PruneStrategy never checks the current active log file" );
+                throw new IllegalStateException(
+                        "The next version should always exist, since this is called after rotation and the " +
+                        "PruneStrategy never checks the current active log file" );
             }
 
             long highest = source.getLastCommittedTxId();

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.immutable
 
@@ -129,7 +128,7 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    throw new ThisShouldNotHappenError("Andres", "This method should never be called on PipeWithSource")
+    throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 

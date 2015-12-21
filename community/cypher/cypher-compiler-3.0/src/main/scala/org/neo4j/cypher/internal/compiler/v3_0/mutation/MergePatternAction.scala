@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class MergePatternAction(patterns: Seq[Pattern],
                               actions: Seq[UpdateAction],
@@ -162,7 +161,7 @@ object MergePatternAction {
         case RelatedTo(_, _, _, _, _, properties) => Some(properties)
         case VarLengthRelatedTo(_, _, _, _, _, _, _, _, _)
              | UniqueLink(_, _, _, _, _) =>
-          throw new ThisShouldNotHappenError("Davide/Stefan", "Merge patterns do not support var length or unique link")
+          throw new IllegalStateException("Merge patterns do not support var length or unique link")
         case _ => None
       }
 

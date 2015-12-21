@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -240,8 +239,7 @@ public class RelationshipProxy
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Jake",
-                    "Property key retrieved through kernel API should exist." );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist." );
         }
     }
 
@@ -307,8 +305,7 @@ public class RelationshipProxy
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Rickard",
-                    "Property key retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
     }
 

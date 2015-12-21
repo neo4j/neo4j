@@ -31,19 +31,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection, Bound, EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.kernel.security.URLAccessValidationError
-import org.neo4j.kernel.{Uniqueness, Traversal, GraphDatabaseAPI}
+import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription}
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.security.URLAccessValidationError
+import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
@@ -202,7 +201,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
         case (None, None) =>
           // If we get here, the non-empty list of range bounds was partitioned into two empty ones
-          throw new ThisShouldNotHappenError("Stefan", "Failed to partition range bounds")
+          throw new IllegalStateException("Failed to partition range bounds")
       }
     }
   }
