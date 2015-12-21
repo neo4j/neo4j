@@ -43,10 +43,10 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
 
     public InMemoryLogChannel()
     {
-        this(new byte[1000]);
+        this( new byte[1000] );
     }
 
-    public InMemoryLogChannel(byte[] bytes)
+    public InMemoryLogChannel( byte[] bytes )
     {
         this.bytes = bytes;
         this.asWriter = ByteBuffer.wrap( this.bytes );

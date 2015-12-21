@@ -29,13 +29,13 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
 
-public class CountStoreTest
+public class InMemoryCountsStoreTest
 {
     @Test
     public void getExpectedValue()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -51,7 +51,7 @@ public class CountStoreTest
     public void neverSetKeyReturnsNull()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -67,7 +67,7 @@ public class CountStoreTest
     public void getNullKeyResultsInNPE()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -84,23 +84,23 @@ public class CountStoreTest
     public void emptyUpdate()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
 
         //WHEN
         countStore.updateAll( 1, update );
 
         //THEN
-        Snapshot snapshot = countStore.snapshot( 1 );
-        Assert.assertEquals( snapshot.getTxId(), 1 );
-        Assert.assertEquals( snapshot.getMap().size(), 0 );
+        CountsSnapshot countsSnapshot = countStore.snapshot( 1 );
+        Assert.assertEquals( countsSnapshot.getTxId(), 1 );
+        Assert.assertEquals( countsSnapshot.getMap().size(), 0 );
     }
 
     @Test
     public void validSnapshot()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey key = CountsKeyFactory.nodeKey( 1 );
         update.put( key, new long[]{1} );
@@ -109,17 +109,17 @@ public class CountStoreTest
         countStore.updateAll( 1, update );
 
         //THEN
-        Snapshot snapshot = countStore.snapshot( 1 );
-        Assert.assertEquals( snapshot.getTxId(), 1 );
-        Assert.assertEquals( snapshot.getMap().size(), 1 );
-        Assert.assertEquals( snapshot.getMap().get( key )[0], 1 );
+        CountsSnapshot countsSnapshot = countStore.snapshot( 1 );
+        Assert.assertEquals( countsSnapshot.getTxId(), 1 );
+        Assert.assertEquals( countsSnapshot.getMap().size(), 1 );
+        Assert.assertEquals( countsSnapshot.getMap().get( key )[0], 1 );
     }
 
     @Test
     public void restoreFromSnapshot()
     {
         //GIVEN
-        CountStore countStore = new CountStore();
+        InMemoryCountsStore countStore = new InMemoryCountsStore();
         Map<CountsKey,long[]> update = new HashMap<>();
         NodeKey keyA = CountsKeyFactory.nodeKey( 1 );
         NodeKey keyB = CountsKeyFactory.nodeKey( 2 );
@@ -137,18 +137,18 @@ public class CountStoreTest
         countStore.updateAll( 3, update );
 
         //WHEN
-        Snapshot snapshot = countStore.snapshot( 3 );
-        long beforeTxId = snapshot.getTxId();
+        CountsSnapshot countsSnapshot = countStore.snapshot( 3 );
+        long beforeTxId = countsSnapshot.getTxId();
         Assert.assertEquals( 3, beforeTxId );
-        countStore = new CountStore( snapshot );
+        countStore = new InMemoryCountsStore( countsSnapshot );
 
         //THEN
-        Snapshot secondSnapshot = countStore.snapshot( 3 );
-        Assert.assertEquals( 3, secondSnapshot.getTxId() );
+        CountsSnapshot secondCountsSnapshot = countStore.snapshot( 3 );
+        Assert.assertEquals( 3, secondCountsSnapshot.getTxId() );
         update.put( keyC, new long[]{1} );
         countStore.updateAll( 4, update );
-        Snapshot thirdSnapshot = countStore.snapshot( 4 );
-        Assert.assertEquals( 4, thirdSnapshot.getTxId() );
+        CountsSnapshot thirdCountsSnapshot = countStore.snapshot( 4 );
+        Assert.assertEquals( 4, thirdCountsSnapshot.getTxId() );
     }
 
 }

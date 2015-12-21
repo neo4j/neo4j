@@ -28,11 +28,11 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 /**
  * Generates a Map<CountsKey, long[]> of CountsKeys and values for testing.
  */
-public class CountStoreMapGenerator
+public class CountsStoreMapGenerator
 {
-    public static ConcurrentHashMap<CountsKey,long[]> simpleCountStoreMap( int num )
+    public static Map<CountsKey,long[]> simpleCountStoreMap( int num )
     {
-        ConcurrentHashMap<CountsKey,long[]> map = new ConcurrentHashMap<>();
+        Map<CountsKey,long[]> map = new ConcurrentHashMap<>();
         addNodeKeys( num, map );
         addRelationshipKeys( num, map );
         addIndexSampleKeys( num, map );

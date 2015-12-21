@@ -26,30 +26,24 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
-import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
-import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
-import org.neo4j.kernel.impl.store.counts.keys.NodeKey;
-import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
-import static org.neo4j.kernel.impl.store.countStore.Snapshot.serialize;
+import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.EMPTY;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_SAMPLE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.INDEX_STATISTICS;
 
-public class CountStoreSnapshotSerializerTest
+public class InMemoryCountsStoreCountsSnapshotSerializerTest
 {
     InMemoryLogChannel logChannel;
-    Snapshot snapshot;
+    CountsSnapshot countsSnapshot;
     ByteBuffer expectedBytes;
     ByteBuffer serializedBytes;
 
@@ -57,7 +51,7 @@ public class CountStoreSnapshotSerializerTest
     public void setup() throws IOException, UnknownKey
     {
         logChannel = new InMemoryLogChannel();
-        snapshot = new Snapshot( 1, new ConcurrentHashMap<>() );
+        countsSnapshot = new CountsSnapshot( 1, new ConcurrentHashMap<>() );
     }
 
     @After
@@ -191,132 +185,7 @@ public class CountStoreSnapshotSerializerTest
     public void onlyHandleExpectedRecordTypes()
     {
         Assert.assertArrayEquals( CountsKeyType.values(),
-                new CountsKeyType[]{ENTITY_NODE, ENTITY_RELATIONSHIP, INDEX_STATISTICS, INDEX_SAMPLE} );
-    }
-
-    @Test
-    public void correctlyDeserializeTxId() throws IOException, UnknownKey
-    {
-        //GIVEN
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        logChannel.putLong( 72 );
-        logChannel.putInt( 0 );
-
-        //WHEN
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-
-        //THEN
-        Assert.assertEquals( 72, snapshot.getTxId() );
-    }
-
-    @Test
-    public void correctlyDeserializeTxIdAndMapSize() throws IOException, UnknownKey
-    {
-        //GIVEN
-        CountStore countStore = new CountStore();
-        Map<CountsKey,long[]> updates = new HashMap<>();
-        updates.put( CountsKeyFactory.nodeKey( 1 ), new long[]{1} );
-        updates.put( CountsKeyFactory.nodeKey( 2 ), new long[]{1} );
-        updates.put( CountsKeyFactory.nodeKey( 3 ), new long[]{1} );
-        countStore.updateAll( 1, updates );
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        Snapshot.serialize( logChannel, countStore.snapshot( 1 ) );
-
-        //WHEN
-        serializedBytes.position( 8 );
-        serializedBytes.putInt( 2 );//We serialized 3, but now the deserialization should only expect 2.
-
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-        Assert.assertEquals( 2, snapshot.getMap().size() );
-    }
-
-    @Test
-    public void correctlyDeserializeEntityNode() throws IOException, UnknownKey
-    {
-        //GIVEN
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        writeSimpleHeader( logChannel );
-        logChannel.put( ENTITY_NODE.code );
-        logChannel.putInt( 1 );
-        logChannel.putLong( 1 );
-
-        //WHEN
-        NodeKey expectedNode = CountsKeyFactory.nodeKey( 1 );
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-
-        //THEN
-        Assert.assertNotNull( snapshot.getMap().get( expectedNode ) );
-        Assert.assertArrayEquals( new long[]{1}, snapshot.getMap().get( expectedNode ) );
-
-    }
-
-    @Test
-    public void correctlyDeserializeEntityRelationship() throws IOException, UnknownKey
-    {
-        //GIVEN
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        writeSimpleHeader( logChannel );
-        logChannel.put( ENTITY_RELATIONSHIP.code );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
-        logChannel.putLong( 1 );
-
-        //WHEN
-        RelationshipKey expectedNode = CountsKeyFactory.relationshipKey( 1, 1, 1 );
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-
-        //THEN
-        Assert.assertNotNull( snapshot.getMap().get( expectedNode ) );
-        Assert.assertArrayEquals( new long[]{1}, snapshot.getMap().get( expectedNode ) );
-    }
-
-    @Test
-    public void correctlyDeserializeIndexSample() throws IOException, UnknownKey
-    {
-        //GIVEN
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        writeSimpleHeader( logChannel );
-        logChannel.put( INDEX_SAMPLE.code );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
-        logChannel.putLong( 1 );
-        logChannel.putLong( 1 );
-
-        //WHEN
-        IndexSampleKey expectedNode = CountsKeyFactory.indexSampleKey( 1, 1 );
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-
-        //THEN
-        Assert.assertNotNull( snapshot.getMap().get( expectedNode ) );
-        Assert.assertArrayEquals( new long[]{1, 1}, snapshot.getMap().get( expectedNode ) );
-    }
-
-    @Test
-    public void correctlyDeserializeIndexStatistics() throws IOException, UnknownKey
-    {
-        //GIVEN
-        serializedBytes = ByteBuffer.allocate( 1000 );
-        InMemoryLogChannel logChannel = new InMemoryLogChannel( serializedBytes.array() );
-        writeSimpleHeader( logChannel );
-        logChannel.put( INDEX_STATISTICS.code );
-        logChannel.putInt( 1 );
-        logChannel.putInt( 1 );
-        logChannel.putLong( 1 );
-        logChannel.putLong( 1 );
-
-        //WHEN
-        IndexStatisticsKey expectedNode = CountsKeyFactory.indexStatisticsKey( 1, 1 );
-        Snapshot snapshot = Snapshot.deserialize( logChannel );
-
-        //THEN
-        Assert.assertNotNull( snapshot.getMap().get( expectedNode ) );
-        Assert.assertArrayEquals( new long[]{1, 1}, snapshot.getMap().get( expectedNode ) );
+                new CountsKeyType[]{EMPTY, ENTITY_NODE, ENTITY_RELATIONSHIP, INDEX_STATISTICS, INDEX_SAMPLE} );
     }
 
     private void initializeBuffers( int serializedLength )
@@ -345,29 +214,30 @@ public class CountStoreSnapshotSerializerTest
 
     private void writeAndSerializeEntityNode( int labelId, long count ) throws IOException, UnknownKey
     {
-        snapshot.getMap().put( CountsKeyFactory.nodeKey( labelId ), new long[]{count} );
-        serialize( logChannel, snapshot );
+        countsSnapshot.getMap().put( CountsKeyFactory.nodeKey( labelId ), new long[]{count} );
+        serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeEntityRelationship( int startId, int type, int endId, long count )
             throws IOException, UnknownKey
     {
-        snapshot.getMap().put( CountsKeyFactory.relationshipKey( startId, type, endId ), new long[]{count} );
-        serialize( logChannel, snapshot );
+        countsSnapshot.getMap().put( CountsKeyFactory.relationshipKey( startId, type, endId ), new long[]{count} );
+        serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeIndexSample( int labelId, int propertyKeyId, long count )
             throws IOException, UnknownKey
     {
-        snapshot.getMap().put( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), new long[]{count, count} );
-        serialize( logChannel, snapshot );
+        countsSnapshot.getMap()
+                .put( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), new long[]{count, count} );
+        serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeIndexStatistics( int labelId, int propertyKeyId, long count )
             throws IOException, UnknownKey
     {
-        snapshot.getMap()
+        countsSnapshot.getMap()
                 .put( CountsKeyFactory.indexStatisticsKey( labelId, propertyKeyId ), new long[]{count, count} );
-        serialize( logChannel, snapshot );
+        serialize( logChannel, countsSnapshot );
     }
 }

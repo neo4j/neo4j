@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.countStore;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -53,14 +52,21 @@ public class IntermediateStateTestManager
         for ( int i = 1; i < this.maps.length; i++ )
         {
             applyDiffToMap( nextMap, maps[i] );
-            ConcurrentHashMap<CountsKey,long[]> newMap = CountStore.copyOfMap( nextMap );
+            ConcurrentHashMap<CountsKey,long[]> newMap = copyOfMap( nextMap );
             intermediateStateMaps[i] = newMap;
         }
         return intermediateStateMaps;
     }
 
-    public synchronized static Map<CountsKey,long[]> applyDiffToMap( Map<CountsKey,long[]> map,
-            Map<CountsKey,long[]> diff )
+    private ConcurrentHashMap<CountsKey,long[]> copyOfMap( ConcurrentHashMap<CountsKey,long[]> nextMap )
+    {
+        ConcurrentHashMap<CountsKey,long[]> newMap = new ConcurrentHashMap<>();
+        nextMap.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );
+        return newMap;
+    }
+
+    public synchronized static ConcurrentHashMap<CountsKey,long[]> applyDiffToMap(
+            ConcurrentHashMap<CountsKey,long[]> map, ConcurrentHashMap<CountsKey,long[]> diff )
     {
         diff.forEach( ( key, value ) -> map.compute( key,
                 ( k, v ) -> v == null ? Arrays.copyOf( value, value.length ) : updateEachValue( v, value ) ) );
@@ -81,7 +87,7 @@ public class IntermediateStateTestManager
         return intermediateStateMaps[txId];
     }
 
-    public synchronized int getNextUpdateMap( Map<CountsKey,long[]> map )
+    public synchronized int getNextUpdateMap( ConcurrentHashMap<CountsKey,long[]> map )
     {
         if ( id < numberOfUpdates )
         {
@@ -140,4 +146,3 @@ public class IntermediateStateTestManager
 
     }
 }
-

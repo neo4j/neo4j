@@ -33,11 +33,12 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     private long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
     private long[] metaArray;
-    private long highestEverSeen = 0;
+    private volatile long highestEverSeen;
 
     public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize, long[] initialMeta )
     {
         this.highestGapFreeNumber = startingNumber;
+        this.highestEverSeen = startingNumber;
         this.highestGapFreeMeta = this.metaArray = initialMeta;
         this.outOfOrderQueue = new SequenceArray( initialMeta.length + 1, initialArraySize );
     }
@@ -45,7 +46,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized boolean offer( long number, long[] meta )
     {
-        highestEverSeen = Math.max(highestEverSeen, number);
+        highestEverSeen = Math.max( highestEverSeen, number );
         if ( highestGapFreeNumber + 1 == number )
         {
             version++;
@@ -59,6 +60,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         return false;
     }
 
+    @Override
     public long highestEverSeen()
     {
         return this.highestEverSeen;
@@ -73,7 +75,8 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public long[] get()
     {
-        long number; long[] meta;
+        long number;
+        long[] meta;
         while ( true )
         {
             int versionBefore = version;
@@ -128,6 +131,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized void set( long number, long[] meta )
     {
+        highestEverSeen = number;
         highestGapFreeNumber = number;
         highestGapFreeMeta = meta;
         outOfOrderQueue.clear();
@@ -136,6 +140,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized String toString()
     {
-        return format( "out-of-order-sequence:%d [%s]", highestGapFreeNumber, outOfOrderQueue );
+        return format( "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue );
     }
 }

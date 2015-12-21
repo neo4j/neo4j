@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,30 +39,30 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
-import static org.neo4j.kernel.impl.store.countStore.Snapshot.deserialize;
-import static org.neo4j.kernel.impl.store.countStore.Snapshot.serialize;
+import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotDeserializer.deserialize;
+import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 /**
  * Serializes and deserialize count stores to test that they produce the same count stores.
  */
-public class CountStoreSnapshotSerializerIntegrationTest
+public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
 {
     @Test
     public void smallWorkloadOnInMemoryLogTest() throws IOException, UnknownKey
     {
         //GIVEN
         InMemoryLogChannel tempChannel = new InMemoryLogChannel();
-        ConcurrentHashMap<CountsKey,long[]> map = CountStoreMapGenerator.simpleCountStoreMap( 1 );
-        Snapshot snapshot = new Snapshot( 1, map );
+        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 1 );
+        CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
 
         //WHEN
-        serialize( tempChannel, snapshot );
-        Snapshot recovered = deserialize( tempChannel );
+        serialize( tempChannel, countsSnapshot );
+        CountsSnapshot recovered = deserialize( tempChannel );
 
         //THEN
-        Assert.assertEquals( snapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : snapshot.getMap().entrySet() )
+        Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
+        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
@@ -72,7 +71,7 @@ public class CountStoreSnapshotSerializerIntegrationTest
 
         for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
         {
-            long[] value = snapshot.getMap().get( pair.getKey() );
+            long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
         }
@@ -84,23 +83,22 @@ public class CountStoreSnapshotSerializerIntegrationTest
     {
         //GIVEN
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File tempFile = new File( "temp.dat" );
-        tempFile.deleteOnExit();
+        File tempFile = File.createTempFile( "temp", "tmp" );
         StoreChannel rawChannel = fs.create( tempFile );
         final LogHeader header = new LogHeader( CURRENT_LOG_VERSION, 1, 42l );
         PhysicalLogVersionedStoreChannel physicalLogVersionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( rawChannel, header.logVersion, header.logFormatVersion );
 
-        ConcurrentHashMap<CountsKey,long[]> map = CountStoreMapGenerator.simpleCountStoreMap( 100000 );
-        Snapshot snapshot = new Snapshot( 1, map );
-        Snapshot recovered;
+        Map<CountsKey,long[]> map = CountsStoreMapGenerator.simpleCountStoreMap( 100000 );
+        CountsSnapshot countsSnapshot = new CountsSnapshot( 1, map );
+        CountsSnapshot recovered;
 
         //WHEN
         try ( PhysicalWritableLogChannel tempChannel = new PhysicalWritableLogChannel(
                 physicalLogVersionedStoreChannel ) )
         {
 
-            serialize( tempChannel, snapshot );
+            serialize( tempChannel, countsSnapshot );
         }
 
         physicalLogVersionedStoreChannel.position( 0 );
@@ -112,8 +110,8 @@ public class CountStoreSnapshotSerializerIntegrationTest
         }
 
         //THEN
-        Assert.assertEquals( snapshot.getTxId(), recovered.getTxId() );
-        for ( Map.Entry<CountsKey,long[]> pair : snapshot.getMap().entrySet() )
+        Assert.assertEquals( countsSnapshot.getTxId(), recovered.getTxId() );
+        for ( Map.Entry<CountsKey,long[]> pair : countsSnapshot.getMap().entrySet() )
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
@@ -122,7 +120,7 @@ public class CountStoreSnapshotSerializerIntegrationTest
 
         for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )
         {
-            long[] value = snapshot.getMap().get( pair.getKey() );
+            long[] value = countsSnapshot.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
             Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
         }
