@@ -97,7 +97,7 @@ By using these actions, you can create a Neo4j service.
 See the <<neo4j-manpage,neo4j man page>> for further details.
 
 [CAUTION]
-This approach to running Neo4j as a server is deprecated.
+This approach to running Neo4j as a service is deprecated.
 We strongly advise you to run Neo4j from a package where feasible.
 
 You can build your own `init.d` script.
