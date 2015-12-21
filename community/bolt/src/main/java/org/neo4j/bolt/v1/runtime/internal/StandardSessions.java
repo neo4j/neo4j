@@ -21,7 +21,7 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;

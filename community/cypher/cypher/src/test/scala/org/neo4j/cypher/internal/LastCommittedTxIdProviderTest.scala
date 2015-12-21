@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.kernel.{GraphDatabaseAPI, NeoStoreDataSource}
+import org.neo4j.kernel.NeoStoreDataSource
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 

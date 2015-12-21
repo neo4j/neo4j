@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.impl.RmiLocation;
@@ -71,7 +71,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         LegacyDatabaseImpl legacyDb = new LegacyDatabaseImpl( storeDir, db );
         rmiLocation( parseInt( arguments.orphans().get( 1 ) ) ).bind( legacyDb );
     }
-    
+
     private final GraphDatabaseAPI db;
     private final String storeDir;
 
@@ -81,7 +81,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         this.storeDir = storeDir;
         this.db = db;
     }
-    
+
     public static Future<LegacyDatabase> start( String classpath, File storeDir, Map<String, String> config )
             throws Exception
     {
@@ -93,7 +93,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         final Process process = execJava( appendNecessaryTestClasses( classpath ),
                 LegacyDatabaseImpl.class.getName(), args.toArray( new String[0] ) );
         new ProcessStreamHandler( process, false ).launch();
-        
+
         final RmiLocation rmiLocation = rmiLocation( rmiPort );
         ExecutorService executor = newSingleThreadExecutor();
         Future<LegacyDatabase> future = executor.submit( new Callable<LegacyDatabase>()
@@ -138,7 +138,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     {
         return RmiLocation.location( "127.0.0.1", rmiPort, "remote" );
     }
-    
+
     @Override
     public int stop()
     {
@@ -339,14 +339,14 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         {
             throw launderedException( e );
         }
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( id );
             tx.success();
         }
     }
-    
+
     @Override
     public boolean isMaster() throws RemoteException
     {

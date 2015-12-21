@@ -23,8 +23,8 @@ import java.rmi.RemoteException;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.TopLevelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;

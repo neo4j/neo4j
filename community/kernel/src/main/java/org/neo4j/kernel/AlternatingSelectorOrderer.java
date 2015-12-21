@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.kernel.impl.AbstractSelectorOrderer;
 
 public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
 {
@@ -29,7 +30,7 @@ public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
     {
         super( startSelector, endSelector );
     }
-    
+
     @Override
     protected Integer initialState()
     {

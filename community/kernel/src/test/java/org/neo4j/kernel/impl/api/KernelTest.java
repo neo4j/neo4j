@@ -25,7 +25,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;

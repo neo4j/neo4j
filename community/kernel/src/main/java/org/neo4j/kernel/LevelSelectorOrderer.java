@@ -26,6 +26,7 @@ import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.AbstractSelectorOrderer;
 
 public class LevelSelectorOrderer extends
         AbstractSelectorOrderer<Pair<AtomicInteger, TraversalBranch[]>>
@@ -88,12 +89,12 @@ public class LevelSelectorOrderer extends
             return otherBranch != null ? otherBranch : branch;
         }
     }
-    
+
     private static class TotalDepth
     {
         private int out;
         private int in;
-        
+
         void set( Direction side, int depth )
         {
             switch ( side )
@@ -102,7 +103,7 @@ public class LevelSelectorOrderer extends
             case INCOMING: in = depth; break;
             }
         }
-        
+
         int get()
         {
             return out+in;

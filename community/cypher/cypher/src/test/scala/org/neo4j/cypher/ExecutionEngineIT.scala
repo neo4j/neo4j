@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
 

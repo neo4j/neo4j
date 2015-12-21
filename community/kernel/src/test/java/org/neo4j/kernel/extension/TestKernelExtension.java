@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.extension;
 
+import org.junit.Assert;
 import org.junit.Test;
 
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
-import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +55,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphdb( 0 );
         try
         {
-            assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
+            Assert.assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
                     KernelExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
         }
         finally

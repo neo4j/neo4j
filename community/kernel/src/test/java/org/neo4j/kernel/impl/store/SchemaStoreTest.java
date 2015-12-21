@@ -29,7 +29,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;

@@ -33,7 +33,7 @@ import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import org.neo4j.graphdb.index.IndexManager
 import org.neo4j.graphdb.schema.Schema
 import org.neo4j.graphdb.traversal.{BidirectionalTraversalDescription, TraversalDescription}
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.store.StoreId
 import org.neo4j.test.TestGraphDatabaseFactory
 

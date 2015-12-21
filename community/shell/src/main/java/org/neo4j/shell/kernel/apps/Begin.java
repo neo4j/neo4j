@@ -22,7 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.TopLevelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;

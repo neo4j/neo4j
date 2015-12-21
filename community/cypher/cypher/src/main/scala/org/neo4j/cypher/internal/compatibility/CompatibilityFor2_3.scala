@@ -41,8 +41,8 @@ import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}

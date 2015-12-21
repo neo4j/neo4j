@@ -41,9 +41,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.Math.pow;
@@ -73,7 +73,7 @@ public class BigStoreIT implements RelationshipType
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BigStoreIT.class );
 
-    
+
     @Before
     public void doBefore()
     {
@@ -81,31 +81,31 @@ public class BigStoreIT implements RelationshipType
         deleteFileOrDirectory( new File( PATH ) );
         db = dbRule.getGraphDatabaseService();
     }
-    
+
     @Override
     public String name()
     {
         return "BIG_TYPE";
     }
-    
+
     @Test
     public void create4BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 32 ), 2, 400 );
     }
-    
+
     @Test
     public void create8BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 33 ), 1, 1000 );
     }
-    
+
     @Test
     public void createAndVerify32BitGraph() throws Exception
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ), 400 );
     }
-    
+
     @Test
     public void createAndVerify33BitGraph() throws Exception
     {
@@ -118,23 +118,23 @@ public class BigStoreIT implements RelationshipType
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 34 ), 1600 );
     }
-    
+
     private void createAndVerifyGraphStartingWithId( long startId, int requiredHeapMb ) throws Exception
     {
         assumeTrue( machineIsOkToRunThisTest( requiredHeapMb ) );
-        
+
         /*
          * Will create a layout like this:
-         * 
+         *
          * (refNode) --> (node) --> (highNode)
          *           ...
          *           ...
-         *           
+         *
          * Each node/relationship will have a bunch of different properties on them.
          */
         Node refNode = createReferenceNode( db );
         setHighIds( startId-1000 );
-        
+
         byte[] bytes = new byte[45];
         bytes[2] = 5;
         bytes[10] = 42;
@@ -166,7 +166,7 @@ public class BigStoreIT implements RelationshipType
 
         // Verify the data
         int verified = 0;
-        
+
         try ( Transaction transaction = db.beginTx() )
         {
             refNode = db.getNodeById( refNode.getId() );
@@ -208,7 +208,7 @@ public class BigStoreIT implements RelationshipType
             // This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files
             return false;
         }
-        
+
         long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
         if ( heapMb < requiredHeapMb )
         {
@@ -252,14 +252,14 @@ public class BigStoreIT implements RelationshipType
         {
             return;
         }
-        
+
         long idBelow = highMark-minus;
         setHighIds( idBelow );
         String propertyKey = "name";
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
         long[] arrayPropertyValue = new long[] { 1021L, 321L, 343212L };
-        
+
         Transaction tx = db.beginTx();
         Node nodeBelowTheLine = db.createNode();
         nodeBelowTheLine.setProperty( propertyKey, intPropertyValue );
@@ -312,7 +312,7 @@ public class BigStoreIT implements RelationshipType
         setHighId( IdType.ARRAY_BLOCK, id );
         setHighId( IdType.STRING_BLOCK, id );
     }
-    
+
     private static <T> Collection<T> asSet( Collection<T> collection )
     {
         return new HashSet<T>( collection );

@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {

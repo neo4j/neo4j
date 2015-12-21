@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import org.neo4j.kernel.Version;
+import org.neo4j.kernel.impl.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.JsonHelper;

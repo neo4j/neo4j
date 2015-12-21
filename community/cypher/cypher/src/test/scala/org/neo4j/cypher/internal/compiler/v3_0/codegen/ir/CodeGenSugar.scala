@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.scalatest.mock.MockitoSugar
 

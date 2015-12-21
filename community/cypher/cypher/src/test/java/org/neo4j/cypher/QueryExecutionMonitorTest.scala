@@ -24,7 +24,7 @@ import java.util.Collections
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.test.TestGraphDatabaseFactory

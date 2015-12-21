@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl;
 
 import java.io.File;
 import java.util.Map;
@@ -29,10 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public abstract class KernelData
 {
     public static final Setting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;

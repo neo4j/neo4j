@@ -17,36 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.extension;
 
-import java.io.File;
+import java.util.function.Supplier;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.KernelData;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
-public class StoreLockerLifecycleAdapter extends LifecycleAdapter
+public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtensionFactory.Dependencies>
 {
-    private final StoreLocker storeLocker;
-    private final File storeDir;
-
-    public StoreLockerLifecycleAdapter( StoreLocker storeLocker, File storeDir )
+    public interface Dependencies
     {
-        this.storeLocker = storeLocker;
-        this.storeDir = storeDir;
+        Config getConfig();
+
+        KernelData getKernel();
+
+        Supplier<NeoStoreDataSource> getNeoStoreDataSource();
+    }
+
+    static final String EXTENSION_ID = "dummy";
+
+    public DummyExtensionFactory()
+    {
+        super( EXTENSION_ID );
     }
 
     @Override
-    public void start() throws Throwable
+    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        storeLocker.checkLock( storeDir );
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        storeLocker.release();
+        return new DummyExtension( dependencies );
     }
 }

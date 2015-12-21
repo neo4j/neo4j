@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 case class LastCommittedTxIdProvider(db: GraphDatabaseService) extends (() => Long) {

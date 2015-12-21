@@ -29,7 +29,7 @@ import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;

@@ -47,7 +47,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.logging.NullLogService;

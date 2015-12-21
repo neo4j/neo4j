@@ -26,7 +26,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 

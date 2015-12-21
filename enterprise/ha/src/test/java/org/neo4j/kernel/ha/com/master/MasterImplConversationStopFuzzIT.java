@@ -42,7 +42,7 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;

@@ -28,7 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;

@@ -28,7 +28,7 @@ import java.util.Map;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertNotNull;

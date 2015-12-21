@@ -43,7 +43,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.configuration.ConfigView;

@@ -24,7 +24,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;

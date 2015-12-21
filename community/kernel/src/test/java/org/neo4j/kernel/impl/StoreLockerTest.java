@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +33,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -41,7 +42,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.StoreLocker.STORE_LOCK_FILENAME;
+import static org.neo4j.kernel.impl.StoreLocker.STORE_LOCK_FILENAME;
 
 public class StoreLockerTest
 {

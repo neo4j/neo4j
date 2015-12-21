@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -34,10 +34,6 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.Logger;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public abstract class KernelDiagnostics implements DiagnosticsProvider
 {
     public static class Versions extends KernelDiagnostics

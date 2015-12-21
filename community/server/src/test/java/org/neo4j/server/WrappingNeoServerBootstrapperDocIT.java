@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.configuration.ServerSettings;

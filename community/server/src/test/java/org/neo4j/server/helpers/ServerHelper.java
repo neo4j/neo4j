@@ -33,10 +33,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class ServerHelper
 {
