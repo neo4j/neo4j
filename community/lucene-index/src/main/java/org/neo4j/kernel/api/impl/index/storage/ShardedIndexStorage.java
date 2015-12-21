@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
@@ -31,12 +30,12 @@ import java.util.List;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 
-public class PartitionedIndexStorage extends IndexStorage
+public class ShardedIndexStorage extends IndexStorage
 {
     private static final int partitions = 1;
     private List<Directory> partitionDirectories = new ArrayList<>();
 
-    public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
+    public ShardedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
             File schemaIndexRootFolder, long indexId )
     {
         super( directoryFactory, fileSystem, new IndexFolderLayout( schemaIndexRootFolder, indexId ) );

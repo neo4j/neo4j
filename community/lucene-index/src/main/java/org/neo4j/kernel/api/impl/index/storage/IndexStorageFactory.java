@@ -41,7 +41,7 @@ public class IndexStorageFactory
 
     public IndexStorage indexStorageOf(long indexId)
     {
-        return new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexId );
+        return new ShardedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexId );
     }
 
     public IndexStorage labelScanStorage()

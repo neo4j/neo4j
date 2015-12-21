@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -120,7 +120,7 @@ public class LuceneIndexAccessorTest
 
     private static IndexStorage getIndexStorage( DirectoryFactory dirFactory, File dir ) throws IOException
     {
-        IndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
+        IndexStorage indexStorage = new ShardedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
         indexStorage.prepareIndexStorage();
         return indexStorage;
     }

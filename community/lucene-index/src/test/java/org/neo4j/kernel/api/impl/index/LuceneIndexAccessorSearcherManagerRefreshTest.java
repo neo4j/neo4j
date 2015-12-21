@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
@@ -197,7 +196,7 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     private LuceneIndexAccessor createAccessor( LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> manager )
     {
         IndexStorage indexStorage =
-                new PartitionedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
+                new ShardedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
         return new LuceneIndexAccessor( structure, writer, manager, indexStorage, 42 )
         {
         };

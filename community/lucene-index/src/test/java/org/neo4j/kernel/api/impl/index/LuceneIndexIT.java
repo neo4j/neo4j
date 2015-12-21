@@ -35,7 +35,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.index.storage.ShardedIndexStorage;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -63,8 +63,7 @@ public class LuceneIndexIT
     @Before
     public void before() throws Exception
     {
-
-        indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
+        indexStorage = new ShardedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
                 testDir.directory(), 1 );
         indexStorage.prepareIndexStorage();
         accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
