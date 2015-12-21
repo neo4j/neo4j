@@ -36,22 +36,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.function.Functions.map;
-import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.MANDATORY;
-import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.helpers.Settings.NO_DEFAULT;
-import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.basePath;
-import static org.neo4j.helpers.Settings.isFile;
-import static org.neo4j.helpers.Settings.list;
-import static org.neo4j.helpers.Settings.matches;
-import static org.neo4j.helpers.Settings.max;
-import static org.neo4j.helpers.Settings.min;
-import static org.neo4j.helpers.Settings.range;
-import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.internal.Settings.DURATION;
+import static org.neo4j.kernel.configuration.internal.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.internal.Settings.MANDATORY;
+import static org.neo4j.kernel.configuration.internal.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.kernel.configuration.internal.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.internal.Settings.PATH;
+import static org.neo4j.kernel.configuration.internal.Settings.STRING;
+import static org.neo4j.kernel.configuration.internal.Settings.basePath;
+import static org.neo4j.kernel.configuration.internal.Settings.isFile;
+import static org.neo4j.kernel.configuration.internal.Settings.list;
+import static org.neo4j.kernel.configuration.internal.Settings.matches;
+import static org.neo4j.kernel.configuration.internal.Settings.max;
+import static org.neo4j.kernel.configuration.internal.Settings.min;
+import static org.neo4j.kernel.configuration.internal.Settings.range;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 
 public class SettingsTest
 {

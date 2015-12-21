@@ -35,7 +35,7 @@ import java.util.function.BiPredicate;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;

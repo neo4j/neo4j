@@ -26,7 +26,7 @@ import java.io.PrintWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;

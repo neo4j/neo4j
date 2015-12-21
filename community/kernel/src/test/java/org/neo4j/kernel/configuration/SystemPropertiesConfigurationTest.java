@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.internal.Settings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

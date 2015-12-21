@@ -33,8 +33,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.web.ServerInternalSettings;

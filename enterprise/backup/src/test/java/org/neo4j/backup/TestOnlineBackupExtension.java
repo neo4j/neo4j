@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import java.util.Map;
 
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 
 public class TestOnlineBackupExtension extends KernelExtensionFactoryContractTest

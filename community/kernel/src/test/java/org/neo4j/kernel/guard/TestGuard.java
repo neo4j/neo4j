@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.TestGraphDatabaseFactory;

@@ -109,9 +109,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.TRUE;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 

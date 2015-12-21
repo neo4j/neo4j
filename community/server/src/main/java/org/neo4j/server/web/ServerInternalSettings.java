@@ -27,14 +27,14 @@ import org.neo4j.kernel.configuration.Obsoleted;
 
 import static java.io.File.separator;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.URI;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.DURATION;
+import static org.neo4j.kernel.configuration.internal.Settings.FALSE;
+import static org.neo4j.kernel.configuration.internal.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.kernel.configuration.internal.Settings.PATH;
+import static org.neo4j.kernel.configuration.internal.Settings.TRUE;
+import static org.neo4j.kernel.configuration.internal.Settings.URI;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 
 /**
  *

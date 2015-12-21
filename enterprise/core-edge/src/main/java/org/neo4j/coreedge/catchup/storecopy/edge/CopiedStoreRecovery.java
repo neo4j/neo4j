@@ -25,9 +25,9 @@ import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.logging.NullLogProvider;
 

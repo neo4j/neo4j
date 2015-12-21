@@ -22,18 +22,18 @@ package org.neo4j.kernel.ha;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.BYTES;
+import static org.neo4j.kernel.configuration.internal.Settings.DURATION;
+import static org.neo4j.kernel.configuration.internal.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.internal.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.internal.Settings.min;
+import static org.neo4j.kernel.configuration.internal.Settings.options;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 
 /**

@@ -38,27 +38,27 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.DOUBLE;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.LONG;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.basePath;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.matches;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.ANY;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.BYTES;
+import static org.neo4j.kernel.configuration.internal.Settings.DEFAULT;
+import static org.neo4j.kernel.configuration.internal.Settings.DOUBLE;
+import static org.neo4j.kernel.configuration.internal.Settings.DURATION;
+import static org.neo4j.kernel.configuration.internal.Settings.FALSE;
+import static org.neo4j.kernel.configuration.internal.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.internal.Settings.LONG;
+import static org.neo4j.kernel.configuration.internal.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.internal.Settings.PATH;
+import static org.neo4j.kernel.configuration.internal.Settings.STRING;
+import static org.neo4j.kernel.configuration.internal.Settings.TRUE;
+import static org.neo4j.kernel.configuration.internal.Settings.basePath;
+import static org.neo4j.kernel.configuration.internal.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.internal.Settings.list;
+import static org.neo4j.kernel.configuration.internal.Settings.matches;
+import static org.neo4j.kernel.configuration.internal.Settings.max;
+import static org.neo4j.kernel.configuration.internal.Settings.min;
+import static org.neo4j.kernel.configuration.internal.Settings.options;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
