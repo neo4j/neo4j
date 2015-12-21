@@ -5,12 +5,18 @@
 :javadoc-slf4jlogprovider: javadocs/org/neo4j/logging/slf4j/Slf4jLogProvider.html
 :javadoc-neo4jlogging: javadocs/org/neo4j/logging
 
-Neo4j provides logging via its own +link:{javadoc-neo4jlogging}/Log.html[org.neo4j.logging.Log]+ layer, and does not natively use any existing Java logging framework.
+[abstract]
+--
+To control logging in Neo4j embedded, use the Neo4j embedded logging framework.
+--
+
+Neo4j embedded provides logging via its own +link:{javadoc-neo4jlogging}/Log.html[org.neo4j.logging.Log]+ layer, and does not natively use any existing Java logging framework.
 All logging events produced by Neo4j have a name, a level and a message.
 The name is a FQCN (fully qualified class name).
 
 [[log-levels]]
 Neo4j uses the following log levels:
+[cols='1m,5']
 |===
 |ERROR | For serious errors that are almost always fatal
 |WARN  | For events that are serious, but not fatal
@@ -31,8 +37,8 @@ classifier=sources
 tag=startDbWithLogProvider
 ----
 
-Neo4j also includes a binding for SLF4J, which is available in the neo4j-slf4j library
-jar. This can be obtained via maven:
+Neo4j also includes a binding for SLF4J, which is available in the `neo4j-slf4j` library jar.
+This can be obtained via Maven:
 
 ["source","xml","unnumbered","2",presubs="attributes"]
 --------------------------------------------
