@@ -220,8 +220,9 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public static class ClusterMembersSnapshot
             implements Serializable
     {
-        private final
-        BiFunction<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
+        private static final long serialVersionUID = -4638991834604077187L;
+
+        private final BiFunction<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
 
         private Iterable<MemberIsAvailable> availableMembers = new ArrayList<>();
 

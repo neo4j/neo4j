@@ -242,6 +242,8 @@ public class AtomicBroadcastMap<K, V>
     public static class Put
             implements Serializable, MapCommand
     {
+        private static final long serialVersionUID = 8125471947744281775L;
+
         Object key;
         Object value;
 
@@ -301,6 +303,8 @@ public class AtomicBroadcastMap<K, V>
     public static class Remove
             implements Serializable, MapCommand
     {
+        private static final long serialVersionUID = 1845870513459732986L;
+
         Object key;
 
         public Remove( Object key )
@@ -346,6 +350,8 @@ public class AtomicBroadcastMap<K, V>
     public static class Clear
             implements Serializable, MapCommand
     {
+        private static final long serialVersionUID = 2872744125025935475L;
+
         @Override
         public void execute( Map map )
         {
@@ -371,6 +377,8 @@ public class AtomicBroadcastMap<K, V>
     public static class PutAll
             implements Serializable, MapCommand
     {
+        private static final long serialVersionUID = 7469806379775576358L;
+
         Map map;
 
         public PutAll( Map map )

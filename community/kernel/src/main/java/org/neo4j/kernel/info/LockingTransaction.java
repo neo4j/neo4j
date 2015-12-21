@@ -24,7 +24,8 @@ import java.io.Serializable;
 
 public class LockingTransaction implements Serializable
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -8743172898557855333L;
+
     private final String transaction;
     private final int readCount;
     private final int writeCount;

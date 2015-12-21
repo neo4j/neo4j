@@ -40,6 +40,8 @@ public enum AcceptorMessage
     public static class PrepareState
             implements Serializable
     {
+        private static final long serialVersionUID = 7179066752672770593L;
+
         private final long ballot;
 
         public PrepareState( long ballot )
@@ -92,6 +94,8 @@ public enum AcceptorMessage
     public static class AcceptState
             implements Serializable
     {
+        private static final long serialVersionUID = -5510569299948660967L;
+
         private long ballot;
         private Object value;
 

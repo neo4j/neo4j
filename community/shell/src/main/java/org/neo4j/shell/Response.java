@@ -23,6 +23,8 @@ import java.io.Serializable;
 
 public class Response implements Serializable
 {
+    private static final long serialVersionUID = -5359521886510594233L;
+
     private final String prompt;
     private final Continuation continuation;
     

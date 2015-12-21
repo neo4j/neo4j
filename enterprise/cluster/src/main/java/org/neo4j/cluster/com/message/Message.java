@@ -32,6 +32,8 @@ import java.util.Map;
 public class Message<MESSAGETYPE extends MessageType>
         implements Serializable
 {
+    private static final long serialVersionUID = 7043669983188264476L;
+
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to )
     {
         return to( messageType, to, null );

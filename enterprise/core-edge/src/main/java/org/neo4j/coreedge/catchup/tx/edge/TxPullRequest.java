@@ -27,6 +27,8 @@ import static java.lang.String.format;
 
 public class TxPullRequest implements Serializable
 {
+    private static final long serialVersionUID = 927527537940622403L;
+
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
     private final long txId;

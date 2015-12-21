@@ -22,9 +22,10 @@ package org.neo4j.management;
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
 
-@SuppressWarnings( "serial" )
 public final class BranchedStoreInfo implements Serializable
 {
+    private static final long serialVersionUID = -3519343870927764106L;
+
     private final String directory;
 
     private final long largestTxId;
