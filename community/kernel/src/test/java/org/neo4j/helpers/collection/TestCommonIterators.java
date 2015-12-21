@@ -19,22 +19,18 @@
  */
 package org.neo4j.helpers.collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestCommonIterators
 {
@@ -321,38 +317,5 @@ public class TestCommonIterators
         assertEquals( (Integer) 9, IteratorUtil.fromEnd( ints, 0 ) );
         assertEquals( (Integer) 8, IteratorUtil.fromEnd( ints, 1 ) );
         assertEquals( (Integer) 7, IteratorUtil.fromEnd( ints, 2 ) );
-    }
-    
-    @Test
-    public void fileAsIterator() throws Exception
-    {
-        String[] lines = new String[] {
-                "first line",
-                "second line and we're still good",
-                "",
-                "last line"
-        };
-        File file = createTextFileWithLines( lines );
-        try
-        {
-            Iterable<String> iterable = IteratorUtil.asIterable( file, StandardCharsets.UTF_8 );
-            assertEquals( Arrays.asList( lines ), IteratorUtil.asCollection( iterable ) );
-        }
-        finally
-        {
-            file.delete();
-        }
-    }
-
-    private File createTextFileWithLines( String[] lines ) throws IOException
-    {
-        File file = File.createTempFile( "lines", "neo4j" );
-        PrintStream out = new PrintStream( file );
-        for ( String line : lines )
-        {
-            out.println( line );
-        }
-        out.close();
-        return file;
     }
 }

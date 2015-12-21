@@ -26,7 +26,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -42,12 +42,16 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class DumpProcessInformationTest
 {
+    private static final String SIGNAL = "here";
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldDumpProcessInformation() throws Exception
     {
@@ -77,14 +81,10 @@ public class DumpProcessInformationTest
         assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    private boolean fileContains( File file, String... expectedStrings )
+    private boolean fileContains( File file, String... expectedStrings ) throws IOException
     {
         Set<String> expectedStringSet = asSet( expectedStrings );
-        for ( String line : asIterable( file, StandardCharsets.UTF_8 ) )
-        {
+        Files.lines( file.toPath() ).forEach( line -> {
             Iterator<String> expectedStringIterator = expectedStringSet.iterator();
             while ( expectedStringIterator.hasNext() )
             {
@@ -93,12 +93,9 @@ public class DumpProcessInformationTest
                     expectedStringIterator.remove();
                 }
             }
-        }
+        } );
         return expectedStringSet.isEmpty();
     }
-
-    private static final String SIGNAL = "here";
-
 
     private void awaitSignal( Process process ) throws IOException
     {
