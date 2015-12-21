@@ -20,7 +20,7 @@
 package org.neo4j.consistency.report;
 
 import org.neo4j.consistency.RecordType;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.Log;
 
@@ -98,7 +98,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         builder.append( System.lineSeparator() ).append( TAB ).append( "Inconsistent with:" );
         for ( Object arg : args )
         {
-            builder.append( ' ' ).append( ObjectUtil.toString( arg ) );
+            builder.append( ' ' ).append( Strings.prettyPrint( arg ) );
         }
         return builder;
     }
