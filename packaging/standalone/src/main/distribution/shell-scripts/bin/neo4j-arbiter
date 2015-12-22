@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright (c) 2002-2015 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
@@ -57,7 +57,7 @@ JAVA_OPTS="-server"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
 
 TIMEOUT=20
-PID_FILE=${NEO4J_PIDFILE}
+PID_FILE="${NEO4J_PIDFILE}"
 
 buildclasspath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*"
@@ -127,7 +127,7 @@ showinfo() {
   echo "CLASSPATH:         ${CLASSPATH}"
 }
 
-case "${1}" in
+case "$1" in
   console)
     console
     ;;
@@ -154,7 +154,7 @@ case "${1}" in
     ;;
 
   *)
-    echo "Usage: neo4j { start | stop | restart | status | info }"
+    echo "Usage: neo4j { console | start | stop | restart | status | info }"
     ;;
 esac
 
