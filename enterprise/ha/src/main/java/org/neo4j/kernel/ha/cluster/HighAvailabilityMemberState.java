@@ -52,7 +52,6 @@ public enum HighAvailabilityMemberState
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
                                                                       InstanceId masterId, URI masterHaURI )
                 {
-//                    assert context.getAvailableMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
                     {
                         throw new RuntimeException( "Received a MasterIsAvailable event for my InstanceId while in" +
