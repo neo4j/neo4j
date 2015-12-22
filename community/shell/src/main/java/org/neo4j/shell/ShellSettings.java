@@ -22,15 +22,15 @@ package org.neo4j.shell;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.matches;
-import static org.neo4j.kernel.configuration.Settings.port;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.ANY;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.FALSE;
+import static org.neo4j.kernel.configuration.internal.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.internal.Settings.STRING;
+import static org.neo4j.kernel.configuration.internal.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.internal.Settings.matches;
+import static org.neo4j.kernel.configuration.internal.Settings.port;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 
 /**
  * Settings for the shell extension

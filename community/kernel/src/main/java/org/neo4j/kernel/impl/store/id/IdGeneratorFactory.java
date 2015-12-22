@@ -17,35 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.store.id;
 
-import java.util.function.Supplier;
+import java.io.File;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtensionFactory.Dependencies>
+public interface IdGeneratorFactory
 {
-    public interface Dependencies
-    {
-        Config getConfig();
+    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
 
-        KernelData getKernel();
+    void create( File filename, long highId, boolean throwIfFileExists );
 
-        Supplier<NeoStoreDataSource> getNeoStoreDataSource();
-    }
-
-    static final String EXTENSION_ID = "dummy";
-
-    public DummyExtensionFactory()
-    {
-        super( EXTENSION_ID );
-    }
-
-    @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
-    {
-        return new DummyExtension( dependencies );
-    }
+    IdGenerator get( IdType idType );
 }

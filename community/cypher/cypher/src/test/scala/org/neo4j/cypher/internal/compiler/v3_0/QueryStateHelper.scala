@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalResource, NullPipe
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext

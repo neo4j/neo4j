@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;

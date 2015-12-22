@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.configuration.internal.Settings;
 
 import static java.util.regex.Pattern.quote;
 

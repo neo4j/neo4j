@@ -25,13 +25,13 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.legacy.consistency.checking.full.TaskExecutionOrder;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.internal.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.internal.Settings.FALSE;
+import static org.neo4j.kernel.configuration.internal.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.internal.Settings.PATH;
+import static org.neo4j.kernel.configuration.internal.Settings.TRUE;
+import static org.neo4j.kernel.configuration.internal.Settings.options;
+import static org.neo4j.kernel.configuration.internal.Settings.setting;
 
 /**
  * Settings for consistency checker

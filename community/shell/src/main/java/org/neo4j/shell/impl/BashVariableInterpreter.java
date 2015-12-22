@@ -30,11 +30,11 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 
-import static org.neo4j.kernel.Version.getKernel;
+import static org.neo4j.kernel.impl.Version.getKernel;
 
 /**
  * Can replace the prompt string (PS1) with common Bash variable interpretation,
- * f.ex. "\h [\t] \W $ " would result in "shell [10:05:30] 1243 $" 
+ * f.ex. "\h [\t] \W $ " would result in "shell [10:05:30] 1243 $"
  */
 public class BashVariableInterpreter
 {

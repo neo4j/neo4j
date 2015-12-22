@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.query;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 
 public abstract class QueryEngineProvider extends Service
 {

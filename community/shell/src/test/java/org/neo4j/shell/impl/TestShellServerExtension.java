@@ -21,7 +21,7 @@ package org.neo4j.shell.impl;
 
 import java.util.Map;
 
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.shell.ShellSettings;
 

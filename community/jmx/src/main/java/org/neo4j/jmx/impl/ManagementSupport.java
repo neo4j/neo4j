@@ -32,7 +32,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.ManagementInterface;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 
 public class ManagementSupport
 {

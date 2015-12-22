@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.impl.PropertyTracker;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.EntityFactory;
@@ -137,7 +137,7 @@ public class LegacyPropertyTrackers
             throw new IllegalStateException( "Property key " + property.propertyKeyId() + " should exist" );
         }
     }
-    
+
     public void nodeDelete( long nodeId )
     {
         if ( !nodeTrackers.isEmpty() )

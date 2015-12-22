@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.guard;
 
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.GuardOperationsCountException;
-import org.neo4j.kernel.guard.GuardTimeoutException;
+import org.neo4j.kernel.Traversal;
+import org.neo4j.kernel.configuration.internal.Settings;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 

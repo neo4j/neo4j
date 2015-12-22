@@ -27,7 +27,8 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -70,7 +71,7 @@ public abstract class KernelExtensionFactoryContractTest
      *                   created.
      * @param instance   used for differentiating multiple instances that will run
      *                   simultaneously.
-     * @return configuration for an {@link org.neo4j.kernel.EmbeddedGraphDatabase} that
+     * @return configuration for an {@link EmbeddedGraphDatabase} that
      */
     protected Map<String, String> configuration( boolean shouldLoad, int instance )
     {

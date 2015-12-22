@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class TransitionalPeriodTransactionMessContainer

@@ -26,7 +26,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Base64;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;

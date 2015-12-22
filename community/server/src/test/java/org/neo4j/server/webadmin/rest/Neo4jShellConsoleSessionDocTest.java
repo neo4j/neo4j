@@ -28,9 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.internal.Settings;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;

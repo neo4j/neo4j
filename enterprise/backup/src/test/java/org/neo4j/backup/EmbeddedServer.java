@@ -23,7 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 
 public class EmbeddedServer implements ServerInterface
 {
@@ -37,7 +37,7 @@ public class EmbeddedServer implements ServerInterface
         graphDatabaseBuilder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         this.db = graphDatabaseBuilder.newGraphDatabase();
     }
-    
+
     public void shutdown()
     {
         db.shutdown();

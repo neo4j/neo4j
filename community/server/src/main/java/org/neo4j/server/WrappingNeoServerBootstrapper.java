@@ -22,7 +22,7 @@ package org.neo4j.server;
 import java.io.File;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
@@ -34,7 +34,7 @@ import org.neo4j.server.configuration.ServerConfigurator;
 
 /**
  * A bootstrapper for the Neo4j Server that takes an already instantiated
- * {@link org.neo4j.kernel.GraphDatabaseAPI}, and optional configuration, and launches a
+ * {@link GraphDatabaseAPI}, and optional configuration, and launches a
  * server using that database.
  *
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.

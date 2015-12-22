@@ -41,11 +41,9 @@ import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
-import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 public class BigBatchStoreIT implements RelationshipType
 {
@@ -61,41 +59,41 @@ public class BigBatchStoreIT implements RelationshipType
             return BigBatchStoreIT.this.getClass().getSimpleName() + "#" + super.getMethodName();
         }
     };
-    
+
     @Before
     public void doBefore() throws Exception
     {
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get());
     }
-    
+
     @After
     public void doAfter()
     {
         db.shutdown();
     }
-    
+
     @Override
     public String name()
     {
         return "BIG_TYPE";
     }
-    
+
     @Test
     public void create4BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 32 ), 2, 1000 );
     }
-    
+
     @Test
     public void create8BPlusStuff() throws Exception
     {
         testHighIds( (long) pow( 2, 33 ), 1, 1600 );
     }
-    
+
     private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws Exception
     {
         assumeTrue( machineIsOkToRunThisTest(requiredHeapMb ) );
-        
+
         long idBelow = highMark-minus;
         setHighId( IdType.NODE, idBelow );
         setHighId( IdType.RELATIONSHIP, idBelow );
@@ -106,7 +104,7 @@ public class BigBatchStoreIT implements RelationshipType
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
         long[] arrayPropertyValue = new long[] { 1021L, 321L, 343212L };
-        
+
         long nodeBelowTheLine = db.createNode( map( propertyKey, intPropertyValue ) );
         assertEquals( idBelow, nodeBelowTheLine );
         long nodeAboveTheLine = db.createNode( map( propertyKey, stringPropertyValue ) );
@@ -124,7 +122,7 @@ public class BigBatchStoreIT implements RelationshipType
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
-        
+
         GraphDatabaseService edb = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         assertEquals( nodeAboveTheLine, edb.getNodeById( highMark ).getId() );
         assertEquals( relBelowTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ).getId() );
@@ -134,14 +132,14 @@ public class BigBatchStoreIT implements RelationshipType
         edb.shutdown();
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
     }
-    
+
     @Test( expected=IllegalArgumentException.class )
     public void makeSureCantCreateNodeWithMagicNumber()
     {
         long id = (long) Math.pow( 2, 32 )-1;
         db.createNode( id, null );
     }
-    
+
     private Collection<Long> asIds( Iterable<BatchRelationship> relationships )
     {
         Collection<Long> ids = new HashSet<Long>();

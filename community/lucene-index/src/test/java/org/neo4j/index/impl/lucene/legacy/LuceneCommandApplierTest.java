@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;

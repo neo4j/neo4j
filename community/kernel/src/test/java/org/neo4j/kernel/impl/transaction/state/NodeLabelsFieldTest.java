@@ -36,7 +36,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;

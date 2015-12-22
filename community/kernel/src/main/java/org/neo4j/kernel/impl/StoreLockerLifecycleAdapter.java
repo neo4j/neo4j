@@ -17,22 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.StoreLocker;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
-@Deprecated
-public interface IdGeneratorFactory
+public class StoreLockerLifecycleAdapter extends LifecycleAdapter
 {
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
+    private final StoreLocker storeLocker;
+    private final File storeDir;
 
-    void create( File filename, long highId, boolean throwIfFileExists );
+    public StoreLockerLifecycleAdapter( StoreLocker storeLocker, File storeDir )
+    {
+        this.storeLocker = storeLocker;
+        this.storeDir = storeDir;
+    }
 
-    IdGenerator get( IdType idType );
+    @Override
+    public void start() throws Throwable
+    {
+        storeLocker.checkLock( storeDir );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        storeLocker.release();
+    }
 }

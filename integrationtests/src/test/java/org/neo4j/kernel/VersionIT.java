@@ -21,6 +21,8 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.Version;
+
 import static org.junit.Assert.assertFalse;
 
 public class VersionIT

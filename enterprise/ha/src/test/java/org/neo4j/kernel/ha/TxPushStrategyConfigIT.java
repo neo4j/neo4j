@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.TransactionTemplate;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.SuppressOutput;

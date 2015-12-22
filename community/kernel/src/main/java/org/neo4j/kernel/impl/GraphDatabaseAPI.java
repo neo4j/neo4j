@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl;
 
 import java.net.URL;
 
@@ -28,10 +28,7 @@ import org.neo4j.kernel.security.URLAccessValidationError;
 
 /**
  * This API can be used to get access to services.
- *
- * @deprecated This will be moved to internal packages in the next major release.
  */
-@Deprecated
 public interface GraphDatabaseAPI extends GraphDatabaseService
 {
     /**

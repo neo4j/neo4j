@@ -26,7 +26,7 @@ import org.junit.rules.TemporaryFolder;
 
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;

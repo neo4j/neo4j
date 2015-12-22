@@ -37,7 +37,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 

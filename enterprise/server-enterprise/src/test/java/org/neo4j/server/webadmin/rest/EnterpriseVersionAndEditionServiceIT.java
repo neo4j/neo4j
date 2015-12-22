@@ -29,7 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import java.util.concurrent.Callable;
 
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;

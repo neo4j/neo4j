@@ -39,7 +39,7 @@ import javax.management.ReflectionException;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.jmx.Description;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;

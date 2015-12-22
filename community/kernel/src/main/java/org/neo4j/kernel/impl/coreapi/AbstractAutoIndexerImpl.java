@@ -29,7 +29,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
-import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.impl.PropertyTracker;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**

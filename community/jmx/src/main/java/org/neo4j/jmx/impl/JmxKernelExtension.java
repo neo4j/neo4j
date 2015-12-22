@@ -30,7 +30,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

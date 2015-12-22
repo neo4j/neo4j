@@ -31,7 +31,7 @@ import java.io.PrintStream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.configuration.internal.Settings;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;

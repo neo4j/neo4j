@@ -22,7 +22,7 @@ package org.neo4j.jmx.impl;
 import javax.management.ObjectName;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.impl.KernelData;
 
 public final class ManagementData extends DependencyResolver.Adapter
 {

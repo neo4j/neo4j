@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.transaction.TransactionStats
 
