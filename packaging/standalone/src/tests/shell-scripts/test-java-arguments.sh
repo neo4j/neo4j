@@ -10,7 +10,7 @@ run_console() {
 }
 
 run_daemon() {
-  HARNESS_JAVA_SLEEP=1 neo4j-home/bin/neo4j start &&
+  FAKE_JAVA_SLEEP=1 neo4j-home/bin/neo4j start &&
   neo4j-home/bin/neo4j stop
 }
 
