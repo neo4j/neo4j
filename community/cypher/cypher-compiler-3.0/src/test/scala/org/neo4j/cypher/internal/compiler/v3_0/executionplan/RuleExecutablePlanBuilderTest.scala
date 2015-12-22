@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_0.{Monitors, PreparedQuery, devNullLogger}
+import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, CypherCompilerConfiguration, Monitors, PreparedQuery, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{Scope, SemanticTable}
@@ -32,7 +32,14 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser
-  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], RewriterStepSequencer.newValidating)
+  val config = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    nonIndexedLabelWarningThreshold = 10000
+  )
+  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], config, RewriterStepSequencer.newValidating)
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
@@ -86,6 +93,6 @@ class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
     val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope], devNullLogger)
-    planBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+    planBuilder.producePipe(parsedQ, planContext, mock[CompilationPhaseTracer]).pipe
   }
 }

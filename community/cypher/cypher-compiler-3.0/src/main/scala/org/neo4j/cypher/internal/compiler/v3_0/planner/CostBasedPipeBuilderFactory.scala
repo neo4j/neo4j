@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.EntityAccessor
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
@@ -34,7 +35,8 @@ object CostBasedPipeBuilderFactory {
              tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
-             useErrorsOverWarnings: Boolean,
+             entityAccessor: EntityAccessor,
+             config: CypherCompilerConfiguration,
              updateStrategy: Option[UpdateStrategy]
     ) = {
 
@@ -51,6 +53,7 @@ object CostBasedPipeBuilderFactory {
     CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
       createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder,
       actualUpdateStrategy,
-      useErrorsOverWarnings)
+      entityAccessor,
+      config)
   }
 }

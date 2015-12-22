@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.notification.{MissingLabelNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Scope, SemanticTable}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -47,10 +46,11 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           plannerName: CostBasedPlannerName,
                                           runtimeBuilder: RuntimeBuilder,
                                           updateStrategy: UpdateStrategy,
-                                          useErrorsOverWarnings: Boolean)
+                                          entityAccessor: EntityAccessor,
+                                          config: CypherCompilerConfiguration)
   extends ExecutablePlanBuilder {
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
@@ -71,7 +71,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
         }
         runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
-                      plannerName, inputQuery)
+                      plannerName, entityAccessor, inputQuery, createFingerprintReference, config)
       case x =>
         throw new CantHandleQueryException(x.toString())
     }
@@ -86,7 +86,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
 
     val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable,
-      queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
+      queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = config.useErrorsOverWarnings,
       config = QueryPlannerConfiguration.default.withUpdateStrategy(updateStrategy))
 
     val plan = queryPlanner.plan(unionQuery)(context)

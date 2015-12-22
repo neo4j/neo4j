@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
+import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -226,4 +228,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 
   def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+
+  val config = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    nonIndexedLabelWarningThreshold = 10000
+  )
+
+  def entityAccessor = new EntityAccessorWrapper3_0(graph.getDependencyResolver.resolveDependency(classOf[NodeManager]))
 }

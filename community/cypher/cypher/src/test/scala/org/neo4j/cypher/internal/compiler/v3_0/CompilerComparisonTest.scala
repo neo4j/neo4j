@@ -23,7 +23,7 @@ import java.io.{File, FileWriter}
 import java.text.NumberFormat
 import java.util.{Date, Locale}
 
-import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper3_0, WrappedMonitors3_0, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper3_0, WrappedMonitors3_0}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -47,14 +47,6 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   val monitorTag = "CompilerComparison"
   val clock = Clock.SYSTEM_CLOCK
-  val config = CypherCompilerConfiguration(
-    queryCacheSize = 100,
-    statsDivergenceThreshold = 0.5,
-    queryPlanTTL = 1000,
-    useErrorsOverWarnings = false,
-    nonIndexedLabelWarningThreshold = 10000
-  )
-
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
     "ronja (idp)" -> ronjaCompiler(IDPPlannerName),
@@ -302,14 +294,15 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       queryPlanner = queryPlanner,
       runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
       semanticChecker = checker,
-      useErrorsOverWarnings = false,
+      entityAccessor = entityAccessor,
+      config = config,
       updateStrategy = None
     )
-    val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner,
+    val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer), planner,
                                                     planBuilderMonitor)
     val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
     val execPlanBuilder =
-      new ExecutionPlanBuilder(graph, new EntityAccessorWrapper3_0(nodeManager), config, clock, pipeBuilder)
+      new ExecutionPlanBuilder(graph, new EntityAccessorWrapper3_0(nodeManager), clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
@@ -325,10 +318,10 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
     val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
     val execPlanBuilder =
-      new ExecutionPlanBuilder(graph, new EntityAccessorWrapper3_0(nodeManager), config, clock, pipeBuilder)
+      new ExecutionPlanBuilder(graph, new EntityAccessorWrapper3_0(nodeManager), clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
     val cacheFlushMonitor =
@@ -344,7 +337,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       val cell_id = s"${id}_cell"
       val execute = s"javascript:setPlanTo('$q', '$compiler');"
       val resultClass =
-        if (dbHits == Some(min)) "good"
+        if (dbHits.contains(min)) "good"
         else if (dbHits.forall(s => s > min * 2)) "bad"
         else "normal"
       <td id={cell_id} class={resultClass}>
