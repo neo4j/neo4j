@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -60,6 +61,7 @@ import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
+@Ignore
 public class IndexWorkSyncTransactionApplicationStressIT
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
