@@ -7,6 +7,10 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
+ifdef VERBOSE
+  SHARNESS_FLAGS := --verbose
+endif
+
 T = $(wildcard test-*.sh)
 
 all: $(T)
@@ -17,5 +21,5 @@ clean:
 .PHONY: clean
 
 $(T):
-> ./$@
+> ./$@ $(SHARNESS_FLAGS)
 .PHONY: $(T)
