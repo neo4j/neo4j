@@ -45,4 +45,14 @@ test_expect_success "should set default charset to UTF-8" "
   test_expect_java_arg '-Dfile.encoding=UTF-8'
 "
 
+test_expect_success "should add lib dirs to classpath" "
+  neo4j-home/bin/neo4j console &&
+  test_expect_java_arg '-cp $(neo4j_home)/lib/*:$(neo4j_home)/system/lib/*'
+"
+
+test_expect_success "should add plugins to classpath" "
+  neo4j-home/bin/neo4j console &&
+  test_expect_java_arg ':$(neo4j_home)/plugins/*'
+"
+
 test_done
