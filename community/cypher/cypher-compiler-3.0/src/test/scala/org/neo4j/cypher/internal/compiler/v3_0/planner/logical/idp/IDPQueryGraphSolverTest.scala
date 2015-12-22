@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, Cardinality}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PlannerQuery, LogicalPlanningTestSupport2, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{QueryGraph, LogicalPlanningTestSupport2, Selections}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner.DEFAULT_SOLVERS
 
 import scala.collection.immutable
 import scala.language.reflectiveCalls
@@ -38,7 +38,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(patternNodes = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -48,7 +48,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         AllNodesScan("a", Set.empty)(solved)
       )
 
-      verify(monitor).noIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).noIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
       verifyNoMoreInteractions(monitor)
@@ -59,7 +59,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = Seq.empty), monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c")
       )
@@ -84,7 +84,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val plans = Array(allNodeScanA, allNodeScanB, allNodeScanC)
 
       (0 to 2).foreach { i =>
-        verify(monitor).noIDPIterationFor(qgs(i), i, plans(i))
+        verify(monitor).noIDPIterationFor(qgs(i), plans(i))
       }
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
@@ -96,7 +96,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -114,9 +114,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Expand(NodeByLabelScan("b", lblName("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r")(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
       verify(monitor).foundPlanAfter(0)
@@ -129,7 +129,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val labelBPredicate = HasLabels(varFor("b"), Seq(LabelName("B")(pos)))(pos)
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -152,9 +152,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             NodeByLabelScan("a", lblName("A"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
         )(solved))
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -169,7 +169,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(joinSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor, joinSolverStep(_))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -197,9 +197,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             NodeByLabelScan("b", lblName("B"), Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "c", "r2")(solved)
         )(solved))
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -217,7 +217,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
     new given {
       val predicate = Equals(Property(varFor("r1"), PropertyKeyName("foo")(pos))(pos), Property(varFor("r2"), PropertyKeyName("foo")(pos))(pos))(pos)
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(joinSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor, joinSolverStep(_))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -249,9 +249,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -267,7 +267,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(
         patternNodes = Set("a"),
         patternRelationships = Set(PatternRelationship("r", ("a", "a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
@@ -280,9 +280,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "a", IdName("r"), ExpandInto)(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -296,7 +296,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor, expandSolverStep(_))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -318,9 +318,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -336,7 +336,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph.empty
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -358,7 +358,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(argumentIds = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -380,7 +380,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -393,9 +393,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         ProjectEndpoints(Argument(Set("r"))(solved)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -414,7 +414,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         case (Expand(ProjectEndpoints(_,_, _, _, _, _, _, _, _), _, _, _, _, _, _), _) => 1.0
       }
 
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor, expandSolverStep(_))
       val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       qg = QueryGraph(
@@ -433,9 +433,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -451,7 +451,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor, expandSolverStep(_))
       qg = QueryGraph(patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         argumentIds = Set("a")
@@ -464,9 +464,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Expand(Argument(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -483,7 +483,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val numberOfPatternRelationships = 10
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor)
+      queryGraphSolver = createQueryGraphSolver(monitor, DEFAULT_SOLVERS:_*)
       val patternRels = for (i <- 1 to numberOfPatternRelationships) yield {
         PatternRelationship("r" + i, ("n" + i, "x"), SemanticDirection.INCOMING, Seq.empty, SimplePatternLength)
       }
@@ -514,7 +514,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         IdName("n" + i)
       }
 
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor)
+      queryGraphSolver = createQueryGraphSolver(monitor, DEFAULT_SOLVERS:_*)
       qg = QueryGraph(patternNodes = patternNodes.toSet, patternRelationships = patternRels.toSet)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -526,7 +526,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(argumentIds = Set("a"), patternNodes = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -536,7 +536,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Argument(Set("a"))(solved)()
       )
 
-      verify(monitor).noIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).noIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -548,7 +548,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor)
+      queryGraphSolver = createQueryGraphSolver(monitor, DEFAULT_SOLVERS:_*)
       qg = QueryGraph(// MATCH a OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a"),
         optionalMatches = Seq(QueryGraph(
@@ -574,16 +574,16 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      verify(monitor).noIDPIterationFor(qgs.head, 0, allNodeScanA)
+      verify(monitor).noIDPIterationFor(qgs.head, allNodeScanA)
 
       // optional match solving
       {
         // apply optional
         val omQG = cfg.qg.optionalMatches.head
 
-        verify(monitor).initTableFor(omQG, 0)
-        verify(monitor).startIDPIterationFor(omQG, 0)
-        verify(monitor).endIDPIterationFor(omQG, 0, expandAtoB)
+        verify(monitor).initTableFor(omQG)
+        verify(monitor).startIDPIterationFor(omQG)
+        verify(monitor).endIDPIterationFor(omQG, expandAtoB)
 
         verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
 
@@ -593,9 +593,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         // outer hash joins
         val omQGWithoutArguments = omQG.withoutArguments()
 
-        verify(monitor).initTableFor(omQGWithoutArguments, 0)
-        verify(monitor).startIDPIterationFor(omQGWithoutArguments, 0)
-        verify(monitor).endIDPIterationFor(omQGWithoutArguments, 0, expandBtoA)
+        verify(monitor).initTableFor(omQGWithoutArguments)
+        verify(monitor).startIDPIterationFor(omQGWithoutArguments)
+        verify(monitor).endIDPIterationFor(omQGWithoutArguments, expandBtoA)
 
         verify(monitor, times(2)).foundPlanAfter(0) // 1 time here
 
@@ -620,7 +620,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         case _ => Double.MaxValue
       }
 
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(// MATCH a, b OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a", "b"),
         optionalMatches = Seq(QueryGraph(
@@ -652,7 +652,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(// OPTIONAL MATCH a-->b RETURN b a
         patternNodes = Set.empty,
         argumentIds = Set.empty,
@@ -683,7 +683,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq.empty)
+      queryGraphSolver = createQueryGraphSolver(monitor)
       qg = QueryGraph(// MATCH (a)-[r]->(b) WHERE id(r) = 42 RETURN *
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -697,9 +697,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         DirectedRelationshipByIdSeek("r", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")(pos)))(pos)), "a", "b", Set.empty)(solved)
       )
 
-      verify(monitor).initTableFor(cfg.qg, 0)
-      verify(monitor).startIDPIterationFor(cfg.qg, 0)
-      verify(monitor).endIDPIterationFor(cfg.qg, 0, plan)
+      verify(monitor).initTableFor(cfg.qg)
+      verify(monitor).startIDPIterationFor(cfg.qg)
+      verify(monitor).endIDPIterationFor(cfg.qg, plan)
       verify(monitor).startConnectingComponents(cfg.qg)
       verify(monitor).endConnectingComponents(cfg.qg, plan)
 
@@ -713,7 +713,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor)
+      queryGraphSolver = createQueryGraphSolver(monitor, DEFAULT_SOLVERS:_*)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -739,7 +739,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     new given {
 
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor = monitor, expandSolverStep(_))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c", "d"),
         patternRelationships = Set(
@@ -768,7 +768,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      queryGraphSolver = createQueryGraphSolver(monitor = monitor, expandSolverStep(_))
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         argumentIds = Set("a", "b")
@@ -781,4 +781,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }
   }
+
+  private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solvers: (QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext])*) =
+    IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = solvers), monitor)
 }

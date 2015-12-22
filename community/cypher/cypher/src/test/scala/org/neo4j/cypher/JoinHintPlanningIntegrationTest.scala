@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeHashJoin, LogicalPlan, IdName}
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable.FoldableAny
+import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
 
 import scala.util.Random
@@ -32,7 +33,7 @@ import scala.util.Random
 class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen with LogicalPlanningTestSupport2 {
 
   test("NodeHashJoin is planned in IDP planner") {
-    val solver = IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor])
+    val solver = IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solvers = DEFAULT_SOLVERS), mock[IDPQueryGraphSolverMonitor])
 
     testPlanner(solver)
   }

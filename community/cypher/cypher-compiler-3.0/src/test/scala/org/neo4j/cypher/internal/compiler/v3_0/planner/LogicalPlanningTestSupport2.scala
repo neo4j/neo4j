@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, LazyLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{SingleComponentPlanner, IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
@@ -64,7 +64,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
-  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(mock[IDPQueryGraphSolverMonitor])
+  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
