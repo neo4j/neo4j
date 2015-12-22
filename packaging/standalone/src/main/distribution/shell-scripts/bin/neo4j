@@ -76,15 +76,7 @@ buildclasspath() {
     exit 1
   fi
 
-  ALL_JARS="${LIBDIR}/*:${SYSLIBDIR}/*:${NEO4J_HOME}/plugins/*"
-
-  for jar in "${NEO4J_HOME}"/plugins/**/*.jar ; do
-    if [ -e "${jar}" ] ; then
-      ALL_JARS="${ALL_JARS}:${jar}"
-    fi
-  done
-
-  CLASSPATH="${ALL_JARS}"
+  CLASSPATH="${LIBDIR}/*:${SYSLIBDIR}/*:${NEO4J_HOME}/plugins/*"
 }
 
 startit() {
