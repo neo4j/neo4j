@@ -52,7 +52,6 @@
       </includes>
       <excludes>
         <exclude>**/Neo4jBackup*</exclude>
-        <exclude>**/Neo4jCoord*</exclude>
         <exclude>**/Neo4jArbiter*</exclude>
       </excludes>
       <filtered>true</filtered>

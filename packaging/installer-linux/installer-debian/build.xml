@@ -49,8 +49,6 @@
                     <include name="**/server/bin/utils"/>
                     <include name="**/server/bin/neo4j-backup"/>
                     <include name="**/server/bin/neo4j-arbiter"/>
-                    <include name="**/server/bin/neo4j-coordinator"/>
-                    <include name="**/server/bin/neo4j-coordinator-shell"/>
                 </fileset>
             </chmod>
 
