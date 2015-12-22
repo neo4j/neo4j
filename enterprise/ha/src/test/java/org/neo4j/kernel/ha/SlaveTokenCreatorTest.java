@@ -23,17 +23,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.test.ConstantRequestContextFactory;
+import org.neo4j.test.IntegerResponse;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -101,32 +100,6 @@ public class SlaveTokenCreatorTest
         );
     }
 
-    private static class IntegerResponse extends Response<Integer>
-    {
-
-        public IntegerResponse( Integer response )
-        {
-            super( response, StoreId.DEFAULT, new ResourceReleaser()
-            {
-                @Override
-                public void release()
-                {
-                }
-            } );
-        }
-
-        @Override
-        public void accept( Handler handler ) throws IOException
-        {
-        }
-
-        @Override
-        public boolean hasTransactionsToBeApplied()
-        {
-            return false;
-        }
-    }
-
     private SlaveTokenCreatorFixture fixture;
     private Master master;
     private RequestContext requestContext;
@@ -140,14 +113,7 @@ public class SlaveTokenCreatorTest
         master = mock( Master.class );
         requestContext = new RequestContext( 1, 2, 3, 4, 5 );
         this.name = "Poke";
-        requestContextFactory = new RequestContextFactory( 0, null )
-        {
-            @Override
-            public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
-            {
-                return requestContext;
-            }
-        };
+        requestContextFactory = new ConstantRequestContextFactory( requestContext );
         tokenCreator = fixture.build( master, requestContextFactory );
     }
 
