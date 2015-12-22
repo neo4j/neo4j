@@ -24,7 +24,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -86,8 +85,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
             // commit transactions in this db.
             return new TransactionRepresentationCommitProcess(
                     resolver.resolveDependency( TransactionAppender.class ),
-                    resolver.resolveDependency( StorageEngine.class ),
-                    resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                    resolver.resolveDependency( StorageEngine.class ) );
         }
 
         @Override

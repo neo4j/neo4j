@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command;
 
 /**
@@ -54,7 +52,6 @@ public interface TransactionApplier extends Visitor<Command,IOException>, Comman
      */
     class Adapter extends CommandVisitor.Adapter implements TransactionApplier
     {
-
         @Override
         public void close() throws Exception
         {

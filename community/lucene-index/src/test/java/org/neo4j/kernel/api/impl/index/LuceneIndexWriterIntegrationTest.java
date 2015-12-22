@@ -46,7 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
 
@@ -83,7 +82,7 @@ public class LuceneIndexWriterIntegrationTest
     {
         CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
         Directory writerDirectory = directoryFactory.open( testDir.directory(), closeRaceSignal );
-        LuceneIndexWriter indexWriter = IndexWriterFactories.reserving().create( writerDirectory );
+        LuceneIndexWriter indexWriter = IndexWriterFactories.standard().create( writerDirectory );
 
         generateIndexData( indexWriter );
         List<Future> closeFutures = submitCloseTasks( indexWriter, closeRaceSignal );
@@ -107,7 +106,7 @@ public class LuceneIndexWriterIntegrationTest
         return closeFutures;
     }
 
-    private void generateIndexData( LuceneIndexWriter indexWriter ) throws IOException, IndexCapacityExceededException
+    private void generateIndexData( LuceneIndexWriter indexWriter ) throws IOException
     {
         for ( int i = 0; i < 10; i++ )
         {
@@ -181,8 +180,8 @@ public class LuceneIndexWriterIntegrationTest
 
         private class SyncNotifierDirectory extends Directory
         {
-            private Directory delegate;
-            private CountDownLatch signal;
+            private final Directory delegate;
+            private final CountDownLatch signal;
 
             public SyncNotifierDirectory( Directory delegate, CountDownLatch signal )
             {

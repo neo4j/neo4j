@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -467,7 +466,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
                     storageEngine.indexingService(),
-                    storageEngine.indexUpdatesValidator(),
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, storageEngine.labelScanStore(),
                     storageEngine );
@@ -482,7 +480,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             dependencies.satisfyDependency( updateableSchemaState );
             dependencies.satisfyDependency( storageEngine.cacheAccess() );
             dependencies.satisfyDependency( storageEngine.indexingService() );
-            dependencies.satisfyDependency( storageEngine.indexUpdatesValidator() );
             dependencies.satisfyDependency( storageEngine.integrityValidator() );
             dependencies.satisfyDependency( storageEngine.labelScanStore() );
             dependencies.satisfyDependency( storageEngine.metaDataStore() );
@@ -762,12 +759,12 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private KernelModule buildKernel( TransactionAppender appender,
                                       IndexingService indexingService,
-                                      IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
+                                      StoreReadLayer storeLayer,
                                       UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine )
     {
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine,
-                indexUpdatesValidator, config );
+                config );
 
         /*
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned

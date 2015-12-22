@@ -17,38 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
-public final class SwallowingIndexUpdater implements IndexUpdater
+/**
+ * Provides direct access to updates.
+ */
+public class DirectIndexUpdates implements IndexUpdates
 {
-    public static final IndexUpdater INSTANCE = new org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater();
+    private final Iterable<NodePropertyUpdate> updates;
 
-    public SwallowingIndexUpdater()
+    public DirectIndexUpdates( Iterable<NodePropertyUpdate> updates )
     {
+        this.updates = updates;
     }
 
     @Override
-    public void process( NodePropertyUpdate update )
+    public Iterator<NodePropertyUpdate> iterator()
     {
-        // intentionally swallow this update
+        return updates.iterator();
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void collectUpdatedNodeIds( PrimitiveLongSet target )
     {
-        // nothing to close
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void remove( PrimitiveLongSet nodeIds )
+    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+            PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        // intentionally swallow these removals
+        throw new UnsupportedOperationException();
     }
 }

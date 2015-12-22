@@ -25,7 +25,6 @@ import org.apache.lucene.store.Directory;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
@@ -89,7 +88,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
+    public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         try
         {
@@ -118,5 +117,5 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         failureStorage.storeIndexFailure( indexId, failure );
     }
 
-    protected abstract void flush() throws IOException, IndexCapacityExceededException;
+    protected abstract void flush() throws IOException;
 }

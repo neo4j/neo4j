@@ -35,15 +35,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
-
 import static java.util.Collections.singletonMap;
 
 /**
  * A thin wrapper around {@link org.apache.lucene.index.IndexWriter} that exposes only some part of it's
  * functionality that it really needed.
- * Serves as a base class for {@link org.neo4j.kernel.api.impl.index.ReservingLuceneIndexWriter} and
- * {@link org.neo4j.kernel.api.impl.index.TrackingLuceneIndexWriter}.
  */
 public class LuceneIndexWriter implements Closeable
 {
@@ -81,12 +77,12 @@ public class LuceneIndexWriter implements Closeable
         }
     }
 
-    public void addDocument( Document document ) throws IOException, IndexCapacityExceededException
+    public void addDocument( Document document ) throws IOException
     {
         writer.addDocument( document );
     }
 
-    public void updateDocument( Term term, Document document ) throws IOException, IndexCapacityExceededException
+    public void updateDocument( Term term, Document document ) throws IOException
     {
         writer.updateDocument( term, document );
     }

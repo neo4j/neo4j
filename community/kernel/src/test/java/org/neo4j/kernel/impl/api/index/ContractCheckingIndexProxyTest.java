@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import java.io.IOException;
+
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
@@ -265,7 +264,7 @@ public class ContractCheckingIndexProxyTest
                     updater.process( null );
                     latch.startAndAwaitFinish();
                 }
-                catch ( IndexEntryConflictException | IndexCapacityExceededException e )
+                catch ( IndexEntryConflictException e )
                 {
                     throw new RuntimeException( e );
                 }

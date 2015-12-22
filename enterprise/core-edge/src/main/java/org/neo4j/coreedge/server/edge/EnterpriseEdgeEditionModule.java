@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
@@ -203,7 +202,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         {
             @Override
             public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-                    IndexUpdatesValidator indexUpdatesValidator, Config config )
+                    Config config )
             {
                 return new ReadOnlyTransactionCommitProcess();
             }

@@ -45,7 +45,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.api.LegacyIndexHits;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
@@ -105,7 +104,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
                 updateCount = 0;
             }
         }
-        catch ( IOException | IndexCapacityExceededException e )
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }

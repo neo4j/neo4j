@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -44,8 +45,6 @@ import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
-import org.neo4j.kernel.impl.api.index.RecoveryIndexingUpdatesValidator;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -173,7 +172,6 @@ public class TransactionRecordStateTest
         // GIVEN
         long nodeId = 0;
         int labelId = 5, propertyKeyId = 7;
-        NodePropertyUpdate expectedUpdate = NodePropertyUpdate.add( nodeId, propertyKeyId, "Neo", new long[]{labelId} );
 
         // -- an index
         long ruleId = 0;
@@ -192,17 +190,17 @@ public class TransactionRecordStateTest
 
         // WHEN
         PhysicalTransactionRepresentation transaction = transactionRepresentationOf( recordState );
-        Iterable<NodePropertyUpdate> updates = indexUpdatesOf( neoStores, transaction );
-
-        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-        RecoveryIndexingUpdatesValidator validator = new RecoveryIndexingUpdatesValidator( visitor );
-        ValidatedIndexUpdates recoveredUpdates = validator.validate( transaction );
-        recoveredUpdates.flush( ignored -> {} );
+        NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
+        transaction.accept( extractor );
 
         // THEN
         // -- later recovering that tx, there should be only one update
-        assertEquals( asSet( expectedUpdate ), asSet( updates ) );
-        verify( visitor, times( 1 ) ).visited( nodeId );
+        assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
+        PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
+        assertEquals( 1, recoveredNodeIds.size() );
+        assertEquals( nodeId, recoveredNodeIds.iterator().next() );
     }
 
     @Test
@@ -1171,9 +1169,9 @@ public class TransactionRecordStateTest
         NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
         transaction.accept( extractor );
 
-        LazyIndexUpdates lazyIndexUpdates = new LazyIndexUpdates( neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), new PropertyLoader( neoStores ), extractor.propertyCommandsByNodeIds(),
-                extractor.nodeCommandsById() );
+        OnlineIndexUpdates lazyIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
+                neoStores.getPropertyStore(), new PropertyLoader( neoStores ) );
+        lazyIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         return lazyIndexUpdates;
     }
 

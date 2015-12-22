@@ -34,7 +34,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -51,7 +50,7 @@ import org.neo4j.tools.console.input.ArgsCommand;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 
 public class ApplyTransactionsCommand extends ArgsCommand
@@ -103,8 +102,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
         TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess(
                         resolver.resolveDependency( TransactionAppender.class ),
-                        resolver.resolveDependency( StorageEngine.class ),
-                        resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                        resolver.resolveDependency( StorageEngine.class ) );
         LifeSupport life = new LifeSupport();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
@@ -127,7 +125,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
                             transaction.getTransactionRepresentation();
                     try
                     {
-                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, RECOVERY );
+                        commitProcess.commit( new TransactionToApply( transactionRepresentation ), NULL, EXTERNAL );
                         progress.add( 1 );
                     }
                     catch ( final Throwable e )

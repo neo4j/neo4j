@@ -43,19 +43,14 @@ public final class IndexWriterFactories
         throw new AssertionError( "Not for instantiation!" );
     }
 
-    public static IndexWriterFactory<ReservingLuceneIndexWriter> reserving()
+    public static IndexWriterFactory<LuceneIndexWriter> standard()
     {
-        return directory -> new ReservingLuceneIndexWriter( directory, standardConfig() );
-    }
-
-    public static IndexWriterFactory<LuceneIndexWriter> tracking()
-    {
-        return directory -> new TrackingLuceneIndexWriter( directory, standardConfig() );
+        return directory -> new LuceneIndexWriter( directory, standardConfig() );
     }
 
     public static IndexWriterFactory<LuceneIndexWriter> batchInsert( final IndexWriterConfig config )
     {
-        return directory -> new TrackingLuceneIndexWriter( directory, config );
+        return directory -> new LuceneIndexWriter( directory, config );
     }
 
     private static IndexWriterConfig standardConfig()

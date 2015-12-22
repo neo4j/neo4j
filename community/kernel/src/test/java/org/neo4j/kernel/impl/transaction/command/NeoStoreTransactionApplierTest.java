@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
@@ -81,9 +81,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
-public class NeoTransactionStoreApplierTest
+public class NeoStoreTransactionApplierTest
 {
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexingService indexingService = mock( IndexingService.class );
@@ -110,6 +111,7 @@ public class NeoTransactionStoreApplierTest
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
 
     @Before
     public void setup()
@@ -129,7 +131,6 @@ public class NeoTransactionStoreApplierTest
         when( lockService.acquireRelationshipLock( anyLong(), Matchers.<LockService.LockType>any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
-        when( transactionToApply.validatedIndexUpdates() ).thenReturn( mock( ValidatedIndexUpdates.class ) );
     }
 
     // NODE COMMAND
@@ -900,6 +901,7 @@ public class NeoTransactionStoreApplierTest
 
     private BatchTransactionApplier newIndexApplier()
     {
-        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer );
+        return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
+                indexUpdatesSync, nodeStore, propertyStore, new PropertyLoader( neoStores ), INTERNAL );
     }
 }

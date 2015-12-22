@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
@@ -33,12 +32,12 @@ public class CommunityCommitProcessFactory implements CommitProcessFactory
 {
     @Override
     public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-            IndexUpdatesValidator indexUpdatesValidator, Config config )
+            Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
             return new ReadOnlyTransactionCommitProcess();
         }
-        return new TransactionRepresentationCommitProcess( appender, storageEngine, indexUpdatesValidator );
+        return new TransactionRepresentationCommitProcess( appender, storageEngine );
     }
 }

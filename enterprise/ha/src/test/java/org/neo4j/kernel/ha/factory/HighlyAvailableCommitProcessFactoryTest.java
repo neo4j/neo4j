@@ -28,7 +28,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
@@ -50,7 +49,7 @@ public class HighlyAvailableCommitProcessFactoryTest
         Config config = new Config( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), mock( IndexUpdatesValidator.class ), config );
+                mock( StorageEngine.class ), config );
 
         assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
     }
@@ -62,8 +61,7 @@ public class HighlyAvailableCommitProcessFactoryTest
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), mock( IndexUpdatesValidator.class ),
-                new Config() );
+                mock( StorageEngine.class ), new Config() );
 
         assertThat( commitProcess, not( instanceOf( ReadOnlyTransactionCommitProcess.class ) ) );
         assertThat( Proxy.getInvocationHandler( commitProcess ), instanceOf( DelegateInvocationHandler.class ) );

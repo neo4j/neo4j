@@ -69,14 +69,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, IndexWriterFactories.tracking(), SearcherManagerFactories.standard() ,
+                    documentStructure, IndexWriterFactories.standard(), SearcherManagerFactories.standard() ,
                     directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
                     NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure,
-                    IndexWriterFactories.tracking(), directoryFactory, folderLayout.getFolder( indexId ),
+                    IndexWriterFactories.standard(), directoryFactory, folderLayout.getFolder( indexId ),
                     failureStorage, indexId, samplingConfig );
         }
     }
@@ -87,12 +87,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
+            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
                     directoryFactory, folderLayout.getFolder( indexId ) );
         }
         else
         {
-            return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
+            return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
                     directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
         }
     }
