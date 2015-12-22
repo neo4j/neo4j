@@ -8,4 +8,21 @@ fake_install() {
   cp ../../../main/distribution/shell-scripts/bin/utils neo4j-home/bin
 }
 
+set_config() {
+  name=$1
+  value=$2
+  file=$3
+
+  echo "${name}=${value}" >>"neo4j-home/conf/${file}"
+}
+
+set_main_class() {
+  class=$1
+  sed -i '' -e "s/#{neo4j\.mainClass}/${class}/" neo4j-home/bin/neo4j
+}
+
+neo4j_home() {
+  echo "$(pwd)/neo4j-home"
+}
+
 export JAVACMD="$(pwd)/sharness.d/fake-java"
