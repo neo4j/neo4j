@@ -3,8 +3,7 @@
 test_description="Test happy path operations for the daemon"
 
 . ./lib/sharness.sh
-
-. ../harness/fixture
+fake_install
 export HARNESS_JAVA_SLEEP=t
 
 test_expect_success "should report that it's not running" "
