@@ -21,16 +21,19 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 
 /**
  * Commit process on slaves in HA. Transactions aren't committed here, but sent to the master, committed
@@ -61,7 +64,14 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new TransactionFailureException(
+                    Status.Transaction.CouldNotCommit, e, "Could not commit transaction on the master" );
+        }
+        catch ( ComException e )
+        {
+            throw new TransientTransactionFailureException(
+                    "Cannot commit this transaction on the master. " +
+                    "The master is either down, or we have network connectivity problems.", e );
         }
     }
 }

@@ -435,7 +435,8 @@ public class ConstraintHaIT
                 slaveTx.close();
                 fail( "Expected this commit to fail :(" );
             }
-            catch ( org.neo4j.graphdb.TransactionFailureException e )
+            catch ( org.neo4j.graphdb.TransactionFailureException |
+                    org.neo4j.graphdb.TransientTransactionFailureException e )
             {
                 assertThat(
                         e.getCause().getCause(),
