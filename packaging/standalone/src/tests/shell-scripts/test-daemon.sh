@@ -4,7 +4,7 @@ test_description="Test happy path operations for the daemon"
 
 . ./lib/sharness.sh
 fake_install
-export HARNESS_JAVA_SLEEP=t
+export HARNESS_JAVA_SLEEP=1
 
 test_expect_success "should report that it's not running" "
   test_expect_code 3 neo4j-home/bin/neo4j status

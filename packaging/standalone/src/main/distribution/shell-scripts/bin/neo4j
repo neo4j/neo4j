@@ -58,8 +58,8 @@ JAVA_OPTS="-server -XX:+DisableExplicitGC"
 [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
 
-NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:=7474}"
-NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:=localhost}"
+NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:-7474}"
+NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 TIMEOUT=120
 PID_FILE="${NEO4J_PIDFILE}"
 
@@ -100,7 +100,7 @@ startit() {
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${PID_FILE}"
 
-  sleep 5
+  sleep "${NEO4J_START_WAIT:-5}"
   checkstatus
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."

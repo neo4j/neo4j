@@ -9,7 +9,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.51-b03, mixed mode)"
 fi
 
 if [[ "${HARNESS_JAVA_SLEEP:-}" ]]; then
-  sleep 6
+  sleep "${HARNESS_JAVA_SLEEP}"
 fi
 
 echo -n "$@" >../java-args

@@ -85,7 +85,7 @@ startit() {
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${PID_FILE}"
 
-  sleep 5
+  sleep "${NEO4J_START_WAIT:-5}"
   checkstatus
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."
