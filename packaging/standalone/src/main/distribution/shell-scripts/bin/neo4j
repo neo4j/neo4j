@@ -36,7 +36,6 @@ function findBaseDirAndCdThere {
     SCRIPT="$(basename "${SCRIPT}")"
   done
   NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-  NEO4J_INSTANCE="${NEO4J_HOME}"
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
   [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
@@ -144,7 +143,6 @@ showinfo() {
 
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
   echo "NEO4J_SERVER_PORT: ${NEO4J_SERVER_PORT}"
-  echo "NEO4J_INSTANCE:    ${NEO4J_INSTANCE}"
   echo "JAVA_HOME:         ${JAVA_HOME}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
   echo "CLASSPATH:         ${CLASSPATH}"
