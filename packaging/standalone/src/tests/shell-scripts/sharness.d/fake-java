@@ -8,6 +8,9 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.51-b03, mixed mode)"
   exit 0
 fi
 
+echo "stdout from java"
+echo "stderr from java" >&2
+
 if [[ "${HARNESS_JAVA_SLEEP:-}" ]]; then
   sleep "${HARNESS_JAVA_SLEEP}"
 fi
