@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 test_description="Test running the console"
 
