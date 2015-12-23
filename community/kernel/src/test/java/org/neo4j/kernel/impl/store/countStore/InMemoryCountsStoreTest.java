@@ -150,5 +150,4 @@ public class InMemoryCountsStoreTest
         CountsSnapshot thirdCountsSnapshot = countStore.snapshot( 4 );
         Assert.assertEquals( 4, thirdCountsSnapshot.getTxId() );
     }
-
 }

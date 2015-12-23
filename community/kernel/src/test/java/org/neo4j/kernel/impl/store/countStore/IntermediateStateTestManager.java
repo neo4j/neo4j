@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
@@ -30,43 +33,45 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 public class IntermediateStateTestManager
 {
-    private int numberOfUpdates;
-    private int id = 1;
-    private ConcurrentHashMap[] maps;
-    private ConcurrentHashMap[] intermediateStateMaps;
-    int largestKey = 5;
+    private volatile int id = 1;
+    private List<ConcurrentHashMap<CountsKey,long[]>> intermediateStateMaps = new ArrayList<>();
+    private Iterator<ConcurrentHashMap<CountsKey,long[]>> maps;
 
-    public IntermediateStateTestManager( int numberOfUpdates )
+    static final int LARGEST_KEY = 5;
+
+    public IntermediateStateTestManager()
     {
-        this.numberOfUpdates = numberOfUpdates + 1;
-        this.maps = new ConcurrentHashMap[this.numberOfUpdates];
-        IntStream.range( 0, this.numberOfUpdates ).forEach( ( i ) -> this.maps[i] = allOnesMap() );
-        this.intermediateStateMaps = computeAllUpdates();
-    }
-
-    private ConcurrentHashMap[] computeAllUpdates()
-    {
-        ConcurrentHashMap[] intermediateStateMaps = new ConcurrentHashMap[this.numberOfUpdates];
-        ConcurrentHashMap<CountsKey,long[]> nextMap = new ConcurrentHashMap<>();
-
-        for ( int i = 1; i < this.maps.length; i++ )
+        intermediateStateMaps.add( new ConcurrentHashMap<>() );
+        this.maps = new Iterator<ConcurrentHashMap<CountsKey,long[]>>()
         {
-            applyDiffToMap( nextMap, maps[i] );
-            ConcurrentHashMap<CountsKey,long[]> newMap = copyOfMap( nextMap );
-            intermediateStateMaps[i] = newMap;
-        }
-        return intermediateStateMaps;
+            @Override
+            public boolean hasNext()
+            {
+                return true;
+            }
+
+            @Override
+            public ConcurrentHashMap<CountsKey,long[]> next()
+            {
+                ConcurrentHashMap<CountsKey,long[]> map = allOnesMap();
+                ConcurrentHashMap<CountsKey,long[]> nextMap =
+                        copyOfMap( intermediateStateMaps.get( intermediateStateMaps.size() - 1 ) );
+                applyDiffToMap( nextMap, map );
+                intermediateStateMaps.add( nextMap );
+                return map;
+            }
+        };
     }
 
-    private ConcurrentHashMap<CountsKey,long[]> copyOfMap( ConcurrentHashMap<CountsKey,long[]> nextMap )
+    private static ConcurrentHashMap<CountsKey,long[]> copyOfMap( ConcurrentHashMap<CountsKey,long[]> nextMap )
     {
         ConcurrentHashMap<CountsKey,long[]> newMap = new ConcurrentHashMap<>();
         nextMap.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );
         return newMap;
     }
 
-    public synchronized static ConcurrentHashMap<CountsKey,long[]> applyDiffToMap(
-            ConcurrentHashMap<CountsKey,long[]> map, ConcurrentHashMap<CountsKey,long[]> diff )
+    private static ConcurrentHashMap<CountsKey,long[]> applyDiffToMap( ConcurrentHashMap<CountsKey,long[]> map,
+            ConcurrentHashMap<CountsKey,long[]> diff )
     {
         diff.forEach( ( key, value ) -> map.compute( key,
                 ( k, v ) -> v == null ? Arrays.copyOf( value, value.length ) : updateEachValue( v, value ) ) );
@@ -84,15 +89,15 @@ public class IntermediateStateTestManager
 
     public synchronized ConcurrentHashMap<CountsKey,long[]> getIntermediateMap( int txId )
     {
-        return intermediateStateMaps[txId];
+        return intermediateStateMaps.get( txId );
     }
 
-    public synchronized int getNextUpdateMap( ConcurrentHashMap<CountsKey,long[]> map )
+    public synchronized int getNextUpdateMap( Map<CountsKey,long[]> map )
     {
-        if ( id < numberOfUpdates )
+        if ( maps.hasNext() )
         {
             map.clear();
-            map.putAll( maps[id] );
+            map.putAll( maps.next() );
             return id++;
         }
         else
@@ -101,10 +106,15 @@ public class IntermediateStateTestManager
         }
     }
 
+    public int getId()
+    {
+        return id;
+    }
+
     private ConcurrentHashMap<CountsKey,long[]> allZerosMap()
     {
         ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < largestKey; i++ )
+        for ( int i = 0; i < LARGEST_KEY; i++ )
         {
             pairs.put( nodeKey( i ), new long[]{0L} );
         }
@@ -114,7 +124,7 @@ public class IntermediateStateTestManager
     private ConcurrentHashMap<CountsKey,long[]> allOnesMap()
     {
         ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < largestKey; i++ )
+        for ( int i = 0; i < LARGEST_KEY; i++ )
         {
             pairs.put( nodeKey( i ), new long[]{1L} );
         }
@@ -125,9 +135,9 @@ public class IntermediateStateTestManager
     {
         int largestDiff = 100;
         ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < largestKey; i++ )
+        for ( int i = 0; i < LARGEST_KEY; i++ )
         {
-            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, largestKey ) ),
+            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, LARGEST_KEY ) ),
                     new long[]{ThreadLocalRandom.current().nextLong( 1, largestDiff )} );
         }
         return pairs;
@@ -137,9 +147,9 @@ public class IntermediateStateTestManager
     {
         int largestDiff = 100;
         ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < largestKey; i++ )
+        for ( int i = 0; i < LARGEST_KEY; i++ )
         {
-            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, largestKey ) ),
+            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, LARGEST_KEY ) ),
                     new long[]{ThreadLocalRandom.current().nextLong( -1 * largestDiff, largestDiff )} );
         }
         return pairs;

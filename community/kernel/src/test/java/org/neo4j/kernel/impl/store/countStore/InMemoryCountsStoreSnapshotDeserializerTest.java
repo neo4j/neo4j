@@ -103,6 +103,7 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         serializedBytes.position( 8 );
         serializedBytes.putInt( 2 );//We serialized 3, but now the deserialization should only expect 2.
 
+        //THEN
         CountsSnapshot countsSnapshot = deserialize( logChannel );
         assertEquals( 2, countsSnapshot.getMap().size() );
     }

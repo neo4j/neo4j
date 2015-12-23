@@ -66,7 +66,7 @@ public class InMemoryCountsStoreCountsSnapshotSerializerIntegrationTest
         {
             long[] value = recovered.getMap().get( pair.getKey() );
             Assert.assertNotNull( value );
-            Assert.assertTrue( Arrays.equals( value, pair.getValue() ) );
+            Assert.assertArrayEquals( value, pair.getValue() );
         }
 
         for ( Map.Entry<CountsKey,long[]> pair : recovered.getMap().entrySet() )

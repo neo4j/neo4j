@@ -26,14 +26,20 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
 import static org.neo4j.kernel.impl.store.countStore.CountsSnapshotSerializer.serialize;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.EMPTY;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_NODE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.ENTITY_RELATIONSHIP;
@@ -181,6 +187,42 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         Assert.assertEquals( expectedBytes, serializedBytes );
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void throwsExceptionOnWrongValueLengthForEntityNode() throws IOException, UnknownKey
+    {
+        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        brokenMap.put( nodeKey( 1 ), new long[]{1, 1} );
+        CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
+        serialize( logChannel, brokenSnapshot );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void throwsExceptionOnWrongValueLengthForEntityRelationship() throws IOException, UnknownKey
+    {
+        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        brokenMap.put( relationshipKey( 1, 1, 1 ), new long[]{1, 1} );
+        CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
+        serialize( logChannel, brokenSnapshot );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void throwsExceptionOnWrongValueLengthForIndexSample() throws IOException, UnknownKey
+    {
+        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        brokenMap.put( indexSampleKey( 1, 1 ), new long[]{1} );
+        CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
+        serialize( logChannel, brokenSnapshot );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void throwsExceptionOnWrongValueLengthForIndexStatistics() throws IOException, UnknownKey
+    {
+        Map<CountsKey,long[]> brokenMap = new ConcurrentHashMap<>();
+        brokenMap.put( indexStatisticsKey( 1, 1 ), new long[]{1} );
+        CountsSnapshot brokenSnapshot = new CountsSnapshot( 1, brokenMap );
+        serialize( logChannel, brokenSnapshot );
+    }
+
     @Test
     public void onlyHandleExpectedRecordTypes()
     {
@@ -214,14 +256,14 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
 
     private void writeAndSerializeEntityNode( int labelId, long count ) throws IOException, UnknownKey
     {
-        countsSnapshot.getMap().put( CountsKeyFactory.nodeKey( labelId ), new long[]{count} );
+        countsSnapshot.getMap().put( nodeKey( labelId ), new long[]{count} );
         serialize( logChannel, countsSnapshot );
     }
 
     private void writeAndSerializeEntityRelationship( int startId, int type, int endId, long count )
             throws IOException, UnknownKey
     {
-        countsSnapshot.getMap().put( CountsKeyFactory.relationshipKey( startId, type, endId ), new long[]{count} );
+        countsSnapshot.getMap().put( relationshipKey( startId, type, endId ), new long[]{count} );
         serialize( logChannel, countsSnapshot );
     }
 

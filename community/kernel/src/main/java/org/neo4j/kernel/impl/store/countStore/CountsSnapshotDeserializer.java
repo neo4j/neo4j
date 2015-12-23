@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyType.value;
 
 public class CountsSnapshotDeserializer
 {
-    public static CountsSnapshot deserialize( ReadableLogChannel channel ) throws UnknownKey, IOException
+    public static CountsSnapshot deserialize( ReadableLogChannel channel ) throws IOException, UnknownKey
     {
         long txid = channel.getLong();
         int size = channel.getInt();
@@ -49,7 +49,6 @@ public class CountsSnapshotDeserializer
             CountsKeyType type = value( channel.get() );
             switch ( type )
             {
-
             case ENTITY_NODE:
                 key = nodeKey( channel.getInt() );
                 value = new long[]{channel.getLong()};
@@ -76,6 +75,12 @@ public class CountsSnapshotDeserializer
                 value = new long[]{channel.getLong(), channel.getLong()};
                 map.put( key, value );
                 break;
+
+            case EMPTY:
+                throw new IllegalArgumentException( "CountsKey of type EMPTY cannot be deserialized." );
+
+            default:
+                throw new IllegalArgumentException( "The read CountsKey has an unknown type." );
             }
         }
         return new CountsSnapshot( txid, map );

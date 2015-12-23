@@ -20,13 +20,11 @@
 package org.neo4j.kernel.impl.store.countStore;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -34,28 +32,27 @@ import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.function.Predicates.awaitForever;
 
 public class InMemoryCountsStore implements CountsStore
 {
     private static final long[] EMPTY_METADATA = {1L};
-    private final ReadWriteLock lock;
-    private final ConcurrentHashMap<CountsKey,long[]> map;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     //TODO Always return long, not long[]. This requires splitting index keys into 4 keys, one for each value.
-
-    private final OutOfOrderSequence lastTxId;
-    private CountsSnapshot snapshot;
+    private final ConcurrentHashMap<CountsKey,long[]> map;
+    private final OutOfOrderSequence lastTxId = new ArrayQueueOutOfOrderSequence( 0L, 100, EMPTY_METADATA );
+    private volatile CountsSnapshot snapshot;
 
     public InMemoryCountsStore( CountsSnapshot snapshot )
     {
         map = new ConcurrentHashMap<>( snapshot.getMap() );
-        lastTxId = new ArrayQueueOutOfOrderSequence( 0L, 100, EMPTY_METADATA );
         lastTxId.set( snapshot.getTxId(), EMPTY_METADATA );
-        lock = new ReentrantReadWriteLock();
     }
 
     public InMemoryCountsStore()
     {
-        this( new CountsSnapshot( 0, new ConcurrentHashMap<>() ) );
+        map = new ConcurrentHashMap<>();
+        lastTxId.set( 0, EMPTY_METADATA );
     }
 
     @Override
@@ -83,12 +80,31 @@ public class InMemoryCountsStore implements CountsStore
         }
     }
 
+    /**
+     *  For each key in the updates param, applies it's value as a diff to the cooresponding value in the given map.
+     * @param updates A map containing the diffs to apply to the corresponding values in the map.
+     * @param map The map to be updated.
+     */
     private void applyUpdates( Map<CountsKey,long[]> updates, Map<CountsKey,long[]> map )
     {
-        updates.forEach(
-                ( key, value ) -> map.compute( key, ( k, v ) -> v == null ? value : updateEachValue( v, value ) ) );
+        updates.forEach( ( key, value ) -> map.compute( key, ( k, v ) -> {
+            if ( v == null )
+            {
+                return Arrays.copyOf( value, value.length );
+            }
+            else
+            {
+                return updateEachValue( v, value );
+            }
+        } ) );
     }
 
+    /**
+     * Because IndexSampleKey and IndexStatisticsKey have 2 values and NodeKey and RelationshipKey have only 1 value,
+     * these keys are stored in the same map by making the value an array of longs. Therefore, when applying the diff
+     * to the keys values, this loop works for keys of both types. In the future, we should separate the values in
+     * IndexSample and IndexStatistics into multiple keys each with one value.
+     */
     private long[] updateEachValue( long[] v, long[] value )
     {
         for ( int i = 0; i < v.length; i++ )
@@ -112,8 +128,8 @@ public class InMemoryCountsStore implements CountsStore
         lock.writeLock().lock();
         try
         {
-            snapshot = new CountsSnapshot( Math.max( txId, lastTxId.highestEverSeen() ),
-                    InMemoryCountsStore.copyOfMap( this.map ) );
+            long snapshotTxId = Math.max( txId, lastTxId.highestEverSeen() );
+            snapshot = new CountsSnapshot( snapshotTxId, copyOfMap( this.map ) );
         }
         finally
         {
@@ -122,12 +138,15 @@ public class InMemoryCountsStore implements CountsStore
 
         try
         {
-            Predicates
-                    .awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );
+            //TODO We should NOT blindly wait forever. We also shouldn't have a timeout. The proposed solution is to
+            // wait forever unless the database has failed in the background. In that case we want to fail as well.
+            // This will allow us to not timeout prematurely but also not hang when the database is broken.
+            awaitForever( () -> lastTxId.getHighestGapFreeNumber() >= snapshot.getTxId(), 100, MILLISECONDS );
             return snapshot;
         }
         catch ( InterruptedException ex )
         {
+            Thread.currentThread().interrupt();
             throw Exceptions
                     .withCause( new UnderlyingStorageException( "Construction of snapshot was interrupted." ), ex );
         }
@@ -137,10 +156,14 @@ public class InMemoryCountsStore implements CountsStore
         }
     }
 
-    private static HashMap<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> nextMap )
+    /**
+     * This is essentially a deep copy of a map, necessary since our values in the map are long arrays. The crucial
+     * part is the Arrays.copyOf() for the value.
+     */
+    private static Map<CountsKey,long[]> copyOfMap( Map<CountsKey,long[]> mapToCopy )
     {
-        HashMap<CountsKey,long[]> newMap = new HashMap<>();
-        nextMap.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );
+        ConcurrentHashMap<CountsKey,long[]> newMap = new ConcurrentHashMap<>();
+        mapToCopy.forEach( ( key, value ) -> newMap.put( key, Arrays.copyOf( value, value.length ) ) );
         return newMap;
     }
 }

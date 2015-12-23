@@ -52,7 +52,11 @@ public class CountsSnapshotSerializer
             {
 
             case ENTITY_NODE:
-                assert value.length == 1;
+                if ( value.length != 1 )
+                {
+                    throw new IllegalArgumentException(
+                            "CountsKey of type " + key.recordType() + " has an unexpected value." );
+                }
                 NodeKey nodeKey = (NodeKey) key;
                 channel.put( ENTITY_NODE.code );
                 channel.putInt( nodeKey.getLabelId() );
@@ -60,7 +64,11 @@ public class CountsSnapshotSerializer
                 break;
 
             case ENTITY_RELATIONSHIP:
-                assert value.length == 1;
+                if ( value.length != 1 )
+                {
+                    throw new IllegalArgumentException(
+                            "CountsKey of type " + key.recordType() + " has an unexpected value." );
+                }
                 RelationshipKey relationshipKey = (RelationshipKey) key;
                 channel.put( ENTITY_RELATIONSHIP.code );
                 channel.putInt( relationshipKey.getStartLabelId() );
@@ -70,7 +78,11 @@ public class CountsSnapshotSerializer
                 break;
 
             case INDEX_SAMPLE:
-                assert value.length == 2;
+                if ( value.length != 2 )
+                {
+                    throw new IllegalArgumentException(
+                            "CountsKey of type " + key.recordType() + " has an unexpected value." );
+                }
                 IndexSampleKey indexSampleKey = (IndexSampleKey) key;
                 channel.put( INDEX_SAMPLE.code );
                 channel.putInt( indexSampleKey.labelId() );
@@ -80,7 +92,11 @@ public class CountsSnapshotSerializer
                 break;
 
             case INDEX_STATISTICS:
-                assert value.length == 2;
+                if ( value.length != 2 )
+                {
+                    throw new IllegalArgumentException(
+                            "CountsKey of type " + key.recordType() + " has an unexpected value." );
+                }
                 IndexStatisticsKey indexStatisticsKey = (IndexStatisticsKey) key;
                 channel.put( INDEX_STATISTICS.code );
                 channel.putInt( indexStatisticsKey.labelId() );
@@ -89,6 +105,11 @@ public class CountsSnapshotSerializer
                 channel.putLong( value[1] );
                 break;
 
+            case EMPTY:
+                throw new IllegalArgumentException( "CountsKey of type EMPTY cannot be serialized." );
+
+            default:
+                throw new IllegalArgumentException( "The read CountsKey has an unknown type." );
             }
         }
     }

@@ -19,18 +19,27 @@
  */
 package org.neo4j.kernel.impl.store.countStore;
 
-import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 /**
  * Writes updates to the count store and ensures that snapshots are correct. Correctness is tested
@@ -44,156 +53,174 @@ public class InMemoryCountsStoreIntegrationTest
     {
         //GIVEN
         InMemoryCountsStore countStore = new InMemoryCountsStore();
-        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager( 5 );
+        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
         Map<CountsKey,long[]> snapshotMap;
 
         //WHEN
         ConcurrentHashMap<CountsKey,long[]> updateMap = new ConcurrentHashMap<>();
         Map<CountsKey,long[]> map = new ConcurrentHashMap<>();
         long txId = intermediateStateTestManager.getNextUpdateMap( updateMap );
-        updateMapByDiff( map, updateMap, txId );
+        updateMapByDiff( map, updateMap );
         countStore.updateAll( txId, updateMap );
         CountsSnapshot countsSnapshot = countStore.snapshot( txId );
         snapshotMap = countsSnapshot.getMap();
 
         //THEN
-        compareMaps( map, snapshotMap );
+        assertMapEquals( map, snapshotMap );
     }
 
     @Test
     public void sequentialWorkload()
     {
         //GIVEN
-        int numberOfUpdates = 1000;
         CountsSnapshot countsSnapshot;
         Map<CountsKey,long[]> snapshotMap;
         Map<CountsKey,long[]> map = new ConcurrentHashMap<>();
         ConcurrentHashMap<CountsKey,long[]> updateMap = new ConcurrentHashMap<>();
-        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager( numberOfUpdates );
+        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
         InMemoryCountsStore countStore = new InMemoryCountsStore();
 
-        for ( int i = 0; i < numberOfUpdates; i++ )
+        for ( int i = 0; i < 1000; i++ )
         {
             //WHEN
             long txId = intermediateStateTestManager.getNextUpdateMap( updateMap );
-            updateMapByDiff( map, updateMap, txId );
+            updateMapByDiff( map, updateMap );
             countStore.updateAll( txId, updateMap );
             countsSnapshot = countStore.snapshot( txId );
             snapshotMap = countsSnapshot.getMap();
 
             //THEN
-            compareMaps( map, snapshotMap );
+            assertMapEquals( map, snapshotMap );
         }
     }
 
     @Test
-    public void concurrentWorkload() throws InterruptedException
+    public void concurrentWorkload() throws Exception
     {
         //GIVEN
-        int numberOfUpdates = 900;
         InMemoryCountsStore countStore = new InMemoryCountsStore();
-        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager( numberOfUpdates );
-        ExecutorService workerExecutorService = Executors.newFixedThreadPool( 10 );
+        IntermediateStateTestManager intermediateStateTestManager = new IntermediateStateTestManager();
+        ExecutorService executor = Executors.newFixedThreadPool( 10 );
+        ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>( executor );
 
-        //There should only ever be one snapshot worker.
-        ExecutorService snapshotExecutorService = Executors.newSingleThreadExecutor();
-
-        for ( int i = 0; i < numberOfUpdates; i++ )
+        List<Runnable> workers = new ArrayList<>( 10 );
+        AtomicBoolean stop = new AtomicBoolean();
+        for ( int i = 0; i < 9; i++ )
         {
-            ConcurrentHashMap<CountsKey,long[]> map = new ConcurrentHashMap<>();
-            long txid = intermediateStateTestManager.getNextUpdateMap( map );
-            Runnable workerA = new UpdateWorker( txid, map, countStore );
-
-            //WHEN
-            workerExecutorService.execute( workerA );
-            if ( i > 1 && ThreadLocalRandom.current().nextInt( 50 ) == 3 )
-            {
-                //THEN
-                snapshotExecutorService.execute( new SnapshotWorker( i, intermediateStateTestManager, countStore ) );
-            }
+            workers.add( new UpdateWorker( stop, intermediateStateTestManager, countStore ) );
         }
-        workerExecutorService.shutdown();
-        snapshotExecutorService.shutdown();
-        workerExecutorService.awaitTermination( 100, TimeUnit.SECONDS );
-        snapshotExecutorService.awaitTermination( 100, TimeUnit.SECONDS );
+        workers.add( new SnapshotWorker( 10, stop, intermediateStateTestManager, countStore ) );
+
+        //WHEN
+        for ( Runnable worker : workers )
+        {
+            ecs.submit( worker, null );
+        }
+
+        // THEN
+        for ( int i = 0; i < workers.size(); i++ )
+        {
+            ecs.take().get();
+        }
+
+        executor.shutdown();
     }
 
     private class UpdateWorker implements Runnable
     {
-        long txId;
-        Map<CountsKey,long[]> map;
-        private InMemoryCountsStore countStore;
+        private final AtomicBoolean stop;
+        private final IntermediateStateTestManager manager;
+        private final InMemoryCountsStore countStore;
 
-        public UpdateWorker( long txId, Map<CountsKey,long[]> map, InMemoryCountsStore countStore )
+        public UpdateWorker( AtomicBoolean stop, IntermediateStateTestManager manager, InMemoryCountsStore countStore )
         {
-            this.txId = txId;
-            this.map = map;
+            this.stop = stop;
+            this.manager = manager;
             this.countStore = countStore;
         }
 
         @Override
         public void run()
         {
-            //Lets mix up the order the updates are applied.
-            if ( ThreadLocalRandom.current().nextInt( 5 ) == 3 ) // 3/5 = 60% of the time. Just a guess.
+            while ( !stop.get() )
             {
-                Thread.yield();
+                Map<CountsKey,long[]> map = new HashMap<>();
+                int txId = manager.getNextUpdateMap( map );
+                //Lets mix up the order the updates are applied.
+                if ( ThreadLocalRandom.current().nextInt( 0, 5 ) == 3 ) // 3/5 = 60% of the time. Just a guess.
+                {
+                    Thread.yield();
+                }
+                countStore.updateAll( txId, map );
             }
-            countStore.updateAll( txId, map );
         }
     }
 
     private class SnapshotWorker implements Runnable
     {
-        int txId;
-        IntermediateStateTestManager intermediateStateTestManager;
-        private InMemoryCountsStore countStore;
+        private AtomicBoolean stop;
+        private final IntermediateStateTestManager intermediateStateTestManager;
+        private final InMemoryCountsStore countStore;
+        private final int repeatTimes;
 
-        public SnapshotWorker( int txId, IntermediateStateTestManager intermediateStateTestManager,
-                InMemoryCountsStore countStore )
+        public SnapshotWorker( int repeatTimes, AtomicBoolean stop,
+                IntermediateStateTestManager intermediateStateTestManager, InMemoryCountsStore countStore )
         {
-            this.txId = txId;
+            this.stop = stop;
             this.intermediateStateTestManager = intermediateStateTestManager;
             this.countStore = countStore;
+            this.repeatTimes = repeatTimes;
         }
 
         @Override
         public void run()
         {
-            CountsSnapshot countsSnapshot = countStore.snapshot( txId );
+            for ( int i = 0; i < repeatTimes; i++ )
+            {
+                int id = intermediateStateTestManager.getId();
+                long txId = id + ThreadLocalRandom.current().nextLong( 0, 5 );
+                CountsSnapshot countsSnapshot = countStore.snapshot( txId );
+                long snapshotTxId = countsSnapshot.getTxId();
 
-            Map<CountsKey,long[]> snapshotMap = countsSnapshot.getMap();
-            Map<CountsKey,long[]> expectedMap =
-                    intermediateStateTestManager.getIntermediateMap( (int) countsSnapshot.getTxId() );
+                Map<CountsKey,long[]> snapshotMap = countsSnapshot.getMap();
+                Map<CountsKey,long[]> expectedMap =
+                        intermediateStateTestManager.getIntermediateMap( (int) snapshotTxId );
 
-            //THEN
-            Assert.assertTrue( "Counts store snapshot was recorded with transaction ID less than the requested value.",
-                    countsSnapshot.getTxId() >= txId );
-            Assert.assertEquals( "Counts store snapshot has an incorrect number of k/v pairs.", snapshotMap.size(),
-                    expectedMap.size() );
+                //THEN
+                assertThat( "Counts store snapshot was recorded with transaction ID less than the requested value.",
+                        snapshotTxId, greaterThanOrEqualTo( txId ) );
 
-            compareMaps( expectedMap, snapshotMap );
+                assertMapEquals( expectedMap, snapshotMap );
+            }
+
+            stop.set( true );
         }
     }
 
-    private void compareMaps( Map<CountsKey,long[]> expected, Map<CountsKey,long[]> actual )
+    private static void assertMapEquals( Map<CountsKey,long[]> expected, Map<CountsKey,long[]> actual )
     {
-        actual.forEach( ( key, value ) -> {
-            Assert.assertTrue( "Example counts store snapshot has null where key was expected.",
-                    expected.get( key ) != null );
-            Assert.assertTrue( "Example counts store snapshot has different value for a key than expected.",
-                    Arrays.equals( expected.get( key ), value ) );
-        } );
+        try
+        {
+            assertEquals( expected.size(), actual.size() );
+            actual.forEach( ( key, value ) -> {
+                assertNotNull( "Example counts store snapshot has null where key was expected.", expected.get( key ) );
+                assertArrayEquals( "Example counts store snapshot has different value for a key than expected.",
+                        expected.get( key ), value );
+            } );
+        }
+        catch ( Throwable t )
+        {
+            actual.forEach( ( key, value ) -> System.out.printf( "(%s) -> (%s)\n", key, Arrays.toString( value ) ) );
+            System.out.println();
+            expected.forEach( ( key, value ) -> System.out.printf( "(%s) -> (%s)\n", key, Arrays.toString( value ) ) );
+            System.out.println();
 
-        expected.forEach( ( key, value ) -> {
-            Assert.assertTrue( "Counts store snapshot has null where key was expected.", actual.get( key ) != null );
-            Assert.assertTrue( "Counts store snapshot has different value for a key than expected.",
-                    Arrays.equals( actual.get( key ), value ) );
-        } );
+            throw t;
+        }
     }
 
     private synchronized static Map<CountsKey,long[]> updateMapByDiff( Map<CountsKey,long[]> map,
-            Map<CountsKey,long[]> diff, long txId )
+            Map<CountsKey,long[]> diff )
     {
         diff.entrySet().forEach( ( pair ) -> map.compute( pair.getKey(),
                 ( k, v ) -> v == null ? pair.getValue() : updateEachValue( v, pair.getValue() ) ) );

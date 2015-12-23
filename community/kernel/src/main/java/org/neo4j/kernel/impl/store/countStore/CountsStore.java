@@ -31,8 +31,20 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
  */
 public interface CountsStore
 {
+    /**
+     * Returns the value for the corresponding key in the CountsStore. The length of the returned value depends on
+     * the type of the CountsKey provided.
+     * @param key   A CountsKey for using to search in the CountsStore.
+     * @return
+     */
     long[] get( CountsKey key );
 
+    /**
+     * Accepts a map and for each key in the map, applies its value to the value of the corresponding key in the
+     * internal map.
+     * @param txId    The ID value for this transaction.
+     * @param updates A map of updates to be applied to the corresponding keys in the internal map.
+     */
     void updateAll( long txId, Map<CountsKey,long[]> updates );
 
     /**
