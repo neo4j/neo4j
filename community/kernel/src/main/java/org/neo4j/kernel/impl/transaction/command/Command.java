@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
@@ -89,7 +89,7 @@ public abstract class Command
     protected final void setup( long key, Mode mode )
     {
         this.mode = mode;
-        this.keyHash = (int) (( key >>> 32 ) ^ key );
+        this.keyHash = (int) ((key >>> 32) ^ key);
         this.key = key;
     }
 
@@ -126,17 +126,41 @@ public abstract class Command
         return format( " -%s%n         +%s", before, after );
     }
 
-    public static class NodeCommand extends Command
-    {
-        private NodeRecord before;
-        private NodeRecord after;
 
-        public NodeCommand init( NodeRecord before, NodeRecord after )
+    public static abstract class BaseCommand<RECORD extends Abstract64BitRecord> extends Command
+    {
+        private final RECORD before;
+        protected final RECORD after;
+
+        public BaseCommand( RECORD before, RECORD after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
-            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return beforeAndAfterToString( before, after );
+        }
+
+        public RECORD getBefore()
+        {
+            return before;
+        }
+
+        public RECORD getAfter()
+        {
+            return after;
+        }
+    }
+
+    public static class NodeCommand extends BaseCommand<NodeRecord>
+    {
+        public NodeCommand( NodeRecord before, NodeRecord after )
+        {
+            super( before, after );
         }
 
         @Override
@@ -144,39 +168,13 @@ public abstract class Command
         {
             return handler.visitNodeCommand( this );
         }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
-        }
-
-        public NodeRecord getBefore()
-        {
-            return before;
-        }
-
-        public NodeRecord getAfter()
-        {
-            return after;
-        }
     }
 
-    public static class RelationshipCommand extends Command
+    public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
     {
-        private RelationshipRecord record;
-
-        public RelationshipCommand init( RelationshipRecord record )
+        public RelationshipCommand( RelationshipRecord before, RelationshipRecord after )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return record.toString();
+            super( before, after );
         }
 
         @Override
@@ -184,28 +182,13 @@ public abstract class Command
         {
             return handler.visitRelationshipCommand( this );
         }
-
-        public RelationshipRecord getRecord()
-        {
-            return record;
-        }
     }
 
-    public static class RelationshipGroupCommand extends Command
+    public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
-        private RelationshipGroupRecord record;
-
-        public RelationshipGroupCommand init( RelationshipGroupRecord record )
+        public RelationshipGroupCommand( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return record.toString();
+            super( before, after );
         }
 
         @Override
@@ -213,31 +196,13 @@ public abstract class Command
         {
             return handler.visitRelationshipGroupCommand( this );
         }
-
-        public RelationshipGroupRecord getRecord()
-        {
-            return record;
-        }
     }
 
-    public static class NeoStoreCommand extends Command
+    public static class NeoStoreCommand extends BaseCommand<NeoStoreRecord>
     {
-        private NeoStoreRecord record;
-
-        public NeoStoreCommand init( NeoStoreRecord record )
+        public NeoStoreCommand( NeoStoreRecord before, NeoStoreRecord after )
         {
-            if( record != null )
-            {
-                setup( record.getId(), Mode.fromRecordState( record ) );
-            }
-            this.record = record;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return record.toString();
+            super( before, after );
         }
 
         @Override
@@ -245,60 +210,19 @@ public abstract class Command
         {
             return handler.visitNeoStoreCommand( this );
         }
-
-        public NeoStoreRecord getRecord()
-        {
-            return record;
-        }
     }
 
-    public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
+    public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange
     {
-
-        @Override
-        public boolean handle( CommandVisitor handler ) throws IOException
+        public PropertyCommand( PropertyRecord before, PropertyRecord after )
         {
-            return handler.visitPropertyKeyTokenCommand( this );
-        }
-    }
-
-    public static class PropertyCommand extends Command implements PropertyRecordChange
-    {
-        private PropertyRecord before;
-        private PropertyRecord after;
-
-        // TODO as optimization the deserialized key/values could be passed in here
-        // so that the cost of deserializing them only applies in recovery/HA
-        public PropertyCommand init( PropertyRecord before, PropertyRecord after )
-        {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
-            return this;
-        }
-
-        @Override
-        public String toString()
-        {
-            return beforeAndAfterToString( before, after );
+            super( before, after );
         }
 
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitPropertyCommand( this );
-        }
-
-        @Override
-        public PropertyRecord getBefore()
-        {
-            return before;
-        }
-
-        @Override
-        public PropertyRecord getAfter()
-        {
-            return after;
         }
 
         public long getNodeId()
@@ -314,29 +238,54 @@ public abstract class Command
 
     public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
     {
-        protected RECORD record;
+        private final RECORD before;
+        private final RECORD after;
 
-        public TokenCommand<RECORD> init( RECORD record )
+        public TokenCommand( RECORD before, RECORD after )
         {
-            setup( record.getId(), Mode.fromRecordState( record ) );
-            this.record = record;
-            return this;
+            setup( after.getId(), Mode.fromRecordState( after ) );
+            this.before = before;
+            this.after = after;
         }
 
-        public RECORD getRecord()
+        public RECORD getBefore()
         {
-            return record;
+            return before;
+        }
+
+        public RECORD getAfter()
+        {
+            return after;
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return beforeAndAfterToString( before, after );
+        }
+    }
+
+    public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
+    {
+        public PropertyKeyTokenCommand( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
+        {
+            super( before, after );
+        }
+
+        @Override
+        public boolean handle( CommandVisitor handler ) throws IOException
+        {
+            return handler.visitPropertyKeyTokenCommand( this );
         }
     }
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
+        public RelationshipTypeTokenCommand( RelationshipTypeTokenRecord before,
+                RelationshipTypeTokenRecord after )
+        {
+            super( before, after );
+        }
 
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
@@ -347,6 +296,10 @@ public abstract class Command
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
+        public LabelTokenCommand( LabelTokenRecord before, LabelTokenRecord after )
+        {
+            super( before, after );
+        }
 
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
@@ -357,18 +310,17 @@ public abstract class Command
 
     public static class SchemaRuleCommand extends Command
     {
-        private Collection<DynamicRecord> recordsBefore;
-        private Collection<DynamicRecord> recordsAfter;
-        private SchemaRule schemaRule;
+        private final Collection<DynamicRecord> recordsBefore;
+        private final Collection<DynamicRecord> recordsAfter;
+        private final SchemaRule schemaRule;
 
-        public SchemaRuleCommand init( Collection<DynamicRecord> recordsBefore,
-                           Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule )
+        public SchemaRuleCommand( Collection<DynamicRecord> recordsBefore, Collection<DynamicRecord> recordsAfter,
+                SchemaRule schemaRule )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
             this.recordsBefore = recordsBefore;
             this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
-            return this;
         }
 
         @Override
@@ -405,23 +357,22 @@ public abstract class Command
 
     public static class NodeCountsCommand extends Command
     {
-        private int labelId;
-        private long delta;
+        private final int labelId;
+        private final long delta;
 
-        public NodeCountsCommand init( int labelId, long delta )
+        public NodeCountsCommand( int labelId, long delta )
         {
             setup( labelId, Mode.UPDATE );
             assert delta != 0 : "Tried to create a NodeCountsCommand for something that didn't change any count";
             this.labelId = labelId;
             this.delta = delta;
-            return this;
         }
 
         @Override
         public String toString()
         {
             return String.format( "UpdateCounts[(%s) %s %d]",
-                                  label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
+                    label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
         }
 
         @Override
@@ -443,20 +394,20 @@ public abstract class Command
 
     public static class RelationshipCountsCommand extends Command
     {
-        private int startLabelId;
-        private int typeId;
-        private int endLabelId;
-        private long delta;
+        private final int startLabelId;
+        private final int typeId;
+        private final int endLabelId;
+        private final long delta;
 
-        public RelationshipCountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
+        public RelationshipCountsCommand( int startLabelId, int typeId, int endLabelId, long delta )
         {
             setup( typeId, Mode.UPDATE );
-            assert delta != 0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
+            assert delta !=
+                   0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
             this.startLabelId = startLabelId;
             this.typeId = typeId;
             this.endLabelId = endLabelId;
             this.delta = delta;
-            return this;
         }
 
         @Override

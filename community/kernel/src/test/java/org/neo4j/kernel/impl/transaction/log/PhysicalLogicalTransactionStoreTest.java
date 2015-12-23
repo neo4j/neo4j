@@ -373,15 +373,12 @@ public class PhysicalLogicalTransactionStoreTest
     private Collection<Command> singleCreateNodeCommand()
     {
         Collection<Command> commands = new ArrayList<>();
-        Command.NodeCommand command = new Command.NodeCommand();
 
         long id = 0;
         NodeRecord before = new NodeRecord( id );
         NodeRecord after = new NodeRecord( id );
         after.setInUse( true );
-        command.init( before, after );
-
-        commands.add( command );
+        commands.add( new Command.NodeCommand( before, after ) );
         return commands;
     }
 

@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -94,9 +93,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         {
             after.setCreated();
         }
-        Command.NodeCommand command = new Command.NodeCommand();
-        command.init( before, after );
-        return command;
+        return new Command.NodeCommand( before, after );
     }
 
     private Command visitRelationshipCommand( ReadableLogChannel channel ) throws IOException
@@ -139,9 +136,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
             record = new RelationshipRecord( id, -1, -1, -1 );
             record.setInUse( false );
         }
-        Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( record );
-        return command;
+        return new Command.RelationshipCommand( null, record );
     }
 
     protected Command visitPropertyCommand( ReadableLogChannel channel ) throws IOException
@@ -160,9 +155,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyCommand command = new Command.PropertyCommand();
-        command.init( before, after );
-        return command;
+        return new Command.PropertyCommand( before, after );
     }
 
     private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException
@@ -192,9 +185,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
-        return command;
+        return new Command.RelationshipTypeTokenCommand( null, record );
     }
 
     private Command visitLabelTokenCommand( ReadableLogChannel channel ) throws IOException
@@ -224,9 +215,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( record );
-        return command;
+        return new Command.LabelTokenCommand( null, record );
     }
 
     private Command visitPropertyKeyTokenCommand( ReadableLogChannel channel ) throws IOException
@@ -252,9 +241,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
-        return command;
+        return new Command.PropertyKeyTokenCommand( null, record );
     }
 
     private Command visitSchemaRuleCommand( ReadableLogChannel channel ) throws IOException
@@ -275,9 +262,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         channel.getLong();
         SchemaRule rule =
                 first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( recordsBefore, recordsAfter, rule );
-        return command;
+        return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
     }
 
     private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
@@ -285,9 +270,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
-        return command;
+        return new Command.NeoStoreCommand( null, record );
     }
 
     private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException

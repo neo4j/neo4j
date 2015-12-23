@@ -50,16 +50,14 @@ public class PhysicalLogCommandReaderV2_1Test
         byte[] data1 = new byte[] {1, 2, 3, 4, 5};
         byte[] data2 = new byte[] {6, 7, 8, 9, 10};
         long value = 1234;
-        PropertyCommand command = new PropertyCommand();
         PropertyRecord property = new PropertyRecord( id );
         property.setInUse( true );
         property.addPropertyBlock( propertyBlockWithSomeDynamicRecords( keyId, STRING, value, data1, data2 ) );
         property.addDeletedRecord( dynamicRecord( false, null, STRING.intValue() ) );
         property.addDeletedRecord( dynamicRecord( false, null, STRING.intValue() ) );
-        command.init( new PropertyRecord( id ), property );
 
         // WHEN
-        writer.visitPropertyCommand( command );
+        writer.visitPropertyCommand( new PropertyCommand( new PropertyRecord( id ), property ) );
 
         // THEN
         PropertyCommand readCommand = (PropertyCommand) reader.read( data );

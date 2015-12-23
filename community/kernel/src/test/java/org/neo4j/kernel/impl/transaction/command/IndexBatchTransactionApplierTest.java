@@ -82,13 +82,11 @@ public class IndexBatchTransactionApplierTest
 
     private NodeCommand node( long nodeId )
     {
-        NodeCommand command = new NodeCommand();
         NodeRecord after = new NodeRecord( nodeId,
                 true, false, NO_NEXT_RELATIONSHIP.intValue(),NO_NEXT_PROPERTY.intValue(), 0 );
         NodeLabelsField.parseLabelsField( after ).add( 1, null, null );
 
-        command.init( new NodeRecord( nodeId ), after );
-        return command;
+        return new NodeCommand( new NodeRecord( nodeId ), after );
     }
 
     private static class OrderVerifyingLabelScanWriter implements LabelScanWriter

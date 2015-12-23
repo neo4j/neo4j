@@ -56,7 +56,7 @@ import static java.lang.String.format;
  *   The process of making an update to log entry or command format is to NOT change any existing class, but to:
  * <ol>
  * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
- * <li>Copy {@link LogEntryParsersV2_2_4} or similar and modify the new copy</li>
+ * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy</li>
  * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
  * <li>Modify {@link CommandWriter} and {@link LogEntryWriter} with required changes</li>
  * </ol>
@@ -79,9 +79,10 @@ public enum LogEntryVersion
     // as of 2015-07-23: neo4j 2.2.4 legacy index command header has bigger id space
     // -4 is correct, -3 can be found in some 2.3 milestones that's why we play it safe
     V2_2_4( -4, LogEntryParsersV2_2_4.class ),
-    V2_3( -5, LogEntryParsersV2_3.class );
+    V2_3( -5, LogEntryParsersV2_3.class ),
+    V3_0( -6, LogEntryParsersV2_3.class );
 
-    public static final LogEntryVersion CURRENT = V2_3;
+    public static final LogEntryVersion CURRENT = V3_0;
     public static final byte NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION = -1;
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] NEGATIVE = new LogEntryVersion[ALL.length+1]; // pessimistic size

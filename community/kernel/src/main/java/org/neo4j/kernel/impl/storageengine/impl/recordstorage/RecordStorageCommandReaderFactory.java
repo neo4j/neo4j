@@ -24,8 +24,9 @@ import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 
 public class RecordStorageCommandReaderFactory implements CommandReaderFactory
@@ -43,6 +44,7 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
         readers[LogEntryVersion.V2_2.ordinal()] = new PhysicalLogCommandReaderV2_2();
         readers[LogEntryVersion.V2_2_4.ordinal()] = new PhysicalLogCommandReaderV2_2_4();
         readers[LogEntryVersion.V2_3.ordinal()] = new PhysicalLogCommandReaderV2_2_4();
+        readers[LogEntryVersion.V3_0.ordinal()] = new PhysicalLogCommandReaderV3_0();
         for ( int i = 0; i < versions.length; i++ )
         {
             if ( versions[i] == null )

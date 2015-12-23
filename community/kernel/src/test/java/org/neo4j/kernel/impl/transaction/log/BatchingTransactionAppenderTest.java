@@ -456,11 +456,9 @@ public class BatchingTransactionAppenderTest
         }
         else
         {
-            NodeCommand nodeCommand = new NodeCommand();
             NodeRecord record = new NodeRecord( 1 + i );
             record.setInUse( true );
-            nodeCommand.init( new NodeRecord( record.getId() ), record );
-            commands.add( nodeCommand );
+            commands.add( new NodeCommand( new NodeRecord( record.getId() ), record ) );
         }
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
@@ -470,14 +468,10 @@ public class BatchingTransactionAppenderTest
     private Collection<Command> singleCreateNodeCommand( long id )
     {
         Collection<Command> commands = new ArrayList<>();
-        Command.NodeCommand command = new Command.NodeCommand();
-
         NodeRecord before = new NodeRecord( id );
         NodeRecord after = new NodeRecord( id );
         after.setInUse( true );
-        command.init( before, after );
-
-        commands.add( command );
+        commands.add( new NodeCommand( before, after ) );
         return commands;
     }
 

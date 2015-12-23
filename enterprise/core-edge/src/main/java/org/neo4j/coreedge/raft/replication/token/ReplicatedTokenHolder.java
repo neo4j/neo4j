@@ -168,16 +168,14 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         TokenStore<RECORD,TOKEN> tokenStore = resolveStore();
         RecordAccess.Loader<Integer,RECORD,Void> recordLoader = resolveLoader( tokenStore );
 
-        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, false, new IntCounter() );
+        RecordChanges<Integer,RECORD,Void> recordAccess = new RecordChanges<>( recordLoader, new IntCounter() );
         TokenCreator<RECORD,TOKEN> tokenCreator = new TokenCreator<>( tokenStore );
         tokenCreator.createToken( tokenName, (int) tokenId, recordAccess );
 
         Collection<Command> commands = new ArrayList<>();
         for ( RecordAccess.RecordProxy<Integer,RECORD, Void> record : recordAccess.changes() )
         {
-            Command.TokenCommand<RECORD> command = createCommand();
-            command.init( record.forReadingLinkage() );
-            commands.add( command );
+            commands.add( createCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
 
         return ReplicatedTokenRequestSerializer.createCommandBytes( commands );
@@ -278,7 +276,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
         {
             if( command instanceof Command.TokenCommand )
             {
-                return ((Command.TokenCommand) command).getRecord().getId();
+                return ((Command.TokenCommand<? extends TokenRecord>) command).getAfter().getId();
             }
         }
         throw new NoSuchEntryException( "Expected command not found" );
@@ -288,7 +286,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token, RECORD extends 
 
     protected abstract TokenStore<RECORD,TOKEN> resolveStore();
 
-    protected abstract Command.TokenCommand<RECORD> createCommand();
+    protected abstract Command.TokenCommand<RECORD> createCommand( RECORD before, RECORD after );
 
     public void setLastCommittedIndex( long lastCommittedIndex )
     {

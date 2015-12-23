@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
@@ -81,11 +82,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -100,11 +98,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( indexApplier, command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( indexes ).createIndex( rule );
@@ -120,11 +115,10 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
+        UniquePropertyConstraintRule schemaRule = uniquenessConstraintRule( id, labelId, propertyKey, 0 );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -140,11 +134,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -159,11 +150,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( indexApplier, command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( indexes ).dropIndex( rule );
@@ -176,8 +164,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
@@ -199,8 +186,7 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 

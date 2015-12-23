@@ -19,18 +19,16 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.UUID;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.UUID;
+
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.ReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
@@ -48,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -140,9 +137,12 @@ public class CoreReplicatedContentMarshalTest
         ByteBuf buffer = Unpooled.buffer();
 
         ArrayList<Command> commands = new ArrayList<>();
-        Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
-        labelTokenCommand.init( new LabelTokenRecord( 0 ) );
-        commands.add( labelTokenCommand );
+        LabelTokenRecord before = new LabelTokenRecord( 0 );
+        LabelTokenRecord after = new LabelTokenRecord( 0 );
+        after.setInUse( true );
+        after.setCreated();
+        after.setNameId( 3232 );
+        commands.add( new Command.LabelTokenCommand( before, after ) );
         ReplicatedContent message = new ReplicatedTokenRequest( TokenType.LABEL, "theLabel",
                 ReplicatedTokenRequestSerializer.createCommandBytes( commands ) );
 

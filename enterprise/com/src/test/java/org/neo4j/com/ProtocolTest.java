@@ -19,12 +19,12 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.junit.Test;
 
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
@@ -73,10 +73,8 @@ public class ProtocolTest
 
     private Collection<Command> justOneNode()
     {
-        NodeCommand nodeCommand = new NodeCommand();
         NodeRecord node = new NodeRecord( 0 );
         node.setInUse( true );
-        nodeCommand.init( new NodeRecord( node.getId() ), node );
-        return Arrays.<Command>asList( nodeCommand );
+        return Arrays.<Command>asList( new NodeCommand( new NodeRecord( node.getId() ), node ) );
     }
 }

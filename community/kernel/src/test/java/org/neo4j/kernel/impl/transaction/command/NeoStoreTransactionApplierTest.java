@@ -145,7 +145,7 @@ public class NeoStoreTransactionApplierTest
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setLabelField( 42, Arrays.asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -167,7 +167,7 @@ public class NeoStoreTransactionApplierTest
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( false );
         after.setLabelField( 42, Arrays.asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -189,7 +189,7 @@ public class NeoStoreTransactionApplierTest
         final NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setLabelField( 42, Arrays.asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -216,7 +216,7 @@ public class NeoStoreTransactionApplierTest
         after.setInUse( true );
         after.setDense( true );
         after.setLabelField( 42, Arrays.asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -235,10 +235,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand( before, record );
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -253,10 +254,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
 
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -272,9 +274,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
+        final RelationshipRecord before = new RelationshipRecord( 12 );
         final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
-        final Command command = new Command.RelationshipCommand().init( record );
+        final Command command = new Command.RelationshipCommand( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -296,7 +299,7 @@ public class NeoStoreTransactionApplierTest
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
-        final Command command = new Command.PropertyCommand().init( before, after );
+        final Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -316,7 +319,7 @@ public class NeoStoreTransactionApplierTest
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
-        final Command command = new Command.PropertyCommand().init( before, after );
+        final Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -337,7 +340,7 @@ public class NeoStoreTransactionApplierTest
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
-        final Command command = new Command.PropertyCommand().init( before, after );
+        final Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -356,7 +359,7 @@ public class NeoStoreTransactionApplierTest
         final PropertyRecord before = new PropertyRecord( 11 );
         final PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
-        final Command command = new Command.PropertyCommand().init( before, after );
+        final Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -376,14 +379,15 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( false );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
-        final Command command = new Command.RelationshipGroupCommand().init( record );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        final Command command = new Command.RelationshipGroupCommand( before, after );
         final boolean result = apply( applier, command::handle, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -392,16 +396,17 @@ public class NeoStoreTransactionApplierTest
         // given
         final BatchTransactionApplier applier = newApplier( true );
         // when
-        final RelationshipGroupRecord record = new RelationshipGroupRecord( 42, 1 );
-        final Command command = new Command.RelationshipGroupCommand().init( record );
+        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        final Command command = new Command.RelationshipGroupCommand( before, after );
 
         boolean result = apply( applier, command::handle, transactionToApply );
 
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
     }
 
     // RELATIONSHIP TYPE TOKEN COMMAND
@@ -411,8 +416,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
-        final Command command = new RelationshipTypeTokenCommand().init( record );
+        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new RelationshipTypeTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -420,7 +428,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -428,9 +436,13 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( 42 );
+
+        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
         final Command.RelationshipTypeTokenCommand command =
-                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand().init( record );
+                (RelationshipTypeTokenCommand) new Command.RelationshipTypeTokenCommand( before, after );
         final RelationshipTypeToken token = new RelationshipTypeToken( "token", 21 );
         when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -440,8 +452,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipTypeTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addRelationshipTypeToken( token );
     }
 
@@ -452,8 +464,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final LabelTokenRecord record = new LabelTokenRecord( 42 );
-        final Command command = new LabelTokenCommand().init( record );
+        final LabelTokenRecord before = new LabelTokenRecord( 42 );
+        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new LabelTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -461,7 +476,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).updateRecord( record );
+        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -469,8 +484,12 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final LabelTokenRecord record = new LabelTokenRecord( 42 );
-        final Command.LabelTokenCommand command = (LabelTokenCommand) new Command.LabelTokenCommand().init( record );
+        final LabelTokenRecord before = new LabelTokenRecord( 42 );
+        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command.LabelTokenCommand command =
+                (LabelTokenCommand) new Command.LabelTokenCommand( before, after );
         final Token token = new Token( "token", 21 );
         when( labelTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -480,8 +499,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( labelTokenStore, times( 1 ) ).updateRecord( record );
+        verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addLabelToken( token );
     }
 
@@ -492,8 +511,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( 42 );
-        final Command command = new PropertyKeyTokenCommand().init( record );
+        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new PropertyKeyTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -501,7 +523,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( record );
+        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
     }
 
     @Test
@@ -509,9 +531,13 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( 42 );
+
+        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
         final Command.PropertyKeyTokenCommand command =
-                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand().init( record );
+                (PropertyKeyTokenCommand) new Command.PropertyKeyTokenCommand( before, after );
         final Token token = new Token( "token", 21 );
         when( propertyKeyTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
 
@@ -521,8 +547,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( record );
+        verify( propertyKeyTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addPropertyKeyToken( token );
     }
 
@@ -538,7 +564,7 @@ public class NeoStoreTransactionApplierTest
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule = IndexRule.indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -561,7 +587,7 @@ public class NeoStoreTransactionApplierTest
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule = IndexRule.indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -585,7 +611,7 @@ public class NeoStoreTransactionApplierTest
         final IndexRule rule =
                 IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -608,7 +634,7 @@ public class NeoStoreTransactionApplierTest
         final IndexRule rule =
                 IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -636,7 +662,7 @@ public class NeoStoreTransactionApplierTest
         final IndexRule rule =
                 IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         try
@@ -663,7 +689,7 @@ public class NeoStoreTransactionApplierTest
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule = IndexRule.indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -686,7 +712,7 @@ public class NeoStoreTransactionApplierTest
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule = IndexRule.indexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ) );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -711,7 +737,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -735,7 +761,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -759,7 +785,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -782,7 +808,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -807,7 +833,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -831,7 +857,7 @@ public class NeoStoreTransactionApplierTest
         final UniquePropertyConstraintRule
                 rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand().init( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
+                new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -852,9 +878,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final NeoStoreRecord record = new NeoStoreRecord();
-        record.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand().init( record );
+        final NeoStoreRecord before = new NeoStoreRecord();
+        final NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
+        final Command command = new Command.NeoStoreCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -862,7 +889,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
+        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
     }
 
     @Test
@@ -870,9 +897,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final NeoStoreRecord record = new NeoStoreRecord();
-        record.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand().init( record );
+        final NeoStoreRecord before = new NeoStoreRecord();
+        final NeoStoreRecord after = new NeoStoreRecord();
+        after.setNextProp( 42 );
+        final Command command = new Command.NeoStoreCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -880,7 +908,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
+        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
     }
 
     private BatchTransactionApplier newApplier( boolean recovery )

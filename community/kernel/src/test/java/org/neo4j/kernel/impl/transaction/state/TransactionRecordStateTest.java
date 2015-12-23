@@ -820,7 +820,7 @@ public class TransactionRecordStateTest
             @Override
             public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
             {
-                if ( command.getRecord().inUse() )
+                if ( command.getAfter().inUse() )
                 {
                     if ( !foundRelationshipGroupInUse.get() )
                     {

@@ -51,8 +51,8 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
         return dependencies.resolveDependency( NeoStores.class ).getLabelTokenStore();
     }
 
-    protected Command.TokenCommand<LabelTokenRecord> createCommand()
+    protected Command.TokenCommand<LabelTokenRecord> createCommand( LabelTokenRecord before, LabelTokenRecord after )
     {
-        return new Command.LabelTokenCommand();
+        return new Command.LabelTokenCommand( before, after );
     }
 }

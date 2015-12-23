@@ -262,9 +262,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.relationshipType( id, relationshipType, id + 1 );
         }
 
-        public void update( NeoStoreRecord record )
+        public void update( NeoStoreRecord before, NeoStoreRecord after )
         {
-            writer.update( record );
+            writer.update( before, after );
         }
 
         public void create( NodeRecord node )
@@ -291,9 +291,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( relationship );
         }
 
-        public void update( RelationshipRecord relationship )
+        public void update( RelationshipRecord before, RelationshipRecord after )
         {
-            writer.update( relationship );
+            writer.update( before, after );
         }
 
         public void delete( RelationshipRecord relationship )
@@ -306,9 +306,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( group );
         }
 
-        public void update(  RelationshipGroupRecord group )
+        public void update(  RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            writer.update( group );
+            writer.update( before, after );
         }
 
         public void delete(  RelationshipGroupRecord group )

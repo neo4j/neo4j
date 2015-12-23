@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -41,7 +41,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 
@@ -181,9 +180,9 @@ public class LogEntrySortingCursorTest
 
     private LogEntry command()
     {
-        final Command.NodeCommand command = new Command.NodeCommand();
-        command.init( new NodeRecord( random.nextInt() ), new NodeRecord( random.nextInt() ) );
-        return new LogEntryCommand( command );
+        NodeRecord before = new NodeRecord( random.nextInt() );
+        NodeRecord after = new NodeRecord( random.nextInt() );
+        return new LogEntryCommand( new Command.NodeCommand( before, after ) );
     }
 
     private LogEntry commit( long txId )

@@ -19,11 +19,13 @@
  */
 package org.neo4j.tools.txlog;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.tools.txlog.checktypes.CheckType;
 
 /**
  * Contains mapping from entity id ({@link NodeRecord#getId()}, {@link PropertyRecord#getId()}, ...) to
@@ -36,26 +38,26 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 class CommittedRecords<R extends Abstract64BitRecord>
 {
     private final CheckType<?,R> checkType;
-    private final PrimitiveLongObjectMap<LogRecord<R>> recordsById;
+    private final Map<Long,LogRecord<R>> recordsById;
 
     CommittedRecords( CheckType<?,R> check )
     {
         this.checkType = check;
-        this.recordsById = Primitive.longObjectMap();
+        this.recordsById = new HashMap<>();
     }
 
-    boolean isValid( R record )
+    public boolean isValid( R record )
     {
         LogRecord<R> current = recordsById.get( record.getId() );
         return current == null || checkType.equal( record, current.record() );
     }
 
-    void put( R record, long logVersion )
+    public void put( R record, long logVersion )
     {
         recordsById.put( record.getId(), new LogRecord<>( record, logVersion ) );
     }
 
-    LogRecord<R> get( long id )
+    public LogRecord<R> get( long id )
     {
         return recordsById.get( id );
     }
@@ -63,6 +65,8 @@ class CommittedRecords<R extends Abstract64BitRecord>
     @Override
     public String toString()
     {
-        return "CommittedRecords{" + "command=" + checkType.name() + ", recordsById.size=" + recordsById.size() + "}";
+        return "CommittedRecords{" +
+               "command=" + checkType.name() +
+               ", recordsById.size=" + recordsById.size() + "}";
     }
 }

@@ -50,4 +50,21 @@ public class PropertyKeyTokenRecord extends TokenRecord
     {
         buf.append( ",propCount=" ).append( propCount );
     }
+
+
+    @Override
+    public PropertyKeyTokenRecord clone()
+    {
+        PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( getId() );
+        propertyKeyTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
+        {
+            propertyKeyTokenRecord.setCreated();
+        }
+        propertyKeyTokenRecord.setIsLight( isLight() );
+        propertyKeyTokenRecord.setNameId( getNameId() );
+        propertyKeyTokenRecord.addNameRecords( getNameRecords() );
+        propertyKeyTokenRecord.setPropertyCount( getPropertyCount() );
+        return propertyKeyTokenRecord;
+    }
 }

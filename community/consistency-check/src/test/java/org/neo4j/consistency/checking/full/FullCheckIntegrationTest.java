@@ -281,9 +281,10 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NeoStoreRecord record = new NeoStoreRecord();
-                record.setNextProp( next.property() );
-                tx.update( record );
+                NeoStoreRecord before = new NeoStoreRecord();
+                NeoStoreRecord after = new NeoStoreRecord();
+                after.setNextProp( next.property() );
+                tx.update( before, after );
                 // We get exceptions when only the above happens in a transaction...
                 tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
             }

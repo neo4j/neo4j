@@ -51,8 +51,9 @@ public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder
         return dependencies.resolveDependency( NeoStores.class ).getRelationshipTypeTokenStore();
     }
 
-    protected Command.TokenCommand<RelationshipTypeTokenRecord> createCommand()
+    protected Command.TokenCommand<RelationshipTypeTokenRecord> createCommand( RelationshipTypeTokenRecord before,
+            RelationshipTypeTokenRecord after )
     {
-        return new Command.RelationshipTypeTokenCommand();
+        return new Command.RelationshipTypeTokenCommand( before, after );
     }
 }

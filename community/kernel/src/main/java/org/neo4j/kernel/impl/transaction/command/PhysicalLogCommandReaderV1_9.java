@@ -69,9 +69,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         {
             return null;
         }
-        Command.NodeCommand command = new Command.NodeCommand();
-        command.init( record, record );
-        return command;
+        return new Command.NodeCommand( record, record );
     }
 
     private Command visitRelationshipCommand( ReadableLogChannel channel ) throws IOException
@@ -114,9 +112,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             record = new RelationshipRecord( id, -1, -1, -1 );
             record.setInUse( false );
         }
-        Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( record );
-        return command;
+        return new Command.RelationshipCommand( null, record );
     }
 
     protected Command visitPropertyCommand( ReadableLogChannel channel ) throws IOException
@@ -128,9 +124,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyCommand command = new Command.PropertyCommand();
-        command.init( record, record );
-        return command;
+        return new Command.PropertyCommand( record, record );
     }
 
     private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException
@@ -160,9 +154,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
-        return command;
+        return new Command.RelationshipTypeTokenCommand( null, record );
     }
 
     private Command visitPropertyKeyTokenCommand( ReadableLogChannel channel ) throws IOException
@@ -188,9 +180,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         {
             return null;
         }
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
-        return command;
+        return new Command.PropertyKeyTokenCommand( null, record );
     }
 
     private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
@@ -198,9 +188,7 @@ public class PhysicalLogCommandReaderV1_9 extends BaseCommandReader
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
-        return command;
+        return new Command.NeoStoreCommand( null, record );
     }
 
     private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException

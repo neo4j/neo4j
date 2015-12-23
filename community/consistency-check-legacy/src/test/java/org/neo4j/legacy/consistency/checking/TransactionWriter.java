@@ -62,37 +62,33 @@ public class TransactionWriter
 
     public void propertyKey( int id, String key, int... dynamicIds )
     {
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) );
-        addCommand( command );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( id );
+        PropertyKeyTokenRecord after = withName( new PropertyKeyTokenRecord( id ), dynamicIds, key );
+        addCommand( new Command.PropertyKeyTokenCommand( before, after ) );
     }
 
     public void label( int id, String name, int... dynamicIds )
     {
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( withName( new LabelTokenRecord( id ), dynamicIds, name ) );
-        addCommand( command );
+        LabelTokenRecord before = new LabelTokenRecord( id );
+        LabelTokenRecord after = withName( new LabelTokenRecord( id ), dynamicIds, name );
+        addCommand( new Command.LabelTokenCommand( before, after ) );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds )
     {
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) );
-        addCommand( command );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
+        RelationshipTypeTokenRecord after = withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label );
+        addCommand( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 
-    public void update( NeoStoreRecord record )
+    public void update( NeoStoreRecord before, NeoStoreRecord after )
     {
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
-        addCommand( command );
+        addCommand( new Command.NeoStoreCommand( before, after ) );
     }
 
-    public void update( LabelTokenRecord labelToken )
+    public void update( LabelTokenRecord before, LabelTokenRecord after )
     {
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-        command.init( labelToken );
-        addCommand( command );
+        addCommand( new Command.LabelTokenCommand( before, after ) );
     }
 
     private void addCommand( Command command )
@@ -110,19 +106,19 @@ public class TransactionWriter
     public void create( LabelTokenRecord labelToken )
     {
         labelToken.setCreated();
-        update( labelToken );
+        update( new LabelTokenRecord( labelToken.getId() ), labelToken );
     }
 
     public void create( PropertyKeyTokenRecord token )
     {
         token.setCreated();
-        update( token );
+        update( new PropertyKeyTokenRecord( token.getId() ), token );
     }
 
     public void create( RelationshipGroupRecord group )
     {
         group.setCreated();
-        update( group );
+        update( new RelationshipGroupRecord( group.getId(), group.getType() ), group );
     }
 
     public void update( NodeRecord before, NodeRecord node )
@@ -131,10 +127,10 @@ public class TransactionWriter
         add( before, node );
     }
 
-    public void update( PropertyKeyTokenRecord token )
+    public void update( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
-        token.setInUse( true );
-        add( token );
+        after.setInUse( true );
+        add( before, after );
     }
 
     public void delete( NodeRecord node )
@@ -143,16 +139,16 @@ public class TransactionWriter
         add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
-    public void create( RelationshipRecord relationship )
+    public void create(  RelationshipRecord record  )
     {
-        relationship.setCreated();
-        update( relationship );
+        record.setCreated();
+        update( new RelationshipRecord( record.getId() ), record );
     }
 
     public void delete( RelationshipGroupRecord group )
     {
         group.setInUse( false );
-        add( group );
+        add( group, new RelationshipGroupRecord( group.getId(), group.getType() ) );
     }
 
     public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord,
@@ -175,22 +171,22 @@ public class TransactionWriter
         addSchema( beforeRecords, afterRecords, rule );
     }
 
-    public void update( RelationshipRecord relationship )
+    public void update( RelationshipRecord before, RelationshipRecord after )
     {
-        relationship.setInUse( true );
-        add( relationship );
+        after.setInUse( true );
+        add( before, after );
     }
 
-    public void update( RelationshipGroupRecord group )
+    public void update( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
-        group.setInUse( true );
-        add( group );
+        after.setInUse( true );
+        add( before, after );
     }
 
-    public void delete( RelationshipRecord relationship )
+    public void delete(  RelationshipRecord record  )
     {
-        relationship.setInUse( false );
-        add( relationship );
+        record.setInUse( false );
+        add( record, new RelationshipRecord( record.getId() ) );
     }
 
     public void create( PropertyRecord property )
@@ -225,68 +221,52 @@ public class TransactionWriter
     private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
             SchemaRule rule )
     {
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-        addCommand( command );
+        addCommand( new Command.SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
     }
 
     public void add( NodeRecord before, NodeRecord after )
     {
-        Command.NodeCommand command = new Command.NodeCommand();
-        command.init(  before, after );
-        addCommand( command );
+        addCommand( new Command.NodeCommand( before, after ) );
     }
 
-    public void add( RelationshipRecord relationship )
+    public void add( RelationshipRecord before, RelationshipRecord after )
     {
-        Command.RelationshipCommand command = new Command.RelationshipCommand();
-        command.init( relationship );
-        addCommand( command );
+        addCommand( new Command.RelationshipCommand( before, after ) );
     }
 
-    public void add( RelationshipGroupRecord group )
+    public void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( group );
-        addCommand( command );
+        addCommand( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     public void add( PropertyRecord before, PropertyRecord property )
     {
-        Command.PropertyCommand command = new Command.PropertyCommand();
-        command.init( before, property );
-        addCommand( command );
+        addCommand( new Command.PropertyCommand( before, property ) );
     }
 
-    public void add( RelationshipTypeTokenRecord record )
+    public void add( RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
     {
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-        command.init( record );
-        addCommand( command );
+        addCommand( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 
-    public void add( PropertyKeyTokenRecord record )
+    public void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-        command.init( record );
-        addCommand( command );
+        addCommand( new Command.PropertyKeyTokenCommand( before, after ) );
     }
 
-    public void add( NeoStoreRecord record )
+    public void add( NeoStoreRecord before, NeoStoreRecord after )
     {
-        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
-        command.init( record );
-        addCommand( command );
+        addCommand( new Command.NeoStoreCommand( before, after ) );
     }
 
     public void incrementNodeCount( int labelId, long delta )
     {
-        addCommand( new Command.NodeCountsCommand().init( labelId, delta ) );
+        addCommand( new Command.NodeCountsCommand( labelId, delta ) );
     }
 
     public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        addCommand( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, delta ) );
+        addCommand( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta ) );
     }
 
     private static <T extends TokenRecord> T withName( T record, int[] dynamicIds, String name )

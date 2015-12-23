@@ -31,4 +31,19 @@ public class RelationshipTypeTokenRecord extends TokenRecord
     {
         return "RelationshipType";
     }
+
+    @Override
+    public RelationshipTypeTokenRecord clone()
+    {
+        RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( getId() );
+        relationshipTypeTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
+        {
+            relationshipTypeTokenRecord.setCreated();
+        }
+        relationshipTypeTokenRecord.setIsLight( isLight() );
+        relationshipTypeTokenRecord.setNameId( getNameId() );
+        relationshipTypeTokenRecord.addNameRecords( getNameRecords() );
+        return relationshipTypeTokenRecord;
+    }
 }
