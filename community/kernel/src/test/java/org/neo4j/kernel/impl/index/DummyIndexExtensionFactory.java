@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.index;
 
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
-public class DummyIndexExtensionFactory extends
-        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
+public class DummyIndexExtensionFactory extends KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies>
 {
     public static final String IDENTIFIER = "test-dummy-neo-index";
     public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
@@ -41,7 +41,7 @@ public class DummyIndexExtensionFactory extends
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         IndexProviders indexProviders = dependencies.getIndexProviders();
         return new Extension( indexProviders );

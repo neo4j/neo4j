@@ -55,6 +55,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -173,7 +174,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     @Override
-    public Lifecycle newKernelExtension( final Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
@@ -188,8 +189,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         final Sessions sessions = new ThreadedSessions(
                 life.add( new StandardSessions( api, dependencies.usageData(), logging ) ),
                 scheduler, logging );
-
-
 
         List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
 

@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -53,7 +54,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -106,7 +106,7 @@ public class StoreMigration
         deps.satisfyDependencies( fs, config );
         deps.satisfyDependencies( legacyIndexProvider );
 
-        KernelContext kernelContext = new MigrationKernelContext( fs, storeDirectory );
+        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );
@@ -142,30 +142,6 @@ public class StoreMigration
         finally
         {
             life.shutdown();
-        }
-    }
-
-    private class MigrationKernelContext implements KernelContext
-    {
-        private final FileSystemAbstraction fileSystem;
-        private final File storeDirectory;
-
-        public MigrationKernelContext( FileSystemAbstraction fileSystem, File storeDirectory )
-        {
-            this.fileSystem = fileSystem;
-            this.storeDirectory = storeDirectory;
-        }
-
-        @Override
-        public FileSystemAbstraction fileSystem()
-        {
-            return fileSystem;
-        }
-
-        @Override
-        public File storeDir()
-        {
-            return storeDirectory;
         }
     }
 

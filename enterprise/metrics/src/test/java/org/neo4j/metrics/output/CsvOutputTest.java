@@ -27,9 +27,9 @@ import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
@@ -57,7 +57,7 @@ public class CsvOutputTest
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
                 MetricsSettings.csvPath.name(), name ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                new MetricRegistry(), NullLog.getInstance(), kernelContext( storeDir ) ) );
 
         // WHEN
         life.start();
@@ -75,7 +75,7 @@ public class CsvOutputTest
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
                 MetricsSettings.csvPath.name(), "test.csv" ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                new MetricRegistry(), NullLog.getInstance(), kernelContext( storeDir ) ) );
 
         // WHEN
         life.start();
@@ -94,7 +94,7 @@ public class CsvOutputTest
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
                 MetricsSettings.csvPath.name(), outputFPath.getAbsolutePath() ),
-                new MetricRegistry(), NullLog.getInstance(), kerneContext( storeDir ) ) );
+                new MetricRegistry(), NullLog.getInstance(), kernelContext( storeDir ) ) );
 
         // WHEN
         life.start();
@@ -103,22 +103,9 @@ public class CsvOutputTest
         waitForFileToAppear( outputFPath );
     }
 
-    private KernelContext kerneContext( final File storeDir )
+    private KernelContext kernelContext( final File storeDir )
     {
-        return new KernelContext()
-        {
-            @Override
-            public File storeDir()
-            {
-                return storeDir;
-            }
-
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return new DefaultFileSystemAbstraction();
-            }
-        };
+        return new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir );
     }
 
     private Config config( String... keysValues )

@@ -39,13 +39,12 @@ public class MetricsExtension implements Lifecycle
     private final Config configuration;
     private final KernelContext kernelContext;
 
-
-    public MetricsExtension( MetricsKernelExtensionFactory.Dependencies dependencies )
+    public MetricsExtension( KernelContext kernelContext, MetricsKernelExtensionFactory.Dependencies dependencies )
     {
+        this.kernelContext = kernelContext;
         this.dependencies = dependencies;
         this.logService = dependencies.logService();
         this.configuration = dependencies.configuration();
-        this.kernelContext = dependencies.kernelContext();
     }
 
     @Override

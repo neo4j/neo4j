@@ -30,10 +30,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.Version;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -169,20 +170,7 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
-        KernelContext kernelContext = dependencies.satisfyDependency( new KernelContext()
-        {
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return PlatformModule.this.fileSystem;
-            }
-
-            @Override
-            public File storeDir()
-            {
-                return PlatformModule.this.storeDir;
-            }
-        } );
+        KernelContext kernelContext = dependencies.satisfyDependency( new SimpleKernelContext( fileSystem, storeDir ) );
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
                 kernelContext,
@@ -291,9 +279,10 @@ public class PlatformModule
         // Get the list of settings classes for extensions
         for ( KernelExtensionFactory<?> kernelExtension : kernelExtensions )
         {
-            if ( kernelExtension.getSettingsClass() != null )
+            Class<?> settingsClass = kernelExtension.getSettingsClass();
+            if ( settingsClass != null )
             {
-                totalSettingsClasses.add( kernelExtension.getSettingsClass() );
+                totalSettingsClasses.add( settingsClass );
             }
         }
 

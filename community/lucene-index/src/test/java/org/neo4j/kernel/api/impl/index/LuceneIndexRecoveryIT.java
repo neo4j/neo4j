@@ -331,11 +331,17 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createAlwaysInitiallyPopulatingLuceneIndexFactory()
+    private KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
+            @Override
+            public Class<LuceneSchemaIndexProviderFactory.Dependencies> getSettingsClass()
+            {
+                return LuceneSchemaIndexProviderFactory.Dependencies.class;
+            }
+
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
@@ -353,11 +359,12 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createLuceneIndexFactory()
+    private KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
+
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,28 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.scan;
+package org.neo4j.kernel.impl.spi;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import java.io.File;
 
-@Service.Implementation( KernelExtensionFactory.class )
-public class InMemoryLabelScanStoreExtension extends
-        KernelExtensionFactory<InMemoryLabelScanStoreExtension.NoDependencies>
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+public class SimpleKernelContext implements KernelContext
 {
-    public interface NoDependencies
-    {   // No dependencies
-    }
+    private final FileSystemAbstraction fileSystem;
+    private final File storeDir;
 
-    public InMemoryLabelScanStoreExtension()
+    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir )
     {
-        super( "in-memory-scan-store" );
+        this.fileSystem = fileSystem;
+        this.storeDir = storeDir;
     }
 
     @Override
-    public LabelScanStoreProvider newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
+    public FileSystemAbstraction fileSystem()
     {
-        return new LabelScanStoreProvider( new InMemoryLabelScanStore(), 2 );
+        return fileSystem;
+    }
+
+    @Override
+    public File storeDir()
+    {
+        return storeDir;
     }
 }

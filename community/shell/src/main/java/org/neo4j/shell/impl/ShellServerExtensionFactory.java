@@ -23,6 +23,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.shell.ShellSettings;
 
@@ -44,13 +45,13 @@ public final class ShellServerExtensionFactory extends KernelExtensionFactory<Sh
     }
 
     @Override
-    public Class getSettingsClass()
+    public Class<ShellSettings> getSettingsClass()
     {
         return ShellSettings.class;
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new ShellServerKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI() );
     }
