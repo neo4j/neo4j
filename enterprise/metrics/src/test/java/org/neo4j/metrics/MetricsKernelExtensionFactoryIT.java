@@ -26,30 +26,18 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiPredicate;
 
-import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.replication.RaftContentSerializer;
-import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.metrics.source.CoreEdgeMetrics;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
@@ -59,13 +47,14 @@ import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
@@ -80,92 +69,83 @@ public class MetricsKernelExtensionFactoryIT
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
     private File outputPath;
-    private ClusterManager.ManagedCluster cluster;
     private HighlyAvailableGraphDatabase db;
 
     @Before
-    public void setup() throws Exception
+    public void setup() throws Throwable
     {
         outputPath = clusterRule.directory( "metrics" );
-    }
-
-    private void createCluster( String minCypherReplanInterval, String minCheckPointIntervalTime )
-            throws Throwable
-    {
-        Map<String,String> config = new HashMap<>();
-        config.put( MetricsSettings.neoEnabled.name(), Settings.TRUE );
-        config.put( metricsEnabled.name(), Settings.TRUE );
-        config.put( csvEnabled.name(), Settings.TRUE );
-        config.put( cypher_min_replan_interval.name(), minCypherReplanInterval );
-        config.put( csvPath.name(), outputPath.getAbsolutePath() );
-        config.put( check_point_interval_time.name(), minCheckPointIntervalTime );
-        config.put( graphiteInterval.name(), "1s" );
-        cluster = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster();
-        db = cluster.getMaster();
+        Map<String,String> config = stringMap(
+                MetricsSettings.neoEnabled.name(), Settings.TRUE,
+                metricsEnabled.name(), Settings.TRUE,
+                csvEnabled.name(), Settings.TRUE,
+                cypher_min_replan_interval.name(), "0m",
+                csvPath.name(), outputPath.getAbsolutePath(),
+                check_point_interval_time.name(), "100ms",
+                graphiteInterval.name(), "1s"
+        );
+        db = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster().getMaster();
     }
 
     @Test
     public void shouldShowTxCommittedMetricsWhenMetricsEnabled() throws Throwable
     {
-        createCluster( "10m", "10m" );
+        // GIVEN
+        long lastCommittedTransactionId = db.getDependencyResolver().resolveDependency( NeoStores.class )
+                .getMetaDataStore().getLastCommittedTransactionId();
 
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        cluster.sync();
-        long expectedNumberOfCommittedTransactions =
-                cluster.getMaster().getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                        .getLastCommittedTransaction().transactionId() - TransactionIdStore.BASE_TX_ID;
-        cluster.stop();
-
-        // Awesome. Let's get some metric numbers.
-        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
+
+        // WHEN
+        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         long committedTransactions = readLongValueAndAssert( metricsFile,
                 ( newValue, currentValue ) -> newValue >= currentValue );
-        assertThat( committedTransactions, lessThanOrEqualTo( expectedNumberOfCommittedTransactions ) );
+
+        // THEN
+        assertThat( committedTransactions, greaterThanOrEqualTo( lastCommittedTransactionId ) );
+        assertThat( committedTransactions, lessThanOrEqualTo( lastCommittedTransactionId + 1000L ) );
     }
 
     @Test
     public void shouldShowEntityCountMetricsWhenMetricsEnabled() throws Throwable
     {
-        createCluster( "10m", "10m" );
-
+        // GIVEN
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        cluster.stop();
-
-        // Awesome. Let's get some metric numbers.
-        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         File metricsFile = new File( outputPath, EntityCountMetrics.COUNTS_NODE + ".csv" );
+
+        // WHEN
+        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         long committedTransactions = readLongValueAndAssert( metricsFile,
                 ( newValue, currentValue ) -> newValue >= currentValue );
+
+        // THEN
         assertThat( committedTransactions, lessThanOrEqualTo( 1000L ) );
     }
 
     @Test
     public void shouldShowClusterMetricsWhenMetricsEnabled() throws Throwable
     {
-        System.out.println();
-        createCluster( "10m", "10m" );
-
+        // GIVEN
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        cluster.stop();
-
-        // Awesome. Let's get some metric numbers.
-        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         File metricsFile = new File( outputPath, ClusterMetrics.IS_MASTER + ".csv" );
+
+        // WHEN
+        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
         long committedTransactions = readLongValueAndAssert( metricsFile,
                 ( newValue, currentValue ) -> newValue >= currentValue );
+
+        // THEN
         assertThat( committedTransactions, equalTo( 1L ) );
     }
 
     @Test
     public void showReplanEvents() throws Throwable
     {
-        createCluster( "0", "10m" );
-
-        //do a simple query to populate cache
+        // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
@@ -173,42 +153,38 @@ public class MetricsKernelExtensionFactoryIT
         }
         //add some data, should make plan stale
         addNodes( 10 );
-        //now we should have to plan again
+        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
+
+        // WHEN
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
             tx.success();
         }
-        //add more data just to make sure metrics are flushed
-        addNodes( 1000 );
-        cluster.stop();
 
-        //now we should have one replan event
-        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
         long events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
+
+        // THEN
         assertThat( events, is( 1L ) );
     }
 
     @Test
     public void shouldUseEventBasedReportingCorrectly() throws Throwable
     {
-        createCluster( "10m", "100ms" );
+        // GIVEN
         addNodes( 100 );
 
+        // WHEN
         CheckPointer checkPointer = db.getDependencyResolver().resolveDependency( CheckPointer.class );
         checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test" ) );
 
         // wait for the file to be written before shutting down the cluster
         File metricFile = new File( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION + ".csv" );
-        // let's wait until the file is in place (since the reporting is async that might take a while)
-        while ( !metricFile.exists() )
-        {
-            Thread.sleep( 10 );
-        }
 
-        cluster.stop();
+        long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
 
-        readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
+        // THEN
+        assertThat( result, greaterThanOrEqualTo( 0L ) );
     }
 
     private void addNodes( int numberOfNodes )
@@ -224,8 +200,14 @@ public class MetricsKernelExtensionFactoryIT
         }
     }
 
-    private long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption ) throws IOException
+    private long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption ) throws Throwable
     {
+        // let's wait until the file is in place (since the reporting is async that might take a while)
+        while ( !metricFile.exists() )
+        {
+            Thread.sleep( 10 );
+        }
+
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
             String[] headers = reader.readLine().split( "," );
