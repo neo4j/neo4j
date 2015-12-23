@@ -43,7 +43,7 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new MetricsExtension( dependencies );
     }
