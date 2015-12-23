@@ -154,7 +154,7 @@ case "$1" in
     ;;
 
   *)
-    echo "Usage: neo4j { console | start | stop | restart | status | info }"
+    echo "Usage: neo4j-arbiter { console | start | stop | restart | status | info }"
     ;;
 esac
 
