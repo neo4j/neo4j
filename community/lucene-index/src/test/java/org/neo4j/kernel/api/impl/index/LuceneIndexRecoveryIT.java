@@ -52,7 +52,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -65,26 +64,6 @@ public class LuceneIndexRecoveryIT
     private final static Label myLabel = label( "MyLabel" );
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
-
-    private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
-    {
-        @Override
-        public Directory open( File dir ) throws IOException
-        {
-            return directoryFactory.open( dir );
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
-        {
-            directoryFactory.dumpToZip( zip, scratchPad );
-        }
-    };
 
     @Before
     public void before()
@@ -347,7 +326,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(),directoryFactory, context
+                        .storeDir() )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -370,7 +350,7 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, context.storeDir() )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

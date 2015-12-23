@@ -47,7 +47,7 @@ public class LuceneIndex implements Closeable
     private final ReentrantLock readWriteLock = new ReentrantLock();
 
     private List<IndexPartition> partitions = new CopyOnWriteArrayList<>();
-    private boolean open = false;
+    private volatile boolean open = false;
     private PartitionedIndexStorage indexStorage;
 
     private static final String KEY_STATUS = "status";
@@ -185,7 +185,6 @@ public class LuceneIndex implements Closeable
 
     public void markAsFailed( String failure ) throws IOException
     {
-        ensureOpen();
         indexStorage.storeIndexFailure( failure );
     }
 

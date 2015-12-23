@@ -139,8 +139,9 @@ public class LuceneIndexAccessorTest
     }
 
     @After
-    public void after()
+    public void after() throws IOException
     {
+        accessor.close();
         dirFactory.close();
     }
 

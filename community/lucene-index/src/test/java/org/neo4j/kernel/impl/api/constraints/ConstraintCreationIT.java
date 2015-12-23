@@ -35,15 +35,16 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class ConstraintCreationIT
 {
-    private static final Label LABEL = Label.label( "label1" );
-    private static final long indexId = 1;
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
+
+    private static final Label LABEL = Label.label( "label1" );
+    private static final long indexId = 1;
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
@@ -81,10 +82,6 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
         File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
 
-        File partitionFolder = new IndexFolderLayout( schemaStoreDir, indexId ).getPartitionFolder( 1 );
-
-        File[] files = partitionFolder.listFiles();
-        assertNotNull( files );
-        assertEquals(0, files.length);
+        assertFalse( new IndexFolderLayout( schemaStoreDir, indexId ).getIndexFolder().exists() );
     }
 }
