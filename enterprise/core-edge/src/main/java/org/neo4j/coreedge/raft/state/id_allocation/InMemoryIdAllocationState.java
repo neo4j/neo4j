@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.replication.id.IdAllocationState;
 import org.neo4j.coreedge.raft.state.membership.Marshal;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 /**
  * An in-memory representation of the IDs allocated to this core instance.

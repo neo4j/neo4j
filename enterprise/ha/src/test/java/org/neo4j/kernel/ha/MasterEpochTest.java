@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;

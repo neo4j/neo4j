@@ -22,15 +22,15 @@ package org.neo4j.metrics.source.db;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
-import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static org.neo4j.kernel.IdType.NODE;
-import static org.neo4j.kernel.IdType.PROPERTY;
-import static org.neo4j.kernel.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.kernel.impl.store.id.IdType.NODE;
+import static org.neo4j.kernel.impl.store.id.IdType.PROPERTY;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 
 @Documented( ".Database Data Metrics" )
 public class EntityCountMetrics extends LifecycleAdapter
@@ -47,11 +47,9 @@ public class EntityCountMetrics extends LifecycleAdapter
     public static final String COUNTS_NODE = name( COUNTS_PREFIX, "node" );
 
     private final MetricRegistry registry;
-    @SuppressWarnings( "deprecation" )
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public EntityCountMetrics( MetricRegistry registry,
-            @SuppressWarnings( "deprecation" ) IdGeneratorFactory idGeneratorFactory )
+    public EntityCountMetrics( MetricRegistry registry, IdGeneratorFactory idGeneratorFactory )
     {
         this.registry = registry;
         this.idGeneratorFactory = idGeneratorFactory;

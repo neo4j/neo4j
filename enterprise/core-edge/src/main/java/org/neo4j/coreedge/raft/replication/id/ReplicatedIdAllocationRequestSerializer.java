@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.replication.id;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 public class ReplicatedIdAllocationRequestSerializer
 {

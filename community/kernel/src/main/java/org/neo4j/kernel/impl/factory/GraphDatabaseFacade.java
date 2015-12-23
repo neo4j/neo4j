@@ -54,7 +54,7 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.TopLevelTransaction;

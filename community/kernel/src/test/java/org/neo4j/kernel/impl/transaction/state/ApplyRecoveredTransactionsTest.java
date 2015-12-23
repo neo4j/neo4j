@@ -28,7 +28,7 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
