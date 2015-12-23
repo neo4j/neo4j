@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -34,6 +35,7 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -43,8 +45,15 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.store.StorePropertyCursor.payloadValueAsObject;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
@@ -54,76 +63,104 @@ import static org.neo4j.test.Assert.assertObjectOrArrayEquals;
 @RunWith( Enclosed.class )
 public class StorePropertyPayloadCursorTest
 {
-    @Test
-    public void shouldBeOkToClearUnusedCursor()
+    public static class BasicContract
     {
-        // Given
-        StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
+        @Test
+        public void shouldBeOkToClearUnusedCursor()
+        {
+            // Given
+            StorePropertyPayloadCursor cursor = newCursor( "cat-dog" );
 
-        // When
-        cursor.clear();
+            // When
+            cursor.clear();
 
-        // Then
-        // clear() on an unused cursor works just fine
-    }
+            // Then
+            // clear() on an unused cursor works just fine
+        }
 
-    @Test
-    public void shouldBeOkToClearPartiallyExhaustedCursor()
-    {
-        // Given
-        StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3L );
+        @Test
+        public void shouldBeOkToClearPartiallyExhaustedCursor()
+        {
+            // Given
+            StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3L );
 
-        cursor.next();
-        cursor.next();
+            cursor.next();
+            cursor.next();
 
-        // When
-        cursor.clear();
+            // When
+            cursor.clear();
 
-        // Then
-        // clear() on an used cursor works just fine
-    }
+            // Then
+            // clear() on an used cursor works just fine
+        }
 
-    @Test
-    public void shouldBeOkToClearExhaustedCursor()
-    {
-        // Given
-        StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3 );
+        @Test
+        public void shouldBeOkToClearExhaustedCursor()
+        {
+            // Given
+            StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3 );
 
-        cursor.next();
-        cursor.next();
-        cursor.next();
+            cursor.next();
+            cursor.next();
+            cursor.next();
 
-        // When
-        cursor.clear();
+            // When
+            cursor.clear();
 
-        // Then
-        // clear() on an exhausted cursor works just fine
-    }
+            // Then
+            // clear() on an exhausted cursor works just fine
+        }
 
-    @Test
-    public void shouldBePossibleToCallClearOnEmptyCursor()
-    {
-        // Given
-        StorePropertyPayloadCursor cursor = newCursor();
+        @Test
+        public void shouldBePossibleToCallClearOnEmptyCursor()
+        {
+            // Given
+            StorePropertyPayloadCursor cursor = newCursor();
 
-        // When
-        cursor.clear();
+            // When
+            cursor.clear();
 
-        // Then
-        // clear() on an empty cursor works just fine
-    }
+            // Then
+            // clear() on an empty cursor works just fine
+        }
 
-    @Test
-    public void shouldBePossibleToCallNextOnEmptyCursor()
-    {
-        // Given
-        StorePropertyPayloadCursor cursor = newCursor();
+        @Test
+        public void shouldBePossibleToCallNextOnEmptyCursor()
+        {
+            // Given
+            StorePropertyPayloadCursor cursor = newCursor();
 
-        // When
-        cursor.next();
+            // When
+            cursor.next();
 
-        // Then
-        // next() on an empty cursor works just fine
+            // Then
+            // next() on an empty cursor works just fine
+        }
+
+        @Test
+        public void shouldUseDynamicStringAndArrayStoresThroughDifferentCursors()
+        {
+            // Given
+            DynamicStringStore dynamicStringStore = newDynamicStoreMock( DynamicStringStore.class );
+            DynamicArrayStore dynamicArrayStore = newDynamicStoreMock( DynamicArrayStore.class );
+
+            String string = RandomStringUtils.randomAlphanumeric( 5000 );
+            byte[] array = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
+            StorePropertyPayloadCursor cursor = newCursor( dynamicStringStore, dynamicArrayStore, string, array );
+
+            // When
+            assertTrue( cursor.next() );
+            assertNotNull( cursor.stringValue() );
+
+            assertTrue( cursor.next() );
+            assertNotNull( cursor.arrayValue() );
+
+            assertFalse( cursor.next() );
+
+            // Then
+            verify( dynamicStringStore ).newDynamicRecordCursor();
+            verify( dynamicArrayStore ).newDynamicRecordCursor();
+        }
     }
 
     @RunWith( Parameterized.class )
@@ -390,6 +427,12 @@ public class StorePropertyPayloadCursorTest
         DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
         DynamicArrayStore dynamicArrayStore = mock( DynamicArrayStore.class );
 
+        return newCursor( dynamicStringStore, dynamicArrayStore, values );
+    }
+
+    private static StorePropertyPayloadCursor newCursor( DynamicStringStore dynamicStringStore,
+            DynamicArrayStore dynamicArrayStore, Object... values )
+    {
         StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
 
         PageCursor pageCursor = newPageCursor( values );
@@ -422,6 +465,22 @@ public class StorePropertyPayloadCursorTest
         }
 
         return new StubPageCursor( 1, page );
+    }
+
+    private static <S extends AbstractDynamicStore> S newDynamicStoreMock( Class<S> clazz )
+    {
+        AbstractDynamicStore.DynamicRecordCursor recordCursor = mock( AbstractDynamicStore.DynamicRecordCursor.class );
+        when( recordCursor.next() ).thenReturn( true ).thenReturn( false );
+        DynamicRecord dynamicRecord = new DynamicRecord( 42 );
+        dynamicRecord.setData( new byte[]{1, 1, 1, 1, 1} );
+        when( recordCursor.get() ).thenReturn( dynamicRecord );
+
+        S store = mock( clazz );
+        when( store.newDynamicRecordCursor() ).thenReturn( mock( AbstractDynamicStore.DynamicRecordCursor.class ) );
+        when( store.getRecordsCursor( anyLong(), anyBoolean(), any( AbstractDynamicStore.DynamicRecordCursor.class ) ) )
+                .thenReturn( recordCursor );
+
+        return store;
     }
 
     static class Param
