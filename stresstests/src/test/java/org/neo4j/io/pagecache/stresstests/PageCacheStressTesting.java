@@ -69,11 +69,11 @@ public class PageCacheStressTesting
 
         runner.run();
 
-        long faults = monitor.countFaults();
-        long evictions = monitor.countEvictions();
-        long pins = monitor.countPins();
-        long unpins = monitor.countUnpins();
-        long flushes = monitor.countFlushes();
+        long faults = monitor.faults();
+        long evictions = monitor.evictions();
+        long pins = monitor.pins();
+        long unpins = monitor.unpins();
+        long flushes = monitor.flushes();
         System.out.printf( " - page faults: %d%n - evictions: %d%n - pins: %d%n - unpins: %d%n - flushes: %d%n",
                 faults, evictions, pins, unpins, flushes );
     }

@@ -565,61 +565,61 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public long countFaults()
+    public long faults()
     {
         return 0;
     }
 
     @Override
-    public long countEvictions()
+    public long evictions()
     {
         return 0;
     }
 
     @Override
-    public long countPins()
+    public long pins()
     {
         return 0;
     }
 
     @Override
-    public long countUnpins()
+    public long unpins()
     {
         return 0;
     }
 
     @Override
-    public long countFlushes()
+    public long flushes()
     {
         return 0;
     }
 
     @Override
-    public long countBytesRead()
+    public long bytesRead()
     {
         return 0;
     }
 
     @Override
-    public long countBytesWritten()
+    public long bytesWritten()
     {
         return 0;
     }
 
     @Override
-    public long countFilesMapped()
+    public long filesMapped()
     {
         return 0;
     }
 
     @Override
-    public long countFilesUnmapped()
+    public long filesUnmapped()
     {
         return 0;
     }
 
     @Override
-    public long countEvictionExceptions()
+    public long evictionExceptions()
     {
         return 0;
     }

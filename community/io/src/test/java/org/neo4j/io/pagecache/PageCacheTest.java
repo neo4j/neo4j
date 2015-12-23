@@ -1929,14 +1929,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        assertThat( "wrong count of pins", tracer.countPins(), is( countedPages * 2 ) );
-        assertThat( "wrong count of unpins", tracer.countUnpins(), is( countedPages * 2 ) );
+        assertThat( "wrong count of pins", tracer.pins(), is( countedPages * 2 ) );
+        assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages * 2 ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        long faults = tracer.countFaults();
-        long bytesRead = tracer.countBytesRead();
+        long faults = tracer.faults();
+        long bytesRead = tracer.bytesRead();
         assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedPages ) );
         assertThat( "wrong number of bytes read",
                 bytesRead, greaterThanOrEqualTo( countedPages * filePageSize ) );
@@ -1945,7 +1945,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // block and get a page directly transferred to it, and these kinds of
         // evictions can count in addition to the evictions we do when the
         // cache is behind on keeping the freelist full.
-        assertThat( "wrong count of evictions", tracer.countEvictions(),
+        assertThat( "wrong count of evictions", tracer.evictions(),
                 both( greaterThanOrEqualTo( countedPages - maxPages ) )
                         .and( lessThanOrEqualTo( countedPages + faults ) ) );
     }
@@ -1972,20 +1972,20 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        assertThat( "wrong count of pins", tracer.countPins(), is( pagesToGenerate * 2 ) );
-        assertThat( "wrong count of unpins", tracer.countUnpins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate * 2 ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
-        long faults = tracer.countFaults();
+        long faults = tracer.faults();
         assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( pagesToGenerate ) );
         // Every page we move forward can put the freelist behind so the cache
         // wants to evict more pages. Plus, every page fault we do could also
         // block and get a page directly transferred to it, and these kinds of
         // evictions can count in addition to the evictions we do when the
         // cache is behind on keeping the freelist full.
-        assertThat( "wrong count of evictions", tracer.countEvictions(),
+        assertThat( "wrong count of evictions", tracer.evictions(),
                 both( greaterThanOrEqualTo( pagesToGenerate - maxPages ) )
                         .and( lessThanOrEqualTo( pagesToGenerate + faults ) ) );
 
@@ -1996,8 +1996,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // We also subtract 'maxPages' from the expected flush count, because
         // vectored IO may coalesce all the flushes we do as part of unmapping
         // the file, into a single flush.
-        long flushes = tracer.countFlushes();
-        long bytesWritten = tracer.countBytesWritten();
+        long flushes = tracer.flushes();
+        long bytesWritten = tracer.bytesWritten();
         assertThat( "wrong count of flushes",
                 flushes, greaterThanOrEqualTo( pagesToGenerate - maxPages ) );
         assertThat( "wrong count of bytes written",

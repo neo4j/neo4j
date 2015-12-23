@@ -22,7 +22,7 @@ package org.neo4j.metrics.source;
 import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
@@ -65,7 +65,7 @@ public class Neo4jMetricsBuilder
 
         TransactionCounters transactionCounters();
 
-        PageCacheMonitor pageCacheCounters();
+        PageCacheCounters pageCacheCounters();
 
         CheckPointerMonitor checkPointerMonitor();
 

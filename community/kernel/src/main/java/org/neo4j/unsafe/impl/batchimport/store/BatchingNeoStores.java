@@ -101,7 +101,7 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
             @Override
             public long countBytesWritten()
             {
-                return tracer.countBytesWritten();
+                return tracer.bytesWritten();
             }
         };
         this.neoStores = newNeoStores( pageCache );
