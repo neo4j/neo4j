@@ -50,19 +50,22 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.source.CoreEdgeMetrics;
+import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
+import org.neo4j.metrics.source.db.EntityCountMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
-import static org.neo4j.kernel.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
@@ -102,7 +105,7 @@ public class MetricsKernelExtensionFactoryIT
     }
 
     @Test
-    public void mustLoadMetricsExtensionWhenConfigured() throws Throwable
+    public void shouldShowTxCommittedMetricsWhenMetricsEnabled() throws Throwable
     {
         createCluster( "10m", "10m" );
 
@@ -120,6 +123,41 @@ public class MetricsKernelExtensionFactoryIT
         long committedTransactions = readLongValueAndAssert( metricsFile,
                 ( newValue, currentValue ) -> newValue >= currentValue );
         assertThat( committedTransactions, lessThanOrEqualTo( expectedNumberOfCommittedTransactions ) );
+    }
+
+    @Test
+    public void shouldShowEntityCountMetricsWhenMetricsEnabled() throws Throwable
+    {
+        createCluster( "10m", "10m" );
+
+        // Create some activity that will show up in the metrics data.
+        addNodes( 1000 );
+        cluster.stop();
+
+        // Awesome. Let's get some metric numbers.
+        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
+        File metricsFile = new File( outputPath, EntityCountMetrics.COUNTS_NODE + ".csv" );
+        long committedTransactions = readLongValueAndAssert( metricsFile,
+                ( newValue, currentValue ) -> newValue >= currentValue );
+        assertThat( committedTransactions, lessThanOrEqualTo( 1000L ) );
+    }
+
+    @Test
+    public void shouldShowClusterMetricsWhenMetricsEnabled() throws Throwable
+    {
+        System.out.println();
+        createCluster( "10m", "10m" );
+
+        // Create some activity that will show up in the metrics data.
+        addNodes( 1000 );
+        cluster.stop();
+
+        // Awesome. Let's get some metric numbers.
+        // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
+        File metricsFile = new File( outputPath, ClusterMetrics.IS_MASTER + ".csv" );
+        long committedTransactions = readLongValueAndAssert( metricsFile,
+                ( newValue, currentValue ) -> newValue >= currentValue );
+        assertThat( committedTransactions, equalTo( 1L ) );
     }
 
     @Test

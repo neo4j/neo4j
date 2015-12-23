@@ -33,6 +33,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
@@ -52,18 +53,18 @@ import static org.mockito.Mockito.when;
 
 public class ClusterMetricsTest
 {
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     private final MetricRegistry metricRegistry = new MetricRegistry();
     private final Monitors monitors = new Monitors();
     private final LifeSupport life = new LifeSupport();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void clusterMetricsReportMasterAvailable()
     {
         // given
-        ClusterMembers clusterMembers =
+        Supplier<ClusterMembers> clusterMembers =
                 getClusterMembers( HighAvailabilityModeSwitcher.MASTER, HighAvailabilityMemberState.MASTER );
 
         life.add( new ClusterMetrics( monitors, metricRegistry, clusterMembers ) );
@@ -83,7 +84,7 @@ public class ClusterMetricsTest
     public void clusterMetricsReportSlaveAvailable()
     {
         // given
-        ClusterMembers clusterMembers =
+        Supplier<ClusterMembers> clusterMembers =
                 getClusterMembers( HighAvailabilityModeSwitcher.SLAVE, HighAvailabilityMemberState.SLAVE );
 
         life.add( new ClusterMetrics( monitors, metricRegistry, clusterMembers ) );
@@ -99,7 +100,7 @@ public class ClusterMetricsTest
         assertEquals( 1, reporter.isAvailableValue );
     }
 
-    private static ClusterMembers getClusterMembers( String memberRole, HighAvailabilityMemberState memberState )
+    private static Supplier<ClusterMembers> getClusterMembers( String memberRole, HighAvailabilityMemberState memberState )
     {
         HighAvailabilityMemberStateMachine stateMachine = mock( HighAvailabilityMemberStateMachine.class );
         when( stateMachine.getCurrentState() ).thenReturn( memberState );
@@ -107,7 +108,7 @@ public class ClusterMetricsTest
         when( clusterMember.getHARole() ).thenReturn( memberRole );
         ObservedClusterMembers observedClusterMembers = mock( ObservedClusterMembers.class );
         when( observedClusterMembers.getCurrentMember() ).thenReturn( clusterMember );
-        return new ClusterMembers( observedClusterMembers, stateMachine );
+        return () -> new ClusterMembers( observedClusterMembers, stateMachine );
     }
 
     private class TestReporter extends ScheduledReporter

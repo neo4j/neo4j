@@ -605,7 +605,7 @@ public class BackupServiceIT
         dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
-                new OnlineBackupExtensionFactory().newInstance( new SimpleKernelContext( fileSystem, storeDir ),
+                new OnlineBackupExtensionFactory().newInstance( new SimpleKernelContext( fileSystem, storeDir, "Test" ),
                 DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
         backup.start();
 

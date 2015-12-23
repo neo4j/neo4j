@@ -36,7 +36,7 @@ public class HighlyAvailableFacadeFactory extends GraphDatabaseFacadeFactory
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        params.put( Configuration.editionName.name(), "Enterprise");
+        params.put( Configuration.editionName.name(), "HA Enterprise");
         return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 

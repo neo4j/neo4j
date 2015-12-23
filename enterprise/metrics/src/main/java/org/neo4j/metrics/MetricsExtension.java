@@ -61,8 +61,8 @@ public class MetricsExtension implements Lifecycle
                 new EventReporterBuilder( configuration, registry, logger, kernelContext, life ).build();
 
         // Setup metric gathering
-        boolean metricsBuilt =
-                new Neo4jMetricsBuilder( registry, reporter, configuration, logService, dependencies, life ).build();
+        boolean metricsBuilt = new Neo4jMetricsBuilder(
+                registry, reporter, configuration, logService, kernelContext, dependencies, life ).build();
 
         if ( metricsBuilt && reporter.isEmpty() )
         {

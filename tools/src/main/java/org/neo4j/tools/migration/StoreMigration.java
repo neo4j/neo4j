@@ -55,6 +55,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
@@ -106,7 +107,7 @@ public class StoreMigration
         deps.satisfyDependencies( fs, config );
         deps.satisfyDependencies( legacyIndexProvider );
 
-        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory );
+        KernelContext kernelContext = new SimpleKernelContext( fs, storeDirectory, config.get( editionName ) );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );

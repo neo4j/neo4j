@@ -64,6 +64,7 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
 
 /**
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
@@ -134,7 +135,7 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         dependencies.satisfyDependency( fileSystem );
         dependencies.satisfyDependency( this );
         dependencies.satisfyDependency( logService );
-        KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir );
+        KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, neo4jConfig.get( editionName ) );
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         KernelExtensions extensions = life.add( new KernelExtensions(
                 kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),

@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.security.URLAccessRules;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -63,6 +62,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -104,8 +105,8 @@ public class PlatformModule
 
     public final TransactionStats transactionMonitor;
 
-    public PlatformModule( File storeDir, Map<String, String> params, final GraphDatabaseFacadeFactory.Dependencies externalDependencies,
-                                                  final GraphDatabaseFacade graphDatabaseFacade)
+    public PlatformModule( File storeDir, Map<String, String> params,
+            GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
         dependencies = new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
         {
@@ -170,10 +171,8 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
-        KernelContext kernelContext = dependencies.satisfyDependency( new SimpleKernelContext( fileSystem, storeDir ) );
-
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                kernelContext,
+                new SimpleKernelContext( fileSystem, storeDir, config.get( editionName ) ),
                 externalDependencies.kernelExtensions(),
                 dependencies,
                 UnsatisfiedDependencyStrategies.fail() ) );

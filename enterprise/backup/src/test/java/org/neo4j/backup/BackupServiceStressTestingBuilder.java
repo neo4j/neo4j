@@ -182,7 +182,7 @@ public class BackupServiceStressTestingBuilder
                 LifeSupport life = new LifeSupport();
                 try
                 {
-                    SimpleKernelContext context = new SimpleKernelContext( fileSystem, storeDir );
+                    SimpleKernelContext context = new SimpleKernelContext( fileSystem, storeDir, "Test" );
                     OnlineBackupExtensionFactory.Dependencies extensionDeps = DependenciesProxy.dependencies(
                             dependencies, OnlineBackupExtensionFactory.Dependencies.class );
                     life.add( new OnlineBackupExtensionFactory().newInstance( context, extensionDeps ) );

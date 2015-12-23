@@ -27,11 +27,13 @@ public class SimpleKernelContext implements KernelContext
 {
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
+    private final String editionName;
 
-    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir )
+    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, String editionName )
     {
         this.fileSystem = fileSystem;
         this.storeDir = storeDir;
+        this.editionName = editionName;
     }
 
     @Override
@@ -44,5 +46,11 @@ public class SimpleKernelContext implements KernelContext
     public File storeDir()
     {
         return storeDir;
+    }
+
+    @Override
+    public String editionName()
+    {
+        return editionName;
     }
 }

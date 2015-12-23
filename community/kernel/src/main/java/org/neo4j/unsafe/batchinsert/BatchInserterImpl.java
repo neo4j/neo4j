@@ -152,6 +152,7 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.editionName;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -300,7 +301,8 @@ public class BatchInserterImpl implements BatchInserter
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, (NeoStoresSupplier) () -> neoStores );
 
-        KernelExtensions extensions = life.add( new KernelExtensions( new SimpleKernelContext( fileSystem, storeDir ),
+        KernelExtensions extensions = life.add( new KernelExtensions(
+                new SimpleKernelContext( fileSystem, storeDir, config.get( editionName ) ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
