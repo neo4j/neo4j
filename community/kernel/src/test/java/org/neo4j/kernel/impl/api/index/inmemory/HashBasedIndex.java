@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -61,7 +61,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     @Override
     void initialize()
     {
-        data = new HashMap<>();
+        data = new ConcurrentHashMap<>();
     }
 
     @Override

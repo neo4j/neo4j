@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,13 +54,13 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import static org.junit.Assert.assertEquals;
 import static java.util.Arrays.asList;
 
+import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
-@Ignore
 public class IndexWorkSyncTransactionApplicationStressIT
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -79,6 +78,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
     public void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception
     {
         // GIVEN
+        long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "2s" ) );
+        int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
+                Runtime.getRuntime().availableProcessors() );
         StorageEngine storageEngine = storageEngineRule
                 .getWith( fs, pageCacheRule.getPageCache( fs ) )
                 .storeDirectory( directory.directory() )
@@ -93,13 +95,13 @@ public class IndexWorkSyncTransactionApplicationStressIT
         // WHEN
         Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );
         final AtomicBoolean end = new AtomicBoolean();
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < numThreads; i++ )
         {
             workers.start( new Worker( i, end, storageEngine, 10, index ) );
         }
 
         // let the threads hammer the storage engine for some time
-        Thread.sleep( 2000 );
+        Thread.sleep( duration );
         end.set( true );
 
         // THEN (assertions as part of the workers applying transactions)
