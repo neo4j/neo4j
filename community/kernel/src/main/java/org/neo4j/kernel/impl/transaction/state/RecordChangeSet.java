@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -47,16 +46,16 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
-    public RecordChangeSet( NeoStores neoStores )
+    public RecordChangeSet( Loaders loaders )
     {
-        this(   Loaders.nodeLoader( neoStores.getNodeStore() ),
-                Loaders.propertyLoader( neoStores.getPropertyStore() ),
-                Loaders.relationshipLoader( neoStores.getRelationshipStore() ),
-                Loaders.relationshipGroupLoader( neoStores.getRelationshipGroupStore() ),
-                Loaders.schemaRuleLoader( neoStores.getSchemaStore() ),
-                Loaders.propertyKeyTokenLoader( neoStores.getPropertyKeyTokenStore() ),
-                Loaders.labelTokenLoader( neoStores.getLabelTokenStore() ),
-                Loaders.relationshipTypeTokenLoader( neoStores.getRelationshipTypeTokenStore() ) );
+        this(   loaders.nodeLoader(),
+                loaders.propertyLoader(),
+                loaders.relationshipLoader(),
+                loaders.relationshipGroupLoader(),
+                loaders.schemaRuleLoader(),
+                loaders.propertyKeyTokenLoader(),
+                loaders.labelTokenLoader(),
+                loaders.relationshipTypeTokenLoader() );
     }
 
     public RecordChangeSet(

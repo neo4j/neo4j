@@ -56,6 +56,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
 
     public DirectRecordAccessSet( NeoStores neoStores )
     {
+        Loaders loaders = new Loaders( neoStores );
         NodeStore nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
@@ -63,19 +64,16 @@ public class DirectRecordAccessSet implements RecordAccessSet
         PropertyKeyTokenStore propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RelationshipTypeTokenStore relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore ) );
-        propertyRecords = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
-        relationshipRecords = new DirectRecordAccess<>(
-                relationshipStore, Loaders.relationshipLoader( relationshipStore ) );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
+        propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
+        relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );
         relationshipGroupRecords = new DirectRecordAccess<>(
-                relationshipGroupStore, Loaders.relationshipGroupLoader( relationshipGroupStore ) );
-        propertyKeyTokenRecords = new DirectRecordAccess<>(
-                propertyKeyTokenStore, Loaders.propertyKeyTokenLoader( propertyKeyTokenStore ) );
+                relationshipGroupStore, loaders.relationshipGroupLoader() );
+        propertyKeyTokenRecords = new DirectRecordAccess<>( propertyKeyTokenStore, loaders.propertyKeyTokenLoader() );
         relationshipTypeTokenRecords = new DirectRecordAccess<>(
-                relationshipTypeTokenStore, Loaders.relationshipTypeTokenLoader( relationshipTypeTokenStore ) );
-        labelTokenRecords = new DirectRecordAccess<>(
-                labelTokenStore, Loaders.labelTokenLoader( labelTokenStore ) );
-//        schemaRecords = new DirectRecordAccess<>( neoStores.getSchemaStore(), Loaders.schemaRuleLoader( neoStores ) ); // TODO
+                relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader() );
+        labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader() );
+//        schemaRecords = new DirectRecordAccess<>( neoStores.getSchemaStore(), loaders.schemaRuleLoader() ); // TODO
     }
 
     @Override

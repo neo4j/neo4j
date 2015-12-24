@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContext;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -142,6 +143,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync;
     private final NeoStoreIndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
+
+    // Immutable state for creating/applying commands
+    private final Loaders loaders;
 
     public RecordStorageEngine(
             File storeDir,
@@ -209,6 +213,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
+
+            // Immutable state for creating/applying commands
+            loaders = new Loaders( neoStores );
         }
         catch ( Throwable failure )
         {
@@ -253,7 +260,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( txState != null )
         {
-            NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, locks );
+            NeoStoreTransactionContext context = new NeoStoreTransactionContext( neoStores, loaders, locks );
             TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator, context );
             recordState.initialize( lastTransactionIdWhenStarted );
 

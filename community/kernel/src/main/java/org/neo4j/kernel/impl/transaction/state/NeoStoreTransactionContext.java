@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -50,12 +49,12 @@ public class NeoStoreTransactionContext
     private final NeoStores neoStores;
     private final ResourceLocker locks;
 
-    public NeoStoreTransactionContext( NeoStores neoStores, ResourceLocker locks )
+    public NeoStoreTransactionContext( NeoStores neoStores, Loaders loaders, ResourceLocker locks )
     {
         this.neoStores = neoStores;
         this.locks = locks;
 
-        recordChangeSet = new RecordChangeSet( neoStores );
+        recordChangeSet = new RecordChangeSet( loaders );
         RelationshipGroupStore relationshipGroupStore = neoStores.getRelationshipGroupStore();
         RelationshipGroupGetter relGroupGetter = new RelationshipGroupGetter( relationshipGroupStore );
         PropertyTraverser propertyTraverser = new PropertyTraverser();

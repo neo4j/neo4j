@@ -1273,7 +1273,7 @@ public class TransactionRecordStateTest
 
     private NeoStoreTransactionContext newContext( NeoStores neoStores )
     {
-        return new NeoStoreTransactionContext( neoStores, mock( Locks.Client.class ) );
+        return new NeoStoreTransactionContext( neoStores, new Loaders( neoStores ), mock( Locks.Client.class ) );
     }
 
     private void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse )
