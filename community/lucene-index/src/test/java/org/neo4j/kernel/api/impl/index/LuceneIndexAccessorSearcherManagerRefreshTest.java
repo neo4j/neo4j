@@ -45,51 +45,11 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     private final File dir = new File( "testFile" );
 
     private final AtomicLong count = new AtomicLong( 0 );
-    private final LuceneReferenceManagerAdapter<IndexSearcher> manager =
-            new LuceneReferenceManagerAdapter<IndexSearcher>()
-            {
-                private final Semaphore reopenLock = new Semaphore( 1 );
-
-                @Override
-                public boolean maybeRefresh() throws IOException
-                {
-                    boolean lockAcquired = false;
-                    try
-                    {
-                        lockAcquired = reopenLock.tryAcquire();
-                        sleep();
-                        if ( lockAcquired )
-                        {
-                            count.incrementAndGet();
-                        }
-                        return lockAcquired;
-                    }
-                    finally
-                    {
-                        if ( lockAcquired )
-                        {
-                            reopenLock.release();
-                        }
-                    }
-                }
-
-                private void sleep()
-                {
-                    try
-                    {
-                        Thread.sleep( 150 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            };
 
     @Test
     public void everySingleUpdateShouldTriggerARefresh() throws Throwable
     {
-        final LuceneIndexAccessor accessor = createAccessor( manager );
+        final LuceneIndexAccessor accessor = createAccessor( );
 
         final CyclicBarrier barrier = new CyclicBarrier( 2 );
         Thread t1 = new CloseIndexUpdaterThread( accessor.newUpdater( ONLINE ), barrier );
@@ -107,7 +67,7 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     @Test
     public void bothForceAndUpdatesShouldTriggerARefresh() throws Throwable
     {
-        final LuceneIndexAccessor accessor = createAccessor( manager );
+        final LuceneIndexAccessor accessor = createAccessor( );
 
         final CyclicBarrier barrier = new CyclicBarrier( 2 );
         Thread t1 = new CloseIndexUpdaterThread( accessor.newUpdater( ONLINE ), barrier );
@@ -125,7 +85,7 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     @Test
     public void twoForceShouldTriggerTwoRefreshes() throws Throwable
     {
-        final LuceneIndexAccessor accessor = createAccessor( manager );
+        final LuceneIndexAccessor accessor = createAccessor( );
 
         final CyclicBarrier barrier = new CyclicBarrier( 2 );
         Thread t1 = new ForceIndexAccessorThread( accessor, barrier );
@@ -192,39 +152,14 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
         }
     }
 
-    private LuceneIndexAccessor createAccessor( LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> manager )
+    private LuceneIndexAccessor createAccessor()
             throws IOException
     {
         PartitionedIndexStorage indexStorage =
                 new PartitionedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
-        return new LuceneIndexAccessor( structure, writer, manager, indexStorage, 42 )
+
+        return new LuceneIndexAccessor( new LuceneIndex( indexStorage ) )
         {
         };
-    }
-
-    private static class LuceneReferenceManagerAdapter<G> implements LuceneIndexAccessor.LuceneReferenceManager<G>
-    {
-
-        @Override
-        public G acquire()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean maybeRefresh() throws IOException
-        {
-            return false;
-        }
-
-        @Override
-        public void release( G reference ) throws IOException
-        {
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-        }
     }
 }

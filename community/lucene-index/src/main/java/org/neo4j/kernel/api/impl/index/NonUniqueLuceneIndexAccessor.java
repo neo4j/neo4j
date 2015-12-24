@@ -26,12 +26,9 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
-    NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  IndexWriterFactory<ObsoleteLuceneIndexWriter> indexWriterFactory,
-                                  PartitionedIndexStorage indexStorage,
-                                  int bufferSizeLimit ) throws IOException
+    NonUniqueLuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, indexStorage, bufferSizeLimit );
+        super( luceneIndex );
     }
 
 }

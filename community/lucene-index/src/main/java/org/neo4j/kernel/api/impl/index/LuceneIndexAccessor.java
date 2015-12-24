@@ -19,24 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.store.Directory;
-
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -46,93 +37,16 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 abstract class LuceneIndexAccessor implements IndexAccessor
 {
-    protected final LuceneDocumentStructure documentStructure;
-    protected final LuceneReferenceManager<IndexSearcher> searcherManager;
-    protected final ObsoleteLuceneIndexWriter writer;
-
-    private final Directory directory;
-    private final PartitionedIndexStorage indexStorage;
-    private final int bufferSizeLimit;
+    protected final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+    private final LuceneIndexWriter writer;
+    private LuceneIndex luceneIndex;
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
-    private final PrimitiveLongVisitor<IOException> removeFromLucene = new PrimitiveLongVisitor<IOException>()
+
+    LuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
     {
-        @Override
-        public boolean visited( long nodeId ) throws IOException
-        {
-            LuceneIndexAccessor.this.remove( nodeId );
-            return false;
-        }
-    };
-
-    // we need this wrapping in order to test the index accessor since the ReferenceManager is not mock friendly
-    public interface LuceneReferenceManager<G> extends Closeable
-    {
-        G acquire() throws IOException;
-
-        boolean maybeRefresh() throws IOException;
-
-        void release( G reference ) throws IOException;
-
-        class Wrap<G> implements LuceneReferenceManager<G>
-        {
-            private final ReferenceManager<G> delegate;
-
-            Wrap( ReferenceManager<G> delegate )
-            {
-
-                this.delegate = delegate;
-            }
-
-            @Override
-            public G acquire() throws IOException
-            {
-                return delegate.acquire();
-            }
-
-            @Override
-            public boolean maybeRefresh() throws IOException
-            {
-                return delegate.maybeRefresh();
-            }
-
-            @Override
-            public void release( G reference ) throws IOException
-            {
-                delegate.release( reference );
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                delegate.close();
-            }
-        }
-    }
-
-    LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-            IndexWriterFactory<ObsoleteLuceneIndexWriter> indexWriterFactory,
-            PartitionedIndexStorage indexStorage, int bufferSizeLimit ) throws IOException
-    {
-        this.documentStructure = documentStructure;
-        this.indexStorage = indexStorage;
-        this.bufferSizeLimit = bufferSizeLimit;
-        this.directory = indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) );
-        this.writer = indexWriterFactory.create( directory );
-        this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
-    }
-
-    // test only
-    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, ObsoleteLuceneIndexWriter writer,
-            LuceneReferenceManager<IndexSearcher> searcherManager,
-            PartitionedIndexStorage indexStorage, int bufferSizeLimit ) throws IOException
-    {
-        this.documentStructure = documentStructure;
-        this.writer = writer;
-        this.searcherManager = searcherManager;
-        this.indexStorage = indexStorage;
-        this.directory = indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) );
-        this.bufferSizeLimit = bufferSizeLimit;
+        this.luceneIndex = luceneIndex;
+        this.writer = luceneIndex.getIndexWriter();
     }
 
     @Override
@@ -141,10 +55,10 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         switch ( mode )
         {
         case ONLINE:
-            return new LuceneIndexUpdater( false );
+            return new LuceneIndexUpdater( writer, false );
 
         case RECOVERY:
-            return new LuceneIndexUpdater( true );
+            return new LuceneIndexUpdater( writer, true );
 
         default:
             throw new IllegalArgumentException( "Unsupported update mode: " + mode );
@@ -155,7 +69,6 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public void drop() throws IOException
     {
         taskCoordinator.cancel();
-        closeIndexResources();
         try
         {
             taskCoordinator.awaitCompletion();
@@ -164,33 +77,26 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         {
             throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
-        indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
+        luceneIndex.drop();
     }
 
     @Override
     public void force() throws IOException
     {
-        writer.commitAsOnline();
-        refreshSearcherManager();
+        luceneIndex.markAsOnline();
+        luceneIndex.maybeRefreshBlocking();
     }
 
     @Override
     public void flush() throws IOException
     {
-        refreshSearcherManager();
+        luceneIndex.maybeRefreshBlocking();
     }
 
     @Override
     public void close() throws IOException
     {
-        closeIndexResources();
-        directory.close();
-    }
-
-    private void closeIndexResources() throws IOException
-    {
-        writer.close();
-        searcherManager.close();
+        luceneIndex.close();
     }
 
     @Override
@@ -198,79 +104,45 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     {
         try
         {
-            final IndexSearcher searcher = searcherManager.acquire();
-            final TaskControl token = taskCoordinator.newInstance();
-            final Closeable closeable = new Closeable()
-            {
-                @Override
-                public void close() throws IOException
-                {
-                    searcherManager.release( searcher );
-                    token.close();
-                }
-            };
-            return makeNewReader( searcher, closeable, token );
+            // TODO: task control stuff
+            return luceneIndex.getIndexReader();
         }
         catch ( IOException e )
         {
-            throw new LuceneIndexSearcherReleaseException("Can't release index searcher: " + searcherManager, e);
+            throw new LuceneIndexAcquisitionException("Can't acquire index reader");
         }
-    }
-
-    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
-    {
-        return new LuceneIndexAccessorReader( searcher, documentStructure, closeable, cancellation, bufferSizeLimit );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return new LuceneAllEntriesIndexAccessorReader( new LuceneAllDocumentsReader( searcherManager ),
-                documentStructure );
+        try
+        {
+            LuceneAllDocumentsReader allDocumentsReader = new LuceneAllDocumentsReader( luceneIndex.getIndexReader() );
+            return new LuceneAllEntriesIndexAccessorReader( allDocumentsReader );
+        }
+        catch ( Exception e )
+        {
+            // TODO:
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return new LuceneSnapshotter().snapshot( indexStorage.getIndexFolder(), writer );
-    }
-
-    private void addRecovered( long nodeId, Object value ) throws IOException
-    {
-        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                documentStructure.documentRepresentingProperty( nodeId, value ) );
-    }
-
-    protected void add( long nodeId, Object value ) throws IOException
-    {
-        writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, value ) );
-    }
-
-    protected void change( long nodeId, Object value ) throws IOException
-    {
-        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                documentStructure.documentRepresentingProperty( nodeId, value ) );
-    }
-
-    protected void remove( long nodeId ) throws IOException
-    {
-        writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
-    }
-
-    // This method should be synchronized because we need every thread to perform actual refresh
-    // and not just skip it because some other refresh is in progress
-    private synchronized void refreshSearcherManager() throws IOException
-    {
-        searcherManager.maybeRefresh();
+        return luceneIndex.snapshot();
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean isRecovery;
+        private final LuceneIndexWriter writer;
 
-        private LuceneIndexUpdater( boolean isRecovery )
+        private LuceneIndexUpdater( LuceneIndexWriter indexWriter, boolean isRecovery )
         {
             this.isRecovery = isRecovery;
+            this.writer = indexWriter;
         }
 
         @Override
@@ -292,7 +164,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
                 change( update.getNodeId(), update.getValueAfter() );
                 break;
             case REMOVED:
-                LuceneIndexAccessor.this.remove( update.getNodeId() );
+                remove( update.getNodeId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -302,13 +174,39 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            refreshSearcherManager();
+            luceneIndex.maybeRefreshBlocking();
         }
 
         @Override
         public void remove( PrimitiveLongSet nodeIds ) throws IOException
         {
-            nodeIds.visitKeys( removeFromLucene );
+            nodeIds.visitKeys( nodeId -> {
+                remove( nodeId );
+                return false;
+            } );
+        }
+
+        private void addRecovered( long nodeId, Object value ) throws IOException
+        {
+
+            writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
+                    documentStructure.documentRepresentingProperty( nodeId, value ) );
+        }
+
+        private void add( long nodeId, Object value ) throws IOException
+        {
+            writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, value ) );
+        }
+
+        private void change( long nodeId, Object value ) throws IOException
+        {
+            writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
+                    documentStructure.documentRepresentingProperty( nodeId, value ) );
+        }
+
+        protected void remove( long nodeId ) throws IOException
+        {
+            writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
         }
     }
 }

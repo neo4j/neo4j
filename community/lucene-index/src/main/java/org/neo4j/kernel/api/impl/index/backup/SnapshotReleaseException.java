@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.backup;
 
-/**
- * Exception that will be thrown in case if encounter IOException during Lucene searcher acquisition.
- *
- * @see org.apache.lucene.search.IndexSearcher
- */
-public class LuceneIndexSearcherAcquisitionException extends RuntimeException
+public class SnapshotReleaseException extends RuntimeException
 {
-    public LuceneIndexSearcherAcquisitionException( String message, Throwable cause )
+    public SnapshotReleaseException( String message, Throwable e )
     {
-        super( message, cause );
+        super( message, e );
     }
 }

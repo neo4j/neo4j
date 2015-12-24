@@ -91,8 +91,8 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     @Override
     public AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcherManager )
     {
-        return new LuceneAllEntriesLabelScanReader( new LuceneAllDocumentsReader(
-                new LuceneIndexAccessor.LuceneReferenceManager.Wrap<>( searcherManager ) ), format );
+        // TODO:
+        return new LuceneAllEntriesLabelScanReader( new LuceneAllDocumentsReader( null ), format );
     }
 
     @Override

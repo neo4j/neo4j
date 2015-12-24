@@ -157,8 +157,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
-     * Implementations are expected to persist this failure and may elect to make use of
-     * {@link org.neo4j.kernel.api.index.util.FailureStorage} for this purpose
+     * Implementations are expected to persist this failure
      */
     public abstract String getPopulationFailure( long indexId ) throws IllegalStateException;
 

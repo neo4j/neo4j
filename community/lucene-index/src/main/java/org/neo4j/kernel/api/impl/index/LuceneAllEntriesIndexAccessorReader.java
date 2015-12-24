@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.Iterator;
-
 import org.apache.lucene.document.Document;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.api.direct.BoundedIterable;
+
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.getNodeId;
 
 public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long>
 {
     private final BoundedIterable<Document> documents;
-    private final LuceneDocumentStructure documentLogic;
 
-    public LuceneAllEntriesIndexAccessorReader( BoundedIterable<Document> documents, LuceneDocumentStructure documentLogic )
+    public LuceneAllEntriesIndexAccessorReader( BoundedIterable<Document> documents )
     {
         this.documents = documents;
-        this.documentLogic = documentLogic;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     @Override
     public Iterator<Long> iterator()
     {
-        final Iterator<Document> iterator = documents.iterator();
+        Iterator<Document> iterator = documents.iterator();
         return new Iterator<Long>()
         {
             public boolean hasNext()
@@ -55,12 +55,7 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
 
             public Long next()
             {
-                return parse( iterator.next() );
-            }
-
-            public void remove()
-            {
-                iterator.remove();
+                return getNodeId( iterator.next() );
             }
         };
     }
@@ -69,11 +64,6 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     public void close() throws Exception
     {
         documents.close();
-    }
-
-    private Long parse( Document document )
-    {
-        return documentLogic.getNodeId( document );
     }
 
 }

@@ -25,19 +25,24 @@ import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotIterator;
 
 public class IndexPartition implements Closeable
 {
-    private IndexWriter indexWriter;
-    private Directory directory;
-    private SearcherManager searcherManager;
+    private final IndexWriter indexWriter;
+    private final Directory directory;
+    private final SearcherManager searcherManager;
+    private final File indexDirectory;
 
-    public IndexPartition( Directory directory ) throws IOException
+    public IndexPartition( File indexDirectory, Directory directory ) throws IOException
     {
+        this.indexDirectory = indexDirectory;
         this.directory = directory;
         this.indexWriter = new IndexWriter( directory, IndexWriterFactories.standardConfig() );
         this.searcherManager = new SearcherManager( indexWriter, true, new SearcherFactory() );
@@ -58,10 +63,19 @@ public class IndexPartition implements Closeable
         searcherManager.maybeRefresh();
     }
 
+    public void maybeRefreshBlocking() throws IOException
+    {
+        searcherManager.maybeRefreshBlocking();
+    }
+
     @Override
     public void close() throws IOException
     {
         IOUtils.closeAll( searcherManager, indexWriter, directory );
     }
 
+    public ResourceIterator<File> snapshot() throws IOException
+    {
+        return LuceneIndexSnapshotIterator.forIndex( indexDirectory, indexWriter );
+    }
 }

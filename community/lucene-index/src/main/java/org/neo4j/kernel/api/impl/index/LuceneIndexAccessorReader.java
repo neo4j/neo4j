@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
@@ -33,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -110,6 +112,20 @@ class LuceneIndexAccessorReader implements IndexReader
             List<Object> updatedPropertyValues ) throws Exception
     {
         // TODO: to remove!
+    }
+
+    @Override
+    public long getMaxDoc()
+    {
+        // TODO: to remove!
+        return -1;
+    }
+
+    @Override
+    public Iterator<Document> getAllDocsIterator()
+    {
+        // TODO: to remove!
+        return null;
     }
 
     private Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException

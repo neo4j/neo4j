@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.impl.index.LuceneIndexAccessor.LuceneReferenceManager;
-
 /**
- * Exception that will be thrown in case if encounter IOException during Lucene searcher release.
+ * Exception that will be thrown in case if encounter IOException during Lucene reader acquisition.
  *
  * @see org.apache.lucene.search.IndexSearcher
- * @see LuceneReferenceManager
  */
-public class LuceneIndexSearcherReleaseException extends RuntimeException
+public class LuceneIndexAcquisitionException extends RuntimeException
 {
-    public LuceneIndexSearcherReleaseException( String message, Throwable e )
+    public LuceneIndexAcquisitionException( String message )
     {
-        super(message, e);
+        super( message );
     }
 }

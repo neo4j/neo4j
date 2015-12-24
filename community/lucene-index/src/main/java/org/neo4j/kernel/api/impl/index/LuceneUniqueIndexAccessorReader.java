@@ -41,7 +41,7 @@ class LuceneUniqueIndexAccessorReader extends LuceneIndexAccessorReader
     /**
      * Implementation note:
      * re-uses the {@link UniqueIndexSampler} in order to know that we have the same semantics as in
-     * {@link DeferredConstraintVerificationUniqueLuceneIndexPopulator population}.
+     * {@link org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator population}.
      */
     @Override
     public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException

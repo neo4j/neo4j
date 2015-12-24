@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -76,6 +77,18 @@ public class DelegatingIndexReader implements IndexReader
     public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         return delegate.sampleIndex( result );
+    }
+
+    @Override
+    public long getMaxDoc()
+    {
+        return delegate.getMaxDoc();
+    }
+
+    @Override
+    public Iterator getAllDocsIterator()
+    {
+        return delegate.getAllDocsIterator();
     }
 
     @Override

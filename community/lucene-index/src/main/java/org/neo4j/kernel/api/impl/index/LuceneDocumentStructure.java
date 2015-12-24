@@ -338,7 +338,7 @@ public class LuceneDocumentStructure
         return new Term( NODE_ID_KEY, "" + nodeId );
     }
 
-    public long getNodeId( Document from )
+    public static long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
     }

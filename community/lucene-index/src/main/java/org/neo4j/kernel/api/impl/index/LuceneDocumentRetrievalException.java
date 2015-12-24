@@ -28,9 +28,9 @@ package org.neo4j.kernel.api.impl.index;
  */
 public class LuceneDocumentRetrievalException extends RuntimeException
 {
-    private int documentId;
+    private long documentId;
 
-    public LuceneDocumentRetrievalException( String message, int documentId, Throwable cause )
+    public LuceneDocumentRetrievalException( String message, long documentId, Throwable cause )
     {
         this(message, cause);
         this.documentId = documentId;
@@ -41,7 +41,7 @@ public class LuceneDocumentRetrievalException extends RuntimeException
         super(message, cause);
     }
 
-    public int getDocumentId()
+    public long getDocumentId()
     {
         return documentId;
     }

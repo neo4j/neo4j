@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
-    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final Map<Long,String> failures = new HashMap<>();
     private final IndexStorageFactory indexStorageFactory;
 
@@ -66,8 +65,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
             IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
-        PartitionedIndexStorage populatorStorage = getIndexStorage( indexId );
-        LuceneIndex luceneIndex = new LuceneIndex( populatorStorage );
+        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( luceneIndex, descriptor );
@@ -83,15 +82,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
-                    indexStorage );
+            return new UniqueLuceneIndexAccessor( luceneIndex );
         }
         else
         {
-            return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
-                    indexStorage, samplingConfig.bufferSize() );
+            return new NonUniqueLuceneIndexAccessor( luceneIndex );
         }
     }
 

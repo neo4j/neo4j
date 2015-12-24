@@ -20,118 +20,37 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredDocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Bits;
 
-import java.io.IOException;
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
-    private final IndexSearcher searcher;
-    private final LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager;
+    private IndexReader indexReader;
 
-    public LuceneAllDocumentsReader(
-            LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> searcherManager )
+    public LuceneAllDocumentsReader( IndexReader indexReader)
     {
-        this.searcherManager = searcherManager;
-        try
-        {
-            this.searcher = searcherManager.acquire();
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexSearcherAcquisitionException( "Can't acquire lucene index searcher.", e );
-        }
+        this.indexReader = indexReader;
     }
 
     @Override
     public long maxCount()
     {
-        return maxDocIdBoundary();
+        return indexReader.getMaxDoc();
     }
 
     @Override
     public Iterator<Document> iterator()
     {
-        return new PrefetchingIterator<Document>()
-        {
-            private DocIdSetIterator idIterator = iterateAllDocs();
-
-            @Override
-            protected Document fetchNextOrNull()
-            {
-                try
-                {
-                    int doc = idIterator.nextDoc();
-                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        return null;
-                    }
-                    return getDocument( doc );
-                }
-                catch ( IOException e )
-                {
-                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
-                }
-            }
-        };
+        return indexReader.getAllDocsIterator();
     }
 
     @Override
     public void close()
     {
-        try
-        {
-            searcherManager.release( searcher );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexSearcherReleaseException( "Can't release index searcher: " + searcher + ".", e );
-        }
+        indexReader.close();
     }
 
-    private Document getDocument( int docId )
-    {
-        try
-        {
-            return searcher.doc( docId );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneDocumentRetrievalException("Can't retrieve document with id: " + docId + ".", docId, e );
-        }
-    }
-
-    private DocIdSetIterator iterateAllDocs()
-    {
-        IndexReader reader = searcher.getIndexReader();
-        final Bits liveDocs = MultiFields.getLiveDocs( reader );
-        final DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
-        if ( liveDocs == null )
-        {
-            return allDocs;
-        }
-
-        return new FilteredDocIdSetIterator( allDocs )
-        {
-            @Override
-            protected boolean match( int doc )
-            {
-                return liveDocs.get( doc );
-            }
-        };
-    }
-
-    private int maxDocIdBoundary()
-    {
-        return searcher.getIndexReader().maxDoc();
-    }
 }

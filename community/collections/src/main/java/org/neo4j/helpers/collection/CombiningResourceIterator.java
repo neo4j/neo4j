@@ -33,14 +33,14 @@ public class CombiningResourceIterator<T> extends CombiningIterator<T> implement
 
     public CombiningResourceIterator( Iterator<ResourceIterator<T>> iterators )
     {
-        super(iterators);
+        super( iterators );
         this.iterators = iterators;
     }
 
     @Override
     protected Iterator<T> nextIteratorOrNull()
     {
-        if(iterators.hasNext())
+        if ( iterators.hasNext() )
         {
             currentIterator = iterators.next();
             seenIterators.add( currentIterator );
@@ -57,7 +57,7 @@ public class CombiningResourceIterator<T> extends CombiningIterator<T> implement
             seenIterator.close();
         }
 
-        while(iterators.hasNext())
+        while ( iterators.hasNext() )
         {
             iterators.next().close();
         }

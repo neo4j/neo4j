@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.reader;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -32,6 +33,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -131,6 +133,20 @@ public class SimpleIndexReader implements IndexReader
             }
             throw e;
         }
+    }
+
+    @Override
+    public long getMaxDoc()
+    {
+        //TODO:
+        return 0;
+    }
+
+    @Override
+    public Iterator<Document> getAllDocsIterator()
+    {
+        //TODO:
+        return null;
     }
 
     @Override

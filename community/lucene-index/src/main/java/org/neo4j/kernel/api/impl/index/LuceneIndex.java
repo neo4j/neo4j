@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
@@ -31,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -68,10 +73,10 @@ public class LuceneIndex implements Closeable
 
     public void open() throws IOException
     {
-        List<Directory> directories = indexStorage.openIndexDirectories();
-        for ( Directory directory : directories )
+        Map<File, Directory> indexDirectories = indexStorage.openIndexDirectories();
+        for ( Map.Entry<File, Directory> indexDirectory : indexDirectories.entrySet() )
         {
-            partitions.add( new IndexPartition( directory ) );
+            partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
         }
         open = true;
     }
@@ -90,6 +95,22 @@ public class LuceneIndex implements Closeable
             for ( IndexPartition partition : getPartitions() )
             {
                 partition.maybeRefresh();
+            }
+        }
+        finally
+        {
+            readWriteLock.unlock();
+        }
+    }
+
+    public void maybeRefreshBlocking() throws IOException
+    {
+        readWriteLock.lock();
+        try
+        {
+            for ( IndexPartition partition : getPartitions() )
+            {
+                partition.maybeRefreshBlocking();
             }
         }
         finally
@@ -121,7 +142,8 @@ public class LuceneIndex implements Closeable
         try
         {
             File partitionFolder = createNewPartitionFolder();
-            IndexPartition indexPartition = new IndexPartition( indexStorage.openDirectory( partitionFolder ) );
+            IndexPartition indexPartition = new IndexPartition( partitionFolder,
+                    indexStorage.openDirectory( partitionFolder ) );
             partitions.add( indexPartition );
             return indexPartition;
         }
@@ -130,7 +152,6 @@ public class LuceneIndex implements Closeable
             readWriteLock.unlock();
         }
     }
-
 
     List<IndexPartition> getPartitions()
     {
@@ -153,6 +174,7 @@ public class LuceneIndex implements Closeable
         try
         {
             IOUtils.closeAll( partitions );
+            open = false;
         }
         finally
         {
@@ -215,4 +237,23 @@ public class LuceneIndex implements Closeable
         return partitionFolder;
     }
 
+
+    public ResourceIterator<File> snapshot() throws IOException
+    {
+        commitCloseLock.lock();
+        try
+        {
+            List<IndexPartition> partitions = getPartitions();
+            List<ResourceIterator<File>> snapshotIterators = new ArrayList<>( partitions.size() );
+            for ( IndexPartition partition : partitions )
+            {
+                snapshotIterators.add( partition.snapshot() );
+            }
+            return Iterables.concatResourceIterators( snapshotIterators.iterator() );
+        }
+        finally
+        {
+            commitCloseLock.unlock();
+        }
+    }
 }

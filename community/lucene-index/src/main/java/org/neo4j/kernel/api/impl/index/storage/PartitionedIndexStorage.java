@@ -24,7 +24,10 @@ import org.apache.lucene.store.Directory;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
@@ -41,10 +44,9 @@ public class PartitionedIndexStorage extends AbstractIndexStorage
         super( directoryFactory, fileSystem, new IndexFolderLayout( schemaIndexRootFolder, indexId ) );
     }
 
-    // TODO: what to do in case we fail in the middle?
-    public List<Directory> openIndexDirectories() throws IOException
+    public Map<File, Directory> openIndexDirectories() throws IOException
     {
-        List<Directory> directories = new ArrayList<>();
+        Map<File, Directory> directories = new LinkedHashMap<>();
         try
         {
             File[] files = fileSystem.listFiles( getIndexFolder() );
@@ -52,7 +54,7 @@ public class PartitionedIndexStorage extends AbstractIndexStorage
             {
                 if ( fileSystem.isDirectory( file ) )
                 {
-                    directories.add( directoryFactory.open( file ) );
+                    directories.put( file, directoryFactory.open( file ) );
                 }
             }
         }
@@ -60,7 +62,7 @@ public class PartitionedIndexStorage extends AbstractIndexStorage
         {
             try
             {
-                IOUtils.closeAll( directories );
+                IOUtils.closeAll( directories.values() );
             }
             catch ( Exception ce )
             {

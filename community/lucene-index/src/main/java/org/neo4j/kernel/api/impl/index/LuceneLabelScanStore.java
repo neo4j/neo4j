@@ -223,7 +223,9 @@ public class LuceneLabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        return new LuceneSnapshotter().snapshot( indexStorage.getIndexFolder(), writer );
+        //TODO: luceneIndex.snapshot()
+//        return new LuceneIndexSnapshotIterator().snapshot( indexStorage.getIndexFolder(), writer );
+        return null;
     }
 
     @Override

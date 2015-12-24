@@ -66,7 +66,8 @@ public class LuceneIndexIT
                 testDir.directory(), 1 );
 
 //        indexStorage.prepareIndexStorage();
-        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), indexStorage, 100_000 );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
+        accessor = new NonUniqueLuceneIndexAccessor( luceneIndex );
     }
 
     @After
