@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
-
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -79,6 +76,8 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class TransactionRecordState implements RecordState
 {
+    private static final Command[] EMPTY_COMMANDS = new Command[0];
+
     private final NeoStores neoStores;
     private final IntegrityValidator integrityValidator;
     private final NodeStore nodeStore;
@@ -150,37 +149,58 @@ public class TransactionRecordState implements RecordState
         }
 
         // Collect nodes, relationships, properties
-        List<Command> nodeCommands = new ArrayList<>( recordChangeSet.getNodeRecords().changeSize() );
-        for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
+        Command[] nodeCommands = EMPTY_COMMANDS;
+        if ( recordChangeSet.getNodeRecords().changeSize() > 0 )
         {
-            NodeRecord record = change.forReadingLinkage();
-            integrityValidator.validateNodeRecord( record );
-            nodeCommands.add( new Command.NodeCommand( change.getBefore(), record ) );
+            nodeCommands = new Command[recordChangeSet.getNodeRecords().changeSize()];
+            int i = 0;
+            for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
+            {
+                NodeRecord record = change.forReadingLinkage();
+                integrityValidator.validateNodeRecord( record );
+                nodeCommands[i++] = new Command.NodeCommand( change.getBefore(), record );
+            }
+            Arrays.sort( nodeCommands, COMMAND_SORTER );
         }
-        Collections.sort( nodeCommands, COMMAND_SORTER );
 
-        List<Command> relCommands = new ArrayList<>( recordChangeSet.getRelRecords().changeSize() );
-        for ( RecordProxy<Long, RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
+        Command[] relCommands = EMPTY_COMMANDS;
+        if ( recordChangeSet.getRelRecords().changeSize() > 0 )
         {
-            relCommands.add( new Command.RelationshipCommand( change.getBefore(), change.forReadingLinkage() ) );
+            relCommands = new Command[recordChangeSet.getRelRecords().changeSize()];
+            int i = 0;
+            for ( RecordProxy<Long, RelationshipRecord, Void> change : recordChangeSet.getRelRecords().changes() )
+            {
+                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(), change.forReadingLinkage() );
+            }
+            Arrays.sort( relCommands, COMMAND_SORTER );
         }
-        Collections.sort( relCommands, COMMAND_SORTER );
 
-        List<Command> propCommands = new ArrayList<>( recordChangeSet.getPropertyRecords().changeSize() );
-        for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change :
-            recordChangeSet.getPropertyRecords().changes() )
+        Command[] propCommands = EMPTY_COMMANDS;
+        if ( recordChangeSet.getPropertyRecords().changeSize() > 0 )
         {
-            propCommands.add( new Command.PropertyCommand( change.getBefore(), change.forReadingLinkage() ) );
+            propCommands = new Command[recordChangeSet.getPropertyRecords().changeSize()];
+            int i = 0;
+            for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change :
+                recordChangeSet.getPropertyRecords().changes() )
+            {
+                propCommands[i++] = new Command.PropertyCommand( change.getBefore(), change.forReadingLinkage() );
+            }
+            Arrays.sort( propCommands, COMMAND_SORTER );
         }
-        Collections.sort( propCommands, COMMAND_SORTER );
 
-        List<Command> relGroupCommands = new ArrayList<>( recordChangeSet.getRelGroupRecords().changeSize() );
-        for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change :
-            recordChangeSet.getRelGroupRecords().changes() )
+        Command[] relGroupCommands = EMPTY_COMMANDS;
+        if ( recordChangeSet.getRelGroupRecords().changeSize() > 0 )
         {
-            relGroupCommands.add( new Command.RelationshipGroupCommand( change.getBefore(), change.forReadingData() ) );
+            relGroupCommands = new Command[recordChangeSet.getRelGroupRecords().changeSize()];
+            int i = 0;
+            for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change :
+                recordChangeSet.getRelGroupRecords().changes() )
+            {
+                relGroupCommands[i++] =
+                        new Command.RelationshipGroupCommand( change.getBefore(), change.forReadingData() );
+            }
+            Arrays.sort( relGroupCommands, COMMAND_SORTER );
         }
-        Collections.sort( relGroupCommands, COMMAND_SORTER );
 
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, relGroupCommands, nodeCommands );
         addFiltered( commands, Mode.UPDATE, propCommands, relCommands, relGroupCommands, nodeCommands );
@@ -218,9 +238,9 @@ public class TransactionRecordState implements RecordState
 
     @SafeVarargs
     private final void addFiltered( Collection<StorageCommand> target, Mode mode,
-                                    Collection<? extends Command>... commands )
+                                    Command[]... commands )
     {
-        for ( Collection<? extends Command> c : commands )
+        for ( Command[] c : commands )
         {
             for ( Command command : c )
             {

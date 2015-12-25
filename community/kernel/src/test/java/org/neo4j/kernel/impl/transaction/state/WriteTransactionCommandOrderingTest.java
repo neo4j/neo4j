@@ -171,6 +171,7 @@ public class WriteTransactionCommandOrderingTest
 
         when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
         when( nodeRecordChanges.changeSize() ).thenReturn( 3 );
+        when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
                 .thenReturn( Collections.<RecordProxy<Integer,LabelTokenRecord,Void>>emptyList() );
