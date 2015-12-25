@@ -100,6 +100,12 @@ public class IndexUpdatesWork implements Work<IndexingService,IndexUpdatesWork>
             {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public boolean hasUpdates()
+            {
+                return true;
+            }
         };
     }
 }

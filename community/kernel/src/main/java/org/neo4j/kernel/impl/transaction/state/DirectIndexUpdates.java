@@ -58,4 +58,10 @@ public class DirectIndexUpdates implements IndexUpdates
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean hasUpdates()
+    {
+        return true;
+    }
 }

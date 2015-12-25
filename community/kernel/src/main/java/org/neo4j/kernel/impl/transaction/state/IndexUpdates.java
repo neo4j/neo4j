@@ -49,4 +49,6 @@ public interface IndexUpdates extends Iterable<NodePropertyUpdate>
      * @param target to receive these node ids.
      */
     void collectUpdatedNodeIds( PrimitiveLongSet target );
+
+    boolean hasUpdates();
 }
