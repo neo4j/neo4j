@@ -131,7 +131,7 @@ public class WriteTransactionCommandOrderingTest
 
     private TransactionRecordState injectAllPossibleCommands()
     {
-        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class );
+        RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
         RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
         RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
@@ -143,14 +143,14 @@ public class WriteTransactionCommandOrderingTest
         RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
         RecordChanges<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
-        when( context.getLabelTokenRecords() ).thenReturn( labelTokenChanges );
-        when( context.getRelationshipTypeTokenRecords() ).thenReturn( relationshipTypeTokenChanges );
-        when( context.getPropertyKeyTokenRecords() ).thenReturn( propertyKeyTokenChanges );
-        when( context.getNodeRecords() ).thenReturn( nodeRecordChanges );
-        when( context.getRelRecords() ).thenReturn( relationshipRecordChanges );
-        when( context.getPropertyRecords() ).thenReturn( propertyRecordChanges );
-        when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
-        when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
+        when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
+        when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
+        when( recordChangeSet.getPropertyKeyTokenChanges() ).thenReturn( propertyKeyTokenChanges );
+        when( recordChangeSet.getNodeRecords() ).thenReturn( nodeRecordChanges );
+        when( recordChangeSet.getRelRecords() ).thenReturn( relationshipRecordChanges );
+        when( recordChangeSet.getPropertyRecords() ).thenReturn( propertyRecordChanges );
+        when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
+        when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
         List<RecordProxy<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
@@ -187,7 +187,8 @@ public class WriteTransactionCommandOrderingTest
         when( schemaRuleChanges.changes() ).thenReturn(
                 Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
-        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), context );
+        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), recordChangeSet,
+                0, null, null, null, null, null );
     }
 
     private static class RecordingPropertyStore extends PropertyStore

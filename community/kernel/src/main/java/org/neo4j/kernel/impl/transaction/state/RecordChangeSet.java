@@ -133,6 +133,12 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     @Override
+    public int changeSize()
+    {
+        return changeCounter.value();
+    }
+
+    @Override
     public void close()
     {
         if ( hasChanges() )

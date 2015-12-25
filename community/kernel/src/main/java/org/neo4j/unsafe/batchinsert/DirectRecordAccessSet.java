@@ -52,7 +52,8 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
     private final DirectRecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
     private final DirectRecordAccess<Integer, LabelTokenRecord, Void> labelTokenRecords;
-//    private final DirectRecordAccess<Long, Collection<DynamicRecord>, SchemaRule> schemaRecords; // TODO
+    // TODO add schema rule access?
+    private final DirectRecordAccess[] all;
 
     public DirectRecordAccessSet( NeoStores neoStores )
     {
@@ -73,7 +74,10 @@ public class DirectRecordAccessSet implements RecordAccessSet
         relationshipTypeTokenRecords = new DirectRecordAccess<>(
                 relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader() );
         labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader() );
-//        schemaRecords = new DirectRecordAccess<>( neoStores.getSchemaStore(), loaders.schemaRuleLoader() ); // TODO
+        all = new DirectRecordAccess[] {
+                nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords,
+                propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords
+        };
     }
 
     @Override
@@ -128,37 +132,41 @@ public class DirectRecordAccessSet implements RecordAccessSet
     public void close()
     {
         commit();
-        nodeRecords.close();
-        propertyRecords.close();
-        relationshipRecords.close();
-        relationshipGroupRecords.close();
-//        schemaRecords.close(); // TODO
-        relationshipTypeTokenRecords.close();
-        labelTokenRecords.close();
-        propertyKeyTokenRecords.close();
+        for ( DirectRecordAccess access : all )
+        {
+            access.close();
+        }
     }
 
     public void commit()
     {
-        nodeRecords.commit();
-        propertyRecords.commit();
-        relationshipGroupRecords.commit();
-        relationshipRecords.commit();
-//        schemaRecords.commit(); // TODO
-        relationshipTypeTokenRecords.commit();
-        labelTokenRecords.commit();
-        propertyKeyTokenRecords.commit();
+        for ( DirectRecordAccess access : all )
+        {
+            access.commit();
+        }
     }
 
     @Override
     public boolean hasChanges()
     {
-        return  nodeRecords.changeSize() > 0 ||
-                propertyRecords.changeSize() > 0 ||
-                relationshipRecords.changeSize() > 0 ||
-                relationshipGroupRecords.changeSize() > 0 ||
-                propertyKeyTokenRecords.changeSize() > 0 ||
-                labelTokenRecords.changeSize() > 0 ||
-                relationshipTypeTokenRecords.changeSize() > 0;
+        for ( DirectRecordAccess access : all )
+        {
+            if ( access.changeSize() > 0 )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int changeSize()
+    {
+        int total = 0;
+        for ( DirectRecordAccess access : all )
+        {
+            total += access.changeSize();
+        }
+        return total;
     }
 }
