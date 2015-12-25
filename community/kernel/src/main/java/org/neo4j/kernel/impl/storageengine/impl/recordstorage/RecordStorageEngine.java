@@ -106,7 +106,6 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -218,6 +217,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     schemaStorage, neoStores, indexingService,
                     storeStatementSupplier( neoStores, config, lockService ) );
             storeLayer = new CacheLayer( diskLayer, schemaCache );
+
             legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
@@ -248,11 +248,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         final LockService currentLockService =
                 config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
-        final Supplier<LabelScanReader> labelScanReaderSupplier = labelScanStore::newReader;
+        final Supplier<IndexReaderFactory> indexReaderFactory = () -> {
+            return new IndexReaderFactory.Caching( indexingService );
+        };
 
         return () -> {
-            return new StoreStatement( neoStores, currentLockService,
-                    new IndexReaderFactory.Caching( indexingService ), labelScanReaderSupplier );
+            return new StoreStatement( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
         };
     }
 

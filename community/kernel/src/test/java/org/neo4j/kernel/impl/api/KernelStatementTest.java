@@ -37,7 +37,7 @@ public class KernelStatementTest
         when( transaction.shouldBeTerminated() ).thenReturn( true );
 
         KernelStatement statement = new KernelStatement(
-            transaction, null, null, null, null, new Procedures() );
+            transaction, null, null, null, null, null );
 
         statement.readOperations().nodeExists( 0 );
     }

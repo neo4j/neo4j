@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -209,7 +210,7 @@ public class KernelTransactionsTest
         NeoStores neoStores = mock( NeoStores.class );
 
         StoreStatement storeStatement = new StoreStatement( neoStores, new ReentrantLockService(),
-                mock( IndexReaderFactory.class ), null );
+                mock( Supplier.class ), null );
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
         when( readLayer.acquireStatement() ).thenReturn( storeStatement );
 
