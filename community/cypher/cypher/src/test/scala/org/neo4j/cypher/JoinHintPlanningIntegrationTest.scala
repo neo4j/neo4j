@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.SingleComponentPlanner._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{cartesianProductsOrValueJoins, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable.FoldableAny
@@ -33,7 +33,9 @@ import scala.util.Random
 class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen with LogicalPlanningTestSupport2 {
 
   test("NodeHashJoin is planned in IDP planner") {
-    val solver = IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solvers = DEFAULT_SOLVERS), mock[IDPQueryGraphSolverMonitor])
+    val monitor = mock[IDPQueryGraphSolverMonitor]
+    val planner1 = SingleComponentPlanner(monitor, solvers = DEFAULT_SOLVERS)
+    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
 
     testPlanner(solver)
   }

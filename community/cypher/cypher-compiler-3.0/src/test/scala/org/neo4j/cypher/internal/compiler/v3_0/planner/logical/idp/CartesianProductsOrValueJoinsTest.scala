@@ -33,7 +33,9 @@ class CartesianProductsOrValueJoinsTest
   test("should plan cartesian product between 2 pattern nodes") {
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b")),
-      input = Set(planA, planB),
+      input = Set(
+        QueryGraph(patternNodes = Set("a")) -> planA,
+        QueryGraph(patternNodes = Set("b")) -> planB),
       expectedPlan = CartesianProduct(
         planA,
         planB
@@ -44,7 +46,10 @@ class CartesianProductsOrValueJoinsTest
   test("should plan cartesian product between 3 pattern nodes") {
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
-      input = Set(planA, planB, planC),
+      input = Set(
+        QueryGraph(patternNodes = Set("a")) -> planA,
+        QueryGraph(patternNodes = Set("b")) -> planB,
+        QueryGraph(patternNodes = Set("c")) -> planC),
       expectedPlan = CartesianProduct(
         planA,
         CartesianProduct(
@@ -61,7 +66,9 @@ class CartesianProductsOrValueJoinsTest
       graph = QueryGraph(
         patternNodes = Set("a", "b"),
         selections = Selections.from(equality)),
-      input = Set(planA, planB),
+      input = Set(
+        QueryGraph(patternNodes = Set("a")) -> planA,
+        QueryGraph(patternNodes = Set("b")) -> planB),
       expectedPlan = ValueHashJoin(planA, planB, equality)(solved))
   }
 
@@ -70,31 +77,35 @@ class CartesianProductsOrValueJoinsTest
     val eq2 = Equals(prop("b", "id"), prop("c", "id"))(pos)
     val eq3 = Equals(prop("a", "id"), prop("c", "id"))(pos)
 
-    val AxC = ValueHashJoin(planA, planC, eq3)(solved)
-    val Bx_AxC = ValueHashJoin(planB, AxC, eq1)(solved)
-    val expectedPlan = Selection(Seq(eq2), Bx_AxC)(solved)
-
     testThis(
       graph = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(eq1, eq2, eq3)),
-      input = Set(planA, planB, planC),
-      expectedPlan = expectedPlan)
+      input = Set(
+        QueryGraph(patternNodes = Set("a")) -> planA,
+        QueryGraph(patternNodes = Set("b")) -> planB,
+        QueryGraph(patternNodes = Set("c")) -> planC),
+      expectedPlan =
+        Selection(Seq(eq3),
+          ValueHashJoin(planC,
+            ValueHashJoin(planA, planB, eq1.switchSides)(solved), eq2.switchSides)(solved))(solved))
   }
 
-  private def testThis(graph: QueryGraph, input: Set[LogicalPlan], expectedPlan: LogicalPlan) = {
+  private def testThis(graph: QueryGraph, input: Set[(QueryGraph, LogicalPlan)], expectedPlan: LogicalPlan) = {
     new given {
       qg = graph
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
       implicit val kit = ctx.config.toKit()
 
-      var plans = input
+      var plans: Set[(QueryGraph, LogicalPlan)] = input
       while (plans.size > 1) {
-        plans = cartesianProductsOrValueJoins(plans, cfg.qg)
+        plans = cartesianProductsOrValueJoins(plans, cfg.qg)(ctx, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
       }
 
-      plans should equal(Set(expectedPlan))
+      val (_, result) = plans.head
+
+      result should equal(expectedPlan)
     }
   }
 }

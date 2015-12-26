@@ -59,7 +59,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = Seq.empty), monitor)
+      queryGraphSolver = IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = Seq.empty), cartesianProductsOrValueJoins, monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c")
       )
@@ -783,5 +783,5 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solvers: (QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext])*) =
-    IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = solvers), monitor)
+    IDPQueryGraphSolver(SingleComponentPlanner(monitor, solvers = solvers), cartesianProductsOrValueJoins, monitor)
 }
