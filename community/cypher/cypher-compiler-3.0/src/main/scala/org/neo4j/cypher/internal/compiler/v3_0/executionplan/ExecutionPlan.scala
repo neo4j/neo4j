@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v3_0.{RuntimeName, PlannerName}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, PlannerName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.kernel.api.Statement
 
 abstract class ExecutionPlan {
-  //TODO run should not have direct access to statement?
-  def run(queryContext: QueryContext, statement: Statement, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
+  def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean

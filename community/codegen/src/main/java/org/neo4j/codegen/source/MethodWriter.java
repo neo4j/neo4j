@@ -412,4 +412,12 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         append( " - " );
         rhs.accept( this );
     }
+
+    @Override
+    public void cast( TypeReference type, Expression expression )
+    {
+        append( "(").append( type.name() ).append( ") " );
+        expression.accept( this );
+
+    }
 }

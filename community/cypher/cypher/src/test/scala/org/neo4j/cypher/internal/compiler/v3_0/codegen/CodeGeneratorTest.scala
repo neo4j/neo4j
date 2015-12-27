@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilde
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -847,10 +848,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).
 
-
-
-
-    executionResultBuilder(statement, new EntityAccessorWrapper3_0(nodeManager), NormalMode, tracer(NormalMode), params, taskCloser)
+    executionResultBuilder(queryContext, new EntityAccessorWrapper3_0(nodeManager), NormalMode, tracer(NormalMode), params, taskCloser)
   }
 
   /*
@@ -903,8 +901,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     16L -> RelationshipData(hNode, iNode, 16L, 3),
     17L -> RelationshipData(iNode, hNode, 17L, 3))
 
+  val queryContext = mock[QueryContext]
   val ro = mock[ReadOperations]
   val statement = mock[org.neo4j.kernel.api.Statement]
+  when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
   when(statement.readOperations()).thenReturn(ro)
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {
     override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = primitiveIterator(allNodes.map(_.getId))

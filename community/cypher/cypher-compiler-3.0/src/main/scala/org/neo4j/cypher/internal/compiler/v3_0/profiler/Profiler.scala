@@ -101,7 +101,7 @@ trait Counter {
   }
 }
 
-final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe)
+final class ProfilingQueryContext(inner: QueryContext, val p: Pipe)
   extends DelegatingQueryContext(inner) with Counter {
   self =>
 

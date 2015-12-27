@@ -182,4 +182,14 @@ class ExpressionToString implements ExpressionVisitor
         rhs.accept( this );
         result.append( ")" );
     }
+
+    @Override
+    public void cast( TypeReference type, Expression expression )
+    {
+        result.append( "cast{type=" );
+        type.writeTo( result );
+        result.append( ", expression=" );
+        expression.accept( this );
+        result.append( "}" );
+    }
 }

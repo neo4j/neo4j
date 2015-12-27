@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, EntityAccessor, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.graphdb.{InputPosition, QueryExecutionType, ResourceIterator, GraphDatabaseService, Node, Relationship}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, Node, QueryExecutionType, Relationship, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -198,7 +198,7 @@ trait CompatibilityFor3_0 {
         case CypherExecutionMode.normal => NormalModev3_0
       }
       exceptionHandlerFor3_0.runSafely {
-        ExecutionResultWrapperFor3_0(inner.run(queryContext(graph, txInfo), txInfo.statement, innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
+        ExecutionResultWrapperFor3_0(inner.run(queryContext(graph, txInfo), innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 

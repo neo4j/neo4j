@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -53,6 +54,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
     val statement = mock[Statement]
+    val queryContext = mock[QueryContext]
+    when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
     val readOps = mock[ReadOperations]
     val entityAccessor = mock[EntityAccessor]
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[Node])
@@ -75,7 +78,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, statement = statement, entityAccessor = entityAccessor, provider = provider, queryExecutionTracer = tracer).size
+    newInstance(compiled, queryContext = queryContext, entityAccessor = entityAccessor, provider = provider, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)

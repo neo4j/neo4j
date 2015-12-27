@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 
 trait RunnablePlan {
-  def apply(statement: KernelStatement,
+  def apply(queryContext: QueryContext,
             nodeManager: EntityAccessor,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
@@ -118,7 +118,7 @@ object InterpretedExecutionPlanBuilder {
     new ExecutionPlan {
       private val fingerprint = createFingerprintReference(fp)
 
-      def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
+      def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
 
       def isPeriodicCommit = periodicCommitInfo.isDefined

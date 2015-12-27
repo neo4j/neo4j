@@ -41,6 +41,11 @@ import org.neo4j.kernel.api.index.IndexDescriptor
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
+
+  type KernelStatement
+
+  def statement: KernelStatement
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]

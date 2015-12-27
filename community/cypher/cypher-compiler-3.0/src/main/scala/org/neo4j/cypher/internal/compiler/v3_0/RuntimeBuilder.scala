@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidArgumentException, SemanticTable}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.api
 
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], interpretedProducer: InterpretedPlanBuilder,
@@ -143,7 +142,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
 
         def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
-        def run(queryContext: QueryContext, kernelStatement: api.Statement,
+        def run(queryContext: QueryContext,
                 executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
           val taskCloser = new TaskCloser
           taskCloser.addTask(queryContext.close)
@@ -154,7 +153,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
               new ExplainExecutionResult(compiled.columns.toList,
                 compiled.planDescription, QueryType.READ_ONLY, preparedQuery.notificationLogger.notifications)
             } else
-              compiled.executionResultBuilder(kernelStatement, entityAccessor, executionMode, createTracer(executionMode), params, taskCloser)
+              compiled.executionResultBuilder(queryContext, entityAccessor, executionMode, createTracer(executionMode), params, taskCloser)
           } catch {
             case (t: Throwable) =>
               taskCloser.close(success = false)

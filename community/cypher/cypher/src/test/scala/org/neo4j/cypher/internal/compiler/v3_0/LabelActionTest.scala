@@ -187,4 +187,8 @@ class SnitchingQueryContext extends QueryContext {
   override def lockNodes(nodeIds: Long*): Unit = ???
 
   override def lockRelationships(relIds: Long*): Unit = ???
+
+  override type KernelStatement = this.type
+
+  override def statement: KernelStatement = ???
 }

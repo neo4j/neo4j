@@ -67,7 +67,7 @@ class RuleExecutablePlanBuilderTest
     plannerName = None,
     runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
-    entityAccessor = entityAccessor,
+    entityAccessor = mock[EntityAccessor],
     updateStrategy = None,
     config = config
   )

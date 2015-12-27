@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v3_0.TaskCloser;
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer;
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext;
 
 public interface GeneratedQuery
 {
     GeneratedQueryExecution execute(
             TaskCloser closer,
-            Statement statement,
+            QueryContext queryContext,
             EntityAccessor entityAccessor,
             ExecutionMode executionMode,
             Provider<InternalPlanDescription> description,
