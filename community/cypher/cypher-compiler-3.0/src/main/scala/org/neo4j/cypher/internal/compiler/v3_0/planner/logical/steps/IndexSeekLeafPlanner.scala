@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
+import org.neo4j.cypher.internal.compiler.v3_0.commands.{SingleQueryExpression, QueryExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -69,10 +69,18 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
 
     predicates.collect {
       // n.prop IN [ ... ]
-      case predicate@AsPropertySeekable(seekable)
+      case predicate@AsPropertySeekable(seekable: PropertySeekable)
         if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
           producePlanFor(seekable.name, seekable.propertyKey, predicate,
           seekable.args.asQueryExpression, labelPredicateMap, hints, argumentIds)
+
+      // ... = n.prop
+      // In some rare cases, we can't rewrite these predicates cleanly,
+      // and so planning needs to search for these cases explicitly
+      case predicate@Equals(a, Property(seekable@Variable(name), propKeyName))
+        if a.dependencies.forall(arguments) && !arguments(seekable) =>
+        val expr = SingleQueryExpression(a)
+        producePlanFor(seekable.name, propKeyName, predicate, expr, labelPredicateMap, hints, argumentIds)
 
       // n.prop STARTS WITH "prefix%..."
       case predicate@AsStringRangeSeekable(seekable) =>

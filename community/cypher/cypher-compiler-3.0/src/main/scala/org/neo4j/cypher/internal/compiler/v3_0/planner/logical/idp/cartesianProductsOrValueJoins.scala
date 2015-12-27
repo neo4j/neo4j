@@ -49,7 +49,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
 
-    val connectedPlans: Map[(QueryGraph, LogicalPlan), ((QueryGraph, LogicalPlan), (QueryGraph, LogicalPlan))] = {
+    val connectedPlans = {
       val joins = produceJoinVariations(plans, qg)
 
       if (joins.nonEmpty)
@@ -86,8 +86,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     } yield {
       val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join), qg)
       val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg)
-      val nestedIndexJoinAB = planNIJ(planA, qgA, qgB, qg, join)
-      val nestedIndexJoinBA = planNIJ(planB, qgB, qgA, qg, join)
+      val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, join)
+      val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, join)
 
       Set(
         (hashJoinAB.solved.lastQueryGraph -> hashJoinAB, t1 -> t2),
@@ -106,16 +106,18 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       Apply
     LHS  Index Seek
    */
-  private def planNIJ(lhsPlan: LogicalPlan, lhsQG: QueryGraph, rhsQG: QueryGraph, fullQG: QueryGraph, predicate: Expression)
+  private def planNIJ(lhsPlan: LogicalPlan, rhsPlan: LogicalPlan, lhsQG: QueryGraph, rhsQG: QueryGraph, fullQG: QueryGraph, predicate: Expression)
                      (implicit context: LogicalPlanningContext,
                       kit: QueryPlannerKit,
                       singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val builtOnTopOfOtherPlans = rhsQG.argumentIds.nonEmpty
-    val qgIsNotSinglePiece = rhsQG.connectedComponents.size > 1
-    if (builtOnTopOfOtherPlans || qgIsNotSinglePiece)
-      None
+    val notSingleComponent = rhsQG.connectedComponents.size > 1
+    val containsOptionals = rhsPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
+
+    if (builtOnTopOfOtherPlans || notSingleComponent || containsOptionals) None
     else {
+      // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
       val ids = rhsQG.addArgumentIds(lhsQG.coveredIds.toSeq).addPredicates(predicate)
       val rhsPlan = singleComponentPlanner.planComponent(ids)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
