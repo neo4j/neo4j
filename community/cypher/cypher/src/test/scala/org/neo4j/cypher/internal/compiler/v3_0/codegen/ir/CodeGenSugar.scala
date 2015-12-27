@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
@@ -38,7 +37,7 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions
@@ -69,10 +68,8 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val nodeManager =
-        graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
       val queryContext = new TransactionBoundQueryContext(graphDb, tx, true, statement)(mock[IndexSearchMonitor])
-      val result = plan.executionResultBuilder(queryContext, new EntityAccessorWrapper3_0(nodeManager), mode,
+      val result = plan.executionResultBuilder(queryContext, mode,
         tracer(mode), params, taskCloser)
       tx.success()
       result.size
@@ -84,12 +81,11 @@ trait CodeGenSugar extends MockitoSugar {
 
   def evaluate(instructions: Seq[Instruction],
                qtx: QueryContext = mockQueryContext(),
-               entityAccessor: EntityAccessor = null,
                columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns,  operatorIds)
-    val result = newInstance(clazz, queryContext = qtx, entityAccessor = entityAccessor, params = params)
+    val result = newInstance(clazz, queryContext = qtx, params = params)
     evaluate(result)
   }
 
@@ -117,12 +113,11 @@ trait CodeGenSugar extends MockitoSugar {
                   taskCloser: TaskCloser = new TaskCloser,
                   queryContext: QueryContext = mockQueryContext(),
                   graphdb: GraphDatabaseService = null,
-                  entityAccessor: EntityAccessor = null,
                   executionMode: ExecutionMode = null,
                   provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
-    val generated = clazz.execute(taskCloser, queryContext,  entityAccessor,
+    val generated = clazz.execute(taskCloser, queryContext,
       executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
     new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }

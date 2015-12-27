@@ -32,7 +32,6 @@ public interface GeneratedQuery
     GeneratedQueryExecution execute(
             TaskCloser closer,
             QueryContext queryContext,
-            EntityAccessor entityAccessor,
             ExecutionMode executionMode,
             Provider<InternalPlanDescription> description,
             QueryExecutionTracer tracer,

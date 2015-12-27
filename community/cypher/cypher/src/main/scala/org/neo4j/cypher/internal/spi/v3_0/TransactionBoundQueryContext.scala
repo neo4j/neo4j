@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, Relati
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.impl.api.{KernelStatement => InternalKernelStatement}
-import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.kernel.{GraphDatabaseAPI, Traversal, Uniqueness}
@@ -57,14 +57,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   type KernelStatement = Statement
 
+  type EntityAccessor = NodeManager
+
   private var open = true
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
   val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   override def statement = _statement
+
+  override def entityAccessor = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   def isOpen = open
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
@@ -46,7 +46,6 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           plannerName: CostBasedPlannerName,
                                           runtimeBuilder: RuntimeBuilder,
                                           updateStrategy: UpdateStrategy,
-                                          entityAccessor: EntityAccessor,
                                           config: CypherCompilerConfiguration)
   extends ExecutablePlanBuilder {
 
@@ -71,7 +70,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
         }
         runtimeBuilder(logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable, planBuilderMonitor,
-                      plannerName, entityAccessor, inputQuery, createFingerprintReference, config)
+                      plannerName,  inputQuery, createFingerprintReference, config)
       case x =>
         throw new CantHandleQueryException(x.toString())
     }

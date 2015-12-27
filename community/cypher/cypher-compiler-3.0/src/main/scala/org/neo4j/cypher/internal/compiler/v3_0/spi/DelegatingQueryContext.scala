@@ -31,6 +31,14 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
+  type KernelStatement = inner.KernelStatement
+
+  type EntityAccessor = inner.EntityAccessor
+
+  override def statement: KernelStatement = inner.statement
+
+  override def entityAccessor: EntityAccessor = inner.entityAccessor
+
   def isOpen: Boolean = inner.isOpen
 
   def isTopLevelTx: Boolean = inner.isTopLevelTx
@@ -152,10 +160,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds:_*)
 
   override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds:_*)
-
-  type KernelStatement = inner.KernelStatement
-
-  override def statement: KernelStatement = inner.statement
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

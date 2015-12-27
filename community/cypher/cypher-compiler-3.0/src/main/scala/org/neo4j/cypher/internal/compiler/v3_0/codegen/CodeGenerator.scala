@@ -67,11 +67,11 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         }
 
         val builder = new RunnablePlan {
-          def apply(queryContext: QueryContext, entityAccessor: EntityAccessor, execMode: ExecutionMode,
+          def apply(queryContext: QueryContext, execMode: ExecutionMode,
                     descriptionProvider: DescriptionProvider, params: Map[String, Any],
                     closer: TaskCloser): InternalExecutionResult = {
             val (provider, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.execute(closer, queryContext, entityAccessor, execMode,
+            val execution: GeneratedQueryExecution = query.execute(closer, queryContext, execMode,
               provider, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
             new CompiledExecutionResult(closer, queryContext, execution, provider)
           }

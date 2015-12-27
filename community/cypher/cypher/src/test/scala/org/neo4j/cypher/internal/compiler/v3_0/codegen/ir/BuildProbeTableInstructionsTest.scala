@@ -26,12 +26,12 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.EntityAccessor
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, symbols}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 
 import scala.collection.mutable
 
@@ -41,7 +41,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val buildTableMethodName = "buildProbeTable"
   private val resultRowKey = "resultKey"
 
-  private val entityAccessor = mock[EntityAccessor]
+  private val entityAccessor = mock[NodeManager]
   private val statement = mock[Statement]
   private val queryContext = mock[QueryContext]
   private val readOps = mock[ReadOperations]
@@ -51,6 +51,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty)
 
   when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
+  when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(readOps)
   when(readOps.nodesGetAll()).then(new Answer[PrimitiveLongIterator] {
     def answer(invocation: InvocationOnMock) = allNodeIdsIterator()
@@ -142,7 +143,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def setUpNodeMocks(ids: Long*): Unit = {
     ids.foreach { id =>
-      val nodeMock = mock[Node]
+      val nodeMock = mock[NodeProxy]
       when(nodeMock.getId).thenReturn(id)
       when(entityAccessor.newNodeProxyById(id)).thenReturn(nodeMock)
       allNodeIds += id
@@ -166,7 +167,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
-    evaluate(instructions, queryContext, entityAccessor, Seq(resultRowKey), Map.empty[String, Object], ids)
+    evaluate(instructions, queryContext, Seq(resultRowKey), Map.empty[String, Object], ids)
   }
 
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {

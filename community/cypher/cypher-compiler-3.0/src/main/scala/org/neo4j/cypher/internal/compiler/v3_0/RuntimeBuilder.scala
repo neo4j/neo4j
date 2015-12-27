@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenerator, CodeStructure}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
@@ -51,13 +51,12 @@ trait RuntimeBuilder {
   def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
             tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            entityAccessor: EntityAccessor,
             preparedQuery: PreparedQuery,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration): ExecutionPlan = {
     try {
       compiledProducer(logicalPlan, semanticTable, planContext, monitor, tracer,
-        plannerName, entityAccessor, preparedQuery, createFingerprintReference)
+        plannerName, preparedQuery, createFingerprintReference)
     } catch {
       case e: CantCompileQueryException =>
         monitor.unableToHandlePlan(logicalPlan, e)
@@ -92,7 +91,6 @@ case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder
   override def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
             tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            entityAccessor: EntityAccessor,
             preparedQuery: PreparedQuery,
             createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
             config: CypherCompilerConfiguration): ExecutionPlan =
@@ -130,7 +128,6 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,
             plannerName: PlannerName,
-            entityAccessor: EntityAccessor,
             preparedQuery: PreparedQuery,
             createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference): ExecutionPlan = {
             monitor.newPlanSeen(logicalPlan)
@@ -153,7 +150,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
               new ExplainExecutionResult(compiled.columns.toList,
                 compiled.planDescription, QueryType.READ_ONLY, preparedQuery.notificationLogger.notifications)
             } else
-              compiled.executionResultBuilder(queryContext, entityAccessor, executionMode, createTracer(executionMode), params, taskCloser)
+              compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode), params, taskCloser)
           } catch {
             case (t: Throwable) =>
               taskCloser.close(success = false)

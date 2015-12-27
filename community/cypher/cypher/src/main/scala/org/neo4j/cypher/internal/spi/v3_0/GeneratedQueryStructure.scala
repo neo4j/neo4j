@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
+import org.neo4j.kernel.impl.core.NodeManager
 
 import scala.collection.mutable
 
@@ -71,7 +72,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         closer = clazz.field(typeRef[TaskCloser], "closer"),
         statement = clazz.field(typeRef[Statement], "statement"),
         ro = clazz.field(typeRef[ReadOperations], "ro"),
-        entityAccessor = clazz.field(typeRef[EntityAccessor], "nodeManager"),
+        entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
         executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
         description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
@@ -115,7 +116,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
         param[TaskCloser]("closer"),
         param[QueryContext]("queryContext"),
-        param[EntityAccessor]("nodeManager"),
         param[ExecutionMode]("executionMode"),
         param[Provider[InternalPlanDescription]]("description"),
         param[QueryExecutionTracer]("tracer"),
@@ -130,7 +130,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
           typeRef[util.Map[String, Object]]),
           execute.load("closer"),
           execute.load("queryContext"),
-          execute.load("nodeManager"),
           execute.load("executionMode"),
           execute.load("description"),
           execute.load("tracer"),
@@ -848,7 +847,6 @@ private object Templates {
   val CONSTRUCTOR = MethodTemplate.constructor(
     param[TaskCloser]("closer"),
     param[QueryContext]("queryContext"),
-    param[EntityAccessor]("nodeManager"),
     param[ExecutionMode]("executionMode"),
     param[Provider[InternalPlanDescription]]("description"),
     param[QueryExecutionTracer]("tracer"),
@@ -863,7 +861,9 @@ private object Templates {
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
     put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
-    put(self(), typeRef[EntityAccessor], "nodeManager", load("nodeManager")).
+    put(self(), typeRef[NodeManager], "nodeManager",
+      cast(typeRef[NodeManager],
+        invoke(load("queryContext"), method[QueryContext, NodeManager]("entityAccessor")))).
     build()
 
   val SET_SUCCESSFUL_CLOSEABLE = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
@@ -29,7 +28,7 @@ import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSear
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
-import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -236,6 +235,4 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     useErrorsOverWarnings = false,
     nonIndexedLabelWarningThreshold = 10000
   )
-
-  def entityAccessor = new EntityAccessorWrapper3_0(graph.getDependencyResolver.resolveDependency(classOf[NodeManager]))
 }

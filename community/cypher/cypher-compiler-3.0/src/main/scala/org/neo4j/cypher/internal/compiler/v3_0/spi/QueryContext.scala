@@ -44,7 +44,11 @@ trait QueryContext extends TokenContext {
 
   type KernelStatement
 
+  type EntityAccessor
+
   def statement: KernelStatement
+
+  def entityAccessor: EntityAccessor
 
   def nodeOps: Operations[Node]
 

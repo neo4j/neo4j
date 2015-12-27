@@ -191,4 +191,8 @@ class SnitchingQueryContext extends QueryContext {
   override type KernelStatement = this.type
 
   override def statement: KernelStatement = ???
+
+  override type EntityAccessor = this.type
+
+  override def entityAccessor: EntityAccessor = ???
 }

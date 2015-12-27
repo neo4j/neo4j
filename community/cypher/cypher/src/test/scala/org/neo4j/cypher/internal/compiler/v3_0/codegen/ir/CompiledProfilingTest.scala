@@ -25,7 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_0.ProfileMode
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, Provider}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
@@ -35,9 +35,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -57,8 +57,9 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val queryContext = mock[QueryContext]
     when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
     val readOps = mock[ReadOperations]
-    val entityAccessor = mock[EntityAccessor]
-    when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[Node])
+    val entityAccessor = mock[NodeManager]
+    when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
+    when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
     when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
@@ -78,7 +79,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, queryContext = queryContext, entityAccessor = entityAccessor, provider = provider, queryExecutionTracer = tracer).size
+    newInstance(compiled, queryContext = queryContext, provider = provider, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)

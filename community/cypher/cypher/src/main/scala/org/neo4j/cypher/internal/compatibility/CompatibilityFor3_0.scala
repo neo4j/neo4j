@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
@@ -38,11 +38,10 @@ import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionB
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, Node, QueryExecutionType, Relationship, ResourceIterator}
+import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
-import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -127,7 +126,6 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
     }
   }
 }
-
 
 case class WrappedMonitors3_0(kernelMonitors: KernelMonitors) extends Monitors {
   def addMonitorListener[T](monitor: T, tags: String*) {
@@ -413,11 +411,6 @@ class StringInfoLogger3_0(log: Log) extends InfoLogger {
   }
 }
 
-class EntityAccessorWrapper3_0(nodeManager: NodeManager) extends EntityAccessor {
-  override def newNodeProxyById(id: Long): Node = nodeManager.newNodeProxyById(id)
-  override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)
-}
-
 case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
                                    config: CypherCompilerConfiguration,
                                    clock: Clock,
@@ -446,12 +439,9 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseService,
       case _ => None
     }
 
-    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
-
-    val entityAccessor = new EntityAccessorWrapper3_0(nodeManager)
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, entityAccessor, config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer, plannerName, runtimeName, updateStrategy)
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer, plannerName, runtimeName, updateStrategy)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -463,12 +453,8 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
-    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
-
-    val entityAccessor = new EntityAccessorWrapper3_0(nodeManager)
-
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, entityAccessor, config, clock, monitors, rewriterSequencer)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

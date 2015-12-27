@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,
-            nodeManager: EntityAccessor,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
@@ -94,7 +93,7 @@ trait ExecutablePlanBuilder {
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
+class ExecutionPlanBuilder(graph: GraphDatabaseService,
                            clock: Clock,
                            executionPlanBuilder: ExecutablePlanBuilder,
                            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
