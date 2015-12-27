@@ -34,7 +34,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateNode(
             CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
             IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("a"), LazyType("R"), IdName("b"), None)(solved)
+          IdName("r"), IdName("a"), relType("R"), IdName("b"), None)(solved)
       )(solved)
     )
   }
@@ -52,9 +52,9 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
                     IdName("b"),Seq.empty,None)(solved),
                   IdName("c"),Seq.empty,None)(solved),
                 IdName("d"),Seq.empty,None)(solved),
-              IdName("r1"),IdName("a"),LazyType("R1"),IdName("b"),None)(solved),
-            IdName("r2"),IdName("c"),LazyType("R2"),IdName("b"),None)(solved),
-          IdName("r3"),IdName("c"),LazyType("R3"),IdName("d"),None)(solved)
+              IdName("r1"),IdName("a"),relType("R1"),IdName("b"),None)(solved),
+            IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved),
+          IdName("r3"),IdName("c"),relType("R3"),IdName("d"),None)(solved)
       )(solved)
     )
   }
@@ -69,9 +69,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
                 CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
                 IdName("b"),Seq.empty,None)(solved),
               IdName("c"),Seq.empty,None)(solved),
-            IdName("r1"),IdName("b"),LazyType("R1"),IdName("a"),None)(solved),
-          IdName("r2"),IdName("c"),LazyType("R2"),IdName("b"),None)(solved)
+            IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None)(solved),
+          IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved)
       )(solved)
     )
   }
+
+  private def relType(name: String): RelTypeName = RelTypeName(name)(pos)
 }
