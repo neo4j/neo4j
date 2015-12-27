@@ -38,27 +38,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 //  def toDefaultPrettyString(formatter: DocFormatter) =
 //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
-//  override def toString = {
-//
-//    def str[T](s: Iterable[T], name: String, f: T => String) =
-//      if (s.nonEmpty)
-//        Some(s"$name: ${s.map(f).mkString(",")}")
-//      else
-//        None
-//
-//    val nodes = str(patternNodes, "nodes", (x: IdName) => x.name)
-//    val args = str(argumentIds, "args", (x: IdName) => x.name)
-//    val rels = str(patternRelationships, "rels", (x: PatternRelationship) => x.name.name)
-//    val sel = str(selections.flatPredicates, "selections", (x: Expression) => x.toString)
-//    val opts = str(optionalMatches, "optionals", (x: QueryGraph) => x.toString)
-//    val hintsText = str(hints, "hints", (x: Hint) => x.toString)
-//    val shortestPaths = str(shortestPathPatterns, "hints", (x: ShortestPathPattern) => x.name.toString)
-//
-//    val description = Seq(nodes, args, rels, sel, opts, hintsText, shortestPaths).flatten.mkString(",")
-//
-//    s"""QueryGraph($description)"""
-//  }
-
   def size = patternRelationships.size
 
   def isEmpty: Boolean = this == QueryGraph.empty

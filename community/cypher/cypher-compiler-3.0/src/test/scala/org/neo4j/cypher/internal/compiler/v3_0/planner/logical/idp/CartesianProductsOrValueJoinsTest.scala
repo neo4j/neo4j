@@ -19,16 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{AstConstructionTestSupport, Equals}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest
   extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
-  val planA = AllNodesScan("a", Set.empty)(solved)
-  val planB = AllNodesScan("b", Set.empty)(solved)
-  val planC = AllNodesScan("c", Set.empty)(solved)
+  val planA = allNodesScan("a")
+  val planB = allNodesScan("b")
+  val planC = allNodesScan("c")
+
+  private def allNodesScan(n: String): LogicalPlan = {
+    val solved = CardinalityEstimation.lift(PlannerQuery(queryGraph = QueryGraph(patternNodes = Set(IdName(n)))), Cardinality(0))
+    AllNodesScan(n, Set.empty)(solved)
+  }
 
   test("should plan cartesian product between 2 pattern nodes") {
     testThis(
@@ -88,12 +94,18 @@ class CartesianProductsOrValueJoinsTest
       expectedPlan =
         Selection(Seq(eq3),
           ValueHashJoin(planC,
-            ValueHashJoin(planA, planB, eq1.switchSides)(solved), eq2.switchSides)(solved))(solved))
+            ValueHashJoin(planB, planA, eq1)(solved), eq2.switchSides)(solved))(solved))
   }
 
   private def testThis(graph: QueryGraph, input: Set[(QueryGraph, LogicalPlan)], expectedPlan: LogicalPlan) = {
     new given {
       qg = graph
+      cardinality = mapCardinality {
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
+        case PlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case _ => 100.0
+      }
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
       implicit val kit = ctx.config.toKit()

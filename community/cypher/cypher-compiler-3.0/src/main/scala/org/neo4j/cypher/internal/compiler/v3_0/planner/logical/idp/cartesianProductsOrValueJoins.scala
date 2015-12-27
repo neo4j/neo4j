@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 
 trait JoinDisconnectedQueryGraphComponents {
   def apply(componentPlans: Set[(QueryGraph, LogicalPlan)], fullQG: QueryGraph)
            (implicit context: LogicalPlanningContext, kit: QueryPlannerKit,
-            singleComponentPlanner: SingleComponentPlannerTrait):Set[(QueryGraph, LogicalPlan)]
+            singleComponentPlanner: SingleComponentPlannerTrait): Set[(QueryGraph, LogicalPlan)]
 }
 
 
@@ -59,7 +60,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     val bestPlan = kit.pickBest(connectedPlans.map(_._1._2)).get
     val bestQG = connectedPlans.collectFirst {
-      case ((fqg,pl) ,_) if bestPlan == pl=> fqg
+      case ((fqg, pl), _) if bestPlan == pl => fqg
     }.get
     val (p1, p2) = connectedPlans(bestQG -> bestPlan)
 
@@ -83,13 +84,42 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       t2@(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
       plans = planA -> planB
     } yield {
-      val AxB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join), qg)
-      val BxA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg)
+      val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join), qg)
+      val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg)
+      val nestedIndexJoinAB = planNIJ(planA, qgA, qgB, qg, join)
+      val nestedIndexJoinBA = planNIJ(planB, qgB, qgA, qg, join)
 
       Set(
-        (AxB.solved.lastQueryGraph -> AxB, t1 -> t2),
-        (BxA.solved.lastQueryGraph -> BxA, t1 -> t2)
-      )
+        (hashJoinAB.solved.lastQueryGraph -> hashJoinAB, t1 -> t2),
+        (hashJoinBA.solved.lastQueryGraph -> hashJoinBA, t1 -> t2)
+      ) ++
+        nestedIndexJoinAB.map(x => (x, t1 -> t2)) ++
+        nestedIndexJoinBA.map(x => (x, t1 -> t2))
+
     }).flatten.toMap
+  }
+
+  /*
+  Index Nested Loop Joins -- if there is a value join connection between the LHS and RHS, and a useful index exists for
+  one of the sides, it can be used if the query is planned as an apply with the index seek on the RHS.
+
+      Apply
+    LHS  Index Seek
+   */
+  private def planNIJ(lhsPlan: LogicalPlan, lhsQG: QueryGraph, rhsQG: QueryGraph, fullQG: QueryGraph, predicate: Expression)
+                     (implicit context: LogicalPlanningContext,
+                      kit: QueryPlannerKit,
+                      singleComponentPlanner: SingleComponentPlannerTrait) = {
+
+    val builtOnTopOfOtherPlans = rhsQG.argumentIds.nonEmpty
+    val qgIsNotSinglePiece = rhsQG.connectedComponents.size > 1
+    if (builtOnTopOfOtherPlans || qgIsNotSinglePiece)
+      None
+    else {
+      val ids = rhsQG.addArgumentIds(lhsQG.coveredIds.toSeq).addPredicates(predicate)
+      val rhsPlan = singleComponentPlanner.planComponent(ids)
+      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
+      Some(result.solved.lastQueryGraph -> result)
+    }
   }
 }

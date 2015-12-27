@@ -70,9 +70,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         result
       } else {
         val solutionPlans = leaves collect {
-          case plan if (qg.coveredIds -- plan.availableSymbols).isEmpty => kit.select(plan, qg)
+          case plan if planFullyCoversQG(qg, plan) => kit.select(plan, qg)
         }
-        val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
+        val result = kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component. This must not happen. QG: " + qg))
         monitor.noIDPIterationFor(qg, result)
         result
       }
@@ -82,6 +82,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
     bestPlan
   }
+
+  private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
+    (qg.coveredIds -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
