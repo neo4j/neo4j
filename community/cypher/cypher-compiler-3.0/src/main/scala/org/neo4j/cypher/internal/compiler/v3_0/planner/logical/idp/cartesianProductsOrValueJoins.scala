@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IndexLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
@@ -106,22 +106,33 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       Apply
     LHS  Index Seek
    */
-  private def planNIJ(lhsPlan: LogicalPlan, rhsPlan: LogicalPlan, lhsQG: QueryGraph, rhsQG: QueryGraph, fullQG: QueryGraph, predicate: Expression)
+  private def planNIJ(lhsPlan: LogicalPlan, rhsInputPlan: LogicalPlan, lhsQG: QueryGraph, rhsQG: QueryGraph, fullQG: QueryGraph, predicate: Expression)
                      (implicit context: LogicalPlanningContext,
                       kit: QueryPlannerKit,
                       singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val builtOnTopOfOtherPlans = rhsQG.argumentIds.nonEmpty
     val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals = rhsPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
+    val containsOptionals = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
 
     if (builtOnTopOfOtherPlans || notSingleComponent || containsOptionals) None
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
-      val ids = rhsQG.addArgumentIds(lhsQG.coveredIds.toSeq).addPredicates(predicate)
+      val ids = rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toSeq).addPredicates(predicate)
       val rhsPlan = singleComponentPlanner.planComponent(ids)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
-      Some(result.solved.lastQueryGraph -> result)
+
+      // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
+      // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
+      // this confuses the cost model
+      val lhsDependencies = result.leaves.collect {
+        case x: IndexLeafPlan => x.valueExpr.expression.dependencies
+      }.flatten
+
+      if (lhsDependencies.nonEmpty)
+        Some(result.solved.lastQueryGraph -> result)
+      else
+        None
     }
   }
 }

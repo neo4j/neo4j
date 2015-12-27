@@ -64,31 +64,6 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlanners("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (c)-->() RETURN count(*)")
-
-    result.toList should equal(List(Map("count(*)" -> 3)))
-
-    // then
-    result should use("Apply")
-    result should use("NodeIndexSeek")
-  }
-
-  test("index seek planned in the presence of optional matches2") {
-    // given
-
-    def relateToThreeNodes(n: Node) = {
-      relate(n, createNode("id" -> 1))
-      relate(n, createNode("id" -> 2))
-      relate(n, createNode("id" -> 3))
-    }
-
-    (0 to 100) foreach (i => relateToThreeNodes(createLabeledNode(Map("id" -> i), "A")))
-    (0 to 100) foreach (i => createLabeledNode(Map("id" -> i), "C"))
-
-    graph.createIndex("A", "id")
-    graph.createIndex("C", "id")
-
-    // when
     val result = executeWithAllPlanners("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
 
     result.toList should equal(List(Map("count(*)" -> 3)))

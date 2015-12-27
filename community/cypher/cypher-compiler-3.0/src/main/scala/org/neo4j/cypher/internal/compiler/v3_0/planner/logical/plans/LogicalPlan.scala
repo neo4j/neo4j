@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import java.lang.reflect.Method
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
@@ -134,6 +135,10 @@ abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
 
 abstract class NodeLogicalLeafPlan extends LogicalLeafPlan {
   def idName: IdName
+}
+
+abstract class IndexLeafPlan extends NodeLogicalLeafPlan {
+  def valueExpr: QueryExpression[Expression]
 }
 
 final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {
