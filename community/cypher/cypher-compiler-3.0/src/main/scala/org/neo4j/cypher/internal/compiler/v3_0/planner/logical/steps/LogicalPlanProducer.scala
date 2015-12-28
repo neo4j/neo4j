@@ -40,10 +40,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def solvePredicate(plan: LogicalPlan, solved: Expression)(implicit context: LogicalPlanningContext) =
     plan.updateSolved(_.amendQueryGraph(_.addPredicates(solved)))
 
-  def planAggregation(left: LogicalPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression])
+  def planAggregation(left: LogicalPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression], reportedAggregation: Map[String, Expression])
                      (implicit context: LogicalPlanningContext) = {
     val solved = left.solved.updateTailOrSelf(_.withHorizon(
-      AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = aggregation)
+      AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = reportedAggregation)
     ))
     Aggregation(left, grouping, aggregation)(solved)
   }

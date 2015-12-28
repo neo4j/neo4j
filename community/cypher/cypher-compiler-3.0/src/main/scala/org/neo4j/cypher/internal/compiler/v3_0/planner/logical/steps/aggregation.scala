@@ -38,6 +38,9 @@ object aggregation {
     //  TODO: we need to project here since the pipe does not do that,
     //  when moving to the new runtime the aggregation pipe MUST do the projection itself
     val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep)
-    context.logicalPlanProducer.planAggregation(projectedPlan, groupingExpressions, aggregation.aggregationExpressions)
+
+    val (rewrittenPlan, aggregations) = patternExpressionBuilder()(projectedPlan, aggregation.aggregationExpressions)
+
+    context.logicalPlanProducer.planAggregation(rewrittenPlan, groupingExpressions, aggregations, aggregation.aggregationExpressions)
   }
 }

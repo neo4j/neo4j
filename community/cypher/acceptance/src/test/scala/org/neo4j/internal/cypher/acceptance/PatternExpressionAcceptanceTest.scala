@@ -382,8 +382,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     createLabeledNode("A")
     relate(node, createNode(), "HAS")
 
-    val result = executeWithAllPlanners("MATCH (n:A) RETURN count((n)-[:HAS]->()) as c").toList
+    val result = executeWithAllPlanners("MATCH (n:A) RETURN count((n)-[:HAS]->()) as c")
 
-    result should equal(List(Map("c" -> 3)))
+    result.toList should equal(List(Map("c" -> 3)))
+    result should use("Expand(All)")
   }
 }
