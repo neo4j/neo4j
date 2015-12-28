@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
@@ -74,9 +75,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
 
     val result = executeWithAllPlanners("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
-      .toList.head("p").asInstanceOf[Seq[_]]
 
-    result should have size 2
+    result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
+    result should use("Expand(All)")
   }
 
   test("match (n) return case when id(n) < 0 then (n)-->() otherwise 42 as p") {
@@ -85,9 +86,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
 
     val result = executeWithAllPlanners("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
-      .toList.head("p").asInstanceOf[Long]
 
-    result should equal(42)
+    result.toList.head("p").asInstanceOf[Long] should equal(42)
+    result should use("Expand(All)")
   }
 
   test("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p") {
@@ -96,9 +97,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
 
     val result = executeWithAllPlanners("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
-      .toList.head("p").asInstanceOf[Seq[_]]
 
-    result should equal(List(start, start))
+    result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
+    result should use("Expand(All)")
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
@@ -132,10 +133,10 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlanners("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c").toList
-      .toList.head("p").asInstanceOf[Seq[_]]
+    val result = executeWithAllPlanners("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c")
 
-    result should have size 2
+    result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
+    result should use("Expand(All)")
   }
 
   test("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c") {
@@ -143,10 +144,10 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val b = createLabeledNode("End")
     relate(a, b)
 
-    val resultPath = executeWithAllPlanners("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
-      .toList.head("path").asInstanceOf[Seq[_]]
+    val result: InternalExecutionResult = executeWithAllPlanners("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
 
-    resultPath should have size 1
+    result.toList.head("path").asInstanceOf[Seq[_]] should have size 1
+    result should use("VarLengthExpand(Into)")
   }
 
   test("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c") {
@@ -220,14 +221,12 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     ))
   }
 
-
   test("match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n") {
     val start = createNode()
     relate(start, createNode())
     relate(start, createNode())
 
     val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
-      .toList
 
     result should have size 3
   }
