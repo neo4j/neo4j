@@ -204,7 +204,7 @@ public class ChunkedInput implements PackInput
             currentChunkIndex++;
             if ( currentChunkIndex < chunks.size() )
             {
-                currentChunk = chunks.get( currentChunkIndex );
+                currentChunk = getCurrentChunk();
             }
             else
             {
@@ -214,6 +214,11 @@ public class ChunkedInput implements PackInput
                                                                         "problem with your client driver." );
             }
         }
+    }
+
+    protected ByteBuf getCurrentChunk()
+    {
+        return chunks.get( currentChunkIndex );
     }
 
     public void close()
