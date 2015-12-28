@@ -21,6 +21,7 @@ package upgrade;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,6 +101,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAl
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
+@Ignore("Label scan store to be upgraded")
 @RunWith(Parameterized.class)
 public class StoreUpgraderTest
 {

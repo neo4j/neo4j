@@ -19,7 +19,6 @@
  */
 package org.neo4j.io;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -33,22 +32,22 @@ public final class IOUtils
     }
 
     /**
-     * Closes given {@link Collection collection} of {@link Closeable closeables}.
+     * Closes given {@link Collection collection} of {@link AutoCloseable closeables}.
      *
      * @param closeables the closeables to close
      * @param <T> the type of closeable
      * @throws IOException
-     * @see #closeAll(Closeable[])
+     * @see #closeAll(AutoCloseable[])
      */
-    public static <T extends Closeable> void closeAll( Collection<T> closeables ) throws IOException
+    public static <T extends AutoCloseable> void closeAll( Collection<T> closeables ) throws IOException
     {
-        closeAll( closeables.toArray( new Closeable[closeables.size()] ) );
+        closeAll( closeables.toArray( new AutoCloseable[closeables.size()] ) );
     }
 
     /**
-     * Closes given array of {@link Closeable closeables}. If any {@link Closeable#close()}
-     * call throws {@link IOException} than it will be rethrown to the caller after calling {@link Closeable#close()}
-     * on other given resources. If more than one {@link Closeable#close()} throw than resulting exception will have
+     * Closes given array of {@link AutoCloseable closeables}. If any {@link AutoCloseable#close()}
+     * call throws {@link IOException} than it will be rethrown to the caller after calling {@link AutoCloseable#close()}
+     * on other given resources. If more than one {@link AutoCloseable#close()} throw than resulting exception will have
      * suppressed exceptions. See {@link Exception#addSuppressed(Throwable)}
      *
      * @param closeables the closeables to close
@@ -56,7 +55,7 @@ public final class IOUtils
      * @throws IOException
      */
     @SafeVarargs
-    public static <T extends Closeable> void closeAll( T... closeables ) throws IOException
+    public static <T extends AutoCloseable> void closeAll( T... closeables ) throws IOException
     {
         Exception closeException = null;
         for ( T closeable : closeables )

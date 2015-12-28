@@ -35,9 +35,12 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
@@ -46,7 +49,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class LuceneIndexIT
 {
@@ -65,16 +67,17 @@ public class LuceneIndexIT
         indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
                 testDir.directory(), 1 );
 
-//        indexStorage.prepareIndexStorage();
-        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
-        accessor = new NonUniqueLuceneIndexAccessor( luceneIndex );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( false ), new
+                IndexSamplingConfig( new Config(  ) ) );
+        luceneIndex.prepare();
+        luceneIndex.open();
+        accessor = new LuceneIndexAccessor( luceneIndex );
     }
 
     @After
     public void after() throws IOException
     {
         accessor.close();
-//        indexStorage.close();
     }
 
     @Test

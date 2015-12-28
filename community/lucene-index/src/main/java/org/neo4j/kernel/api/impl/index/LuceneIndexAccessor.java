@@ -21,11 +21,9 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -35,13 +33,11 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 
-abstract class LuceneIndexAccessor implements IndexAccessor
+public class LuceneIndexAccessor implements IndexAccessor
 {
-    protected final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
+    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final LuceneIndexWriter writer;
     private LuceneIndex luceneIndex;
-
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
     LuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
     {
@@ -68,15 +64,6 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        taskCoordinator.cancel();
-        try
-        {
-            taskCoordinator.awaitCompletion();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
-        }
         luceneIndex.drop();
     }
 
@@ -104,7 +91,6 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     {
         try
         {
-            // TODO: task control stuff
             return luceneIndex.getIndexReader();
         }
         catch ( IOException e )
@@ -118,6 +104,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     {
         try
         {
+            // TODO:
             LuceneAllDocumentsReader allDocumentsReader = new LuceneAllDocumentsReader( luceneIndex.getIndexReader() );
             return new LuceneAllEntriesIndexAccessorReader( allDocumentsReader );
         }

@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,6 +40,7 @@ import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
+@Ignore("Label scan store to be upgraded")
 public class HAClusterStartupIT
 {
     @Rule

@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,6 +41,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 
+@Ignore("Label scan store to be upgraded")
 public class BackupHaIT
 {
     @ClassRule

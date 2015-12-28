@@ -66,7 +66,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
-        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, config, samplingConfig );
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator( luceneIndex, descriptor );
@@ -82,15 +82,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
-        LuceneIndex luceneIndex = new LuceneIndex( indexStorage );
-        if ( config.isUnique() )
-        {
-            return new UniqueLuceneIndexAccessor( luceneIndex );
-        }
-        else
-        {
-            return new NonUniqueLuceneIndexAccessor( luceneIndex );
-        }
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, config, samplingConfig );
+        luceneIndex.open();
+        return new LuceneIndexAccessor( luceneIndex );
     }
 
     @Override

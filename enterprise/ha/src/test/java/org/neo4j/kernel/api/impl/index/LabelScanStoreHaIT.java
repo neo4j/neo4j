@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +49,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
+@Ignore("Label scan store to be upgraded")
 public class LabelScanStoreHaIT
 {
     @Test
@@ -65,7 +67,7 @@ public class LabelScanStoreHaIT
         // and get the label scan store with it.
 
         // THEN
-        assertEquals( "Expected noone to build their label scan store index.",
+        assertEquals( "Expected none to build their label scan store index.",
                 0, monitor.timesRebuiltWithData );
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {

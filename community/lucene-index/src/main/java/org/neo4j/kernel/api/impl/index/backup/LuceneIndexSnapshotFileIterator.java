@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
+import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,12 +33,10 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.impl.index.LuceneIndexAcquisitionException;
-import org.neo4j.kernel.api.impl.index.ObsoleteLuceneIndexWriter;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
-public class LuceneIndexSnapshotIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
+public class LuceneIndexSnapshotFileIterator extends PrefetchingIterator<File> implements ResourceIterator<File>
 {
     private final File indexDirectory;
     private final SnapshotDeletionPolicy snapshotDeletionPolicy;
@@ -48,8 +49,9 @@ public class LuceneIndexSnapshotIterator extends PrefetchingIterator<File> imple
         if ( deletionPolicy instanceof SnapshotDeletionPolicy )
         {
             SnapshotDeletionPolicy policy = (SnapshotDeletionPolicy) deletionPolicy;
-            return policy.getSnapshotCount() > 0 ? new LuceneIndexSnapshotIterator( indexDirectory, policy )
-                                                 : emptyIterator();
+            return hasCommits( indexWriter )
+                   ? new LuceneIndexSnapshotFileIterator( indexDirectory, policy )
+                   : emptyIterator();
         }
         else
         {
@@ -60,7 +62,7 @@ public class LuceneIndexSnapshotIterator extends PrefetchingIterator<File> imple
         }
     }
 
-    LuceneIndexSnapshotIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
+    LuceneIndexSnapshotFileIterator( File indexDirectory, SnapshotDeletionPolicy snapshotDeletionPolicy )
             throws IOException
     {
         this.snapshot = snapshotDeletionPolicy.snapshot();
@@ -91,6 +93,13 @@ public class LuceneIndexSnapshotIterator extends PrefetchingIterator<File> imple
             throw new SnapshotReleaseException( "Unable to release lucene index snapshot for index in: " +
                                                 indexDirectory, e);
         }
+    }
+
+    private static boolean hasCommits( IndexWriter indexWriter ) throws IOException
+    {
+        Directory directory = indexWriter.getDirectory();
+        return DirectoryReader.indexExists( directory ) &&
+               SegmentInfos.readLatestCommit( directory ) != null;
     }
 
 

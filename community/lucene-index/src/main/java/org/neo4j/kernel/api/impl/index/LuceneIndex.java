@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
@@ -32,9 +29,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
@@ -42,6 +42,8 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.reader.PartitionedIndexReader;
 import org.neo4j.kernel.api.impl.index.reader.SimpleIndexReader;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Collections.singletonMap;
@@ -54,14 +56,21 @@ public class LuceneIndex implements Closeable
     private List<IndexPartition> partitions = new CopyOnWriteArrayList<>();
     private volatile boolean open = false;
     private PartitionedIndexStorage indexStorage;
+    private final IndexConfiguration config;
+    private final IndexSamplingConfig samplingConfig;
 
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
 
-    public LuceneIndex( PartitionedIndexStorage indexStorage )
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
+
+    public LuceneIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
+            IndexSamplingConfig samplingConfig )
     {
         this.indexStorage = indexStorage;
+        this.config = config;
+        this.samplingConfig = samplingConfig;
     }
 
     public void prepare() throws IOException
@@ -73,8 +82,8 @@ public class LuceneIndex implements Closeable
 
     public void open() throws IOException
     {
-        Map<File, Directory> indexDirectories = indexStorage.openIndexDirectories();
-        for ( Map.Entry<File, Directory> indexDirectory : indexDirectories.entrySet() )
+        Map<File,Directory> indexDirectories = indexStorage.openIndexDirectories();
+        for ( Map.Entry<File,Directory> indexDirectory : indexDirectories.entrySet() )
         {
             partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
         }
@@ -184,6 +193,15 @@ public class LuceneIndex implements Closeable
 
     public void drop() throws IOException
     {
+        taskCoordinator.cancel();
+        try
+        {
+            taskCoordinator.awaitCompletion();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
+        }
         close();
         indexStorage.cleanupFolder( indexStorage.getIndexFolder() );
     }
@@ -212,7 +230,8 @@ public class LuceneIndex implements Closeable
 
     private IndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
     {
-        return new SimpleIndexReader( partitions.get( 0 ).acquireSearcher() );
+        return new SimpleIndexReader( partitions.get( 0 ).acquireSearcher(), config,
+                samplingConfig, taskCoordinator );
     }
 
     private IndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
@@ -241,15 +260,31 @@ public class LuceneIndex implements Closeable
     public ResourceIterator<File> snapshot() throws IOException
     {
         commitCloseLock.lock();
+        List<ResourceIterator<File>> snapshotIterators = null;
         try
         {
             List<IndexPartition> partitions = getPartitions();
-            List<ResourceIterator<File>> snapshotIterators = new ArrayList<>( partitions.size() );
+            snapshotIterators = new ArrayList<>( partitions.size() );
             for ( IndexPartition partition : partitions )
             {
                 snapshotIterators.add( partition.snapshot() );
             }
             return Iterables.concatResourceIterators( snapshotIterators.iterator() );
+        }
+        catch ( Exception e )
+        {
+            if ( snapshotIterators != null )
+            {
+                try
+                {
+                    IOUtils.closeAll( snapshotIterators );
+                }
+                catch ( IOException ex )
+                {
+                    throw Exceptions.withCause( ex, e );
+                }
+            }
+            throw e;
         }
         finally
         {

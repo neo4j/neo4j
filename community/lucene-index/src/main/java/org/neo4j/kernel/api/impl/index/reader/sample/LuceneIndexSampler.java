@@ -17,18 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.reader.sample;
 
-import java.io.IOException;
+import org.neo4j.helpers.TaskControl;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.register.Register;
 
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
-class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
+public abstract class LuceneIndexSampler
 {
-    NonUniqueLuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
+    private TaskControl taskControl;
+
+    public LuceneIndexSampler( TaskControl taskControl )
     {
-        super( luceneIndex );
+        this.taskControl = taskControl;
+    }
+
+    public abstract long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
+
+    protected void checkCancellation() throws IndexNotFoundKernelException
+    {
+        if ( taskControl.cancellationRequested() )
+        {
+            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
+        }
     }
 
 }

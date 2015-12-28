@@ -31,7 +31,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
-import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotIterator;
+import org.neo4j.kernel.api.impl.index.backup.LuceneIndexSnapshotFileIterator;
 
 public class IndexPartition implements Closeable
 {
@@ -76,6 +76,6 @@ public class IndexPartition implements Closeable
 
     public ResourceIterator<File> snapshot() throws IOException
     {
-        return LuceneIndexSnapshotIterator.forIndex( indexDirectory, indexWriter );
+        return LuceneIndexSnapshotFileIterator.forIndex( indexDirectory, indexWriter );
     }
 }

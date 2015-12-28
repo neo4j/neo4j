@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,7 +45,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.Label.label;
-
+@Ignore("Label scan store to be upgraded")
 public class RestartIT
 {
     @Rule

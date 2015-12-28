@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -224,8 +225,8 @@ public class LuceneLabelScanStore
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         //TODO: luceneIndex.snapshot()
-//        return new LuceneIndexSnapshotIterator().snapshot( indexStorage.getIndexFolder(), writer );
-        return null;
+//        return new LuceneIndexSnapshotFileIterator().snapshot( indexStorage.getIndexFolder(), writer );
+        return IteratorUtil.emptyIterator();
     }
 
     @Override

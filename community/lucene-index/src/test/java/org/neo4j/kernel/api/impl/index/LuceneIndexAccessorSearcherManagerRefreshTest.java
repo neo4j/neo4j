@@ -19,30 +19,38 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.search.IndexSearcher;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 
+@Ignore("Needs to be rewriten to use new index infrastructure")
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
-    private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
-    private final ObsoleteLuceneIndexWriter writer = mock( ObsoleteLuceneIndexWriter.class );
-    private final File dir = new File( "testFile" );
+
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
 
     private final AtomicLong count = new AtomicLong( 0 );
 
@@ -155,11 +163,18 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
     private LuceneIndexAccessor createAccessor()
             throws IOException
     {
-        PartitionedIndexStorage indexStorage =
-                new PartitionedIndexStorage( mock( DirectoryFactory.class ), mock( FileSystemAbstraction.class ), dir, 1 );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-        return new LuceneIndexAccessor( new LuceneIndex( indexStorage ) )
-        {
-        };
+        PartitionedIndexStorage indexStorage =
+                new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, fileSystem,
+                        testDirectory.directory( "index" ), 1 );
+
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( false ),
+                new IndexSamplingConfig( new Config() ) );
+        luceneIndex.prepare();
+        luceneIndex.open();
+
+        return new LuceneIndexAccessor( luceneIndex );
+
     }
 }

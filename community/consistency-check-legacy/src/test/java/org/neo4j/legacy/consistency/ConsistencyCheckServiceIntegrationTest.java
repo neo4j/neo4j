@@ -19,6 +19,7 @@
  */
 package org.neo4j.legacy.consistency;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -58,6 +59,7 @@ import static org.neo4j.legacy.consistency.ConsistencyCheckService.defaultLogFil
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
+@Ignore("Label scan store to be upgraded")
 public class ConsistencyCheckServiceIntegrationTest
 {
     @Test

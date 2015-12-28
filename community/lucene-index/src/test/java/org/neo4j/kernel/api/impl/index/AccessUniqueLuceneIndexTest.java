@@ -28,20 +28,21 @@ import java.util.List;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
-public class UniqueLuceneIndexAccessorTest
+public class AccessUniqueLuceneIndexTest
 {
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File indexDirectory = new File( "index1" );
@@ -51,7 +52,7 @@ public class UniqueLuceneIndexAccessorTest
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
-        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
+        LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
         updateAndCommit( accessor, asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
@@ -67,7 +68,8 @@ public class UniqueLuceneIndexAccessorTest
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
-        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
+
+        LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
         updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
@@ -84,7 +86,8 @@ public class UniqueLuceneIndexAccessorTest
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
-        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
+
+        LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
         updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
@@ -111,7 +114,8 @@ public class UniqueLuceneIndexAccessorTest
     {
         // given
         PartitionedIndexStorage indexStorage = getIndexStorage();
-        UniqueLuceneIndexAccessor accessor = createAccessor( indexStorage );
+
+        LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
         updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
@@ -124,9 +128,12 @@ public class UniqueLuceneIndexAccessorTest
         assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
     }
 
-    private UniqueLuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
+    private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), indexStorage );
+        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( true ),
+                new IndexSamplingConfig( new Config() ) );
+        luceneIndex.open();
+        return new LuceneIndexAccessor( luceneIndex );
     }
 
     private PartitionedIndexStorage getIndexStorage() throws IOException
@@ -134,7 +141,6 @@ public class UniqueLuceneIndexAccessorTest
         IndexStorageFactory storageFactory =
                 new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
         PartitionedIndexStorage indexStorage = storageFactory.indexStorageOf( 1 );
-//        indexStorage.prepareIndexStorage();
         return indexStorage;
     }
 

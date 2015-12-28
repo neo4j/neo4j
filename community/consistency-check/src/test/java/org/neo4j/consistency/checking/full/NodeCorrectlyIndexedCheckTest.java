@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.lucene.document.Document;
 import org.junit.Test;
 
 import java.io.File;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -287,6 +289,18 @@ public class NodeCorrectlyIndexedCheckTest
                 public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
                         List<Object> updatedPropertyValues ) throws Exception
                 {
+                }
+
+                @Override
+                public long getMaxDoc()
+                {
+                    return 0;
+                }
+
+                @Override
+                public Iterator<Document> getAllDocsIterator()
+                {
+                    return null;
                 }
 
                 @Override

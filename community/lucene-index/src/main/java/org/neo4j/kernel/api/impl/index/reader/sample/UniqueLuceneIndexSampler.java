@@ -17,29 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.impl.index.reader.sample;
 
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.Closeable;
-import java.io.IOException;
+import org.neo4j.helpers.TaskControl;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.register.Register;
 
-import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.storageengine.api.schema.IndexReader;
-
-/**
- * Variant of {@link LuceneIndexAccessor} that also verifies uniqueness constraints.
- */
-class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
+public class UniqueLuceneIndexSampler extends LuceneIndexSampler
 {
-    public UniqueLuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
+
+    private IndexSearcher indexSearcher;
+
+    public UniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskControl taskControl )
     {
-        super( luceneIndex );
+        super( taskControl );
+        this.indexSearcher = indexSearcher;
     }
 
-    // TODO: unique index reader
-    protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
+    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
-        return new LuceneUniqueIndexAccessorReader( searcher, documentStructure, closeable, cancellation );
+        UniqueIndexSampler sampler = new UniqueIndexSampler();
+        sampler.increment( indexSearcher.getIndexReader().numDocs() );
+        checkCancellation();
+        return sampler.result( result );
     }
 }

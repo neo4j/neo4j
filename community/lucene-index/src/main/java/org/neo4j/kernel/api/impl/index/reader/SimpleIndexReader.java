@@ -22,14 +22,18 @@ package org.neo4j.kernel.api.impl.index.reader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -37,12 +41,21 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.TaskControl;
+import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentRetrievalException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.reader.sample.LuceneIndexSampler;
+import org.neo4j.kernel.api.impl.index.reader.sample.NonUniqueLuceneIndexSampler;
+import org.neo4j.kernel.api.impl.index.reader.sample.UniqueLuceneIndexSampler;
+import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -51,17 +64,40 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KE
 public class SimpleIndexReader implements IndexReader
 {
     private PartitionSearcher partitionSearcher;
+    private IndexConfiguration indexConfiguration;
+    private final IndexSamplingConfig samplingConfig;
+    private TaskCoordinator taskCoordinator;
     private LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
-    public SimpleIndexReader( PartitionSearcher partitionSearcher )
+    public SimpleIndexReader( PartitionSearcher partitionSearcher,
+            IndexConfiguration indexConfiguration,
+            IndexSamplingConfig samplingConfig,
+            TaskCoordinator taskCoordinator )
     {
         this.partitionSearcher = partitionSearcher;
+        this.indexConfiguration = indexConfiguration;
+        this.samplingConfig = samplingConfig;
+        this.taskCoordinator = taskCoordinator;
     }
 
     @Override
     public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
-        return -1;
+        LuceneIndexSampler sampler = createIndexSampler();
+        return sampler.sampleIndex( result );
+    }
+
+    private LuceneIndexSampler createIndexSampler()
+    {
+        TaskControl taskControl = taskCoordinator.newInstance();
+        if ( indexConfiguration.isUnique() )
+        {
+            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskControl );
+        }
+        else
+        {
+            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskControl, samplingConfig );
+        }
     }
 
     @Override
@@ -138,15 +174,66 @@ public class SimpleIndexReader implements IndexReader
     @Override
     public long getMaxDoc()
     {
-        //TODO:
-        return 0;
+        return getIndexSearcher().getIndexReader().maxDoc();
     }
 
     @Override
     public Iterator<Document> getAllDocsIterator()
     {
-        //TODO:
-        return null;
+        return new PrefetchingIterator<Document>()
+        {
+            private DocIdSetIterator idIterator = iterateAllDocs();
+
+            @Override
+            protected Document fetchNextOrNull()
+            {
+                try
+                {
+                    int doc = idIterator.nextDoc();
+                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
+                    {
+                        return null;
+                    }
+                    return getDocument( doc );
+                }
+                catch ( IOException e )
+                {
+                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
+                }
+            }
+        };
+    }
+
+    private Document getDocument( int docId )
+    {
+        try
+        {
+            return getIndexSearcher().doc( docId );
+        }
+        catch ( IOException e )
+        {
+            throw new LuceneDocumentRetrievalException("Can't retrieve document with id: " + docId + ".", docId, e );
+        }
+    }
+
+    private DocIdSetIterator iterateAllDocs()
+    {
+        org.apache.lucene.index.IndexReader reader = getIndexSearcher().getIndexReader();
+        final Bits liveDocs = MultiFields.getLiveDocs( reader );
+        final DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
+        if ( liveDocs == null )
+        {
+            return allDocs;
+        }
+
+        return new FilteredDocIdSetIterator( allDocs )
+        {
+            @Override
+            protected boolean match( int doc )
+            {
+                return liveDocs.get( doc );
+            }
+        };
     }
 
     @Override
