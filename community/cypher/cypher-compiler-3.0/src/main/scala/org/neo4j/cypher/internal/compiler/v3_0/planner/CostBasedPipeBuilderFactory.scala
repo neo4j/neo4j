@@ -34,7 +34,7 @@ object CostBasedPipeBuilderFactory {
              tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
-             useErrorsOverWarnings: Boolean,
+             config: CypherCompilerConfiguration,
              updateStrategy: Option[UpdateStrategy]
     ) = {
 
@@ -51,6 +51,6 @@ object CostBasedPipeBuilderFactory {
     CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
       createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder,
       actualUpdateStrategy,
-      useErrorsOverWarnings)
+      config)
   }
 }

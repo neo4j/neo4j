@@ -67,8 +67,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
 object CypherCompilerFactory {
   val monitorTag = "cypher3.0"
 
-  def costBasedCompiler(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
-                        config: CypherCompilerConfiguration, clock: Clock, structure: CodeStructure[GeneratedQuery],
+  def costBasedCompiler(graph: GraphDatabaseService, config: CypherCompilerConfiguration, clock: Clock, structure: CodeStructure[GeneratedQuery],
                         monitors: Monitors, logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
@@ -92,19 +91,19 @@ object CypherCompilerFactory {
       metricsFactory = metricsFactory,
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
+      semanticChecker = checker,
       plannerName = plannerName,
       runtimeBuilder = runtimeBuilder,
-      semanticChecker = checker,
-      useErrorsOverWarnings = config.useErrorsOverWarnings,
+      config = config,
       updateStrategy = updateStrategy
     )
-    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
+    val rulePlanProducer = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
 
     // Pick planner based on input
     val planBuilder = ExecutablePlanBuilder.create(plannerName, rulePlanProducer,
                                                    costPlanProducer, planBuilderMonitor, config.useErrorsOverWarnings)
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, entityAccessor, config, clock, planBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph,clock, planBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _) )
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
@@ -113,15 +112,15 @@ object CypherCompilerFactory {
     new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
-  def ruleBasedCompiler(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
+  def ruleBasedCompiler(graph: GraphDatabaseService,
                         config: CypherCompilerConfiguration, clock: Clock, monitors: Monitors,
                         rewriterSequencer: (String) => RewriterStepSequencer): CypherCompiler = {
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, rewriterSequencer)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, entityAccessor, config, clock, pipeBuilder)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](config.queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)

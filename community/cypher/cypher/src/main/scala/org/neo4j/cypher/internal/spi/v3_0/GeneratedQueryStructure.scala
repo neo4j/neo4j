@@ -39,17 +39,19 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, CypherExecutionException, ParameterNotFoundException, symbols}
-import org.neo4j.graphdb.{Relationship, Node, Direction}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
+import org.neo4j.kernel.impl.core.NodeManager
 
 import scala.collection.mutable
 
@@ -68,8 +70,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       // fields
       val fields = Fields(
         closer = clazz.field(typeRef[TaskCloser], "closer"),
+        statement = clazz.field(typeRef[Statement], "statement"),
         ro = clazz.field(typeRef[ReadOperations], "ro"),
-        entityAccessor = clazz.field(typeRef[EntityAccessor], "nodeManager"),
+        entityAccessor = clazz.field(typeRef[NodeManager], "nodeManager"),
         executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
         description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
@@ -112,23 +115,21 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     val query = using(generator.generateClass(packageName,className, typeRef[GeneratedQuery])) { clazz =>
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
         param[TaskCloser]("closer"),
-        param[Statement]("statement"),
-        param[EntityAccessor]("nodeManager"),
+        param[QueryContext]("queryContext"),
         param[ExecutionMode]("executionMode"),
         param[Provider[InternalPlanDescription]]("description"),
         param[QueryExecutionTracer]("tracer"),
         param[util.Map[String, Object]]("params"))) { execute =>
         execute.returns(Expression.invoke(Expression.newInstance(execution), MethodReference.constructorReference(execution,
           typeRef[TaskCloser],
-          typeRef[Statement],
+          typeRef[QueryContext],
           typeRef[EntityAccessor],
           typeRef[ExecutionMode],
           typeRef[Provider[InternalPlanDescription]],
           typeRef[QueryExecutionTracer],
           typeRef[util.Map[String, Object]]),
           execute.load("closer"),
-          execute.load("statement"),
-          execute.load("nodeManager"),
+          execute.load("queryContext"),
           execute.load("executionMode"),
           execute.load("description"),
           execute.load("tracer"),
@@ -178,6 +179,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 }
 
 private case class Fields(closer: FieldReference,
+                          statement: FieldReference,
                           ro: FieldReference,
                           entityAccessor: FieldReference,
                           executionMode: FieldReference,
@@ -844,19 +846,24 @@ private object Templates {
 
   val CONSTRUCTOR = MethodTemplate.constructor(
     param[TaskCloser]("closer"),
-    param[Statement]("statement"),
-    param[EntityAccessor]("nodeManager"),
+    param[QueryContext]("queryContext"),
     param[ExecutionMode]("executionMode"),
     param[Provider[InternalPlanDescription]]("description"),
     param[QueryExecutionTracer]("tracer"),
+
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
-    put(self(), typeRef[ReadOperations], "ro", invoke(load("statement"), method[Statement, ReadOperations]("readOperations"))).
+    put(self(), typeRef[Statement], "statement",
+      cast(typeRef[Statement],
+        invoke(load("queryContext"), method[QueryContext, Statement]("statement")))).
+    put(self(), typeRef[ReadOperations], "ro", invoke(get(self(), typeRef[Statement], "statement"), method[Statement, ReadOperations]("readOperations"))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
     put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
-    put(self(), typeRef[EntityAccessor], "nodeManager", load("nodeManager")).
+    put(self(), typeRef[NodeManager], "nodeManager",
+      cast(typeRef[NodeManager],
+        invoke(load("queryContext"), method[QueryContext, NodeManager]("entityAccessor")))).
     build()
 
   val SET_SUCCESSFUL_CLOSEABLE = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",

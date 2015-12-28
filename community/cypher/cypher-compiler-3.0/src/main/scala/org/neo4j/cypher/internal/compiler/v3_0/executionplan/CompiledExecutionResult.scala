@@ -25,16 +25,15 @@ import java.util
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsCollection
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport.asScala
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_0.{EntityNotFoundException, ProfilerStatisticsNotReadyException}
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.Statement
 
 import scala.collection.{Map, mutable}
 
@@ -48,7 +47,7 @@ trait SuccessfulCloseable {
  * except `javaColumns` and `accept` which delegates to the injected compiled code.
  */
 class CompiledExecutionResult(taskCloser: TaskCloser,
-                              statement: Statement,
+                              context: QueryContext,
                               compiledCode: GeneratedQueryExecution,
                               description: Provider[InternalPlanDescription])
   extends InternalExecutionResult with SuccessfulCloseable  {
@@ -104,7 +103,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
       populateDumpToStringResults(dumpToStringBuilder)(row)
     }
     val iterator = result.iterator()
-    new CompiledExecutionResult(taskCloser, statement, compiledCode, description) {
+    new CompiledExecutionResult(taskCloser, context, compiledCode, description) {
 
       override def javaColumns: util.List[String] = self.javaColumns
 
@@ -172,16 +171,19 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
     builder += map
   }
 
-  private def props(x: PropertyContainer): String = {
-    val readOperations = statement.readOperations()
-    val (properties, propFcn, id) = x match {
-      case n: Node => (asScala(readOperations.nodeGetPropertyKeys(n.getId)), readOperations.nodeGetProperty _, n.getId )
-      case r: Relationship => (asScala(readOperations.relationshipGetPropertyKeys(r.getId)), readOperations.relationshipGetProperty _, r.getId)
-    }
-
+  private def props(n: Node): String = {
+    val ops = context.nodeOps
+    val properties = ops.propertyKeyIds(n.getId)
     val keyValStrings = properties.
-      map(pkId => readOperations.propertyKeyGetName(pkId) + ":" + text(propFcn(id, pkId)))
+      map(pkId => context.getPropertyKeyName(pkId) + ":" + text(ops.getProperty(n.getId, pkId)))
+    keyValStrings.mkString("{", ",", "}")
+  }
 
+  private def props(r: Relationship): String = {
+    val ops = context.relationshipOps
+    val properties = ops.propertyKeyIds(r.getId)
+    val keyValStrings = properties.
+      map(pkId => context.getPropertyKeyName(pkId) + ":" + text(ops.getProperty(r.getId, pkId)))
     keyValStrings.mkString("{", ",", "}")
   }
 

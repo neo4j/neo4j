@@ -31,12 +31,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.api.Statement
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
@@ -68,13 +67,13 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
         }
 
         val builder = new RunnablePlan {
-          def apply(statement: Statement, entityAccessor: EntityAccessor, execMode: ExecutionMode,
+          def apply(queryContext: QueryContext, execMode: ExecutionMode,
                     descriptionProvider: DescriptionProvider, params: Map[String, Any],
                     closer: TaskCloser): InternalExecutionResult = {
             val (provider, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.execute(closer, statement, entityAccessor, execMode,
+            val execution: GeneratedQueryExecution = query.execute(closer, queryContext, execMode,
               provider, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
-            new CompiledExecutionResult(closer, statement, execution, provider)
+            new CompiledExecutionResult(closer, queryContext, execution, provider)
           }
         }
 

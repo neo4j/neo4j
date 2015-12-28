@@ -38,46 +38,46 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = _statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = _statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    getOnlineIndex(statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    getOnlineIndex(_statement.readOperations().indexesGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
-    val labelId = statement.readOperations().labelGetForName(labelName)
+    val labelId = _statement.readOperations().labelGetForName(labelName)
 
-    val indexDescriptors = statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = _statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = _statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = _statement.readOperations().propertyKeyGetForName(propertyKey)
 
     // here we do not need to use getOnlineIndex method because uniqueness constraint creation is synchronous
-    Some(statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
+    Some(_statement.readOperations().uniqueIndexGetForLabelAndPropertyKey(labelId, propertyKeyId))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: SchemaKernelException => None }
 
   private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
-    statement.readOperations().indexGetState(descriptor) match {
+    _statement.readOperations().indexGetState(descriptor) match {
       case InternalIndexState.ONLINE => Some(descriptor)
       case _                         => None
     }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = try {
-    val labelId = statement.readOperations().labelGetForName(labelName)
-    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
+    val labelId = _statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = _statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
+    val matchingConstraints = _statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
 
     import scala.collection.JavaConverters._
-    statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+    _statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
       case unique: UniquenessConstraint => unique
     }
   } catch {
@@ -100,7 +100,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     val javaCreator = new java.util.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
-    statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    _statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
 
@@ -114,7 +114,7 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(statement), MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(_statement), MutableGraphStatisticsSnapshot())
 
   val txIdProvider = LastCommittedTxIdProvider(gdb)
 }

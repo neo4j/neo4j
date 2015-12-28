@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.{DescriptionProvider, tracer}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
@@ -37,14 +37,12 @@ import org.neo4j.cypher.internal.frontend.v3_0.PeriodicCommitInOpenTransactionEx
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 
 trait RunnablePlan {
-  def apply(statement: KernelStatement,
-            nodeManager: EntityAccessor,
+  def apply(queryContext: QueryContext,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
@@ -91,77 +89,35 @@ object ExecutablePlanBuilder {
 }
 
 trait ExecutablePlanBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
+                  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
-                           config: CypherCompilerConfiguration, clock: Clock, pipeBuilder: ExecutablePlanBuilder)
+class ExecutionPlanBuilder(graph: GraphDatabaseService,
+                           clock: Clock,
+                           executionPlanBuilder: ExecutablePlanBuilder,
+                           createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer=CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
-    val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
-    executablePlan match {
-      case Left(compiledPlan) => buildCompiled(compiledPlan, planContext, inputQuery)
-      case Right(pipeInfo) => buildInterpreted(pipeInfo, planContext, inputQuery)
-    }
+  def build(planContext: PlanContext, inputQuery: PreparedQuery,
+            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
+    executionPlanBuilder.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
   }
+}
 
-  private def buildCompiled(compiledPlan: CompiledPlan, planContext: PlanContext, inputQuery: PreparedQuery) = {
-    new ExecutionPlan {
-      val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
-
-      def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastCommittedTxId, statistics)
-
-      def run(queryContext: QueryContext, kernelStatement: KernelStatement,
-              executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
-        val taskCloser = new TaskCloser
-        taskCloser.addTask(queryContext.close)
-        try {
-          if (executionMode == ExplainMode) {
-            //close all statements
-            taskCloser.close(success = true)
-            new ExplainExecutionResult(compiledPlan.columns.toList,
-              compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
-          } else
-            compiledPlan.executionResultBuilder(kernelStatement, entityAccessor, executionMode,
-              tracer(executionMode), params, taskCloser)
-        } catch {
-          case (t: Throwable) =>
-            taskCloser.close(success = false)
-            throw t
-        }
-      }
-
-      def plannerUsed: PlannerName = compiledPlan.plannerUsed
-
-      def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
-
-      def runtimeUsed = CompiledRuntimeName
-
-      def notifications = Seq.empty
-    }
-  }
-
-
-
-  private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
-    val notificationCheckers = Seq(checkForEagerLoadCsv,
-      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
-
-    notificationCheckers.flatMap(_(pipe))
-  }
-
-
-  private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
+object InterpretedExecutionPlanBuilder {
+  def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery,
+                                 createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
+                                 config: CypherCompilerConfiguration) = {
     val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
     val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
     new ExecutionPlan {
-      private val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
+      private val fingerprint = createFingerprintReference(fp)
 
-      def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
+      def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
 
       def isPeriodicCommit = periodicCommitInfo.isDefined
@@ -170,9 +126,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
 
       def runtimeUsed = InterpretedRuntimeName
 
-      def notifications = checkForNotifications(pipe, planContext)
+      def notifications = checkForNotifications(pipe, planContext, config)
     }
+  }
 
+  private def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {
+    val notificationCheckers = Seq(checkForEagerLoadCsv,
+      CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
+
+    notificationCheckers.flatMap(_(pipe))
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {

@@ -51,4 +51,6 @@ public interface ExpressionVisitor
     void gt( Expression lhs, Expression rhs );
 
     void sub( Expression lhs, Expression rhs );
+
+    void cast( TypeReference type, Expression expression );
 }

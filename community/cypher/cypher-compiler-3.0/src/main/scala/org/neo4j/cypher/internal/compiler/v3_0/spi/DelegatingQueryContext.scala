@@ -23,13 +23,21 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
+class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+
+  type KernelStatement = inner.KernelStatement
+
+  type EntityAccessor = inner.EntityAccessor
+
+  override def statement: KernelStatement = inner.statement
+
+  override def entityAccessor: EntityAccessor = inner.entityAccessor
 
   def isOpen: Boolean = inner.isOpen
 

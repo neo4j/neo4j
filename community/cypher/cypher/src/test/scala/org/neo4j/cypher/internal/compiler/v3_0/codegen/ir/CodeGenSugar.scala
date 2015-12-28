@@ -22,22 +22,22 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions
@@ -68,9 +68,8 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTx()
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val nodeManager =
-        graphDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
-      val result = plan.executionResultBuilder(statement, new EntityAccessorWrapper3_0(nodeManager), mode,
+      val queryContext = new TransactionBoundQueryContext(graphDb, tx, true, statement)(mock[IndexSearchMonitor])
+      val result = plan.executionResultBuilder(queryContext, mode,
         tracer(mode), params, taskCloser)
       tx.success()
       result.size
@@ -81,13 +80,12 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   def evaluate(instructions: Seq[Instruction],
-               stmt: Statement = mock[Statement],
-               entityAccessor: EntityAccessor = null,
+               qtx: QueryContext = mockQueryContext(),
                columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns,  operatorIds)
-    val result = newInstance(clazz, statement = stmt, entityAccessor = entityAccessor, params = params)
+    val result = newInstance(clazz, queryContext = qtx, params = params)
     evaluate(result)
   }
 
@@ -113,19 +111,26 @@ trait CodeGenSugar extends MockitoSugar {
 
   def newInstance(clazz: GeneratedQuery,
                   taskCloser: TaskCloser = new TaskCloser,
-                  statement: Statement = mock[Statement],
+                  queryContext: QueryContext = mockQueryContext(),
                   graphdb: GraphDatabaseService = null,
-                  entityAccessor: EntityAccessor = null,
                   executionMode: ExecutionMode = null,
                   provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
                   params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
-    val generated = clazz.execute(taskCloser, statement, entityAccessor,
+    val generated = clazz.execute(taskCloser, queryContext,
       executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
-    new CompiledExecutionResult(taskCloser, statement, generated, provider)
+    new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }
 
   def insertStatic(clazz: Class[GeneratedQueryExecution], mappings: (String, Id)*) = mappings.foreach {
     case (name, id) => setStaticField(clazz, name, id)
+  }
+
+  private def mockQueryContext() = {
+    val qc = mock[QueryContext]
+    val statement = mock[Statement]
+    when(qc.statement).thenReturn(statement.asInstanceOf[qc.KernelStatement])
+
+    qc
   }
 }

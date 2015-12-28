@@ -105,7 +105,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
     CypherCompilerFactory.costBasedCompiler(
       graph,
-      new EntityAccessorWrapper3_0(nodeManager),
       CypherCompilerConfiguration(
         queryCacheSize = 128,
         statsDivergenceThreshold = 0.5,

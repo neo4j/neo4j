@@ -163,6 +163,30 @@ public abstract class ExpressionTemplate
         };
     }
 
+    public static ExpressionTemplate cast( Class<?> clazz, ExpressionTemplate expression )
+    {
+        return new ExpressionTemplate()
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.cast( typeReference( clazz ), expression.materialize( method ) );
+            }
+        };
+    }
+
+    public static ExpressionTemplate cast( TypeReference type, ExpressionTemplate expression )
+    {
+        return new ExpressionTemplate()
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.cast( type, expression.materialize( method ) );
+            }
+        };
+    }
+
     abstract void templateAccept( CodeBlock method, ExpressionVisitor visitor );
 
     private static Expression[] tryMaterialize( ExpressionTemplate[] templates )
