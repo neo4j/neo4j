@@ -20,10 +20,6 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import org.junit.Test;
-import org.mockito.Matchers;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -31,12 +27,13 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.doReturn;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class LearnerContextImplTest
@@ -45,35 +42,34 @@ public class LearnerContextImplTest
     public void shouldOnlyLogLearnMissOnce() throws Exception
     {
         // Given
-        Logging logging = mock( Logging.class );
+        StringBuffer buffer = new StringBuffer();
+        final StringLogger logger = StringLogger.wrap( buffer );
+        Logging logging = new DevNullLoggingService()
+        {
+            @Override
+            public StringLogger getMessagesLog( Class loggingClass )
+            {
+                return logger;
+            }
+        };
         LearnerContextImpl ctx = new LearnerContextImpl( new InstanceId( 1 ), mock( CommonContextState.class ),
                 logging, mock( Timeouts.class ), mock( PaxosInstanceStore.class ), mock( AcceptorInstanceStore.class ),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( HeartbeatContextImpl.class ) );
 
-        final List<String> logs = new ArrayList<>();
-        ConsoleLogger consoleLogger = new ConsoleLogger( null )
-        {
-            @Override
-            public void warn( String message )
-            {
-                logs.add( message );
-            }
-        };
-        doReturn( consoleLogger ).when( logging ).getConsoleLog( Matchers.<Class> any() );
-
         // When
-        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) );
-        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) );
-        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 2l ) );
-        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 2l ) );
-        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) );
+        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1L ) );
+        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1L ) );
+        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 2L ) );
+        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 2L ) );
+        ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1L ) );
 
         // Then
-        assertEquals( 3, logs.size() );
-        assertTrue( logs.get( 0 ).startsWith( "Did not have learned value for Paxos instance 1." ) );
-        assertTrue( logs.get( 1 ).startsWith( "Did not have learned value for Paxos instance 2." ) );
-        assertTrue( logs.get( 2 ).startsWith( "Did not have learned value for Paxos instance 1." ) );
+        String[] logs = buffer.toString().split( "\n" );
+        assertEquals( 3, logs.length );
+        assertThat( logs[0], containsString( "Did not have learned value for Paxos instance 1." ) );
+        assertThat( logs[1], containsString( "Did not have learned value for Paxos instance 2." ) );
+        assertThat( logs[2], containsString( "Did not have learned value for Paxos instance 1." ) );
     }
 
 }

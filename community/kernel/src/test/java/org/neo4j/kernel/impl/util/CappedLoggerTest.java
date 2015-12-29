@@ -171,6 +171,12 @@ public class CappedLoggerTest
         logger = new CappedLogger( delegate );
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowIfDelegateIsNull() throws Exception
+    {
+        new CappedLogger( null );
+    }
+
     @Test
     public void mustLogWithoutLimitConfiguration() throws Exception
     {
@@ -223,6 +229,17 @@ public class CappedLoggerTest
     public void mustThrowOnNullClock() throws Exception
     {
         logger.setTimeLimit( 10, TimeUnit.MILLISECONDS, null );
+    }
+
+    @Test
+    public void mustAllowConfigurationChaining() throws Exception
+    {
+        logger.setCountLimit( 1 )
+              .setTimeLimit( 10, TimeUnit.MILLISECONDS, Clock.SYSTEM_CLOCK )
+              .setDuplicateFilterEnabled( true )
+              .unsetCountLimit()
+              .unsetTimeLimit()
+              .setCountLimit( 1 );
     }
 
     @Test

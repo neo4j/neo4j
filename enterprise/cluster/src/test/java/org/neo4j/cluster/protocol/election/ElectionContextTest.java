@@ -19,6 +19,9 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
-
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -43,6 +43,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
 import static junit.framework.Assert.assertNull;
@@ -99,7 +100,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
-                clusterConfiguration, mock( Executor.class ), mock( Logging.class ),
+                clusterConfiguration, mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -132,7 +133,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), mock( Logging.class ),
+                mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -167,7 +168,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                mock( Executor.class ), mock( Logging.class ),
+                mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
@@ -446,7 +447,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), clusterConfiguration,
-                        mock( Executor.class ), mock( Logging.class ),
+                        mock( Executor.class ), new DevNullLoggingService(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );

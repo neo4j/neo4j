@@ -26,6 +26,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosC
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,11 +35,13 @@ import static org.mockito.Mockito.mock;
 
 public class LearnerContextTest
 {
+    private final Logging logging = new DevNullLoggingService();
+
     @Test
     public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, logging, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -45,14 +49,14 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( 0, new InstanceId( 3 ) );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1L ) );
     }
 
     @Test
     public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, logging, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -61,7 +65,7 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( 0, new InstanceId( 4 ) );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1L ) );
         assertThat( state.getLastKnownAliveUpToDateInstance(), equalTo( new InstanceId( 3 ) ));
     }
 
@@ -69,7 +73,7 @@ public class LearnerContextTest
     public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, logging, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -77,7 +81,7 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( -1, null );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( -1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( -1L ) );
         assertThat( state.getLastKnownAliveUpToDateInstance(), equalTo( new org.neo4j.cluster.InstanceId( 2 ) ));
     }
 }

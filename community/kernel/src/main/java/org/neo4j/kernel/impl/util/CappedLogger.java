@@ -46,6 +46,10 @@ public class CappedLogger
 
     public CappedLogger( StringLogger delegate )
     {
+        if ( delegate == null )
+        {
+            throw new IllegalArgumentException( "The delegate StringLogger cannot be null" );
+        }
         filter = new Filter();
         this.delegate = delegate;
     }
@@ -98,21 +102,23 @@ public class CappedLogger
      * Set a limit to the amount of logging that this logger will accept between resets.
      * @param limit The number of log messages that the CappedLogger will let through in between resets.
      */
-    public void setCountLimit( int limit )
+    public CappedLogger setCountLimit( int limit )
     {
         if ( limit < 1 )
         {
             throw new IllegalArgumentException( "The count limit must be positive" );
         }
         filter = filter.setCountLimit( limit );
+        return this;
     }
 
     /**
      * Unset the count limit, and allow any number of messages through, provided other limits don't apply.
      */
-    public void unsetCountLimit()
+    public CappedLogger unsetCountLimit()
     {
         filter = filter.unsetCountLimit();
+        return this;
     }
 
     /**
@@ -122,7 +128,7 @@ public class CappedLogger
      * @param unit The time unit.
      * @param clock The clock to use for reading the current time when checking this limit.
      */
-    public void setTimeLimit( long time, TimeUnit unit, Clock clock )
+    public CappedLogger setTimeLimit( long time, TimeUnit unit, Clock clock )
     {
         if ( time < 1 )
         {
@@ -137,15 +143,17 @@ public class CappedLogger
             throw new IllegalArgumentException( "The clock used for time limiting cannot be null" );
         }
         filter = filter.setTimeLimit( time, unit, clock );
+        return this;
     }
 
     /**
      * Unset the time limit, and allow any number of messages through, as often as possible, provided other limits
      * don't apply.
      */
-    public void unsetTimeLimit()
+    public CappedLogger unsetTimeLimit()
     {
         filter = filter.unsetTimeLimit();
+        return this;
     }
 
     /**
@@ -154,9 +162,10 @@ public class CappedLogger
      * messages will get logged in full.
      * @param enabled {@code true} if duplicates should be filtered, {@code false} if they should not.
      */
-    public void setDuplicateFilterEnabled( boolean enabled )
+    public CappedLogger setDuplicateFilterEnabled( boolean enabled )
     {
         filter = filter.setDuplicateFilterEnabled( enabled );
+        return this;
     }
 
     private static class Filter

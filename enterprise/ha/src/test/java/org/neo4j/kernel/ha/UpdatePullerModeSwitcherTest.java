@@ -33,7 +33,7 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -54,7 +54,7 @@ public class UpdatePullerModeSwitcherTest
         @SuppressWarnings( "unchecked" )
         DelegateInvocationHandler<UpdatePuller> invocationHandler = mock( DelegateInvocationHandler.class );
         PullerFactory pullersFactory = new PullerFactory( mock( RequestContextFactory.class ), mock( Master.class ),
-                mock( LastUpdateTime.class ), mock( Logging.class ), mock( InstanceId.class ), mock(
+                mock( LastUpdateTime.class ), new DevNullLoggingService(), mock( InstanceId.class ), mock(
                 InvalidEpochExceptionHandler.class ), 42, mock( JobScheduler.class ), mock( DependencyResolver.class ),
                 mock( AvailabilityGuard.class ), mock( HighAvailabilityMemberStateMachine.class ) );
         modeSwitcher = new UpdatePullerModeSwitcher( switcherNotifier, invocationHandler, pullersFactory );

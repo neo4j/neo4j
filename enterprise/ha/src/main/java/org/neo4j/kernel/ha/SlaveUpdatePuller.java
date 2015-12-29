@@ -166,10 +166,8 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.invalidEpochHandler = invalidEpochHandler;
         this.jobScheduler = jobScheduler;
         this.logger = logging.getMessagesLog( getClass() );
-        this.invalidEpochCappedLogger = new CappedLogger( logger );
-        this.comExceptionCappedLogger = new CappedLogger( logger );
-        invalidEpochCappedLogger.setCountLimit( LOG_CAP );
-        comExceptionCappedLogger.setCountLimit( LOG_CAP );
+        this.invalidEpochCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
+        this.comExceptionCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
     }
 
     @Override

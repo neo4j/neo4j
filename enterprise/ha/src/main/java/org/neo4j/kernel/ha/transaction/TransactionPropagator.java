@@ -155,10 +155,8 @@ public class TransactionPropagator implements Lifecycle
         this.log = log;
         this.slaves = slaves;
         this.pusher = pusher;
-        slaveCommitFailureLogger = new CappedLogger( log );
-        slaveCommitFailureLogger.setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
-        pushedToTooFewSlaveLogger = new CappedLogger( log );
-        pushedToTooFewSlaveLogger.setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
+        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
+        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
     }
 
     @Override
