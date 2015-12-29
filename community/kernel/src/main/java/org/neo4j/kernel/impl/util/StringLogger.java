@@ -124,6 +124,11 @@ public abstract class StringLogger
 
     public static StringLogger wrap( final StringBuffer target )
     {
+        return wrap( target, false );
+    }
+
+    public static StringLogger wrap( final StringBuffer target, boolean enableDebug )
+    {
         return new ActualStringLogger( new PrintWriter( new Writer()
         {
             @Override
@@ -188,7 +193,7 @@ public abstract class StringLogger
             {
                 // do nothing
             }
-        } ), false );
+        } ), enableDebug );
     }
 
     public static StringLogger tee( final StringLogger logger1, final StringLogger logger2 )

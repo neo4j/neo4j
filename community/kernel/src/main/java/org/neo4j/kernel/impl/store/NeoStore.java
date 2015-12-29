@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
@@ -53,7 +54,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -151,7 +151,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
 
     private final int relGrabSize;
-    private final CappedOperation<Void> transactionCloseWaitLogger;
+    private final CappedLogger transactionCloseWaitLogger;
 
     public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
                      FileSystemAbstraction fileSystemAbstraction, final StringLogger stringLogger,
@@ -171,16 +171,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.relGroupStore = relGroupStore;
         this.counts = counts;
         this.relGrabSize = conf.get( Configuration.relationship_grab_size );
-        this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
-        {
-            @Override
-            protected void triggered( Void event )
-            {
-                stringLogger.info( format(
-                        "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
-                        highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ) );
-            }
-        };
+        this.transactionCloseWaitLogger = new CappedLogger( stringLogger );
+        transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
         counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
         {
             @Override
@@ -1001,8 +993,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         boolean onPar = lastClosedTx.getHighestGapFreeNumber() == lastCommittingTxField.get();
         if ( !onPar )
-        {   // Trigger some logging here, max logged every 30 secs or so
-            transactionCloseWaitLogger.event( null );
+        {
+            // Trigger some logging here, logging at most one message every 30 seconds
+            transactionCloseWaitLogger.info( format(
+                    "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
+                    highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ), null );
         }
         return onPar;
     }

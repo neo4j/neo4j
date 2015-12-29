@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -31,7 +32,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.concurrent.BinaryLatch;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
@@ -40,7 +40,7 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -115,8 +115,13 @@ import static java.lang.System.currentTimeMillis;
  */
 public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, UpdatePuller
 {
-
-    public static String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
+    public static final int LOG_CAP = Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.LOG_CAP", 10 );
+    public static final long PARK_NANOS = TimeUnit.MILLISECONDS.toNanos( Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.PARK_MILLIS", 100 ) );
+    public static final int AVAILABILITY_AWAIT_MILLIS = Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.AVAILABILITY_AWAIT_MILLIS", 5000 );
+    public static final String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
 
     static final Condition NEXT_TICKET = new Condition()
     {
@@ -133,7 +138,8 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private final RequestContextFactory requestContextFactory;
     private final Master master;
     private final StringLogger logger;
-    private final CappedOperation<Pair<String,? extends Exception>> cappedLogger;
+    private final CappedLogger invalidEpochCappedLogger;
+    private final CappedLogger comExceptionCappedLogger;
     private final LastUpdateTime lastUpdateTime;
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
@@ -160,15 +166,10 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.invalidEpochHandler = invalidEpochHandler;
         this.jobScheduler = jobScheduler;
         this.logger = logging.getMessagesLog( getClass() );
-        this.cappedLogger = new CappedOperation<Pair<String,? extends Exception>>(
-                CappedOperation.count( 10 ) )
-        {
-            @Override
-            protected void triggered( Pair<String,? extends Exception> event )
-            {
-                logger.warn( event.first(), event.other() );
-            }
-        };
+        this.invalidEpochCappedLogger = new CappedLogger( logger );
+        this.comExceptionCappedLogger = new CappedLogger( logger );
+        invalidEpochCappedLogger.setCountLimit( LOG_CAP );
+        comExceptionCappedLogger.setCountLimit( LOG_CAP );
     }
 
     @Override
@@ -201,7 +202,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
                 continue;
             }
 
-            LockSupport.parkNanos( 100_000_000 );
+            LockSupport.parkNanos( PARK_NANOS );
         }
     }
 
@@ -235,7 +236,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     @Override
     public void pullUpdates() throws InterruptedException
     {
-        if ( !isActive() || !availabilityGuard.isAvailable( 5000 ) )
+        if ( !isActive() || !availabilityGuard.isAvailable( AVAILABILITY_AWAIT_MILLIS ) )
         {
             return;
         }
@@ -340,15 +341,17 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
             {
                 // Updates would be applied as part of response processing
             }
+            invalidEpochCappedLogger.reset();
+            comExceptionCappedLogger.reset();
         }
         catch ( InvalidEpochException e )
         {
             invalidEpochHandler.handle();
-            cappedLogger.event( Pair.of( "Pull updates by " + this + " failed at the epoch check", e ) );
+            invalidEpochCappedLogger.warn( "Pull updates by " + this + " failed at the epoch check", e );
         }
         catch ( ComException e )
         {
-            cappedLogger.event( Pair.of( "Pull updates by " + this + " failed due to network error.", e ) );
+            invalidEpochCappedLogger.warn( "Pull updates by " + this + " failed due to network error.", e );
         }
         catch ( Throwable e )
         {

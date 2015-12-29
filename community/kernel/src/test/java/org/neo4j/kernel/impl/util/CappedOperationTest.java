@@ -28,7 +28,6 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.util.CappedOperation.Switch;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.util.CappedOperation.count;
 import static org.neo4j.kernel.impl.util.CappedOperation.differentItems;
 
