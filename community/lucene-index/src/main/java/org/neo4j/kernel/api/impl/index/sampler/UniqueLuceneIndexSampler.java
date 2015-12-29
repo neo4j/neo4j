@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.reader.sample;
+package org.neo4j.kernel.api.impl.index.sampler;
 
 import org.apache.lucene.search.IndexSearcher;
 
@@ -28,8 +28,7 @@ import org.neo4j.register.Register;
 
 public class UniqueLuceneIndexSampler extends LuceneIndexSampler
 {
-
-    private IndexSearcher indexSearcher;
+    private final IndexSearcher indexSearcher;
 
     public UniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskControl taskControl )
     {
@@ -37,7 +36,8 @@ public class UniqueLuceneIndexSampler extends LuceneIndexSampler
         this.indexSearcher = indexSearcher;
     }
 
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    @Override
+    protected long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         sampler.increment( indexSearcher.getIndexReader().numDocs() );

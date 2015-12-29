@@ -22,14 +22,11 @@ package org.neo4j.index.lucene;
 import java.io.File;
 import java.io.IOException;
 
-
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.kernel.api.impl.index.LuceneIndex;
+import org.neo4j.kernel.api.impl.index.LuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -67,13 +64,15 @@ public class LuceneLabelScanStoreBuilder
         if ( null == labelScanStore )
         {
             // TODO: Replace with kernel extension based lookup
-            IndexStorageFactory storageFactory = new IndexStorageFactory( DirectoryFactory.PERSISTENT, fileSystem,
-                    LabelScanStoreProvider.getStoreDirectory( storeDir ) );
-            IndexStorage indexStorage = storageFactory.labelScanStorage();
-            labelScanStore = new LuceneLabelScanStore(
-                    new NodeRangeDocumentLabelScanStorageStrategy(), indexStorage, IndexWriterFactories.standard(),
-                    fullStoreStream,
-                    LuceneLabelScanStore.loggerMonitor( logProvider ) );
+            LuceneIndex index = LuceneIndexBuilder.create()
+                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( storeDir ) )
+                    .withFileSystem( fileSystem )
+                    .withIndexIdentifier( LuceneLabelScanStore.INDEX_IDENTIFIER )
+                    .build();
+
+            labelScanStore = new LuceneLabelScanStore(new NodeRangeDocumentLabelScanStorageStrategy(), index,
+                    fullStoreStream, LuceneLabelScanStore.loggerMonitor( logProvider ) );
+
             try
             {
                 labelScanStore.init();

@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,19 +44,16 @@ import java.util.TreeSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.storageengine.api.schema.BoundedIterable;
+import org.neo4j.storageengine.api.schema.NodeLabelRange;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -75,10 +71,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
-@Ignore("Failing now, label scan store need to be updated")
 @RunWith(Parameterized.class)
 public class LuceneLabelScanStoreTest
 {
@@ -200,7 +194,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
+        BoundedIterable<NodeLabelRange> reader = store.newReader().allNodeLabelRanges();
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
@@ -222,7 +216,7 @@ public class LuceneLabelScanStoreTest
         ) );
 
         // WHEN
-        AllEntriesLabelScanReader reader = store.newAllEntriesReader();
+        BoundedIterable<NodeLabelRange> reader = store.newReader().allNodeLabelRanges();
         Iterator<NodeLabelRange> iterator = reader.iterator();
         NodeLabelRange range1 = iterator.next();
         NodeLabelRange range2 = iterator.next();
@@ -459,11 +453,13 @@ public class LuceneLabelScanStoreTest
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
-        IndexStorageFactory indexStorageFactory =
-                new IndexStorageFactory( directoryFactory, new DefaultFileSystemAbstraction(), dir );
-        IndexStorage indexStorage = indexStorageFactory.labelScanStorage();
-        store = life.add( new LuceneLabelScanStore( strategy, indexStorage, standard(),
-                asStream( existingData ), monitor ) );
+
+        LuceneIndex luceneIndex = LuceneIndexBuilder.create()
+                .withIndexIdentifier( "testIndex" )
+                .withDirectoryFactory( directoryFactory )
+                .withIndexRootFolder( dir )
+                .build();
+        store = life.add( new LuceneLabelScanStore( strategy, luceneIndex, asStream( existingData ), monitor ) );
 
         life.start();
         assertTrue( monitor.initCalled );

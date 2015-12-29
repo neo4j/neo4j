@@ -21,15 +21,13 @@ package org.neo4j.kernel.api.impl.index.storage.layout;
 
 import java.io.File;
 
-import static java.lang.Integer.parseInt;
-
 public class IndexFolderLayout implements FolderLayout
 {
     private final File indexFolder;
 
-    public IndexFolderLayout( File rootDirectory, long indexId )
+    public IndexFolderLayout( File rootDirectory, String identifier )
     {
-        this.indexFolder = new File( rootDirectory, String.valueOf( indexId ) );
+        this.indexFolder = new File( rootDirectory, identifier );
     }
 
     @Override

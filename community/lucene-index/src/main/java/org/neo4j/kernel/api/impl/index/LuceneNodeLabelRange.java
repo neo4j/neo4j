@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.direct.NodeLabelRange;
 
+
 public class LuceneNodeLabelRange implements NodeLabelRange
 {
     private final int id;

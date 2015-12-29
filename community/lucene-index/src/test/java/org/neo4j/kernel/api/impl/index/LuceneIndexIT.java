@@ -31,16 +31,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
@@ -64,14 +59,14 @@ public class LuceneIndexIT
     @Before
     public void before() throws Exception
     {
-        indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT, new DefaultFileSystemAbstraction(),
-                testDir.directory(), 1 );
+        LuceneIndex index = LuceneIndexBuilder.create()
+                .withIndexRootFolder( testDir.directory() )
+                .withIndexIdentifier( "testIndex" )
+                .build();
 
-        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( false ), new
-                IndexSamplingConfig( new Config(  ) ) );
-        luceneIndex.prepare();
-        luceneIndex.open();
-        accessor = new LuceneIndexAccessor( luceneIndex );
+        index.prepare();
+        index.open();
+        accessor = new LuceneIndexAccessor( index );
     }
 
     @After

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,15 +41,12 @@ import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.Arrays.asList;
@@ -91,12 +87,16 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        PartitionedIndexStorage indexStorage = getIndexStorage( dirFactory, dir );
-                        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( false ),
-                                new IndexSamplingConfig( new Config() ) );
-                        luceneIndex.open();
-                        // 100_000 sampling size
-                        return new LuceneIndexAccessor( luceneIndex );
+                        LuceneIndex index = LuceneIndexBuilder.create()
+                                .withFileSystem( new EphemeralFileSystemAbstraction() )
+                                .withDirectoryFactory( dirFactory )
+                                .withIndexRootFolder( dir )
+                                .withIndexIdentifier( "1" )
+                                .build();
+
+                        index.prepare();
+                        index.open();
+                        return new LuceneIndexAccessor( index );
                     }
                 } ),
                 arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
@@ -105,24 +105,21 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        PartitionedIndexStorage indexStorage = getIndexStorage( dirFactory, dir );
-                        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( true ),
-                                new IndexSamplingConfig( new Config() ) );
-                        luceneIndex.open();
-                        // 100_000 sampling size
-                        return new LuceneIndexAccessor( luceneIndex );
+                        LuceneIndex index = LuceneIndexBuilder.create()
+                                .uniqueIndex()
+                                .withFileSystem( new EphemeralFileSystemAbstraction() )
+                                .withDirectoryFactory( dirFactory )
+                                .withIndexRootFolder( dir )
+                                .withIndexIdentifier( "testIndex" )
+                                .build();
+
+                        index.prepare();
+                        index.open();
+                        return new LuceneIndexAccessor( index );
                     }
                 } )
         );
     }
-
-    private static PartitionedIndexStorage getIndexStorage( DirectoryFactory dirFactory, File dir ) throws IOException
-    {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, new EphemeralFileSystemAbstraction(), dir, 1 );
-        indexStorage.prepareFolder( indexStorage.getPartitionFolder( 1 ) );
-        return indexStorage;
-    }
-
 
     private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
@@ -300,7 +297,6 @@ public class LuceneIndexAccessorTest
     }
 
     @Test
-    @Ignore("Broken should be updated with new index infrastructure")
     public void shouldStopSamplingWhenIndexIsDropped() throws Exception
     {
         // given
@@ -310,6 +306,7 @@ public class LuceneIndexAccessorTest
 
         // when
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
+        IndexSampler indexSampler = indexReader.createSampler();
 
         Future<Void> drop = threading.executeAndAwait( new IOFunction<Void, Void>()
         {
@@ -323,7 +320,7 @@ public class LuceneIndexAccessorTest
 
         try ( IndexReader reader = indexReader /* do not inline! */ )
         {
-            reader.sampleIndex( Registers.newDoubleLongRegister() );
+            indexSampler.sampleIndex( Registers.newDoubleLongRegister() );
             fail( "expected exception" );
         }
         catch ( IndexNotFoundKernelException e )

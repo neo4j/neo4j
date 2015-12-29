@@ -57,7 +57,6 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -65,6 +64,7 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -1625,12 +1625,6 @@ public class BatchInsertTest
         }
 
         @Override
-        public AllEntriesLabelScanReader newAllEntriesReader()
-        {
-            return null;
-        }
-
-        @Override
         public ResourceIterator<File> snapshotStoreFiles() throws IOException
         {
             return null;
@@ -1656,7 +1650,8 @@ public class BatchInsertTest
         {
         }
 
-        @Override public LabelScanWriter newWriter()
+        @Override
+        public LabelScanWriter newWriter()
         {
             writersCreated++;
             return new LabelScanWriter()

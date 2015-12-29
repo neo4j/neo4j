@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -53,42 +54,7 @@ public class IndexSamplingCancellationTest
 {
     private final Barrier.Control samplingStarted = new Barrier.Control(), samplingDone = new Barrier.Control();
     private volatile Throwable samplingException;
-    private final InMemoryIndexProvider index = new InMemoryIndexProvider( 100 )
-    {
-        @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
-                                                IndexSamplingConfig samplingConfig )
-        {
-            return new IndexAccessor.Delegator( super.getOnlineAccessor( indexId, indexConfig, samplingConfig ) )
-            {
-                @Override
-                public IndexReader newReader()
-                {
-                    return new DelegatingIndexReader( super.newReader() )
-                    {
-                        @Override
-                        public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
-                        {
-                            samplingStarted.reached();
-                            try
-                            {
-                                return super.sampleIndex( result );
-                            }
-                            catch ( Throwable e )
-                            {
-                                samplingException = e;
-                                throw e;
-                            }
-                            finally
-                            {
-                                samplingDone.reached();
-                            }
-                        }
-                    };
-                }
-            };
-        }
-    };
+    private final InMemoryIndexProvider index = new TestInMemoryIndexProvider();
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -154,5 +120,78 @@ public class IndexSamplingCancellationTest
             tx.success();
         }
         return index;
+    }
+
+    private class TestInMemoryIndexProvider extends InMemoryIndexProvider
+    {
+        TestInMemoryIndexProvider()
+        {
+            super( 100 );
+        }
+
+        @Override
+        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration indexConfig,
+                IndexSamplingConfig samplingConfig )
+        {
+            return new DelegatingIndexAccessor( super.getOnlineAccessor( indexId, indexConfig, samplingConfig ) );
+        }
+    }
+
+    private class DelegatingIndexAccessor extends IndexAccessor.Delegator
+    {
+        DelegatingIndexAccessor( IndexAccessor delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            return new TestIndexReader( super.newReader() );
+        }
+    }
+
+    private class TestIndexReader extends DelegatingIndexReader
+    {
+        TestIndexReader( IndexReader delegate )
+        {
+            super( delegate );
+        }
+
+        @Override
+        public IndexSampler createSampler()
+        {
+            samplingStarted.reached();
+            IndexSampler sampler = super.createSampler();
+            return new DelegatingIndexSampler( sampler );
+        }
+    }
+
+    private class DelegatingIndexSampler implements IndexSampler
+    {
+        final IndexSampler delegate;
+
+        DelegatingIndexSampler( IndexSampler delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+        {
+            try
+            {
+                return delegate.sampleIndex( result );
+            }
+            catch ( Throwable e )
+            {
+                samplingException = e;
+                throw e;
+            }
+            finally
+            {
+                samplingDone.reached();
+            }
+        }
     }
 }

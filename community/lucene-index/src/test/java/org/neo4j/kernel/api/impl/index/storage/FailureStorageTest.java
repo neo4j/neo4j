@@ -28,25 +28,24 @@ import java.io.File;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.String.format;
 
 public class FailureStorageTest
 {
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexFolderLayout indexFolderLayout;
-    private final long indexId = 1;
+    private final String indexIdentifier = "1";
 
     @Before
     public void before()
     {
         File rootDirectory = new File( "dir" );
         fs.get().mkdirs( rootDirectory );
-        indexFolderLayout = new IndexFolderLayout( rootDirectory, indexId );
+        indexFolderLayout = new IndexFolderLayout( rootDirectory, indexIdentifier );
     }
 
     @Test

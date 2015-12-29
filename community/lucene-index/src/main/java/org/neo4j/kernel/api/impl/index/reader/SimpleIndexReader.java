@@ -45,19 +45,17 @@ import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentRetrievalException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.index.reader.sample.LuceneIndexSampler;
-import org.neo4j.kernel.api.impl.index.reader.sample.NonUniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.impl.index.reader.sample.UniqueLuceneIndexSampler;
+import org.neo4j.kernel.api.impl.index.sampler.NonUniqueLuceneIndexSampler;
+import org.neo4j.kernel.api.impl.index.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
@@ -81,13 +79,7 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
-    {
-        LuceneIndexSampler sampler = createIndexSampler();
-        return sampler.sampleIndex( result );
-    }
-
-    private LuceneIndexSampler createIndexSampler()
+    public IndexSampler createSampler()
     {
         TaskControl taskControl = taskCoordinator.newInstance();
         if ( indexConfiguration.isUnique() )

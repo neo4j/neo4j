@@ -33,16 +33,15 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.storageengine.api.schema.AllEntriesLabelScanReader;
+import org.neo4j.storageengine.api.schema.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
-
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
@@ -116,11 +115,16 @@ public class InMemoryLabelScanStore implements LabelScanStore
                 }
                 return nodes.iterator();
             }
+
+            @Override
+            public AllEntriesLabelScanReader allNodeLabelRanges()
+            {
+                return newAllEntriesReader();
+            }
         };
     }
 
-    @Override
-    public AllEntriesLabelScanReader newAllEntriesReader()
+    private AllEntriesLabelScanReader newAllEntriesReader()
     {
         final Map<Long, Set<Long>> nodesToLabels = new HashMap<>();
         for ( Map.Entry<Long, Set<Long>> labelToNodes : data.entrySet() )

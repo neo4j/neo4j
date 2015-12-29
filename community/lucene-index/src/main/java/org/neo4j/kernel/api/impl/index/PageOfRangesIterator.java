@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+
+import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -31,17 +31,17 @@ import org.neo4j.kernel.api.impl.index.bitmaps.LongPageIterator;
 
 class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
 {
-    private IndexSearcher searcher;
+    private LuceneIndex index;
     private final Query query;
     private final BitmapDocumentFormat format;
     private final int rangesPerPage;
     private final int[] labels;
     private DocValuesCollector.LongValuesIterator rangesIterator;
 
-    PageOfRangesIterator( BitmapDocumentFormat format, IndexSearcher searcher, int rangesPerPage, Query query,
+    PageOfRangesIterator( BitmapDocumentFormat format, LuceneIndex index, int rangesPerPage, Query query,
                           int... labels )
     {
-        this.searcher = searcher;
+        this.index = index;
         this.query = query;
         this.format = format;
         this.rangesPerPage = rangesPerPage;
@@ -55,6 +55,8 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     @Override
     protected PrimitiveLongIterator fetchNextOrNull()
     {
+        //TODO
+        IndexSearcher searcher = null;
         if ( searcher == null )
         {
             return null; // we are done searching with this iterator
@@ -79,6 +81,8 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     }
 
     private DocValuesCollector.LongValuesIterator getRanges() {
+        //TODO
+        IndexSearcher searcher = null;
         if ( rangesIterator != null )
         {
             return rangesIterator;

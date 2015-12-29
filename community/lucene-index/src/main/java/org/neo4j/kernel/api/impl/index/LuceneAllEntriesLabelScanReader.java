@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.BoundedIterable;

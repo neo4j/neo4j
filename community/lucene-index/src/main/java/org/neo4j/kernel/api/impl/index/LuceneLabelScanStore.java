@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexNotFoundException;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
@@ -36,31 +29,26 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-public class LuceneLabelScanStore
-        implements LabelScanStore, LabelScanStorageStrategy.StorageService
+public class LuceneLabelScanStore implements LabelScanStore
 {
+    public static final String INDEX_IDENTIFIER = "labelStore";
+
     private final LabelScanStorageStrategy strategy;
-    private final IndexWriterFactory<ObsoleteLuceneIndexWriter> writerFactory;
+    private final LuceneIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
-    private final IndexStorage indexStorage;
-    private SearcherManager searcherManager;
-    private ObsoleteLuceneIndexWriter writer;
     private boolean needsRebuild;
     private final Lock lock = new ReentrantLock( true );
-    private Directory directory;
 
     public interface Monitor
     {
@@ -77,6 +65,7 @@ public class LuceneLabelScanStore
         void rebuilt( long roughNodeCount );
     }
 
+    // todo: WAT?
     public static Monitor loggerMonitor( LogProvider logProvider )
     {
         final Log log = logProvider.getLog( LuceneLabelScanStore.class );
@@ -121,58 +110,27 @@ public class LuceneLabelScanStore
         };
     }
 
-    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, IndexStorage indexStorage,
-            IndexWriterFactory<ObsoleteLuceneIndexWriter> writerFactory,
+    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, LuceneIndex luceneIndex,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
+        this.luceneIndex = luceneIndex;
         this.strategy = strategy;
-        this.indexStorage = indexStorage;
-        this.writerFactory = writerFactory;
         this.fullStoreStream = fullStoreStream;
         this.monitor = monitor;
     }
 
-    @Override
-    public void deleteDocuments( Term documentTerm ) throws IOException
-    {
-        writer.deleteDocuments( documentTerm );
-    }
-
-    @Override
-    public void updateDocument( Term documentTerm, Document document ) throws IOException
-    {
-        writer.updateDocument( documentTerm, document );
-    }
-
-    @Override
-    public IndexSearcher acquireSearcher()
+    private AllEntriesLabelScanReader newAllEntriesReader()
     {
         try
         {
-            return searcherManager.acquire();
+            return strategy.newNodeLabelReader( luceneIndex.getIndexReader() );
         }
         catch ( IOException e )
         {
+            //TODO:
+            e.printStackTrace();
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    public void refreshSearcher() throws IOException
-    {
-        searcherManager.maybeRefresh();
-    }
-
-    @Override
-    public void releaseSearcher( IndexSearcher searcher ) throws IOException
-    {
-        searcherManager.release( searcher );
-    }
-
-    @Override
-    public AllEntriesLabelScanReader newAllEntriesReader()
-    {
-        return strategy.newNodeLabelReader( searcherManager );
     }
 
     @Override
@@ -180,7 +138,7 @@ public class LuceneLabelScanStore
     {
         try
         {
-            writer.commit();
+            luceneIndex.flush();
         }
         catch ( IOException e )
         {
@@ -191,13 +149,13 @@ public class LuceneLabelScanStore
     @Override
     public LabelScanReader newReader()
     {
-        final IndexSearcher searcher = acquireSearcher();
+
         return new LabelScanReader()
         {
             @Override
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
-                return strategy.nodesWithLabel( searcher, labelId );
+                return strategy.nodesWithLabel( luceneIndex, labelId );
             }
 
             @Override
@@ -205,7 +163,8 @@ public class LuceneLabelScanStore
             {
                 try
                 {
-                    releaseSearcher( searcher );
+                    // why?
+                    luceneIndex.maybeRefresh();
                 }
                 catch ( IOException e )
                 {
@@ -216,7 +175,13 @@ public class LuceneLabelScanStore
             @Override
             public Iterator<Long> labelsForNode( long nodeId )
             {
-                return strategy.labelsForNode(searcher, nodeId);
+                return strategy.labelsForNode( luceneIndex, nodeId );
+            }
+
+            @Override
+            public AllEntriesLabelScanReader allNodeLabelRanges()
+            {
+                return newAllEntriesReader();
             }
         };
     }
@@ -224,45 +189,37 @@ public class LuceneLabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        //TODO: luceneIndex.snapshot()
-//        return new LuceneIndexSnapshotFileIterator().snapshot( indexStorage.getIndexFolder(), writer );
-        return IteratorUtil.emptyIterator();
+        return luceneIndex.snapshot();
     }
 
     @Override
     public void init() throws IOException
     {
         monitor.init();
-
         try
         {
-            directory = indexStorage.openDirectory( indexStorage.getIndexFolder() );
-            // TODO: NOT sure that we still need it?
-            DirectoryReader.open( indexStorage.getIndexDirectory() ).close();
+            if ( !luceneIndex.exists() )
+            {
+                monitor.noIndex();
+                luceneIndex.prepare();
+                needsRebuild = true;
+            }
+            else if ( !luceneIndex.isValid() )
+            {
+                // monitor.corruptIndex(  );
+                luceneIndex.prepare();
+                needsRebuild = true;
+            }
 
-            writer = writerFactory.create( indexStorage.getIndexDirectory() );
-        }
-        catch ( IndexNotFoundException e )
-        {
-            // No index present, create one
-            monitor.noIndex();
-            prepareRebuildOfIndex();
-            writer = writerFactory.create( indexStorage.getIndexDirectory() );
+            // todo: test this strange open-close thingy
+            luceneIndex.open();
         }
         catch ( LockObtainFailedException e )
         {
+            luceneIndex.close();
             monitor.lockedIndex( e );
             throw e;
         }
-        catch( IOException e )
-        {
-            // The index was somehow corrupted, fail
-            monitor.corruptIndex( e );
-            throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
-                    "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
-                    indexStorage.getIndexFolder() + "', and then start the database again." );
-        }
-        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -294,17 +251,7 @@ public class LuceneLabelScanStore
     @Override
     public void shutdown() throws IOException
     {
-        if ( searcherManager != null )
-        {   // In case something went wrong in init then the state of things might be off
-            searcherManager.close();
-            searcherManager = null;
-        }
-        if ( writer != null )
-        {
-            writer.close();
-            writer = null;
-        }
-        directory.close();
+        luceneIndex.close();
     }
 
     @Override
@@ -313,13 +260,6 @@ public class LuceneLabelScanStore
         // Only a single writer is allowed at any point in time. For that this lock is used and passed
         // onto the writer to release in its close()
         lock.lock();
-        return strategy.acquireWriter( this, lock );
-    }
-
-    private void prepareRebuildOfIndex() throws IOException
-    {
-        indexStorage.cleanupFolder(indexStorage.getIndexFolder());
-        indexStorage.prepareFolder( indexStorage.getIndexFolder() );
-        needsRebuild = true;
+        return strategy.acquireWriter( luceneIndex, lock );
     }
 }

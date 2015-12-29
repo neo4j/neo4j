@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,30 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.reader.sample;
+package org.neo4j.kernel.api.impl.index.sampler;
 
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.index.reader.PartitionedIndexReader;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.register.Register;
 
-
-public abstract class LuceneIndexSampler
+public class NonUniquePartitionedIndexSampler extends LuceneIndexSampler
 {
-    private TaskControl taskControl;
+    private final PartitionedIndexReader indexReader;
+    private final IndexSamplingConfig indexSamplingConfig;
 
-    public LuceneIndexSampler( TaskControl taskControl )
+    public NonUniquePartitionedIndexSampler( PartitionedIndexReader indexReader, TaskControl taskControl,
+            IndexSamplingConfig indexSamplingConfig )
     {
-        this.taskControl = taskControl;
+        super( taskControl );
+        this.indexReader = indexReader;
+        this.indexSamplingConfig = indexSamplingConfig;
     }
 
-    public abstract long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
-
-    protected void checkCancellation() throws IndexNotFoundKernelException
+    @Override
+    protected long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
-        if ( taskControl.cancellationRequested() )
-        {
-            throw new IndexNotFoundKernelException( "Index dropped while sampling." );
-        }
+        return -1;
     }
-
 }

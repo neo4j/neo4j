@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 
 /**
  * Reader of a label scan store which contains label-->nodes mappings.
@@ -40,4 +41,6 @@ public interface LabelScanReader extends Resource
      * @return label ids for the given {@code nodeId}.
      */
     Iterator<Long> labelsForNode( long nodeId );
+
+    AllEntriesLabelScanReader allNodeLabelRanges();
 }

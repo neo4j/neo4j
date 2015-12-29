@@ -25,8 +25,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorage;
-import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -36,7 +34,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 import static org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.loggerMonitor;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
@@ -80,14 +77,26 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
 
-        IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, context.fileSystem(),
-                LabelScanStoreProvider.getStoreDirectory(context.storeDir() ) );
-        IndexStorage indexStorage = storageFactory.labelScanStorage();
+        LuceneIndex index = getLuceneIndex( context, directoryFactory );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
-                new NodeRangeDocumentLabelScanStorageStrategy(), indexStorage, standard(),
+                new NodeRangeDocumentLabelScanStorageStrategy(), index,
                 fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
-
         return new LabelScanStoreProvider( scanStore, priority );
+    }
+
+    private LuceneIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
+    {
+        return LuceneIndexBuilder.create()
+                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
+                    .withFileSystem( context.fileSystem() )
+                    .withDirectoryFactory( directoryFactory )
+                    .withIndexIdentifier( LuceneLabelScanStore.INDEX_IDENTIFIER )
+                    .build();
+    }
+
+    private Monitor getMonitor( Dependencies dependencies )
+    {
+        return monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() );
     }
 }

@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.storageengine.api.schema.BoundedIterable;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;

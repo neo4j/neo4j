@@ -31,14 +31,11 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -61,7 +58,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
-    private static final int INDEX_ID = 42;
+    private static final String INDEX_IDENTIFIER = "42";
 
     private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
@@ -460,10 +457,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, new File(
-                "/target/whatever" ), INDEX_ID );
+                "/target/whatever" ), INDEX_IDENTIFIER );
+        LuceneIndex index = LuceneIndexBuilder.create()
+                .withIndexStorage( indexStorage )
+                .build();
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneIndex( indexStorage, new
-                IndexConfiguration( false ), new IndexSamplingConfig( new Config(  ) ) ), descriptor );
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator( index, descriptor );
 
         populator.create();
 

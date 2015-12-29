@@ -45,10 +45,28 @@ public final class IOUtils
     }
 
     /**
-     * Closes given array of {@link AutoCloseable closeables}. If any {@link AutoCloseable#close()}
-     * call throws {@link IOException} than it will be rethrown to the caller after calling {@link AutoCloseable#close()}
-     * on other given resources. If more than one {@link AutoCloseable#close()} throw than resulting exception will have
-     * suppressed exceptions. See {@link Exception#addSuppressed(Throwable)}
+     * Closes given {@link Collection collection} of {@link AutoCloseable closeables} ignoring all exceptions.
+     *
+     * @param closeables the closeables to close
+     * @param <T> the type of closeable
+     * @see #closeAll(AutoCloseable[])
+     */
+    public static <T extends AutoCloseable> void closeAllSilently( Collection<T> closeables )
+    {
+        try
+        {
+            closeAll( closeables );
+        }
+        catch ( IOException ignored )
+        {
+        }
+    }
+
+    /**
+     * Closes given array of {@link AutoCloseable closeables}. If any {@link AutoCloseable#close()} call throws
+     * {@link IOException} than it will be rethrown to the caller after calling {@link AutoCloseable#close()}
+     * on other given resources. If more than one {@link AutoCloseable#close()} throw than resulting exception will
+     * have suppressed exceptions. See {@link Exception#addSuppressed(Throwable)}
      *
      * @param closeables the closeables to close
      * @param <T> the type of closeable

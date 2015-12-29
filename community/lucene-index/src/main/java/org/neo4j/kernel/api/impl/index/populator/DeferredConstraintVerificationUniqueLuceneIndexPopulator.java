@@ -108,7 +108,6 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case CHANGED:
-                        // do nothing on the sampler, since it would be something like:
                         // sampler.increment( -1 ); // remove old vale
                         // sampler.increment( 1 ); // add new value
 

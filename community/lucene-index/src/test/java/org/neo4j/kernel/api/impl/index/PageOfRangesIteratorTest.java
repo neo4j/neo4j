@@ -119,8 +119,9 @@ public class PageOfRangesIteratorTest
             }
         } ).when( searcher ).search( same( query ), any( DocValuesCollector.class ) );
 
+        // todo
         PrimitiveLongIterator iterator = concat(
-                new PageOfRangesIterator( format, searcher, pageSize, query, labelId ) );
+                new PageOfRangesIterator( format, null, pageSize, query, labelId ) );
 
         // when
         List<Long> longs = primitivesList( iterator );

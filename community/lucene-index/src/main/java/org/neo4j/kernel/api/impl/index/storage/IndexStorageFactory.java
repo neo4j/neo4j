@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index.storage;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.storage.layout.LabelScanStoreFolderLayout;
 
 public class IndexStorageFactory
 {
@@ -39,14 +38,9 @@ public class IndexStorageFactory
         this.indexRootFolder = indexRootFolder;
     }
 
-    public PartitionedIndexStorage indexStorageOf(long indexId)
+    public PartitionedIndexStorage indexStorageOf( long indexId )
     {
-        return new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexId );
-    }
-
-    public IndexStorage labelScanStorage()
-    {
-        return new IndexStorage( directoryFactory, fileSystem, new LabelScanStoreFolderLayout( indexRootFolder ) );
+        return new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, String.valueOf( indexId ) );
     }
 
     public void shutdown()

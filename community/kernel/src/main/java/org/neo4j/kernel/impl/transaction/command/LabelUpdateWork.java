@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.Work;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
 

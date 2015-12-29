@@ -23,11 +23,11 @@ import static org.neo4j.register.Register.DoubleLong;
 
 public class UniqueIndexSampler
 {
-    long count = 0;
+    private long count;
 
-    public void increment( int count )
+    public void increment( long count )
     {
-        this.count += count;
+        this.count = Math.addExact( this.count, count );
     }
 
     public long result( DoubleLong.Out register )

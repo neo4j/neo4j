@@ -19,39 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherManager;
-
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 public interface LabelScanStorageStrategy
 {
-    PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
+    PrimitiveLongIterator nodesWithLabel( LuceneIndex luceneIndex, int labelId );
 
-    AllEntriesLabelScanReader newNodeLabelReader( SearcherManager searcher );
+    AllEntriesLabelScanReader newNodeLabelReader( IndexReader indexReader );
 
-    Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId );
+    Iterator<Long> labelsForNode( LuceneIndex luceneIndex, long nodeId );
 
-    LabelScanWriter acquireWriter( StorageService storage, Lock heldLock );
-
-    interface StorageService
-    {
-        void updateDocument( Term documentTerm, Document document ) throws IOException;
-
-        void deleteDocuments( Term documentTerm ) throws IOException;
-
-        IndexSearcher acquireSearcher();
-
-        void releaseSearcher( IndexSearcher searcher ) throws IOException;
-
-        void refreshSearcher() throws IOException;
-    }
+    LabelScanWriter acquireWriter( LuceneIndex index, Lock heldLock );
 }

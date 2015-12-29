@@ -17,27 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.storage.layout;
+package org.neo4j.storageengine.api.schema;
 
-import java.io.File;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.register.Register;
 
-public class LabelScanStoreFolderLayout implements  FolderLayout
+public interface IndexSampler
 {
-    private final File indexFolder;
-
-    public LabelScanStoreFolderLayout( File rootDirectory )
-    {
-        this.indexFolder = rootDirectory;
-    }
-
-    public File getIndexFolder()
-    {
-        return indexFolder;
-    }
-
-    @Override
-    public File getPartitionFolder( int partition )
-    {
-        throw new UnsupportedOperationException( "Label scan store storage does not support partitions." );
-    }
+    /**
+     * Sample this index (on the current thread)
+     *
+     * @param result contains the unique values and the sampled size
+     * @return the index size
+     * @throws IndexNotFoundKernelException if the index is dropped while sampling
+     */
+    long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException;
 }

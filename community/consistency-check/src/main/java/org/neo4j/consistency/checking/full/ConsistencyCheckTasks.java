@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.LABELS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
@@ -179,7 +178,7 @@ public class ConsistencyCheckTasks
         if ( checkLabelScanStore )
         {
             tasks.add( recordScanner( "LabelScanStore",
-                    labelScanStore.newAllEntriesReader(), new LabelScanDocumentProcessor(
+                    labelScanStore.newReader().allNodeLabelRanges(), new LabelScanDocumentProcessor(
                             filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD ) );
         }
         if ( checkIndexes )

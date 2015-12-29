@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
@@ -26,11 +28,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
@@ -65,6 +69,11 @@ public class LuceneIndex implements Closeable
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
+    public LuceneIndex( LuceneIndex luceneIndex )
+    {
+        this(luceneIndex.indexStorage, luceneIndex.config, luceneIndex.samplingConfig);
+    }
+
     public LuceneIndex( PartitionedIndexStorage indexStorage, IndexConfiguration config,
             IndexSamplingConfig samplingConfig )
     {
@@ -88,6 +97,58 @@ public class LuceneIndex implements Closeable
             partitions.add( new IndexPartition( indexDirectory.getKey(), indexDirectory.getValue() ) );
         }
         open = true;
+    }
+
+    public boolean exists()
+    {
+        List<File> folders = indexStorage.listFolders();
+        for ( File folder : folders )
+        {
+            String[] files = folder.list();
+            if ( files == null || !containsSegmentFile( files ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isValid()
+    {
+        if ( open )
+        {
+            return true;
+        }
+        Collection<Directory> directories = null;
+        try
+        {
+            directories = indexStorage.openIndexDirectories().values();
+            for ( Directory directory : directories )
+            {
+                try ( CheckIndex checker = new CheckIndex( directory ) )
+                {
+                    CheckIndex.Status status = checker.checkIndex();
+                    if ( !status.clean )
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            return false;
+        }
+        finally
+        {
+            IOUtils.closeAllSilently( directories );
+        }
+        return true;
+    }
+
+    private boolean containsSegmentFile( String[] files )
+    {
+        return Stream.of( files ).anyMatch( file -> file.startsWith( IndexFileNames.SEGMENTS ) );
     }
 
     public LuceneIndexWriter getIndexWriter() throws IOException
@@ -228,13 +289,13 @@ public class LuceneIndex implements Closeable
         indexStorage.storeIndexFailure( failure );
     }
 
-    private IndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
+    private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
     {
         return new SimpleIndexReader( partitions.get( 0 ).acquireSearcher(), config,
                 samplingConfig, taskCoordinator );
     }
 
-    private IndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
+    private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = new ArrayList<>();
         for ( IndexPartition partition : partitions )
@@ -290,5 +351,10 @@ public class LuceneIndex implements Closeable
         {
             commitCloseLock.unlock();
         }
+    }
+
+    public void flush() throws IOException
+    {
+        // TODO: do we need it?
     }
 }

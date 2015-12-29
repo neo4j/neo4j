@@ -23,8 +23,7 @@ import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,23 +38,19 @@ import static java.util.stream.Collectors.toList;
 public class PartitionedIndexStorage extends AbstractIndexStorage
 {
     public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
-            File schemaIndexRootFolder, long indexId )
+            File rootFolder, String identifier )
     {
-        super( directoryFactory, fileSystem, new IndexFolderLayout( schemaIndexRootFolder, indexId ) );
+        super( directoryFactory, fileSystem, new IndexFolderLayout( rootFolder, identifier ) );
     }
 
-    public Map<File, Directory> openIndexDirectories() throws IOException
+    public Map<File,Directory> openIndexDirectories() throws IOException
     {
-        Map<File, Directory> directories = new LinkedHashMap<>();
+        Map<File,Directory> directories = new LinkedHashMap<>();
         try
         {
-            File[] files = fileSystem.listFiles( getIndexFolder() );
-            for ( File file : files )
+            for ( File dir : listFolders() )
             {
-                if ( fileSystem.isDirectory( file ) )
-                {
-                    directories.put( file, directoryFactory.open( file ) );
-                }
+                directories.put( dir, directoryFactory.open( dir ) );
             }
         }
         catch ( IOException oe )
@@ -71,5 +66,13 @@ public class PartitionedIndexStorage extends AbstractIndexStorage
             throw oe;
         }
         return directories;
+    }
+
+    public List<File> listFolders()
+    {
+        File[] files = fileSystem.listFiles( getIndexFolder() );
+        return files == null ? Collections.emptyList()
+                             : Stream.of( files ).filter( fileSystem::isDirectory ).collect( toList() );
+
     }
 }

@@ -44,7 +44,7 @@ public class ConstraintCreationIT
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
 
     private static final Label LABEL = Label.label( "label1" );
-    private static final long indexId = 1;
+    private static final String INDEX_IDENTIFIER = "1";
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
@@ -82,6 +82,6 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
         File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
 
-        assertFalse( new IndexFolderLayout( schemaStoreDir, indexId ).getIndexFolder().exists() );
+        assertFalse( new IndexFolderLayout( schemaStoreDir, INDEX_IDENTIFIER ).getIndexFolder().exists() );
     }
 }

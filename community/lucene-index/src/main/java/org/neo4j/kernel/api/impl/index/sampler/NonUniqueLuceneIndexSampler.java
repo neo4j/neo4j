@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.reader.sample;
+package org.neo4j.kernel.api.impl.index.sampler;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
@@ -40,17 +40,19 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KE
 
 public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
 {
-    private IndexSearcher indexSearcher;
+    private final IndexSearcher indexSearcher;
     private final IndexSamplingConfig indexSamplingConfig;
 
-    public NonUniqueLuceneIndexSampler(IndexSearcher indexSearcher, TaskControl taskControl, IndexSamplingConfig indexSamplingConfig)
+    public NonUniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskControl taskControl,
+            IndexSamplingConfig indexSamplingConfig )
     {
         super( taskControl );
         this.indexSearcher = indexSearcher;
         this.indexSamplingConfig = indexSamplingConfig;
     }
 
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    @Override
+    protected long performSampling( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( indexSamplingConfig.bufferSize() );
         for ( LeafReaderContext readerContext : indexSearcher.getIndexReader().leaves() )
@@ -82,7 +84,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
         return sampler.result( result );
     }
 
-    private Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
+    private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException
     {
         Fields fields = readerContext.reader().fields();
         Set<String> fieldNames = Iterables.toSet( fields );

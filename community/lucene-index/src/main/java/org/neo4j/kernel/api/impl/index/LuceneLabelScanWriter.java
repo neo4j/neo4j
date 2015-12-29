@@ -33,30 +33,28 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.String.format;
 
 public class LuceneLabelScanWriter implements LabelScanWriter
 {
-    private final LabelScanStorageStrategy.StorageService storage;
+    private final LuceneIndex index;
     private final BitmapDocumentFormat format;
-    private final IndexSearcher searcher;
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
     private final Lock heldLock;
 
-    public LuceneLabelScanWriter( LabelScanStorageStrategy.StorageService storage,
+    public LuceneLabelScanWriter( LuceneIndex index,
                                   BitmapDocumentFormat format, Lock heldLock )
     {
-        this.storage = storage;
+        this.index = index;
         this.format = format;
         this.heldLock = heldLock;
         currentRange = -1;
         updates = new ArrayList<>( format.bitmapFormat().rangeSize() );
-        searcher = storage.acquireSearcher();
     }
 
     @Override
@@ -91,8 +89,8 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         {
             try
             {
-                storage.releaseSearcher( searcher );
-                storage.refreshSearcher();
+                // todo: why do we need maybeRefresh here? maybe use maybeRefresh
+                index.maybeRefresh();
             }
             finally
             {
@@ -130,6 +128,8 @@ public class LuceneLabelScanWriter implements LabelScanWriter
             return;
         }
 
+        // TODO:
+        IndexSearcher searcher = null;
         Map<Long/*label*/, Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
         updateFields( updates, fields );
 
@@ -148,11 +148,11 @@ public class LuceneLabelScanWriter implements LabelScanWriter
 
         if ( isEmpty( document ) )
         {
-            storage.deleteDocuments( format.rangeTerm( document ) );
+            index.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
         }
         else
         {
-            storage.updateDocument( format.rangeTerm( document ), document );
+            index.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
         }
         updates.clear();
     }

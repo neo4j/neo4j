@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index.reader;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -27,10 +28,11 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSampler;
+
+import static java.util.stream.Collectors.toList;
 
 public class PartitionedIndexReader implements IndexReader
 {
@@ -80,9 +82,9 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public long sampleIndex( Register.DoubleLong.Out result ) throws IndexNotFoundKernelException
+    public IndexSampler createSampler()
     {
-        return 0;
+        return null;
     }
 
     @Override
@@ -122,5 +124,10 @@ public class PartitionedIndexReader implements IndexReader
         {
             throw new IndexReaderCloseException( e );
         }
+    }
+
+    public List<IndexSearcher> getIndexSearchers()
+    {
+        return partitionSearchers.stream().map( PartitionSearcher::getIndexSearcher ).collect( toList() );
     }
 }

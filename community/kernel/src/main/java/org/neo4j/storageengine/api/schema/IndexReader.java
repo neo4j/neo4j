@@ -25,8 +25,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.register.Register.DoubleLong;
+
 
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the
@@ -84,13 +83,7 @@ public interface IndexReader extends Resource
      */
     int countIndexedNodes( long nodeId, Object propertyValue );
 
-    /**
-     * Sample this index (on the current thread)
-     * @param result contains the unique values and the sampled size
-     * @return the index size
-     * @throws IndexNotFoundKernelException if the index is dropped while sampling
-     */
-    long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    IndexSampler createSampler();
 
     //TODO:
 
@@ -144,10 +137,9 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public long sampleIndex( DoubleLong.Out result )
+        public IndexSampler createSampler()
         {
-            result.write( 0l, 0l );
-            return 0;
+            return null;
         }
 
         @Override
