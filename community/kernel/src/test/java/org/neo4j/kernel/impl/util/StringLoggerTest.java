@@ -27,23 +27,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.Predicates.and;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
@@ -167,112 +159,6 @@ public class StringLoggerTest
         assertTrue( "Should have contained " + thirdMessage, fileContains( logFile, stringContaining( thirdMessage ) ) );
         assertTrue( "Should have contained stack trace from " + thirdMessage, fileContains( logFile, and(
                 stringContaining( "at " ), stringContaining( testName.getMethodName() ) ) ) );
-    }
-
-    @Test
-    public void cappedLoggerShouldIgnoreSubsequentMessagesWithinTimeInterval()
-    {
-        StringBuffer buffer = new StringBuffer();
-        StringLogger delegate = StringLogger.wrap( buffer );
-        FakeClock fakeClock = new FakeClock();
-        StringLogger cappedLogger = cappedLogger( delegate,
-                CappedOperation.<String>time( fakeClock, 1, TimeUnit.MILLISECONDS ) );
-
-        fakeClock.forward( 1, TimeUnit.MILLISECONDS );
-        cappedLogger.info( "f1rst" );
-        cappedLogger.info( "s3cond" );
-        fakeClock.forward( 1, TimeUnit.MILLISECONDS );
-        cappedLogger.info( "th1rd" );
-
-        String output = buffer.toString();
-        assertThat( output, containsString( "f1rst" ) );
-        assertThat( output, containsString( "th1rd" ) );
-        assertThat( output, not( containsString( "s3cond" ) ) );
-    }
-
-    private static StringLogger cappedLogger(
-            final StringLogger delegate,
-            final CappedOperation.Switch<String> capSwitch )
-    {
-        capSwitch.reset(); // this is what CappedOperation does, so the switches are designed for a reset() call first.
-        return new StringLogger()
-        {
-            @Override
-            protected void doDebug( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.doDebug( msg, cause, flush, logMarker );
-                    capSwitch.reset();
-                }
-            }
-
-            @Override
-            public void info( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.info( msg, cause, flush, logMarker );
-                    capSwitch.reset();
-                }
-            }
-
-            @Override
-            public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.warn( msg, cause, flush, logMarker );
-                    capSwitch.reset();
-                }
-            }
-
-            @Override
-            public void error( String msg, Throwable cause, boolean flush, LogMarker logMarker )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.error( msg, cause, flush, logMarker );
-                    capSwitch.reset();
-                }
-            }
-
-            @Override
-            public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
-            {
-                if ( capSwitch.accept( msg ) )
-                {
-                    delegate.logLongMessage( msg, source, flush );
-                }
-            }
-
-            @Override
-            public void addRotationListener( Runnable listener )
-            {
-                delegate.addRotationListener( listener );
-            }
-
-            @Override
-            public void flush()
-            {
-                delegate.flush();
-            }
-
-            @Override
-            public void close()
-            {
-                delegate.close();
-            }
-
-            @Override
-            protected void logLine( String line )
-            {
-                if ( capSwitch.accept( line ) )
-                {
-                    delegate.logLine( line );
-                }
-            }
-        };
     }
 
     private Predicate<String> stringContaining( final String string )
