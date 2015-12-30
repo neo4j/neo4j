@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredDocIdSetIterator;
-import org.apache.lucene.util.Bits;
-
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.reader.IndexReaderCloseException;
 import org.neo4j.storageengine.api.schema.AllEntriesLabelScanReader;
@@ -37,12 +30,14 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
 {
+    private final LuceneLabelScanIndex index;
     private final PartitionSearcher partitionSearcher;
     private final LabelScanStorageStrategy storageStrategy;
 
-    public SimpleLuceneLabelScanStoreReader( PartitionSearcher partitionSearcher,
+    public SimpleLuceneLabelScanStoreReader( LuceneLabelScanIndex index, PartitionSearcher partitionSearcher,
             LabelScanStorageStrategy storageStrategy )
     {
+        this.index = index;
         this.partitionSearcher = partitionSearcher;
         this.storageStrategy = storageStrategy;
     }
@@ -62,66 +57,7 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
-        return storageStrategy.newNodeLabelReader( this );
-    }
-
-    @Override
-    public Iterator<Document> getAllDocsIterator()
-    {
-        return new PrefetchingIterator<Document>()
-        {
-            private DocIdSetIterator idIterator = iterateAllDocs();
-
-            @Override
-            protected Document fetchNextOrNull()
-            {
-                try
-                {
-                    int doc = idIterator.nextDoc();
-                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        return null;
-                    }
-                    return getDocument( doc );
-                }
-                catch ( IOException e )
-                {
-                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
-                }
-            }
-        };
-    }
-
-    private Document getDocument( int docId )
-    {
-        try
-        {
-            return partitionSearcher.getIndexSearcher().doc( docId );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneDocumentRetrievalException( "Can't retrieve document with id: " + docId + ".", docId, e );
-        }
-    }
-
-    private DocIdSetIterator iterateAllDocs()
-    {
-        org.apache.lucene.index.IndexReader reader = partitionSearcher.getIndexSearcher().getIndexReader();
-        final Bits liveDocs = MultiFields.getLiveDocs( reader );
-        final DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
-        if ( liveDocs == null )
-        {
-            return allDocs;
-        }
-
-        return new FilteredDocIdSetIterator( allDocs )
-        {
-            @Override
-            protected boolean match( int doc )
-            {
-                return liveDocs.get( doc );
-            }
-        };
+        return storageStrategy.newNodeLabelReader( index.allDocumentsReader() );
     }
 
     @Override
@@ -135,11 +71,5 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
         {
             throw new IndexReaderCloseException( e );
         }
-    }
-
-    @Override
-    public long getMaxDoc()
-    {
-        return partitionSearcher.getIndexSearcher().getIndexReader().maxDoc();
     }
 }

@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +41,10 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+
+import static java.util.stream.Collectors.toList;
 
 // todo: this component has an implicit possibility to be opened and closed multiple times. we should revisit and at least test it.
 public abstract class AbstractLuceneIndex implements Closeable
@@ -154,6 +158,38 @@ public abstract class AbstractLuceneIndex implements Closeable
         finally
         {
             commitCloseLock.unlock();
+        }
+    }
+
+    public LuceneAllDocumentsReader allDocumentsReader()
+    {
+        ensureOpen();
+        readWriteLock.lock();
+        try
+        {
+            List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
+            try
+            {
+                for ( IndexPartition partition : partitions )
+                {
+                    searchers.add( partition.acquireSearcher() );
+                }
+
+                List<LucenePartitionAllDocumentsReader> partitionReaders = searchers.stream()
+                        .map( LucenePartitionAllDocumentsReader::new )
+                        .collect( toList() );
+
+                return new LuceneAllDocumentsReader( partitionReaders );
+            }
+            catch ( IOException e )
+            {
+                IOUtils.closeAllSilently( searchers );
+                throw new UncheckedIOException( e );
+            }
+        }
+        finally
+        {
+            readWriteLock.unlock();
         }
     }
 

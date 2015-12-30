@@ -58,7 +58,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
             {
                 IndexPartition partition = partitions.get( 0 );
                 PartitionSearcher searcher = partition.acquireSearcher();
-                return new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy );
+                return new SimpleLuceneLabelScanStoreReader( this, searcher, storageStrategy );
             }
             throw new UnsupportedOperationException();
         }

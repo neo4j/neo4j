@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -77,19 +76,7 @@ public class DelegatingIndexReader implements IndexReader
     {
         return delegate.createSampler();
     }
-
-    @Override
-    public long getMaxDoc()
-    {
-        return delegate.getMaxDoc();
-    }
-
-    @Override
-    public Iterator getAllDocsIterator()
-    {
-        return delegate.getAllDocsIterator();
-    }
-
+    
     @Override
     public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
             throws Exception

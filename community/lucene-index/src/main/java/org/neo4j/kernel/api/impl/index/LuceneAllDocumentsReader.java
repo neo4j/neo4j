@@ -21,43 +21,45 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.direct.BoundedIterable;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
+
+import static java.util.stream.Collectors.toList;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
-    private LabelScanReader labelScanReader;
-    private IndexReader indexReader;
+    private final List<LucenePartitionAllDocumentsReader> partitionReaders;
 
-    public LuceneAllDocumentsReader( IndexReader indexReader )
+    public LuceneAllDocumentsReader( List<LucenePartitionAllDocumentsReader> partitionReaders )
     {
-        this.indexReader = indexReader;
-    }
-
-    public LuceneAllDocumentsReader( LabelScanReader labelScanReader )
-    {
-        this.labelScanReader = labelScanReader;
+        this.partitionReaders = partitionReaders;
     }
 
     @Override
     public long maxCount()
     {
-        return labelScanReader != null ? labelScanReader.getMaxDoc() : indexReader.getMaxDoc();
+        return partitionReaders.stream().mapToLong( LucenePartitionAllDocumentsReader::maxCount ).sum();
     }
 
     @Override
     public Iterator<Document> iterator()
     {
-        return labelScanReader != null ? labelScanReader.getAllDocsIterator() : indexReader.getAllDocsIterator();
+        Iterator<Iterator<Document>> iterators = partitionReaders.stream()
+                .map( LucenePartitionAllDocumentsReader::iterator )
+                .collect( toList() )
+                .iterator();
+
+        return Iterables.concat( iterators );
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        IOUtils.closeAllSilently( labelScanReader, labelScanReader );
+        IOUtils.closeAll( partitionReaders );
     }
 }

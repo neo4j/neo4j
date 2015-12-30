@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
-import org.apache.lucene.document.Document;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -263,17 +261,5 @@ class HashBasedIndex extends InMemoryIndexImplementation
             throws Exception
     {
         // TODO:
-    }
-
-    @Override
-    public long getMaxDoc()
-    {
-        return 0;
-    }
-
-    @Override
-    public Iterator<Document> getAllDocsIterator()
-    {
-        return null;
     }
 }

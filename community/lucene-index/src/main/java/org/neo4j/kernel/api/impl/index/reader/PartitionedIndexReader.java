@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index.reader;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -99,18 +97,6 @@ public class PartitionedIndexReader implements IndexReader
             List<Object> updatedPropertyValues ) throws Exception
     {
 
-    }
-
-    @Override
-    public long getMaxDoc()
-    {
-        return 0;
-    }
-
-    @Override
-    public Iterator<Document> getAllDocsIterator()
-    {
-        return null;
     }
 
     @Override

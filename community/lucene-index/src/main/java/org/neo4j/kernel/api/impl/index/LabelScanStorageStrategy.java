@@ -25,14 +25,12 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
-
 
 public interface LabelScanStorageStrategy
 {
     PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
 
-    AllEntriesLabelScanReader newNodeLabelReader( LabelScanReader reader );
+    AllEntriesLabelScanReader newNodeLabelReader( LuceneAllDocumentsReader allDocumentsReader );
 
     Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId );
 }

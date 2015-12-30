@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -87,10 +86,6 @@ public interface IndexReader extends Resource
 
     //TODO:
 
-    long getMaxDoc();
-
-    Iterator getAllDocsIterator();
-    
     void verifyDeferredConstraints( Object accessor, int propertyKeyId ) throws Exception;
 
     void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
@@ -141,19 +136,7 @@ public interface IndexReader extends Resource
         {
             return IndexSampler.EMPTY;
         }
-
-        @Override
-        public long getMaxDoc()
-        {
-            return 0;
-        }
-
-        @Override
-        public Iterator getAllDocsIterator()
-        {
-            return null;
-        }
-
+        
         @Override
         public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
                 throws Exception

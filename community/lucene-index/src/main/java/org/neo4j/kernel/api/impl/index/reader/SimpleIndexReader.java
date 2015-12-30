@@ -19,34 +19,26 @@
  */
 package org.neo4j.kernel.api.impl.index.reader;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.FilteredDocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
-import org.neo4j.kernel.api.impl.index.LuceneDocumentRetrievalException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.NonUniqueLuceneIndexSampler;
@@ -161,71 +153,6 @@ public class SimpleIndexReader implements IndexReader
             }
             throw e;
         }
-    }
-
-    @Override
-    public long getMaxDoc()
-    {
-        return getIndexSearcher().getIndexReader().maxDoc();
-    }
-
-    @Override
-    public Iterator<Document> getAllDocsIterator()
-    {
-        return new PrefetchingIterator<Document>()
-        {
-            private DocIdSetIterator idIterator = iterateAllDocs();
-
-            @Override
-            protected Document fetchNextOrNull()
-            {
-                try
-                {
-                    int doc = idIterator.nextDoc();
-                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        return null;
-                    }
-                    return getDocument( doc );
-                }
-                catch ( IOException e )
-                {
-                    throw new LuceneDocumentRetrievalException( "Can't fetch document id from lucene index.", e );
-                }
-            }
-        };
-    }
-
-    private Document getDocument( int docId )
-    {
-        try
-        {
-            return getIndexSearcher().doc( docId );
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneDocumentRetrievalException("Can't retrieve document with id: " + docId + ".", docId, e );
-        }
-    }
-
-    private DocIdSetIterator iterateAllDocs()
-    {
-        org.apache.lucene.index.IndexReader reader = getIndexSearcher().getIndexReader();
-        final Bits liveDocs = MultiFields.getLiveDocs( reader );
-        final DocIdSetIterator allDocs = DocIdSetIterator.all( reader.maxDoc() );
-        if ( liveDocs == null )
-        {
-            return allDocs;
-        }
-
-        return new FilteredDocIdSetIterator( allDocs )
-        {
-            @Override
-            protected boolean match( int doc )
-            {
-                return liveDocs.get( doc );
-            }
-        };
     }
 
     @Override

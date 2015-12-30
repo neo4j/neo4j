@@ -31,7 +31,11 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
+<<<<<<< b169a7e93e2e6863cdd95e5dd138f05f30892e02
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+=======
+import org.neo4j.storageengine.api.schema.AllEntriesLabelScanReader;
+>>>>>>> Reading all documents moved inside lucene index
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -83,10 +87,9 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public AllEntriesLabelScanReader newNodeLabelReader( LabelScanReader reader )
+    public AllEntriesLabelScanReader newNodeLabelReader( LuceneAllDocumentsReader allDocumentsReader )
     {
-        LuceneAllDocumentsReader documents = new LuceneAllDocumentsReader( reader );
-        return new LuceneAllEntriesLabelScanReader( documents, format );
+        return new LuceneAllEntriesLabelScanReader( allDocumentsReader, format );
     }
 
     @Override

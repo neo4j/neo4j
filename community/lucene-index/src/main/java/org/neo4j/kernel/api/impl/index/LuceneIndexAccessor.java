@@ -105,9 +105,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     {
         try
         {
-            // TODO:
-            LuceneAllDocumentsReader allDocumentsReader = new LuceneAllDocumentsReader( luceneIndex.getIndexReader() );
-            return new LuceneAllEntriesIndexAccessorReader( allDocumentsReader );
+            return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader() );
         }
         catch ( Exception e )
         {

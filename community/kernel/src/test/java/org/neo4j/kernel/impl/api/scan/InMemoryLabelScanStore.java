@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.scan;
 
-import org.apache.lucene.document.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -105,12 +103,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
             }
 
             @Override
-            public long getMaxDoc()
-            {
-                return 0;
-            }
-
-            @Override
             public Iterator<Long> labelsForNode( long nodeId )
             {
                 List<Long> nodes = new ArrayList<>();
@@ -128,12 +120,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
             public AllEntriesLabelScanReader allNodeLabelRanges()
             {
                 return newAllEntriesReader();
-            }
-
-            @Override
-            public Iterator<Document> getAllDocsIterator()
-            {
-                return null;
             }
         };
     }
