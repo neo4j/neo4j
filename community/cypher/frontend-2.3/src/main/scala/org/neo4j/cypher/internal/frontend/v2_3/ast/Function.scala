@@ -30,6 +30,7 @@ object Function {
     functions.Atan,
     functions.Atan2,
     functions.Avg,
+    functions.CamelCase,
     functions.Ceil,
     functions.Coalesce,
     functions.Collect,

@@ -52,6 +52,7 @@ object ExpressionConverters {
           commandexpressions.Distinct(command, inner)
         else
           command
+      case CamelCase => commandexpressions.CamelCaseFunction(toCommandExpression(invocation.arguments.head))
       case Ceil => commandexpressions.CeilFunction(toCommandExpression(invocation.arguments.head))
       case Coalesce => commandexpressions.CoalesceFunction(toCommandExpression(invocation.arguments): _*)
       case Collect =>

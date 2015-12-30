@@ -198,3 +198,36 @@ Feature: ReturnAcceptanceTest
       | [({foo: 3})] |
       | []           |
       | []           |
+
+  Scenario: lower should transform string to lowercase
+    Given using: cineast
+    When running: Match (a:Movie) WHERE a.title contains 'Window' RETURN lower(a.title) as title
+    Then result:
+      | title |
+      | hitchhiker: windows |
+      | rear window |
+      | rear window |
+      | secret window |
+      | the woman in the window |
+
+  Scenario: upper should transform string to uppercase
+    Given using: cineast
+    When running: Match (a:Movie) WHERE a.title contains 'Window' RETURN upper(a.title) as title
+    Then result:
+      | title |
+      | HITCHHIKER: WINDOWS |
+      | REAR WINDOW |
+      | REAR WINDOW |
+      | SECRET WINDOW |
+      | THE WOMAN IN THE WINDOW |
+
+  Scenario: camelCast should transform string to camel case
+    Given using: cineast
+    When running: Match (a:Movie) WHERE a.title contains 'Window' RETURN camelCase(lower(a.title)) as title
+    Then result:
+      | title |
+      | Hitchhiker: Windows |
+      | Rear Window |
+      | Rear Window |
+      | Secret Window |
+      | The Woman In The Window |
