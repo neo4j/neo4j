@@ -90,6 +90,18 @@ public final class BinaryLatch
      */
     public void await()
     {
+        await( this );
+    }
+
+    /**
+     * Wait for the latch to be released, blocking the current thread with the specified blocker, if necessary.
+     *
+     * This method returns immediately if the latch has already been released.
+     * @param blocker The blocker that is given as the reason for blocking the thread, accessible through
+     * {@link java.util.concurrent.locks.LockSupport#getBlocker(Thread)}.
+     */
+    public void await( Object blocker )
+    {
         // Put in a local variable to avoid volatile reads we don't need.
         Node state = stack;
         if ( state != released )
@@ -120,7 +132,7 @@ public final class BinaryLatch
                 {
                     // Park may wake up spuriously, so we have to loop on it until we observe from the state of the
                     // stack, that the latch has been released.
-                    LockSupport.park( this );
+                    LockSupport.park( blocker );
                 }
                 while ( !isReleased( waiter ) );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2016 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,32 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
-/**
- * An executor for the background threads for the page caches.
- *
- * This is similar to an unbounded cached thread pool, except it uses daemon threads.
- *
- * There are only one of these (it's a singleton) to facilitate reusing the threads of closed page caches.
- * This is useful for making tests run faster.
- */
-final class BackgroundThreadExecutor implements Executor
+final class DaemonThreadFactory implements ThreadFactory
 {
-    static final BackgroundThreadExecutor INSTANCE = new BackgroundThreadExecutor();
-
-    private final Executor executor;
-
-    private BackgroundThreadExecutor()
-    {
-        executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-    }
-
     @Override
-    public void execute( Runnable command )
+    public Thread newThread( Runnable r )
     {
-        executor.execute( command );
+        ThreadFactory def = Executors.defaultThreadFactory();
+        Thread thread = def.newThread( r );
+        thread.setDaemon( true );
+        return thread;
     }
-
 }
