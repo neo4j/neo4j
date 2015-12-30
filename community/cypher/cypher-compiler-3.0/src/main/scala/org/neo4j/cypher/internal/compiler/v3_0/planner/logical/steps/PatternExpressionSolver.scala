@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast, replace}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
+import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, SemanticDirection, ast, replace}
 
 /*
 Prepares expressions containing pattern expressions by solving them in a sub-query through RollUpApply and replacing
@@ -69,17 +70,24 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
           case ((planAcc, expressionAcc), patternExpression) =>
             val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None)
 
-            val rewrittenExpression = expressionAcc.endoRewrite(rewriteAll(patternExpression, introducedVariable))
+            val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
+            val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
 
-            (newPlan, rewrittenExpression)
+            // If for some reason nothing was changed, make sure we also return the original plan
+            if (rewrittenExpression == expressionAcc)
+              (planAcc, expressionAcc)
+            else
+              (newPlan, rewrittenExpression)
         }
 
         (newPlan, newProjectionsMapAcc + (key -> newExpression))
     }
 
-  private def rewriteAll(oldExp: Expression, newExp: Expression) = replace(replacer => {
-    // We only unnest the inner pattern expressions if they are not hiding inside an expression that introduces scope
-    case exp@(_: ReduceExpression | _: FilteringExpression) => replacer.stop(exp)
+  private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = replace(replacer => {
+    // We only unnest the pattern expressions if they are not hiding inside an expression that introduces scope
+    case exp@(_: ExpressionWithInnerScope) => replacer.stop(exp)
+    case exp@FunctionInvocation(FunctionName(name), _, _) if name == Exists.name => replacer.stop(exp)
+
     case exp if exp == oldExp => newExp
     case exp => replacer.expand(exp)
   })

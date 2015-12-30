@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
-import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, InputPosition, SemanticCheckResult}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
 // these variables are bound
 //
-trait ScopeExpression extends Expression {
+trait ScopeExpression extends Expression with ExpressionWithInnerScope {
   def variables: Set[Variable]
 
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-trait FilteringExpression extends Expression {
+trait FilteringExpression extends Expression with ExpressionWithInnerScope {
   def name: String
   def variable: Variable
   def expression: Expression
@@ -206,7 +206,7 @@ object SingleIterablePredicate {
     SingleIterablePredicate(FilterScope(variable, innerPredicate)(position), expression)(position)
 }
 
-case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Expression)(val position: InputPosition) extends Expression {
+case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Expression)(val position: InputPosition) extends Expression with ExpressionWithInnerScope {
   import ReduceExpression._
 
   def variable = scope.variable

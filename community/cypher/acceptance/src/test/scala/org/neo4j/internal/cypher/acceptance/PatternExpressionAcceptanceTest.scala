@@ -99,7 +99,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlanners("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
 
     result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
-    result should use("Expand(All)")
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
@@ -418,6 +417,19 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlanners("MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n")
     result shouldNot use("RollUpApply")
     result should be (empty)
+  }
+
+  test("match (n:X) where EXISTS(n.prop) return n, EXISTS( (n)--() ) AS b") {
+    val n1 = createLabeledNode(Map("prop" -> 42), "X")
+    val n2 = createLabeledNode(Map("prop" -> 42), "X")
+
+    relate(n1, createNode())
+
+    val result = executeWithAllPlanners("match (n:X) return n, EXISTS( (n)--() ) AS b")
+
+    result.toList should equal(List(
+      Map("n" -> n1, "b" -> true),
+      Map("n" -> n2, "b" -> false)))
   }
 
   private def setup(): (Node, Node) = {
