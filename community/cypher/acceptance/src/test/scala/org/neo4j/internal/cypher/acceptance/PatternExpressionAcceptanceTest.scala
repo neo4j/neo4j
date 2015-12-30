@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, Relationship}
 import org.scalatest.Matchers
 
 class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
@@ -115,9 +115,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     graph.inTx {
       val result = executeWithAllPlanners("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
         .map(_.mapValues {
-        case l: List[Any] => l.toSet
-        case x => x
-      }).toList
+          case l: List[Any] => l.toSet
+          case x => x
+        }).toList
 
       result should equal(List(
         Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
@@ -196,9 +196,9 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     graph.inTx {
       val result = executeWithAllPlanners("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
         .map(_.mapValues {
-        case l: List[Any] => l.toSet
-        case x => x
-      }).toSet
+          case l: List[Any] => l.toSet
+          case x => x
+        }).toSet
 
       result should equal(Set(
         Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
@@ -344,7 +344,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     result.toList should equal(Seq(Map("n" -> node)))
     val argumentPLan = result.executionPlanDescription().cd("Argument")
-    val estimatedRows = argumentPLan.arguments.collect {case n : EstimatedRows => n}.head
+    val estimatedRows = argumentPLan.arguments.collect { case n: EstimatedRows => n }.head
     estimatedRows should equal(EstimatedRows(3.0))
   }
 
@@ -386,5 +386,50 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     result.toList should equal(List(Map("c" -> 3)))
     result should use("Expand(All)")
+  }
+
+  test("use getDegree for simple pattern expression with length clause, outgoing") {
+    val (n1, _) = setup()
+
+    val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)-->()) > 2 RETURN n")
+    result shouldNot use("RollUpApply")
+    result.toList should equal(List(Map("n" -> n1)))
+  }
+
+  test("use getDegree for simple pattern expression with length clause, incoming") {
+    val (_, n2) = setup()
+
+    val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)<--()) > 2 RETURN n")
+    result shouldNot use("RollUpApply")
+    result.toList should equal(List(Map("n" -> n2)))
+  }
+
+  test("use getDegree for simple pattern expression with length clause, both") {
+    val (n1, n2) = setup()
+
+    val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)--()) > 2 RETURN n")
+    result shouldNot use("RollUpApply")
+    result.toList should equal(List(Map("n" -> n1), Map("n" -> n2)))
+  }
+
+  test("use getDegree for simple pattern expression with rel-type ORs") {
+    setup()
+
+    val result = executeWithAllPlanners("MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n")
+    result shouldNot use("RollUpApply")
+    result should be (empty)
+  }
+
+  private def setup(): (Node, Node) = {
+    val n1 = createLabeledNode("X")
+    val n2 = createLabeledNode("X")
+
+    relate(n1, createNode())
+    relate(n1, createNode())
+    relate(n1, createNode())
+    relate(createNode(), n2)
+    relate(createNode(), n2)
+    relate(createNode(), n2)
+    (n1, n2)
   }
 }

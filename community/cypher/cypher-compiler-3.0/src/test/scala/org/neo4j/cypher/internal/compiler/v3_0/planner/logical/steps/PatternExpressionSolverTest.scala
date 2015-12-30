@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticDirection, SemanticTable}
 
-class PatternExpressionBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
     val otherSide = newMockedLogicalPlan("  UNNAMED1")
@@ -106,7 +106,7 @@ class PatternExpressionBuilderTest extends CypherFunSuite with LogicalPlanningTe
     newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy, semanticTable = new SemanticTable())
 
   private def createPatternExpressionBuilder(pathSteps: Map[PatternExpression, PathStep]) =
-    patternExpressionBuilder(pathSteps.map {
+    PatternExpressionSolver(pathSteps.map {
       case (exp, step) => EveryPath(exp.pattern.element) -> step
     })
 

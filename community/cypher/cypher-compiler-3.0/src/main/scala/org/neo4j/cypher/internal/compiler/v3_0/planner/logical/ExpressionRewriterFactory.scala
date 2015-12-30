@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.getDegreeOptimizer
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_0.{inSequence, bottomUp, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 object ExpressionRewriterFactory extends (LogicalPlanningContext => Rewriter) {
   override def apply(context: LogicalPlanningContext): Rewriter = bottomUp(Rewriter.lift {
     case plan: LogicalPlan =>
       plan.mapExpressions {
         case (arguments, expression) =>
-          val rewriter = inSequence(
-            getDegreeOptimizer,
-            patternExpressionRewriter(arguments, context)
-          )
-          expression.endoRewrite(rewriter)
+          expression.endoRewrite(patternExpressionRewriter(arguments, context))
       }
   })
 }

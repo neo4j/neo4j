@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, ast, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast, replace}
 
 /*
-Prepares expressions containing pattern expressions by solving them in a sub-query through RollUp,
-and replacing the original expression with an identifier
+Prepares expressions containing pattern expressions by solving them in a sub-query through RollUpApply and replacing
+the original expression with an identifier, or preferably GetDegree when possible.
 
 A query such as:
 MATCH (n) RETURN (n)-->()
@@ -46,30 +47,29 @@ Would be solved with a plan such as
 |
 +(LHS) AllNodesScan(n)
 */
-case class patternExpressionBuilder(pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression) {
+case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression) {
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) =
     projectionsMap.foldLeft(source, Map.empty[String, Expression]) {
 
       // RETURN (a)-->() as X - The top-level expression is a pattern expression
       case ((plan, newProjectionsMapAcc), (key, expression: PatternExpression)) =>
-        val (newPlan, newExpression) = fixUp(plan, expression, Some(key))
+        val (newPlan, newExpression) = solveUsingRollUpApply(plan, expression, Some(key))
         (newPlan, newProjectionsMapAcc + (key -> newExpression))
 
       // Any other expression, that might contain an inner PatternExpression
-      case ((plan, newProjectionsMapAcc), (key, expression)) =>
+      case ((plan, newProjectionsMapAcc), (key, inExpression)) =>
+        val expression = solveUsingGetDegree(inExpression)
+
         val patternExpressions: Seq[PatternExpression] = expression.findByAllClass[PatternExpression]
 
         // Yeah, this is a foldLeft inside a foldLeft. On the outside, we are folding over all projections, and here
         // we are folding over all inner PatternExpressions inside this particular projection
         val (newPlan, newExpression) = patternExpressions.foldLeft(plan, expression) {
           case ((planAcc, expressionAcc), patternExpression) =>
-            val (newPlan, introducedVariable) = fixUp(planAcc, patternExpression, None)
+            val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None)
 
-            val rewrittenExpression = expressionAcc.endoRewrite(bottomUp(Rewriter.lift {
-              case x if x == patternExpression =>
-                introducedVariable
-            }))
+            val rewrittenExpression = expressionAcc.endoRewrite(rewriteAll(patternExpression, introducedVariable))
 
             (newPlan, rewrittenExpression)
         }
@@ -77,8 +77,50 @@ case class patternExpressionBuilder(pathStepBuilder: EveryPath => PathStep = pro
         (newPlan, newProjectionsMapAcc + (key -> newExpression))
     }
 
-  private def fixUp(source: LogicalPlan, expr: PatternExpression, maybeKey: Option[String])
-                   (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
+  private def rewriteAll(oldExp: Expression, newExp: Expression) = replace(replacer => {
+    // We only unnest the inner pattern expressions if they are not hiding inside an expression that introduces scope
+    case exp@(_: ReduceExpression | _: FilteringExpression) => replacer.stop(exp)
+    case exp if exp == oldExp => newExp
+    case exp => replacer.expand(exp)
+  })
+
+  private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
+
+  private val getDegreeRewriter = replace(replacer => {
+    // Top-Down:
+    // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
+    case that: NestedPlanExpression =>
+      replacer.stop(that)
+
+    case that =>
+      // Bottom-up:
+      // Replace function invocations with more efficient expressions
+      replacer.expand(that) match {
+
+        // LENGTH( (a)-[]->() )
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None))))))
+          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
+          calculateUsingGetDegree(func, node, types, dir)
+
+        // LENGTH( ()-[]->(a) )
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None))))))
+          if func.function.contains(functions.Length) || func.function.contains(functions.Size) =>
+          calculateUsingGetDegree(func, node, types, dir.reversed)
+
+        case rewritten =>
+          rewritten
+      }
+  })
+
+  private def calculateUsingGetDegree(func: FunctionInvocation, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
+    types
+      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
+      .reduceOption[Expression](Add(_, _)(func.position))
+      .getOrElse(GetDegree(node, None, dir)(func.position))
+  }
+
+  private def solveUsingRollUpApply(source: LogicalPlan, expr: PatternExpression, maybeKey: Option[String])
+                                   (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
 
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
 
