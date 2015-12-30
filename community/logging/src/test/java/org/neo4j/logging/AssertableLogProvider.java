@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class AssertableLogProvider extends AbstractLogProvider<Log>
@@ -462,6 +463,48 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
     }
 
+    @SafeVarargs
+    public final void assertContainsLogCallsMatching( int logSkipCount, Matcher<String>... matchers )
+    {
+        synchronized ( logCalls )
+        {
+            assertEquals( logCalls.size(), logSkipCount + matchers.length );
+            for ( int i = 0; i < matchers.length; i++ )
+            {
+                LogCall logCall = logCalls.get( logSkipCount + i );
+                Matcher<String> matcher = matchers[i];
+
+                if ( !matcher.matches( logCall.message ) )
+                {
+                    StringDescription description = new StringDescription();
+                    description.appendDescriptionOf( matcher );
+                    fail( format( "Expected log statement with message as %s, but none found. Actual log call was:\n%s",
+                            description.toString(), logCall.toString() ) );
+                }
+            }
+        }
+    }
+
+    public void assertContainsThrowablesMatching( int logSkipCount,  Throwable... throwables )
+    {
+        synchronized ( logCalls )
+        {
+            assertEquals( logCalls.size(), logSkipCount + throwables.length );
+            for ( int i = 0; i < throwables.length; i++ )
+            {
+                LogCall logCall = logCalls.get( logSkipCount + i );
+                Throwable throwable = throwables[i];
+
+                if ( logCall.throwable == null && throwable != null ||
+                        logCall.throwable != null && logCall.throwable.getClass() != throwable.getClass() )
+                {
+                    fail( format( "Expected %s, but was:\n%s",
+                            throwable, logCall.throwable ) );
+                }
+            }
+        }
+    }
+
     /**
      * Note: Does not care about ordering.
      */
@@ -506,6 +549,23 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
                     ) );
                 }
             }
+        }
+    }
+
+    public void assertContainsLogCallContaining( String partOfMessage )
+    {
+        synchronized (logCalls)
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( logCall.toString().contains( partOfMessage ) )
+                {
+                    return;
+                }
+            }
+            fail( format(
+                    "Expected at least one log statement containing '%s', but none found. Actual log calls were:\n%s", partOfMessage, serialize( logCalls.iterator() )
+            ) );
         }
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
