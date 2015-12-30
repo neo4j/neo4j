@@ -30,8 +30,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.util.CappedLogger;
 
 class LearnerContextImpl
         extends AbstractContextImpl
@@ -42,19 +42,7 @@ class LearnerContextImpl
     private long lastLearnedInstanceId = -1;
 
     /** To minimize logging, keep track of the latest learn miss, only log when it changes. */
-    private final CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId> learnMissLogging =
-            new CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId>(
-                    CappedOperation.differentItems() )
-            {
-                @Override
-                protected void triggered( InstanceId instanceId )
-                {
-                    getLog( LearnerState.class ).warn( "Did not have learned value for Paxos instance "
-                            + instanceId + ". This generally indicates that this instance has missed too many " +
-                            "cluster events and is failing to catch up. If this error does not resolve soon it " +
-                            "may become necessary to restart this cluster member so normal operation can resume.");
-                }
-            };
+    private final CappedLogger learnMissLogger;
 
     private final HeartbeatContext heartbeatContext;
     private final AcceptorInstanceStore instanceStore;
@@ -76,6 +64,8 @@ class LearnerContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.paxosInstances = paxosInstances;
+        this.learnMissLogger = new CappedLogger( logging.getLog( LearnerState.class ) )
+                .setDuplicateFilterEnabled( true );
     }
 
     private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
@@ -92,6 +82,8 @@ class LearnerContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.paxosInstances = paxosInstances;
+        this.learnMissLogger = new CappedLogger( logging.getLog( LearnerState.class ) ).setDuplicateFilterEnabled(
+                true );
     }
 
     @Override
@@ -183,7 +175,10 @@ class LearnerContextImpl
     @Override
     public void notifyLearnMiss( InstanceId instanceId )
     {
-        learnMissLogging.event( instanceId );
+        learnMissLogger.warn( "Did not have learned value for Paxos instance " + instanceId + ". " +
+                              "This generally indicates that this instance has missed too many cluster events and is " +
+                              "failing to catch up. If this error does not resolve soon it may become necessary to " +
+                              "restart this cluster member so normal operation can resume.", null );
     }
 
     public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
