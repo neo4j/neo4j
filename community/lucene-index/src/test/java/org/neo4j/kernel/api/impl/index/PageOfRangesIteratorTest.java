@@ -19,29 +19,26 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.junit.runners.Parameterized.Parameter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.MapUtil;
 
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.same;
@@ -62,22 +59,15 @@ import static org.neo4j.helpers.collection.IteratorUtil.primitivesList;
 @RunWith( Parameterized.class )
 public class PageOfRangesIteratorTest
 {
-    @Parameterized.Parameters( name = "{0} bits" )
+    @Parameter
+    public BitmapDocumentFormat format;
+
+    @Parameters( name = "{0} bits" )
     public static List<Object[]> formats()
     {
-        ArrayList<Object[]> parameters = new ArrayList<>();
-        for ( BitmapDocumentFormat format : BitmapDocumentFormat.values() )
-        {
-            parameters.add( new Object[]{format} );
-        }
-        return parameters;
-    }
-
-    private final BitmapDocumentFormat format;
-
-    public PageOfRangesIteratorTest( BitmapDocumentFormat format )
-    {
-        this.format = format;
+        return Stream.of( BitmapDocumentFormat.values() )
+                .map( format -> new Object[]{format} )
+                .collect( toList() );
     }
 
     @Test
@@ -99,24 +89,18 @@ public class PageOfRangesIteratorTest
         when( labelNDV.get( 16 ) ).thenReturn( 0x03L );
         when( labelNDV.get( 37 ) ).thenReturn( 0x30L );
 
-        Map<String,NumericDocValues> docValues =
-                MapUtil.genericMap( "range", rangeNDV, "7", labelNDV );
+        Map<String,NumericDocValues> docValues = MapUtil.genericMap( "range", rangeNDV, "7", labelNDV );
         IndexReaderStub reader = new IndexReaderStub( docValues );
         reader.setElements( new String[]{"11", "16", "37"} );
         final LeafReaderContext context = reader.getContext();
 
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                DocValuesCollector collector = (DocValuesCollector) invocation.getArguments()[1];
-                collector.doSetNextReader( context );
-                collector.collect( 11 );
-                collector.collect( 16 );
-                collector.collect( 37 );
-                return null;
-            }
+        doAnswer( invocation -> {
+            DocValuesCollector collector = (DocValuesCollector) invocation.getArguments()[1];
+            collector.doSetNextReader( context );
+            collector.collect( 11 );
+            collector.collect( 16 );
+            collector.collect( 37 );
+            return null;
         } ).when( searcher ).search( same( query ), any( DocValuesCollector.class ) );
 
         PrimitiveLongIterator iterator = concat(
@@ -130,7 +114,7 @@ public class PageOfRangesIteratorTest
         /*doc1:*/(1L << format.bitmapFormat().shift),
         /*doc2:*/(2L << format.bitmapFormat().shift), (2L << format.bitmapFormat().shift) + 1,
         /*doc3:*/(3L << format.bitmapFormat().shift) + 4, (3L << format.bitmapFormat().shift) + 5 ),
-                      longs );
+                longs );
 
         verify( searcher, times( 1 ) ).search( same( query ), any( DocValuesCollector.class ) );
         verify( rangeNDV, times( 3 ) ).get( anyInt() );
@@ -139,20 +123,5 @@ public class PageOfRangesIteratorTest
         verifyNoMoreInteractions( searcher );
         verifyNoMoreInteractions( labelNDV );
         verifyNoMoreInteractions( rangeNDV );
-    }
-
-    static TopDocs docs( ScoreDoc... docs )
-    {
-        return new TopDocs( docs.length, docs, 0.0f );
-    }
-
-    static Document document( IndexableField... fields )
-    {
-        Document document = new Document();
-        for ( IndexableField field : fields )
-        {
-            document.add( field );
-        }
-        return document;
     }
 }

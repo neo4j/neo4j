@@ -23,9 +23,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +45,7 @@ import static java.lang.String.format;
 public class SimpleLuceneLabelScanWriter implements LabelScanWriter
 {
     private final IndexPartition partition;
+    private final PartitionSearcher partitionSearcher;
     private final BitmapDocumentFormat format;
 
     private final List<NodeLabelUpdate> updates;
@@ -52,6 +55,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
     public SimpleLuceneLabelScanWriter( IndexPartition partition, BitmapDocumentFormat format, Lock heldLock )
     {
         this.partition = partition;
+        this.partitionSearcher = acquireSearcher( partition );
         this.format = format;
         this.heldLock = heldLock;
         currentRange = -1;
@@ -90,6 +94,7 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
         {
             try
             {
+                partitionSearcher.close();
                 // todo: why do we need maybeRefresh here? maybe use maybeRefreshBlocking
                 partition.maybeRefresh();
             }
@@ -129,35 +134,32 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
             return;
         }
 
-        try ( PartitionSearcher partitionSearcher = partition.acquireSearcher() )
+        IndexSearcher searcher = partitionSearcher.getIndexSearcher();
+        Map<Long/*label*/,Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
+        updateFields( updates, fields );
+
+        Document document = new Document();
+        format.addRangeValuesField( document, currentRange );
+
+        for ( Map.Entry<Long/*label*/,Bitmap> field : fields.entrySet() )
         {
-            IndexSearcher searcher = partitionSearcher.getIndexSearcher();
-            Map<Long/*label*/,Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
-            updateFields( updates, fields );
-
-            Document document = new Document();
-            format.addRangeValuesField( document, currentRange );
-
-            for ( Map.Entry<Long/*label*/,Bitmap> field : fields.entrySet() )
+            // one field per label
+            Bitmap value = field.getValue();
+            if ( value.hasContent() )
             {
-                // one field per label
-                Bitmap value = field.getValue();
-                if ( value.hasContent() )
-                {
-                    format.addLabelAndSearchFields( document, field.getKey(), value );
-                }
+                format.addLabelAndSearchFields( document, field.getKey(), value );
             }
-
-            if ( isEmpty( document ) )
-            {
-                partition.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
-            }
-            else
-            {
-                partition.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
-            }
-            updates.clear();
         }
+
+        if ( isEmpty( document ) )
+        {
+            partition.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
+        }
+        else
+        {
+            partition.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
+        }
+        updates.clear();
     }
 
     private boolean isEmpty( Document document )
@@ -199,6 +201,25 @@ public class SimpleLuceneLabelScanWriter implements LabelScanWriter
                 fields.put( label, bitmap = new Bitmap() );
             }
             format.bitmapFormat().set( bitmap, update.getNodeId(), true );
+        }
+    }
+
+    /**
+     * Acquires {@link PartitionSearcher} for the given {@link IndexPartition}
+     * converting {@link IOException} to {@link UncheckedIOException} if needed.
+     *
+     * This method is called only once per writer to not disturb lucene's {@link SearcherManager}
+     * on every {@link #flush() flush} call.
+     */
+    private static PartitionSearcher acquireSearcher( IndexPartition partition )
+    {
+        try
+        {
+            return partition.acquireSearcher();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 }

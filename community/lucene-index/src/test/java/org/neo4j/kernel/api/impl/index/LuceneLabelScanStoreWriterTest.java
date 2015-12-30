@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
@@ -32,44 +34,82 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.junit.Ignore;
+import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Long.parseLong;
 import static java.lang.String.valueOf;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.index.BitmapDocumentFormat.RANGE;
 
-@Ignore
+@RunWith( Parameterized.class )
 public class LuceneLabelScanStoreWriterTest
 {
-    public static final BitmapDocumentFormat FORMAT = BitmapDocumentFormat._32;
+    @Parameter
+    public BitmapDocumentFormat format;
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private final DirectoryFactory dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+
+    @Parameterized.Parameters( name = "{0} bits" )
+    public static List<Object[]> formats()
+    {
+        return Stream.of( BitmapDocumentFormat.values() )
+                .map( format -> new Object[]{format} )
+                .collect( toList() );
+    }
+
+    @After
+    public void closeDirFactory() throws Exception
+    {
+        dirFactory.close();
+    }
 
     @Test
     public void shouldComplainIfNodesSuppliedOutOfRangeOrder() throws Exception
     {
         // given
         int nodeId1 = 1;
-        int nodeId2 = 33;
+        int nodeId2 = 65;
+        StubIndexPartition partition = newStubIndexPartition();
 
-        long node1Range = FORMAT.bitmapFormat().rangeOf( nodeId1 );
-        long node2Range = FORMAT.bitmapFormat().rangeOf( nodeId2 );
+        long node1Range = format.bitmapFormat().rangeOf( nodeId1 );
+        long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
         assertNotEquals( node1Range, node2Range );
 
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{} ) );
         try
         {
@@ -89,21 +129,21 @@ public class LuceneLabelScanStoreWriterTest
         int nodeId = 1;
         int label1 = 201;
         int label2 = 202;
-        StubStorageService storage = new StubStorageService();
+        StubIndexPartition partition = newStubIndexPartition();
 
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId, new long[]{}, new long[]{label1, label2} ) );
         writer.close();
 
         // then
-        long range = FORMAT.bitmapFormat().rangeOf( nodeId );
-        Document document = storage.getDocument( new Term( RANGE, valueOf( range ) ) );
+        long range = format.bitmapFormat().rangeOf( nodeId );
+        Document document = partition.documentFor( new Term( RANGE, valueOf( range ) ) );
 
-        assertTrue( FORMAT.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label1 ) ) ),
+        assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label1 ) ) ),
                 nodeId ) );
-        assertTrue( FORMAT.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label2 ) ) ), nodeId ) );
+        assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label2 ) ) ), nodeId ) );
     }
 
     @Test
@@ -114,20 +154,19 @@ public class LuceneLabelScanStoreWriterTest
         int nodeId2 = 3;
         int label1 = 201;
         int label2 = 202;
-        StubStorageService storage = new StubStorageService();
-        BitmapDocumentFormat format = BitmapDocumentFormat._32;
+        StubIndexPartition partition = newStubIndexPartition();
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 
         // then
-        Document document = storage.getDocument( new Term( RANGE, valueOf( range ) ) );
+        Document document = partition.documentFor( new Term( RANGE, valueOf( range ) ) );
 
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label1 ) ) ), nodeId1 ) );
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label2 ) ) ), nodeId2 ) );
@@ -138,28 +177,27 @@ public class LuceneLabelScanStoreWriterTest
     {
         // given
         int nodeId1 = 1;
-        int nodeId2 = 33;
+        int nodeId2 = 65;
         int label1 = 201;
         int label2 = 202;
-        StubStorageService storage = new StubStorageService();
-        BitmapDocumentFormat format = BitmapDocumentFormat._32;
+        StubIndexPartition partition = newStubIndexPartition();
 
         long node1Range = format.bitmapFormat().rangeOf( nodeId1 );
         long node2Range = format.bitmapFormat().rangeOf( nodeId2 );
         assertNotEquals( node1Range, node2Range );
 
         // when
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 
         // then
-        Document document1 = storage.getDocument( new Term( RANGE, valueOf( node1Range ) ) );
+        Document document1 = partition.documentFor( new Term( RANGE, valueOf( node1Range ) ) );
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document1.get( valueOf( label1 ) ) ), nodeId1 ) );
 
-        Document document2 = storage.getDocument( new Term( RANGE, valueOf( node2Range ) ) );
+        Document document2 = partition.documentFor( new Term( RANGE, valueOf( node2Range ) ) );
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document2.get( valueOf( label2 ) ) ), nodeId2 ) );
     }
 
@@ -171,117 +209,172 @@ public class LuceneLabelScanStoreWriterTest
         int nodeId2 = 3;
         int label1 = 201;
         int label2 = 202;
-        StubStorageService storage = new StubStorageService();
-        BitmapDocumentFormat format = BitmapDocumentFormat._32;
+        StubIndexPartition partition = newStubIndexPartition();
 
         long range = format.bitmapFormat().rangeOf( nodeId1 );
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // node already indexed
-        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.close();
 
         // when
-        writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        writer = new SimpleLuceneLabelScanWriter( partition, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 
         // then
-        Document document = storage.getDocument( new Term( RANGE, valueOf( range ) ) );
+        Document document = partition.documentFor( new Term( RANGE, valueOf( range ) ) );
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label1 ) ) ), nodeId1 ) );
         assertTrue( format.bitmapFormat().hasLabel( parseLong( document.get( valueOf( label2 ) ) ), nodeId2 ) );
     }
 
-    private class StubStorageService
+    private StubIndexPartition newStubIndexPartition()
     {
-        private final Map<Term, Document> storage = new HashMap<>();
-
-//        @Override
-        public void updateDocument( Term term, Document document ) throws IOException
+        try
         {
-            storage.put( term, document );
+            File folder = testDir.directory();
+            Directory directory = dirFactory.open( folder );
+            return new StubIndexPartition( folder, directory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static PartitionSearcher newStubPartitionSearcher( Map<Term,Document> storage )
+    {
+        PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
+        when( partitionSearcher.getIndexSearcher() ).thenReturn( new StubIndexSearcher( storage ) );
+        return partitionSearcher;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static IndexWriter newStubIndexWriter( Map<Term,Document> storage )
+    {
+        IndexWriter writer = mock( IndexWriter.class );
+
+        try
+        {
+            doAnswer( invocation -> {
+                Object[] args = invocation.getArguments();
+                Term term = (Term) args[0];
+                Iterable<? extends IndexableField> fields = (Iterable<? extends IndexableField>) args[1];
+                Document document = new Document();
+                fields.forEach( document::add );
+                storage.put( term, document );
+                return null;
+            } ).when( writer ).updateDocument( any(), any() );
+
+            doAnswer( invocation -> {
+                Term[] terms = (Term[]) invocation.getArguments()[0];
+                Stream.of( terms ).forEach( storage::remove );
+                return null;
+            } ).when( writer ).deleteDocuments( Mockito.<Term>anyVararg() );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
 
-//        @Override
-        public void deleteDocuments( Term term ) throws IOException
+        return writer;
+    }
+
+    private static class StubIndexPartition extends IndexPartition
+    {
+        final Directory directory;
+        final Map<Term,Document> storage = new HashMap<>();
+
+        StubIndexPartition( File folder, Directory directory ) throws IOException
         {
-            storage.remove( term );
+            super( folder, directory );
+            this.directory = directory;
         }
 
-//        @Override
-        public IndexSearcher acquireSearcher()
+        @Override
+        public PartitionSearcher acquireSearcher() throws IOException
         {
-            return new IndexSearcher( new IndexReaderStub( false ) )
-            {
-                private final Map<Integer,Document> docIds = new HashMap<>();
-
-                @Override
-                public void search( Query query, Collector results ) throws IOException
-                {
-                    Document document = storage.get( ((TermQuery) query).getTerm() );
-                    if ( document == null )
-                    {
-                        return;
-                    }
-
-                    final int docId = new Random().nextInt();
-                    docIds.put( docId, document );
-                    try {
-                        LeafCollector leafCollector = results.getLeafCollector( leafContexts.get( 0 ) );
-                        Scorer scorer = new ConstantScoreScorer( null, 10f, new OneDocIdIterator( docId ) );
-                        leafCollector.setScorer( scorer );
-                        leafCollector.collect( docId );
-                    } catch ( CollectionTerminatedException swallow ) {
-                        // swallow
-                    }
-                }
-
-                @Override
-                public TopDocs search( Query query, int n )
-                {
-                    Document document = storage.get( ((TermQuery) query).getTerm() );
-                    if ( document == null )
-                    {
-                        return new TopDocs( 0, new ScoreDoc[0], 0 );
-                    }
-
-                    int docId = new Random().nextInt();
-                    docIds.put( docId, document );
-                    int score = 10;
-                    return new TopDocs( 1, new ScoreDoc[]{new ScoreDoc( docId, score )}, score );
-                }
-
-                @Override
-                public Document doc( int docID )
-                {
-                    return docIds.get( docID );
-                }
-            };
+            return newStubPartitionSearcher( storage );
         }
 
-//        @Override
-        public void releaseSearcher( IndexSearcher searcher ) throws IOException
+        @Override
+        public IndexWriter getIndexWriter()
         {
+            return newStubIndexWriter( storage );
         }
 
-//        @Override
-        public void refreshSearcher() throws IOException
-        {
-        }
-
-        public Document getDocument( Term term )
+        Document documentFor( Term term )
         {
             return storage.get( term );
         }
     }
 
-    private final class OneDocIdIterator extends DocIdSetIterator {
-        private final int target;
-        private int currentDoc = -1;
-        private boolean exhausted;
+    private static class StubIndexSearcher extends IndexSearcher
+    {
+        final Map<Term,Document> storage;
+        final Map<Integer,Document> docIds;
 
-        public OneDocIdIterator(int docId)
+        StubIndexSearcher( Map<Term,Document> storage )
+        {
+            super( new IndexReaderStub( false ) );
+            this.storage = storage;
+            this.docIds = new HashMap<>();
+        }
+
+        @Override
+        public void search( Query query, Collector results ) throws IOException
+        {
+            Document document = storage.get( ((TermQuery) query).getTerm() );
+            if ( document == null )
+            {
+                return;
+            }
+
+            int docId = ThreadLocalRandom.current().nextInt();
+            docIds.put( docId, document );
+            try
+            {
+                LeafCollector leafCollector = results.getLeafCollector( leafContexts.get( 0 ) );
+                Scorer scorer = new ConstantScoreScorer( null, 10f, new OneDocIdIterator( docId ) );
+                leafCollector.setScorer( scorer );
+                leafCollector.collect( docId );
+            }
+            catch ( CollectionTerminatedException ignored )
+            {
+            }
+        }
+
+        @Override
+        public TopDocs search( Query query, int n )
+        {
+            Document document = storage.get( ((TermQuery) query).getTerm() );
+            if ( document == null )
+            {
+                return new TopDocs( 0, new ScoreDoc[0], 0 );
+            }
+
+            int docId = ThreadLocalRandom.current().nextInt();
+            docIds.put( docId, document );
+            int score = 10;
+            return new TopDocs( 1, new ScoreDoc[]{new ScoreDoc( docId, score )}, score );
+        }
+
+        @Override
+        public Document doc( int docID )
+        {
+            return docIds.get( docID );
+        }
+    }
+
+    private static class OneDocIdIterator extends DocIdSetIterator
+    {
+        final int target;
+        int currentDoc = -1;
+        boolean exhausted;
+
+        public OneDocIdIterator( int docId )
         {
             target = docId;
         }

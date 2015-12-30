@@ -19,87 +19,92 @@
  */
 package org.neo4j.kernel.api.impl.index.backup;
 
-import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Stream;
 
-import static java.util.Arrays.asList;
-import static junit.framework.Assert.assertEquals;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.test.TargetDirectory;
+
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertFalse;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertEquals;
 
-@Ignore("To be rewritten with new index infrastructure")
 public class LuceneSnapshotterTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
-    private final File indexDir = new File(".");
-    private SnapshotDeletionPolicy snapshotPolicy;
-
-    private IndexCommit luceneSnapshot;
+    private File indexDir;
+    private Directory dir;
     private IndexWriter writer;
 
     @Before
-    public void setup() throws IOException
+    public void initializeLuceneResources() throws IOException
     {
-        writer = mock( IndexWriter.class );
-        snapshotPolicy = mock(SnapshotDeletionPolicy.class);
-        luceneSnapshot = mock(IndexCommit.class);
+        indexDir = testDir.directory();
+        dir = new RAMDirectory();
+        writer = new IndexWriter( dir, IndexWriterFactories.standardConfig() );
+    }
 
-        IndexWriterConfig config = new IndexWriterConfig( null );
-
-        when( writer.getConfig().getIndexDeletionPolicy() ).thenReturn( snapshotPolicy );
-
-        when(snapshotPolicy.snapshot()).thenReturn( luceneSnapshot );
+    @After
+    public void closeLuceneResources() throws IOException
+    {
+        IOUtils.closeAll( writer, dir );
     }
 
     @Test
-    public void shouldReturnRealSnapshotIfIndexAllowsIt() throws Exception
+    public void shouldReturnRealSnapshotIfIndexAllowsIt() throws IOException
     {
-        // Given
-        LuceneIndexSnapshotFileIterator snapshotter = new LuceneIndexSnapshotFileIterator( indexDir, snapshotPolicy );
+        insertRandomDocuments( writer );
 
-        when(luceneSnapshot.getFileNames()).thenReturn( asList("a", "b") );
+        Set<String> files = listDir( dir );
+        assertFalse( files.isEmpty() );
 
-        // When
-//        ResourceIterator<File> snapshot = snapshotter.snapshot( indexDir, writer );
-
-        // Then
-//        assertEquals( new File(indexDir, "a"), snapshot.next() );
-//        assertEquals( new File(indexDir, "b"), snapshot.next() );
-//        assertFalse( snapshot.hasNext() );
-//        snapshot.close();
-
-        verify( snapshotPolicy ).release( any(IndexCommit.class) );
+        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        {
+            Set<String> snapshotFiles = Iterables.toList( snapshot ).stream().map( File::getName ).collect( toSet() );
+            assertEquals( files, snapshotFiles );
+        }
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws Exception
+    public void shouldReturnEmptyIteratorWhenNoCommitsHaveBeenMade() throws IOException
     {
-        // Given
-//        LuceneIndexSnapshotFileIterator snapshotter = new LuceneIndexSnapshotFileIterator();
-
-//        when(luceneSnapshot.getFileNames()).thenThrow( new IllegalStateException( "No index commit to snapshot" ));
-
-        // When
-//        ResourceIterator<File> snapshot = snapshotter.snapshot( indexDir, writer );
-
-        // Then
-//        assertFalse( snapshot.hasNext() );
-//        snapshot.close();
-
-//        verify( snapshotPolicy ).snapshot();
-//        verifyNoMoreInteractions( snapshotPolicy );
+        String[] strings = dir.listAll();
+        try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
+        {
+            assertFalse( snapshot.hasNext() );
+        }
     }
 
+    private static void insertRandomDocuments( IndexWriter writer ) throws IOException
+    {
+        Document doc = new Document();
+        doc.add( new StringField( "a", "b", Field.Store.YES ) );
+        doc.add( new StringField( "c", "d", Field.Store.NO ) );
+        writer.addDocument( doc );
+        writer.commit();
+    }
 
+    private static Set<String> listDir( Directory dir ) throws IOException
+    {
+        String[] files = dir.listAll();
+        return Stream.of( files ).collect( toSet() );
+    }
 }

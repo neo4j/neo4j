@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
@@ -103,12 +104,17 @@ public abstract class AbstractLuceneIndex implements Closeable
             directories = indexStorage.openIndexDirectories().values();
             for ( Directory directory : directories )
             {
-                try ( CheckIndex checker = new CheckIndex( directory ) )
+                // it is ok for index directory to be empty
+                // this can happen if it is opened and closed without any writes in between
+                if ( !ArrayUtil.isEmpty( directory.listAll() ) )
                 {
-                    CheckIndex.Status status = checker.checkIndex();
-                    if ( !status.clean )
+                    try ( CheckIndex checker = new CheckIndex( directory ) )
                     {
-                        return false;
+                        CheckIndex.Status status = checker.checkIndex();
+                        if ( !status.clean )
+                        {
+                            return false;
+                        }
                     }
                 }
             }

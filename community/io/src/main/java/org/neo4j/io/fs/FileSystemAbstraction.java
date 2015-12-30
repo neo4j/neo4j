@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -74,7 +75,7 @@ public interface FileSystemAbstraction
 
     void truncate( File path, long size ) throws IOException;
 
-    interface ThirdPartyFileSystem
+    interface ThirdPartyFileSystem extends Closeable
     {
         void close();
 

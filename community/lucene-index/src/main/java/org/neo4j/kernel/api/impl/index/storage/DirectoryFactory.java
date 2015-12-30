@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -38,7 +37,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 
 import static java.lang.Math.min;
 
@@ -82,18 +80,11 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         @Override
         public synchronized Directory open( File dir ) throws IOException
         {
-            if(!directories.containsKey( dir ))
+            if ( !directories.containsKey( dir ) )
             {
-                // todo: RAMDirectory has no segment files initially. This causes CheckIndex to fail.
-                // todo: check if it is OK to just make a dummy commit here to create segment file
-                RAMDirectory directory = new RAMDirectory();
-                try ( IndexWriter writer = new IndexWriter( directory, IndexWriterFactories.standardConfig() ) )
-                {
-                    writer.commit();
-                }
-                directories.put( dir, directory );
+                directories.put( dir, new RAMDirectory() );
             }
-            return new UncloseableDirectory(directories.get(dir));
+            return new UncloseableDirectory( directories.get( dir ) );
         }
 
         @Override
