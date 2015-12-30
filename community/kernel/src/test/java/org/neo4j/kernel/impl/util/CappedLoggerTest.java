@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
@@ -263,7 +264,7 @@ public class CappedLoggerTest
         String[] lines = logLines( limit + 1 );
         logger.reset();
         String[] moreLines = logLines( 1, limit + 1 );
-        assertLoggedLines( lines, limit );
+        assertLoggedLines( ArrayUtils.addAll( ArrayUtils.subarray( lines, 0, limit ), moreLines ), 1 + limit );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( lines[limit] ) ) );
         logProvider.assertContainsMessageMatching( containsString( moreLines[0] ) );
     }
@@ -277,7 +278,8 @@ public class CappedLoggerTest
         logger.unsetCountLimit();
         int moreLineCount = 1000;
         String[] moreLines = logLines( moreLineCount, limit + 1 );
-        assertLoggedLines( lines, limit );
+        assertLoggedLines( ArrayUtils.addAll( ArrayUtils.subarray( lines, 0, limit ), moreLines ),
+                moreLineCount + limit );
         logProvider.assertNone( currentLog( inLog( CappedLogger.class ), containsString( lines[limit] ) ) );
         assertLoggedLines( moreLines, moreLineCount, limit );
     }
