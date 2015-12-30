@@ -139,7 +139,7 @@ public interface IndexReader extends Resource
         @Override
         public IndexSampler createSampler()
         {
-            return null;
+            return IndexSampler.EMPTY;
         }
 
         @Override

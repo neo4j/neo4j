@@ -59,12 +59,12 @@ public class LuceneIndexIT
     @Before
     public void before() throws Exception
     {
-        LuceneIndex index = LuceneIndexBuilder.create()
+        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                 .withIndexRootFolder( testDir.directory() )
                 .withIndexIdentifier( "testIndex" )
                 .build();
 
-        index.prepare();
+        index.create();
         index.open();
         accessor = new LuceneIndexAccessor( index );
     }

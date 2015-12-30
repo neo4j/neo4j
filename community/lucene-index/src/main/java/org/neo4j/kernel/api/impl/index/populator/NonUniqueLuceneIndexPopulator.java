@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.LuceneIndex;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -41,7 +41,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private final NonUniqueIndexSampler sampler;
     private final List<NodePropertyUpdate> updates = new ArrayList<>();
 
-    public NonUniqueLuceneIndexPopulator( LuceneIndex luceneIndex, IndexSamplingConfig samplingConfig )
+    public NonUniqueLuceneIndexPopulator( LuceneSchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
         super( luceneIndex );
         this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );

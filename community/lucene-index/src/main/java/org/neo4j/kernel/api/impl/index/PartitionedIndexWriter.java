@@ -33,13 +33,13 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
-    private LuceneIndex index;
+    private LuceneSchemaIndex index;
 
     private static final Integer MAXIMUM_PARTITION_SIZE =
             FeatureToggles.getInteger( PartitionedIndexWriter.class, "partitionSize",
                     Integer.MAX_VALUE - (Integer.MAX_VALUE / 10) );
 
-    public PartitionedIndexWriter( LuceneIndex index ) throws IOException
+    public PartitionedIndexWriter( LuceneSchemaIndex index ) throws IOException
     {
         this.index = index;
     }

@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.RAMDirectory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,15 +37,8 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.RAMDirectory;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 
 import static java.lang.Math.min;
 
@@ -82,7 +84,14 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         {
             if(!directories.containsKey( dir ))
             {
-                directories.put( dir, new RAMDirectory() );
+                // todo: RAMDirectory has no segment files initially. This causes CheckIndex to fail.
+                // todo: check if it is OK to just make a dummy commit here to create segment file
+                RAMDirectory directory = new RAMDirectory();
+                try ( IndexWriter writer = new IndexWriter( directory, IndexWriterFactories.standardConfig() ) )
+                {
+                    writer.commit();
+                }
+                directories.put( dir, directory );
             }
             return new UncloseableDirectory(directories.get(dir));
         }

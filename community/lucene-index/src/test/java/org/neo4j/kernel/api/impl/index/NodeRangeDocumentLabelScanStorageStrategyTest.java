@@ -73,7 +73,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //        when( searcher.search( new TermQuery( format.rangeTerm( 0 ) ), 1 ) ).thenReturn( docs() );
 //        when( searcher.search( new TermQuery( format.rangeTerm( 1 ) ), 1 ) ).thenReturn( null );
 //
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //        // when
 //        writer.write( labelChanges( 0, labels(), labels( 6, 7 ) ) );
@@ -107,7 +107,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //        format.addLabelFields( givenDoc, "7", 0x70L );
 //        LabelScanStorageStrategy.StorageService storage = storage(givenDoc);
 //
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //        // when
 //        writer.write( labelChanges( 0, labels(), labels( 7, 8 ) ) );
@@ -130,7 +130,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //                          format.labelField( 7, 0x1 ),
 //                          format.labelField( 8, 0x1 ) ) );
 //
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //        // when
 //        writer.write( labelChanges( 0, labels( 7, 8 ), labels( 8 ) ) );
@@ -151,7 +151,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //                document( format.rangeField( 0 ),
 //                          format.labelField( 7, 0x1 ) ) );
 //
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //        // when
 //        writer.write( labelChanges( 0, labels( 7 ), labels() ) );
@@ -170,7 +170,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //                          format.labelField( 6, 0x1 ),
 //                          format.labelField( 7, 0x1 ) ) );
 //
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //        // when
 //        writer.write( labelChanges( 0, labels( 7 ), labels( 7, 8 ) ) );
@@ -193,7 +193,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //            // given
 //            LabelScanStorageStrategy.StorageService storage = storage();
 //
-//            LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, mock( Lock.class ) );
+//            SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, mock( Lock.class ) );
 //
 //            // when
 //            writer.write( labelChanges( i, labels(), labels( 7 ) ) );
@@ -214,7 +214,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 //        // GIVEN
 //        LabelScanStorageStrategy.StorageService storage = storage();
 //        Lock lock = mock( Lock.class );
-//        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( storage, format, lock );
+//        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( storage, format, lock );
 //
 //        // WHEN
 //        writer.close();

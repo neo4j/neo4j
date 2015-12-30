@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class LuceneIndexBuilder
+public class LuceneSchemaIndexBuilder
 {
     private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
@@ -44,25 +44,28 @@ public class LuceneIndexBuilder
     private String indexIdentifier;
     private PartitionedIndexStorage indexStorage;
 
-    private LuceneIndexBuilder() {}
-
-    public static LuceneIndexBuilder create() {
-        return new LuceneIndexBuilder();
+    private LuceneSchemaIndexBuilder()
+    {
     }
 
-    public LuceneIndexBuilder withIndexIdentifier( String indexIdentifier )
+    public static LuceneSchemaIndexBuilder create()
+    {
+        return new LuceneSchemaIndexBuilder();
+    }
+
+    public LuceneSchemaIndexBuilder withIndexIdentifier( String indexIdentifier )
     {
         this.indexIdentifier = indexIdentifier;
         return this;
     }
 
-    public LuceneIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
+    public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
     {
         this.samplingConfig = samplingConfig;
         return this;
     }
 
-    public <T> LuceneIndexBuilder withSamplingBufferSize( int size )
+    public <T> LuceneSchemaIndexBuilder withSamplingBufferSize( int size )
     {
         Map<String,String> params = stringMap( GraphDatabaseSettings.index_sampling_buffer_size.name(), size + "" );
         Config config = new Config( params );
@@ -70,51 +73,51 @@ public class LuceneIndexBuilder
         return this;
     }
 
-    public LuceneIndexBuilder withSamplingConfig( Config config )
+    public LuceneSchemaIndexBuilder withSamplingConfig( Config config )
     {
         this.samplingConfig = new IndexSamplingConfig( config );
         return this;
     }
 
-    public LuceneIndexBuilder withIndexConfig( IndexConfiguration indexConfig )
+    public LuceneSchemaIndexBuilder withIndexConfig( IndexConfiguration indexConfig )
     {
         this.indexConfig = indexConfig;
         return this;
     }
 
-    public LuceneIndexBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
+    public LuceneSchemaIndexBuilder withIndexStorage( PartitionedIndexStorage indexStorage )
     {
         this.indexStorage = indexStorage;
         return this;
     }
 
-    public LuceneIndexBuilder uniqueIndex()
+    public LuceneSchemaIndexBuilder uniqueIndex()
     {
         this.indexConfig = IndexConfiguration.UNIQUE;
         return this;
     }
 
-    public LuceneIndexBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
+    public LuceneSchemaIndexBuilder withDirectoryFactory( DirectoryFactory directoryFactory )
     {
         this.directoryFactory = directoryFactory;
         return this;
     }
 
-    public LuceneIndexBuilder withFileSystem( FileSystemAbstraction fileSystem )
+    public LuceneSchemaIndexBuilder withFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
         return this;
     }
 
-    public LuceneIndexBuilder withIndexRootFolder( File indexRootFolder )
+    public LuceneSchemaIndexBuilder withIndexRootFolder( File indexRootFolder )
     {
         this.indexRootFolder = indexRootFolder;
         return this;
     }
 
-    public LuceneIndex build()
+    public LuceneSchemaIndex build()
     {
-        return new LuceneIndex( buildIndexStorage(), indexConfig, samplingConfig );
+        return new LuceneSchemaIndex( buildIndexStorage(), indexConfig, samplingConfig );
     }
 
     private PartitionedIndexStorage buildIndexStorage()

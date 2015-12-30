@@ -23,13 +23,10 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -42,8 +39,7 @@ public class LuceneLabelScanStore implements LabelScanStore
 {
     public static final String INDEX_IDENTIFIER = "labelStore";
 
-    private final LabelScanStorageStrategy strategy;
-    private final LuceneIndex luceneIndex;
+    private final LuceneLabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
@@ -110,27 +106,12 @@ public class LuceneLabelScanStore implements LabelScanStore
         };
     }
 
-    public LuceneLabelScanStore( LabelScanStorageStrategy strategy, LuceneIndex luceneIndex,
-            FullStoreChangeStream fullStoreStream, Monitor monitor )
+    public LuceneLabelScanStore( LuceneLabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
+            Monitor monitor )
     {
         this.luceneIndex = luceneIndex;
-        this.strategy = strategy;
         this.fullStoreStream = fullStoreStream;
         this.monitor = monitor;
-    }
-
-    private AllEntriesLabelScanReader newAllEntriesReader()
-    {
-        try
-        {
-            return strategy.newNodeLabelReader( luceneIndex.getIndexReader() );
-        }
-        catch ( IOException e )
-        {
-            //TODO:
-            e.printStackTrace();
-            throw new RuntimeException( e );
-        }
     }
 
     @Override
@@ -149,41 +130,7 @@ public class LuceneLabelScanStore implements LabelScanStore
     @Override
     public LabelScanReader newReader()
     {
-
-        return new LabelScanReader()
-        {
-            @Override
-            public PrimitiveLongIterator nodesWithLabel( int labelId )
-            {
-                return strategy.nodesWithLabel( luceneIndex, labelId );
-            }
-
-            @Override
-            public void close()
-            {
-                try
-                {
-                    // why?
-                    luceneIndex.maybeRefresh();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-
-            @Override
-            public Iterator<Long> labelsForNode( long nodeId )
-            {
-                return strategy.labelsForNode( luceneIndex, nodeId );
-            }
-
-            @Override
-            public AllEntriesLabelScanReader allNodeLabelRanges()
-            {
-                return newAllEntriesReader();
-            }
-        };
+        return luceneIndex.getLabelScanReader();
     }
 
     @Override
@@ -201,14 +148,19 @@ public class LuceneLabelScanStore implements LabelScanStore
             if ( !luceneIndex.exists() )
             {
                 monitor.noIndex();
-                luceneIndex.prepare();
+                luceneIndex.create();
                 needsRebuild = true;
             }
             else if ( !luceneIndex.isValid() )
             {
-                // monitor.corruptIndex(  );
-                luceneIndex.prepare();
-                needsRebuild = true;
+                // todo: rebuild instead of failing? failing is here now only because there is a test expecting failure...
+//                monitor.corruptIndex(  );
+//                luceneIndex.create();
+//                needsRebuild = true;
+
+                throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
+                                       "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
+                                       luceneIndex + "', and then start the database again." );
             }
 
             // todo: test this strange open-close thingy
@@ -260,6 +212,6 @@ public class LuceneLabelScanStore implements LabelScanStore
         // Only a single writer is allowed at any point in time. For that this lock is used and passed
         // onto the writer to release in its close()
         lock.lock();
-        return strategy.acquireWriter( luceneIndex, lock );
+        return luceneIndex.getLabelScanWriter(lock);
     }
 }

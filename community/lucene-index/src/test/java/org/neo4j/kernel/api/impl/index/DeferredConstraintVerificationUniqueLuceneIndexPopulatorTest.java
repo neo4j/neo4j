@@ -458,7 +458,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, new File(
                 "/target/whatever" ), INDEX_IDENTIFIER );
-        LuceneIndex index = LuceneIndexBuilder.create()
+        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                 .withIndexStorage( indexStorage )
                 .build();
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new

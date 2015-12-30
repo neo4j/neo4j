@@ -43,4 +43,8 @@ public interface LabelScanReader extends Resource
     Iterator<Long> labelsForNode( long nodeId );
 
     AllEntriesLabelScanReader allNodeLabelRanges();
+
+    Iterator getAllDocsIterator(); // todo: should not be here...
+
+    long getMaxDoc(); // todo: should not be here...
 }

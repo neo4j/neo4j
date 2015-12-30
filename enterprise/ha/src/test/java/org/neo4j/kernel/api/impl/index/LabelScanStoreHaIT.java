@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,12 +43,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
-@Ignore("Label scan store to be upgraded")
 public class LabelScanStoreHaIT
 {
     @Test

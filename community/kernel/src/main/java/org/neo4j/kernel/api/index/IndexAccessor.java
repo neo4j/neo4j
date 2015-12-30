@@ -135,11 +135,13 @@ public interface IndexAccessor extends Closeable
                     return 0;
                 }
 
-                @Override public void close() throws IOException
+                @Override
+                public void close() throws IOException
                 {
                 }
 
-                @Override public Iterator<Long> iterator()
+                @Override
+                public Iterator<Long> iterator()
                 {
                     return emptyIterator();
                 }

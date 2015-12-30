@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.search.IndexSearcher;
+
 import java.util.Iterator;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
+
 
 public interface LabelScanStorageStrategy
 {
-    PrimitiveLongIterator nodesWithLabel( LuceneIndex luceneIndex, int labelId );
+    PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
 
-    AllEntriesLabelScanReader newNodeLabelReader( IndexReader indexReader );
+    AllEntriesLabelScanReader newNodeLabelReader( LabelScanReader reader );
 
-    Iterator<Long> labelsForNode( LuceneIndex luceneIndex, long nodeId );
-
-    LabelScanWriter acquireWriter( LuceneIndex index, Lock heldLock );
+    Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId );
 }

@@ -27,13 +27,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -66,11 +64,6 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     private static final int RANGES_PER_PAGE = 4096;
     private final BitmapDocumentFormat format;
 
-    public NodeRangeDocumentLabelScanStorageStrategy()
-    {
-        this( BitmapDocumentFormat._32 );
-    }
-
     NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat format )
     {
         this.format = format;
@@ -83,26 +76,24 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public PrimitiveLongIterator nodesWithLabel( LuceneIndex index, int labelId )
+    public PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId )
     {
         return concat(
-                new PageOfRangesIterator( format, index, RANGES_PER_PAGE, format.labelQuery( labelId ), labelId ) );
+                new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE, format.labelQuery( labelId ), labelId ) );
     }
 
     @Override
-    public AllEntriesLabelScanReader newNodeLabelReader( IndexReader indexReader )
+    public AllEntriesLabelScanReader newNodeLabelReader( LabelScanReader reader )
     {
-        return new LuceneAllEntriesLabelScanReader( new LuceneAllDocumentsReader( indexReader ), format );
+        LuceneAllDocumentsReader documents = new LuceneAllDocumentsReader( reader );
+        return new LuceneAllEntriesLabelScanReader( documents, format );
     }
 
     @Override
-    public Iterator<Long> labelsForNode( LuceneIndex luceneIndex, long nodeId )
+    public Iterator<Long> labelsForNode( IndexSearcher searcher, long nodeId )
     {
         try
         {
-            IndexReader indexReader = luceneIndex.getIndexReader();
-
-            IndexSearcher searcher = null;
             TopDocs topDocs = searcher.search( format.rangeQuery( format.bitmapFormat().rangeOf( nodeId ) ), 1 );
 
             if ( topDocs.scoreDocs.length < 1 )
@@ -143,11 +134,5 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    public LabelScanWriter acquireWriter( LuceneIndex luceneIndex, Lock heldLock )
-    {
-        return new LuceneLabelScanWriter( luceneIndex, format, heldLock );
     }
 }

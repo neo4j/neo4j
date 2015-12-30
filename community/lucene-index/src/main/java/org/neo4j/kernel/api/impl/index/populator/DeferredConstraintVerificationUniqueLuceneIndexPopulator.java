@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.index.LuceneIndex;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -41,7 +41,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
 
-    public DeferredConstraintVerificationUniqueLuceneIndexPopulator(LuceneIndex index, IndexDescriptor descriptor )
+    public DeferredConstraintVerificationUniqueLuceneIndexPopulator(LuceneSchemaIndex index, IndexDescriptor descriptor )
     {
         super( index );
         this.descriptor = descriptor;

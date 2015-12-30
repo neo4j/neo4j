@@ -32,14 +32,13 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-
 public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final LuceneIndexWriter writer;
-    private LuceneIndex luceneIndex;
+    private LuceneSchemaIndex luceneIndex;
 
-    LuceneIndexAccessor( LuceneIndex luceneIndex ) throws IOException
+    LuceneIndexAccessor( LuceneSchemaIndex luceneIndex ) throws IOException
     {
         this.luceneIndex = luceneIndex;
         this.writer = luceneIndex.getIndexWriter();

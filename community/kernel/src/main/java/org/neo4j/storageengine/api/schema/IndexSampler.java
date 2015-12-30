@@ -24,6 +24,11 @@ import org.neo4j.register.Register;
 
 public interface IndexSampler
 {
+    IndexSampler EMPTY = result -> {
+        result.write( 0, 0 );
+        return 0;
+    };
+
     /**
      * Sample this index (on the current thread)
      *

@@ -25,6 +25,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -77,22 +78,19 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, context.fileSystem() );
 
-        LuceneIndex index = getLuceneIndex( context, directoryFactory );
-        LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
-                new NodeRangeDocumentLabelScanStorageStrategy(), index,
-                fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
-                monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
+        LuceneLabelScanIndex index = getLuceneIndex( context, directoryFactory );
+        LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
+                fullStoreLabelUpdateStream( dependencies.indexStoreView() ), getMonitor( dependencies ) );
+
         return new LabelScanStoreProvider( scanStore, priority );
     }
 
-    private LuceneIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
+    private LuceneLabelScanIndex getLuceneIndex( KernelContext context, DirectoryFactory directoryFactory )
     {
-        return LuceneIndexBuilder.create()
-                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
-                    .withFileSystem( context.fileSystem() )
-                    .withDirectoryFactory( directoryFactory )
-                    .withIndexIdentifier( LuceneLabelScanStore.INDEX_IDENTIFIER )
-                    .build();
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( directoryFactory, context.fileSystem(),
+                LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
+                LuceneLabelScanStore.INDEX_IDENTIFIER );
+        return new LuceneLabelScanIndex( indexStorage );
     }
 
     private Monitor getMonitor( Dependencies dependencies )

@@ -130,7 +130,7 @@ public class AccessUniqueLuceneIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        LuceneIndex luceneIndex = new LuceneIndex( indexStorage, new IndexConfiguration( true ),
+        LuceneSchemaIndex luceneIndex = new LuceneSchemaIndex( indexStorage, new IndexConfiguration( true ),
                 new IndexSamplingConfig( new Config() ) );
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex );

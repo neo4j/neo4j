@@ -22,17 +22,17 @@ package org.neo4j.kernel.api.impl.index.populator;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
-import org.neo4j.kernel.api.impl.index.LuceneIndex;
 import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexPopulator;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
-    protected LuceneIndex luceneIndex;
+    protected LuceneSchemaIndex luceneIndex;
     protected LuceneIndexWriter writer;
     protected final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
 
-    LuceneIndexPopulator( LuceneIndex luceneIndex )
+    LuceneIndexPopulator( LuceneSchemaIndex luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }
@@ -40,7 +40,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void create() throws IOException
     {
-        luceneIndex.prepare();
+        luceneIndex.create();
         luceneIndex.open();
         writer = luceneIndex.getIndexWriter();
     }

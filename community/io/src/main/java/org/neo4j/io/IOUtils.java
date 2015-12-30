@@ -78,25 +78,46 @@ public final class IOUtils
         Exception closeException = null;
         for ( T closeable : closeables )
         {
-            try
+            if ( closeable != null )
             {
-                closeable.close();
-            }
-            catch ( Exception e )
-            {
-                if ( closeException == null )
+                try
                 {
-                    closeException = e;
+                    closeable.close();
                 }
-                else
+                catch ( Exception e )
                 {
-                    closeException.addSuppressed( e );
+                    if ( closeException == null )
+                    {
+                        closeException = e;
+                    }
+                    else
+                    {
+                        closeException.addSuppressed( e );
+                    }
                 }
             }
         }
         if ( closeException != null )
         {
             throw new IOException( "Exception closing multiple resources", closeException );
+        }
+    }
+
+    /**
+     * Closes given array of {@link AutoCloseable closeables} ignoring all exceptions.
+     *
+     * @param closeables the closeables to close
+     * @param <T> the type of closeable
+     */
+    @SafeVarargs
+    public static <T extends AutoCloseable> void closeAllSilently( T... closeables )
+    {
+        try
+        {
+            closeAll( closeables );
+        }
+        catch ( IOException ignored )
+        {
         }
     }
 }

@@ -87,14 +87,14 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        LuceneIndex index = LuceneIndexBuilder.create()
+                        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                                 .withFileSystem( new EphemeralFileSystemAbstraction() )
                                 .withDirectoryFactory( dirFactory )
                                 .withIndexRootFolder( dir )
                                 .withIndexIdentifier( "1" )
                                 .build();
 
-                        index.prepare();
+                        index.create();
                         index.open();
                         return new LuceneIndexAccessor( index );
                     }
@@ -105,7 +105,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        LuceneIndex index = LuceneIndexBuilder.create()
+                        LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                                 .uniqueIndex()
                                 .withFileSystem( new EphemeralFileSystemAbstraction() )
                                 .withDirectoryFactory( dirFactory )
@@ -113,7 +113,7 @@ public class LuceneIndexAccessorTest
                                 .withIndexIdentifier( "testIndex" )
                                 .build();
 
-                        index.prepare();
+                        index.create();
                         index.open();
                         return new LuceneIndexAccessor( index );
                     }

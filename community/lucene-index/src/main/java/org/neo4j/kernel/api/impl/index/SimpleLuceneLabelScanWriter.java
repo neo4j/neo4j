@@ -33,24 +33,25 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
+import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 import static java.lang.String.format;
 
-public class LuceneLabelScanWriter implements LabelScanWriter
+public class SimpleLuceneLabelScanWriter implements LabelScanWriter
 {
-    private final LuceneIndex index;
+    private final IndexPartition partition;
     private final BitmapDocumentFormat format;
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
     private final Lock heldLock;
 
-    public LuceneLabelScanWriter( LuceneIndex index,
-                                  BitmapDocumentFormat format, Lock heldLock )
+    public SimpleLuceneLabelScanWriter( IndexPartition partition, BitmapDocumentFormat format, Lock heldLock )
     {
-        this.index = index;
+        this.partition = partition;
         this.format = format;
         this.heldLock = heldLock;
         currentRange = -1;
@@ -89,8 +90,8 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         {
             try
             {
-                // todo: why do we need maybeRefresh here? maybe use maybeRefresh
-                index.maybeRefresh();
+                // todo: why do we need maybeRefresh here? maybe use maybeRefreshBlocking
+                partition.maybeRefresh();
             }
             finally
             {
@@ -128,33 +129,35 @@ public class LuceneLabelScanWriter implements LabelScanWriter
             return;
         }
 
-        // TODO:
-        IndexSearcher searcher = null;
-        Map<Long/*label*/, Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
-        updateFields( updates, fields );
-
-        Document document = new Document();
-        format.addRangeValuesField( document, currentRange );
-
-        for ( Map.Entry<Long/*label*/, Bitmap> field : fields.entrySet() )
+        try ( PartitionSearcher partitionSearcher = partition.acquireSearcher() )
         {
-            // one field per label
-            Bitmap value = field.getValue();
-            if ( value.hasContent() )
+            IndexSearcher searcher = partitionSearcher.getIndexSearcher();
+            Map<Long/*label*/,Bitmap> fields = readLabelBitMapsInRange( searcher, currentRange );
+            updateFields( updates, fields );
+
+            Document document = new Document();
+            format.addRangeValuesField( document, currentRange );
+
+            for ( Map.Entry<Long/*label*/,Bitmap> field : fields.entrySet() )
             {
-                format.addLabelAndSearchFields( document, field.getKey(), value );
+                // one field per label
+                Bitmap value = field.getValue();
+                if ( value.hasContent() )
+                {
+                    format.addLabelAndSearchFields( document, field.getKey(), value );
+                }
             }
-        }
 
-        if ( isEmpty( document ) )
-        {
-            index.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
+            if ( isEmpty( document ) )
+            {
+                partition.getIndexWriter().deleteDocuments( format.rangeTerm( document ) );
+            }
+            else
+            {
+                partition.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
+            }
+            updates.clear();
         }
-        else
-        {
-            index.getIndexWriter().updateDocument( format.rangeTerm( document ), document );
-        }
-        updates.clear();
     }
 
     private boolean isEmpty( Document document )

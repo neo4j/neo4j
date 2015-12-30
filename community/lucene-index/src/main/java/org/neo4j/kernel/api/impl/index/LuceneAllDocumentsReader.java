@@ -23,34 +23,41 @@ import org.apache.lucene.document.Document;
 
 import java.util.Iterator;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 public class LuceneAllDocumentsReader implements BoundedIterable<Document>
 {
+    private LabelScanReader labelScanReader;
     private IndexReader indexReader;
 
-    public LuceneAllDocumentsReader( IndexReader indexReader)
+    public LuceneAllDocumentsReader( IndexReader indexReader )
     {
         this.indexReader = indexReader;
+    }
+
+    public LuceneAllDocumentsReader( LabelScanReader labelScanReader )
+    {
+        this.labelScanReader = labelScanReader;
     }
 
     @Override
     public long maxCount()
     {
-        return indexReader.getMaxDoc();
+        return labelScanReader != null ? labelScanReader.getMaxDoc() : indexReader.getMaxDoc();
     }
 
     @Override
     public Iterator<Document> iterator()
     {
-        return indexReader.getAllDocsIterator();
+        return labelScanReader != null ? labelScanReader.getAllDocsIterator() : indexReader.getAllDocsIterator();
     }
 
     @Override
     public void close()
     {
-        indexReader.close();
+        IOUtils.closeAllSilently( labelScanReader, labelScanReader );
     }
-
 }

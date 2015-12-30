@@ -69,7 +69,7 @@ public class LuceneLabelScanStoreWriterTest
         assertNotEquals( node1Range, node2Range );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{} ) );
         try
         {
@@ -92,7 +92,7 @@ public class LuceneLabelScanStoreWriterTest
         StubStorageService storage = new StubStorageService();
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, FORMAT, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId, new long[]{}, new long[]{label1, label2} ) );
         writer.close();
@@ -120,7 +120,7 @@ public class LuceneLabelScanStoreWriterTest
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -149,7 +149,7 @@ public class LuceneLabelScanStoreWriterTest
         assertNotEquals( node1Range, node2Range );
 
         // when
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
@@ -178,12 +178,12 @@ public class LuceneLabelScanStoreWriterTest
         assertEquals( range, format.bitmapFormat().rangeOf( nodeId2 ) );
 
         // node already indexed
-        LuceneLabelScanWriter writer = new LuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        SimpleLuceneLabelScanWriter writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId1, new long[]{}, new long[]{label1} ) );
         writer.close();
 
         // when
-        writer = new LuceneLabelScanWriter( null, format, mock( Lock.class ) );
+        writer = new SimpleLuceneLabelScanWriter( null, format, mock( Lock.class ) );
         writer.write( NodeLabelUpdate.labelChanges( nodeId2, new long[]{}, new long[]{label2} ) );
         writer.close();
 

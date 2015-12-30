@@ -44,22 +44,24 @@ import java.util.TreeSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.storageengine.api.schema.BoundedIterable;
-import org.neo4j.storageengine.api.schema.NodeLabelRange;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.storageengine.api.schema.BoundedIterable;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.NodeLabelRange;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -77,14 +79,14 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 public class LuceneLabelScanStoreTest
 {
     private static final long[] NO_LABELS = new long[0];
-    private final LabelScanStorageStrategy strategy;
+    private final BitmapDocumentFormat documentFormat;
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static List<Object[]> parameterizedWithStrategies()
     {
         return asList(
-                new Object[]{new NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat._32 )},
-                new Object[]{new NodeRangeDocumentLabelScanStorageStrategy( BitmapDocumentFormat._64 )}
+                new Object[]{BitmapDocumentFormat._32},
+                new Object[]{BitmapDocumentFormat._64}
         );
     }
 
@@ -95,6 +97,7 @@ public class LuceneLabelScanStoreTest
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private LifeSupport life;
     private TrackingMonitor monitor;
+    private PartitionedIndexStorage indexStorage;
     private LuceneLabelScanStore store;
     private File dir;
 
@@ -337,11 +340,9 @@ public class LuceneLabelScanStoreTest
         }
         catch( LifecycleException e )
         {
-            assertThat(e.getCause(), instanceOf( IOException.class ));
-            assertThat(e.getCause().getMessage(), equalTo(
-                    "Label scan store could not be read, and needs to be rebuilt. To trigger a rebuild, ensure the " +
-                            "database is stopped, delete the files in '"+dir.getAbsolutePath()+"', and then start the " +
-                            "database again." ));
+            assertThat( e.getCause(), instanceOf( IOException.class ) );
+            assertThat( e.getCause().getMessage(), startsWith(
+                    "Label scan store could not be read, and needs to be rebuilt" ) );
         }
     }
 
@@ -412,9 +413,9 @@ public class LuceneLabelScanStoreTest
         return gaps;
     }
 
-    public LuceneLabelScanStoreTest( LabelScanStorageStrategy strategy )
+    public LuceneLabelScanStoreTest( BitmapDocumentFormat documentFormat )
     {
-        this.strategy = strategy;
+        this.documentFormat = documentFormat;
     }
 
     private void assertNodesForLabel( int labelId, long... expectedNodeIds )
@@ -454,12 +455,11 @@ public class LuceneLabelScanStoreTest
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        LuceneIndex luceneIndex = LuceneIndexBuilder.create()
-                .withIndexIdentifier( "testIndex" )
-                .withDirectoryFactory( directoryFactory )
-                .withIndexRootFolder( dir )
-                .build();
-        store = life.add( new LuceneLabelScanStore( strategy, luceneIndex, asStream( existingData ), monitor ) );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, new DefaultFileSystemAbstraction(), dir,
+                LuceneLabelScanStore.INDEX_IDENTIFIER );
+
+        LuceneLabelScanIndex index = new LuceneLabelScanIndex( documentFormat, indexStorage );
+        store = life.add( new LuceneLabelScanStore( index, asStream( existingData ), monitor ) );
 
         life.start();
         assertTrue( monitor.initCalled );
@@ -486,12 +486,16 @@ public class LuceneLabelScanStoreTest
     private void scrambleIndexFilesAndRestart( List<NodeLabelUpdate> data ) throws IOException
     {
         shutdown();
-        File[] files = dir.listFiles();
-        if ( files != null )
+        List<File> indexPartitions = indexStorage.listFolders();
+        for ( File partition : indexPartitions )
         {
-            for ( File indexFile : files )
+            File[] files = partition.listFiles();
+            if ( files != null )
             {
-                scrambleFile( indexFile );
+                for ( File indexFile : files )
+                {
+                    scrambleFile( indexFile );
+                }
             }
         }
         start( data );
