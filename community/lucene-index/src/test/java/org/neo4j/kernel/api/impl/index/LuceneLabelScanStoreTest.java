@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.BoundedIterable;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.NodeLabelRange;
@@ -459,7 +460,8 @@ public class LuceneLabelScanStoreTest
                 LuceneLabelScanStore.INDEX_IDENTIFIER );
 
         LuceneLabelScanIndex index = new LuceneLabelScanIndex( documentFormat, indexStorage );
-        store = life.add( new LuceneLabelScanStore( index, asStream( existingData ), monitor ) );
+        store = new LuceneLabelScanStore( index, asStream( existingData ), NullLogProvider.getInstance(), monitor );
+        life.add( store );
 
         life.start();
         assertTrue( monitor.initCalled );

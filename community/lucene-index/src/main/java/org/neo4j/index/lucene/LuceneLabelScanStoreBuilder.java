@@ -32,8 +32,6 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
-
 /**
  * Means of obtaining a {@link LabelScanStore}, independent of the {@link org.neo4j.kernel.extension.KernelExtensions}
  * mechanism, when you need to access the store without running a full database. This is used during consistency
@@ -48,7 +46,7 @@ public class LuceneLabelScanStoreBuilder
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
-    private LuceneLabelScanStore labelScanStore = null;
+    private LuceneLabelScanStore labelScanStore;
 
     public LuceneLabelScanStoreBuilder( File storeDir, FullStoreChangeStream fullStoreStream,
             FileSystemAbstraction fileSystem, LogProvider logProvider )
@@ -68,8 +66,8 @@ public class LuceneLabelScanStoreBuilder
                     LabelScanStoreProvider.getStoreDirectory( storeDir ),
                     LuceneLabelScanStore.INDEX_IDENTIFIER );
             LuceneLabelScanIndex index = new LuceneLabelScanIndex( indexStorage );
-            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream,
-                    LuceneLabelScanStore.loggerMonitor( logProvider ) );
+            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream, logProvider,
+                    LuceneLabelScanStore.Monitor.EMPTY );
 
             try
             {

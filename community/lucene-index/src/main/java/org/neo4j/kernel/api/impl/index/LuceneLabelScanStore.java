@@ -42,12 +42,46 @@ public class LuceneLabelScanStore implements LabelScanStore
     private final LuceneLabelScanIndex luceneIndex;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
+    private final Log log;
     private final Monitor monitor;
     private boolean needsRebuild;
     private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
     {
+        Monitor EMPTY = new Monitor()
+        {
+            @Override
+            public void init()
+            {
+            }
+
+            @Override
+            public void noIndex()
+            {
+            }
+
+            @Override
+            public void lockedIndex( LockObtainFailedException e )
+            {
+            }
+
+            @Override
+            public void corruptIndex( IOException e )
+            {
+            }
+
+            @Override
+            public void rebuilding()
+            {
+            }
+
+            @Override
+            public void rebuilt( long roughNodeCount )
+            {
+            }
+        };
+
         void init();
 
         void noIndex();
@@ -61,56 +95,12 @@ public class LuceneLabelScanStore implements LabelScanStore
         void rebuilt( long roughNodeCount );
     }
 
-    // todo: WAT?
-    public static Monitor loggerMonitor( LogProvider logProvider )
-    {
-        final Log log = logProvider.getLog( LuceneLabelScanStore.class );
-        return new Monitor()
-        {
-            @Override
-            public void init()
-            {   // Don't log anything here
-            }
-
-            @Override
-            public void noIndex()
-            {
-                log.info( "No lucene scan store index found, this might just be first use. " +
-                             "Preparing to rebuild." );
-            }
-
-            @Override
-            public void lockedIndex( LockObtainFailedException e )
-            {
-                log.warn( "Index is locked by another process or database", e );
-            }
-
-            @Override
-            public void corruptIndex( IOException corruptionException )
-            {
-                log.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
-                        corruptionException );
-            }
-
-            @Override
-            public void rebuilding()
-            {
-                log.info( "Rebuilding lucene scan store, this may take a while" );
-            }
-
-            @Override
-            public void rebuilt( long highNodeId )
-            {
-                log.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
-            }
-        };
-    }
-
     public LuceneLabelScanStore( LuceneLabelScanIndex luceneIndex, FullStoreChangeStream fullStoreStream,
-            Monitor monitor )
+            LogProvider logProvider, Monitor monitor )
     {
         this.luceneIndex = luceneIndex;
         this.fullStoreStream = fullStoreStream;
+        this.log = logProvider.getLog( getClass() );
         this.monitor = monitor;
     }
 
@@ -147,7 +137,9 @@ public class LuceneLabelScanStore implements LabelScanStore
         {
             if ( !luceneIndex.exists() )
             {
+                log.info( "No lucene scan store index found, this might just be first use. Preparing to rebuild." );
                 monitor.noIndex();
+
                 luceneIndex.create();
                 needsRebuild = true;
             }
@@ -157,6 +149,8 @@ public class LuceneLabelScanStore implements LabelScanStore
 //                monitor.corruptIndex(  );
 //                luceneIndex.create();
 //                needsRebuild = true;
+
+                log.warn( "Lucene scan store index could not be read. Preparing to rebuild." );
 
                 throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
                                        "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
@@ -169,6 +163,7 @@ public class LuceneLabelScanStore implements LabelScanStore
         catch ( LockObtainFailedException e )
         {
             luceneIndex.close();
+            log.error( "Index is locked by another process or database", e );
             monitor.lockedIndex( e );
             throw e;
         }
@@ -181,8 +176,10 @@ public class LuceneLabelScanStore implements LabelScanStore
         {   // we saw in init() that we need to rebuild the index, so do it here after the
             // neostore has been properly started.
             monitor.rebuilding();
+            log.info( "Rebuilding lucene scan store, this may take a while" );
             long numberOfNodes = rebuild();
             monitor.rebuilt( numberOfNodes );
+            log.info( "Lucene scan store rebuilt (roughly " + numberOfNodes + " nodes)" );
             needsRebuild = false;
         }
     }

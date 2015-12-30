@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
-import static org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.loggerMonitor;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 @Service.Implementation(KernelExtensionFactory.class)
@@ -69,7 +68,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
     {
         super( "lucene-scan-store");
         this.priority = priority;
-        this.monitor = monitor;
+        this.monitor = (monitor == null) ? Monitor.EMPTY : monitor;
     }
 
     @Override
@@ -80,7 +79,9 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
         LuceneLabelScanIndex index = getLuceneIndex( context, directoryFactory );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( index,
-                fullStoreLabelUpdateStream( dependencies.indexStoreView() ), getMonitor( dependencies ) );
+                fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
+                dependencies.getLogService().getInternalLogProvider(), monitor );
+
 
         return new LabelScanStoreProvider( scanStore, priority );
     }
@@ -93,8 +94,4 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         return new LuceneLabelScanIndex( indexStorage );
     }
 
-    private Monitor getMonitor( Dependencies dependencies )
-    {
-        return monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() );
-    }
 }
