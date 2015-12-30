@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
@@ -43,11 +44,9 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 /**
  * Pushes transactions committed on master to one or more slaves. Number of slaves receiving each transactions
@@ -147,28 +146,8 @@ public class TransactionPropagator implements Lifecycle
     private final Configuration config;
     private final Slaves slaves;
     private final CommitPusher pusher;
-    private final CappedOperation<ReplicationContext> slaveCommitFailureLogger =
-            new CappedOperation<ReplicationContext>(
-                    CappedOperation.time( 5, TimeUnit.SECONDS ),
-                    CappedOperation.differentItemClasses() )
-            {
-                @Override
-                protected void triggered( ReplicationContext context )
-                {
-                    log.error( "Slave " + context.slave.getServerId() + ": Replication commit threw" +
-                               (context.throwable instanceof ComException ? " communication" : "") +
-                               " exception:", context.throwable );
-                }
-            };
-    private final CappedOperation<String> pushedToTooFewSlaveLogger =
-            new CappedOperation<String>( time( 5, TimeUnit.SECONDS ) )
-            {
-                @Override
-                protected void triggered( String message )
-                {
-                    log.info( message );
-                }
-            };
+    private final CappedLogger slaveCommitFailureLogger;
+    private final CappedLogger pushedToTooFewSlaveLogger;
 
     public TransactionPropagator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
     {
@@ -176,6 +155,8 @@ public class TransactionPropagator implements Lifecycle
         this.log = log;
         this.slaves = slaves;
         this.pusher = pusher;
+        slaveCommitFailureLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
+        pushedToTooFewSlaveLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, Clock.SYSTEM_CLOCK );
     }
 
     @Override
@@ -286,8 +267,8 @@ public class TransactionPropagator implements Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                pushedToTooFewSlaveLogger.event( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
-                        replicationFactor + ", but could only commit at " + successfulReplications );
+                pushedToTooFewSlaveLogger.info( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
+                        replicationFactor + ", but could only commit at " + successfulReplications, null );
             }
         }
         catch ( Throwable t )
@@ -330,7 +311,9 @@ public class TransactionPropagator implements Lifecycle
         catch ( ExecutionException e )
         {
             context.throwable = e.getCause();
-            slaveCommitFailureLogger.event( context );
+            slaveCommitFailureLogger.error( "Slave " + context.slave.getServerId() + ": Replication commit threw" +
+                                            (context.throwable instanceof ComException ? " communication" : "") +
+                                            " exception:", context.throwable );
             return false;
         }
         catch ( CancellationException e )

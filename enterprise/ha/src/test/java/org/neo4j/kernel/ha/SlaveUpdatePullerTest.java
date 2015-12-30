@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -55,7 +57,6 @@ import org.neo4j.test.CleanupRule;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -246,16 +247,65 @@ public class SlaveUpdatePullerTest
         updatePuller.pullUpdates();
 
         // THEN the OOM should be caught and logged
-        assertTrue( logging.hasSeenError( OutOfMemoryError.class ) );
+        assertThat( logging.countErrorsByType( OutOfMemoryError.class ), is( 1 ) );
 
         // WHEN that has passed THEN we should still be making pull attempts.
         updatePuller.pullUpdates();
     }
 
+    @Test
+    public void shouldCapExcessiveComExceptionLogging() throws Exception
+    {
+        OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
+        updatePullStubbing.thenThrow( new ComException() );
+
+        for ( int i = 0; i < SlaveUpdatePuller.LOG_CAP + 20; i++ )
+        {
+            updatePuller.pullUpdates();
+        }
+
+        assertThat( logging.countWarningsByType( ComException.class ), is( SlaveUpdatePuller.LOG_CAP ) );
+
+        // And we should be able to recover afterwards
+        updatePullStubbing
+                .thenReturn( Response.EMPTY )
+                .thenThrow( new ComException() );
+
+        updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
+        updatePuller.pullUpdates(); // And then we log another exception
+
+        assertThat( logging.countWarningsByType( ComException.class ), is( SlaveUpdatePuller.LOG_CAP + 1 ) );
+    }
+
+    @Test
+    public void shouldCapExcessiveInvalidEpochExceptionLogging() throws Exception
+    {
+        OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
+        updatePullStubbing.thenThrow( new InvalidEpochException( 2, 1 ) );
+
+        for ( int i = 0; i < SlaveUpdatePuller.LOG_CAP + 20; i++ )
+        {
+            updatePuller.pullUpdates();
+        }
+
+        assertThat( logging.countWarningsByType( InvalidEpochException.class ), is( SlaveUpdatePuller.LOG_CAP ) );
+
+        // And we should be able to recover afterwards
+        updatePullStubbing
+                .thenReturn( Response.EMPTY )
+                .thenThrow(  new InvalidEpochException( 2, 1 ) );
+
+        updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
+        updatePuller.pullUpdates(); // And then we log another exception
+
+        assertThat( logging.countWarningsByType( InvalidEpochException.class ), is( SlaveUpdatePuller.LOG_CAP + 1 ) );
+    }
+
     private static class ErrorTrackingLogging extends LifecycleAdapter implements Logging
     {
         private final List<Throwable> errors = new ArrayList<>();
-        private final StringLogger logger = new ErrorTrackingLogger( errors );
+        private final List<Throwable> warnings = new ArrayList<>();
+        private final StringLogger logger = new ErrorTrackingLogger( errors, warnings );
 
         @Override
         public StringLogger getMessagesLog( Class loggingClass )
@@ -269,26 +319,46 @@ public class SlaveUpdatePullerTest
             throw new UnsupportedOperationException( "Shouldn't be required" );
         }
 
-        boolean hasSeenError( Class<?> cls )
+        int countErrorsByType( Class<?> cls )
         {
-            for ( Throwable throwable : errors )
+            return countByType( errors, cls );
+        }
+
+        int countWarningsByType( Class<?> cls )
+        {
+            return countByType( warnings, cls );
+        }
+
+        private int countByType( List<Throwable> throwables, Class<?> cls )
+        {
+            int sum = 0;
+            for ( Throwable throwable : throwables )
             {
                 if ( throwable.getClass().equals( cls ) )
                 {
-                    return true;
+                    sum++;
                 }
             }
-            return false;
+            return sum;
         }
     }
 
     private static class ErrorTrackingLogger extends BufferingLogger
     {
         private final List<Throwable> errors;
+        private final List<Throwable> warnings;
 
-        public ErrorTrackingLogger( List<Throwable> errors )
+        public ErrorTrackingLogger( List<Throwable> errors, List<Throwable> warnings )
         {
             this.errors = errors;
+            this.warnings = warnings;
+        }
+
+        @Override
+        public void warn( String msg, Throwable cause, boolean flush, LogMarker logMarker )
+        {
+            warnings.add( cause );
+            super.warn( msg, cause, flush, logMarker );
         }
 
         @Override
