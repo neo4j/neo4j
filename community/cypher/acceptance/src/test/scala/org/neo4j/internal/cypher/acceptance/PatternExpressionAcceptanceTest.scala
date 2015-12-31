@@ -213,11 +213,11 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     relate(start, createNode())
 
     val result = executeWithAllPlanners("match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n")
-      .toList
 
-    result should equal(List(
+    result.toList should equal(List(
       Map("n" -> start)
     ))
+    result shouldNot use("RollUpApply")
   }
 
   test("match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n") {
@@ -228,6 +228,27 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
 
     result should have size 3
+  }
+
+  test("match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n")
+
+    result should have size 3
+  }
+
+  test("match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n")
+
+    result should have size 3
+    result should use("RollUpApply")
   }
 
   test("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n") {
@@ -252,15 +273,13 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val start3 = createNode()
     relate(start3, createNode())
 
-    graph.inTx {
-      val result = executeWithAllPlanners("match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n")
-        .toList
+    val result = executeWithAllPlanners("match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n")
 
-      result should equal(List(
-        Map("n" -> start),
-        Map("n" -> start3)
-      ))
-    }
+    result.toList should equal(List(
+      Map("n" -> start),
+      Map("n" -> start3)
+    ))
+    result should use("RollUpApply")
   }
 
   test("MATCH (owner) WITH owner, COUNT(*) > 0 AS collected WHERE (owner)--() RETURN *") {

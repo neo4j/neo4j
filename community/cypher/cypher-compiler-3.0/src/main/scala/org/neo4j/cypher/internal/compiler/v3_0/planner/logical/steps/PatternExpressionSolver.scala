@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, SemanticDirection, ast, replace}
 
+import scala.collection.mutable
+
 /*
 Prepares expressions containing pattern expressions by solving them in a sub-query through RollUpApply and replacing
 the original expression with an identifier, or preferably GetDegree when possible.
@@ -49,6 +51,25 @@ Would be solved with a plan such as
 +(LHS) AllNodesScan(n)
 */
 case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression) {
+
+  def apply(source: LogicalPlan, expressions: Seq[Expression])
+           (implicit context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
+    val expressionBuild = mutable.ListBuffer[Expression]()
+    val finalPlan = expressions.foldLeft(source) {
+      case (planAcc, expression: PatternExpression) =>
+        val (newPlan, newExpression) = solveUsingRollUpApply(planAcc, expression, None)
+        expressionBuild += newExpression
+        newPlan
+
+      case (planAcc, inExpression) =>
+        val (newPlan, newExpression) = rewriteInnerExpressions(planAcc, inExpression)
+        expressionBuild += newExpression
+        newPlan
+    }
+
+    (finalPlan, expressionBuild.toSeq)
+  }
+
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) =
     projectionsMap.foldLeft(source, Map.empty[String, Expression]) {
@@ -60,28 +81,30 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 
       // Any other expression, that might contain an inner PatternExpression
       case ((plan, newProjectionsMapAcc), (key, inExpression)) =>
-        val expression = solveUsingGetDegree(inExpression)
-
-        val patternExpressions: Seq[PatternExpression] = expression.findByAllClass[PatternExpression]
-
-        // Yeah, this is a foldLeft inside a foldLeft. On the outside, we are folding over all projections, and here
-        // we are folding over all inner PatternExpressions inside this particular projection
-        val (newPlan, newExpression) = patternExpressions.foldLeft(plan, expression) {
-          case ((planAcc, expressionAcc), patternExpression) =>
-            val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None)
-
-            val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
-            val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
-
-            // If for some reason nothing was changed, make sure we also return the original plan
-            if (rewrittenExpression == expressionAcc)
-              (planAcc, expressionAcc)
-            else
-              (newPlan, rewrittenExpression)
-        }
-
+        val (newPlan, newExpression) = rewriteInnerExpressions(plan, inExpression)
         (newPlan, newProjectionsMapAcc + (key -> newExpression))
     }
+
+  private def rewriteInnerExpressions(plan: LogicalPlan, inExpression: Expression)
+                                     (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
+    val expression = solveUsingGetDegree(inExpression)
+
+    val patternExpressions: Seq[PatternExpression] = expression.findByAllClass[PatternExpression]
+
+    patternExpressions.foldLeft(plan, expression) {
+      case ((planAcc, expressionAcc), patternExpression) =>
+        val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None)
+
+        val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
+        val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
+
+        // If for some reason nothing was changed, make sure we also return the original plan
+        if (rewrittenExpression == expressionAcc)
+          (planAcc, expressionAcc)
+        else
+          (newPlan, rewrittenExpression)
+    }
+  }
 
   private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = replace(replacer => {
     // We only unnest the pattern expressions if they are not hiding inside an expression that introduces scope

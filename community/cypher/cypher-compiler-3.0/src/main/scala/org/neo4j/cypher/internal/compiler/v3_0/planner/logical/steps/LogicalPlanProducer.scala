@@ -265,8 +265,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     OuterHashJoin(nodes, left, right)(solved)
   }
 
-  def planSelection(predicates: Seq[Expression], left: LogicalPlan)(implicit context: LogicalPlanningContext) = {
-    val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
+  def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression])(implicit context: LogicalPlanningContext) = {
+    val solved = left.solved.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(reported: _*)))
     Selection(predicates, left)(solved)
   }
 
