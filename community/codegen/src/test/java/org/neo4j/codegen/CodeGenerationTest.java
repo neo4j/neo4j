@@ -52,7 +52,6 @@ import static org.neo4j.codegen.MethodReference.constructorReference;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
-import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 
 public class CodeGenerationTest
@@ -202,7 +201,7 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            TypeReference stringList = parameterizedType( List.class, String.class );
+            TypeReference stringList = TypeReference.parameterizedType( List.class, String.class );
             FieldReference foo = simple.staticField( stringList, "FOO", Expression.invoke(
                     methodReference( Arrays.class, stringList, "asList", String[].class ),
                     constant( "FOO" ),
@@ -235,7 +234,7 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock fail = simple.generate( MethodDeclaration.method( void.class, "fail",
-                    param( parameterizedType( Thrower.class, typeParameter( "E" ) ), "thrower" ) )
+                    param( TypeReference.parameterizedType( Thrower.class, typeParameter( "E" ) ), "thrower" ) )
                     .parameterizedWith( "E", extending( Exception.class ) )
                     .throwsException( typeParameter( "E" ) ) ) )
             {
@@ -248,13 +247,8 @@ public class CodeGenerationTest
         // when
         try
         {
-            instanceMethod( handle.newInstance(), "fail", Thrower.class ).invoke( new Thrower<IOException>()
-            {
-                @Override
-                public void doThrow() throws IOException
-                {
-                    throw new IOException( "Hello from the inside" );
-                }
+            instanceMethod( handle.newInstance(), "fail", Thrower.class ).invoke( (Thrower<IOException>) () -> {
+                throw new IOException( "Hello from the inside" );
             } );
 
             fail( "expected exception" );
@@ -320,7 +314,7 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
-                    param( parameterizedType( Iterator.class, Runnable.class ), "targets" ) ) )
+                    param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targets" ) ) )
             {
                 try ( CodeBlock loop = callEach.whileLoop( invoke( callEach.load( "targets" ),
                         methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )

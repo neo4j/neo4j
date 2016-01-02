@@ -30,12 +30,12 @@ import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
-class ClassWriter implements ClassEmitter
+class ClassSourceWriter implements ClassEmitter
 {
     private final StringBuilder target;
     final Configuration configuration;
 
-    ClassWriter( StringBuilder target, Configuration configuration )
+    ClassSourceWriter( StringBuilder target, Configuration configuration )
     {
         this.target = target;
         this.configuration = configuration;

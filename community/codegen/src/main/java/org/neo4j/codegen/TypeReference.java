@@ -20,6 +20,10 @@
 package org.neo4j.codegen;
 
 import java.util.Arrays;
+import java.util.List;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 public class TypeReference
 {
@@ -71,12 +75,12 @@ public class TypeReference
             String canonicalName = type.getCanonicalName();
             simpleName = canonicalName.substring( packageName.length() + 1 );
         }
-        return new TypeReference( packageName, simpleName );
+        return new TypeReference( packageName, simpleName, type.isPrimitive(), type.isArray(), false );
     }
 
     public static TypeReference typeParameter( String name )
     {
-        return new TypeReference( "", name );
+        return new TypeReference( "", name, false, false, true );
     }
 
     public static TypeReference parameterizedType( Class<?> base, Class<?>... parameters )
@@ -91,7 +95,7 @@ public class TypeReference
 
     public static TypeReference parameterizedType( TypeReference base, TypeReference... parameters )
     {
-        return new TypeReference( base.packageName, base.simpleName, parameters );
+        return new TypeReference( base.packageName, base.simpleName, false, base.isArray(), false, parameters );
     }
 
     public static TypeReference[] typeReferences( Class<?> first, Class<?>[] more )
@@ -118,6 +122,9 @@ public class TypeReference
     private final String packageName;
     private final String simpleName;
     private final TypeReference[] parameters;
+    private final boolean isPrimitive;
+    private final boolean isArray;
+    private final boolean isTypeParameter;
 
     public String packageName()
     {
@@ -129,15 +136,39 @@ public class TypeReference
         return simpleName;
     }
 
-    static final TypeReference VOID = new TypeReference( "", "void" ),
-            OBJECT = new TypeReference( "java.lang", "Object" );
+    public boolean isPrimitive()
+    {
+        return isPrimitive;
+    }
+
+    public boolean isTypeParameter()
+    {
+        return isTypeParameter;
+    }
+
+    static final TypeReference VOID = new TypeReference( "", "void", true, false, false ),
+            OBJECT = new TypeReference( "java.lang", "Object", false, false, false );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
-    TypeReference( String packageName, String simpleName, TypeReference... parameters )
+    TypeReference( String packageName, String simpleName, boolean isPrimitive, boolean isArray,
+            boolean isTypeParameter, TypeReference... parameters )
     {
         this.packageName = packageName;
         this.simpleName = simpleName;
+        this.isPrimitive = isPrimitive;
+        this.isArray = isArray;
+        this.isTypeParameter = isTypeParameter;
         this.parameters = parameters;
+    }
+
+    public boolean isGeneric()
+    {
+        return parameters == null || parameters.length > 0;
+    }
+
+    public List<TypeReference> parameters()
+    {
+        return unmodifiableList( asList( parameters ) );
     }
 
     @Override
@@ -155,7 +186,6 @@ public class TypeReference
         return simpleName.equals( that.simpleName ) &&
                packageName.equals( that.packageName ) &&
                Arrays.equals( parameters, that.parameters );
-
     }
 
     @Override
@@ -197,6 +227,11 @@ public class TypeReference
     public String name()
     {
         return writeTo( new StringBuilder() ).toString();
+    }
+
+    public boolean isArray()
+    {
+        return isArray;
     }
 
     public abstract static class Bound

@@ -20,12 +20,14 @@
 package org.neo4j.codegen;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
+import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.NO_TYPES;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -158,6 +160,23 @@ public abstract class MethodDeclaration
         return false;
     }
 
+    public boolean isGeneric()
+    {
+        if ( returnType().isGeneric() || typeParameters.length != 0)
+        {
+            return true;
+        }
+        for ( Parameter parameter : parameters )
+        {
+            if ( parameter.type().isGeneric() )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public TypeReference declaringClass()
     {
         return owner;
@@ -170,6 +189,59 @@ public abstract class MethodDeclaration
     public Parameter[] parameters()
     {
         return parameters;
+    }
+
+    public MethodDeclaration erased()
+    {
+        Map<String,TypeReference> table = new HashMap<>();
+        for ( TypeParameter parameter : typeParameters )
+        {
+            table.put( parameter.name(), parameter.extendsBound() );
+        }
+
+        TypeReference newReturnType = erase( returnType(), table );
+        Parameter[] newParameters = new Parameter[this.parameters.length];
+        for ( int i = 0; i < parameters.length; i++ )
+        {
+            Parameter parameter = parameters[i];
+            TypeReference erasedType = erase( parameter.type(), table);
+            newParameters[i] = param( erasedType, parameter.name() );
+        }
+        TypeReference[] newExceptions = new TypeReference[exceptions.length];
+        for ( int i = 0; i < exceptions.length; i++ )
+        {
+            newExceptions[i] = erase( exceptions[i], table );
+        }
+        String newName = name();
+        boolean newIsConstrucor = isConstructor();
+
+        return new MethodDeclaration( owner, newParameters, newExceptions, typeParameters )
+        {
+            @Override
+            public boolean isConstructor()
+            {
+                return newIsConstrucor;
+            }
+
+            @Override
+            public TypeReference returnType()
+            {
+                return newReturnType;
+            }
+
+            @Override
+            public String name()
+            {
+                return newName;
+            }
+        };
+    }
+
+    private TypeReference erase( TypeReference reference, Map<String,TypeReference> table  )
+    {
+        TypeReference erasedReference = table.get( reference.name() );
+
+        return erasedReference != null ? erasedReference : reference;
     }
 
     static MethodDeclaration method( TypeReference owner, final TypeReference returnType, final String name,

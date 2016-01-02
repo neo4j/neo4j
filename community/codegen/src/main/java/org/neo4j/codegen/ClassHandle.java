@@ -27,7 +27,7 @@ public class ClassHandle extends TypeReference
 
     ClassHandle( String packageName, String name, TypeReference parent, CodeGenerator generator, long generation )
     {
-        super(packageName, name);
+        super(packageName, name, parent.isPrimitive(), parent.isArray(), false );
         this.parent = parent;
         this.generator = generator;
         this.generation = generation;

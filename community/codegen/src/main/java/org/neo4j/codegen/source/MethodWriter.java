@@ -36,29 +36,19 @@ import org.neo4j.codegen.TypeReference;
 
 class MethodWriter implements MethodEmitter, ExpressionVisitor
 {
-    private static final Runnable BOTTOM = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            throw new IllegalStateException( "Popped too many levels!" );
-        }
-    }, LEVEL = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-        }
+    private static final Runnable BOTTOM = () -> {
+        throw new IllegalStateException( "Popped too many levels!" );
+    }, LEVEL = () -> {
     };
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
-    private final ClassWriter classWriter;
+    private final ClassSourceWriter classSourceWriter;
     private final Deque<Runnable> level = new LinkedList<>();
 
-    public MethodWriter( StringBuilder target, ClassWriter classWriter )
+    public MethodWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
     {
         this.target = target;
-        this.classWriter = classWriter;
+        this.classSourceWriter = classSourceWriter;
         this.level.push( BOTTOM );
         this.level.push( LEVEL );
     }
@@ -84,7 +74,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
         {
             throw new IllegalStateException( "unbalanced blocks!" );
         }
-        classWriter.append( target );
+        classSourceWriter.append( target );
     }
 
     @Override
@@ -193,7 +183,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void beginTry( final Resource... resources )
     {
-        if ( resources.length > 0 && classWriter.configuration.isSet( SourceCode.SIMPLIFY_TRY_WITH_RESOURCE ) )
+        if ( resources.length > 0 && classSourceWriter.configuration.isSet( SourceCode.SIMPLIFY_TRY_WITH_RESOURCE ) )
         {
             for ( Resource resource : resources )
             {
@@ -203,18 +193,13 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
             }
             indent().append( "try\n" );
             indent().append( "{" );
-            level.push( new Runnable()
-            {
-                @Override
-                public void run()
+            level.push( () -> {
+                beginFinally();
+                for ( Resource resource : resources )
                 {
-                    beginFinally();
-                    for ( Resource resource : resources )
-                    {
-                        indent().append( resource.name() ).append( ".close();\n" );
-                    }
-                    endBlock();
+                    indent().append( resource.name() ).append( ".close();\n" );
                 }
+                endBlock();
             } );
         }
         else
