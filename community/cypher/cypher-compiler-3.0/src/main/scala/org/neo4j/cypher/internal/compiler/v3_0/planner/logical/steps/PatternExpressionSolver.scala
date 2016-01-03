@@ -71,19 +71,25 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
   }
 
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])
-           (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) =
-    projectionsMap.foldLeft(source, Map.empty[String, Expression]) {
+           (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
+    val newProjections = Map.newBuilder[String, Expression]
+    val plan = projectionsMap.foldLeft(source) {
 
       // RETURN (a)-->() as X - The top-level expression is a pattern expression
-      case ((plan, newProjectionsMapAcc), (key, expression: PatternExpression)) =>
+      case (plan, (key, expression: PatternExpression)) =>
         val (newPlan, newExpression) = solveUsingRollUpApply(plan, expression, Some(key))
-        (newPlan, newProjectionsMapAcc + (key -> newExpression))
+        newProjections += (key -> newExpression)
+        newPlan
 
       // Any other expression, that might contain an inner PatternExpression
-      case ((plan, newProjectionsMapAcc), (key, inExpression)) =>
+      case (plan, (key, inExpression)) =>
         val (newPlan, newExpression) = rewriteInnerExpressions(plan, inExpression)
-        (newPlan, newProjectionsMapAcc + (key -> newExpression))
+        newProjections += (key -> newExpression)
+        newPlan
     }
+
+    (plan, newProjections.result())
+  }
 
   private def rewriteInnerExpressions(plan: LogicalPlan, inExpression: Expression)
                                      (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
