@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -248,18 +247,5 @@ class HashBasedIndex extends InMemoryIndexImplementation
     public IndexSampler createSampler()
     {
         return new HashBasedIndexSampler( data );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId ) throws Exception
-    {
-        // TODO:
-    }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
-            throws Exception
-    {
-        // TODO:
     }
 }

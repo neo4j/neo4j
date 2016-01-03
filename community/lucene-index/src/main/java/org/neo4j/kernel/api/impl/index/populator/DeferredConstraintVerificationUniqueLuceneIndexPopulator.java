@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.register.Register.DoubleLong;
-import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -72,18 +71,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
     @Override
     public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
-        luceneIndex.maybeRefresh();
-        IndexReader indexReader;
-        try
-        {
-            indexReader = luceneIndex.getIndexReader();
-            indexReader.verifyDeferredConstraints(accessor, descriptor.getPropertyKeyId());
-        }
-        catch ( Exception e )
-        {
-            throw new IOException( e );
-        }
-        indexReader.close();
+        luceneIndex.verifyUniqueness( accessor, descriptor.getPropertyKeyId() );
     }
 
     @Override
@@ -128,16 +116,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
             @Override
             public void close() throws IOException, IndexEntryConflictException
             {
-                luceneIndex.maybeRefresh();
-                try ( IndexReader indexReader = luceneIndex.getIndexReader() )
-                {
-                    indexReader.verifyDeferredConstraints( accessor, descriptor.getPropertyKeyId(),
-                            updatedPropertyValues );
-                }
-                catch ( Exception e )
-                {
-                    throw new IOException( e );
-                }
+                luceneIndex.verifyUniqueness( accessor, descriptor.getPropertyKeyId(), updatedPropertyValues );
             }
 
             @Override

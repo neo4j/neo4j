@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index.reader;
+package org.neo4j.kernel.api.impl.index.verification;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;

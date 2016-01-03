@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.List;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -75,20 +73,6 @@ public class DelegatingIndexReader implements IndexReader
     public IndexSampler createSampler()
     {
         return delegate.createSampler();
-    }
-    
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
-            throws Exception
-    {
-        delegate.verifyDeferredConstraints( accessor, propertyKeyId );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId, List<Object> updatedPropertyValues )
-            throws Exception
-    {
-        delegate.verifyDeferredConstraints( accessor, propertyKeyId, updatedPropertyValues );
     }
 
     @Override

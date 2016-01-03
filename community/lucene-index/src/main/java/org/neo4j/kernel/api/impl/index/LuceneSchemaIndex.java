@@ -28,12 +28,17 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.reader.PartitionedIndexReader;
 import org.neo4j.kernel.api.impl.index.reader.SimpleIndexReader;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.index.verification.PartitionedUniquenessVerifier;
+import org.neo4j.kernel.api.impl.index.verification.SimpleUniquenessVerifier;
+import org.neo4j.kernel.api.impl.index.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -80,6 +85,33 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         }
     }
 
+    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( UniquenessVerifier verifier = createUniquenessVerifier() )
+        {
+            verifier.verify( accessor, propertyKeyId );
+        }
+    }
+
+    public void verifyUniqueness( PropertyAccessor accessor, int propertyKeyId, List<Object> updatedPropertyValues )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( UniquenessVerifier verifier = createUniquenessVerifier() )
+        {
+            verifier.verify( accessor, propertyKeyId, updatedPropertyValues );
+        }
+    }
+
+    private UniquenessVerifier createUniquenessVerifier() throws IOException
+    {
+        ensureOpen();
+        maybeRefresh();
+        List<IndexPartition> partitions = getPartitions();
+        return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
+                                                : createPartitionedUniquenessVerifier( partitions );
+    }
+
     private boolean hasSinglePartition( List<IndexPartition> partitions )
     {
         return partitions.size() == 1;
@@ -87,18 +119,37 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
 
     private SimpleIndexReader createSimpleReader( List<IndexPartition> partitions ) throws IOException
     {
-        return new SimpleIndexReader( partitions.get( 0 ).acquireSearcher(), config,
-                samplingConfig, taskCoordinator );
+        IndexPartition singlePartition = partitions.get( 0 );
+        return new SimpleIndexReader( singlePartition.acquireSearcher(), config, samplingConfig, taskCoordinator );
     }
 
     private PartitionedIndexReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
     {
-        List<PartitionSearcher> searchers = new ArrayList<>();
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedIndexReader( searchers );
+    }
+
+    private UniquenessVerifier createSimpleUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    {
+        IndexPartition singlePartition = partitions.get( 0 );
+        PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
+        return new SimpleUniquenessVerifier( partitionSearcher );
+    }
+
+    private UniquenessVerifier createPartitionedUniquenessVerifier( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedUniquenessVerifier( searchers );
+    }
+
+    private static List<PartitionSearcher> acquireSearchers( List<IndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
         for ( IndexPartition partition : partitions )
         {
             searchers.add( partition.acquireSearcher() );
         }
-        return new PartitionedIndexReader( searchers );
+        return searchers;
     }
 
     @Override

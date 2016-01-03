@@ -19,32 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.index.reader;
 
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.index.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexConfiguration;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -84,78 +76,6 @@ public class SimpleIndexReader implements IndexReader
         }
     }
 
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
-            throws Exception
-    {
-        try
-        {
-            PropertyAccessor propertyAccessor = (PropertyAccessor) accessor;
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( propertyAccessor, documentLogic,
-                    propertyKeyId );
-            IndexSearcher searcher = partitionSearcher.getIndexSearcher();
-            for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
-            {
-                Fields fields = leafReaderContext.reader().fields();
-                for ( String field : fields )
-                {
-                    if ( NODE_ID_KEY.equals( field ) )
-                    {
-                        continue;
-                    }
-
-                    TermsEnum terms = fields.terms( field ).iterator();
-                    BytesRef termsRef;
-                    while ( (termsRef = terms.next()) != null )
-                    {
-                        if ( terms.docFreq() > 1 )
-                        {
-                            collector.reset();
-                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
-                        }
-                    }
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            Throwable cause = e.getCause();
-            if ( cause instanceof IndexEntryConflictException )
-            {
-                throw (IndexEntryConflictException) cause;
-            }
-            throw e;
-        }
-    }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
-            List<Object> updatedPropertyValues ) throws Exception
-    {
-        try
-        {
-            PropertyAccessor propertyAccessor = (PropertyAccessor) accessor;
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( propertyAccessor, documentLogic,
-                    propertyKeyId );
-            for ( Object propertyValue : updatedPropertyValues )
-            {
-                collector.reset();
-                Query query = documentLogic.newSeekQuery( propertyValue );
-                getIndexSearcher().search( query, collector );
-            }
-        }
-        catch ( IOException e )
-        {
-            Throwable cause = e.getCause();
-            if ( cause instanceof IndexEntryConflictException )
-            {
-                throw (IndexEntryConflictException) cause;
-            }
-            throw e;
-        }
-    }
-
-    @Override
     public PrimitiveLongIterator seek( Object value )
     {
         return query( documentLogic.newSeekQuery( value ) );

@@ -84,22 +84,7 @@ public class PartitionedIndexReader implements IndexReader
     {
         return null;
     }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId )
-            throws Exception
-    {
-
-    }
-
-    @Override
-    public void verifyDeferredConstraints( Object accessor, int propertyKeyId,
-            List<Object> updatedPropertyValues ) throws Exception
-    {
-
-    }
-
-    @Override
+    
     public void close()
     {
         try
