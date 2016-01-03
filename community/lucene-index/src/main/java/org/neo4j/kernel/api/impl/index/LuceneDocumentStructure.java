@@ -57,7 +57,8 @@ public class LuceneDocumentStructure
     //  when lucene writer trying to add or update document
     private static final int MAX_FIELD_LENGTH = IndexWriter.MAX_TERM_LENGTH;
 
-    private final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
+
+    private static final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
     {
         @Override
         protected DocWithId initialValue()
@@ -66,7 +67,7 @@ public class LuceneDocumentStructure
         }
     };
 
-    DocWithId reuseDocument( long nodeId )
+    static DocWithId reuseDocument( long nodeId )
     {
         DocWithId doc = perThreadDocument.get();
         doc.setId( nodeId );
@@ -238,14 +239,18 @@ public class LuceneDocumentStructure
         }
     }
 
-    public Document documentRepresentingProperty( long nodeId, Object value )
+    private LuceneDocumentStructure()
+    {
+    }
+
+    public static Document documentRepresentingProperty( long nodeId, Object value )
     {
         DocWithId document = reuseDocument( nodeId );
         document.setValue( valueEncodingForValue( value ), value );
         return document.document;
     }
 
-    public ValueEncoding valueEncodingForValue( Object value )
+    public static ValueEncoding valueEncodingForValue( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -258,7 +263,7 @@ public class LuceneDocumentStructure
         throw new IllegalStateException( "Unable to encode the value " + value );
     }
 
-    public String encodedStringValue( Object value )
+    public static String encodedStringValue( Object value )
     {
         return valueEncodingForValue( value ).encodeField( value ).stringValue();
     }
@@ -273,12 +278,12 @@ public class LuceneDocumentStructure
         return new StringField( fieldIdentifier, value, store );
     }
 
-    public MatchAllDocsQuery newScanQuery()
+    public static MatchAllDocsQuery newScanQuery()
     {
         return new MatchAllDocsQuery();
     }
 
-    public Query newSeekQuery( Object value )
+    public static Query newSeekQuery( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -294,14 +299,14 @@ public class LuceneDocumentStructure
      * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
      * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
      */
-    public NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
+    public static NumericRangeQuery<Double> newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
     {
         Double min = lower != null ? lower.doubleValue() : null;
         Double max = upper != null ? upper.doubleValue() : null;
         return NumericRangeQuery.newDoubleRange( ValueEncoding.Number.key(), min, max, true, true );
     }
 
-    public Query newRangeSeekByStringQuery( String lower, boolean includeLower,
+    public static Query newRangeSeekByStringQuery( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
         boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
@@ -328,12 +333,12 @@ public class LuceneDocumentStructure
         return termRangeQuery;
     }
 
-    public PrefixQuery newRangeSeekByPrefixQuery( String prefix )
+    public static PrefixQuery newRangeSeekByPrefixQuery( String prefix )
     {
         return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
     }
 
-    public Term newTermForChangeOrRemove( long nodeId )
+    public static Term newTermForChangeOrRemove( long nodeId )
     {
         return new Term( NODE_ID_KEY, "" + nodeId );
     }

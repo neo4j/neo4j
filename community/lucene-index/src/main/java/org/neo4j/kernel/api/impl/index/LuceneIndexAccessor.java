@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 public class LuceneIndexAccessor implements IndexAccessor
 {
-    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final LuceneIndexWriter writer;
     private LuceneSchemaIndex luceneIndex;
 
@@ -175,24 +174,24 @@ public class LuceneIndexAccessor implements IndexAccessor
         private void addRecovered( long nodeId, Object value ) throws IOException
         {
 
-            writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                    documentStructure.documentRepresentingProperty( nodeId, value ) );
+            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
         }
 
         private void add( long nodeId, Object value ) throws IOException
         {
-            writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, value ) );
+            writer.addDocument( LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
         }
 
         private void change( long nodeId, Object value ) throws IOException
         {
-            writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                    documentStructure.documentRepresentingProperty( nodeId, value ) );
+            writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                    LuceneDocumentStructure.documentRepresentingProperty( nodeId, value ) );
         }
 
         protected void remove( long nodeId ) throws IOException
         {
-            writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
+            writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         }
     }
 }

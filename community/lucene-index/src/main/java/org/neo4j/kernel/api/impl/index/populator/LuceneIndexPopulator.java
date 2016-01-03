@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.index.populator;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -30,7 +29,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected LuceneSchemaIndex luceneIndex;
     protected LuceneIndexWriter writer;
-    protected final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
 
     LuceneIndexPopulator( LuceneSchemaIndex luceneIndex )
     {

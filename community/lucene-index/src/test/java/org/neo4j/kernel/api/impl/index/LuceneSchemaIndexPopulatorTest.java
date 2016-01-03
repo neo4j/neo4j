@@ -69,7 +69,6 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexSearcher searcher;
     private final long indexId = 0;
     private final int propertyKeyId = 666;
-    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
     @Before
     public void before() throws Exception
@@ -269,7 +268,7 @@ public class LuceneSchemaIndexPopulatorTest
 
         for ( Hit hit : expectedHits )
         {
-            TopDocs hits = searcher.search( documentLogic.newSeekQuery( hit.value ), 10 );
+            TopDocs hits = searcher.search( LuceneDocumentStructure.newSeekQuery( hit.value ), 10 );
             assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
             Set<Long> foundNodeIds = new HashSet<>();
             for ( int i = 0; i < hits.totalHits; i++ )

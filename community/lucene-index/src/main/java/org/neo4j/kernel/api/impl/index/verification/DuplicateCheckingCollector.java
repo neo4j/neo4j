@@ -27,7 +27,6 @@ import org.apache.lucene.search.SimpleCollector;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
@@ -38,18 +37,13 @@ import org.neo4j.kernel.api.properties.Property;
 class DuplicateCheckingCollector extends SimpleCollector
 {
     private final PropertyAccessor accessor;
-    private final LuceneDocumentStructure documentStructure;
     private final int propertyKeyId;
     private EntrySet actualValues;
     private LeafReader reader;
 
-    public DuplicateCheckingCollector(
-            PropertyAccessor accessor,
-            LuceneDocumentStructure documentStructure,
-            int propertyKeyId )
+    public DuplicateCheckingCollector( PropertyAccessor accessor, int propertyKeyId )
     {
         this.accessor = accessor;
-        this.documentStructure = documentStructure;
         this.propertyKeyId = propertyKeyId;
         actualValues = new EntrySet();
     }
@@ -63,8 +57,7 @@ class DuplicateCheckingCollector extends SimpleCollector
         }
         catch ( KernelException e )
         {
-            throw new ThisShouldNotHappenError(
-                    "Chris", "Indexed node should exist and have the indexed property.", e );
+            throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
         }
         catch ( PreexistingIndexEntryConflictException e )
         {
@@ -75,7 +68,7 @@ class DuplicateCheckingCollector extends SimpleCollector
     private void doCollect( int doc ) throws IOException, KernelException, PreexistingIndexEntryConflictException
     {
         Document document = reader.document( doc );
-        long nodeId = documentStructure.getNodeId( document );
+        long nodeId = LuceneDocumentStructure.getNodeId( document );
         Property property = accessor.getProperty( nodeId, propertyKeyId );
 
         // We either have to find the first conflicting entry set element,

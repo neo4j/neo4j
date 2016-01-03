@@ -49,7 +49,6 @@ public class SimpleIndexReader implements IndexReader
     private IndexConfiguration indexConfiguration;
     private final IndexSamplingConfig samplingConfig;
     private TaskCoordinator taskCoordinator;
-    private LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
     public SimpleIndexReader( PartitionSearcher partitionSearcher,
             IndexConfiguration indexConfiguration,
@@ -78,39 +77,39 @@ public class SimpleIndexReader implements IndexReader
 
     public PrimitiveLongIterator seek( Object value )
     {
-        return query( documentLogic.newSeekQuery( value ) );
+        return query( LuceneDocumentStructure.newSeekQuery( value ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
-        return query( documentLogic.newInclusiveNumericRangeSeekQuery( lower, upper ) );
+        return query( LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( lower, upper ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
             String upper, boolean includeUpper )
     {
-        return query( documentLogic.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
+        return query( LuceneDocumentStructure.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
     }
 
     @Override
     public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
     {
-        return query( documentLogic.newRangeSeekByPrefixQuery( prefix ) );
+        return query( LuceneDocumentStructure.newRangeSeekByPrefixQuery( prefix ) );
     }
 
     @Override
     public PrimitiveLongIterator scan()
     {
-        return query( documentLogic.newScanQuery() );
+        return query( LuceneDocumentStructure.newScanQuery() );
     }
 
     @Override
     public int countIndexedNodes( long nodeId, Object propertyValue )
     {
-        Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
-        Query valueQuery = documentLogic.newSeekQuery( propertyValue );
+        Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+        Query valueQuery = LuceneDocumentStructure.newSeekQuery( propertyValue );
         BooleanQuery.Builder nodeIdAndValueQuery = new BooleanQuery.Builder().setDisableCoord( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );

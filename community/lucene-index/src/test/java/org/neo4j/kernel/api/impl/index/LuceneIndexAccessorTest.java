@@ -79,7 +79,6 @@ public class LuceneIndexAccessorTest
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
     {
         final File dir = new File( "dir" );
-        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         return Arrays.asList(
                 arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
                 {

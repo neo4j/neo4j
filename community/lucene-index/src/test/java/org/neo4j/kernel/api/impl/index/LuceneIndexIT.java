@@ -49,7 +49,6 @@ public class LuceneIndexIT
 {
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value";
-    private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
     private LuceneIndexAccessor accessor;
 
     @Rule

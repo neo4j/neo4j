@@ -40,8 +40,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncod
 
 public class LuceneDocumentStructureTest
 {
-    private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-
     @Test
     public void tooLongStringShouldBeSkipped()
     {
@@ -70,7 +68,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
         // given
-        Document document = documentStructure.documentRepresentingProperty( 123, "hello" );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, "hello" );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -81,7 +79,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingBoolProperty() throws Exception
     {
         // given
-        Document document = documentStructure.documentRepresentingProperty( 123, true );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, true );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -92,7 +90,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingNumberProperty() throws Exception
     {
         // given
-        Document document = documentStructure.documentRepresentingProperty( 123, 12 );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, 12 );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -103,7 +101,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildDocumentRepresentingArrayProperty() throws Exception
     {
         // given
-        Document document = documentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
+        Document document = LuceneDocumentStructure.documentRepresentingProperty( 123, new Integer[]{1, 2, 3} );
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
@@ -114,7 +112,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingBoolProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) documentStructure.newSeekQuery( true );
+        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( true );
 
         // then
         assertEquals( "true", query.getTerm().text() );
@@ -124,7 +122,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingStringProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) documentStructure.newSeekQuery( "Characters" );
+        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( "Characters" );
 
         // then
         assertEquals( "Characters", query.getTerm().text() );
@@ -135,7 +133,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
         // given
-        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) documentStructure.newSeekQuery( 12 );
+        NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) LuceneDocumentStructure.newSeekQuery( 12 );
 
         // then
         assertEquals( 12.0, query.getMin() );
@@ -146,7 +144,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildQueryRepresentingArrayProperty() throws Exception
     {
         // given
-        TermQuery query = (TermQuery) documentStructure.newSeekQuery( new Integer[]{1, 2, 3} );
+        TermQuery query = (TermQuery) LuceneDocumentStructure.newSeekQuery( new Integer[]{1, 2, 3} );
 
         // then
         assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
@@ -156,7 +154,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByNumberQueryForStrings() throws Exception
     {
         // given
-        NumericRangeQuery<Double> query = documentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
+        NumericRangeQuery<Double> query = LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( 12.0d, null );
 
         // then
         assertEquals( "number", query.getField() );
@@ -170,7 +168,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
     {
         // given
-        TermRangeQuery query = (TermRangeQuery) documentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+        TermRangeQuery query = (TermRangeQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
 
         // then
         assertEquals( "string", query.getField() );
@@ -184,7 +182,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
     {
         // given
-        PrefixQuery query = documentStructure.newRangeSeekByPrefixQuery( "Prefix" );
+        PrefixQuery query = LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
 
         // then
         assertEquals( "Prefix", query.getPrefix().text() );
@@ -194,7 +192,7 @@ public class LuceneDocumentStructureTest
     public void shouldBuildScanQuery() throws Exception
     {
         // given
-        MatchAllDocsQuery query = documentStructure.newScanQuery();
+        MatchAllDocsQuery query = LuceneDocumentStructure.newScanQuery();
 
         // then
         assertNotNull( query );

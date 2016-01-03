@@ -40,8 +40,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KE
 
 public class SimpleUniquenessVerifier implements UniquenessVerifier
 {
-    private static final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-
     private final PartitionSearcher partitionSearcher;
 
     public SimpleUniquenessVerifier( PartitionSearcher partitionSearcher )
@@ -54,7 +52,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, documentLogic, propKeyId );
+            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
             IndexSearcher searcher = indexSearcher();
             for ( LeafReaderContext leafReaderContext : searcher.getIndexReader().leaves() )
             {
@@ -96,11 +94,11 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     {
         try
         {
-            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, documentLogic, propKeyId );
+            DuplicateCheckingCollector collector = new DuplicateCheckingCollector( accessor, propKeyId );
             for ( Object propertyValue : updatedPropertyValues )
             {
                 collector.reset();
-                Query query = documentLogic.newSeekQuery( propertyValue );
+                Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
                 indexSearcher().search( query, collector );
             }
         }

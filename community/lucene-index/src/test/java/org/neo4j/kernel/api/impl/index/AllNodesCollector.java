@@ -39,28 +39,20 @@ class AllNodesCollector extends SimpleCollector
         try ( SearcherManager manager = new SearcherManager( directory, new SearcherFactory() ) )
         {
             IndexSearcher searcher = manager.acquire();
-            List<Long> nodes = new ArrayList<>();
-            LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-            Query query = documentStructure.newSeekQuery( propertyValue );
-            searcher.search( query, new AllNodesCollector( documentStructure, nodes ) );
-            return nodes;
+            Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
+            AllNodesCollector collector = new AllNodesCollector();
+            searcher.search( query, collector );
+            return collector.nodeIds;
         }
     }
 
-    private final List<Long> nodeIds;
-    private final LuceneDocumentStructure documentLogic;
+    private final List<Long> nodeIds = new ArrayList<>();
     private LeafReader reader;
-
-    AllNodesCollector( LuceneDocumentStructure documentLogic, List<Long> nodeIds )
-    {
-        this.documentLogic = documentLogic;
-        this.nodeIds = nodeIds;
-    }
 
     @Override
     public void collect( int doc ) throws IOException
     {
-        nodeIds.add( documentLogic.getNodeId( reader.document( doc ) ) );
+        nodeIds.add( LuceneDocumentStructure.getNodeId( reader.document( doc ) ) );
     }
 
     @Override

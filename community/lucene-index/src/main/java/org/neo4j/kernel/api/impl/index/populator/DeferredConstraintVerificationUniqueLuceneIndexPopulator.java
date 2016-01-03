@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndex;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -64,7 +65,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
             throws IndexEntryConflictException, IOException
     {
         sampler.increment( 1 );
-        Document doc = documentStructure.documentRepresentingProperty( nodeId, propertyValue );
+        Document doc = LuceneDocumentStructure.documentRepresentingProperty( nodeId, propertyValue );
         writer.addDocument( doc );
     }
 
@@ -91,8 +92,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
                         sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                        writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                                LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case CHANGED:
@@ -100,13 +101,13 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends Lu
                         // sampler.increment( 1 ); // add new value
 
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
-                        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
-                                documentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
+                        writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                                LuceneDocumentStructure.documentRepresentingProperty( nodeId, update.getValueAfter() ) );
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
                         sampler.increment( -1 ); // remove old value
-                        writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
+                        writer.deleteDocuments( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );
                         break;
                     default:
                         throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
