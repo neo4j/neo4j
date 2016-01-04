@@ -234,6 +234,11 @@ public class TypeReference
         return isArray;
     }
 
+    public boolean isVoid()
+    {
+        return this == VOID;
+    }
+
     public abstract static class Bound
     {
         private final TypeReference type;

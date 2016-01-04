@@ -89,7 +89,7 @@ class ClassSourceWriter implements ClassEmitter
             if ( signature.isStatic() )
             {
                 target.append( "    static\n    {\n" );
-                return new MethodWriter( target, this );
+                return new MethodSourceWriter( target, this );
             }
             else
             {
@@ -128,7 +128,7 @@ class ClassSourceWriter implements ClassEmitter
             sep = ", ";
         }
         target.append( "\n    {\n" );
-        return new MethodWriter( target, this );
+        return new MethodSourceWriter( target, this );
     }
 
     private static void typeParameters( StringBuilder target, MethodDeclaration method )
@@ -175,7 +175,7 @@ class ClassSourceWriter implements ClassEmitter
         if ( value != null )
         {
             append( " = " );
-            value.accept( new MethodWriter( target, this ) );
+            value.accept( new MethodSourceWriter( target, this ) );
         }
         append( ";\n" );
     }

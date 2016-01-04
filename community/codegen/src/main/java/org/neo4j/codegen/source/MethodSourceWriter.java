@@ -34,7 +34,7 @@ import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.Resource;
 import org.neo4j.codegen.TypeReference;
 
-class MethodWriter implements MethodEmitter, ExpressionVisitor
+class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 {
     private static final Runnable BOTTOM = () -> {
         throw new IllegalStateException( "Popped too many levels!" );
@@ -45,7 +45,7 @@ class MethodWriter implements MethodEmitter, ExpressionVisitor
     private final ClassSourceWriter classSourceWriter;
     private final Deque<Runnable> level = new LinkedList<>();
 
-    public MethodWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
+    public MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;

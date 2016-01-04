@@ -19,11 +19,8 @@
  */
 package org.neo4j.codegen.source;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import javax.tools.JavaFileObject;
 
 import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.ClassEmitter;
@@ -34,38 +31,33 @@ import org.neo4j.codegen.TypeReference;
 class ByteCodeGenerator extends CodeGenerator
 {
     private final Configuration configuration;
-    private final Map<TypeReference, StringBuilder> classes = new HashMap<>();
-    private final SourceCompiler compiler;
+    private final Map<TypeReference, ClassByteCodeWriter> classes = new HashMap<>();
 
-    ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration, SourceCompiler compiler )
+    ByteCodeGenerator( ClassLoader parentClassLoader, Configuration configuration)
     {
         super( parentClassLoader );
         this.configuration = configuration;
-        this.compiler = compiler;
     }
 
     @Override
     protected ClassEmitter generate( TypeReference type, TypeReference base, TypeReference[] interfaces )
     {
-        return new ClassByteCodeWriter( type, base, interfaces );
+        ClassByteCodeWriter codeWriter = new ClassByteCodeWriter( type, base, interfaces );
+        synchronized ( this )
+        {
+            ClassByteCodeWriter old = classes.put( type, codeWriter );
+            if ( old != null )
+            {
+                classes.put( type, old );
+                throw new IllegalStateException( "Trying to generate class twice: " + type );
+            }
+        }
+
+        return codeWriter;
     }
 
     protected Iterable<? extends ByteCodes> compile( ClassLoader classpathLoader ) throws CompilationFailureException
     {
-        return compiler.compile( sourceFiles(), classpathLoader );
-    }
-
-    private synchronized List<JavaSourceFile> sourceFiles()
-    {
-        List<JavaSourceFile> sourceFiles = new ArrayList<>( classes.size() );
-        for ( Map.Entry<TypeReference, StringBuilder> entry : classes.entrySet() )
-        {
-            TypeReference reference = entry.getKey();
-            StringBuilder source = entry.getValue();
-            configuration.visit( reference, source );
-            sourceFiles.add( new JavaSourceFile( configuration.sourceBase().uri(
-                    reference.packageName(), reference.simpleName(), JavaFileObject.Kind.SOURCE ), source ) );
-        }
-        return sourceFiles;
+        return classes.values().stream().map( ClassByteCodeWriter::toByteCodes )::iterator;
     }
 }

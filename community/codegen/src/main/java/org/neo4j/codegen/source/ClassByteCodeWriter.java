@@ -20,14 +20,23 @@
 package org.neo4j.codegen.source;
 
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 
+import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.neo4j.codegen.ByteCodes;
 import org.neo4j.codegen.ClassEmitter;
 import org.neo4j.codegen.Expression;
+import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.MethodEmitter;
+import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.Resource;
 import org.neo4j.codegen.TypeReference;
@@ -37,12 +46,19 @@ import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
+import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_8;
 
 class ClassByteCodeWriter implements ClassEmitter
 {
     private final ClassWriter classWriter;
+    private final TypeReference type;
+    private final Map<FieldReference,Expression> staticFields = new HashMap<>();
 
     ClassByteCodeWriter(TypeReference type, TypeReference base, TypeReference[] interfaces)
     {
@@ -50,67 +66,125 @@ class ClassByteCodeWriter implements ClassEmitter
         String[] iNames = new String[interfaces.length];
         for ( int i = 0; i < interfaces.length; i++ )
         {
-            iNames[i] = interfaces[i].name();
+            iNames[i] = byteCodeName( interfaces[i].name() );
         }
-        classWriter.visit(V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName(type.packageName()), signature(type), base.name(), iNames);
+        classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type.name() ), signature( type ),
+                byteCodeName( base.name() ), iNames );
+        this.type = type;
     }
 
     @Override
     public MethodEmitter method( MethodDeclaration signature )
     {
-        throw new UnsupportedOperationException(  );
+        return new MethodByteCodeEmitter( classWriter, signature);
     }
 
     @Override
     public void field( FieldReference field, Expression value )
     {
-
+        //keep track of all static field->value, and initiate in <clinit> in done
+        if ( Modifier.isStatic( field.modifiers() ) )
+        {
+            staticFields.put( field, value );
+        }
+        FieldVisitor fieldVisitor = classWriter
+                .visitField( field.modifiers(), "string", "Ljava/lang/String;", signature( field.type() ), null );
+        fieldVisitor.visitEnd();
     }
 
     @Override
     public void done()
     {
-
+        if ( !staticFields.isEmpty() )
+        {
+            MethodVisitor methodVisitor = classWriter.visitMethod( ACC_STATIC, "<clinit>", "()V", null, null );
+            ByteCodeExpressionVisitor expressionVisitor = new ByteCodeExpressionVisitor( methodVisitor );
+            methodVisitor.visitCode();
+            for ( Map.Entry<FieldReference,Expression> entry : staticFields.entrySet() )
+            {
+                FieldReference field = entry.getKey();
+                entry.getValue().accept( expressionVisitor );
+                methodVisitor.visitFieldInsn(PUTSTATIC, byteCodeName( field.owner().name() ),
+                        field.name(), signature( field.type() ));
+            }
+            methodVisitor.visitInsn( RETURN );
+            methodVisitor.visitMaxs( 0, 0 );
+            methodVisitor.visitEnd();
+        }
+        classWriter.visitEnd();
     }
 
-    private static class MethodByteCodeEmitter implements MethodEmitter {
-
-        private final MethodVisitor methodVisitor;
-
-        public MethodByteCodeEmitter(ClassWriter classWriter, MethodDeclaration declaration)
+    public ByteCodes toByteCodes()
+    {
+        return new ByteCodes()
         {
+            @Override
+            public String name()
+            {
+                return type.name();
+            }
+
+            @Override
+            public ByteBuffer bytes()
+            {
+                return ByteBuffer.wrap( classWriter.toByteArray() );
+            }
+        };
+    }
+
+    private static class MethodByteCodeEmitter implements MethodEmitter
+    {
+        private final MethodVisitor methodVisitor;
+        private final MethodDeclaration declaration;
+        private final ByteCodeExpressionVisitor expressionVisitor;
+
+        public MethodByteCodeEmitter( ClassWriter classWriter, MethodDeclaration declaration)
+        {
+            this.declaration = declaration;
             this.methodVisitor = classWriter.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
                     signature( declaration ), exceptions( declaration ) );
+            this.methodVisitor.visitCode();
+            //if constructor must call default constructor of Object
+            if ( declaration.isConstructor() )
+            {
+                this.methodVisitor.visitVarInsn( ALOAD, 0 );
+                this.methodVisitor.visitMethodInsn( INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false );
+            }
+            this.expressionVisitor = new ByteCodeExpressionVisitor( this.methodVisitor );
         }
 
         @Override
         public void done()
         {
-
+            if ( declaration.returnType().isVoid() )
+            {
+                methodVisitor.visitInsn( RETURN );
+            }
+            //we rely on asm to keep track of stack depth
+            methodVisitor.visitMaxs( 0, 0 );
+            methodVisitor.visitEnd();
         }
 
         @Override
         public void expression( Expression expression )
         {
-
+            expression.accept( expressionVisitor );
         }
 
         @Override
         public void put( Expression target, FieldReference field, Expression value )
         {
-
         }
 
         @Override
         public void returns()
         {
-
+            methodVisitor.visitInsn( RETURN );
         }
 
         @Override
         public void returns( Expression value )
         {
-
         }
 
         @Override
@@ -175,6 +249,113 @@ class ClassByteCodeWriter implements ClassEmitter
 
         @Override
         public void beginForEach( Parameter local, Expression iterable )
+        {
+
+        }
+
+    }
+
+    private static class ByteCodeExpressionVisitor implements ExpressionVisitor
+    {
+        private final MethodVisitor methodVisitor;
+
+        private ByteCodeExpressionVisitor( MethodVisitor methodVisitor )
+        {
+            this.methodVisitor = methodVisitor;
+        }
+
+        @Override
+        public void invoke( Expression target, MethodReference method, Expression[] arguments )
+        {
+
+        }
+
+        @Override
+        public void invoke( MethodReference method, Expression[] arguments )
+        {
+
+        }
+
+        @Override
+        public void load( TypeReference type, String name )
+        {
+
+        }
+
+        @Override
+        public void getField( Expression target, FieldReference field )
+        {
+
+        }
+
+        @Override
+        public void constant( Object value )
+        {
+
+        }
+
+        @Override
+        public void getStatic( FieldReference field )
+        {
+
+        }
+
+        @Override
+        public void loadThis( String sourceName )
+        {
+
+        }
+
+        @Override
+        public void newInstance( TypeReference type )
+        {
+
+        }
+
+        @Override
+        public void not( Expression expression )
+        {
+
+        }
+
+        @Override
+        public void ternary( Expression test, Expression onTrue, Expression onFalse )
+        {
+
+        }
+
+        @Override
+        public void eq( Expression lhs, Expression rhs )
+        {
+
+        }
+
+        @Override
+        public void or( Expression lhs, Expression rhs )
+        {
+
+        }
+
+        @Override
+        public void add( Expression lhs, Expression rhs )
+        {
+
+        }
+
+        @Override
+        public void gt( Expression lhs, Expression rhs )
+        {
+
+        }
+
+        @Override
+        public void sub( Expression lhs, Expression rhs )
+        {
+
+        }
+
+        @Override
+        public void cast( TypeReference type, Expression expression )
         {
 
         }

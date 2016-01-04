@@ -43,7 +43,7 @@ import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 public enum SourceCode implements CodeGeneratorOption
 {
     SIMPLIFY_TRY_WITH_RESOURCE;
-    public static final CodeGeneratorOption SOURCECODE = new CodeGenerationStrategy<Configuration>()
+    public static final CodeGenerationStrategy<Configuration> SOURCECODE = new CodeGenerationStrategy<Configuration>()
     {
         @Override
         protected Configuration createConfigurator( ClassLoader loader )
@@ -62,6 +62,27 @@ public enum SourceCode implements CodeGeneratorOption
         protected String name()
         {
             return "SOURCECODE";
+        }
+    };
+    public static final CodeGenerationStrategy<Configuration> BYTECODE = new CodeGenerationStrategy<Configuration>()
+    {
+        @Override
+        protected Configuration createConfigurator( ClassLoader loader )
+        {
+            return new Configuration().withOptions( "-classpath", fullClasspathStringFor( loader ) );
+        }
+
+        @Override
+        protected CodeGenerator createCodeGenerator( ClassLoader loader, Configuration configuration )
+                throws CodeGenerationStrategyNotSupportedException
+        {
+            return new ByteCodeGenerator( loader, configuration );
+        }
+
+        @Override
+        protected String name()
+        {
+            return "BYTECODE";
         }
     };
     public static final CodeGeneratorOption PRINT_SOURCE = new SourceVisitor()

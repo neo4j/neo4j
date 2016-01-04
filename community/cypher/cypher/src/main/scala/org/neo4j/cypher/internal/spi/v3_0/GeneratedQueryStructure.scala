@@ -27,7 +27,7 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
@@ -58,7 +58,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id], sourceSink: Option[SourceSink])
                             (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
     val generator: codegen.CodeGenerator = try {
-      codegen.CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, sourceSink.map(sink => new SourceVisitor {
+      codegen.CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, SourceCode.SOURCECODE, sourceSink.map(sink => new SourceVisitor {
         override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
           sink.apply(reference.name(), sourceCode.toString)
       }).getOrElse(BLANK_OPTION))

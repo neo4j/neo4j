@@ -19,7 +19,10 @@
  */
 package org.neo4j.codegen;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -27,8 +30,12 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
+import org.neo4j.codegen.source.Configuration;
+import org.neo4j.codegen.source.SourceCode;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -54,15 +61,26 @@ import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 
+@RunWith(Parameterized.class)
 public class CodeGenerationTest
 {
     public static final MethodReference RUN = methodReference( Runnable.class, void.class, "run" );
 
-    public CodeGenerationTest()
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<Object[]> generators()
+    {
+        return Arrays.asList(new Object[] {SourceCode.SOURCECODE}, new Object[] {SourceCode.BYTECODE});
+    }
+
+    @Parameterized.Parameter( 0 )
+    public CodeGenerationStrategy<Configuration> strategy;
+
+    @Before
+    public void createGenerator()
     {
         try
         {
-            generator = CodeGenerator.generateCode( /*SourceCode.PRINT_SOURCE*/ );
+            generator = CodeGenerator.generateCode( strategy, SourceCode.PRINT_SOURCE);
         }
         catch ( CodeGenerationNotSupportedException e )
         {
@@ -589,7 +607,7 @@ public class CodeGenerationTest
     }
 
     private static final String PACKAGE = "org.neo4j.codegen.test";
-    private final CodeGenerator generator;
+    private CodeGenerator generator;
 
     ClassGenerator generateClass( String name, Class<?> firstInterface, Class<?>... more )
     {
