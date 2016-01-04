@@ -47,7 +47,6 @@ abstract class MuninnPageCursor implements PageCursor
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
-    protected long lockStamp;
     private long pointer;
     private int size;
 
@@ -115,7 +114,6 @@ abstract class MuninnPageCursor implements PageCursor
     protected void clearPageState()
     {
         size = 0; // make all future bound checks fail
-        lockStamp = 0; // make sure not to accidentally keep a lock state around
         page = null; // make all future page navigation fail
     }
 
@@ -236,7 +234,6 @@ abstract class MuninnPageCursor implements PageCursor
         // we must make sure to release that write lock as well.
         PageFaultEvent faultEvent = pinEvent.beginPageFault();
         MuninnPage page;
-        long stamp;
         try
         {
             // The grabFreePage method might throw.
@@ -247,7 +244,10 @@ abstract class MuninnPageCursor implements PageCursor
             // their translation tables might race with eviction) and try to pin it.
             // However, they will all fail because when they try to pin, the page will either be 1) free, 2) bound to
             // our file, or 3) the page is write locked.
-            stamp = page.writeLock();
+            if ( !page.tryExclusiveLock() )
+            {
+                throw new AssertionError( "Unable to take exclusive lock on free page" );
+            }
         }
         catch ( Throwable throwable )
         {
@@ -273,7 +273,7 @@ abstract class MuninnPageCursor implements PageCursor
         catch ( Throwable throwable )
         {
             // Make sure to unlock the page, so the eviction thread can pick up our trash.
-            page.unlockWrite( stamp );
+            page.unlockExclusive();
             // Make sure to unstuck the page fault latch.
             UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
             latch.release();
@@ -281,7 +281,7 @@ abstract class MuninnPageCursor implements PageCursor
             pinEvent.done();
             throw throwable;
         }
-        convertPageFaultLock( page, stamp );
+        convertPageFaultLock( page );
         UnsafeUtil.putObjectVolatile( chunk, chunkOffset, page );
         latch.release();
         faultEvent.done();
@@ -295,7 +295,7 @@ abstract class MuninnPageCursor implements PageCursor
 
     protected abstract void unpinCurrentPage();
 
-    protected abstract void convertPageFaultLock( MuninnPage page, long stamp );
+    protected abstract void convertPageFaultLock( MuninnPage page );
 
     protected abstract void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper );
 

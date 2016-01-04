@@ -663,8 +663,7 @@ public class MuninnPageCache implements PageCache
 
             if ( page.isLoaded() && page.decrementUsage() )
             {
-                long stamp = page.tryWriteLock();
-                if ( stamp != 0 )
+                if ( page.tryExclusiveLock() )
                 {
                     // We got the write lock. Time to evict the page!
                     try ( EvictionEvent evictionEvent = faultEvent.beginEviction() )
@@ -673,7 +672,7 @@ public class MuninnPageCache implements PageCache
                     }
                     finally
                     {
-                        page.unlockWrite( stamp );
+                        page.unlockExclusive();
                     }
                 }
             }
@@ -790,8 +789,7 @@ public class MuninnPageCache implements PageCache
 
             if ( page.isLoaded() && page.decrementUsage() )
             {
-                long stamp = page.tryWriteLock();
-                if ( stamp != 0 )
+                if ( page.tryExclusiveLock() )
                 {
                     // We got the lock.
                     // Assume that the eviction is going to succeed, so that we
@@ -812,7 +810,7 @@ public class MuninnPageCache implements PageCache
                     }
                     finally
                     {
-                        page.unlockWrite( stamp );
+                        page.unlockExclusive();
                     }
 
                     if ( pageEvicted )
@@ -951,14 +949,13 @@ public class MuninnPageCache implements PageCache
 
                 // Skip the page if it is already write locked, or not dirty, or too popular.
                 boolean thisPageIsDirty = false;
-                if ( page.isWriteLocked() || !(thisPageIsDirty = page.isDirty()) || !page.decrementUsage() )
+                if ( !(thisPageIsDirty = page.isDirty()) || !page.decrementUsage() )
                 {
                     seenDirtyPages |= thisPageIsDirty;
                     continue; // Continue looping to the next page.
                 }
 
-                long stamp = page.tryReadLock();
-                if ( stamp != 0 )
+                if ( page.tryExclusiveLock() ) // TODO somehow avoid taking these exclusive locks, that we currently need to avoid racing with other flushes
                 {
                     try
                     {
@@ -984,7 +981,7 @@ public class MuninnPageCache implements PageCache
                     }
                     finally
                     {
-                        page.unlockRead( stamp );
+                        page.unlockExclusive();
                     }
                 }
 

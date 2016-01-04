@@ -193,7 +193,6 @@ final class MuninnPagedFile implements PagedFile
     void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
-        long[] stamps = new long[translationTableChunkSize];
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         try
@@ -210,7 +209,7 @@ final class MuninnPagedFile implements PagedFile
                     if ( element instanceof MuninnPage )
                     {
                         MuninnPage page = (MuninnPage) element;
-                        stamps[pagesGrabbed] = page.readLock();
+                        page.writeLock();
                         if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
                         {
                             // The page is still bound to the expected file and file page id after we locked it,
@@ -222,17 +221,17 @@ final class MuninnPagedFile implements PagedFile
                         }
                         else
                         {
-                            page.unlockRead( stamps[pagesGrabbed] );
+                            page.unlockWrite();
                         }
                     }
                     if ( pagesGrabbed > 0 )
                     {
-                        pagesGrabbed = vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                        pagesGrabbed = vectoredFlush( pages, pagesGrabbed, flushOpportunity );
                     }
                 }
                 if ( pagesGrabbed > 0 )
                 {
-                    vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                    vectoredFlush( pages, pagesGrabbed, flushOpportunity );
                 }
             }
 
@@ -244,8 +243,7 @@ final class MuninnPagedFile implements PagedFile
         }
     }
 
-    private int vectoredFlush(
-            long[] stamps, MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
+    private int vectoredFlush( MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
             throws IOException
     {
         FlushEvent flush = null;
@@ -284,7 +282,7 @@ final class MuninnPagedFile implements PagedFile
             // Always unlock all the pages in the vector
             for ( int j = 0; j < pagesGrabbed; j++ )
             {
-                pages[j].unlockRead( stamps[j] );
+                pages[j].unlockWrite();
             }
         }
     }

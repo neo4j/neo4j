@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
-import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -34,7 +33,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
 
-final class MuninnPage extends StampedLock implements Page
+final class MuninnPage extends OptiLock implements Page
 {
     private static final long usageStampOffset = UnsafeUtil.getFieldOffset( MuninnPage.class, "usageStamp" );
 
@@ -144,7 +143,6 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
-        assert isReadLocked() || isWriteLocked() : "doFlush requires lock";
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
@@ -168,7 +166,6 @@ final class MuninnPage extends StampedLock implements Page
             long filePageId,
             PageFaultEvent faultEvent ) throws IOException
     {
-        assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
             String msg = format(
@@ -198,7 +195,6 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void evict( EvictionEvent evictionEvent ) throws IOException
     {
-        assert isWriteLocked(): "Cannot evict page without write-lock";
         long filePageId = this.filePageId;
         evictionEvent.setCachePageId( getCachePageId() );
         evictionEvent.setFilePageId( filePageId );
@@ -232,7 +228,6 @@ final class MuninnPage extends StampedLock implements Page
      */
     public void initBuffer()
     {
-        assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
             pointer = memoryManager.allocateAligned( size() );
@@ -249,6 +244,6 @@ final class MuninnPage extends StampedLock implements Page
     {
         return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
                 hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
-                swapper, getLockStateString() );
+                swapper, super.toString() );
     }
 }

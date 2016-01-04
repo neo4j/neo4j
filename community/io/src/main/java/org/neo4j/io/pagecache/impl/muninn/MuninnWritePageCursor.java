@@ -32,7 +32,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         if ( page != null )
         {
             pinEvent.done();
-            assert page.isWriteLocked(): "page pinned for writing was not write locked: " + page;
             unlockPage( page );
         }
         clearPageState();
@@ -63,13 +62,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     protected void lockPage( MuninnPage page )
     {
-        lockStamp = page.writeLock();
+        page.writeLock();
     }
 
     @Override
     protected void unlockPage( MuninnPage page )
     {
-        page.unlockWrite( lockStamp );
+        page.unlockWrite();
     }
 
     @Override
@@ -87,9 +86,10 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void convertPageFaultLock( MuninnPage page, long stamp )
+    protected void convertPageFaultLock( MuninnPage page )
     {
-        lockStamp = stamp;
+        page.unlockExclusive(); // TODO page.unlockExclusiveAndTakeWriteLock
+        page.writeLock();
     }
 
     @Override
