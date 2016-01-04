@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesRelationship, CreatesAnyNode, CreatesNodesWithLabels, Effects}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CreatesRelationship, Effects}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, IsMap}
-import org.neo4j.cypher.internal.compiler.v3_0.mutation.{makeValueNeoSafe, GraphElementPropertyFunctions}
+import org.neo4j.cypher.internal.compiler.v3_0.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_0.{InvalidSemanticsException, InternalException, CypherTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
@@ -114,7 +114,7 @@ case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String
                                  (implicit pipeMonitor: PipeMonitor)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
 
-  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "CreateRelationship", variables)
+  def planDescriptionWithoutCardinality = src.planDescription.andThen(this.id, "MergeCreateRelationship", variables)
 
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
