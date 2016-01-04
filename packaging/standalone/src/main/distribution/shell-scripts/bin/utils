@@ -88,8 +88,8 @@ findjava() {
 }
 
 checkstatus() {
-  if [ -e "${PID_FILE}" ] ; then
-    NEO4J_PID=$( cat "${PID_FILE}" )
+  if [ -e "${NEO4J_PIDFILE}" ] ; then
+    NEO4J_PID=$( cat "${NEO4J_PIDFILE}" )
     kill -0 "${NEO4J_PID}" 2>/dev/null || NEO4J_PID=""
   fi
 }
@@ -136,21 +136,21 @@ stopit() {
 
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "ERROR: ${FRIENDLY_NAME} not running"
-    [ -e "${PID_FILE}" ] && rm "${PID_FILE}"
+    [ -e "${NEO4J_PIDFILE}" ] && rm "${NEO4J_PIDFILE}"
   else
     echo -n "Stopping ${FRIENDLY_NAME} [${NEO4J_PID}]..."
     x=0
     while [ "${NEO4J_PID}" != "" ]  ; do
       kill ${NEO4J_PID} 2>/dev/null
-      if [ $x -le "$TIMEOUT" ]; then
+      if [ $x -le "$SHUTDOWN_TIMEOUT" ]; then
         printf "."
       fi
       sleep 1
       checkstatus
 
-      if [ $x -eq "$TIMEOUT" ] ;then
+      if [ $x -eq "$SHUTDOWN_TIMEOUT" ] ;then
 	    echo ""
-	    echo "${FRIENDLY_NAME} [${NEO4J_PID}] is taking more than ${TIMEOUT}s to stop"
+	    echo "${FRIENDLY_NAME} [${NEO4J_PID}] is taking more than ${SHUTDOWN_TIMEOUT}s to stop"
 	    echo "There might be some troubles with the shutdown of ${FRIENDLY_NAME}, please read log files for details"
 	    echo "This script will keep waiting for the server to shutdown, you could manually kill the process ${NEO4J_PID}"
 	    echo ""
@@ -159,7 +159,7 @@ stopit() {
       x=$((x+1))
     done
     echo " done"
-    [ -e "${PID_FILE}" ] && rm  "${PID_FILE}"
+    [ -e "${NEO4J_PIDFILE}" ] && rm  "${NEO4J_PIDFILE}"
   fi
 }
 

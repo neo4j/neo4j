@@ -20,6 +20,7 @@
 set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Arbiter"
+SHUTDOWN_TIMEOUT=20
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -35,11 +36,8 @@ function findBaseDirAndCdThere {
     cd "$(dirname "${SCRIPT}")"
     SCRIPT="$(basename "${SCRIPT}")"
   done
-  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-  [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
-  [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
 
+  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
   cd "${NEO4J_HOME}"
 }
 
@@ -49,15 +47,16 @@ function parseConfig {
 
 findBaseDirAndCdThere
 source bin/utils
+
+[[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
+[[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
+[[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
 parseConfig
 
 JAVA_OPTS="-server"
 [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
 [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
-
-TIMEOUT=20
-PID_FILE="${NEO4J_PIDFILE}"
 
 buildclasspath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*"
@@ -82,13 +81,13 @@ startit() {
   nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 \
     org.neo4j.server.enterprise.StandaloneClusterClient \
     >>"${CONSOLE_LOG}" 2>&1 &
-  echo "$!" >"${PID_FILE}"
+  echo "$!" >"${NEO4J_PIDFILE}"
 
   sleep "${NEO4J_START_WAIT:-5}"
   checkstatus
   if [[ ! "${NEO4J_PID:-}" ]] ; then
     echo "Unable to start. See ${CONSOLE_LOG} for details."
-    rm "${PID_FILE}"
+    rm "${NEO4J_PIDFILE}"
     exit 1
   fi
 
