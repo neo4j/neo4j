@@ -98,7 +98,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public void shutdown() throws Throwable
     {   // Nothing to shut down
-        indexStorageFactory.shutdown();
     }
 
     @Override

@@ -25,25 +25,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class IndexStorageFactory
 {
-    private final DirectoryFactory directoryFactory;
+    private final DirectoryFactory dirFactory;
     private final FileSystemAbstraction fileSystem;
     private final File indexRootFolder;
 
-    public IndexStorageFactory( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
-            File indexRootFolder )
+    public IndexStorageFactory( DirectoryFactory dirFactory, FileSystemAbstraction fileSystem, File indexRootFolder )
     {
-        this.directoryFactory = directoryFactory;
+        this.dirFactory = dirFactory;
         this.fileSystem = fileSystem;
         this.indexRootFolder = indexRootFolder;
     }
 
     public PartitionedIndexStorage indexStorageOf( long indexId )
     {
-        return new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, String.valueOf( indexId ) );
-    }
-
-    public void shutdown()
-    {
-        directoryFactory.close();
+        return new PartitionedIndexStorage( dirFactory, fileSystem, indexRootFolder, String.valueOf( indexId ) );
     }
 }

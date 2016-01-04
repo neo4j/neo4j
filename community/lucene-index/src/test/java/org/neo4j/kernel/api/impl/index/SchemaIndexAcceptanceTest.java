@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.util.Arrays;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
@@ -51,7 +51,9 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class SchemaIndexAcceptanceTest
 {
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+
     private GraphDatabaseService db;
     private final Label label = label( "PERSON" );
     private final String propertyKey = "key";
@@ -172,15 +174,12 @@ public class SchemaIndexAcceptanceTest
 
     private GraphDatabaseService newDb()
     {
-        return new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        return new TestGraphDatabaseFactory().setFileSystem( fsRule.get() ).newImpermanentDatabase();
     }
 
     private void crashAndRestart()
     {
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
-        db.shutdown();
-        fs.shutdown();
-        fs = snapshot;
+        fsRule.snapshot( db::shutdown );
         db = newDb();
     }
 
