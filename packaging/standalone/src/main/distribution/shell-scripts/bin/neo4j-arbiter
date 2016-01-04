@@ -21,7 +21,9 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Arbiter"
 SHUTDOWN_TIMEOUT=20
-CONFIG_FILES=(arbiter-wrapper.conf)
+CONFIG_FILES=("arbiter-wrapper.conf")
+MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
+MIN_ALLOWED_OPEN_FILES=1
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -77,12 +79,12 @@ startit() {
 
   echo "Starting ${FRIENDLY_NAME}."
 
+  checklimits
   buildclasspath
   checkandrepairenv
 
   CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"
-  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 \
-    org.neo4j.server.enterprise.StandaloneClusterClient \
+  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
 
@@ -110,11 +112,11 @@ console() {
 
   echo "Starting ${FRIENDLY_NAME}."
 
+  checklimits
   buildclasspath
   checkandrepairenv
 
-  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 \
-    org.neo4j.server.enterprise.StandaloneClusterClient
+  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
 }
 
 showinfo() {

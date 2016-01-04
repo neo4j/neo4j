@@ -21,7 +21,9 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Server"
 SHUTDOWN_TIMEOUT=120
-CONFIG_FILES=(neo4j-wrapper.conf neo4j-server.properties)
+CONFIG_FILES=("neo4j-wrapper.conf" "neo4j-server.properties")
+MAIN_CLASS="#{neo4j.mainClass}"
+MIN_ALLOWED_OPEN_FILES=40000
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -97,7 +99,7 @@ startit() {
   checkandrepairenv
 
   CONSOLE_LOG="${NEO4J_LOG}/console.log"
-  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}" \
+  nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
 
@@ -134,7 +136,7 @@ console() {
   buildclasspath
   checkandrepairenv
 
-  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "#{neo4j.mainClass}"
+  exec "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
 }
 
 showinfo() {

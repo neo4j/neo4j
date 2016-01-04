@@ -177,10 +177,10 @@ checkandrepairenv() {
 checklimits() {
   detectos
   if [ $DIST_OS != "macosx" ] ; then
-    OPEN_FILES="$(ulimit -n)"
+    ALLOWED_OPEN_FILES="$(ulimit -n)"
 
-    if [ "${OPEN_FILES}" -lt 40000 ]; then
-      echo "WARNING: Max ${OPEN_FILES} open files allowed, minimum of 40 000 recommended. See the Neo4j manual."
+    if [ "${ALLOWED_OPEN_FILES}" -lt "${MIN_ALLOWED_OPEN_FILES}" ]; then
+      echo "WARNING: Max ${ALLOWED_OPEN_FILES} open files allowed, minimum of ${MIN_ALLOWED_OPEN_FILES} recommended. See the Neo4j manual."
     fi
   fi
 }
