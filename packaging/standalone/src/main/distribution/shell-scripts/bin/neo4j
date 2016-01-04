@@ -21,6 +21,7 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Server"
 SHUTDOWN_TIMEOUT=120
+CONFIG_FILES=(neo4j-wrapper.conf neo4j-server.properties)
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -42,8 +43,9 @@ function findBaseDirAndCdThere {
 }
 
 function parseConfig {
-  getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
-  getconfig "${NEO4J_CONFIG}/neo4j-server.properties"
+  for file in "${CONFIG_FILES[@]}"; do
+    getconfig "${NEO4J_CONFIG}/${file}"
+  done
 }
 
 findBaseDirAndCdThere

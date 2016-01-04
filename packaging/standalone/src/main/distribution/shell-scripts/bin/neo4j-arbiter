@@ -21,6 +21,7 @@ set -euo pipefail
 
 FRIENDLY_NAME="Neo4j Arbiter"
 SHUTDOWN_TIMEOUT=20
+CONFIG_FILES=(arbiter-wrapper.conf)
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -42,7 +43,9 @@ function findBaseDirAndCdThere {
 }
 
 function parseConfig {
-  getconfig "${NEO4J_CONFIG}/arbiter-wrapper.conf"
+  for file in "${CONFIG_FILES[@]}"; do
+    getconfig "${NEO4J_CONFIG}/${file}"
+  done
 }
 
 findBaseDirAndCdThere

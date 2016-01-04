@@ -5,15 +5,6 @@ test_description="Test Java arguments"
 . ./lib/sharness.sh
 fake_install
 
-run_console() {
-  neo4j-home/bin/neo4j console
-}
-
-run_daemon() {
-  FAKE_JAVA_SLEEP=1 neo4j-home/bin/neo4j start &&
-  neo4j-home/bin/neo4j stop
-}
-
 for run_command in run_console run_daemon; do
   test_expect_success "should specify -server" "
     ${run_command} &&
