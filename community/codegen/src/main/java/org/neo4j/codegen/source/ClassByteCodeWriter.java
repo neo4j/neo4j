@@ -50,7 +50,12 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.DLOAD;
+import static org.objectweb.asm.Opcodes.FLOAD;
+import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_8;
@@ -70,7 +75,7 @@ class ClassByteCodeWriter implements ClassEmitter
             iNames[i] = byteCodeName( interfaces[i].name() );
         }
         classWriter.visit( V1_8, ACC_PUBLIC + ACC_SUPER, byteCodeName( type.name() ), signature( type ),
-                byteCodeName( base.name() ), iNames );
+                byteCodeName( base.name() ), iNames.length != 0 ? iNames : null );
         this.type = type;
     }
 
@@ -145,12 +150,6 @@ class ClassByteCodeWriter implements ClassEmitter
             this.methodVisitor = classWriter.visitMethod( ACC_PUBLIC, declaration.name(), desc( declaration ),
                     signature( declaration ), exceptions( declaration ) );
             this.methodVisitor.visitCode();
-            //if constructor must call default constructor of Object
-            if ( declaration.isConstructor() )
-            {
-                this.methodVisitor.visitVarInsn( ALOAD, 0 );
-                this.methodVisitor.visitMethodInsn( INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false );
-            }
             this.expressionVisitor = new ByteCodeExpressionVisitor( this.methodVisitor );
         }
 
@@ -175,6 +174,10 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void put( Expression target, FieldReference field, Expression value )
         {
+            target.accept( expressionVisitor );
+            value.accept( expressionVisitor );
+            methodVisitor.visitFieldInsn(PUTFIELD, byteCodeName(field.owner().name()) , field.name(), typeName( field.type() ));
+
         }
 
         @Override
@@ -268,6 +271,13 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void invoke( Expression target, MethodReference method, Expression[] arguments )
         {
+            target.accept( this );
+            for ( Expression argument : arguments )
+            {
+                argument.accept( this );
+            }
+            methodVisitor.visitMethodInsn(INVOKESPECIAL, byteCodeName( method.owner().name() ), method.name(), desc(method), false);
+            System.out.println("methodVisitor.visitMethodInsn(INVOKESPECIAL, byteCodeName( method.owner().name() ), method.name(), desc(method), false);");
 
         }
 
@@ -278,9 +288,29 @@ class ClassByteCodeWriter implements ClassEmitter
         }
 
         @Override
-        public void load( TypeReference type, String name )
+        public void load( LocalVariable variable )
         {
+            switch ( variable.type().simpleName() )
+            {
+            case "int":
+            case "byte":
+            case "short":
+            case "char":
+                methodVisitor.visitVarInsn( ILOAD, variable.index() );
+                break;
+            case "long":
+                methodVisitor.visitVarInsn( LLOAD, variable.index() );
+                break;
+            case "float":
+                methodVisitor.visitVarInsn( FLOAD, variable.index() );
+                break;
+            case "double":
+                methodVisitor.visitVarInsn( DLOAD, variable.index() );
+                break;
+            default:
+                methodVisitor.visitVarInsn( ALOAD, variable.index() );
 
+            }
         }
 
         @Override
@@ -304,7 +334,8 @@ class ClassByteCodeWriter implements ClassEmitter
         @Override
         public void loadThis( String sourceName )
         {
-
+            methodVisitor.visitVarInsn( ALOAD, 0 );
+            System.out.println("methodVisitor.visitVarInsn( ALOAD, 0 );");
         }
 
         @Override

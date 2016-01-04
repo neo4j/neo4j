@@ -45,7 +45,7 @@ public class MethodReference
     public static MethodReference methodReference( TypeReference owner, TypeReference returns, String name,
             TypeReference... parameters )
     {
-        return new MethodReference( owner, name );
+        return new MethodReference( owner, name, returns, parameters );
     }
 
     public static MethodReference constructorReference( Class<?> owner, Class<?> firstParameter, Class<?>... parameters )
@@ -60,17 +60,21 @@ public class MethodReference
 
     public static MethodReference constructorReference( TypeReference owner, TypeReference... parameters )
     {
-        return new MethodReference( owner, "<init>" );
+        return new MethodReference( owner, "<init>", TypeReference.VOID, parameters );
     }
 
     private final TypeReference owner;
     private final String name;
+    private final TypeReference returns;
+    private final TypeReference[] parameters;
 
-    MethodReference( TypeReference owner, String name )
+    MethodReference( TypeReference owner, String name, TypeReference returns, TypeReference[] parameters )
     {
         this.owner = owner;
 
         this.name = name;
+        this.returns = returns;
+        this.parameters = parameters;
     }
 
     public String name()
@@ -81,6 +85,16 @@ public class MethodReference
     public TypeReference owner()
     {
         return owner;
+    }
+
+    public TypeReference returns()
+    {
+        return returns;
+    }
+
+    public TypeReference[] parameters()
+    {
+        return parameters;
     }
 
     public boolean isConstructor()

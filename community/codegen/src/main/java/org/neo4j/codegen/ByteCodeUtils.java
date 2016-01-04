@@ -46,6 +46,20 @@ public final class ByteCodeUtils
         return internalDesc( declaration.erased(), false );
     }
 
+    public static String desc( MethodReference reference)
+    {
+        StringBuilder builder = new StringBuilder(  );
+        builder.append( "(" );
+        for ( TypeReference parameter : reference.parameters() )
+        {
+            internalType( builder, parameter, false );
+        }
+        builder.append( ")" );
+        internalType( builder, reference.returns(), false );
+
+        return builder.toString();
+    }
+
     public static String signature( TypeReference reference )
     {
         if ( !reference.isGeneric() )

@@ -70,14 +70,14 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    static Expression load( final TypeReference type, final String name )
+    static Expression load( final LocalVariable variable)
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.load( type, name );
+                visitor.load( variable );
             }
         };
     }

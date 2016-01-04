@@ -60,6 +60,7 @@ import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.typeParameter;
+import static org.neo4j.codegen.TypeReference.typeReference;
 
 @RunWith(Parameterized.class)
 public class CodeGenerationTest
@@ -152,16 +153,6 @@ public class CodeGenerationTest
         assertSame( String.class, theField.getType() );
     }
 
-    public static class NamedBase
-    {
-        private final String name;
-
-        public NamedBase( String name )
-        {
-            this.name = name;
-        }
-    }
-
     @Test
     public void shouldGenerateConstructorFromTemplate() throws Throwable
     {
@@ -171,7 +162,7 @@ public class CodeGenerationTest
         {
             simple.field( String.class, "foo" );
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
-                    .invokeSuper( load( "name" ) )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
                     .put( self(), String.class, "foo", load( "foo" ) )
                     .build() );
             handle = simple.handle();
@@ -570,7 +561,7 @@ public class CodeGenerationTest
         {
             simple.field( String.class, "foo" );
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( Object.class, "foo" ) )
-                    .invokeSuper( load( "name" ) )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
                     .put( self(), String.class, "foo", cast(String.class, load( "foo" )) )
                     .build() );
             handle = simple.handle();

@@ -63,18 +63,18 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void load( TypeReference type, String name )
+    public void load(  LocalVariable variable)
     {
         result.append( "load{type=" );
-        if ( type == null )
+        if ( variable.type() == null )
         {
             result.append( "null" );
         }
         else
         {
-            type.writeTo( result );
+            variable.type().writeTo( result );
         }
-        result.append( ", name=" ).append( name ).append( "}" );
+        result.append( ", name=" ).append( variable.name() ).append( "}" );
     }
 
     @Override

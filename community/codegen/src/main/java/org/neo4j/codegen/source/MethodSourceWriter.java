@@ -275,9 +275,9 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void load( TypeReference type, String name )
+    public void load( LocalVariable variable)
     {
-        append( name );
+        append( variable.name() );
     }
 
     @Override

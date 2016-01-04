@@ -19,6 +19,9 @@
  */
 package org.neo4j.codegen;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.neo4j.codegen.Resource.withResource;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
@@ -28,6 +31,8 @@ public class CodeBlock implements AutoCloseable
     private MethodEmitter emitter;
     private final CodeBlock parent;
     private boolean done;
+    private Map<String, LocalVariable> localVariables = new HashMap<>(  );
+    private int varCount = 0;
 
     CodeBlock( CodeBlock parent )
     {
@@ -35,13 +40,19 @@ public class CodeBlock implements AutoCloseable
         this.emitter = parent.emitter;
         parent.emitter = InvalidState.IN_SUB_BLOCK;
         this.parent = parent;
+        this.localVariables = parent.localVariables;
     }
 
-    CodeBlock( ClassGenerator clazz, MethodEmitter emitter )
+    CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter...parameters )
     {
         this.clazz = clazz;
         this.emitter = emitter;
         this.parent = null;
+        localVariables.put("this", localVariable( clazz.handle(), "this" ) );
+        for ( Parameter parameter : parameters )
+        {
+            localVariables.put( parameter.name(), localVariable( parameter.type(), parameter.name() ) );
+        }
     }
 
     public ClassGenerator classGenerator()
@@ -78,14 +89,15 @@ public class CodeBlock implements AutoCloseable
         emitter.expression( expression );
     }
 
-    TypeReference local( String name )
+    LocalVariable local( String name )
     {
-        return null;
+        return localVariables.get( name);
     }
 
     public LocalVariable declare( TypeReference type, String name )
     {
-        LocalVariable local = new LocalVariable( type, name );
+        LocalVariable local = localVariable( type, name );
+        localVariables.put(name, local);
         emitter.declare( local );
         return local;
     }
@@ -102,6 +114,7 @@ public class CodeBlock implements AutoCloseable
 
     public void assign( TypeReference type, String name, Expression value )
     {
+        localVariables.put(name, localVariable( type, name ) );
         emitter.assign( type, name, value );
     }
 
@@ -117,7 +130,7 @@ public class CodeBlock implements AutoCloseable
 
     public Expression load( String name )
     {
-        return Expression.load( local( name ), name );
+        return Expression.load( local( name ) );
     }
 
     public CodeBlock forEach( Parameter local, Expression iterable )
@@ -186,5 +199,10 @@ public class CodeBlock implements AutoCloseable
     public TypeReference owner()
     {
         return clazz.handle();
+    }
+
+    private LocalVariable localVariable( TypeReference type, String name )
+    {
+        return new LocalVariable( type, name, varCount++ );
     }
 }

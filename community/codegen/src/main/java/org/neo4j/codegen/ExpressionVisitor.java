@@ -25,7 +25,7 @@ public interface ExpressionVisitor
 
     void invoke( MethodReference method, Expression[] arguments );
 
-    void load( TypeReference type, String name );
+    void load( LocalVariable variable);
 
     void getField( Expression target, FieldReference field );
 

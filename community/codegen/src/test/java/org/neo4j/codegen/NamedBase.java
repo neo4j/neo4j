@@ -19,37 +19,12 @@
  */
 package org.neo4j.codegen;
 
-public class LocalVariable extends Expression
+public class NamedBase
 {
-    private final TypeReference type;
-    private final String name;
-    private final int index;
+    final String name;
 
-    LocalVariable( TypeReference type, String name, int index )
+    public NamedBase( String name )
     {
-        this.type = type;
         this.name = name;
-        this.index = index;
-    }
-
-    public TypeReference type()
-    {
-        return type;
-    }
-
-    public String name()
-    {
-        return name;
-    }
-
-    public int index()
-    {
-        return index;
-    }
-
-    @Override
-    public void accept( ExpressionVisitor visitor )
-    {
-        visitor.load( this );
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class ExpressionTemplate
@@ -30,7 +31,7 @@ public abstract class ExpressionTemplate
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
-                visitor.load( method.clazz.handle(), "this" );
+                visitor.load( new LocalVariable( method.clazz.handle(), "this", 0) );
             }
         };
     }
@@ -85,7 +86,7 @@ public abstract class ExpressionTemplate
             @Override
             protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
-                visitor.load( method.local( name ), name );
+                visitor.load( method.local( name ) );
             }
         };
     }
@@ -219,16 +220,17 @@ public abstract class ExpressionTemplate
         return expressions;
     }
 
-    static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters )
+    //TODO I am not crazy about the way type parameters are sent here
+    static ExpressionTemplate invokeSuperConstructor( final ExpressionTemplate[] parameters, final TypeReference[] parameterTypes )
     {
-        // TODO: we need to get the parameter types in here eventually...
+        assert parameters.length == parameterTypes.length;
         return new ExpressionTemplate()
         {
             @Override
             void templateAccept( CodeBlock method, ExpressionVisitor visitor )
             {
                 visitor.invoke( Expression.SUPER,
-                        new MethodReference( method.clazz.handle().parent(), "<init>" ),
+                        new MethodReference( method.clazz.handle().parent(), "<init>", VOID, parameterTypes),
                         materialize( method, parameters ) );
             }
         };

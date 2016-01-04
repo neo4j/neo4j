@@ -36,6 +36,7 @@ public class ClassGenerator implements AutoCloseable
     private final ClassHandle handle;
     private ClassEmitter emitter;
     private Map<String,FieldReference> fields;
+    private boolean hasConstructor = false;
 
     ClassGenerator( ClassHandle handle, ClassEmitter emitter )
     {
@@ -46,6 +47,10 @@ public class ClassGenerator implements AutoCloseable
     @Override
     public void close()
     {
+        if (!hasConstructor)
+        {
+            generate( MethodTemplate.constructor().invokeSuper().build() );
+        }
         emitter.done();
         handle.generator.closeClass();
         emitter = InvalidState.CLASS_DONE;
@@ -128,7 +133,11 @@ public class ClassGenerator implements AutoCloseable
 
     private CodeBlock generate( MethodDeclaration declaration )
     {
-        return new CodeBlock( this, emitter.method( declaration ) );
+        if (declaration.isConstructor())
+        {
+            hasConstructor = true;
+        }
+        return new CodeBlock( this, emitter.method( declaration ), declaration.parameters() );
     }
 
     FieldReference getField( String name )
