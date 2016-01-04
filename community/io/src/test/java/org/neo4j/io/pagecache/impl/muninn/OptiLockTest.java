@@ -270,6 +270,23 @@ public class OptiLockTest
     }
 
     @Test
+    public void unlockExclusiveMustReturnStampForOptimisticReadLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        long r = lock.unlockExclusive();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void stampFromUnlockExclusiveMustNotBeValidIfThereAreWriteLocks() throws Exception
+    {
+        lock.tryExclusiveLock();
+        long r = lock.unlockExclusive();
+        lock.writeLock();
+        assertFalse( lock.validateReadLock( r ) );
+    }
+
+    @Test
     public void toStringMustDescribeState() throws Exception
     {
         assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:0:0]" ) );
@@ -278,5 +295,4 @@ public class OptiLockTest
         lock.unlockWrite();
         assertThat( lock.toString(), is( "OptiLock[E:0, W:0:0, S:1:1]" ) );
     }
-    // TODO some kind of stress test
 }

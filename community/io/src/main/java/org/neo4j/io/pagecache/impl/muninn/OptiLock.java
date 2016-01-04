@@ -25,20 +25,20 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * OptiLock is a sequence-based lock like StampedLock, but with the ability to take optimistic write-locks.
- * <p/>
+ * <p>
  * The OptiLock supports non-blocking optimistic concurrent read-locks, and blocking concurrent write-locks,
  * and a pessimistic exclusive-lock.
- * <p/>
+ * <p>
  * The optimistic read-lock works through validation, so at the end of the critical section, the read-lock has to be
  * validated and, if the validation fails, the critical section has to be retried. The read-lock acquires a stamp
  * at the start of the critical section, which is then validated at the end of the critical section. The stamp is
  * invalidated if any write-lock or exclusive lock has been taking since the stamp was acquired.
- * <p/>
+ * <p>
  * The optimistic write-locks works by assuming that writes are always non-conflicting, so no validation is required.
  * However, the write-locks will check if a pessimistic exclusive lock is held at the start of the critical section,
  * and if so, block and wait for the exclusive lock to be released. The write-locks will invalidate all optimistic
  * read-locks.
- * <p/>
+ * <p>
  * The exclusive lock will also invalidate the optimistic read-locks, but not the write locks. The exclusive lock is
  * try-lock only, and will never block.
  */
@@ -46,17 +46,17 @@ public class OptiLock
 {
     /**
      * StampedLock methods used:
-     *  - {@link StampedLock#writeLock()} - page faulting, write locking pages
-     *  - {@link StampedLock#tryWriteLock()} - eviction
-     *  - {@link StampedLock#readLock()} - flushing, pessimistic page read-locks
-     *  - {@link StampedLock#tryReadLock()} - background flushing
-     *  - {@link StampedLock#tryOptimisticRead()} - optimistic page read-locking
-     *  - {@link StampedLock#validate(long stamp)} - optimistic page read-locking
-     *  - {@link StampedLock#unlockRead(long stamp)} - flushing, pessimistic page read-locks
-     *  - {@link StampedLock#unlockWrite(long stamp)} - eviction, page faulting, page write-locks
-     *  - {@link StampedLock#tryConvertToReadLock(long stamp)} - page fault in page read cursor
-     *  - {@link StampedLock#isWriteLocked()} - assertions
-     *  - {@link StampedLock#isReadLocked()} - assertions
+     * - {@link StampedLock#writeLock()} - page faulting, write locking pages
+     * - {@link StampedLock#tryWriteLock()} - eviction
+     * - {@link StampedLock#readLock()} - flushing, pessimistic page read-locks
+     * - {@link StampedLock#tryReadLock()} - background flushing
+     * - {@link StampedLock#tryOptimisticRead()} - optimistic page read-locking
+     * - {@link StampedLock#validate(long stamp)} - optimistic page read-locking
+     * - {@link StampedLock#unlockRead(long stamp)} - flushing, pessimistic page read-locks
+     * - {@link StampedLock#unlockWrite(long stamp)} - eviction, page faulting, page write-locks
+     * - {@link StampedLock#tryConvertToReadLock(long stamp)} - page fault in page read cursor
+     * - {@link StampedLock#isWriteLocked()} - assertions
+     * - {@link StampedLock#isReadLocked()} - assertions
      */
 
     private static final long CNT_BITS = 17; // Bits for counting concurrent write-locks
@@ -84,21 +84,43 @@ public class OptiLock
         return UnsafeUtil.compareAndSwapLong( this, STATE, expect, update );
     }
 
+    /**
+     * Start an optimistic critical section, and return a stamp that can be used to validate if the read-lock was
+     * consistent. That is, if no write or exclusive lock was overlapping with the optimistic read-lock.
+     *
+     * @return A stamp that must be passed to {@link #validateReadLock(long)} to validate the critical section.
+     */
     public long tryOptimisticReadLock()
     {
         return getState() & SEQ_MASK;
     }
 
+    /**
+     * Validate a stamp from {@link #tryOptimisticReadLock()} or {@link #unlockExclusive()}, and return {@code true}
+     * if no write or exclusive lock overlapped with the critical section of the optimistic read lock represented by
+     * the
+     * stamp.
+     *
+     * @param stamp The stamp of the optimistic read lock.
+     * @return {@code true} if the optimistic read lock was valid, {@code false} otherwise.
+     */
     public boolean validateReadLock( long stamp )
     {
         UnsafeUtil.loadFence();
         return getState() == stamp;
     }
 
+    /**
+     * Take a concurrent write lock. Multiple write locks can be held at the same time. Write locks will invalidate any
+     * optimistic read lock that overlaps with them, and write locks will make any attempt at grabbing an exclusive
+     * lock fail. If an exclusive lock is currently held, then taking a write lock will block on the exclusive lock.
+     * <p>
+     * Write locks must be paired with a corresponding {@link #unlockWrite()}.
+     */
     public void writeLock()
     {
         long s, n;
-        for (;;)
+        for (; ; )
         {
             s = getState();
             if ( (s & EXCL_MASK) == EXCL_MASK )
@@ -132,6 +154,9 @@ public class OptiLock
         throw new IllegalMonitorStateException( "Write lock counter overflow: " + describeState( s ) );
     }
 
+    /**
+     * Release a write lock taking with {@link #writeLock()}.
+     */
     public void unlockWrite()
     {
         long s, n;
@@ -157,6 +182,15 @@ public class OptiLock
         return (s & SEQ_IMSK) + (s + 1 & SEQ_MASK);
     }
 
+    /**
+     * Grab an exclusive lock if one is immediately available. Exclusive locks will invalidate any overlapping
+     * optimistic read lock, and make write locks block. If any write locks are currently taken, then the attempt to
+     * grab an exclusive lock will fail.
+     * <p>
+     * Successfully grabbed exclusive locks must always be paired with a corresponding {@link #unlockExclusive()}.
+     *
+     * @return {@code true} if we successfully got an exclusive lock, {@code false} otherwise.
+     */
     public boolean tryExclusiveLock()
     {
         long s = getState();
@@ -168,7 +202,13 @@ public class OptiLock
         return false;
     }
 
-    public void unlockExclusive()
+    /**
+     * Unlock the currently held exclusive lock, and atomically and implicitly take an optimistic read lock, as
+     * represented by the returned stamp.
+     *
+     * @return A stamp that represents an optimistic read lock, in case you need it.
+     */
+    public long unlockExclusive()
     {
         long s = getState();
         if ( (s & EXCL_MASK) != EXCL_MASK )
@@ -177,7 +217,9 @@ public class OptiLock
         }
         exclusiveLatch.release();
         exclusiveLatch = null;
-        compareAndSetState( s, nextSeq( s ) - EXCL_MASK );
+        long n = nextSeq( s ) - EXCL_MASK;
+        compareAndSetState( s, n );
+        return n;
     }
 
     private void throwUnmatchedUnlockExclusive( long s )
