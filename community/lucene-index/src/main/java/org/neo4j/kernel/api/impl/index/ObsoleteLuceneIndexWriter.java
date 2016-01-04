@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -64,20 +63,6 @@ public class ObsoleteLuceneIndexWriter implements Closeable, LuceneIndexWriter
         this.writer = new IndexWriter( dir, conf );
     }
 
-    public static boolean isOnline( Directory directory ) throws IOException
-    {
-        if ( !DirectoryReader.indexExists( directory ) )
-        {
-            return false;
-        }
-
-        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
-        {
-            Map<String,String> userData = reader.getIndexCommit().getUserData();
-            return ONLINE.equals( userData.get( KEY_STATUS ) );
-        }
-    }
-
     @Override
     public void addDocument( Document document ) throws IOException
     {
@@ -117,20 +102,6 @@ public class ObsoleteLuceneIndexWriter implements Closeable, LuceneIndexWriter
         commitCloseLock.lock();
         try
         {
-            writer.commit();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    public void commitAsOnline() throws IOException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            writer.setCommitData( ONLINE_COMMIT_USER_DATA );
             writer.commit();
         }
         finally

@@ -25,7 +25,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class IndexStorageFactory
 {
-
     private final DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fileSystem;
     private final File indexRootFolder;

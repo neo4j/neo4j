@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -167,14 +169,26 @@ public class LuceneSchemaIndex extends AbstractLuceneIndex
         super.drop();
     }
 
+    public boolean isOnline() throws IOException
+    {
+        ensureOpen();
+        IndexPartition partition = getPartitions().get( 0 );
+        Directory directory = partition.getDirectory();
+        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
+        {
+            Map<String,String> userData = reader.getIndexCommit().getUserData();
+            return ONLINE.equals( userData.get( KEY_STATUS ) );
+        }
+    }
+
     public void markAsOnline() throws IOException
     {
         ensureOpen();
         commitCloseLock.lock();
         try
         {
-            IndexPartition indexPartition = getPartitions().get( 0 );
-            IndexWriter indexWriter = indexPartition.getIndexWriter();
+            IndexPartition partition = getPartitions().get( 0 );
+            IndexWriter indexWriter = partition.getIndexWriter();
             indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
             indexWriter.commit();
         }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.store.Directory;
 
 import java.io.EOFException;
 import java.io.File;
@@ -33,7 +32,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.populator.DeferredConstraintVerificationUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.index.populator.NonUniqueLuceneIndexPopulator;
-import org.neo4j.kernel.api.impl.index.storage.AbstractIndexStorage;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -43,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -59,6 +58,15 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
         this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
+    }
+
+    /**
+     * Visible <b>only</b> for testing.
+     */
+    LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, IndexStorageFactory indexStorageFactory )
+    {
+        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
+        this.indexStorageFactory = indexStorageFactory;
     }
 
     @Override
@@ -98,7 +106,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            AbstractIndexStorage indexStorage = getIndexStorage( indexId );
+            PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
             String failure = indexStorage.getStoredIndexFailure();
             if ( failure != null )
             {
@@ -106,12 +114,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                 return InternalIndexState.FAILED;
             }
 
-            File partitionFolder = indexStorage.getPartitionFolder( 1 );
-            try ( Directory directory = indexStorage.openDirectory( partitionFolder ) )
-            {
-                boolean status = ObsoleteLuceneIndexWriter.isOnline( directory );
-                return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
-            }
+            return indexIsOnline( indexStorage ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( CorruptIndexException e )
         {
@@ -158,5 +161,20 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private PartitionedIndexStorage getIndexStorage( long indexId )
     {
         return indexStorageFactory.indexStorageOf( indexId );
+    }
+
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage ) throws IOException
+    {
+        IndexConfiguration indexConfig = new IndexConfiguration( false );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        try ( LuceneSchemaIndex index = new LuceneSchemaIndex( indexStorage, indexConfig, samplingConfig ) )
+        {
+            if ( index.exists() )
+            {
+                index.open();
+                return index.isOnline();
+            }
+            return false;
+        }
     }
 }

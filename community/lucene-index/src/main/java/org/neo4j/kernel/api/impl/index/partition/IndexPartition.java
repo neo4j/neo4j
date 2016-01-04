@@ -53,6 +53,11 @@ public class IndexPartition implements Closeable
         return indexWriter;
     }
 
+    public Directory getDirectory()
+    {
+        return directory;
+    }
+
     public PartitionSearcher acquireSearcher() throws IOException
     {
         return new PartitionSearcher( searcherManager );

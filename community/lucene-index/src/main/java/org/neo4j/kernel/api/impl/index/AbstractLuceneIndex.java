@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CheckIndex;
-import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
@@ -78,7 +77,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         open = true;
     }
 
-    public boolean exists()
+    public boolean exists() throws IOException
     {
         List<File> folders = indexStorage.listFolders();
         if ( folders.isEmpty() )
@@ -87,8 +86,7 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
         for ( File folder : folders )
         {
-            String[] files = folder.list();
-            if ( files == null || !containsSegmentFile( files ) )
+            if ( !luceneDirectoryExists( folder ) )
             {
                 return false;
             }
@@ -294,10 +292,12 @@ public abstract class AbstractLuceneIndex implements Closeable
         }
     }
 
-
-    private static boolean containsSegmentFile( String[] files )
+    private boolean luceneDirectoryExists( File folder ) throws IOException
     {
-        return Stream.of( files ).anyMatch( file -> file.startsWith( IndexFileNames.SEGMENTS ) );
+        try ( Directory directory = indexStorage.openDirectory( folder ) )
+        {
+            return DirectoryReader.indexExists( directory );
+        }
     }
 
     private File createNewPartitionFolder() throws IOException

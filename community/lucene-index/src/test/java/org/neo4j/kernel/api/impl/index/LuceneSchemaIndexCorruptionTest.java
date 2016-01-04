@@ -26,15 +26,21 @@ import org.junit.Test;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertTrue;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,87 +55,115 @@ public class LuceneSchemaIndexCorruptionTest
     public void shouldMarkIndexAsFailedIfIndexIsCorrupt() throws Exception
     {
         // Given
-        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+        long faultyIndexId = 1;
+        CorruptIndexException error = new CorruptIndexException( "It's broken.", "" );
 
-        // This isn't quite correct, but it will trigger the correct code paths in our code
-        when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken.", "" ));
-
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
+        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = p.getInitialState( 1l );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.FAILED) );
+        assertEquals( InternalIndexState.FAILED, initialState );
     }
 
     @Test
     public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithFileNotFoundException() throws Exception
     {
         // Given
-        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+        long faultyIndexId = 1;
+        FileNotFoundException error = new FileNotFoundException( "/some/path/somewhere" );
 
-        // This isn't quite correct, but it will trigger the correct code paths in our code
-        FileNotFoundException toThrow = new FileNotFoundException( "/some/path/somewhere" );
-        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
-
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
+        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = p.getInitialState( 1l );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.FAILED) );
-        assertThat( p.getPopulationFailure( 1l ), equalTo( "File not found: " + toThrow.getMessage() ) );
+        assertEquals( InternalIndexState.FAILED, initialState );
+        assertEquals( "File not found: " + error.getMessage(), provider.getPopulationFailure( faultyIndexId ) );
     }
 
     @Test
     public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithEOFException() throws Exception
     {
         // Given
-        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+        long faultyIndexId = 1;
+        EOFException error = new EOFException( "/some/path/somewhere" );
 
-        // This isn't quite correct, but it will trigger the correct code paths in our code
-        EOFException toThrow = new EOFException( "/some/path/somewhere" );
-        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
-
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
+        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = p.getInitialState( 1l );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertThat( initialState, equalTo(InternalIndexState.FAILED) );
-        assertThat( p.getPopulationFailure( 1l ), equalTo( "EOF encountered: " + toThrow.getMessage() ) );
+        assertEquals( InternalIndexState.FAILED, initialState );
+        assertEquals( "EOF encountered: " + error.getMessage(), provider.getPopulationFailure( faultyIndexId ) );
     }
 
     @Test
     public void shouldDenyFailureForNonFailedIndex() throws Exception
     {
-
         // Given
-        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+        long faultyIndexId = 1;
+        long validIndexId = 2;
+        EOFException error = new EOFException( "/some/path/somewhere" );
 
-        // This isn't quite correct, but it will trigger the correct code paths in our code
-        EOFException toThrow = new EOFException( "/some/path/somewhere" );
-        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
-
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
+        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
 
         // When
-        InternalIndexState initialState = p.getInitialState( 1l );
+        InternalIndexState initialState = provider.getInitialState( faultyIndexId );
 
         // Then
-        assertThat( initialState, equalTo( InternalIndexState.FAILED ) );
-        boolean exceptionOnOtherIndexThrown = false;
+        assertEquals( InternalIndexState.FAILED, initialState );
         try
         {
-            p.getPopulationFailure( 2l );
+            provider.getPopulationFailure( validIndexId );
+            fail( "Exception expected" );
         }
-        catch( IllegalStateException e )
+        catch ( Exception e )
         {
-            exceptionOnOtherIndexThrown = true;
+            assertThat( e, instanceOf( IllegalStateException.class ) );
         }
-        assertTrue( exceptionOnOtherIndexThrown );
+    }
+
+    private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
+    {
+        FaultyIndexStorageFactory storageFactory = new FaultyIndexStorageFactory( faultyIndexId, error );
+        return new LuceneSchemaIndexProvider( fs.get(), storageFactory );
+    }
+
+    private class FaultyIndexStorageFactory extends IndexStorageFactory
+    {
+        final long faultyIndexId;
+        final Exception error;
+
+        FaultyIndexStorageFactory( long faultyIndexId, Exception error )
+        {
+            super( mock( DirectoryFactory.class ), fs.get(), testDirectory.graphDbDir() );
+            this.faultyIndexId = faultyIndexId;
+            this.error = error;
+        }
+
+        @Override
+        public PartitionedIndexStorage indexStorageOf( long indexId )
+        {
+            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId );
+        }
+
+        PartitionedIndexStorage newFaultyPartitionedIndexStorage()
+        {
+            try
+            {
+                PartitionedIndexStorage storage = mock( PartitionedIndexStorage.class );
+                when( storage.listFolders() ).thenReturn( singletonList( new File( "/some/path/somewhere/1" ) ) );
+                when( storage.openDirectory( any() ) ).thenThrow( error );
+                return storage;
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
     }
 }
