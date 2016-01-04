@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{SignedDecimalIntegerLiteral, PropertyKeyName, Property, Equals}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Equals, Property, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -47,6 +48,22 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val rhs: LogicalPlan = Optional(selection)(solved)
     val lhs = newMockedLogicalPlan("a")
     val input = Apply(lhs, rhs)(solved)
+
+    input.endoRewrite(unnestOptional) should equal(input)
+  }
+
+  test("should not rewrite plans containing merges") {
+    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val rhs:LogicalPlan =
+      Optional(
+        Expand(singleRow, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r")
+        )(solved))(solved)
+    val lhs = newMockedLogicalPlan("a")
+    val apply = Apply(lhs, rhs)(solved)
+    val mergeRel = MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), LazyType("T"), IdName("b"),
+      None)(solved)
+
+    val input = AntiConditionalApply(apply, mergeRel, Seq.empty)(solved)
 
     input.endoRewrite(unnestOptional) should equal(input)
   }
