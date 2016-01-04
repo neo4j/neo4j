@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNull;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
-import static org.neo4j.codegen.ByteCodeUtils.type;
+import static org.neo4j.codegen.ByteCodeUtils.typeName;
 import static org.neo4j.codegen.MethodDeclaration.method;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.extending;
@@ -45,7 +45,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( int.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "I" ) );
@@ -58,7 +58,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( short.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "S" ) );
@@ -71,7 +71,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( char.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "C" ) );
@@ -84,7 +84,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( long.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "J" ) );
@@ -97,7 +97,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( float.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "F" ) );
@@ -110,7 +110,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( double.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "D" ) );
@@ -123,7 +123,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( boolean.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "Z" ) );
@@ -136,7 +136,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( void.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "V" ) );
@@ -149,7 +149,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( String.class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "Ljava/lang/String;" ) );
@@ -162,7 +162,7 @@ public class ByteCodeUtilsTest
         TypeReference reference = typeReference( boolean[].class );
 
         // WHEN
-        String byteCodeName = type( reference );
+        String byteCodeName = typeName( reference );
 
         // THEN
         assertThat( byteCodeName, equalTo( "[Z" ) );

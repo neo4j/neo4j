@@ -45,6 +45,7 @@ import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
+import static org.neo4j.codegen.ByteCodeUtils.typeName;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
@@ -88,7 +89,7 @@ class ClassByteCodeWriter implements ClassEmitter
             staticFields.put( field, value );
         }
         FieldVisitor fieldVisitor = classWriter
-                .visitField( field.modifiers(), "string", "Ljava/lang/String;", signature( field.type() ), null );
+                .visitField( field.modifiers(), field.name(), typeName( field.type() ), signature( field.type() ), null );
         fieldVisitor.visitEnd();
     }
 

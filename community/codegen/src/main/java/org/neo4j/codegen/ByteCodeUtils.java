@@ -34,7 +34,7 @@ public final class ByteCodeUtils
         return javaName.replaceAll( "\\.", "\\/" );
     }
 
-    public static String type( TypeReference reference )
+    public static String typeName( TypeReference reference )
     {
         StringBuilder builder = new StringBuilder();
         internalType( builder, reference, false );
