@@ -31,11 +31,9 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValuePath;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueUnboundRelationship;
-import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
@@ -50,14 +48,54 @@ public class BoltValueStructsDocTest
 {
 
     // This lookup is used to check we hydrate structures to the correct types
-    public static Map<String, Class> expectedClass = new HashMap<>();
+    public static Map<String, String> expectedSerialization = new HashMap<>();
 
     static
     {
-        expectedClass.put( "Node", ValueNode.class );
-        expectedClass.put( "Relationship", ValueRelationship.class );
-        expectedClass.put( "UnboundRelationship", ValueUnboundRelationship.class );
-        expectedClass.put( "Path", ValuePath.class );
+        expectedSerialization.put( "Node", "B3 4E C9 05\n" +
+                                           "39 92 86 42\n" +
+                                           "61 6E 61 6E\n" +
+                                           "61 86 50 65\n" +
+                                           "72 73 6F 6E\n" +
+                                           "A1 81 6B C9\n" +
+                                           "30 39" );
+        expectedSerialization.put( "Relationship", "B5 52 C9 05\n" +
+                                                   "39 C9 05 39\n" +
+                                                   "C9 05 39 85\n" +
+                                                   "31 32 33 34\n" +
+                                                   "35 A1 81 6B\n" +
+                                                   "C9 30 39" );
+        expectedSerialization.put( "UnboundRelationship", "B3 72 C9 05\n" +
+                                                          "39 87 20 22\n" +
+                                                          "4B 4E 4F 57\n" +
+                                                          "53 A1 81 6B\n" +
+                                                          "C9 30 39" );
+        expectedSerialization.put( "Path", "B3 50 92 B3\n" +
+                                           "4E C9 03 E9\n" +
+                                           "92 86 50 65\n" +
+                                           "72 73 6F 6E\n" +
+                                           "88 45 6D 70\n" +
+                                           "6C 6F 79 65\n" +
+                                           "65 A2 84 6E\n" +
+                                           "61 6D 65 85\n" +
+                                           "41 6C 69 63\n" +
+                                           "65 83 61 67\n" +
+                                           "65 21 B3 4E\n" +
+                                           "C9 03 EA 92\n" +
+                                           "86 50 65 72\n" +
+                                           "73 6F 6E 88\n" +
+                                           "45 6D 70 6C\n" +
+                                           "6F 79 65 65\n" +
+                                           "A2 84 6E 61\n" +
+                                           "6D 65 83 42\n" +
+                                           "6F 62 83 61\n" +
+                                           "67 65 2C 91\n" +
+                                           "B3 72 0C 85\n" +
+                                           "4B 4E 4F 57\n" +
+                                           "53 A1 85 73\n" +
+                                           "69 6E 63 65\n" +
+                                           "C9 07 CF 92\n" +
+                                           "01 01" );
     }
 
     @Parameterized.Parameter(0)
@@ -97,18 +135,10 @@ public class BoltValueStructsDocTest
 
         // Then unpack again into a regular object
         byte[] bytes = output.bytes();
-        //System.out.println("Serialized bytes:\n" + HexPrinter.hex( bytes ));
-        PackedInputArray input = new PackedInputArray( bytes );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
-        Object unpacked = unpacker.unpack();
+        String hex = HexPrinter.hex( bytes, 4, "\n" );
 
         // Then it should get interpreted as the documented structure
-        assertEquals( expectedClass.get( struct.name() ), unpacked.getClass() );
-
-        // Hello, future traveler. The assertion above is not strictly necessary. What we're trying
-        // to do here is simply to ensure that the documented structure is what we get back out
-        // when we deserialize, the name of the class does not strictly have to map to the name in
-        // the docs, if that is causing you trouble.
+        assertEquals( expectedSerialization.get( struct.name() ), hex );
     }
 
     private void packValueOf( DocStruct.Field field, Neo4jPack.Packer packer ) throws IOException

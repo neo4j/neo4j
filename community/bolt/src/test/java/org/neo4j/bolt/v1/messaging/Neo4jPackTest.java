@@ -31,9 +31,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -41,7 +39,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
-import static org.neo4j.bolt.v1.messaging.example.Support.labels;
 
 public class Neo4jPackTest
 {
@@ -127,55 +124,32 @@ public class Neo4jPackTest
     }
 
     @Test
-    public void shouldBeAbleToPackAndUnpackNode() throws IOException
+    public void shouldNotBeAbleToUnpackNode() throws IOException
     {
-        // Given
-        Object unpacked = unpacked( packed( ALICE ) );
-
-        // Then
-        assertThat( unpacked, instanceOf( Node.class ) );
-        Node unpackedNode = (Node) unpacked;
-        assertThat( unpackedNode.getId(), equalTo( ALICE.getId() ) );
-        assertThat( labels( unpackedNode ), equalTo( labels( ALICE ) ) );
-        assertThat( unpackedNode.getAllProperties(), equalTo( ALICE.getAllProperties() ) );
+        // Expect
+        exception.expect( BoltIOException.class );
+        // When
+        unpacked( packed( ALICE ) );
     }
 
     @Test
-    public void shouldBeAbleToPackAndUnpackRelationship() throws IOException
+    public void shouldNotBeAbleToUnpackRelationship() throws IOException
     {
-        // Given
-        Object unpacked = unpacked( packed( ALICE_KNOWS_BOB ) );
-
-        // Then
-        assertThat( unpacked, instanceOf( Relationship.class ) );
-        Relationship unpackedRelationship = (Relationship) unpacked;
-        assertThat( unpackedRelationship.getId(), equalTo( ALICE_KNOWS_BOB.getId() ) );
-        assertThat( unpackedRelationship.getStartNode().getId(),
-                equalTo( ALICE_KNOWS_BOB.getStartNode().getId() ) );
-        assertThat( unpackedRelationship.getEndNode().getId(),
-                equalTo( ALICE_KNOWS_BOB.getEndNode().getId() ) );
-        assertThat( unpackedRelationship.getType().name(),
-                equalTo( ALICE_KNOWS_BOB.getType().name() ) );
-        assertThat( unpackedRelationship.getAllProperties(),
-                equalTo( ALICE_KNOWS_BOB.getAllProperties() ) );
+        // Expect
+        exception.expect( BoltIOException.class );
+        // When
+        unpacked( packed( ALICE_KNOWS_BOB ) );
     }
 
     @Test
-    public void shouldBeAbleToPackAndUnpackPaths() throws IOException
+    public void shouldNotBeAbleToUnpackPaths() throws IOException
     {
         for ( Path path : ALL_PATHS )
         {
-            System.out.println(path);
-
-            // Given
-            Object unpacked = unpacked( packed( path ) );
-
-            // Then
-            assertThat( unpacked, instanceOf( Path.class ) );
-            Path unpackedPath = (Path) unpacked;
-            assertThat( unpackedPath, equalTo( path ) );
-
+            // Expect
+            exception.expect( BoltIOException.class );
+            // When
+            unpacked( packed( path ) );
         }
     }
-
 }

@@ -21,13 +21,18 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
@@ -50,6 +55,17 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LOOP;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_NODES_VISITED_MULTIPLE_TIMES;
+import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION;
+import static org.neo4j.bolt.v1.messaging.example.Paths
+        .PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1.Writer.NO_OP;
@@ -58,6 +74,9 @@ import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 
 public class MessageFormatTest
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
@@ -113,7 +132,7 @@ public class MessageFormatTest
         assertSerializesNeoValue( map( "k", null ) );
         assertSerializesNeoValue( map( "k", true ) );
         assertSerializesNeoValue( map( "k", false ) );
-        assertSerializesNeoValue( map( "k", 1337l ) );
+        assertSerializesNeoValue( map( "k", 1337L ) );
         assertSerializesNeoValue( map( "k", 133.7d ) );
         assertSerializesNeoValue( map( "k", "Hello" ) );
         assertSerializesNeoValue( map( "k", asList( "one", "", "three" ) ) );
@@ -122,24 +141,104 @@ public class MessageFormatTest
     @Test
     public void shouldSerializeNode() throws Throwable
     {
-        assertSerializesNeoValue( new ValueNode( 12l, asList( label( "User" ), label( "Banana" ) ),
-                map( "name", "Bob", "age", 14 ) ) );
+        ValueNode valueNode = new ValueNode( 12L, asList( label( "User" ), label( "Banana" ) ),
+                map( "name", "Bob", "age", 14 ) );
+
+        assertThat( serialized( valueNode ),
+                equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E\n" +
+                         "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n" +
+                         "65 0E" ) );
     }
 
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        assertSerializesNeoValue( new ValueRelationship( 12l, 1l, 2l, RelationshipType.withName( "KNOWS" ),
-                map( "name", "Bob", "age", 14 ) ) );
+        ValueRelationship valueRelationship = new ValueRelationship( 12L, 1L, 2L, RelationshipType.withName( "KNOWS" ),
+                map( "name", "Bob", "age", 14 ) );
+
+        assertThat( serialized( valueRelationship ),
+                equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84\n" +
+                         "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
 
     @Test
     public void shouldSerializePaths() throws Throwable
     {
-        for ( Path path : ALL_PATHS )
-        {
-            assertSerializesNeoValue( path );
-        }
+        assertThat( serialized( PATH_WITH_LENGTH_ZERO ),
+                equalTo( "B1 71 91 B3 50 91 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 90 90"  ) );
+        assertThat( serialized( PATH_WITH_LENGTH_ONE ),
+                equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9\n" +
+                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F\n" +
+                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n" +
+                         "65 2C 91 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73 69\n" +
+                         "6E 63 65 C9 07 CF 92 01 01"
+        ) );
+        assertThat( serialized( PATH_WITH_LENGTH_TWO ),
+                equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9\n" +
+                         "03 EB 91 86 50 65 72 73 6F 6E A1 84 6E 61 6D 65\n" +
+                         "85 43 61 72 6F 6C B3 4E C9 03 EC 90 A1 84 6E 61\n" +
+                         "6D 65 84 44 61 76 65 92 B3 72 0D 85 4C 49 4B 45\n" +
+                         "53 A0 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F\n" +
+                         "A0 94 01 01 02 02"  ) );
+        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION),
+                equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9\n" +
+                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F\n" +
+                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n" +
+                         "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1\n" +
+                         "84 6E 61 6D 65 85 43 61 72 6F 6C B3 4E C9 03 EC\n" +
+                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 93 B3 72 0C\n" +
+                         "85 4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF\n" +
+                         "B3 72 20 88 44 49 53 4C 49 4B 45 53 A0 B3 72 22\n" +
+                         "8A 4D 41 52 52 49 45 44 5F 54 4F A0 96 01 01 FE\n" +
+                         "02 03 03" ) );
+        assertThat( serialized( PATH_WITH_NODES_VISITED_MULTIPLE_TIMES ),
+                equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9\n" +
+                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F\n" +
+                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n" +
+                         "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1\n" +
+                         "84 6E 61 6D 65 85 43 61 72 6F 6C 93 B3 72 0C 85\n" +
+                         "4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF B3\n" +
+                         "72 0D 85 4C 49 4B 45 53 A0 B3 72 20 88 44 49 53\n" +
+                         "4C 49 4B 45 53 A0 9A 01 01 FF 00 02 02 03 01 FD\n" +
+                         "02" ) );
+        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION ),
+                equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9\n" +
+                         "03 EB 91 86 50 65 72 73 6F 6E A1 84 6E 61 6D 65\n" +
+                         "85 43 61 72 6F 6C B3 4E C9 03 EA 92 86 50 65 72\n" +
+                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61\n" +
+                         "6D 65 83 42 6F 62 83 61 67 65 2C B3 4E C9 03 EC\n" +
+                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 94 B3 72 0D\n" +
+                         "85 4C 49 4B 45 53 A0 B3 72 20 88 44 49 53 4C 49\n" +
+                         "4B 45 53 A0 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73\n" +
+                         "69 6E 63 65 C9 07 CF B3 72 22 8A 4D 41 52 52 49\n" +
+                         "45 44 5F 54 4F A0 9A 01 01 02 02 FD 00 01 01 04\n" +
+                         "03") );
+        assertThat( serialized( PATH_WITH_LOOP ),
+                equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 EB 91 86 50 65 72\n" +
+                         "73 6F 6E A1 84 6E 61 6D 65 85 43 61 72 6F 6C B3\n" +
+                         "4E C9 03 EC 90 A1 84 6E 61 6D 65 84 44 61 76 65\n" +
+                         "92 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F A0\n" +
+                         "B3 72 2C 89 57 4F 52 4B 53 5F 46 4F 52 A0 94 01\n" +
+                         "01 02 01") );
+    }
+
+    private String serialized( Object object ) throws IOException
+    {
+        RecordMessage message =
+                new RecordMessage( record( object ) );
+        return HexPrinter.hex( serialize( message ), 4, " " );
     }
 
     private void assertSerializes( Message msg ) throws IOException

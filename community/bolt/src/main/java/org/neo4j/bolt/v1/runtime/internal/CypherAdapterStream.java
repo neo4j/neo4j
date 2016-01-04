@@ -61,14 +61,9 @@ public class CypherAdapterStream implements RecordStream
     @Override
     public void accept( final Visitor visitor ) throws Exception
     {
-        delegate.accept( new Result.ResultVisitor<Exception>()
-        {
-            @Override
-            public boolean visit( Result.ResultRow row ) throws Exception
-            {
-                visitor.visit( currentRecord.reset( row ) );
-                return true;
-            }
+        delegate.accept( row -> {
+            visitor.visit( currentRecord.reset( row ) );
+            return true;
         } );
 
         QueryExecutionType qt = delegate.getQueryExecutionType();

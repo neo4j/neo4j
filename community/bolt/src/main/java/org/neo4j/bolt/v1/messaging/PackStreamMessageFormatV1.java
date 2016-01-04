@@ -163,7 +163,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packer.pack( message );
-            
+
             onMessageComplete.onMessageComplete();
         }
 
