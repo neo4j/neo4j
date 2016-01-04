@@ -20,11 +20,6 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-server'
   "
 
-  test_expect_success "should disable explicit GC" "
-    ${run_command} &&
-    test_expect_java_arg '-XX:+DisableExplicitGC'
-  "
-
   test_expect_success "should add additional options" "
     set_config 'wrapper.java.additional' '-XX:+UseG1GC', neo4j-wrapper.conf &&
     ${run_command} &&

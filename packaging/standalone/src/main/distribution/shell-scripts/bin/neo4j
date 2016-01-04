@@ -52,7 +52,7 @@ findBaseDirAndCdThere
 source bin/utils
 parseConfig
 
-JAVA_OPTS="-server -XX:+DisableExplicitGC"
+JAVA_OPTS="-server"
 [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
 [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
