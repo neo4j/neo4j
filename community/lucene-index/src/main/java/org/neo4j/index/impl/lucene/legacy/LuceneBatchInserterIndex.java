@@ -21,10 +21,12 @@ package org.neo4j.index.impl.lucene.legacy;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -38,29 +40,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.impl.index.DocValuesCollector;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
-import org.neo4j.kernel.api.impl.index.ObsoleteLuceneIndexWriter;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
 {
     private final IndexIdentifier identifier;
     private final IndexType type;
 
-    private ObsoleteLuceneIndexWriter writer;
+    private IndexWriter writer;
     private SearcherManager searcherManager;
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<EntityId>>> cache;
@@ -250,17 +248,19 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private ObsoleteLuceneIndexWriter instantiateWriter( File directory )
+    private IndexWriter instantiateWriter( File folder )
     {
+        Directory dir = null;
         try
         {
+            dir = LuceneDataSource.getDirectory( folder, identifier );
             IndexWriterConfig writerConfig = new IndexWriterConfig( type.analyzer );
             writerConfig.setRAMBufferSizeMB( determineGoodBufferSize( writerConfig.getRAMBufferSizeMB() ) );
-            Directory luceneDir = LuceneDataSource.getDirectory( directory, identifier );
-            return IndexWriterFactories.batchInsert( writerConfig ).create( luceneDir );
+            return new IndexWriter( dir, writerConfig );
         }
         catch ( IOException e )
         {
+            IOUtils.closeAllSilently( dir );
             throw new RuntimeException( e );
         }
     }
@@ -272,11 +272,11 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         return Math.min( result, 700 );
     }
 
-    private static SearcherManager instantiateSearcherManager( ObsoleteLuceneIndexWriter writer )
+    private static SearcherManager instantiateSearcherManager( IndexWriter writer )
     {
         try
         {
-            return writer.createSearcherManager();
+            return new SearcherManager( writer, true, new SearcherFactory() );
         }
         catch ( IOException e )
         {
@@ -288,7 +288,10 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            this.searcherManager.close();
+            if ( searcherManager != null )
+            {
+                this.searcherManager.close();
+            }
         }
         catch ( IOException e )
         {
@@ -306,7 +309,6 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         {
             if ( this.writer != null )
             {
-                this.writer.optimize();
                 this.writer.close();
             }
         }
@@ -483,10 +485,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            while ( !searcherManager.maybeRefresh() )
-            {
-                LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
-            }
+            searcherManager.maybeRefreshBlocking();
         }
         catch ( IOException e )
         {

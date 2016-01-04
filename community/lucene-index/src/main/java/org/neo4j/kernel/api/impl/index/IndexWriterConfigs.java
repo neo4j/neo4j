@@ -26,32 +26,20 @@ import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
 import org.neo4j.index.impl.lucene.legacy.MultipleBackupDeletionPolicy;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-public final class IndexWriterFactories
+public final class IndexWriterConfigs
 {
-
     private static final int MAX_BUFFERED_DOCS =
-            FeatureToggles.getInteger( IndexWriterFactories.class, "max_buffered_docs", 100000 );
+            FeatureToggles.getInteger( IndexWriterConfigs.class, "max_buffered_docs", 100000 );
     private static final int MERGE_POLICY_MERGE_FACTOR =
-            FeatureToggles.getInteger( IndexWriterFactories.class, "merge.factor", 2 );
+            FeatureToggles.getInteger( IndexWriterConfigs.class, "merge.factor", 2 );
     private static final double MERGE_POLICY_NO_CFS_RATIO =
-            FeatureToggles.getDouble( IndexWriterFactories.class, "nocfs.ratio", 1.0 );
+            FeatureToggles.getDouble( IndexWriterConfigs.class, "nocfs.ratio", 1.0 );
     private static final double MERGE_POLICY_MIN_MERGE_MB =
-            FeatureToggles.getDouble( IndexWriterFactories.class, "min.merge", 0.1 );
+            FeatureToggles.getDouble( IndexWriterConfigs.class, "min.merge", 0.1 );
 
-    private IndexWriterFactories()
+    private IndexWriterConfigs()
     {
         throw new AssertionError( "Not for instantiation!" );
-    }
-
-
-    public static IndexWriterFactory<ObsoleteLuceneIndexWriter> standard()
-    {
-        return directory -> new ObsoleteLuceneIndexWriter( directory, standardConfig() );
-    }
-
-    public static IndexWriterFactory<ObsoleteLuceneIndexWriter> batchInsert( final IndexWriterConfig config )
-    {
-        return directory -> new ObsoleteLuceneIndexWriter( directory, config );
     }
 
     public static IndexWriterConfig standardConfig()

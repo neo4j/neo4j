@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.stream.Collectors.toSet;
@@ -59,7 +59,7 @@ public class LuceneSnapshotterTest
     {
         indexDir = testDir.directory();
         dir = new RAMDirectory();
-        writer = new IndexWriter( dir, IndexWriterFactories.standardConfig() );
+        writer = new IndexWriter( dir, IndexWriterConfigs.standardConfig() );
     }
 
     @After

@@ -77,6 +77,11 @@ public abstract class AbstractLuceneIndex implements Closeable
         open = true;
     }
 
+    boolean isOpen()
+    {
+        return open;
+    }
+
     public boolean exists() throws IOException
     {
         List<File> folders = indexStorage.listFolders();

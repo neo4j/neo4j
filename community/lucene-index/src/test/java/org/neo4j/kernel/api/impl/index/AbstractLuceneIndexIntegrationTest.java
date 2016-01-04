@@ -24,6 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -46,13 +47,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.ZipOutputStream;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class ObsoleteLuceneIndexWriterIntegrationTest
+public class AbstractLuceneIndexIntegrationTest
 {
     private static final int THREAD_NUMBER = 5;
     @Rule
@@ -60,13 +65,17 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
+    private final CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
+
     private SyncNotifierDirectoryFactory directoryFactory;
+    private TestLuceneIndex luceneIndex;
     private ExecutorService workers;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
-        directoryFactory = new SyncNotifierDirectoryFactory();
+        directoryFactory = new SyncNotifierDirectoryFactory( closeRaceSignal );
+        luceneIndex = createTestLuceneIndex( directoryFactory, testDir.directory() );
         workers = Executors.newFixedThreadPool( THREAD_NUMBER );
     }
 
@@ -78,50 +87,58 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
     }
 
     @Test( timeout = 10000 )
-    @RepeatRule.Repeat( times = 4 )
+    @RepeatRule.Repeat( times = 5 )
     public void testSaveCallCommitAndCloseFromMultipleThreads() throws Exception
     {
-        CountDownLatch closeRaceSignal = new CountDownLatch( 1 );
-        Directory writerDirectory = directoryFactory.open( testDir.directory(), closeRaceSignal );
-        ObsoleteLuceneIndexWriter indexWriter = IndexWriterFactories.standard().create( writerDirectory );
+        generateInitialData();
+        List<Future<?>> closeFutures = submitCloseTasks( closeRaceSignal );
 
-        generateIndexData( indexWriter );
-        List<Future> closeFutures = submitCloseTasks( indexWriter, closeRaceSignal );
-
-
-        for ( Future closeFuture : closeFutures )
+        for ( Future<?> closeFuture : closeFutures )
         {
             closeFuture.get();
         }
-        assertFalse( indexWriter.writer.isOpen() );
+
+        assertFalse( luceneIndex.isOpen() );
     }
 
-    private List<Future> submitCloseTasks( ObsoleteLuceneIndexWriter indexWriter, CountDownLatch closeRaceSignal )
+    private static TestLuceneIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
-        List<Future> closeFutures = new ArrayList<>( THREAD_NUMBER );
-        closeFutures.add( workers.submit( createMainCloseTask( indexWriter ) ) );
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fs, folder, "test" );
+        TestLuceneIndex index = new TestLuceneIndex( indexStorage );
+        index.create();
+        index.open();
+        return index;
+    }
+
+    private List<Future<?>> submitCloseTasks( CountDownLatch closeRaceSignal )
+    {
+        List<Future<?>> closeFutures = new ArrayList<>( THREAD_NUMBER );
+        closeFutures.add( workers.submit( createMainCloseTask() ) );
         for ( int i = 0; i < THREAD_NUMBER - 1; i++ )
         {
-            closeFutures.add( workers.submit( createConcurrentCloseTask( indexWriter, closeRaceSignal ) ) );
+            closeFutures.add( workers.submit( createConcurrentCloseTask( closeRaceSignal ) ) );
         }
         return closeFutures;
     }
 
-    private void generateIndexData( ObsoleteLuceneIndexWriter indexWriter ) throws IOException
+    private void generateInitialData() throws IOException
     {
+        IndexWriter indexWriter = firstPartitionWriter();
         for ( int i = 0; i < 10; i++ )
         {
             indexWriter.addDocument( createTestDocument() );
         }
     }
 
-    private Runnable createConcurrentCloseTask( ObsoleteLuceneIndexWriter writer, CountDownLatch closeRaceSignal )
+    private Runnable createConcurrentCloseTask( CountDownLatch closeRaceSignal )
     {
         return () -> {
             try
             {
                 closeRaceSignal.await();
-                writer.close();
+                Thread.yield();
+                luceneIndex.close();
             }
             catch ( Exception e )
             {
@@ -130,12 +147,12 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
         };
     }
 
-    private Runnable createMainCloseTask( ObsoleteLuceneIndexWriter writer )
+    private Runnable createMainCloseTask()
     {
         return () -> {
             try
             {
-                writer.close();
+                luceneIndex.close();
             }
             catch ( Exception e )
             {
@@ -152,8 +169,31 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
         return document;
     }
 
+    private IndexWriter firstPartitionWriter()
+    {
+        List<IndexPartition> partitions = luceneIndex.getPartitions();
+        assertEquals( 1, partitions.size() );
+        IndexPartition partition = partitions.get( 0 );
+        return partition.getIndexWriter();
+    }
+
+    private static class TestLuceneIndex extends AbstractLuceneIndex
+    {
+        TestLuceneIndex( PartitionedIndexStorage indexStorage )
+        {
+            super( indexStorage );
+        }
+    }
+
     private static class SyncNotifierDirectoryFactory implements DirectoryFactory
     {
+        final CountDownLatch signal;
+
+        SyncNotifierDirectoryFactory( CountDownLatch signal )
+        {
+            this.signal = signal;
+        }
+
         public Directory open( File dir, CountDownLatch signal ) throws IOException
         {
             Directory directory = open( dir );
@@ -164,19 +204,18 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
         public Directory open( File dir ) throws IOException
         {
             dir.mkdirs();
-            return FSDirectory.open( dir.toPath() );
+            FSDirectory fsDir = FSDirectory.open( dir.toPath() );
+            return new SyncNotifierDirectory( fsDir, signal );
         }
 
         @Override
         public void close()
         {
-
         }
 
         @Override
         public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
         {
-
         }
 
         private class SyncNotifierDirectory extends Directory
@@ -231,6 +270,7 @@ public class ObsoleteLuceneIndexWriterIntegrationTest
                         throw new RuntimeException( e );
                     }
                 }
+
                 delegate.sync( names );
             }
 
