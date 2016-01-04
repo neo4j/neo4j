@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan, NodeLogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.{countStorePlanner, verifyBestPlan}
-import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
@@ -30,7 +30,6 @@ QueryGraphs and EventHorizons
  */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
                            planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                           expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                            planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
                            planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
@@ -51,10 +50,8 @@ case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Opti
 
     val projectedPlan = planEventHorizon(in, planWithUpdatesAndEffects)
     val projectedContext = context.recurse(projectedPlan)
-    val expressionRewriter = expressionRewriterFactory(projectedContext)
-    val completePlan = projectedPlan.endoRewrite(expressionRewriter)
 
-    val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
+    val finalPlan = planWithTail(projectedPlan, in.tail)(projectedContext)
     verifyBestPlan(finalPlan, in)
   }
 

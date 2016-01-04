@@ -103,8 +103,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(producer.planStarProjection(any(), any(), any())(any())).thenReturn(lp)
     when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
-    val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop,
-      planSingleQuery = PlanSingleQuery(expressionRewriterFactory = (lpc) => Rewriter.noop ))
+    val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop, planSingleQuery = PlanSingleQuery())
 
     // when
     val query = UnionQuery(Seq(plannerQuery), distinct = false, Seq.empty)

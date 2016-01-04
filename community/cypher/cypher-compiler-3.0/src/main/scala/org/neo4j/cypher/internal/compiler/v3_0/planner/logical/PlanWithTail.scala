@@ -58,8 +58,7 @@ In this case the following must hold
   - If Update3 affects Read3, Read2 must use RepeatableRead
 
 */
-case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                        planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
+case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
                         planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
                         planUpdates: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanUpdates)
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
@@ -94,14 +93,8 @@ case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Re
         val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
         val projectedContext = applyContext.recurse(projectedPlan)
 
-        val completePlan = {
-          val expressionRewriter = expressionRewriterFactory(projectedContext)
-
-          projectedPlan.endoRewrite(expressionRewriter)
-        }
-
         // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query.tail)(projectedContext)
+        apply(projectedPlan, query.tail)(projectedContext)
 
       case None =>
         lhs

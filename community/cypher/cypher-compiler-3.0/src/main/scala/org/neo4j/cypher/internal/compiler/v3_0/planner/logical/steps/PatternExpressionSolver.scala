@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{LogicalPlanningContext, PatternExpressionPatternElementNamer, patternExpressionRewriter}
+import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_0.{ExpressionWithInnerScope, SemanticDirection, ast, replace}
@@ -54,6 +55,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 
   def apply(source: LogicalPlan, expressions: Seq[Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Seq[Expression]) = {
+    val lastDitch = patternExpressionRewriter(source.availableSymbols, context)
     val expressionBuild = mutable.ListBuffer[Expression]()
     val finalPlan = expressions.foldLeft(source) {
       case (planAcc, expression: PatternExpression) =>
@@ -62,7 +64,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
         newPlan
 
       case (planAcc, inExpression) =>
-        val (newPlan, newExpression) = rewriteInnerExpressions(planAcc, inExpression)
+        val (newPlan, newExpression) = rewriteInnerExpressions(planAcc, inExpression, lastDitch)
         expressionBuild += newExpression
         newPlan
     }
@@ -73,6 +75,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])
            (implicit context: LogicalPlanningContext): (LogicalPlan, Map[String, Expression]) = {
     val newProjections = Map.newBuilder[String, Expression]
+    val lastDitch = patternExpressionRewriter(source.availableSymbols, context)
     val plan = projectionsMap.foldLeft(source) {
 
       // RETURN (a)-->() as X - The top-level expression is a pattern expression
@@ -83,7 +86,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
 
       // Any other expression, that might contain an inner PatternExpression
       case (plan, (key, inExpression)) =>
-        val (newPlan, newExpression) = rewriteInnerExpressions(plan, inExpression)
+        val (newPlan, newExpression) = rewriteInnerExpressions(plan, inExpression, lastDitch)
         newProjections += (key -> newExpression)
         newPlan
     }
@@ -91,7 +94,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     (plan, newProjections.result())
   }
 
-  private def rewriteInnerExpressions(plan: LogicalPlan, inExpression: Expression)
+  private def rewriteInnerExpressions(plan: LogicalPlan, inExpression: Expression, lastDitch: patternExpressionRewriter)
                                      (implicit context: LogicalPlanningContext): (LogicalPlan, Expression) = {
     val expression = solveUsingGetDegree(inExpression)
 
@@ -101,7 +104,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
       case ((planAcc, expressionAcc), patternExpression) =>
         val (newPlan, introducedVariable) = solveUsingRollUpApply(planAcc, patternExpression, None)
 
-        val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable)
+        val rewriter = rewriteButStopAtInnerScopes(patternExpression, introducedVariable, lastDitch)
         val rewrittenExpression = expressionAcc.endoRewrite(rewriter)
 
         // If for some reason nothing was changed, make sure we also return the original plan
@@ -112,14 +115,16 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
     }
   }
 
-  private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression) = replace(replacer => {
-    // We only unnest the pattern expressions if they are not hiding inside an expression that introduces scope
-    case exp@(_: ExpressionWithInnerScope) => replacer.stop(exp)
-    case exp@FunctionInvocation(FunctionName(name), _, _) if name == Exists.name => replacer.stop(exp)
+  private def rewriteButStopAtInnerScopes(oldExp: Expression, newExp: Expression, lastDitch: patternExpressionRewriter) =
+    replace(replacer => {
+      // We only unnest the pattern expressions if they are not hiding inside an expression that introduces scope.
+      case exp@(_: ExpressionWithInnerScope) => exp.endoRewrite(lastDitch)
+      case exp@FunctionInvocation(FunctionName(name), _, _) if name == Exists.name => exp.endoRewrite(lastDitch)
 
-    case exp if exp == oldExp => newExp
-    case exp => replacer.expand(exp)
-  })
+
+      case exp if exp == oldExp => newExp
+      case exp => replacer.expand(exp)
+    })
 
   private def solveUsingGetDegree(exp: Expression): Expression = exp.endoRewrite(getDegreeRewriter)
 
