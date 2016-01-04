@@ -67,19 +67,7 @@ NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:-7474}"
 NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 
 buildclasspath() {
-  LIBDIR="${NEO4J_HOME}/lib"
-  if [ ! -e "${LIBDIR}" ] ; then
-    echo "Error: missing Neo4j Library, expected at ${LIBDIR}"
-    exit 1
-  fi
-
-  SYSLIBDIR="${NEO4J_HOME}/system/lib"
-  if [ ! -e "${SYSLIBDIR}" ] ; then
-    echo "Error: missing Neo4j System Library, expected at ${SYSLIBDIR}"
-    exit 1
-  fi
-
-  CLASSPATH="${LIBDIR}/*:${SYSLIBDIR}/*:${NEO4J_HOME}/plugins/*"
+  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
 }
 
 startit() {
