@@ -370,4 +370,23 @@ public class VersionAwareLogEntryReaderTest
         // then
         assertNull( logEntry );
     }
+
+    @Test
+    public void shouldParseStreamOfZerosAsEmptyLogEntries() throws Exception
+    {
+        // GIVEN
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        int count = 100;
+        channel.put( new byte[count], count );
+
+        // WHEN/THEN
+        for ( int i = 0; i < count; i++ )
+        {
+            LogEntry entry = reader.readLogEntry( channel );
+            assertNull( entry );
+            assertEquals( i+1, channel.readerPosition() );
+        }
+    }
 }

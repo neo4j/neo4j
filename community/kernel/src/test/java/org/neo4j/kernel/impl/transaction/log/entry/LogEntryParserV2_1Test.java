@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,8 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class LogEntryParserV2_1Test
 {
     private final LogEntryVersion version = LogEntryVersion.V2_1;
-    private final CommandReader commandReader =
-            new RecordStorageCommandReaderFactory().byVersion( version.byteCode(), version.logHeaderFormatVersion() );
+    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 37 );
 
