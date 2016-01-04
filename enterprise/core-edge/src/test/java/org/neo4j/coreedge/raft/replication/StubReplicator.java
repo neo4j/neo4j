@@ -25,13 +25,14 @@ import java.util.Set;
 public class StubReplicator implements Replicator
 {
     private final Set<ReplicatedContentListener> listeners = new HashSet<>();
+    private long logIndex = 0;
 
     @Override
     public void replicate( ReplicatedContent content ) throws ReplicationFailedException
     {
         for ( ReplicatedContentListener listener : listeners )
         {
-            listener.onReplicated( content, 0 );
+            listener.onReplicated( content, logIndex++ );
         }
     }
 

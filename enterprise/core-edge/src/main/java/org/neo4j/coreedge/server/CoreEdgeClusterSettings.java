@@ -34,16 +34,17 @@ import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.setting;
 
-@Description( "Settings for Core-Edge Clusters" )
+@Description("Settings for Core-Edge Clusters")
 public class CoreEdgeClusterSettings
 {
-    public static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String, ListenSocketAddress>()
+    public static final Function<String, ListenSocketAddress> LISTEN_SOCKET_ADDRESS = new Function<String,
+            ListenSocketAddress>()
     {
         @Override
         public ListenSocketAddress apply( String value )
         {
             String[] split = value.split( ":" );
-            return new ListenSocketAddress(new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ));
+            return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
         }
 
         @Override
@@ -53,13 +54,14 @@ public class CoreEdgeClusterSettings
         }
     };
 
-    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String, AdvertisedSocketAddress>()
+    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
+            AdvertisedSocketAddress>()
     {
         @Override
         public AdvertisedSocketAddress apply( String value )
         {
             String[] split = value.split( ":" );
-            return new AdvertisedSocketAddress(new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ));
+            return new AdvertisedSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
         }
 
         @Override
@@ -69,68 +71,72 @@ public class CoreEdgeClusterSettings
         }
     };
 
-    @Description( "Time out for a new member to catch up" )
+    @Description("Time out for a new member to catch up")
     public static final Setting<Long> join_catch_up_timeout =
             setting( "core_edge.join_catch_up_timeout", DURATION, "10m" );
 
-    @Description( "Leader election timeout" )
+    @Description("Leader election timeout")
     public static final Setting<Long> leader_election_timeout =
             setting( "core_edge.leader_election_timeout", DURATION, "500ms" );
 
-    @Description( "Leader wait timeout" )
+    @Description("Leader wait timeout")
     public static final Setting<Long> leader_wait_timeout =
             setting( "core_edge.leader_wait_timeout", DURATION, "30s" );
 
-    @Description( "The maximum batch size when catching up (in unit of entries)" )
+    @Description("The maximum batch size when catching up (in unit of entries)")
     public static final Setting<Integer> catchup_batch_size =
             setting( "core_edge.catchup_batch_size", INTEGER, "64" );
 
-    @Description( "The maximum lag allowed before log shipping pauses (in unit of entries)" )
-    public static final Setting<Integer> log_shipping_max_lag  =
+    @Description("The maximum lag allowed before log shipping pauses (in unit of entries)")
+    public static final Setting<Integer> log_shipping_max_lag =
             setting( "core_edge.log_shipping_max_lag", INTEGER, "256" );
 
-    @Description( "The time between successive retries of replicating a transaction" )
-    public static final Setting<Long> tx_replication_retry_interval  =
+    @Description("The time between successive retries of replicating a transaction")
+    public static final Setting<Long> tx_replication_retry_interval =
             setting( "core_edge.tx_replication_retry_interval", DURATION, "1s" );
 
-    @Description( "The maximum time for trying to replicate a transaction and receive a successful response. " +
-                  "Note that the transaction might still have been committed in the cluster." )
-    public static final Setting<Long> tx_replication_timeout  =
+    @Description("The maximum time for trying to replicate a transaction and receive a successful response. " +
+            "Note that the transaction might still have been committed in the cluster.")
+    public static final Setting<Long> tx_replication_timeout =
             setting( "core_edge.tx_replication_timeout", DURATION, "30s" );
 
-    @Description( "Expected size of core cluster" )
+    @Description("Expected size of core cluster")
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
-    @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout." )
+    @Description("Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout.")
     public static final Setting<Long> lock_read_timeout =
             setting( "core_edge.lock_read_timeout", DURATION, "20s" );
 
-    @Description( "Network interface and port for the RAFT server to listen on." )
+    @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             setting( "core_edge.transaction_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:6001" );
 
-    @Description( "Hostname/IP address and port that other RAFT servers can use to communicate with us." )
+    @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
             setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6001" );
 
-    @Description( "Network interface and port for the RAFT server to listen on." )
+    @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> raft_listen_address =
             setting( "core_edge.raft_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:7400" );
 
-    @Description( "Hostname/IP address and port that other RAFT servers can use to communicate with us." )
+    @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
 
-    @Description( "Host and port to bind the cluster management communication." )
+    @Description("Host and port to bind the cluster management communication.")
     public static final Setting<ListenSocketAddress> cluster_listen_address =
             setting( "core_edge.cluster_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5001" );
 
-    @Description( "A comma-separated list of other members of the cluster to join." )
+    @Description("A comma-separated list of other members of the cluster to join.")
     public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =
             setting( "core_edge.initial_core_cluster_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
 
-    @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
+    @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "core_edge.disable_middleware_logging", BOOLEAN, TRUE );
+
+    @Description("The maximum file size before the id allocation store is rotated (in unit of entries)")
+    public static final Setting<Integer> id_alloc_store_size = setting( "core_edge.id_alloc_store_size", INTEGER,
+            "1000" );
 }

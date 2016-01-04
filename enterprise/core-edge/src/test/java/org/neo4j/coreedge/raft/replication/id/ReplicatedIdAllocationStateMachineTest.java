@@ -26,6 +26,9 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.server.AdvertisedSocketAddress.address;
 
@@ -42,7 +45,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
 
         // when
         IdRange myHighestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
@@ -58,7 +61,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -74,7 +77,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -91,12 +94,13 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
+        long index = 0;
 
         // when
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), 0 );
-        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 );
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), index++ );
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), index++ );
+        idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index++ );
 
         // then
         assertEquals( 3072, idAllocationStateMachine.getFirstNotAllocated( someType ) );
@@ -107,7 +111,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
 
         // when
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -123,7 +127,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
 
         // when
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -139,7 +143,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryIdAllocationStateStore() );
+                new InMemoryIdAllocationState() );
 
         // when
         idAllocationStateMachine.onReplicated( new ReplicatedIdAllocationRequest( someoneElse, someType, 0, 1024 ), 0 );
@@ -156,7 +160,7 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldCorrectlyRestartWithPreviousState() throws Exception
     {
         // given
-        IdAllocationState idAllocationState = new InMemoryIdAllocationStateStore();
+        IdAllocationState idAllocationState = new InMemoryIdAllocationState();
 
         ReplicatedIdAllocationStateMachine firstIdAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( me, idAllocationState );
@@ -174,5 +178,88 @@ public class ReplicatedIdAllocationStateMachineTest
 
         assertEquals( firstIdAllocationStateMachine.getFirstNotAllocated( someType ),
                 secondIdAllocationStateMachine.getFirstNotAllocated( someType ) );
+
+        assertEquals( firstIdAllocationStateMachine.getFirstNotAllocated( someType ),
+                secondIdAllocationStateMachine.getFirstNotAllocated( someType ) );
+    }
+
+    @Test
+    public void shouldIgnoreAlreadySeenIndex() throws Exception
+    {
+        /*
+         * This test essentially verifies that the ReplicatedIdAllocationStateMachine is idempotent. It checks that
+         * if an onReplicated() request comes in with an index already seen by the state machine, then it will be
+         * promptly ignored. We check that by ensuring that no interactions happen with the mock request, which means
+         * that the state it carried was not read and therefor the state machine state was not updated.
+         * The state store is chosen to not be a mock because the last seen index is expected to be stored there. This
+         * does not imply the index storage details leak from the API, since a mock that only stores the index could
+         * be used instead - this is merely a convenience.
+         */
+        // given
+        // a state machine
+        final long AN_INDEX = 24;
+        IdAllocationState idAllocationState = new InMemoryIdAllocationState();
+        ReplicatedIdAllocationStateMachine stateMachine =
+                new ReplicatedIdAllocationStateMachine( me, idAllocationState );
+
+        // which has seen a replicated content at a specific index
+        ReplicatedIdAllocationRequest mockRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( mockRequest.owner() ).thenReturn( someoneElse );
+        when( mockRequest.idType() ).thenReturn( someType );
+        stateMachine.onReplicated( mockRequest, AN_INDEX );
+
+        // when
+        // we see content at an index before and content at the above index
+        ReplicatedIdAllocationRequest replicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( replicatedMockRequest.owner() ).thenReturn( someoneElse );
+        stateMachine.onReplicated( replicatedMockRequest, AN_INDEX - 3 ); // random already seen index
+
+        ReplicatedIdAllocationRequest anotherReplicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( anotherReplicatedMockRequest.owner() ).thenReturn( someoneElse );
+        stateMachine.onReplicated( anotherReplicatedMockRequest, AN_INDEX );
+
+        // then
+        // there should be only one interaction with the mock, the one for the first time onReplicated() was called
+        verifyZeroInteractions( replicatedMockRequest );
+        verifyZeroInteractions( anotherReplicatedMockRequest );
+    }
+
+    @Test
+    public void shouldContinueAcceptingRequestsAfterIgnoreAlreadySeenIndex() throws Exception
+    {
+        /*
+         * This test completes the previous one (shouldIgnoreAlreadySeenIndex), ensuring that while past indexes are
+         * ignored, future indexes will continue to be applied against the state machine.
+         */
+        // given
+        // a state machine
+        final long AN_INDEX = 24;
+        IdAllocationState idAllocationState = new InMemoryIdAllocationState();
+        ReplicatedIdAllocationStateMachine stateMachine =
+                new ReplicatedIdAllocationStateMachine( me, idAllocationState );
+
+        // which has seen a replicated content at a specific index
+        ReplicatedIdAllocationRequest mockRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( mockRequest.owner() ).thenReturn( someoneElse );
+        when( mockRequest.idType() ).thenReturn( someType );
+        stateMachine.onReplicated( mockRequest, AN_INDEX );
+
+        // we see content at an index before the last seen one
+        ReplicatedIdAllocationRequest replicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( replicatedMockRequest.owner() ).thenReturn( someoneElse );
+        when( replicatedMockRequest.idType() ).thenReturn( someType );
+        stateMachine.onReplicated( replicatedMockRequest, AN_INDEX - 3 ); // random already seen index
+
+        // when
+        // we receive value for an index larger than the one seen
+        ReplicatedIdAllocationRequest newReplicatedRequest = mock( ReplicatedIdAllocationRequest.class );
+        when( newReplicatedRequest.owner() ).thenReturn( someoneElse );
+        when( newReplicatedRequest.idType() ).thenReturn( someType );
+        stateMachine.onReplicated( newReplicatedRequest, AN_INDEX + 12 ); // random future index
+
+        // then
+        // there should be two interactions with the mock, the one for the first time onReplicated() was called and
+        // another for the index seen after the duplication
+        verifyZeroInteractions( replicatedMockRequest );
     }
 }

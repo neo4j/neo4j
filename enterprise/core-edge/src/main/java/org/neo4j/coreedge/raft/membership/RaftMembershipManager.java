@@ -228,6 +228,8 @@ public class RaftMembershipManager<MEMBER> extends RaftMembershipImpl<MEMBER> im
     public void stateChanged()
     {
         checkForStartCondition();
+
+        // JW + CG: potentially persist core member state here.
     }
 
     public void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
