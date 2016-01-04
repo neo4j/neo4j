@@ -17,23 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.bolt.security.ssl;
 
+import java.io.File;
 import java.security.KeyStore;
 
 public class KeyStoreInformation {
 
     private final char[] keyStorePassword;
     private final char[] keyPassword;
+    private final File privateKeyPath;
+    private final File certificatePath;
     private final KeyStore keyStore;
 
-    public KeyStoreInformation(KeyStore keyStore, char[] keyStorePassword, char[] keyPassword)
+    public KeyStoreInformation( KeyStore keyStore, char[] keyStorePassword, char[] keyPassword, File privateKeyPath,
+            File certificatePath )
     {
         this.keyStore = keyStore;
         this.keyStorePassword = keyStorePassword;
         this.keyPassword = keyPassword;
+        this.privateKeyPath = privateKeyPath;
+        this.certificatePath = certificatePath;
     }
-    
+
     public char[] getKeyStorePassword() {
         return keyStorePassword;
     }
@@ -45,5 +51,15 @@ public class KeyStoreInformation {
     public KeyStore getKeyStore()
     {
         return keyStore;
+    }
+
+    public File getPrivateKeyPath()
+    {
+        return privateKeyPath;
+    }
+
+    public File getCertificatePath()
+    {
+        return certificatePath;
     }
 }

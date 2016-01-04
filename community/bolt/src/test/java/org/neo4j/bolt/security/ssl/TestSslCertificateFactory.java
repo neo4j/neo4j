@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.ssl;
+package org.neo4j.bolt.security.ssl;
 
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.junit.Rule;

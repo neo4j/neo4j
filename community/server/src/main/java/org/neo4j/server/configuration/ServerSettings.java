@@ -29,12 +29,11 @@ import org.neo4j.bolt.BoltKernelExtension.EncryptionLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Obsoleted;
+import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.EMPTY;
@@ -42,11 +41,8 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.port;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -75,8 +71,7 @@ public interface ServerSettings
             port );
 
     @Description( "Hostname for the Neo4j REST API" )
-    Setting<String> webserver_address = setting( "org.neo4j.server.webserver.address", STRING,
-            "localhost", illegalValueMessage( "Must be a valid hostname", matches( ANY ) ) );
+    Setting<String> webserver_address = BoltKernelExtension.Settings.webserver_address;
 
     @Description( "Number of Neo4j worker threads." )
     Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
@@ -143,12 +138,10 @@ public interface ServerSettings
     Setting<Integer> webserver_https_port = setting( "org.neo4j.server.webserver.https.port", INTEGER, "7473", port );
 
     @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
-    Setting<File> tls_certificate_file = setting(
-            "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
+    Setting<File> tls_certificate_file = BoltKernelExtension.Settings.tls_certificate_file;
 
     @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
-    Setting<File> tls_key_file = setting(
-            "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
+    Setting<File> tls_key_file = BoltKernelExtension.Settings.tls_key_file;
 
     @Deprecated
     @Description( "Path to the SSL certificate used for HTTPS connections. This is deprecated, please use " +

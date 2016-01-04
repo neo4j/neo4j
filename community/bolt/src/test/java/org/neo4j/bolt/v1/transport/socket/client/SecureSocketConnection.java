@@ -21,23 +21,28 @@ package org.neo4j.bolt.v1.transport.socket.client;
 
 import java.net.Socket;
 import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.HashSet;
+import java.util.Set;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 public class SecureSocketConnection extends SocketConnection
 {
+    private final Set<X509Certificate> serverCertificatesSeen = new HashSet<>();
+
     public SecureSocketConnection()
     {
-        super( createSecureSocket() );
+        setSocket( createSecureSocket() );
     }
 
-    private static Socket createSecureSocket()
+    private Socket createSecureSocket()
     {
         try
         {
             SSLContext context = SSLContext.getInstance( "SSL" );
-            context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom() );
+            context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager( serverCertificatesSeen::add )}, new SecureRandom() );
 
             return context.getSocketFactory().createSocket();
         }
@@ -46,4 +51,10 @@ public class SecureSocketConnection extends SocketConnection
             throw new RuntimeException( e );
         }
     }
+
+    public Set<X509Certificate> getServerCertificatesSeen()
+    {
+        return serverCertificatesSeen;
+    }
+
 }

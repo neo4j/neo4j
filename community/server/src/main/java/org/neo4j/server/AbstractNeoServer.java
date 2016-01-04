@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,9 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
+import org.neo4j.bolt.security.ssl.Certificates;
+import org.neo4j.bolt.security.ssl.KeyStoreFactory;
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -75,9 +79,6 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.ssl.Certificates;
-import org.neo4j.server.security.ssl.KeyStoreFactory;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -451,7 +452,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             throw new ServerStartupException( "TLS certificate error occurred, unable to start server: " + e.getMessage(), e );
         }
-        catch( IOException e )
+        catch( IOException | OperatorCreationException e )
         {
             throw new ServerStartupException( "IO problem while loading or creating TLS certificates: " + e.getMessage(), e );
         }

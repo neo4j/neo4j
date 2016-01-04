@@ -21,21 +21,35 @@ package org.neo4j.bolt.v1.transport.socket.client;
 
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.function.Consumer;
 import javax.net.ssl.X509TrustManager;
 
 /** Trust self-signed certificates */
 public class NaiveTrustManager implements X509TrustManager
 {
+    private final Consumer<X509Certificate> certSink;
+
+    public NaiveTrustManager( Consumer<X509Certificate> certSink )
+    {
+        this.certSink = certSink;
+    }
+
     @Override
     public void checkClientTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-
+        for ( X509Certificate x509Certificate : x509Certificates )
+        {
+            certSink.accept( x509Certificate );
+        }
     }
 
     @Override
     public void checkServerTrusted( X509Certificate[] x509Certificates, String s ) throws CertificateException
     {
-
+        for ( X509Certificate x509Certificate : x509Certificates )
+        {
+            certSink.accept( x509Certificate );
+        }
     }
 
     @Override

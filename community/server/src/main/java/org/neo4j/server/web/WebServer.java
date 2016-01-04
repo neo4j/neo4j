@@ -23,15 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
 
 public interface WebServer
 {
