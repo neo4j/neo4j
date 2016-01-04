@@ -43,8 +43,6 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
     override def rhs: Option[LogicalPlan] = None
 
-    override def mapExpressions(f: (Set[IdName], Expression) => Expression) = ???
-
     override def strictness = ???
   }
 

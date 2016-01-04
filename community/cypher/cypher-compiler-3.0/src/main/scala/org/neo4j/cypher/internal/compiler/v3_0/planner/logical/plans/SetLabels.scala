@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.LabelName
 
 case class SetLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])
                     (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

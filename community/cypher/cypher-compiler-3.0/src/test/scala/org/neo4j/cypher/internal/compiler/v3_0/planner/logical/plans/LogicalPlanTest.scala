@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, L
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
-  case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {
+  case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
     def rhs: Option[LogicalPlan] = ???

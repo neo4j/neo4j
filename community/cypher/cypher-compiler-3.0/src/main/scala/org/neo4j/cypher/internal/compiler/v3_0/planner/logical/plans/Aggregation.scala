@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 
 case class Aggregation(left: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
@@ -37,10 +36,4 @@ case class Aggregation(left: LogicalPlan,
   val groupingKeys = groupingExpressions.keySet.map(IdName(_))
 
   val availableSymbols = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(
-      groupingExpressions = Eagerly.immutableMapValues[String, Expression, Expression](groupingExpressions, f(left.availableSymbols, _)),
-      aggregationExpression = Eagerly.immutableMapValues[String, Expression, Expression](aggregationExpression, f(left.availableSymbols ++ groupingKeys, _))
-    )(solved)
 }

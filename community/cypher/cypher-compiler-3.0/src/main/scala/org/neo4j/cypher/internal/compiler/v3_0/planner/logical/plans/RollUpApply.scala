@@ -32,7 +32,7 @@ Note about nullableIdentifiers: when any of these identifiers is null, the colle
  */
 case class RollUpApply(source: LogicalPlan, inner:LogicalPlan, collectionName: IdName, identifierToCollect: IdName, nullableIdentifiers: Set[IdName])
                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LazyLogicalPlan {
 
   override def lhs = Some(source)
 

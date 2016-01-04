@@ -96,8 +96,6 @@ abstract class LogicalPlan
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
 
-  def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan
-
   def isLeaf: Boolean = lhs.isEmpty && rhs.isEmpty
 
   override def toString = {
@@ -119,12 +117,6 @@ abstract class LogicalPlan
   }
 
   def debugId: String = f"0x${hashCode()}%08x"
-}
-
-trait LogicalPlanWithoutExpressions {
-  self: LogicalPlan =>
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan = self
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {

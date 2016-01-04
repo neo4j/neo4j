@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.docgen
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalLeafPlan, LogicalPlan, LogicalPlanWithoutExpressions}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LogicalLeafPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.frontend.v3_0.perty._
 import org.neo4j.cypher.internal.frontend.v3_0.perty.gen.{DocHandlerTestSuite, toStringDocGen}
@@ -77,13 +77,13 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     TestLeafPlan(12).toString should equal("TestLeafPlan(12) {}")
   }
 
-  case class TestLeafPlan(x: Int) extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+  case class TestLeafPlan(x: Int) extends LogicalLeafPlan {
     def availableSymbols = Set[IdName](IdName("a"))
     def solved: PlannerQuery with CardinalityEstimation = ???
     def argumentIds: Set[IdName] = ???
   }
 
-  case class TestPipePlan(left: LogicalPlan) extends LogicalPlan with LogicalPlanWithoutExpressions {
+  case class TestPipePlan(left: LogicalPlan) extends LogicalPlan {
     def lhs = Some(left)
     def rhs = None
     def strictness = ???
@@ -91,7 +91,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     def solved: PlannerQuery with CardinalityEstimation = ???
   }
 
-  case class TestComboPlan(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan with LogicalPlanWithoutExpressions {
+  case class TestComboPlan(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
     def lhs = Some(left)
     def rhs = Some(right)
     def strictness = ???

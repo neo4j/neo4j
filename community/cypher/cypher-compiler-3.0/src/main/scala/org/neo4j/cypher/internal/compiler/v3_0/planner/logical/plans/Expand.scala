@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, Variable, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Expression, RelTypeName, Variable}
 
 sealed trait ExpansionMode
 case object ExpandAll extends ExpansionMode
@@ -33,7 +33,7 @@ case class Expand(left: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: IdName, relName: IdName,
                   mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None
@@ -47,9 +47,6 @@ case class OptionalExpand(left: LogicalPlan, from: IdName, dir: SemanticDirectio
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(predicates = predicates.map(f(availableSymbols, _)))(solved)
 }
 
 // TODO: Support proper var length handling in Ronja again
@@ -70,10 +67,4 @@ case class VarExpand(left: LogicalPlan,
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
-
-  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(predicates = predicates.map {
-      case tuple @ (ident, expr) =>
-        (ident, f(left.availableSymbols + relName + IdName(ident.name), expr))
-    })(solved)
 }
