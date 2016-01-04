@@ -398,14 +398,18 @@ public class RaftLogShipper<MEMBER>
             return;
         }
 
-        RaftLogEntry logEntry = null;
+        RaftLogEntry[] logEntries;
         if ( raftLog.entryExists( logIndex ) )
         {
-            logEntry = raftLog.readLogEntry( logIndex );
+            logEntries = new RaftLogEntry[]{ raftLog.readLogEntry( logIndex ) };
+        }
+        else
+        {
+            logEntries = RaftLogEntry.empty;
         }
 
         RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, new RaftLogEntry[] { logEntry }, leaderContext.commitIndex );
+                leader, leaderContext.term, prevLogIndex, prevLogTerm, logEntries, leaderContext.commitIndex );
 
         outbound.send( follower, appendRequest );
 
