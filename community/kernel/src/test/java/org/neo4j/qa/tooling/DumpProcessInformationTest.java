@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,10 +26,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.proc.ProcessUtil;
@@ -42,12 +43,16 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class DumpProcessInformationTest
 {
+    private static final String SIGNAL = "here";
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldDumpProcessInformation() throws Exception
     {
@@ -77,28 +82,24 @@ public class DumpProcessInformationTest
         assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    private boolean fileContains( File file, String... expectedStrings )
+    private boolean fileContains( File file, String... expectedStrings ) throws IOException
     {
         Set<String> expectedStringSet = asSet( expectedStrings );
-        for ( String line : asIterable( file, StandardCharsets.UTF_8 ) )
+        try ( Stream<String> lines = Files.lines( file.toPath() ) )
         {
-            Iterator<String> expectedStringIterator = expectedStringSet.iterator();
-            while ( expectedStringIterator.hasNext() )
-            {
-                if ( line.contains( expectedStringIterator.next() ) )
+            lines.forEach( line -> {
+                Iterator<String> expectedStringIterator = expectedStringSet.iterator();
+                while ( expectedStringIterator.hasNext() )
                 {
-                    expectedStringIterator.remove();
+                    if ( line.contains( expectedStringIterator.next() ) )
+                    {
+                        expectedStringIterator.remove();
+                    }
                 }
-            }
+            } );
         }
         return expectedStringSet.isEmpty();
     }
-
-    private static final String SIGNAL = "here";
-
 
     private void awaitSignal( Process process ) throws IOException
     {

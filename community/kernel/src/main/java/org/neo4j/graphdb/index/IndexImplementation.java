@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -57,7 +58,7 @@ public interface IndexImplementation extends Lifecycle
      * @param recovery indicate recovery
      * @return an index applier that will get notifications about commands to apply.
      */
-    CommandHandler newApplier( boolean recovery );
+    TransactionApplier newApplier( boolean recovery );
 
     /**
      * Fills in default configuration parameters for indexes provided from this

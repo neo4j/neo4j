@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, Prepared
 import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
 
 case class ErrorReportingExecutablePlanBuilder(inner: ExecutablePlanBuilder) extends ExecutablePlanBuilder {
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] =
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
     try {
-      inner.producePlan(inputQuery, planContext, tracer)
+      inner.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
     } catch {
       case e: CantHandleQueryException =>
         throw new InvalidArgumentException("The given query is not currently supported in the selected cost-based planner", e)

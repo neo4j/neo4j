@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -240,7 +240,7 @@ public class SessionIT
         assertThat( responses.next(), success() );
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
-        assertThat( discarding.next(), failedWith( Status.Transaction.ValidationFailed ) );
+        assertThat( discarding.next(), failedWith( Status.Schema.ConstraintViolation ) );
     }
 
     @Test

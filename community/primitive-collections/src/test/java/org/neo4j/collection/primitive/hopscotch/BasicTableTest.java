@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -192,9 +192,9 @@ public class BasicTableTest
     @Test
     public void shouldSetAndGetSmallKey() throws Exception
     {
-        // GIVEN
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
+            // GIVEN
             long nullKey = table.nullKey();
             assertEquals( nullKey, table.key( 0 ) );
 
@@ -215,10 +215,10 @@ public class BasicTableTest
     @Test
     public void shouldSetAndGetBigKey() throws Exception
     {
-        // GIVEN
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
+            // GIVEN
             long nullKey = table.nullKey();
             assertEquals( nullKey, table.key( 0 ) );
 
@@ -235,10 +235,10 @@ public class BasicTableTest
     @Test
     public void shouldRemoveBigKey() throws Exception
     {
-        // GIVEN
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
+            // GIVEN
             long nullKey = table.nullKey();
             long key = 0x24F1FF3FEL;
             int index = 5;
@@ -256,9 +256,9 @@ public class BasicTableTest
     @Test
     public void shouldSetHopBits() throws Exception
     {
-        // GIVEN
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
+            // GIVEN
             int index = 10;
             long hopBits = table.hopBits( index );
             assertEquals( 0L, hopBits );
@@ -275,9 +275,9 @@ public class BasicTableTest
     @Test
     public void shouldMoveHopBit() throws Exception
     {
-        // GIVEN
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
+            // GIVEN
             int index = 10;
             table.putHopBit( index, 2 );
             table.putHopBit( index, 11 );
@@ -287,6 +287,26 @@ public class BasicTableTest
 
             // THEN
             assertEquals( (1L << 11) | (1L << 17), table.hopBits( index ) );
+        }
+    }
+
+    @Test
+    public void shouldClearTable() throws Exception
+    {
+        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        {
+            // GIVEN
+            int index = 3;
+            long key = 123L;
+            Object value = factory.sampleValue();
+            table.put( index, key, value );
+            assertEquals( key, table.key( index ) );
+
+            // WHEN
+            table.clear();
+
+            // THEN
+            assertEquals( table.nullKey(), table.key( index ) );
         }
     }
 

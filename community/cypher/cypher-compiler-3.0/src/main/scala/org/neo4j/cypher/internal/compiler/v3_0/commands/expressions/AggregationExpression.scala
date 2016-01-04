@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,11 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.aggregation._
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class AggregationExpression extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) =
-    throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")
+    throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
   def createAggregationFunction: AggregationFunction
 }

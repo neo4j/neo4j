@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -85,6 +85,7 @@ public class RaftLogShipper<MEMBER>
     }
 
     private final Outbound<MEMBER> outbound;
+    private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
@@ -114,6 +115,7 @@ public class RaftLogShipper<MEMBER>
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
+        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.raftLog = raftLog;
         this.clock = clock;
@@ -134,7 +136,7 @@ public class RaftLogShipper<MEMBER>
 
         try
         {
-            timeoutService = new DelayedRenewableTimeoutService();
+            timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
             timeoutService.init();
             timeoutService.start();
         }

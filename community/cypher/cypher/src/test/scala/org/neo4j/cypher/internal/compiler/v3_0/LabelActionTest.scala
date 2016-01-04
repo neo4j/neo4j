@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -187,4 +187,12 @@ class SnitchingQueryContext extends QueryContext {
   override def lockNodes(nodeIds: Long*): Unit = ???
 
   override def lockRelationships(relIds: Long*): Unit = ???
+
+  override type KernelStatement = this.type
+
+  override def statement: KernelStatement = ???
+
+  override type EntityAccessor = this.type
+
+  override def entityAccessor: EntityAccessor = ???
 }

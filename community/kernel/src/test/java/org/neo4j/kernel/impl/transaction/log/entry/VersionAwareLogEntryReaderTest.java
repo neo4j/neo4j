@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
@@ -37,7 +38,8 @@ import static org.junit.Assert.assertTrue;
 
 public class VersionAwareLogEntryReaderTest
 {
-    private final VersionAwareLogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+    private final VersionAwareLogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+            new RecordStorageCommandReaderFactory() );
 
     @Test
     public void shouldReadAStartLogEntry() throws IOException
@@ -88,8 +90,7 @@ public class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 11 ), new NodeRecord( 11 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 11 ), new NodeRecord( 11 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 
@@ -318,8 +319,7 @@ public class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.V2_1;
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 10 ), new NodeRecord( 10 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 10 ), new NodeRecord( 10 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 

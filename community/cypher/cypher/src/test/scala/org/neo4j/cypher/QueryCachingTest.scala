@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -95,7 +95,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log += s"cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: String): Unit = {
+    override def cacheDiscard(key: String, ignored: String): Unit = {
       log += s"cacheDiscard: $key"
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 
 public class SubGraphExporter
@@ -66,8 +65,7 @@ public class SubGraphExporter
                 Iterator<String> propertyKeys = index.getPropertyKeys().iterator();
                 if ( !propertyKeys.hasNext() )
                 {
-                    throw new ThisShouldNotHappenError( "Chris",
-                            "indexes should have at least one property key" );
+                    throw new IllegalStateException( "Indexes should have at least one property key" );
                 }
                 String key = quote( propertyKeys.next() );
                 if ( propertyKeys.hasNext() )
@@ -96,8 +94,7 @@ public class SubGraphExporter
             Iterator<String> propertyKeys = constraint.getPropertyKeys().iterator();
             if ( !propertyKeys.hasNext() )
             {
-                throw new ThisShouldNotHappenError( "Chris",
-                        "constraints should have at least one property key" );
+                throw new IllegalStateException( "Constraints should have at least one property key" );
             }
             String key = quote( propertyKeys.next() );
             if ( propertyKeys.hasNext() )

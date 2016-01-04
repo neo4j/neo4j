@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -71,7 +70,7 @@ public interface LabelScanStore extends Lifecycle
      * Starts the store. After this has been called updates can be processed.
      */
     @Override
-    void start() throws IOException, IndexCapacityExceededException;
+    void start() throws IOException;
 
     @Override
     void stop() throws IOException;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Arrays;
-
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Pair;
@@ -35,7 +34,8 @@ import org.neo4j.helpers.Pair;
  */
 public class ClusterMemberInfo implements Serializable
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -514433972115185753L;
+
     private final String instanceId;
     private final boolean available;
     private final boolean alive;

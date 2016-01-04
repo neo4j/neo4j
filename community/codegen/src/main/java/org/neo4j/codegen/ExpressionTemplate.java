@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.codegen;
 
 import static org.neo4j.codegen.TypeReference.typeReference;
@@ -159,6 +158,30 @@ public abstract class ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 ExpressionTemplate.this.templateAccept( method, visitor );
+            }
+        };
+    }
+
+    public static ExpressionTemplate cast( Class<?> clazz, ExpressionTemplate expression )
+    {
+        return new ExpressionTemplate()
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.cast( typeReference( clazz ), expression.materialize( method ) );
+            }
+        };
+    }
+
+    public static ExpressionTemplate cast( TypeReference type, ExpressionTemplate expression )
+    {
+        return new ExpressionTemplate()
+        {
+            @Override
+            protected void templateAccept( CodeBlock method, ExpressionVisitor visitor )
+            {
+                visitor.cast( type, expression.materialize( method ) );
             }
         };
     }

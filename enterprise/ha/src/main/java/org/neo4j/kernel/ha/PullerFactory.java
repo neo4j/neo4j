@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -74,7 +74,8 @@ public class PullerFactory
     public SlaveUpdatePuller createSlaveUpdatePuller()
     {
         return new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler, monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
+                availabilityGuard, invalidEpochHandler, jobScheduler,
+                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) );
     }
 
     public UpdatePullingTransactionObligationFulfiller createObligationFulfiller( UpdatePuller updatePuller )

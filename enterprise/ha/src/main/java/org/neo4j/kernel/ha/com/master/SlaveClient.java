@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
@@ -36,6 +34,8 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.LogProvider;
 
@@ -51,12 +51,13 @@ public class SlaveClient extends Client<Slave> implements Slave
 
     public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, LogProvider logProvider,
                         StoreId storeId, int maxConcurrentChannels, int chunkSize,
-                        ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+                        ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
+                        LogEntryReader<ReadableLogChannel> entryReader )
     {
         super( hostNameOrIp, port, logProvider, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
-                maxConcurrentChannels, chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor );
+                maxConcurrentChannels, chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor, entryReader );
         this.machineId = machineId;
     }
 

@@ -27,9 +27,6 @@ Retrieves information about Java on the local machine to start Neo4j services an
 .PARAMETER Neo4jServer
 The Neo4j Server Object
 
-.PARAMETER ExtraClassPath
-Additional paths to be added the Java Class Path
-
 .PARAMETER ForServer
 Retrieve the Java command line to start a Neo4j Server
 
@@ -71,9 +68,6 @@ Function Get-Java
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ArbiterInvoke')]
     [switch]$ForArbiter
-
-    ,[Parameter(Mandatory=$false,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
-    [string[]]$ExtraClassPath = @()
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [switch]$ForUtility
@@ -207,11 +201,7 @@ Function Get-Java
       Get-ChildItem -Path $RepoPath | Where-Object { $_.Extension -eq '.jar'} | % {
         $ClassPath += "`"$($_.FullName)`";"
       }
-      #  Get the additional classpath jars
-      $ExtraClassPath | ForEach-Object -Process { If (Test-Path -Path $_) { Write-Output $_} } | Get-ChildItem | Where-Object { $_.Extension -eq '.jar'} | % {
-        $ClassPath += "`"$($_.FullName)`";"
-      }
-      if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed    
+      if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed
 
       $ShellArgs = @()
       if ($Env:JAVA_OPTS -ne $null) { $ShellArgs += $Env:JAVA_OPTS }

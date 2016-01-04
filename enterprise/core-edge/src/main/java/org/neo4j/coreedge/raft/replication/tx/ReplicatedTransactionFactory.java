@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.net.NetworkReadableLogChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkWritableLogChannelNetty4;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -93,7 +94,8 @@ public class ReplicatedTransactionFactory
 
     public static TransactionRepresentation read( NetworkReadableLogChannelNetty4 channel, byte[] extraHeader ) throws IOException
     {
-        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
+        LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
 
         int authorId = channel.getInt();
         int masterId = channel.getInt();

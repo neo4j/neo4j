@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.Objects;
+
 public class RelationshipRecord extends PrimitiveRecord
 {
     private long firstNode;
@@ -31,6 +33,11 @@ public class RelationshipRecord extends PrimitiveRecord
     private boolean firstInFirstChain = true;
     private boolean firstInSecondChain = true;
 
+    public RelationshipRecord( long id )
+    {
+        super( id, Record.NO_NEXT_PROPERTY.intValue() );
+    }
+
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
         this( id );
@@ -39,20 +46,12 @@ public class RelationshipRecord extends PrimitiveRecord
         this.type = type;
     }
 
-    public RelationshipRecord( long id )
-    {
-        super( id, Record.NO_NEXT_PROPERTY.intValue() );
-    }
-
     public RelationshipRecord( long id, boolean inUse, long firstNode, long secondNode, int type,
                                long firstPrevRel, long firstNextRel, long secondPrevRel, long secondNextRel,
                                boolean firstInFirstChain, boolean firstInSecondChain )
     {
-        this( id );
+        this( id, firstNode, secondNode, type );
         setInUse( inUse );
-        this.firstNode = firstNode;
-        this.secondNode = secondNode;
-        this.type = type;
         this.firstPrevRel = firstPrevRel;
         this.firstNextRel = firstNextRel;
         this.secondPrevRel = secondPrevRel;
@@ -177,9 +176,46 @@ public class RelationshipRecord extends PrimitiveRecord
                 .append( "]" ).toString();
     }
 
+
+    @Override
+    public RelationshipRecord clone()
+    {
+        return new RelationshipRecord( getId(), inUse(),
+                firstNode, secondNode, type,
+                firstPrevRel, firstNextRel, secondPrevRel, secondNextRel, firstInFirstChain, firstInSecondChain );
+    }
+
     @Override
     public void setIdTo( PropertyRecord property )
     {
         property.setRelId( getId() );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+        if ( !super.equals( o ) )
+        { return false; }
+        RelationshipRecord that = (RelationshipRecord) o;
+        return firstNode == that.firstNode &&
+               secondNode == that.secondNode &&
+               type == that.type &&
+               firstPrevRel == that.firstPrevRel &&
+               firstNextRel == that.firstNextRel &&
+               secondPrevRel == that.secondPrevRel &&
+               secondNextRel == that.secondNextRel &&
+               firstInFirstChain == that.firstInFirstChain &&
+               firstInSecondChain == that.firstInSecondChain;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), firstNode, secondNode, type, firstPrevRel, firstNextRel, secondPrevRel,
+                secondNextRel, firstInFirstChain, firstInSecondChain );
     }
 }

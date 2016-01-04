@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class PlanCacheMetricsMonitor extends StringCacheMonitor {
   private val counter = new AtomicLong()
-  override def cacheDiscard(key: String): Unit = {
+  override def cacheDiscard(ignored1: String, ignored2: String): Unit = {
     counter.incrementAndGet()
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
@@ -46,7 +47,6 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 public class MetaDataStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
@@ -121,23 +121,15 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     // transactions have been closed. Useful in rotation and shutdown.
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[2] );
 
-    private final CappedOperation<Void> transactionCloseWaitLogger;
+    private final CappedLogger transactionCloseWaitLogger;
 
     MetaDataStore( File fileName, Config conf,
                    IdGeneratorFactory idGeneratorFactory,
                    PageCache pageCache, LogProvider logProvider )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider );
-        this.transactionCloseWaitLogger = new CappedOperation<Void>( time( 30, SECONDS ) )
-        {
-            @Override
-            protected void triggered( Void event )
-            {
-                log.info( format(
-                        "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
-                        highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ) );
-            }
-        };
+        this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
+        transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }
 
     @Override
@@ -751,7 +743,9 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         boolean onPar = lastClosedTx.getHighestGapFreeNumber() == lastCommittingTxField.get();
         if ( !onPar )
         {   // Trigger some logging here, max logged every 30 secs or so
-            transactionCloseWaitLogger.event( null );
+            transactionCloseWaitLogger.info( format(
+                    "Waiting for all transactions to close...%n committed:  %s%n  committing: %s%n  closed:     %s",
+                    highestCommittedTransaction.get(), lastCommittingTxField, lastClosedTx ), null );
         }
         return onPar;
     }

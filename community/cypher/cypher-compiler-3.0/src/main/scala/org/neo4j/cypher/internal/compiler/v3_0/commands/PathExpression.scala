@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   extends Expression
@@ -47,7 +46,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
-      case None       => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
+      case None       => throw new AssertionError("This execution plan should not exist.")
       case Some(null) => true
       case Some(_)    => false
     })

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -35,11 +34,6 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
  * State and methods are divided up into two parts, one part being the responsibility of the user to manage,
  * the other part up to the commit process to manage.
  *
- * There's also currently a work-around ({@link #TRANSACTION_ID_NOT_SPECIFIED}) for up front
- * {@link ValidatedIndexUpdates index updates}, that topic is discussed elsewhere in the commit process code,
- * but basically index updates validation will go away when busting the lucene id limits so that this
- * work-around goes away.
- *
  * The access pattern looks like:
  * <ol>
  * <li>=== USER ===</li>
@@ -48,7 +42,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
  * <li>Pass into {@link TransactionCommitProcess#commit(TransactionToApply, CommitEvent, TransactionApplicationMode)}</li>
  * <li>=== COMMIT PROCESS ===</li>
  * <li>Commit, where {@link #commitment(Commitment, long)} is called to store the {@link Commitment} and transaction id</li>
- * <li>Apply, where f.ex {@link #validatedIndexUpdates(ValidatedIndexUpdates)}, {@link #commitment()},
+ * <li>Apply, where {@link #commitment()},
  * {@link #transactionRepresentation()} and {@link #next()} are called</li>
  * <li>=== USER ===</li>
  * <li>Data about the commit can now also be accessed using f.ex {@link #commitment()} or {@link #transactionId()}</li>
@@ -64,7 +58,6 @@ public class TransactionToApply
     private TransactionToApply nextTransactionInBatch;
 
     // These fields are provided by commit process/storage engine
-    private ValidatedIndexUpdates validatedIndexUpdates;
     private Commitment commitment;
 
     /**
@@ -105,16 +98,6 @@ public class TransactionToApply
     public TransactionRepresentation transactionRepresentation()
     {
         return transactionRepresentation;
-    }
-
-    public void validatedIndexUpdates( ValidatedIndexUpdates validatedIndexUpdates )
-    {
-        this.validatedIndexUpdates = validatedIndexUpdates;
-    }
-
-    public ValidatedIndexUpdates validatedIndexUpdates()
-    {
-        return validatedIndexUpdates;
     }
 
     public void commitment( Commitment commitment, long transactionId )

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,12 +29,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Node
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress =
     extractExpanderStepsFromQuery(plan) match {
-      case (None,_) => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
+      case (None,_) => throw new AssertionError("This plan should not have been accepted")
       case (Some(longestPath), solvedStartItems) =>
         val LongestTrail(start, end, longestTrail) = longestPath
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,6 +33,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellBootstrap implements Serializable
 {
+    private static final long serialVersionUID = 8363358670517974177L;
+
     private final boolean enable;
     private String host;
     private final int port;

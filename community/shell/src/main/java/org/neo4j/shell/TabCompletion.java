@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,8 @@ import java.util.Collection;
 
 public class TabCompletion implements Serializable
 {
+    private static final long serialVersionUID = -3960128927108659417L;
+
     private final Collection<String> candidates;
     private final int cursor;
 

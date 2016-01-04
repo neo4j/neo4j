@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,15 +28,16 @@ public class LockGroup implements AutoCloseable
 
     public final void add( Lock lock )
     {
+        if ( lock == null )
+        {
+            throw new IllegalArgumentException( "Cannot add null locks. See LockService.NOLOCK instead." );
+        }
         locks.add( lock );
     }
 
     @Override
     public void close()
     {
-        for ( Lock lock : locks )
-        {
-            lock.release();
-        }
+        locks.forEach( Lock::release );
     }
 }

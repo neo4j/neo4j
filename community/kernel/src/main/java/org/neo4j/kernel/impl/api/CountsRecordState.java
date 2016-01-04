@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -248,7 +248,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.NodeCountsCommand().init( labelId, count ) );
+                commands.add( new Command.NodeCountsCommand( labelId, count ) );
             }
         }
 
@@ -257,7 +257,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+                commands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, count ) );
             }
         }
     }

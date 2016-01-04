@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
@@ -32,17 +34,16 @@ import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 
-public class CacheInvalidationTransactionApplier extends CommandHandler.Delegator
+public class CacheInvalidationTransactionApplier extends TransactionApplier.Adapter
 {
     private final CacheAccessBackDoor cacheAccess;
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final LabelTokenStore labelTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
 
-    public CacheInvalidationTransactionApplier( CommandHandler delegate, NeoStores neoStores,
+    public CacheInvalidationTransactionApplier( NeoStores neoStores,
                                                 CacheAccessBackDoor cacheAccess )
     {
-        super( delegate );
         this.cacheAccess = cacheAccess;
         this.relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         this.labelTokenStore = neoStores.getLabelTokenStore();
@@ -52,8 +53,6 @@ public class CacheInvalidationTransactionApplier extends CommandHandler.Delegato
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
-        super.visitRelationshipTypeTokenCommand( command );
-
         RelationshipTypeToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addRelationshipTypeToken( type );
 
@@ -63,8 +62,6 @@ public class CacheInvalidationTransactionApplier extends CommandHandler.Delegato
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
-        super.visitLabelTokenCommand( command );
-
         Token labelId = labelTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addLabelToken( labelId );
 
@@ -74,11 +71,15 @@ public class CacheInvalidationTransactionApplier extends CommandHandler.Delegato
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
-        super.visitPropertyKeyTokenCommand( command );
-
         Token index = propertyKeyTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addPropertyKeyToken( index );
 
         return false;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        // Nothing to close
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.codegen;
 
 import org.junit.Test;
@@ -46,6 +45,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newInstance;
+import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
 import static org.neo4j.codegen.ExpressionTemplate.self;
 import static org.neo4j.codegen.MethodReference.constructorReference;
@@ -547,6 +547,31 @@ public class CodeGenerationTest
         {
             assertEquals( "hello world", exception.getMessage() );
         }
+    }
+
+    @Test
+    public void shouldBeAbleToCast() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
+        {
+            simple.field( String.class, "foo" );
+            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( Object.class, "foo" ) )
+                    .invokeSuper( load( "name" ) )
+                    .put( self(), String.class, "foo", cast(String.class, load( "foo" )) )
+                    .build() );
+            handle = simple.handle();
+        }
+
+        // when
+        Object instance = constructor( handle.loadClass(), String.class, Object.class ).invoke( "Pontus", "Tobias" );
+
+        // then
+        assertEquals( "SimpleClass", instance.getClass().getSimpleName() );
+        assertThat( instance, instanceOf( NamedBase.class ) );
+        assertEquals( "Pontus", ((NamedBase) instance).name );
+        assertEquals( "Tobias", getField( instance, "foo" ) );
     }
 
     static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception

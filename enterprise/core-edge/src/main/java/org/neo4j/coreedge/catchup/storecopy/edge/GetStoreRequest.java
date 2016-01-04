@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,5 +25,7 @@ import org.neo4j.coreedge.catchup.RequestMessageType;
 
 public class GetStoreRequest implements Serializable
 {
+    private static final long serialVersionUID = 1716269110109766232L;
+
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
 }

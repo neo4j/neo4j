@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression}
-import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, Predicate}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.{PatternGraphBuilder, QueryToken, Unsolved}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.Seq
 
@@ -142,7 +141,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
       aggregation = aggregation.map {
         case Unsolved(exp) => Unsolved(exp.rewrite(f) match {
           case x: AggregationExpression => x
-          case _                        => throw new ThisShouldNotHappenError("Andrés & Michael", "aggregation expressions should never be rewritten to non-aggregation-expressions")
+          case _                        => throw new IllegalStateException("aggregation expressions should never be rewritten to non-aggregation-expressions")
         })
         case x => x
       },

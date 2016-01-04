@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.immutable
 
@@ -129,7 +128,7 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    throw new ThisShouldNotHappenError("Andres", "This method should never be called on PipeWithSource")
+    throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 

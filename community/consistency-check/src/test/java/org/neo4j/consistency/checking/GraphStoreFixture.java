@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -263,9 +262,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.relationshipType( id, relationshipType, id + 1 );
         }
 
-        public void update( NeoStoreRecord record )
+        public void update( NeoStoreRecord before, NeoStoreRecord after )
         {
-            writer.update( record );
+            writer.update( before, after );
         }
 
         public void create( NodeRecord node )
@@ -292,9 +291,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( relationship );
         }
 
-        public void update( RelationshipRecord relationship )
+        public void update( RelationshipRecord before, RelationshipRecord after )
         {
-            writer.update( relationship );
+            writer.update( before, after );
         }
 
         public void delete( RelationshipRecord relationship )
@@ -307,9 +306,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.create( group );
         }
 
-        public void update(  RelationshipGroupRecord group )
+        public void update(  RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
-            writer.update( group );
+            writer.update( before, after );
         }
 
         public void delete(  RelationshipGroupRecord group )
@@ -395,8 +394,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( TransactionAppender.class ),
-                            dependencyResolver.resolveDependency( StorageEngine.class ),
-                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ) );
+                            dependencyResolver.resolveDependency( StorageEngine.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStores.class ).getNodeStore();

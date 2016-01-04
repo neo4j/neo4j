@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,7 +31,6 @@ import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
@@ -168,7 +167,8 @@ public class EnterpriseCoreEditionModule
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshall, raftListenAddress, logProvider );
 
-        final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService();
+        final DelayedRenewableTimeoutService raftTimeoutService = new DelayedRenewableTimeoutService( Clock
+                .SYSTEM_CLOCK, logProvider );
 
         File raftLogsDirectory = createRaftLogsDirectory( platformModule.storeDir, fileSystem );
         NaiveDurableRaftLog raftLog = new NaiveDurableRaftLog( fileSystem, raftLogsDirectory,
@@ -269,14 +269,6 @@ public class EnterpriseCoreEditionModule
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself,
                 replicatedLockStateMachine ) );
 
-        LocalDatabase localDatabase =
-                new LocalDatabase( platformModule.storeDir,
-                        new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
-                                platformModule.pageCache ),
-                        new StoreFiles( new DefaultFileSystemAbstraction() ),
-                        dependencies.provideDependency( NeoStoreDataSource.class ),
-                        platformModule.dependencies.provideDependency( TransactionIdStore.class ) );
-
         CatchupServer catchupServer = new CatchupServer( logProvider,
                 new StoreIdSupplier( platformModule ),
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
@@ -324,9 +316,9 @@ public class EnterpriseCoreEditionModule
                                                                    final Dependencies dependencies,
                                                                    final Clock clock )
     {
-        return ( appender, applier, indexUpdatesValidator, config ) -> {
+        return ( appender, applier, config ) -> {
             TransactionRepresentationCommitProcess localCommit =
-                    new TransactionRepresentationCommitProcess( appender, applier, indexUpdatesValidator );
+                    new TransactionRepresentationCommitProcess( appender, applier );
             dependencies.satisfyDependencies( localCommit );
 
             ReplicatedTransactionStateMachine replicatedTxStateMachine = new ReplicatedTransactionStateMachine(
@@ -350,7 +342,7 @@ public class EnterpriseCoreEditionModule
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
                                                         RaftLog raftLog,
                                                         TermStore termStore,
-                                                        VoteStore voteStore,
+                                                        VoteStore<CoreMember> voteStore,
                                                         CoreMember myself,
                                                         LogProvider logProvider,
                                                         RaftServer<CoreMember> raftServer,
@@ -433,11 +425,11 @@ public class EnterpriseCoreEditionModule
     }
 
     protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                       CoreMember myself, ReplicatedLockStateMachine replicatedLockStateMachine )
+                                       CoreMember myself, ReplicatedLockStateMachine<CoreMember> replicatedLockStateMachine )
     {
         Locks local = CommunityEditionModule.createLockManager( config, logging );
 
-        return new LeaderOnlyLockManager( myself, replicator, local, replicatedLockStateMachine );
+        return new LeaderOnlyLockManager<CoreMember>( myself, replicator, local, replicatedLockStateMachine );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

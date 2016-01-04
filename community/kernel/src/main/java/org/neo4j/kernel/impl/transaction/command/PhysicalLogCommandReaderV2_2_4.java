@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -48,11 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -66,71 +62,49 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter implements CommandReader
+public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
 {
-    private ReadableLogChannel channel;
-    private IndexCommandHeader indexCommandHeader;
-
     @Override
-    public Command read( ReadableLogChannel channel ) throws IOException
-    {
-        // for the reader to pick up
-        this.channel = channel;
-        byte commandType = 0;
-        while ( commandType == 0 )
-        {
-            commandType = channel.get();
-        }
-        Command command = instantiateCommand( channel, commandType );
-        if ( command.handle( this ) )
-        {
-            return null;
-        }
-        return command;
-    }
-
-    private Command instantiateCommand( ReadableLogChannel channel, byte commandType ) throws IOException
+    protected Command read( byte commandType, ReadableLogChannel channel ) throws IOException
     {
         switch ( commandType )
         {
         case NeoCommandType.NODE_COMMAND:
-            return new Command.NodeCommand();
+            return visitNodeCommand( channel );
         case NeoCommandType.PROP_COMMAND:
-            return new Command.PropertyCommand();
+            return visitPropertyCommand( channel );
         case NeoCommandType.PROP_INDEX_COMMAND:
-            return new Command.PropertyKeyTokenCommand();
+            return visitPropertyKeyTokenCommand( channel );
         case NeoCommandType.REL_COMMAND:
-            return new Command.RelationshipCommand();
+            return visitRelationshipCommand( channel );
         case NeoCommandType.REL_TYPE_COMMAND:
-            return new Command.RelationshipTypeTokenCommand();
+            return visitRelationshipTypeTokenCommand( channel );
         case NeoCommandType.LABEL_KEY_COMMAND:
-            return new Command.LabelTokenCommand();
+            return visitLabelTokenCommand( channel );
         case NeoCommandType.NEOSTORE_COMMAND:
-            return new Command.NeoStoreCommand();
+            return visitNeoStoreCommand( channel );
         case NeoCommandType.SCHEMA_RULE_COMMAND:
-            return new Command.SchemaRuleCommand();
+            return visitSchemaRuleCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
-            return new Command.RelationshipGroupCommand();
+            return visitRelationshipGroupCommand( channel );
         case NeoCommandType.INDEX_DEFINE_COMMAND:
-            return new IndexDefineCommand();
+            return visitIndexDefineCommand( channel );
         case NeoCommandType.INDEX_ADD_COMMAND:
-            return new IndexCommand.AddNodeCommand();
+            return visitIndexAddNodeCommand( channel );
         case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
-            return new IndexCommand.AddRelationshipCommand();
+            return visitIndexAddRelationshipCommand( channel );
         case NeoCommandType.INDEX_REMOVE_COMMAND:
-            return new IndexCommand.RemoveCommand();
+            return visitIndexRemoveCommand( channel );
         case NeoCommandType.INDEX_DELETE_COMMAND:
-            return new IndexCommand.DeleteCommand();
+            return visitIndexDeleteCommand( channel );
         case NeoCommandType.INDEX_CREATE_COMMAND:
-            return new IndexCommand.CreateCommand();
+            return visitIndexCreateCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
-            return new RelationshipCountsCommand();
+            return visitRelationshipCountsCommand( channel );
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
-            return new NodeCountsCommand();
+            return visitNodeCountsCommand( channel );
         default:
-            LogPositionMarker position = new LogPositionMarker();
-            channel.getCurrentPosition( position );
-            throw new IOException( "Unknown command type[" + commandType + "] near " + position.newPosition() );
+            throw unknownCommandType( commandType, channel );
         }
     }
 
@@ -144,8 +118,8 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         boolean endNodeNeedsLong;
         int keyId;
 
-        IndexCommandHeader set( byte valueType, byte entityType, boolean entityIdNeedsLong,
-                                int indexNameId, boolean startNodeNeedsLong, boolean endNodeNeedsLong, int keyId )
+        IndexCommandHeader( byte valueType, byte entityType, boolean entityIdNeedsLong, int indexNameId,
+                boolean startNodeNeedsLong, boolean endNodeNeedsLong, int keyId )
         {
             this.valueType = valueType;
             this.entityType = entityType;
@@ -154,34 +128,30 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
             this.startNodeNeedsLong = startNodeNeedsLong;
             this.endNodeNeedsLong = endNodeNeedsLong;
             this.keyId = keyId;
-            return this;
         }
     }
 
-    @Override
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+    private Command visitNodeCommand( ReadableLogChannel channel ) throws IOException
     {
         long id = channel.getLong();
-        NodeRecord before = readNodeRecord( id );
+        NodeRecord before = readNodeRecord( id, channel );
         if ( before == null )
         {
-            return true;
+            return null;
         }
-        NodeRecord after = readNodeRecord( id );
+        NodeRecord after = readNodeRecord( id, channel );
         if ( after == null )
         {
-            return true;
+            return null;
         }
         if ( !before.inUse() && after.inUse() )
         {
             after.setCreated();
         }
-        command.init( before, after );
-        return false;
+        return new Command.NodeCommand( before, after );
     }
 
-    @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+    private Command visitRelationshipCommand( ReadableLogChannel channel ) throws IOException
     {
         long id = channel.getLong();
         byte flags = channel.get();
@@ -217,33 +187,29 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         {
             record.setCreated();
         }
-        command.init( record );
-        return false;
+        return new Command.RelationshipCommand( null, record );
     }
 
-    @Override
-    public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
+    private Command visitPropertyCommand( ReadableLogChannel channel ) throws IOException
     {
         // ID
         long id = channel.getLong(); // 8
         // BEFORE
-        PropertyRecord before = readPropertyRecord( id );
+        PropertyRecord before = readPropertyRecord( id, channel );
         if ( before == null )
         {
-            return true;
+            return null;
         }
         // AFTER
-        PropertyRecord after = readPropertyRecord( id );
+        PropertyRecord after = readPropertyRecord( id, channel );
         if ( after == null )
         {
-            return true;
+            return null;
         }
-        command.init( before, after );
-        return false;
+        return new Command.PropertyCommand( before, after );
     }
 
-    @Override
-    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+    private Command visitRelationshipGroupCommand( ReadableLogChannel channel ) throws IOException
     {
         long id = channel.getLong();
         byte inUseByte = channel.get();
@@ -260,13 +226,11 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-        command.init( record );
-        return false;
+
+        return new Command.RelationshipGroupCommand( null, record );
     }
 
-    @Override
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
-            throws IOException
+    private Command visitRelationshipTypeTokenCommand( ReadableLogChannel channel ) throws IOException
     {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
@@ -286,19 +250,17 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         int nrTypeRecords = channel.getInt();
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
-            DynamicRecord dr = readDynamicRecord();
+            DynamicRecord dr = readDynamicRecord( channel );
             if ( dr == null )
             {
-                return true;
+                return null;
             }
             record.addNameRecord( dr );
         }
-        command.init( record );
-        return false;
+        return new Command.RelationshipTypeTokenCommand( null, record );
     }
 
-    @Override
-    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
+    private Command visitLabelTokenCommand( ReadableLogChannel channel ) throws IOException
     {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
@@ -318,19 +280,17 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         int nrTypeRecords = channel.getInt();
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
-            DynamicRecord dr = readDynamicRecord();
+            DynamicRecord dr = readDynamicRecord( channel );
             if ( dr == null )
             {
-                return true;
+                return null;
             }
             record.addNameRecord( dr );
         }
-        command.init( record );
-        return false;
+        return new Command.LabelTokenCommand( null, record );
     }
 
-    @Override
-    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
+    private Command visitPropertyKeyTokenCommand( ReadableLogChannel channel ) throws IOException
     {
         // id+in_use(byte)+count(int)+key_blockId(int)
         int id = channel.getInt();
@@ -348,21 +308,19 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         record.setInUse( inUse );
         record.setPropertyCount( channel.getInt() );
         record.setNameId( channel.getInt() );
-        if ( readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) == -1 )
+        if ( readDynamicRecords( channel, record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) == -1 )
         {
-            return true;
+            return null;
         }
-        command.init( record );
-        return false;
+        return new Command.PropertyKeyTokenCommand( null, record );
     }
 
-    @Override
-    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
+    private Command visitSchemaRuleCommand( ReadableLogChannel channel ) throws IOException
     {
         Collection<DynamicRecord> recordsBefore = new ArrayList<>();
-        readDynamicRecords( recordsBefore, COLLECTION_DYNAMIC_RECORD_ADDER );
+        readDynamicRecords( channel, recordsBefore, COLLECTION_DYNAMIC_RECORD_ADDER );
         Collection<DynamicRecord> recordsAfter = new ArrayList<>();
-        readDynamicRecords( recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
+        readDynamicRecords( channel, recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
         byte isCreated = channel.get();
         if ( 1 == isCreated )
         {
@@ -371,23 +329,21 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
                 record.setCreated();
             }
         }
-        SchemaRule rule = first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter )
-                                                        : readSchemaRule( recordsBefore );
-        command.init( recordsBefore, recordsAfter, rule );
-        return false;
+        SchemaRule rule = first( recordsAfter ).inUse()
+                          ? readSchemaRule( recordsAfter )
+                          : readSchemaRule( recordsBefore );
+        return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
     }
 
-    @Override
-    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
+    private Command visitNeoStoreCommand( ReadableLogChannel channel ) throws IOException
     {
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
-        command.init( record );
-        return false;
+        return new Command.NeoStoreCommand( null, record );
     }
 
-    private NodeRecord readNodeRecord( long id ) throws IOException
+    private NodeRecord readNodeRecord( long id, ReadableLogChannel channel ) throws IOException
     {
         byte inUseFlag = channel.get();
         boolean inUse = false;
@@ -414,15 +370,13 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
             record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                     Record.NO_NEXT_PROPERTY.intValue() );
         }
-
-        readDynamicRecords( dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
+        readDynamicRecords( channel, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
         record.setLabelField( labelField, dynamicLabelRecords );
-
         record.setInUse( inUse );
         return record;
     }
 
-    DynamicRecord readDynamicRecord() throws IOException
+    private DynamicRecord readDynamicRecord( ReadableLogChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -437,15 +391,11 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   +
-                                                                   " is not valid for a number of bytes field of " +
-                                                                   "a dynamic record";
+                    + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1l << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       +
-                                                                       " is not valid for a next record field of " +
-                                                                       "a dynamic record";
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                            + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte data[] = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -454,13 +404,14 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         return record;
     }
 
-    <T> int readDynamicRecords( T target, DynamicRecordAdder<T> adder ) throws IOException
+    private <T> int readDynamicRecords( ReadableLogChannel channel, T target, DynamicRecordAdder<T> adder )
+            throws IOException
     {
         int numberOfRecords = channel.getInt();
         assert numberOfRecords >= 0;
         while ( numberOfRecords > 0 )
         {
-            DynamicRecord read = readDynamicRecord();
+            DynamicRecord read = readDynamicRecord( channel );
             if ( read == null )
             {
                 return -1;
@@ -471,7 +422,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         return numberOfRecords;
     }
 
-    private PropertyRecord readPropertyRecord( long id ) throws IOException
+    private PropertyRecord readPropertyRecord( long id, ReadableLogChannel channel ) throws IOException
     {
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)
@@ -508,14 +459,14 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         }
         while ( nrPropBlocks-- > 0 )
         {
-            PropertyBlock block = readPropertyBlock();
+            PropertyBlock block = readPropertyBlock( channel );
             if ( block == null )
             {
                 return null;
             }
             record.addPropertyBlock( block );
         }
-        int deletedRecords = readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
+        int deletedRecords = readDynamicRecords( channel, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
         if ( deletedRecords == -1 )
         {
             return null;
@@ -523,7 +474,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         assert deletedRecords >= 0;
         while ( deletedRecords-- > 0 )
         {
-            DynamicRecord read = readDynamicRecord();
+            DynamicRecord read = readDynamicRecord( channel );
             if ( read == null )
             {
                 return null;
@@ -532,26 +483,23 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         }
         if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
         {
-            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is "
-                                             + record );
+            throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is " + record );
         }
         return record;
     }
 
-    PropertyBlock readPropertyBlock() throws IOException
+    private PropertyBlock readPropertyBlock( ReadableLogChannel channel ) throws IOException
     {
         PropertyBlock toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
         assert blockSize > 0 && blockSize % 8 == 0 : blockSize + " is not a valid block size value";
         // Read in blocks
-        long[] blocks = readLongs( blockSize / 8 );
+        long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                                                + " longs were read in while i asked for what corresponds to " +
-                                                blockSize;
-        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed( blocks[0] ) ==
-               blocks.length : blocks.length
-                               + " is not a valid number of blocks for type " +
-                               PropertyType.getPropertyType( blocks[0], false );
+                + " longs were read in while i asked for what corresponds to " + blockSize;
+        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
+                blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
+                        + PropertyType.getPropertyType( blocks[0], false );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object
@@ -561,14 +509,14 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
          * Read in existence of DynamicRecords. Remember, this has already been
          * read in the buffer with the blocks, above.
          */
-        if ( readDynamicRecords( toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) == -1 )
+        if ( readDynamicRecords( channel, toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) == -1 )
         {
             return null;
         }
         return toReturn;
     }
 
-    private long[] readLongs( int count ) throws IOException
+    private long[] readLongs( ReadableLogChannel channel, int count ) throws IOException
     {
         long[] result = new long[count];
         for ( int i = 0; i < count; i++ )
@@ -596,84 +544,80 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         return rule;
     }
 
-    @Override
-    public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
+    private Command visitIndexAddNodeCommand( ReadableLogChannel channel ) throws IOException
     {
-        IndexCommandHeader header = readIndexCommandHeader();
+        IndexCommandHeader header = readIndexCommandHeader( channel );
         Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType );
+        Object value = readIndexValue( header.valueType, channel );
+        AddNodeCommand command = new AddNodeCommand();
         command.init( header.indexNameId, entityId.longValue(), header.keyId, value );
-        return false;
+        return command;
     }
 
-    @Override
-    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+    private Command visitIndexAddRelationshipCommand( ReadableLogChannel channel ) throws IOException
     {
-        IndexCommandHeader header = readIndexCommandHeader();
+        IndexCommandHeader header = readIndexCommandHeader( channel );
         Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType );
+        Object value = readIndexValue( header.valueType, channel );
         Number startNode = header.startNodeNeedsLong ? channel.getLong() : channel.getInt();
         Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
-        command.init( header.indexNameId, entityId.longValue(), header.keyId, value,
-                startNode.longValue(), endNode.longValue() );
-        return false;
+        AddRelationshipCommand command = new AddRelationshipCommand();
+        command.init( header.indexNameId, entityId.longValue(), header.keyId, value, startNode.longValue(),
+                endNode.longValue() );
+        return command;
     }
 
-    @Override
-    public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
+    private Command visitIndexRemoveCommand( ReadableLogChannel channel ) throws IOException
     {
-        IndexCommandHeader header = readIndexCommandHeader();
+        IndexCommandHeader header = readIndexCommandHeader( channel );
         Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType );
+        Object value = readIndexValue( header.valueType, channel );
+        RemoveCommand command = new RemoveCommand();
         command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value );
-        return false;
+        return command;
     }
 
-    @Override
-    public boolean visitIndexDeleteCommand( DeleteCommand deleteCommand ) throws IOException
+    private Command visitIndexDeleteCommand( ReadableLogChannel channel ) throws IOException
     {
-        IndexCommandHeader header = readIndexCommandHeader();
-        deleteCommand.init( header.indexNameId, header.entityType );
-        return false;
+        IndexCommandHeader header = readIndexCommandHeader( channel );
+        DeleteCommand command = new DeleteCommand();
+        command.init( header.indexNameId, header.entityType );
+        return command;
     }
 
-    @Override
-    public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
+    private Command visitIndexCreateCommand( ReadableLogChannel channel ) throws IOException
     {
-        IndexCommandHeader header = readIndexCommandHeader();
+        IndexCommandHeader header = readIndexCommandHeader( channel );
         Map<String,String> config = read2bMap( channel );
-        createCommand.init( header.indexNameId, header.entityType, config );
-        return false;
+        CreateCommand command = new CreateCommand();
+        command.init( header.indexNameId, header.entityType, config );
+        return command;
     }
 
-    @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
+    private Command visitIndexDefineCommand( ReadableLogChannel channel ) throws IOException
     {
-        readIndexCommandHeader();
+        readIndexCommandHeader( channel );
         Map<String,Integer> indexNames = readMap( channel );
         Map<String,Integer> keys = readMap( channel );
-        indexDefineCommand.init( indexNames, keys );
-        return false;
+        IndexDefineCommand command = new IndexDefineCommand();
+        command.init( indexNames, keys );
+        return command;
     }
 
-    @Override
-    public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
+    private Command visitNodeCountsCommand( ReadableLogChannel channel ) throws IOException
     {
         int labelId = channel.getInt();
         long delta = channel.getLong();
-        command.init( labelId, delta );
-        return false;
+        return new Command.NodeCountsCommand( labelId, delta );
     }
 
-    @Override
-    public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+    private Command visitRelationshipCountsCommand( ReadableLogChannel channel ) throws IOException
     {
         int startLabelId = channel.getInt();
         int typeId = channel.getInt();
         int endLabelId = channel.getInt();
         long delta = channel.getLong();
-        command.init( startLabelId, typeId, endLabelId, delta );
-        return false;
+        return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
     }
 
     private Map<String,Integer> readMap( ReadableLogChannel channel ) throws IOException
@@ -699,28 +643,22 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         return result == 0xFFFF ? -1 : result;
     }
 
-    private IndexCommandHeader readIndexCommandHeader() throws ReadPastEndException, IOException
+    private IndexCommandHeader readIndexCommandHeader( ReadableLogChannel channel ) throws IOException
     {
         byte firstHeaderByte = channel.get();
         byte valueType = (byte) ((firstHeaderByte & 0x1C) >> 2);
         byte entityType = (byte) ((firstHeaderByte & 0x2) >> 1);
         boolean entityIdNeedsLong = (firstHeaderByte & 0x1) > 0;
-
         byte secondHeaderByte = channel.get();
         boolean startNodeNeedsLong = (secondHeaderByte & 0x80) > 0;
         boolean endNodeNeedsLong = (secondHeaderByte & 0x40) > 0;
-
         int indexNameId = getUnsignedShort( channel );
         int keyId = getUnsignedShort( channel );
-        if ( indexCommandHeader == null )
-        {
-            indexCommandHeader = new IndexCommandHeader();
-        }
-        return indexCommandHeader.set( valueType, entityType, entityIdNeedsLong,
-                indexNameId, startNodeNeedsLong, endNodeNeedsLong, keyId );
+        return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong, indexNameId, startNodeNeedsLong,
+                endNodeNeedsLong, keyId );
     }
 
-    private Object readIndexValue( byte valueType ) throws IOException
+    private Object readIndexValue( byte valueType, ReadableLogChannel channel ) throws IOException
     {
         switch ( valueType )
         {
@@ -741,15 +679,5 @@ public class PhysicalLogCommandReaderV2_2_4 extends CommandHandler.Adapter imple
         default:
             throw new RuntimeException( "Unknown value type " + valueType );
         }
-    }
-
-    @Override
-    public void apply()
-    {   // Nothing to apply
-    }
-
-    @Override
-    public void close()
-    {   // Nothing to close
     }
 }

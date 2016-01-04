@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -54,22 +55,19 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-
 public class Commands
 {
     public static NodeCommand createNode( long id, long... dynamicLabelRecordIds )
     {
-        NodeCommand command = new NodeCommand();
         NodeRecord record = new NodeRecord( id );
         record.setInUse( true );
+        record.setCreated();
         if ( dynamicLabelRecordIds.length > 0 )
         {
             Collection<DynamicRecord> dynamicRecords = dynamicRecords( dynamicLabelRecordIds );
             record.setLabelField( DynamicNodeLabels.dynamicPointer( dynamicRecords ), dynamicRecords );
         }
-        command.init( new NodeRecord( id ), record );
-        return command;
+        return new NodeCommand( new NodeRecord( id ), record );
     }
 
     private static List<DynamicRecord> dynamicRecords( long... dynamicLabelRecordIds )
@@ -86,20 +84,19 @@ public class Commands
 
     public static RelationshipCommand createRelationship( long id, long startNode, long endNode, int type )
     {
-        RelationshipCommand command = new RelationshipCommand();
-        RelationshipRecord record = new RelationshipRecord( id, startNode, endNode, type );
-        record.setInUse( true );
-        command.init( record );
-        return command;
+        RelationshipRecord before = new RelationshipRecord( id );
+        before.setInUse( false );
+        RelationshipRecord after = new RelationshipRecord( id, startNode, endNode, type );
+        after.setInUse( true );
+        return new RelationshipCommand( before, after );
     }
 
     public static LabelTokenCommand createLabelToken( int id, int nameId )
     {
-        LabelTokenCommand command = new LabelTokenCommand();
-        LabelTokenRecord record = new LabelTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
-        return command;
+        LabelTokenRecord before = new LabelTokenRecord( id );
+        LabelTokenRecord after = new LabelTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        return new LabelTokenCommand( before, after );
     }
 
     private static void populateTokenRecord( TokenRecord record, int nameId )
@@ -113,48 +110,44 @@ public class Commands
 
     public static PropertyKeyTokenCommand createPropertyKeyToken( int id, int nameId )
     {
-        PropertyKeyTokenCommand command = new PropertyKeyTokenCommand();
-        PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
-        return command;
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( id );
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        return new PropertyKeyTokenCommand( before, after );
     }
 
     public static RelationshipTypeTokenCommand createRelationshipTypeToken( int id, int nameId )
     {
-        RelationshipTypeTokenCommand command = new RelationshipTypeTokenCommand();
-        RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
-        populateTokenRecord( record, nameId );
-        command.init( record );
-        return command;
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        return new RelationshipTypeTokenCommand( before, after );
     }
 
     public static RelationshipGroupCommand createRelationshipGroup( long id, int type )
     {
-        RelationshipGroupCommand command = new RelationshipGroupCommand();
-        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
-        record.setInUse( true );
-        command.init( record );
-        return command;
+        RelationshipGroupRecord before = new RelationshipGroupRecord( id, type );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( id, type );
+        after.setInUse( true );
+        return new RelationshipGroupCommand( before, after );
     }
 
-    public static SchemaRuleCommand createIndexRule( long id, int label, int property )
+    public static SchemaRuleCommand createIndexRule( SchemaIndexProvider.Descriptor provider,
+            long id, int label, int property )
     {
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        SchemaRule rule = IndexRule.indexRule( id, label, property, NO_INDEX_PROVIDER.getProviderDescriptor() );
+        SchemaRule rule = IndexRule.indexRule( id, label, property, provider );
         RecordSerializer serializer = new RecordSerializer();
         serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( true );
+        record.setCreated();
         record.setData( serializer.serialize() );
-        command.init( Collections.<DynamicRecord>emptyList(), asList( record ), rule );
-        return command;
+        return new SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), asList( record ), rule );
     }
 
     public static PropertyCommand createProperty( long id, PropertyType type, int key,
             long... valueRecordIds )
     {
-        PropertyCommand command = new PropertyCommand();
         PropertyRecord record = new PropertyRecord( id );
         PropertyBlock block = new PropertyBlock();
         if ( valueRecordIds.length == 0 )
@@ -167,8 +160,7 @@ public class Commands
             block.setValueRecords( dynamicRecords( valueRecordIds ) );
         }
         record.addPropertyBlock( block );
-        command.init( new PropertyRecord( id ), record );
-        return command;
+        return new PropertyCommand( new PropertyRecord( id ), record );
     }
 
     public static TransactionRepresentation transactionRepresentation( Command... commands )

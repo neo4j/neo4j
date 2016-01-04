@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,60 +21,16 @@ package org.neo4j.helpers;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.Function;
 
 /**
  * Helper functions for working with strings.
  */
 public final class Strings
 {
-
     public static final String TAB = "\t";
 
     private Strings()
     {
-    }
-
-    public static final Function<String,String> decamelize = name -> {
-        StringBuilder result = new StringBuilder();
-        for ( int i = 0; i < name.length(); i++ )
-        {
-            char c = name.charAt( i );
-            if ( Character.isUpperCase( c ) )
-            {
-                if ( i > 0 )
-                {
-                    result.append( '_' );
-                }
-                result.append( Character.toLowerCase( c ) );
-            }
-            else
-            {
-                result.append( c );
-            }
-        }
-        return result.toString();
-    };
-
-    public static boolean isBlank( String str )
-    {
-        if ( str == null || str.isEmpty() )
-        {
-            return true;
-        }
-        for ( int i = 0; i < str.length(); i++ )
-        {
-            if ( !Character.isWhitespace( str.charAt( i ) ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static String defaultIfBlank( String str, String defaultStr )
-    {
-        return isBlank( str ) ? defaultStr : str;
     }
 
     public static String prettyPrint( Object o )
@@ -139,7 +95,7 @@ public final class Strings
         }
         catch ( IOException e )
         {
-            throw new ThisShouldNotHappenError( "Stefan", "IOException from using StringBuilder", e );
+            throw new AssertionError( "IOException from using StringBuilder", e );
         }
         return builder.toString();
     }
@@ -204,31 +160,5 @@ public final class Strings
                     break;
             }
         }
-    }
-
-    /**
-     * Use this to standardize the width of some text output to all be left-justified and space-padded
-     * on the right side to fill up the given column width.
-     *
-     * @param str the text to format
-     * @param columnWidth the column width
-     * @return the left-justified space-padded text
-     */
-    public static String ljust( String str, int columnWidth )
-    {
-        return String.format( "%-" + columnWidth + "s", str );
-    }
-
-    /**
-     * Use this to standardize the width of some text output to all be right-justified and space-padded
-     * on the left side to fill up the given column width.
-     *
-     * @param str the text to format
-     * @param columnWidth the column width
-     * @return the right-justified space-padded text
-     */
-    public static String rjust( String str, int columnWidth )
-    {
-        return String.format( "%" + columnWidth + "s", str );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 
@@ -39,27 +39,25 @@ public class RelationshipGroupCommandTest
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
         // Given
-        RelationshipGroupRecord record = new RelationshipGroupRecord( 10, 12 );
-        record.setInUse( false );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 10, 12, 13, 14, 15, 16, 17, true );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 10, 12 );
+        after.setInUse( false );
 
         // When
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( record );
-        assertSerializationWorksFor( command );
+        assertSerializationWorksFor( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     @Test
     public void shouldSerializeCreatedRecord() throws Exception
     {
         // Given
-        RelationshipGroupRecord record = new RelationshipGroupRecord( 10, 12 );
-        record.setCreated();
-        record.setInUse( true );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 10, 12 );
+        before.setInUse( false );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 10, 12, 13, 14, 15, 16, 17, true );
+        after.setCreated();
 
         // When
-        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
-        command.init( record );
-        assertSerializationWorksFor( command );
+        assertSerializationWorksFor( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     private void assertSerializationWorksFor( Command.RelationshipGroupCommand cmd ) throws IOException
@@ -68,11 +66,11 @@ public class RelationshipGroupCommandTest
         CommandWriter commandWriter = new CommandWriter( channel );
         commandWriter.visitRelationshipGroupCommand( cmd );
 
-        CommandReader commandReader = new PhysicalLogNeoCommandReaderV2_2();
+        CommandReader commandReader = new PhysicalLogCommandReaderV2_2();
         Command.RelationshipGroupCommand result = (Command.RelationshipGroupCommand) commandReader.read( channel );
 
-        RelationshipGroupRecord recordBefore = cmd.getRecord();
-        RelationshipGroupRecord recordAfter = result.getRecord();
+        RelationshipGroupRecord recordBefore = cmd.getBefore();
+        RelationshipGroupRecord recordAfter = result.getAfter();
 
         // Then
         assertThat( recordBefore.getFirstIn(), equalTo( recordAfter.getFirstIn() ) );

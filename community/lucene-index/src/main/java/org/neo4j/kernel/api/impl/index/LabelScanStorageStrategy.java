@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,7 +30,6 @@ import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public interface LabelScanStorageStrategy
@@ -45,7 +44,7 @@ public interface LabelScanStorageStrategy
 
     interface StorageService
     {
-        void updateDocument( Term documentTerm, Document document ) throws IOException, IndexCapacityExceededException;
+        void updateDocument( Term documentTerm, Document document ) throws IOException;
 
         void deleteDocuments( Term documentTerm ) throws IOException;
 

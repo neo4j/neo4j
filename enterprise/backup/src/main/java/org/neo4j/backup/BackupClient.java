@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,6 +35,8 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -51,14 +53,16 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     static final long BIG_READ_TIMEOUT = 40 * 1000;
 
     public BackupClient( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long timeout,
-                         ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+            ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
+            LogEntryReader<ReadableLogChannel> reader )
     {
         super( hostNameOrIp, port, logProvider, storeId, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
-                byteCounterMonitor, requestMonitor );
+                byteCounterMonitor, requestMonitor, reader );
     }
 
+    @Override
     public Response<Void> fullBackup( StoreWriter storeWriter, final boolean forensics )
     {
         return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY, new Serializer()

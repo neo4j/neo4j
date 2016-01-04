@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -471,7 +471,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
 
     val solved = inner.solved.amendUpdateGraph(_.addMutatingPatterns(pattern))
 
-    CreateRelationship(inner, pattern.relName, pattern.startNode, LazyType(pattern.relType)(context.semanticTable),
+    CreateRelationship(inner, pattern.relName, pattern.startNode, pattern.relType,
       pattern.endNode, pattern.properties)(solved)
   }
 

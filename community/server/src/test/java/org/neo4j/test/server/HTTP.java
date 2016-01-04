@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,6 +22,8 @@ package org.neo4j.test.server;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.codehaus.jackson.JsonNode;
 
 import java.net.URI;
@@ -51,7 +53,12 @@ public class HTTP
 {
 
     private static final Builder BUILDER = new Builder().withHeaders( "Accept", "application/json" );
-    private static final Client CLIENT = new Client();
+    private static final Client CLIENT;
+    static {
+        DefaultClientConfig defaultClientConfig = new DefaultClientConfig();
+        defaultClientConfig.getProperties().put( ClientConfig.PROPERTY_FOLLOW_REDIRECTS, Boolean.FALSE );
+        CLIENT = Client.create( defaultClientConfig );
+    }
 
     public static Builder withHeaders( Map<String, String> headers )
     {

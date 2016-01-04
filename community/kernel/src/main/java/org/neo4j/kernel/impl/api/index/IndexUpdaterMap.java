@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,10 +25,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -84,7 +82,7 @@ public class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
             {
                 updater.close();
             }
-            catch ( IOException | IndexEntryConflictException | IndexCapacityExceededException e )
+            catch ( IOException | IndexEntryConflictException e )
             {
                 if ( null == exceptions )
                 {

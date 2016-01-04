@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,10 +32,11 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -139,7 +140,7 @@ public class RecoveryTest
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
-                    LogEntryVersion.CURRENT.byteCode() );
+                    LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
@@ -228,7 +229,7 @@ public class RecoveryTest
         {
             StoreFlusher flusher = mock( StoreFlusher.class );
             final LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>(
-                    LogEntryVersion.CURRENT.byteCode() );
+                    LogEntryVersion.CURRENT.byteCode(), new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( flusher, mock( NeoStores.class ), null,
@@ -279,7 +280,7 @@ public class RecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, CommandHandler.EMPTY );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, new CommandVisitor.Adapter() );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

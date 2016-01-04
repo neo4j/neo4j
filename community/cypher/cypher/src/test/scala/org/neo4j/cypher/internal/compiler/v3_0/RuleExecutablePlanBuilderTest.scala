@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -55,6 +55,7 @@ class RuleExecutablePlanBuilderTest
   with Timed
   with MockitoSugar {
 
+
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
@@ -66,8 +67,8 @@ class RuleExecutablePlanBuilderTest
     plannerName = None,
     runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
-    useErrorsOverWarnings = false,
-    updateStrategy = None
+    updateStrategy = None,
+    config = config
   )
 
   class FakePreparedQuery(q: AbstractQuery)
@@ -86,9 +87,9 @@ class RuleExecutablePlanBuilderTest
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors3_0(kernelMonitors))
+      val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors3_0(kernelMonitors), config)
       val query = new FakePreparedQuery(q)
-      pipeBuilder.producePlan(query, planContext)
+      pipeBuilder.producePipe(query, planContext, CompilationPhaseTracer.NO_TRACING)
     })
 
     assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
@@ -108,14 +109,14 @@ class RuleExecutablePlanBuilderTest
         .updates(DeletePropertyAction(variable, PropertyKey("foo")))
         .returns(ReturnItem(Variable("x"), "x"))
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
 
       // when
 
-      val commands = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+      val commands = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
       assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(variable, PropertyKey("foo", pkId))))
     } finally {
@@ -134,13 +135,13 @@ class RuleExecutablePlanBuilderTest
         .where(HasLabel(Variable("x"), Label("Person")))
         .returns(ReturnItem(Variable("x"), "x"))
 
-      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)
 
       // when
-      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[FilterPipe].predicate
+      val predicate = execPlanBuilder.producePipe(parsedQ, planContext,CompilationPhaseTracer.NO_TRACING).pipe.asInstanceOf[FilterPipe].predicate
 
       assertTrue("Label was not resolved", predicate == HasLabel(Variable("x"), Label("Person", labelId)))
     } finally {
@@ -164,8 +165,8 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
-      val pipe = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
+      val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -192,8 +193,8 @@ class RuleExecutablePlanBuilderTest
         .returns(AllVariables())
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
-      val pipe = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
+      val pipe = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -219,8 +220,8 @@ class RuleExecutablePlanBuilderTest
       val parsedQ = new FakePreparedQuery(q)
 
 
-      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
-      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
+      val pipe = execPlanBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -243,10 +244,10 @@ class RuleExecutablePlanBuilderTest
       )
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), RewriterStepSequencer.newValidating)
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
 
       // when
-      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.periodicCommit
+      val periodicCommit = pipeBuilder.producePipe(parsedQ, planContext, CompilationPhaseTracer.NO_TRACING).periodicCommit
 
       assert(periodicCommit === Some(PeriodicCommitInfo(None)))
     } finally {
@@ -255,7 +256,7 @@ class RuleExecutablePlanBuilderTest
   }
 }
 
-class LegacyExecutablePlanBuilderWithCustomPlanBuilders(innerBuilders: Seq[PlanBuilder], monitors:Monitors) extends LegacyExecutablePlanBuilder(monitors, RewriterStepSequencer.newValidating) {
+class LegacyExecutablePlanBuilderWithCustomPlanBuilders(innerBuilders: Seq[PlanBuilder], monitors:Monitors, config: CypherCompilerConfiguration) extends LegacyExecutablePlanBuilder(monitors, config, RewriterStepSequencer.newValidating) {
   override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = innerBuilders }
 }
 

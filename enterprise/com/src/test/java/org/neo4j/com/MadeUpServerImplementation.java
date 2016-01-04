@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -116,11 +116,9 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
     private TransactionRepresentation transaction( long txId )
     {
         Collection<Command> commands = new ArrayList<>();
-        NodeCommand command = new NodeCommand();
         NodeRecord node = new NodeRecord( txId );
         node.setInUse( true );
-        command.init( new NodeRecord( txId ), node );
-        commands.add( command );
+        commands.add( new NodeCommand( new NodeRecord( txId ), node ) );
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return transaction;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,23 +22,22 @@ package org.neo4j.unsafe.batchinsert;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 public interface LabelScanWriter extends Closeable
 {
     /**
      * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending node id.
-     * 
+     *
      * @param update node label update to store
      * @throws IOException some kind of I/O exception has occurred
-     * @throws IndexCapacityExceededException when no more index entries can be added
      */
-    void write( NodeLabelUpdate update ) throws IOException, IndexCapacityExceededException;
+    void write( NodeLabelUpdate update ) throws IOException;
 
     /**
      * Close this writer and flush pending changes to the store.
      */
+    @Override
     void close() throws IOException;
 
     LabelScanWriter EMPTY = new LabelScanWriter()

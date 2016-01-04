@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,6 +29,8 @@ import org.neo4j.cluster.com.message.Message;
 public class InstanceId
         implements Serializable, Comparable<InstanceId>
 {
+    private static final long serialVersionUID = 2505002855546341672L;
+
     public static final String INSTANCE = "instance";
 
     long id;

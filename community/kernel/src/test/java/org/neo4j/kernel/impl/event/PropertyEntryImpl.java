@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.event;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.ArrayUtil.BOXING_AWARE_ARRAY_EQUALITY;
 
 class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
@@ -111,7 +110,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         String entityDescription = "For " + entity + " and " + key;
         if ( o1 == null || o2 == null )
         {
-            assertTrue( entityDescription + ". " + ObjectUtil.toString( o1 ) + " != " + ObjectUtil.toString( o2 ), o1 == o2 );
+            assertTrue( entityDescription + ". " + Strings.prettyPrint( o1 ) + " != " + Strings.prettyPrint( o2 ), o1 == o2 );
         }
         else
         {
@@ -119,7 +118,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
             if ( o1.getClass().isArray() )
             {
                 assertTrue( entityDescription + " (" + o1.getClass().getComponentType().getSimpleName() + ") " +
-                        ObjectUtil.toString( o1 ) + " not equal to " + ObjectUtil.toString( o2 ),
+                        Strings.prettyPrint( o1 ) + " not equal to " + Strings.prettyPrint( o2 ),
                         ArrayUtil.equals( o1, o2, BOXING_AWARE_ARRAY_EQUALITY ) );
             }
             else

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,23 +19,23 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -44,7 +44,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class NodeTest
@@ -55,31 +54,31 @@ public class NodeTest
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
-    public void givenNodeWithRelationshipWhenDeleteNodeThenThrowExceptionOnCommit() throws Exception
+    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
     {
         // Given
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        node1.createRelationshipTo( node2, RelationshipType.withName( "KNOWS" ) );
+        Node node;
 
+        node = db.createNode();
+        Node node2 = db.createNode();
+        node.createRelationshipTo( node2, RelationshipType.withName( "MAYOR_OF" ) );
         tx.success();
 
-        // When
+        // And given a transaction deleting just the node
         tx.begin();
-        node1.delete();
+        node.delete();
 
-        try
-        {
-            tx.success();
+        // Expect
+        exception.expect( ConstraintViolationException.class );
+        exception.expectMessage( "Cannot delete node<"+node.getId()+">, because it still has relationships. " +
+                                 "To delete this node, you must first delete its relationships." );
 
-        // Then
-            Assert.fail();
-        }
-        catch ( TransactionFailureException e )
-        {
-            Assert.assertNotEquals( e.getCause().getMessage().indexOf( "still has relationships" ), -1 );
-        }
+        // When I commit
+        tx.success();
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,7 +36,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-
 public class RaftInstanceBuilder<MEMBER>
 {
     private final MEMBER member;
@@ -47,7 +46,7 @@ public class RaftInstanceBuilder<MEMBER>
     private TermStore termStore = new InMemoryTermStore();
     private VoteStore<MEMBER> voteStore = new InMemoryVoteStore<>();
     private RaftLog raftLog = new InMemoryRaftLog();
-    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService();
+    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
 
     private Inbound inbound = handler -> {};
     private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};

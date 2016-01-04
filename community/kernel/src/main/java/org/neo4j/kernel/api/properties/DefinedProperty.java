@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.helpers.MathUtil;
-import org.neo4j.helpers.ObjectUtil;
-
 import java.util.Comparator;
+
+import org.neo4j.helpers.MathUtil;
+import org.neo4j.helpers.Strings;
 
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 
@@ -123,7 +123,7 @@ public abstract class DefinedProperty extends Property
     @Override
     public String valueAsString()
     {
-        return ObjectUtil.toString( value() );
+        return Strings.prettyPrint( value() );
     }
 
     DefinedProperty( int propertyKeyId )

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,6 +42,8 @@ public enum ProposerMessage
     public static class PromiseState
             implements Serializable
     {
+        private static final long serialVersionUID = -7601846656107583813L;
+
         private long ballot;
         private Object value;
 
@@ -121,6 +123,8 @@ public enum ProposerMessage
     public static class RejectPrepare
             implements Serializable
     {
+        private static final long serialVersionUID = -7876771047186067963L;
+
         private long ballot;
 
         public RejectPrepare( long ballot )
@@ -171,6 +175,8 @@ public enum ProposerMessage
     public static class RejectAcceptState
             implements Serializable
     {
+        private static final long serialVersionUID = -7885247643311510986L;
+
         public RejectAcceptState()
         {
         }
@@ -191,6 +197,8 @@ public enum ProposerMessage
     public static class AcceptedState
             implements Serializable
     {
+        private static final long serialVersionUID = 7637829269471254916L;
+
         public AcceptedState()
         {
         }

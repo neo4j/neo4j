@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,17 +23,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -158,7 +157,7 @@ class SlaveLocksClient implements Locks.Client
         AtomicInteger counter = lockMap.get( resourceId );
         if ( counter == null )
         {
-            throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
+            throw new IllegalStateException( this + " cannot release lock it does not hold: SHARED " +
                     resourceType + "[" + resourceId + "]" );
         }
         if ( counter.decrementAndGet() == 0 )
@@ -197,6 +196,12 @@ class SlaveLocksClient implements Locks.Client
             {
                 // Lock session is closed on master at this point
             }
+            catch ( ComException e )
+            {
+                throw new DistributedLockFailureException(
+                        "Failed to end the lock session on the master (which implies releasing all held locks)",
+                        master, e );
+            }
             initialized = false;
         }
     }
@@ -210,8 +215,14 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void close()
     {
-        releaseAll();
-        client.close();
+        try
+        {
+            releaseAll();
+        }
+        finally
+        {
+            client.close();
+        }
     }
 
     @Override
@@ -234,6 +245,10 @@ class SlaveLocksClient implements Locks.Client
             {
                 return receiveLockResponse( response );
             }
+            catch ( ComException e )
+            {
+                throw new DistributedLockFailureException( "Cannot get shared lock on master", master, e );
+            }
         }
         else
         {
@@ -248,6 +263,10 @@ class SlaveLocksClient implements Locks.Client
         try ( Response<LockResult> response = master.acquireExclusiveLock( requestContext, resourceType, resourceId ) )
         {
             return receiveLockResponse( response );
+        }
+        catch ( ComException e )
+        {
+            throw new DistributedLockFailureException( "Cannot get exclusive lock on master", master, e );
         }
     }
 
@@ -287,12 +306,20 @@ class SlaveLocksClient implements Locks.Client
             {
                 // Lock session is initialized on master at this point
             }
-            catch ( TransactionFailureException e )
+            catch ( Exception exception )
             {
                 // Temporary wrapping, we should review the exception structure of the Locks API to allow this to
                 // not use runtime exceptions here.
-                throw new org.neo4j.graphdb.TransactionFailureException( "Failed to acquire lock in cluster: " +
-                        e.getMessage(), e );
+                ComException e;
+                if ( exception instanceof ComException )
+                {
+                    e = (ComException) exception;
+                }
+                else
+                {
+                    e = new ComException( exception );
+                }
+                throw new DistributedLockFailureException( "Failed to start a new lock session on master", master, e );
             }
             initialized = true;
         }
@@ -305,9 +332,7 @@ class SlaveLocksClient implements Locks.Client
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
     {
-        return new UnsupportedOperationException( "At the time of adding \"try lock\" semantics there was no usage of" +
-                " " +
-                getClass().getSimpleName() + " calling it directly. It was designed to be called on a local " +
-                LockManager.class.getSimpleName() + " delegated to from within the waiting version" );
+        return new UnsupportedOperationException(
+                "Distributed tryLocks are not supported. They only work with local lock managers." );
     }
 }

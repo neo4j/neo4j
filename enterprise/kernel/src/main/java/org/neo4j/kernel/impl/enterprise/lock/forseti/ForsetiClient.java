@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -809,10 +809,9 @@ public class ForsetiClient implements Locks.Client
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)
 
-
     /**
-     * This operates under the guarantee that there will be no exclusive locks held by this client, and so it can remove
-     * a check otherwise needed. It is used when releasing all locks.
+     * Release all shared locks, assuming that there will be no exclusive locks held by this client, such that there
+     * is no need to check for those. It is used when releasing all locks.
      */
     private class ReleaseSharedDontCheckExclusiveVisitor implements PrimitiveLongVisitor<RuntimeException>
     {
@@ -833,9 +832,8 @@ public class ForsetiClient implements Locks.Client
     }
 
     /**
-     * This will not downgrade exclusive locks to shared locks (if the user holds both), instead, it will release the
-     * exclusive lock and remove any local reference to the shared lock. This is an optimization used when releasing
-     * all locks.
+     * Release exclusive locks and remove any local reference to the shared lock.
+     * This is an optimization used when releasing all locks.
      */
     private class ReleaseExclusiveLocksAndClearSharedVisitor implements PrimitiveLongVisitor<RuntimeException>
     {

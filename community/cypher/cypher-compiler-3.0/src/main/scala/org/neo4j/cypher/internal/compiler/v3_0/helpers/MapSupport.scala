@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.EntityNotFoundException
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, Map, immutable}
@@ -52,16 +51,15 @@ trait MapSupport {
   }
 
   class PropertyContainerMap[T <: PropertyContainer](n: T, ctx: QueryContext, ops: Operations[T]) extends Map[String, Any] {
-    def +[B1 >: Any](kv: (String, B1)) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
+    def +[B1 >: Any](kv: (String, B1)) = throw new UnsupportedOperationException("This map is not a real map")
 
-    def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
+    def -(key: String) = throw new UnsupportedOperationException("This map is not a real map")
 
     def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Int) => Option(ops.getProperty(id(n), pkId)) )
 
     def iterator: Iterator[(String, Any)] =
       ops.propertyKeyIds(id(n)).
-        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId)).
-        toIterator
+        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId))
 
     override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(id(n), _))
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -119,6 +119,8 @@ public enum ClusterMessage
     public static class ConfigurationResponseState
             implements Serializable
     {
+        private static final long serialVersionUID = -2394291383400324304L;
+
         private final Map<InstanceId, URI> nodes;
         private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
         private final Map<String, InstanceId> roles;
@@ -220,6 +222,8 @@ public enum ClusterMessage
     public static class ConfigurationChangeState
             implements Serializable
     {
+        private static final long serialVersionUID = 3798148961231305356L;
+
         private InstanceId join;
         private URI joinUri;
 

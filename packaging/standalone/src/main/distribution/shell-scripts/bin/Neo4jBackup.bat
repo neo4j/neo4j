@@ -75,10 +75,6 @@ set LIBPATH=""
 pushd "%REPO%"
 for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
-set REPO=%BASEDIR%\system\coordinator\lib
-pushd "%REPO%"
-for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
-popd
 goto LIBPATH_END
 
 : APPEND_TO_LIBPATH

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, EntityNotFoundException}
 import org.neo4j.graphdb.{Node, NotFoundException, Relationship}
-import org.neo4j.helpers.ThisShouldNotHappenError
-
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -58,7 +56,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   def arguments = Seq(mapExpr)
 
   def calculateType(symbols: SymbolTable) =
-    throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")
+    throw new UnsupportedOperationException("This class should override evaluateType, and this method should never be run")
 
   override def evaluateType(expectedType: CypherType, symbols: SymbolTable) = {
     mapExpr.evaluateType(CTMap, symbols)

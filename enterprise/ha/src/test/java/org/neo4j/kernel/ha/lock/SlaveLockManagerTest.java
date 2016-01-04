@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
@@ -37,9 +37,22 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.function.Suppliers.singleton;
 
 public class SlaveLockManagerTest
 {
+    private RequestContextFactory requestContextFactory;
+    private Master master;
+    private AvailabilityGuard availabilityGuard;
+
+    @Before
+    public void setUp()
+    {
+        requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
+        master = mock( Master.class );
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, NullLog.getInstance() );
+    }
+
     @Test
     public void shutsDownLocalLocks() throws Throwable
     {
@@ -71,11 +84,8 @@ public class SlaveLockManagerTest
         }
     }
 
-    private static SlaveLockManager newSlaveLockManager( Locks localLocks )
+    private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        RequestContextFactory requestContextFactory =
-                new RequestContextFactory( 1, Suppliers.singleton( mock( TransactionIdStore.class ) ) );
-        AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, mock( Log.class ) );
-        return new SlaveLockManager( localLocks, requestContextFactory, mock( Master.class ), availabilityGuard );
+        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard );
     }
 }

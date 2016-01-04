@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.com.slave;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.ComExceptionHandler;
@@ -32,6 +33,8 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,9 +47,9 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
     private final Log log;
-
     private final ResponseUnpacker responseUnpacker;
     private final InvalidEpochExceptionHandler invalidEpochHandler;
+    private final Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader;
 
     @Override
     public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
@@ -64,8 +67,10 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     public MasterClientResolver( LogProvider logProvider, ResponseUnpacker responseUnpacker,
             InvalidEpochExceptionHandler invalidEpochHandler,
-            int readTimeout, int lockReadTimeout, int channels, int chunkSize )
+            int readTimeout, int lockReadTimeout, int channels, int chunkSize,
+            Supplier<LogEntryReader<ReadableLogChannel>> logEntryReader )
     {
+        this.logEntryReader = logEntryReader;
         this.log = logProvider.getLog( getClass() );
         this.responseUnpacker = responseUnpacker;
         this.invalidEpochHandler = invalidEpochHandler;
@@ -80,6 +85,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     @Override
     public void handle( ComException exception )
     {
+        exception.traceComException( log, "MasterClientResolver.handle" );
         if ( exception instanceof IllegalProtocolVersionException )
         {
             log.info( "Handling " + exception + ", will pick new master client" );
@@ -94,6 +100,10 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
 
             invalidEpochHandler.handle();
+        }
+        else
+        {
+            log.debug( "Ignoring " + exception + "." );
         }
     }
 
@@ -146,7 +156,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             return life.add( new MasterClient210( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
                     lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient210.class ),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient210.class ) ) );
+                    monitors.newMonitor( RequestMonitor.class, MasterClient210.class ), logEntryReader.get() ) );
         }
     }
 
@@ -165,7 +175,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
             return life.add( new MasterClient214( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
                     lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                    monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                    monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader.get() ) );
         }
     }
 }

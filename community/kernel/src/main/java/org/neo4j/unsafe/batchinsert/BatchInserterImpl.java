@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -60,7 +60,6 @@ import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -500,7 +499,7 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
     }
 
-    private void repopulateAllIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
+    private void repopulateAllIndexes() throws IOException, IndexEntryConflictException
     {
         if ( !labelsTouched )
         {
@@ -551,10 +550,6 @@ public class BatchInserterImpl implements BatchInserter
                         {
                             throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
                         }
-                        catch ( IndexCapacityExceededException e )
-                        {
-                            throw new UnderlyingStorageException( e );
-                        }
                     }
                 }
             }
@@ -596,14 +591,7 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public boolean visit( NodeLabelUpdate update ) throws IOException
         {
-            try
-            {
-                writer.write( update );
-            }
-            catch ( IndexCapacityExceededException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            writer.write( update );
             return true;
         }
 
@@ -1027,7 +1015,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             repopulateAllIndexes();
         }
-        catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
+        catch ( IOException | IndexEntryConflictException e )
         {
             throw new RuntimeException( e );
         }

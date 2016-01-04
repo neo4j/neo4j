@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -42,7 +41,6 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
 
     private final TransactionIdStore store;
     private final StorageEngine storageEngine;
-    private final IndexUpdatesValidator indexUpdatesValidator;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
     private long lastTransactionChecksum;
@@ -55,7 +53,6 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
     {
         this.store = store;
         this.storageEngine = storageEngine;
-        this.indexUpdatesValidator = storageEngine.indexUpdatesValidatorForRecovery();
         this.monitor = monitor;
     }
 
@@ -78,13 +75,6 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
     private void queue( TransactionRepresentation txRepresentation, long txId ) throws Exception
     {
         TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
-
-        // Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
-        // appear in write ahead log.
-        // This step is still needed though, because it is not only about validation of index sizes but also about
-        // inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
-        // grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
-        tx.validatedIndexUpdates( indexUpdatesValidator.validate( txRepresentation ) );
         tx.commitment( NO_COMMITMENT, txId );
 
         queue.queue( tx );

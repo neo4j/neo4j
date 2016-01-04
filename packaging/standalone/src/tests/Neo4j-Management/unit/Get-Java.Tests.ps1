@@ -393,11 +393,11 @@ InModuleScope Neo4j-Management {
         'Home' = 'TestDrive:\Path'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'
       })
 
-      $result = Get-Java -ForUtility -AppName 'someapp' -StartingClass 'someclass' -ExtraClassPath 'TestDrive:\FakeExtraClass' -Neo4jServer $serverObject -ErrorAction Stop
+      $result = Get-Java -ForUtility -AppName 'someapp' -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
       $resultArgs = ($result.args -join ' ')
 
       It "should have correct ClassPath" {
-        $resultArgs | Should Match ([regex]::Escape('-classpath ;"TestDrive:\fake1.jar";"TestDrive:\FakeExtraClass\fake2.jar"'))
+        $resultArgs | Should Match ([regex]::Escape('-classpath ;"TestDrive:\fake1.jar"'))
       }
       It "should have correct Repo" {
         $resultArgs | Should Match ([regex]::Escape('-Dapp.repo="TestDrive:\Path\lib"'))

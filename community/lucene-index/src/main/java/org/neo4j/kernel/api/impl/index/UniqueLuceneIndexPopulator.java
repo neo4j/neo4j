@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,13 +31,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.register.Register;
 
@@ -87,7 +85,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     @Override
     public void add( long nodeId, Object propertyValue )
-            throws IndexEntryConflictException, IOException, IndexCapacityExceededException
+            throws IndexEntryConflictException, IOException
     {
         Long previousEntry = currentBatch.get( propertyValue );
         if ( previousEntry == null )
@@ -137,14 +135,8 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         return new IndexUpdater()
         {
             @Override
-            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-            {
-                return Reservation.EMPTY;
-            }
-
-            @Override
             public void process( NodePropertyUpdate update )
-                    throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+                    throws IOException, IndexEntryConflictException
             {
                 add( update.getNodeId(), update.getValueAfter() );
             }

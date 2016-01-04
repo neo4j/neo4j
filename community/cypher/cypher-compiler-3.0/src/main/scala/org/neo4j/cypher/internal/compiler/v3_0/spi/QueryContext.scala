@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,6 +41,15 @@ import org.neo4j.kernel.api.index.IndexDescriptor
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext extends TokenContext {
+
+  type KernelStatement
+
+  type EntityAccessor
+
+  def statement: KernelStatement
+
+  def entityAccessor: EntityAccessor
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]

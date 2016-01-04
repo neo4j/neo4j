@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -54,12 +54,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -109,6 +111,7 @@ class BackupService
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
+    private final VersionAwareLogEntryReader entryReader;
 
     BackupService()
     {
@@ -121,6 +124,7 @@ class BackupService
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.entryReader = new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, File targetDirectory,
@@ -146,7 +150,7 @@ class BackupService
                 {
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
-                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
+                            ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ), entryReader );
                     client.start();
                     return client.fullBackup( writer, forensics );
                 }
@@ -298,7 +302,7 @@ class BackupService
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, logProvider, targetDb.storeId(),
                 timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
-                monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
+                monitors.newMonitor( RequestMonitor.class, BackupClient.class ), entryReader );
 
         boolean consistent = false;
         try

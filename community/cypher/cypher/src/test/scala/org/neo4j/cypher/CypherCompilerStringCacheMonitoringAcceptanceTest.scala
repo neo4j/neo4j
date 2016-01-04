@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,7 +45,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: String) {
+    override def cacheDiscard(key: String, key2: String) {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -127,7 +127,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: CYPHER 3.0 $query" )
+      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: $query" )
     )
   }
 }

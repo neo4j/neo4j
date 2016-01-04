@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -67,7 +67,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
-    override def cacheDiscard(query: String) {
+    override def cacheDiscard(ignored: String, query: String) {
       log.info(s"Discarded stale query from the query cache: $query")
     }
   })
@@ -172,7 +172,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
             })
           }.flatMap { case (candidatePlan, params) =>
             if (!touched && candidatePlan.isStale(lastCommittedTxId, kernelStatement)) {
-              cacheAccessor.remove(cache)(cacheKey)
+              cacheAccessor.remove(cache)(cacheKey, queryText)
               None
             } else {
               Some((candidatePlan, params))

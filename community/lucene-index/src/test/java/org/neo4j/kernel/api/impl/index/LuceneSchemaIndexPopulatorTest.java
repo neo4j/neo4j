@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -60,7 +59,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LuceneSchemaIndexPopulatorTest
 {
-
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexDescriptor indexDescriptor;
@@ -266,7 +264,7 @@ public class LuceneSchemaIndexPopulatorTest
         return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
 
-    private void assertIndexedValues( Hit... expectedHits ) throws IOException, IndexCapacityExceededException
+    private void assertIndexedValues( Hit... expectedHits ) throws IOException
     {
         switchToVerification();
 
@@ -284,7 +282,7 @@ public class LuceneSchemaIndexPopulatorTest
         }
     }
 
-    private void switchToVerification() throws IOException, IndexCapacityExceededException
+    private void switchToVerification() throws IOException
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
@@ -296,7 +294,7 @@ public class LuceneSchemaIndexPopulatorTest
             IndexPopulator populator,
             Iterable<NodePropertyUpdate> updates,
             PropertyAccessor accessor )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
         {

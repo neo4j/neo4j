@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -305,7 +305,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))()
 
     case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-      CreateRelationshipPipe(source, idName.name, startNode.name, typ, endNode.name, props.map(toCommandExpression))()
+      CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))()
 
     case SetLabels(_, IdName(name), labels) =>
      SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))()

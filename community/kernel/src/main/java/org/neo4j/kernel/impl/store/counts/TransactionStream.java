@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,9 +37,11 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
@@ -53,17 +55,20 @@ class TransactionStream
     private final FileSystemAbstraction fs;
     private final boolean isContiguous;
     private final LogFile firstFile;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
-    public TransactionStream( FileSystemAbstraction fs, File path ) throws IOException
+    public TransactionStream( FileSystemAbstraction fs, File path, LogEntryReader<ReadableLogChannel> logEntryReader )
+            throws IOException
     {
         this.fs = fs;
+        this.logEntryReader = logEntryReader;
         { // read metadata from all files in the directory
             ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
             File[] files = fs.listFiles( path, new TxFileFilter( fs ) );
             ArrayList<LogFile> logFiles = new ArrayList<>( files.length );
             for ( File file : files )
             {
-                LogFile logFile = new LogFile( fs, file, buffer );
+                LogFile logFile = new LogFile( fs, file, buffer, logEntryReader );
                 if ( logFile.lastTxId > 0 )
                 {
                     logFiles.add( logFile );
@@ -106,7 +111,7 @@ class TransactionStream
         return firstFile.header.lastCommittedTxId;
     }
 
-    public IOCursor<CommittedTransactionRepresentation> cursor() throws IOException
+    public IOCursor<CommittedTransactionRepresentation> cursor()
     {
         return new Cursor();
     }
@@ -217,14 +222,15 @@ class TransactionStream
         private final long lastTxId;
         long cap = Long.MAX_VALUE;
 
-        LogFile( FileSystemAbstraction fs, File file, ByteBuffer buffer ) throws IOException
+        LogFile( FileSystemAbstraction fs, File file, ByteBuffer buffer,
+                LogEntryReader<ReadableLogChannel> logEntryReader ) throws IOException
         {
             this.file = file;
             try ( StoreChannel channel = fs.open( file, "r" ) )
             {
                 header = readLogHeader( buffer, channel, false );
 
-                try ( IOCursor<LogEntry> cursor = logEntryCursor( channel, header ) )
+                try ( IOCursor<LogEntry> cursor = logEntryCursor( logEntryReader, channel, header ) )
                 {
                     long txId = header.lastCommittedTxId;
                     while ( cursor.next() )
@@ -300,12 +306,13 @@ class TransactionStream
         {
             buffer.clear();
         }
-        return logEntryCursor( channel, file.header );
+        return logEntryCursor( logEntryReader, channel, file.header );
     }
 
-    private static IOCursor<LogEntry> logEntryCursor( StoreChannel channel, LogHeader header ) throws IOException
+    private static IOCursor<LogEntry> logEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader,
+            StoreChannel channel, LogHeader header ) throws IOException
     {
-        return new LogEntryCursor( new ReadAheadLogChannel(
+        return new LogEntryCursor( logEntryReader, new ReadAheadLogChannel(
                 new PhysicalLogVersionedStoreChannel( channel, header.logVersion, header.logFormatVersion ),
                 NO_MORE_CHANNELS ) );
     }

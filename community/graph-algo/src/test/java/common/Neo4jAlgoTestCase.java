@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,18 +19,17 @@
  */
 package common;
 
-import java.io.File;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,7 +41,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.SillyUtils.nonNull;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
@@ -85,26 +83,6 @@ public abstract class Neo4jAlgoTestCase
         graph.clear();
         tx.success();
         tx.close();
-    }
-
-    public static void deleteFileOrDirectory( File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : nonNull( file.listFiles() ) )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        else
-        {
-            assertTrue( "delete " + file, file.delete() );
-        }
     }
 
     protected void assertPathDef( Path path, String... names )

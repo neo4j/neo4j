@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -66,8 +66,7 @@ public class RejectTransportEncryptionIT
         return asList(
                 new Object[]{
                         (Factory<Connection>) SecureWebSocketConnection::new,
-                        new IOException( "Failed to connect to the server within 30 seconds" )
-                        // TODO shutdown ssl connections properly
+                        new IOException( "Failed to connect to the server within 10 seconds" )
                 },
                 new Object[]{
                         (Factory<Connection>) SecureSocketConnection::new,

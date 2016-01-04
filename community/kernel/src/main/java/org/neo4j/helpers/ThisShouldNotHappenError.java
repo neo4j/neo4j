@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,14 @@
  */
 package org.neo4j.helpers;
 
+/**
+ * This class should not be used. It is here only because we have a binary dependency on the previous Cypher compiler
+ * which uses this class.
+ *
+ * @deprecated Use {@link IllegalStateException}, {@link IllegalArgumentException},
+ * {@link UnsupportedOperationException} or {@link AssertionError} instead.
+ */
+@Deprecated
 public class ThisShouldNotHappenError extends Error
 {
     public ThisShouldNotHappenError( String developer, String message )

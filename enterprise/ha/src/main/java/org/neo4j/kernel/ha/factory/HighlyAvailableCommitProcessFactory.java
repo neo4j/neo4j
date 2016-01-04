@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 
@@ -42,7 +41,7 @@ class HighlyAvailableCommitProcessFactory implements CommitProcessFactory
 
     @Override
     public TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine,
-            IndexUpdatesValidator indexUpdatesValidator, Config config )
+            Config config )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {

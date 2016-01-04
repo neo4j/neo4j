@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,5 +31,20 @@ public class LabelTokenRecord extends TokenRecord
     protected String simpleName()
     {
         return "Label";
+    }
+
+    @Override
+    public LabelTokenRecord clone()
+    {
+        LabelTokenRecord labelTokenRecord = new LabelTokenRecord( getId() );
+        labelTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
+        {
+            labelTokenRecord.setCreated();
+        }
+        labelTokenRecord.setIsLight( isLight() );
+        labelTokenRecord.setNameId( getNameId() );
+        labelTokenRecord.addNameRecords( getNameRecords() );
+        return labelTokenRecord;
     }
 }

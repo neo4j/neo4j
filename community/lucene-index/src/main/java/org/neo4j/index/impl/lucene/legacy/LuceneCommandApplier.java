@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.index.IndexImplementation;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -32,13 +33,12 @@ import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 /**
- * Applies changes from {@link IndexCommand commands} onto one ore more indexes from the same
+ * Applies changes from {@link IndexCommand commands} onto one or more indexes from the same
  * {@link IndexImplementation provider}.
  */
-public class LuceneCommandApplier extends CommandHandler.Adapter
+public class LuceneCommandApplier extends TransactionApplier.Adapter
 {
     private final LuceneDataSource dataSource;
     private final Map<String,CommitContext> nodeContexts = new HashMap<>();
@@ -116,7 +116,7 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
     }
 
     @Override
-    public void apply()
+    public void close()
     {
         try
         {
@@ -137,14 +137,12 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         {
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
-    }
-
-    @Override
-    public void close()
-    {
-        if ( definitions != null )
+        finally
         {
-            dataSource.releaseWriteLock();
+            if ( definitions != null )
+            {
+                dataSource.releaseWriteLock();
+            }
         }
     }
 

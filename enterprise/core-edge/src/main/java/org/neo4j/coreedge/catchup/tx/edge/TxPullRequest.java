@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,6 +27,8 @@ import static java.lang.String.format;
 
 public class TxPullRequest implements Serializable
 {
+    private static final long serialVersionUID = 927527537940622403L;
+
     public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.TX_PULL_REQUEST;
 
     private final long txId;

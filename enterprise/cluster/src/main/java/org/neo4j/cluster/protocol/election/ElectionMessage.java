@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,6 +36,8 @@ public enum ElectionMessage
     public static class VotedData
         implements Serializable
     {
+        private static final long serialVersionUID = 6115474263667086327L;
+
         private final String role;
         private final InstanceId instanceId;
         private final Comparable<Object> voteCredentials;
@@ -77,6 +79,8 @@ public enum ElectionMessage
 
     public static class VersionedVotedData extends VotedData
     {
+        private static final long serialVersionUID = -3795472557085578559L;
+
         private final long version;
 
         public VersionedVotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials, long version )

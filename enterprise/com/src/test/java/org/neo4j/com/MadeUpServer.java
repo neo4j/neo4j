@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,17 +19,16 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
+import java.io.IOException;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -189,8 +188,8 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             public Response<Integer> call( MadeUpCommunicationInterface master,
                 RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
-                throw new ThisShouldNotHappenError( "Jake", "Test should not reach this far, " +
-                    "it should fail while reading the request context." );
+                throw new AssertionError(
+                        "Test should not reach this far, it should fail while reading the request context." );
             }
         }, Protocol.VOID_SERIALIZER ),
 

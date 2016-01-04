@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.codegen;
 
 class ExpressionToString implements ExpressionVisitor
@@ -181,5 +180,15 @@ class ExpressionToString implements ExpressionVisitor
         result.append( " - " );
         rhs.accept( this );
         result.append( ")" );
+    }
+
+    @Override
+    public void cast( TypeReference type, Expression expression )
+    {
+        result.append( "cast{type=" );
+        type.writeTo( result );
+        result.append( ", expression=" );
+        expression.accept( this );
+        result.append( "}" );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.reattachAliasedExpr
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.groupInequalityPredicatesForLegacy
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.Converge.iterateUntilConverged
@@ -37,12 +38,16 @@ trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String) => RewriterStepSequencer, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration, rewriterSequencer: (String) => RewriterStepSequencer, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  override def producePlan(in: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) = {
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
+  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
+    interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery, createFingerprintReference, config)
+
+  def producePipe(in: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
@@ -63,7 +68,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
       case q: Union =>
         buildUnionQuery(q, planContext)
     }
-    Right(res)
+    res
   }
 
   private val unionBuilder = new UnionBuilder(this)
@@ -112,10 +117,9 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
 
     psq.where.map(p => p.token) match {
       case None => psq
-      case Some(predicates) => {
+      case Some(predicates) =>
         val newWhere = groupInequalityPredicatesForLegacy(predicates).map(Unsolved(_)).toSeq
         psq.copy(where = newWhere)
-      }
     }
   }
 

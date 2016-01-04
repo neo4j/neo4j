@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.{Traversal, Uniqueness}
 
 import scala.collection.JavaConverters._
@@ -66,5 +65,5 @@ class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
       case _                                                => Evaluation.EXCLUDE_AND_CONTINUE
     }
 
-  def evaluate(path: Path) = throw new ThisShouldNotHappenError("Andres", "This method should never be used")
+  def evaluate(path: Path) = throw new UnsupportedOperationException("This method should never be used")
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -30,7 +31,7 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
-import org.neo4j.helpers.Pair;
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
@@ -39,7 +40,8 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.CappedOperation;
+import org.neo4j.kernel.impl.util.CappedLogger;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -118,7 +120,13 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         void pulledUpdates( long lastAppliedTxId );
     }
 
-    public static String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
+    public static final int LOG_CAP = Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.LOG_CAP", 10 );
+    public static final long PARK_NANOS = TimeUnit.MILLISECONDS.toNanos( Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.PARK_MILLIS", 100 ) );
+    public static final int AVAILABILITY_AWAIT_MILLIS = Integer.getInteger(
+            "org.neo4j.kernel.ha.SlaveUpdatePuller.AVAILABILITY_AWAIT_MILLIS", 5000 );
+    public static final String UPDATE_PULLER_THREAD_PREFIX = "UpdatePuller@";
 
     static final Condition NEXT_TICKET = new Condition()
     {
@@ -130,21 +138,32 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     };
 
     private volatile boolean halted;
-    private final AtomicInteger targetTicket = new AtomicInteger(), currentTicket = new AtomicInteger();
+    private final AtomicInteger targetTicket = new AtomicInteger();
+    private final AtomicInteger currentTicket = new AtomicInteger();
     private final RequestContextFactory requestContextFactory;
     private final Master master;
     private final Log logger;
-    private final CappedOperation<Pair<String,? extends Exception>> cappedLogger;
+    private final CappedLogger invalidEpochCappedLogger;
+    private final CappedLogger comExceptionCappedLogger;
     private final LastUpdateTime lastUpdateTime;
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
     private InvalidEpochExceptionHandler invalidEpochHandler;
     private final Monitor monitor;
-    private Thread me;
+    private final JobScheduler jobScheduler;
+    private volatile Thread updatePullingThread;
+    private volatile BinaryLatch shutdownLatch; // Store under synchronised(this), load in update puller thread
 
-    SlaveUpdatePuller( RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
-            LogProvider logging, InstanceId instanceId, AvailabilityGuard availabilityGuard,
-            InvalidEpochExceptionHandler invalidEpochHandler, Monitor monitor )
+    SlaveUpdatePuller(
+            RequestContextFactory requestContextFactory,
+            Master master,
+            LastUpdateTime lastUpdateTime,
+            LogProvider logging,
+            InstanceId instanceId,
+            AvailabilityGuard availabilityGuard,
+            InvalidEpochExceptionHandler invalidEpochHandler,
+            JobScheduler jobScheduler,
+            Monitor monitor)
     {
         this.requestContextFactory = requestContextFactory;
         this.master = master;
@@ -152,20 +171,32 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.instanceId = instanceId;
         this.availabilityGuard = availabilityGuard;
         this.invalidEpochHandler = invalidEpochHandler;
+        this.jobScheduler = jobScheduler;
         this.monitor = monitor;
         this.logger = logging.getLog( getClass() );
-        this.cappedLogger = new CappedOperation<Pair<String,? extends Exception>>( CappedOperation.count( 10 ) )
-        {
-            @Override
-            protected void triggered( Pair<String,? extends Exception> event )
-            {
-                logger.warn( event.first(), event.other() );
-            }
-        };
+        this.invalidEpochCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
+        this.comExceptionCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
     }
 
     @Override
     public void run()
+    {
+        updatePullingThread = Thread.currentThread();
+        String oldName = updatePullingThread.getName();
+        updatePullingThread.setName( UPDATE_PULLER_THREAD_PREFIX + instanceId );
+        try
+        {
+            periodicallyPullUpdates();
+        }
+        finally
+        {
+            updatePullingThread.setName( oldName );
+            updatePullingThread = null;
+            shutdownLatch.release();
+        }
+    }
+
+    private void periodicallyPullUpdates()
     {
         while ( !halted )
         {
@@ -177,36 +208,41 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
                 continue;
             }
 
-            LockSupport.parkNanos( 100_000_000 );
+            LockSupport.parkNanos( PARK_NANOS );
         }
     }
 
     @Override
-    public void init() throws Throwable
+    public synchronized void init() throws Throwable
     {
-        // TODO Don't do this. This is just to satisfy LockSupport park/unpark
-        // And we cannot have this class extend Thread since there's a naming clash with Lifecycle for stop()
-        me = new Thread( this, UPDATE_PULLER_THREAD_PREFIX + instanceId );
-        me.start();
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        halted = true;
-        while ( me.getState() != Thread.State.TERMINATED )
+        if ( shutdownLatch != null )
         {
-            Thread.sleep( 1 );
-            Thread.yield();
+            return; // This SlaveUpdatePuller has already been initialised
         }
-        invalidEpochHandler = null;
-        me = null;
+
+        shutdownLatch = new BinaryLatch();
+        jobScheduler.schedule( JobScheduler.Groups.pullUpdates, this );
+    }
+
+    @Override
+    public synchronized void shutdown() throws Throwable
+    {
+        if ( shutdownLatch == null )
+        {
+            return; // This SlaveUpdatePuller has already been shut down
+        }
+
+        Thread thread = updatePullingThread;
+        halted = true;
+        LockSupport.unpark( thread );
+        shutdownLatch.await();
+        shutdownLatch = null;
     }
 
     @Override
     public void pullUpdates() throws InterruptedException
     {
-        if ( !isActive() || !availabilityGuard.isAvailable( 5000 ) )
+        if ( !isActive() || !availabilityGuard.isAvailable( AVAILABILITY_AWAIT_MILLIS ) )
         {
             return;
         }
@@ -287,7 +323,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private int poke()
     {
         int result = this.targetTicket.incrementAndGet();
-        LockSupport.unpark( me );
+        LockSupport.unpark( updatePullingThread );
         return result;
     }
 
@@ -312,15 +348,17 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
                 // Updates would be applied as part of response processing
                 monitor.pulledUpdates( context.lastAppliedTransaction() );
             }
+            invalidEpochCappedLogger.reset();
+            comExceptionCappedLogger.reset();
         }
         catch ( InvalidEpochException e )
         {
             invalidEpochHandler.handle();
-            cappedLogger.event( Pair.of( "Pull updates by " + this + " failed at the epoch check", e ) );
+            invalidEpochCappedLogger.warn( "Pull updates by " + this + " failed at the epoch check", e );
         }
         catch ( ComException e )
         {
-            cappedLogger.event( Pair.of( "Pull updates by " + this + " failed due to network error.", e ) );
+            invalidEpochCappedLogger.warn( "Pull updates by " + this + " failed due to network error.", e );
         }
         catch ( Throwable e )
         {

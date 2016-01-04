@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,7 +29,7 @@ public interface LogFile
 {
     interface LogFileVisitor
     {
-        boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException;
+        boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException;
     }
 
     /**
@@ -42,7 +42,7 @@ public interface LogFile
      * @return {@link ReadableLogChannel} capable of reading log data, starting from {@link LogPosition position}.
      * @throws IOException
      */
-    ReadableVersionableLogChannel getReader( LogPosition position ) throws IOException;
+    ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
     void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
 

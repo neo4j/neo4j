@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,10 +52,7 @@ import static org.mockito.Mockito.when;
 
 public class SlaveLocksClientConcurrentTest
 {
-
     private static ExecutorService executor;
-    private SlaveLocksClient reader;
-    private SlaveLocksClient writer;
 
     private Master master;
     private ForsetiLockManager lockManager;
@@ -89,8 +86,8 @@ public class SlaveLocksClientConcurrentTest
     @Test( timeout = 1000 )
     public void readersCanAcquireLockAsSoonAsItReleasedOnMaster() throws InterruptedException
     {
-        reader = createClient();
-        writer = createClient();
+        SlaveLocksClient reader = createClient();
+        SlaveLocksClient writer = createClient();
 
         CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
         CountDownLatch resourceLatch = new CountDownLatch( 1 );

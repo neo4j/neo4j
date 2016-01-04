@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,8 @@ package org.neo4j.tools.txlog;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -35,21 +36,24 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.test.LogTestUtils;
+import org.neo4j.tools.txlog.checktypes.CheckType;
+import org.neo4j.tools.txlog.checktypes.CheckTypes;
 
 /**
  * Tool that verifies consistency of transaction logs.
- * <p/>
+ *
  * Transaction log is considered consistent when every command's before state is the same as after state for
  * corresponding record in previously committed transaction.
- * <p/>
+ *
  * Tool expects a single argument - directory with transaction logs.
  * It then simply iterates over all commands in those logs, compares before state for current record with previously
  * seen after state and stores after state for current record, if before state is consistent.
  */
-//: TODO introduce abstract tool class as soon as we will have several tools in tools module
 public class CheckTxLogs
 {
     private static final String HELP_FLAG = "help";
+    private static final String CHECKS = "checks";
+    private static final String SEPARATOR = ",";
 
     private final FileSystemAbstraction fs;
 
@@ -65,6 +69,7 @@ public class CheckTxLogs
         {
             printUsageAndExit();
         }
+        CheckType[] checkTypes = parseChecks( arguments );
         File dir = parseDir( arguments );
 
         File[] logs = txLogsIn( dir );
@@ -72,15 +77,21 @@ public class CheckTxLogs
 
         CheckTxLogs tool = new CheckTxLogs( new DefaultFileSystemAbstraction() );
 
-        tool.scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler() );
-        tool.scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler() );
+        tool.scan( logs, new PrintingInconsistenciesHandler(), checkTypes );
     }
 
-    <C extends Command, R extends Abstract64BitRecord> void scan( File[] logs, CheckType<C,R> check,
-            InconsistenciesHandler handler ) throws IOException
+    void scan( File[] logs, InconsistenciesHandler handler, CheckType<?,?>... checkTypes ) throws IOException
+    {
+        for ( CheckType<?,?> checkType : checkTypes )
+        {
+            scan( logs, handler, checkType );
+        }
+    }
+
+    private <C extends Command, R extends Abstract64BitRecord> void scan(
+            File[] logs, InconsistenciesHandler handler, CheckType<C,R> check ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
-
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
         for ( File log : logs )
@@ -126,6 +137,19 @@ public class CheckTxLogs
         state.put( after, logVersion );
     }
 
+    private static CheckType[] parseChecks( Args arguments )
+    {
+        String checks = arguments.get( CHECKS );
+        if ( checks == null )
+        {
+            return CheckTypes.CHECK_TYPES;
+        }
+
+        return Stream.of( checks.split( SEPARATOR ) )
+                .map( CheckTypes::fromName )
+                .toArray( CheckType<?,?>[]::new );
+    }
+
     private static File parseDir( Args args )
     {
         if ( args.orphans().size() != 1 )
@@ -144,15 +168,10 @@ public class CheckTxLogs
     private static File[] txLogsIn( File dir )
     {
         File[] logs = dir.listFiles( LogFiles.FILENAME_FILTER );
-        Arrays.sort( logs, new Comparator<File>()
-        {
-            @Override
-            public int compare( File f1, File f2 )
-            {
-                long f1Version = PhysicalLogFiles.getLogVersion( f1 );
-                long f2Version = PhysicalLogFiles.getLogVersion( f2 );
-                return Long.compare( f1Version, f2Version );
-            }
+        Arrays.sort( logs, ( f1, f2 ) -> {
+            long f1Version = PhysicalLogFiles.getLogVersion( f1 );
+            long f2Version = PhysicalLogFiles.getLogVersion( f2 );
+            return Long.compare( f1Version, f2Version );
         } );
         return logs;
     }
@@ -160,7 +179,14 @@ public class CheckTxLogs
     private static void printUsageAndExit()
     {
         System.out.println( "Tool expects single argument - directory with tx logs" );
-        System.out.println( "Example:\n\t./checkTxLogs <directory containing neostore.transaction.db files>" );
+        System.out.println( "Usage:" );
+        System.out.println( "\t./checkTxLogs [options] <directory>" );
+        System.out.println( "Options:" );
+        System.out.println( "\t--help\t\tprints this description" );
+        System.out.println( "\t--checks='checkname[,...]'\t\tthe list of checks to perform. Checks available: " +
+                            Arrays.stream( CheckTypes.CHECK_TYPES )
+                                    .map( CheckType::name )
+                                    .collect( Collectors.joining( SEPARATOR ) ) );
         System.exit( 1 );
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.CommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -43,24 +44,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  */
 public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> implements LogEntryReader<SOURCE>
 {
-    private final LogPositionMarker positionMarker = new LogPositionMarker();
-
     // Exists for backwards compatibility until we drop support for one of the two versions (1.9 and 2.0)
     // that doesn't have log entry version in its format.
     private final byte logHeaderFormatVersion;
+    private final CommandReaderFactory commandReaderFactory;
 
-    // Caching of CommandReader instance, we use the LogEntryVersion instance for comparison
-    private LogEntryVersion lastVersion;
-    private CommandReader currentCommandReader;
-
-    public VersionAwareLogEntryReader( byte logHeaderFormatVersion )
+    public VersionAwareLogEntryReader( byte logHeaderFormatVersion, CommandReaderFactory commandReaderFactory )
     {
         this.logHeaderFormatVersion = logHeaderFormatVersion;
+        this.commandReaderFactory = commandReaderFactory;
     }
 
-    public VersionAwareLogEntryReader()
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
-        this( NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION );
+        this( NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION, commandReaderFactory );
     }
 
     @Override
@@ -68,6 +65,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
     {
         try
         {
+            LogPositionMarker positionMarker = new LogPositionMarker();
             channel.getCurrentPosition( positionMarker );
             while ( true )
             {
@@ -90,7 +88,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
 
                     version = byVersion( versionCode, logHeaderFormatVersion );
                     entryReader = version.entryParser( typeCode );
-                    commandReader = commandReader( version );
+                    commandReader = commandReaderFactory.byVersion( version );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler
@@ -115,15 +113,5 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableLogChannel> imple
         {
             return null;
         }
-    }
-
-    private CommandReader commandReader( LogEntryVersion version )
-    {
-        if ( version != lastVersion )
-        {
-            lastVersion = version;
-            currentCommandReader = version.newCommandReader();
-        }
-        return currentCommandReader;
     }
 }

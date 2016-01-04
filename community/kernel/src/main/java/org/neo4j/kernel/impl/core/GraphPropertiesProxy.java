@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -192,8 +191,7 @@ public class GraphPropertiesProxy implements GraphProperties
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Jake",
-                    "Property key retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
     }
 
@@ -235,8 +233,7 @@ public class GraphPropertiesProxy implements GraphProperties
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Rickard",
-                    "Property key retrieved through kernel API should exist.", e );
+            throw new IllegalStateException( "Property key retrieved through kernel API should exist.", e );
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Comparator;
 
 import org.neo4j.helpers.MathUtil;
-import org.neo4j.helpers.ObjectUtil;
+import org.neo4j.helpers.Strings;
 
 import static java.lang.String.format;
 
@@ -40,7 +40,7 @@ public class PropertyValueComparison
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
 
     // This compares two values that have the same super type according to that super type's comparator
-    // Any values that fall under OTHER, are compared by ObjectUtil.toString
+    // Any values that fall under OTHER, are compared by Strings.prettyPrint
     // NULL is not supported
     public final static PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
 
@@ -164,8 +164,8 @@ public class PropertyValueComparison
 
                     // case OTHER:
                     default:
-                        String leftString = ObjectUtil.toString( left );
-                        String rightString = ObjectUtil.toString( right );
+                        String leftString = Strings.prettyPrint( left );
+                        String rightString = Strings.prettyPrint( right );
                         return leftString.compareTo( rightString );
                 }
             }

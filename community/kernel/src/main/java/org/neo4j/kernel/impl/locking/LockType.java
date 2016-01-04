@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,29 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.kernel.api.KernelTransaction;
-
 /**
  * Enum defining the <CODE>READ</CODE> lock and the <CODE>WRITE</CODE> lock.
  */
 public enum LockType
 {
-    READ
-    {
-        @Override
-        public void release( LockManager lockManager, Object resource, KernelTransaction tx )
-        {
-            lockManager.releaseReadLock( resource, tx );
-        }
-    },
-    WRITE
-    {
-        @Override
-        public void release( LockManager lockManager, Object resource, KernelTransaction tx )
-        {
-            lockManager.releaseWriteLock( resource, tx );
-        }
-    };
-
-    public abstract void release( LockManager lockManager, Object resource, KernelTransaction tx );
+    READ, WRITE
 }

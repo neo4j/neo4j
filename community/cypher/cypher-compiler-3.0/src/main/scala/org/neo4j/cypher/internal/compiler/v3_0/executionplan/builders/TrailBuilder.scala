@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,16 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.VariableLengthStepTrail
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.EndPoint
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.RelationshipVariable
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.SingleStepTrail
-import annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{EndPoint, RelationshipVariable, SingleStepTrail, VariableLengthStepTrail, _}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+
+import scala.annotation.tailrec
 
 object TrailBuilder {
   def findLongestTrail(patterns: Seq[Pattern], boundPoints: Seq[String], predicates: Seq[Predicate] = Nil) =
@@ -83,7 +79,7 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
         case rel: RelatedTo if rel.right.name == done.end          => singleStep(rel, rel.left.name, rel.direction.reversed)
         case rel: VarLengthRelatedTo if rel.right.name == done.end => multiStep(rel, rel.left.name, rel.direction.reversed, rel.direction)
         case rel: VarLengthRelatedTo if rel.left.name == done.end  => multiStep(rel, rel.right.name, rel.direction, rel.direction)
-        case _                                                     => throw new ThisShouldNotHappenError("Andres", "This pattern is not expected")
+        case _                                                     => throw new AssertionError("This pattern is not expected")
       }
 
       (result, patternsLeft)

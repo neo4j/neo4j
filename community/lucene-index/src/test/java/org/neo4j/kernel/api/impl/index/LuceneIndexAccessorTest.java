@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,7 +37,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -47,15 +46,17 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Registers;
 import org.neo4j.test.ThreadingRule;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -84,7 +85,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, standard(), dirFactory, dir, 100_000 );
                     }
 
                     @Override
@@ -99,7 +100,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, standard(), dirFactory, dir );
                     }
 
                     @Override
@@ -125,9 +126,8 @@ public class LuceneIndexAccessorTest
     }
 
     @After
-    public void after() throws IOException
+    public void after()
     {
-        accessor.close();
         dirFactory.close();
     }
 
@@ -148,8 +148,7 @@ public class LuceneIndexAccessorTest
     }
 
     @Test
-    public void indexStringRangeQuery() throws IndexCapacityExceededException, IOException,
-            IndexEntryConflictException
+    public void indexStringRangeQuery() throws IOException, IndexEntryConflictException
     {
         updateAndCommit( asList( add( 1, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
 
@@ -181,7 +180,7 @@ public class LuceneIndexAccessorTest
     }
 
     @Test
-    public void indexNumberRangeQuery() throws IndexCapacityExceededException, IOException, IndexEntryConflictException
+    public void indexNumberRangeQuery() throws IOException, IndexEntryConflictException
     {
         updateAndCommit( asList( add( 1, 1 ), add( 2, 2 ), add( 3, 3 ), add( 4, 4 ), add( 5, Double.NaN ) ) );
 
@@ -339,7 +338,7 @@ public class LuceneIndexAccessorTest
     }
 
     private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

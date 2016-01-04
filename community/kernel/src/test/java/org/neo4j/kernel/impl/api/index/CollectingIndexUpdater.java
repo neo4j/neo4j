@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,22 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {
     protected final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
-
-    @Override
-    public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-    {
-        return Reservation.EMPTY;
-    }
 
     @Override
     public void process( NodePropertyUpdate update )

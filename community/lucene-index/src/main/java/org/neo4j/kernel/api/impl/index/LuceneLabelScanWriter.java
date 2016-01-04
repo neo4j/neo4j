@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,10 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.String.format;
@@ -62,7 +60,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     }
 
     @Override
-    public void write( NodeLabelUpdate update ) throws IOException, IndexCapacityExceededException
+    public void write( NodeLabelUpdate update ) throws IOException
     {
         long range = format.bitmapFormat().rangeOf( update.getNodeId() );
 
@@ -88,10 +86,6 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         try
         {
             flush();
-        }
-        catch ( IndexCapacityExceededException e )
-        {
-            throw new UnderlyingStorageException( e );
         }
         finally
         {
@@ -129,7 +123,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
         return fields;
     }
 
-    private void flush() throws IOException, IndexCapacityExceededException
+    private void flush() throws IOException
     {
         if ( currentRange < 0 )
         {

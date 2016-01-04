@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -145,9 +145,9 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone(RelationshipRecord relationshipRecord) {
-                // Not needed because we don't manage before state for relationship records.
-                throw new UnsupportedOperationException("Unexpected call to clone on a relationshipRecord");
+            public RelationshipRecord clone(RelationshipRecord relationshipRecord)
+            {
+                return relationshipRecord.clone();
             }
         };
     }
@@ -177,7 +177,7 @@ public class Loaders
             @Override
             public RelationshipGroupRecord clone( RelationshipGroupRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
@@ -247,7 +247,7 @@ public class Loaders
             @Override
             public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
@@ -278,7 +278,7 @@ public class Loaders
             @Override
             public LabelTokenRecord clone( LabelTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }
@@ -309,7 +309,7 @@ public class Loaders
             @Override
             public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
             {
-                throw new UnsupportedOperationException();
+                return record.clone();
             }
         };
     }

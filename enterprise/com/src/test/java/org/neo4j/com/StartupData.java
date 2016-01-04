@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,8 @@ import java.io.Serializable;
 
 class StartupData implements Serializable
 {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 3570271945897559074L;
+    
     final long creationTime;
     final long storeId;
     final byte applicationProtocolVersion;

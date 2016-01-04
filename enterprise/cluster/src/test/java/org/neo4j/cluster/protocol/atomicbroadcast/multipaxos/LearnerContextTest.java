@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosC
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,11 +35,14 @@ import static org.mockito.Mockito.mock;
 
 public class LearnerContextTest
 {
+    private final LogProvider logProvider = new AssertableLogProvider();
+
     @Test
     public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -52,7 +57,8 @@ public class LearnerContextTest
     public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -69,7 +75,8 @@ public class LearnerContextTest
     public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, null, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
+                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When

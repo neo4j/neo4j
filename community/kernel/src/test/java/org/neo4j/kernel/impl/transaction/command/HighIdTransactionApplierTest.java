@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,16 +22,12 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.test.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.command.CommandHandler.EMPTY;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 
 public class HighIdTransactionApplierTest
 {
@@ -43,9 +39,8 @@ public class HighIdTransactionApplierTest
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.open();
-        HighIdTransactionApplier tracker = new HighIdTransactionApplier( EMPTY, neoStores );
+        HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
-        tracker.begin( mock( TransactionToApply.class ), new LockGroup() );
         // WHEN
         // Nodes
         tracker.visitNodeCommand( Commands.createNode( 10, 2, 3 ) );
@@ -72,16 +67,15 @@ public class HighIdTransactionApplierTest
         tracker.visitRelationshipGroupCommand( Commands.createRelationshipGroup( 20, 2 ) );
 
         // Schema rules
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule( 10, 0, 1 ) );
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule( 20, 1, 2 ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, 0, 1 ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
+                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, 1, 2 ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );
         tracker.visitPropertyCommand( Commands.createProperty( 20, PropertyType.ARRAY, 1, 8, 9 ) );
 
-        tracker.end();
-
-        tracker.apply();
         tracker.close();
 
         // THEN

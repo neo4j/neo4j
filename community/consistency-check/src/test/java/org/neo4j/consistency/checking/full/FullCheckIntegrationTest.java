@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -61,7 +61,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -74,8 +73,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -91,7 +90,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -100,6 +98,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.logging.FormattedLog;
@@ -282,9 +281,10 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NeoStoreRecord record = new NeoStoreRecord();
-                record.setNextProp( next.property() );
-                tx.update( record );
+                NeoStoreRecord before = new NeoStoreRecord();
+                NeoStoreRecord after = new NeoStoreRecord();
+                after.setNextProp( next.property() );
+                tx.update( before, after );
                 // We get exceptions when only the above happens in a transaction...
                 tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
             }
@@ -444,7 +444,7 @@ public class FullCheckIntegrationTest
     }
 
     private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
-            throws IOException, IndexCapacityExceededException
+            throws IOException
     {
         try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Add, Litera
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{PipeMonitor, Top1Pipe, TopNPipe}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 class TopPipeBuilder extends PlanBuilder with SortingPreparations {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
@@ -43,7 +42,7 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
     val (limitExpression, newSlice) = slice match {
       case Slice(Some(skip), Some(l)) => (Add(skip, l), Some(Unsolved(Slice(Some(skip), None))))
       case Slice(None, Some(l))       => (l, Some(Solved(slice)))
-      case _                          => throw new ThisShouldNotHappenError("Andres", "This builder should not be called for this query")
+      case _                          => throw new AssertionError("This builder should not be called for this query")
     }
 
     val resultPipe = limitExpression match {

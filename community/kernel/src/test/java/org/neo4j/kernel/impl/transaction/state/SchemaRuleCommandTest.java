@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,32 +21,40 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -74,11 +82,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -93,11 +98,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( indexApplier, command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( indexes ).createIndex( rule );
@@ -113,11 +115,10 @@ public class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 )  );
+        UniquePropertyConstraintRule schemaRule = uniquenessConstraintRule( id, labelId, propertyKey, 0 );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -133,11 +134,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( storeApplier, command );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( first( afterRecords ) );
@@ -152,11 +150,8 @@ public class SchemaRuleCommandTest
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
-
         // WHEN
-        visitSchemaRuleCommand( indexApplier, command );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
         verify( indexes ).dropIndex( rule );
@@ -169,14 +164,13 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
+        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -192,13 +186,12 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
         InMemoryLogChannel buffer = new InMemoryLogChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( new CommandWriter( buffer ), command );
+        visitSchemaRuleCommand( new CommandWriterBatchWrapper( buffer ), command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -217,13 +210,15 @@ public class SchemaRuleCommandTest
     private final IndexingService indexes = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
-    private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStores,
+    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            labelScanStoreSynchronizer );
-    private final PhysicalLogNeoCommandReaderV2_2 reader = new PhysicalLogNeoCommandReaderV2_2();
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
+    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
+            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ),
+            mock( PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
+    private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )
@@ -250,11 +245,41 @@ public class SchemaRuleCommandTest
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 
-    private void visitSchemaRuleCommand( CommandHandler applier, SchemaRuleCommand command ) throws Exception
+    private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
     {
         TransactionToApply tx = new TransactionToApply(
                 new PhysicalTransactionRepresentation( Arrays.<Command>asList( command ) ), txId );
-        tx.validatedIndexUpdates( mock( ValidatedIndexUpdates.class ) );
         CommandHandlerContract.apply( applier, tx );
+    }
+
+    private class CommandWriterBatchWrapper extends CommandVisitor.Delegator implements BatchTransactionApplier,
+            TransactionApplier {
+
+        public CommandWriterBatchWrapper(InMemoryLogChannel buffer) {
+            super(new CommandWriter( buffer ));
+        }
+        @Override
+        public TransactionApplier startTx( TransactionToApply transaction ) throws IOException
+        {
+            return this;
+        }
+
+        @Override
+        public TransactionApplier startTx( TransactionToApply transaction, LockGroup lockGroup ) throws IOException
+        {
+            return this;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            // Nothing to do
+        }
+
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            return element.handle( this );
+        }
     }
 }

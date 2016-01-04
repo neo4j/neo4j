@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -91,29 +91,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     close(success = true)
   }
 
-  def close(success: Boolean) = translateException {
+  def close(success: Boolean) = decoratedCypherException({
     closer.close(success)
-  }
-
-  private def translateException[U](f: => U): U = decoratedCypherException({
-    try {
-      f
-    } catch {
-      case e: TransactionFailureException =>
-        e.getCause match {
-          case exception: org.neo4j.kernel.api.exceptions.TransactionFailureException =>
-            val status = exception.status()
-            if (status == Status.Transaction.ValidationFailed) {
-              exception.getMessage match {
-                case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
-                case _                           => throw e
-              }
-            }
-          case _ =>
-        }
-
-        throw e
-    }
   })
 
   private def failIfThrows[U](f: => U): U = decoratedCypherException({

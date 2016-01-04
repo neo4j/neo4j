@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,11 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
-
-import static org.neo4j.register.Register.DoubleLong;
+import org.neo4j.register.Register.DoubleLong;
 
 /**
  * Used for initial population of an index.
@@ -53,7 +51,7 @@ public interface IndexPopulator
      * @param propertyValue property value for the entry to index.
      */
     void add( long nodeId, Object propertyValue )
-            throws IndexEntryConflictException, IOException, IndexCapacityExceededException;
+            throws IndexEntryConflictException, IOException;
 
     /**
      * Verify constraints for all entries added so far.
@@ -95,7 +93,7 @@ public interface IndexPopulator
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
      * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
-    void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException;
+    void close( boolean populationCompletedSuccessfully ) throws IOException;
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by

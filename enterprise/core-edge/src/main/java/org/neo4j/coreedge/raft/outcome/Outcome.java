@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -40,6 +40,8 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
  */
 public class Outcome<MEMBER> implements Serializable
 {
+    private static final long serialVersionUID = 4288616769553581132L;
+
     /* Common */
     private Role newRole;
 

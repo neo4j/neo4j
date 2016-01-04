@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,11 +24,11 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.EntityAccessorWrapper3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -847,10 +847,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).
 
-
-
-
-    executionResultBuilder(statement, new EntityAccessorWrapper3_0(nodeManager), NormalMode, tracer(NormalMode), params, taskCloser)
+    executionResultBuilder(queryContext, NormalMode, tracer(NormalMode), params, taskCloser)
   }
 
   /*
@@ -903,8 +900,25 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     16L -> RelationshipData(hNode, iNode, 16L, 3),
     17L -> RelationshipData(iNode, hNode, 17L, 3))
 
+  val nodeManager = mock[NodeManager]
+  when(nodeManager.newNodeProxyById(anyLong())).thenAnswer(new Answer[Node]() {
+    override def answer(invocationOnMock: InvocationOnMock): NodeProxy = {
+      val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
+      allNodes(id)
+    }
+  })
+  when(nodeManager.newRelationshipProxyById(anyLong())).thenAnswer(new Answer[Relationship]() {
+    override def answer(invocationOnMock: InvocationOnMock): RelationshipProxy = {
+      val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
+      relMap(id).relationship
+    }
+  })
+
+  val queryContext = mock[QueryContext]
   val ro = mock[ReadOperations]
   val statement = mock[org.neo4j.kernel.api.Statement]
+  when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
+  when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
   when(statement.readOperations()).thenReturn(ro)
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {
     override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = primitiveIterator(allNodes.map(_.getId))
@@ -967,20 +981,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       }.head
       label.exists(l => nodesForLabel.contains(l) && nodesForLabel(l).exists(_.getId == nodeId)
       )
-    }
-  })
-
-  val nodeManager = mock[NodeManager]
-  when(nodeManager.newNodeProxyById(anyLong())).thenAnswer(new Answer[Node]() {
-    override def answer(invocationOnMock: InvocationOnMock): NodeProxy = {
-      val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
-      allNodes(id)
-    }
-  })
-  when(nodeManager.newRelationshipProxyById(anyLong())).thenAnswer(new Answer[Relationship]() {
-    override def answer(invocationOnMock: InvocationOnMock): RelationshipProxy = {
-      val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
-      relMap(id).relationship
     }
   })
 

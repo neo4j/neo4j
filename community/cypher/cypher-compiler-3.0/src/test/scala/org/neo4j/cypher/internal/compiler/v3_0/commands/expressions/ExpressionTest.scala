@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 import scala.collection.Map
 
@@ -129,7 +128,7 @@ class ExpressionTest extends CypherFunSuite {
       case (Some(x), None)    => k -> x
       case (None, Some(x))    => k -> x
       case (Some(x), Some(y)) => k -> x.leastUpperBound(y)
-      case (None, None)       => throw new ThisShouldNotHappenError("Andres", "only here to stop warnings")
+      case (None, None)       => throw new AssertionError("only here to stop warnings")
     }).toMap
 
     if (result != expected) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -41,13 +39,10 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitorTest
@@ -58,12 +53,6 @@ public class RecoveryVisitorTest
     private final LogEntryStart startEntry = new LogEntryStart( 1, 2, 123, 456, "tx".getBytes(),
             new LogPosition( 1, 198 ) );
     private final LogEntryCommit commitEntry = new OnePhaseCommit( 42, 0 );
-
-    @Before
-    public void before()
-    {
-        when( storageEngine.indexUpdatesValidatorForRecovery() ).thenReturn( mock( IndexUpdatesValidator.class, RETURNS_MOCKS ) );
-    }
 
     @Test
     public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws Exception

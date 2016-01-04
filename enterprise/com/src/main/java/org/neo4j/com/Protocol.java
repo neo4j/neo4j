@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -104,40 +103,45 @@ public abstract class Protocol
         {
         }
     };
-    public static final Deserializer<TransactionRepresentation> TRANSACTION_REPRESENTATION_DESERIALIZER =
-            new Deserializer<TransactionRepresentation>()
+    public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
+    {
+        private final LogEntryReader<ReadableLogChannel> reader;
+
+        public TransactionRepresentationDeserializer( LogEntryReader<ReadableLogChannel> reader )
+        {
+            this.reader = reader;
+        }
+
+        @Override
+        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
+                throws IOException
+        {
+            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+
+            int authorId = channel.getInt();
+            int masterId = channel.getInt();
+            long latestCommittedTxWhenStarted = channel.getLong();
+            long timeStarted = channel.getLong();
+            long timeCommitted = channel.getLong();
+
+            int headerLength = channel.getInt();
+            byte[] header = new byte[headerLength];
+
+            channel.get( header, headerLength );
+
+            LogEntryCommand entryRead;
+            List<Command> commands = new LinkedList<>();
+            while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
             {
-                @Override
-                public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
-                        IOException
-                {
-                    LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
-                    NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+                commands.add( entryRead.getXaCommand() );
+            }
 
-                    int authorId = channel.getInt();
-                    int masterId = channel.getInt();
-                    long latestCommittedTxWhenStarted = channel.getLong();
-                    long timeStarted = channel.getLong();
-                    long timeCommitted = channel.getLong();
-
-                    int headerLength = channel.getInt();
-                    byte[] header = new byte[headerLength];
-
-                    channel.get( header, headerLength );
-
-                    LogEntryCommand entryRead;
-                    List<Command> commands = new LinkedList<>();
-                    while ( (entryRead = (LogEntryCommand) reader.readLogEntry( channel )) != null )
-                    {
-                        commands.add( entryRead.getXaCommand() );
-                    }
-
-                    PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
-                    toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
-                            timeCommitted, -1 );
-                    return toReturn;
-                }
-            };
+            PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
+            toReturn.setHeader( header, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
+                    timeCommitted, -1 );
+            return toReturn;
+        }
+    }
     private final int chunkSize;
 
     /* ========================
@@ -227,9 +231,10 @@ public abstract class Protocol
     }
 
     public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
-                                                            ByteBuffer input, long timeout,
-                                                            Deserializer<PAYLOAD> payloadDeserializer,
-                                                            ResourceReleaser channelReleaser ) throws IOException
+            ByteBuffer input, long timeout,
+            Deserializer<PAYLOAD> payloadDeserializer,
+            ResourceReleaser channelReleaser,
+            final LogEntryReader<ReadableLogChannel> entryReader ) throws IOException
     {
         final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
                 internalProtocolVersion, applicationProtocolVersion );
@@ -254,11 +259,9 @@ public abstract class Protocol
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation,Exception> visitor ) throws Exception
             {
-                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
                 NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
 
-                try ( PhysicalTransactionCursor<ReadableLogChannel> cursor =
-                              new PhysicalTransactionCursor<>( channel, reader ) )
+                try ( PhysicalTransactionCursor cursor = new PhysicalTransactionCursor( channel, entryReader ) )
                 {
                     while ( cursor.next() && !visitor.visit( cursor.get() ) )
                     {

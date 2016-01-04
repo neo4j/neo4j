@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,13 +22,12 @@ package org.neo4j.index.lucene;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
@@ -73,7 +72,7 @@ public class LuceneLabelScanStoreBuilder
                     new NodeRangeDocumentLabelScanStorageStrategy(),
                     DirectoryFactory.PERSISTENT,
                     LabelScanStoreProvider.getStoreDirectory( storeDir ),
-                    fileSystem, IndexWriterFactories.tracking(),
+                    fileSystem, IndexWriterFactories.standard(),
                     fullStoreLabelUpdateStream( neoStoresSupplier ),
                     LuceneLabelScanStore.loggerMonitor( logProvider ) );
 
@@ -82,7 +81,7 @@ public class LuceneLabelScanStoreBuilder
                 labelScanStore.init();
                 labelScanStore.start();
             }
-            catch ( IOException | IndexCapacityExceededException e )
+            catch ( IOException e )
             {
                 // Throw better exception
                 throw new RuntimeException( e );

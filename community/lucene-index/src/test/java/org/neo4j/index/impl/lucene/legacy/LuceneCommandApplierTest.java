@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -78,7 +78,6 @@ public class LuceneCommandApplierTest
                     MapUtil.<String,Integer>genericMap( key, 0 ) );
             applier.visitIndexDefineCommand( definitions );
             applier.visitIndexAddNodeCommand( addNodeToIndex( definitions, indexName, 1L ) );
-            applier.apply();
         }
 
         // THEN both those updates should have been directed to the same index

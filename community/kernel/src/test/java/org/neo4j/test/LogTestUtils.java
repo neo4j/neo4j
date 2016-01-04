@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -140,7 +141,8 @@ public class LogTestUtils
             ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
                     LogVersionBridge.NO_MORE_CHANNELS );
 
-            return new LogEntryCursor( logChannel );
+            return new LogEntryCursor( new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ),
+                    logChannel );
         }
         catch ( Throwable t )
         {
@@ -198,7 +200,8 @@ public class LogTestUtils
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>(
+                    new RecordStorageCommandReaderFactory() );
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

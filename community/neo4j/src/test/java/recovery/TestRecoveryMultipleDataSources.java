@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,10 +27,10 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -83,18 +83,23 @@ public class TestRecoveryMultipleDataSources
         }
 
         File storeDir = new File( args[0] );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        Transaction tx = db.beginTx();
-        db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-        tx.success();
-        tx.close();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            tx.success();
+        }
 
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
 
-        tx = db.beginTx();
-        db.index().forNodes( "index" ).add( db.createNode(), storeDir.getAbsolutePath(), db.createNode() );
-        tx.success();
-        tx.close();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.index().forNodes( "index" ).add( db.createNode(), storeDir.getAbsolutePath(), db.createNode() );
+            tx.success();
+        }
+
         exit( 0 );
     }
 }

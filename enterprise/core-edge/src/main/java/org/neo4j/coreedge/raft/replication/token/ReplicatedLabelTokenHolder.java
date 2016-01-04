@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -51,8 +51,8 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
         return dependencies.resolveDependency( NeoStores.class ).getLabelTokenStore();
     }
 
-    protected Command.TokenCommand<LabelTokenRecord> createCommand()
+    protected Command.TokenCommand<LabelTokenRecord> createCommand( LabelTokenRecord before, LabelTokenRecord after )
     {
-        return new Command.LabelTokenCommand();
+        return new Command.LabelTokenCommand( before, after );
     }
 }

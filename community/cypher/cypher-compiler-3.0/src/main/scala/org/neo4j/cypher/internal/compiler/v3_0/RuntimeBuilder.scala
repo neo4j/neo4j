@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,15 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase._
+import org.neo4j.cypher.internal.compiler.v3_0.CompiledPlanBuilder.createTracer
+import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenerator, CodeStructure}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{CompiledPlan, GeneratedQuery, NewRuntimeSuccessRateMonitor, PipeInfo}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_0.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidArgumentException, SemanticTable}
+import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {
@@ -44,14 +51,19 @@ trait RuntimeBuilder {
   def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
             tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
             monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-            preparedQuery: PreparedQuery): Either[CompiledPlan, PipeInfo] = {
+            preparedQuery: PreparedQuery,
+            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+            config: CypherCompilerConfiguration): ExecutionPlan = {
     try {
-      Left(compiledProducer(logicalPlan, semanticTable, planContext, monitor, tracer, plannerName))
+      compiledProducer(logicalPlan, semanticTable, planContext, monitor, tracer,
+        plannerName, preparedQuery, createFingerprintReference)
     } catch {
       case e: CantCompileQueryException =>
         monitor.unableToHandlePlan(logicalPlan, e)
         fallback(preparedQuery)
-        Right(interpretedProducer(logicalPlan, pipeBuildContext, planContext, tracer))
+        val foo = interpretedProducer.apply(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
+
+        foo
     }
   }
 
@@ -76,13 +88,14 @@ case class WarningFallbackRuntimeBuilder(interpretedProducer: InterpretedPlanBui
 }
 
 case class InterpretedRuntimeBuilder(interpretedProducer: InterpretedPlanBuilder) extends RuntimeBuilder {
-
   override def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext, planContext: PlanContext,
-                     tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
-                     monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
-                     preparedQuery: PreparedQuery): Either[CompiledPlan, PipeInfo] = {
-    Right(interpretedProducer.apply(logicalPlan, pipeBuildContext, planContext, tracer))
-  }
+            tracer: CompilationPhaseTracer, semanticTable: SemanticTable,
+            monitor: NewRuntimeSuccessRateMonitor, plannerName: PlannerName,
+            preparedQuery: PreparedQuery,
+            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+            config: CypherCompilerConfiguration): ExecutionPlan =
+    interpretedProducer(logicalPlan, pipeBuildContext, planContext, tracer, preparedQuery, createFingerprintReference, config)
+
 
   override def compiledProducer = throw new InternalException("This should never be called")
 
@@ -100,9 +113,11 @@ case class ErrorReportingRuntimeBuilder(compiledProducer: CompiledPlanBuilder) e
 case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors) {
 
   def apply(logicalPlan: LogicalPlan, pipeBuildContext: PipeExecutionBuilderContext,
-            planContext: PlanContext, tracer: CompilationPhaseTracer) =
+            planContext: PlanContext, tracer: CompilationPhaseTracer, preparedQuery: PreparedQuery,
+            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference,
+            config: CypherCompilerConfiguration) =
     closing(tracer.beginPhase(PIPE_BUILDING)) {
-      new PipeExecutionPlanBuilder(clock, monitors).build(logicalPlan)(pipeBuildContext, planContext)
+      interpretedToExecutionPlan(new PipeExecutionPlanBuilder(clock, monitors).build(logicalPlan)(pipeBuildContext, planContext), planContext, preparedQuery, createFingerprintReference, config)
     }
 }
 
@@ -112,10 +127,68 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
 
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,
-            plannerName: PlannerName) = {
-    monitor.newPlanSeen(logicalPlan)
+            plannerName: PlannerName,
+            preparedQuery: PreparedQuery,
+            createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference): ExecutionPlan = {
+            monitor.newPlanSeen(logicalPlan)
     closing(tracer.beginPhase(CODE_GENERATION)) {
-      codeGen.generate(logicalPlan, planContext, clock, semanticTable, plannerName)
+      val compiled = codeGen.generate(logicalPlan, planContext, clock, semanticTable, plannerName)
+
+      new ExecutionPlan {
+        val fingerprint = createFingerprintReference(compiled.fingerprint)
+
+        def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+
+        def run(queryContext: QueryContext,
+                executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+          val taskCloser = new TaskCloser
+          taskCloser.addTask(queryContext.close)
+          try {
+            if (executionMode == ExplainMode) {
+              //close all statements
+              taskCloser.close(success = true)
+              new ExplainExecutionResult(compiled.columns.toList,
+                compiled.planDescription, QueryType.READ_ONLY, preparedQuery.notificationLogger.notifications)
+            } else
+              compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode), params, taskCloser)
+          } catch {
+            case (t: Throwable) =>
+              taskCloser.close(success = false)
+              throw t
+          }
+        }
+
+        def plannerUsed: PlannerName = compiled.plannerUsed
+
+        def isPeriodicCommit: Boolean = compiled.periodicCommit.isDefined
+
+        def runtimeUsed = CompiledRuntimeName
+
+        override def notifications: Seq[InternalNotification] = Seq.empty
+      }
     }
+  }
+}
+
+object CompiledPlanBuilder {
+
+
+  def createTracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
+    case ProfileMode =>
+      val tracer = new ProfilingTracer()
+      (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
+
+        override def get(): InternalPlanDescription = description.map {
+          plan: InternalPlanDescription =>
+            val data = tracer.get(plan.id)
+            plan.
+              addArgument(Arguments.DbHits(data.dbHits())).
+              addArgument(Arguments.Rows(data.rows())).
+              addArgument(Arguments.Time(data.time()))
+        }
+      }, Some(tracer))
+    case _ => (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
+      override def get(): InternalPlanDescription = description
+    }, None)
   }
 }

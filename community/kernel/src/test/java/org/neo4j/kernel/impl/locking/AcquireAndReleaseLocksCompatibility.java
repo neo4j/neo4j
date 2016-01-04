@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -43,13 +43,13 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void exclusiveShouldWaitForExclusive() throws Exception
     {
         // When
-        clientA.acquireExclusive( NODE, 1l );
+        clientA.acquireExclusive( NODE, 1L );
 
         // Then
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1l ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // And when
-        clientA.releaseExclusive( NODE, 1l );
+        clientA.releaseExclusive( NODE, 1L );
 
         // Then this should not block
         assertNotWaiting( clientB, clientBLock );
@@ -59,17 +59,17 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void exclusiveShouldWaitForShared() throws Exception
     {
         // When
-        clientA.acquireShared( NODE, 1l );
+        clientA.acquireShared( NODE, 1L );
 
         // Then other shared locks are allowed
-        clientC.acquireShared( NODE, 1l );
+        clientC.acquireShared( NODE, 1L );
 
         // But exclusive locks should wait
-        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1l ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // And when
-        clientA.releaseShared( NODE, 1l );
-        clientC.releaseShared( NODE, 1l );
+        clientA.releaseShared( NODE, 1L );
+        clientC.releaseShared( NODE, 1L );
 
         // Then this should not block
         assertNotWaiting( clientB, clientBLock );
@@ -79,13 +79,13 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void sharedShouldWaitForExclusive() throws Exception
     {
         // When
-        clientA.acquireExclusive( NODE, 1l );
+        clientA.acquireExclusive( NODE, 1L );
 
         // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1l ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // And when
-        clientA.releaseExclusive( NODE, 1l );
+        clientA.releaseExclusive( NODE, 1L );
 
         // Then this should not block
         assertNotWaiting( clientB, clientBLock );
@@ -95,11 +95,11 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void shouldReleaseAllLocks() throws Exception
     {
         // When
-        clientA.acquireExclusive( NODE, 1l );
+        clientA.acquireExclusive( NODE, 1L );
         clientA.acquireShared( NODE, 2l );
 
         // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1l ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // And when
         clientA.releaseAll();
@@ -112,51 +112,51 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     public void shouldTrySharedLock() throws Exception
     {
         // Given I've grabbed a share lock
-        assertTrue( clientA.trySharedLock( NODE, 1l ) );
+        assertTrue( clientA.trySharedLock( NODE, 1L ) );
 
         // Then other clients can't have exclusive locks
-        assertFalse( clientB.tryExclusiveLock( NODE, 1l ) );
+        assertFalse( clientB.tryExclusiveLock( NODE, 1L ) );
 
         // But they are allowed share locks
-        assertTrue( clientB.trySharedLock( NODE, 1l ) );
+        assertTrue( clientB.trySharedLock( NODE, 1L ) );
     }
 
     @Test
     public void shouldTryExclusiveLock() throws Exception
     {
         // Given I've grabbed an exclusive lock
-        assertTrue( clientA.tryExclusiveLock( NODE, 1l ) );
+        assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
 
         // Then other clients can't have exclusive locks
-        assertFalse( clientB.tryExclusiveLock( NODE, 1l ) );
+        assertFalse( clientB.tryExclusiveLock( NODE, 1L ) );
 
         // Nor can they have share locks
-        assertFalse( clientB.trySharedLock( NODE, 1l ) );
+        assertFalse( clientB.trySharedLock( NODE, 1L ) );
     }
 
     @Test
     public void shouldTryUpgradeSharedToExclusive() throws Exception
     {
         // Given I've grabbed an exclusive lock
-        assertTrue( clientA.trySharedLock( NODE, 1l ) );
+        assertTrue( clientA.trySharedLock( NODE, 1L ) );
 
         // Then I can upgrade it to exclusive
-        assertTrue( clientA.tryExclusiveLock( NODE, 1l ) );
+        assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
 
         // And other clients are denied it
-        assertFalse( clientB.trySharedLock( NODE, 1l ) );
+        assertFalse( clientB.trySharedLock( NODE, 1L ) );
     }
 
     @Test
     public void shouldUpgradeExclusiveOnTry() throws Exception
     {
         // Given I've grabbed a shared lock
-        clientA.acquireShared( NODE, 1l );
+        clientA.acquireShared( NODE, 1L );
 
         // When
-        assertTrue( clientA.tryExclusiveLock( NODE, 1l ) );
+        assertTrue( clientA.tryExclusiveLock( NODE, 1L ) );
 
         // Then I should be able to release it
-        clientA.releaseExclusive( NODE, 1l );
+        clientA.releaseExclusive( NODE, 1L );
     }
 }

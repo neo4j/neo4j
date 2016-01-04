@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -375,15 +375,16 @@ public class Config implements DiagnosticsProvider, ConfigView
                 }
             }
 
+            Function<Map<String,String>,ConfigView> mapper = m -> new ConfigView()
+            {
+                @Override
+                public <T> T get( Setting<T> setting )
+                {
+                    return setting.apply( m::get );
+                }
+            };
             return groups.values().stream()
-                    .map( m -> new ConfigView()
-                    {
-                        @Override
-                        public <T> T get( Setting<T> setting )
-                        {
-                            return setting.apply( m::get );
-                        }
-                    })
+                    .map( mapper )
                     .collect( toList() );
         };
     }

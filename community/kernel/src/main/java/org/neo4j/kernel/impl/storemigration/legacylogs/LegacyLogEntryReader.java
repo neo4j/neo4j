@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,6 +27,7 @@ import java.util.function.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -56,7 +57,8 @@ class LegacyLogEntryReader
 
     LegacyLogEntryReader( FileSystemAbstraction fs )
     {
-        this( fs, from -> new VersionAwareLogEntryReader<>( from.logFormatVersion ) );
+        this( fs, from -> new VersionAwareLogEntryReader<>( from.logFormatVersion,
+                new RecordStorageCommandReaderFactory() ) );
     }
 
     public Pair<LogHeader, IOCursor<LogEntry>> openReadableChannel( File logFile ) throws IOException

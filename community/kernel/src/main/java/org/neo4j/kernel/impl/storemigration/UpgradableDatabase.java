@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
@@ -33,6 +34,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
@@ -137,8 +140,10 @@ public class UpgradableDatabase
             }
 
             PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
+            LogEntryReader<ReadableLogChannel> logEntryReader =
+                    new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
             LatestCheckPointFinder latestCheckPointFinder =
-                    new LatestCheckPointFinder( logFiles, fs, new VersionAwareLogEntryReader<>() );
+                    new LatestCheckPointFinder( logFiles, fs, logEntryReader );
             try
             {
                 LatestCheckPoint latestCheckPoint = latestCheckPointFinder.find( logFiles.getHighestLogVersion() );

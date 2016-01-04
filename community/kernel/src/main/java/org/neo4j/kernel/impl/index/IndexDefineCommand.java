@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.Primitive.intObjectMap;
@@ -173,7 +173,7 @@ public class IndexDefineCommand extends Command
     }
 
     @Override
-    public boolean handle( CommandHandler visitor ) throws IOException
+    public boolean handle( CommandVisitor visitor ) throws IOException
     {
         return visitor.visitIndexDefineCommand( this );
     }

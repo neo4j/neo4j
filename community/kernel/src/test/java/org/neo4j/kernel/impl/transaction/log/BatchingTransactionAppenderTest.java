@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,6 +41,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -111,7 +112,8 @@ public class BatchingTransactionAppenderTest
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -181,7 +183,8 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() );
         try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -453,11 +456,9 @@ public class BatchingTransactionAppenderTest
         }
         else
         {
-            NodeCommand nodeCommand = new NodeCommand();
             NodeRecord record = new NodeRecord( 1 + i );
             record.setInUse( true );
-            nodeCommand.init( new NodeRecord( record.getId() ), record );
-            commands.add( nodeCommand );
+            commands.add( new NodeCommand( new NodeRecord( record.getId() ), record ) );
         }
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
         transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, -1 );
@@ -467,14 +468,10 @@ public class BatchingTransactionAppenderTest
     private Collection<Command> singleCreateNodeCommand( long id )
     {
         Collection<Command> commands = new ArrayList<>();
-        Command.NodeCommand command = new Command.NodeCommand();
-
         NodeRecord before = new NodeRecord( id );
         NodeRecord after = new NodeRecord( id );
         after.setInUse( true );
-        command.init( before, after );
-
-        commands.add( command );
+        commands.add( new NodeCommand( before, after ) );
         return commands;
     }
 

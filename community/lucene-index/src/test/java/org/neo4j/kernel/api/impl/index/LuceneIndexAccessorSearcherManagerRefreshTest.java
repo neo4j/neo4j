@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
     private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
-    private final ReservingLuceneIndexWriter writer = mock( ReservingLuceneIndexWriter.class );
+    private final LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
     private final Directory directory = mock( Directory.class );
     private final File dir = mock( File.class );
 

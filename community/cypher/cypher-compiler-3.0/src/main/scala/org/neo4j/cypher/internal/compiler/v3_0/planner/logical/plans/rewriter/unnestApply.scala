@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 case object unnestApply extends Rewriter {
 
   /*
+  Based on the paper
+  Parameterized Queries and Nesting Equivalences by C. A. Galindo-Legaria
+
   Glossary:
     Ax : Apply
     L,R: Arbitrary operator, named Left and Right
@@ -53,6 +56,13 @@ case object unnestApply extends Rewriter {
     // L Ax (σ R) => σ(L Ax R)
     case o@Apply(lhs, sel@Selection(predicates, rhs)) =>
       Selection(predicates, Apply(lhs, rhs)(o.solved))(o.solved)
+
+    // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
+    case original@Apply(lhs, Apply(sel@Selection(predicates, lhs2), rhs))
+      if predicates.forall(lhs.satisfiesExpressionDependencies)=>
+      val selectionLHS = Selection(predicates, lhs)(original.solved)
+      val apply2 = Apply(lhs2, rhs)(original.solved)
+      Apply(selectionLHS, apply2)(original.solved)
 
     // L Ax (π R) => π(L Ax R)
     case origApply@Apply(lhs, p@Projection(rhs, _)) =>

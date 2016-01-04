@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.PrimitiveIntStack;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -370,8 +369,7 @@ public class ParallelSort
                     return i;
                 }
             }
-            throw new ThisShouldNotHappenError( "Mattias and Raghu",
-                    "The middle value somehow dissappeared in front of our eyes" );
+            throw new IllegalStateException( "The middle value somehow disappeared in front of our eyes" );
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.cluster.InstanceId;
 
 /**
  * This event represents a change in the cluster members internal state. The possible states
- * are enumerated in ClusterMemberState.
+ * are enumerated in {@link HighAvailabilityMemberState}.
  */
 public class HighAvailabilityMemberChangeEvent
 {

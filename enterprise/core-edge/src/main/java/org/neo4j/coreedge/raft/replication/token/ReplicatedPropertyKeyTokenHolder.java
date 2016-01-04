@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -51,8 +51,9 @@ public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Toke
         return dependencies.resolveDependency( NeoStores.class ).getPropertyKeyTokenStore();
     }
 
-    protected Command.TokenCommand<PropertyKeyTokenRecord> createCommand()
+    protected Command.TokenCommand<PropertyKeyTokenRecord> createCommand( PropertyKeyTokenRecord before,
+            PropertyKeyTokenRecord after )
     {
-        return new Command.PropertyKeyTokenCommand();
+        return new Command.PropertyKeyTokenCommand( before, after );
     }
 }

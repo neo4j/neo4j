@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
@@ -112,7 +111,7 @@ public interface StorageEngine
      */
     void apply( TransactionToApply batch, TransactionApplicationMode mode ) throws Exception;
 
-//     Stream<Command> deserialise( SequenceOfBytes source );
+    CommandReaderFactory commandReaderFactory();
 
     // ====================================================================
     // All these methods below are temporary while in the process of
@@ -120,9 +119,6 @@ public interface StorageEngine
     // ====================================================================
     @Deprecated
     TransactionIdStore transactionIdStore();
-
-    @Deprecated
-    IndexUpdatesValidator indexUpdatesValidatorForRecovery();
 
     @Deprecated
     LogVersionRepository logVersionRepository();
@@ -138,9 +134,6 @@ public interface StorageEngine
 
     @Deprecated
     IndexingService indexingService();
-
-    @Deprecated
-    IndexUpdatesValidator indexUpdatesValidator();
 
     @Deprecated
     LabelScanStore labelScanStore();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -180,7 +180,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     relate(a, b, "HATES")
     relate(a, b, "LOVES")
 
-    intercept[NodeStillHasRelationshipsException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
+    intercept[ConstraintValidationException](executeWithRulePlanner("match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r"))
   }
 
   test("delete and return") {

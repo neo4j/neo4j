@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,32 +19,21 @@
  */
 package org.neo4j.server;
 
-import org.junit.Before;
 import org.junit.Test;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class NeoServerDocIT extends AbstractRestFunctionalTestBase
 {
-    private FunctionalTestHelper functionalTestHelper;
-
-    @Before
-    public void setUp()
-    {
-        functionalTestHelper = new FunctionalTestHelper( server() );
-    }
-
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception
     {
@@ -57,18 +46,8 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
         assertFalse( server().baseUri()
                 .toString()
                 .contains( "browser" ) );
-        JaxRsResponse response = RestRequest.req().get( server().baseUri().toString(), MediaType.TEXT_HTML_TYPE );
-        assertThat( response.getStatus(), is( 200 ) );
-        assertThat( response.getEntity(), containsString( "Neo4j" ) );
+
+        HTTP.Response res = HTTP.withHeaders( HttpHeaders.ACCEPT, MediaType.TEXT_HTML ).GET( server().baseUri().toString() );
+        assertThat( res.header( "Location" ), containsString( "browser") );
     }
-
-    @Test
-    public void serverShouldProvideAWelcomePage() throws Exception
-    {
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.browserUri() );
-
-        assertThat( response.getStatus(), is( 200 ) );
-        assertThat( response.getHeaders().getFirst( "Content-Type" ), containsString( "html" ) );
-    }
-
 }

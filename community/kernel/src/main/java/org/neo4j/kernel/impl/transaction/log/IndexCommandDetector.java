@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 
-final class IndexCommandDetector extends CommandHandler.Delegator
+final class IndexCommandDetector extends CommandVisitor.Delegator
 {
     private boolean hasWrittenAnyLegacyIndexCommand;
 
-    public IndexCommandDetector( CommandHandler delegate )
+    public IndexCommandDetector( CommandVisitor delegate )
     {
         super( delegate );
     }

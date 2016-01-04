@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.symbols.{Typed, SymbolTable}
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.symbols.{SymbolTable, Typed}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class Variable(entityName: String) extends Expression with Typed {
 
@@ -38,7 +37,7 @@ case class Variable(entityName: String) extends Expression with Typed {
   def arguments = Seq()
 
   def calculateType(symbols: SymbolTable) =
-    throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")
+    throw new UnsupportedOperationException("This class should override evaluateType, and this method should never be run")
 
   override def evaluateType(expectedType: CypherType, symbols: SymbolTable) = symbols.evaluateType(entityName, expectedType)
 

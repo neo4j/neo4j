@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -43,14 +43,17 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
-import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ApplyRecoveredTransactionsTest
 {
@@ -62,13 +65,14 @@ public class ApplyRecoveredTransactionsTest
         long relationshipId = neoStores.getRelationshipStore().nextId();
         int type = 1;
         applyExternalTransaction( 1,
-                nodeCommand( node( nodeId ), inUse( created( node( nodeId ) ) ) ),
-                relationshipCommand( inUse( created( with( relationship( relationshipId ), nodeId, nodeId, type ) ) ) ) );
+                new NodeCommand( new NodeRecord( nodeId ), inUse( created( new NodeRecord( nodeId ) ) ) ),
+                new RelationshipCommand( null,
+                        inUse( created( with( new RelationshipRecord( relationshipId ), nodeId, nodeId, type ) ) ) ) );
 
         // and when, later on, recovering a transaction deleting some of those
         applyExternalTransaction( 2,
-                nodeCommand( inUse( created( node( nodeId ) ) ), node( nodeId ) ),
-                relationshipCommand( relationship( relationshipId ) ) );
+                new NodeCommand( inUse( created( new NodeRecord( nodeId ) ) ), new NodeRecord( nodeId ) ),
+                new RelationshipCommand( null, new RelationshipRecord( relationshipId ) ) );
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
         assertEquals( nodeId+1, neoStores.getNodeStore().getHighId() );
@@ -83,24 +87,18 @@ public class ApplyRecoveredTransactionsTest
         return relationship;
     }
 
-    private Command relationshipCommand( RelationshipRecord relationship )
-    {
-        RelationshipCommand command = new RelationshipCommand();
-        command.init( relationship );
-        return command;
-    }
-
-    private RelationshipRecord relationship( long relationshipId )
-    {
-        return new RelationshipRecord( relationshipId );
-    }
-
     private void applyExternalTransaction( long transactionId, Command...commands ) throws Exception
     {
-        NeoStoreTransactionApplier applier = new NeoStoreTransactionApplier( neoStores,
-                mock( CacheAccessBackDoor.class ), mock( LockService.class ) );
+        LockService lockService = mock( LockService.class );
+        when( lockService.acquireNodeLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
+        when( lockService.acquireRelationshipLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
+        NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
+                mock( CacheAccessBackDoor.class ), lockService );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
-        CommandHandlerContract.apply( applier, new TransactionToApply( tx ) );
+        CommandHandlerContract.apply( applier, txApplier -> {
+            tx.accept( txApplier );
+            return false;
+        }, new TransactionToApply( tx, transactionId ) );
     }
 
     @Rule
@@ -125,13 +123,6 @@ public class ApplyRecoveredTransactionsTest
         neoStores.close();
     }
 
-    private Command nodeCommand( NodeRecord before, NodeRecord after )
-    {
-        NodeCommand command = new NodeCommand();
-        command.init( before, after );
-        return command;
-    }
-
     private <RECORD extends Abstract64BitRecord> RECORD inUse( RECORD record )
     {
         record.setInUse( true );
@@ -144,8 +135,4 @@ public class ApplyRecoveredTransactionsTest
         return record;
     }
 
-    private NodeRecord node( long id )
-    {
-        return new NodeRecord( id );
-    }
 }

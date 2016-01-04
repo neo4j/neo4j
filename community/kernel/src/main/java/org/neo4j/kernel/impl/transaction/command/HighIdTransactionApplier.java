@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -45,14 +47,13 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCo
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
 
-public class HighIdTransactionApplier extends CommandHandler.Delegator
+public class HighIdTransactionApplier extends TransactionApplier.Adapter
 {
     private final NeoStores neoStores;
     private final Map<CommonAbstractStore,HighId> highIds = new HashMap<>();
 
-    public HighIdTransactionApplier( CommandHandler delegate, NeoStores neoStores )
+    public HighIdTransactionApplier( NeoStores neoStores )
     {
-        super( delegate );
         this.neoStores = neoStores;
     }
 
@@ -62,14 +63,14 @@ public class HighIdTransactionApplier extends CommandHandler.Delegator
         NodeStore nodeStore = neoStores.getNodeStore();
         track( nodeStore, command );
         track( nodeStore.getDynamicLabelStore(), command.getAfter().getDynamicLabelRecords() );
-        return super.visitNodeCommand( command );
+        return false;
     }
 
     @Override
     public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
         track( neoStores.getRelationshipStore(), command );
-        return super.visitRelationshipCommand( command );
+        return false;
     }
 
     @Override
@@ -92,35 +93,35 @@ public class HighIdTransactionApplier extends CommandHandler.Delegator
                 break;
             }
         }
-        return super.visitPropertyCommand( command );
+        return false;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
     {
         track( neoStores.getRelationshipGroupStore(), command );
-        return super.visitRelationshipGroupCommand( command );
+        return false;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getRelationshipTypeTokenStore(), command );
-        return super.visitRelationshipTypeTokenCommand( command );
+        return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getLabelTokenStore(), command );
-        return super.visitLabelTokenCommand( command );
+        return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getPropertyKeyTokenStore(), command );
-        return super.visitPropertyKeyTokenCommand( command );
+        return false;
     }
 
     @Override
@@ -131,13 +132,12 @@ public class HighIdTransactionApplier extends CommandHandler.Delegator
         {
             track( schemaStore, record.getId() );
         }
-        return super.visitSchemaRuleCommand( command );
+        return false;
     }
 
     @Override
-    public void end() throws Exception
+    public void close() throws Exception
     {
-        super.end();
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
         for ( Map.Entry<CommonAbstractStore,HighId> highId : highIds.entrySet() )
@@ -176,7 +176,7 @@ public class HighIdTransactionApplier extends CommandHandler.Delegator
     void trackToken( TokenStore<RECORD, TOKEN> tokenStore, TokenCommand<RECORD> tokenCommand )
     {
         track( tokenStore, tokenCommand );
-        track( tokenStore.getNameStore(), tokenCommand.getRecord().getNameRecords() );
+        track( tokenStore.getNameStore(), tokenCommand.getAfter().getNameRecords() );
     }
 
     private static class HighId

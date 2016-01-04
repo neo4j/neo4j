@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,13 +39,21 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         this.valueMarker = valueMarker;
         this.dataSize = (long)this.capacity*bytesPerEntry;
         this.address = UnsafeUtil.allocateMemory( dataSize );
-        clear();
+        clearMemory();
     }
 
     @Override
     public void clear()
     {
+        if ( !isEmpty() )
+        {
+            clearMemory();
+        }
         super.clear();
+    }
+
+    private void clearMemory()
+    {
         UnsafeUtil.setMemory( address, dataSize, (byte)-1 );
     }
 

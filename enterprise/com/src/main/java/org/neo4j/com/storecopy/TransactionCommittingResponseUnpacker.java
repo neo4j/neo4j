@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,12 +24,13 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
-import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storageengine.StorageEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
@@ -56,6 +57,11 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
          * Responsible for fulfilling transaction obligations received from transaction obligation responses.
          */
         TransactionObligationFulfiller obligationFulfiller();
+
+        /**
+         * Log provider
+         */
+        LogService logService();
     }
 
     /**
@@ -79,8 +85,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
             // commit transactions in this db.
             return new TransactionRepresentationCommitProcess(
                     resolver.resolveDependency( TransactionAppender.class ),
-                    resolver.resolveDependency( StorageEngine.class ),
-                    resolver.resolveDependency( IndexUpdatesValidator.class ) );
+                    resolver.resolveDependency( StorageEngine.class ) );
         }
 
         @Override
@@ -97,6 +102,12 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
                 };
             }
         }
+
+        @Override
+        public LogService logService()
+        {
+            return resolver.resolveDependency( LogService.class );
+        }
     }
 
     public static final int DEFAULT_BATCH_SIZE = 100;
@@ -111,6 +122,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     // Assigned in start()
     private TransactionCommitProcess commitProcess;
     private TransactionObligationFulfiller obligationFulfiller;
+    private Log log;
 
     // Assigned in stop()
     private volatile boolean stopped;
@@ -137,7 +149,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         BatchingResponseHandler responseHandler = new BatchingResponseHandler( maxBatchSize,
                 (batch) -> {
                     commitProcess.commit( batch, CommitEvent.NULL, EXTERNAL );
-                }, obligationFulfiller, txHandler );
+                }, obligationFulfiller, txHandler, log );
         try
         {
             response.accept( responseHandler );
@@ -153,6 +165,7 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     {
         this.commitProcess = dependencies.commitProcess();
         this.obligationFulfiller = dependencies.obligationFulfiller();
+        this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
         this.stopped = false;
     }
 

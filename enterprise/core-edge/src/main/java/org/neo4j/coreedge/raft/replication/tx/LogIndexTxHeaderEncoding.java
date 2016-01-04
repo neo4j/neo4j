@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -38,6 +38,11 @@ public class LogIndexTxHeaderEncoding
 
     public static long decodeLogIndexFromTxHeader( byte[] bytes )
     {
+        if ( bytes.length < Long.BYTES )
+        {
+            throw new IllegalArgumentException( "Unable to decode RAFT log index from transaction header" );
+        }
+
         long logIndex = 0;
         for ( int i = 0; i < Long.BYTES; i++ )
         {

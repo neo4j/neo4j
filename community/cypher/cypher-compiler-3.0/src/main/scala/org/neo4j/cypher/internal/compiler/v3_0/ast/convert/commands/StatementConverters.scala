@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands
 
-
+import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{And, Predicate, True}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{expressions => commandexpressions, values => commandvalues, _}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.SetAction
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, ast}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SetClause
 import org.neo4j.cypher.internal.frontend.v3_0.notification.JoinHintUnsupportedNotification
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, ast}
 
 object StatementConverters {
 
@@ -82,7 +80,7 @@ object StatementConverters {
           idForProperty = s.property.map.asInstanceOf[ast.Variable].name,
           propertyKey = s.property.propertyKey.name)
       case _ =>
-        throw new ThisShouldNotHappenError("cleishm", s"Unknown statement during transformation ($statement)")
+        throw new IllegalArgumentException(s"Unknown statement during transformation ($statement)")
     }
   }
 
@@ -117,7 +115,7 @@ object StatementConverters {
             case c: ast.Foreach      => c.addToQueryBuilder(b)
             case _: ast.With         => b
             case _: ast.Return       => b
-            case _                   => throw new ThisShouldNotHappenError("cleishm", "Unknown clause while grouping")
+            case _                   => throw new IllegalArgumentException("Unknown clause while grouping")
           })
 
           val result = Some(group.takeRight(2) match {
@@ -339,7 +337,7 @@ object StatementConverters {
       case c: ast.Foreach =>
         Seq(mutation.ForeachAction(toCommandExpression(c.expression), c.variable.name, c.updates.flatMap {
           case update: ast.UpdateClause => update.updateActions()
-          case _                        => throw new ThisShouldNotHappenError("cleishm", "a non-update clause in FOREACH didn't fail semantic check")
+          case _                        => throw new IllegalStateException("a non-update clause in FOREACH didn't fail semantic check")
         }))
     }
   }

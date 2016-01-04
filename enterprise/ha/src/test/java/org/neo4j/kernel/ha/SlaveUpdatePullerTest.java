@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,15 +19,21 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.hamcrest.Matcher;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.mockito.stubbing.OngoingStubbing;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -36,16 +42,24 @@ import org.neo4j.kernel.ha.UpdatePuller.Condition;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.impl.util.CountingJobScheduler;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.CleanupRule;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -57,6 +71,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SlaveUpdatePullerTest
 {
+    private final AtomicInteger scheduledJobs = new AtomicInteger();
     private final InstanceId instanceId = new InstanceId( 1 );
     private final Config config = mock( Config.class );
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
@@ -66,21 +81,45 @@ public class SlaveUpdatePullerTest
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
     private final SlaveUpdatePuller.Monitor monitor = mock( SlaveUpdatePuller.Monitor.class );
-    private final SlaveUpdatePuller updatePuller = new SlaveUpdatePuller( requestContextFactory,
-            master, lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler, monitor );
+    private final JobScheduler jobScheduler = new CountingJobScheduler( scheduledJobs, new Neo4jJobScheduler() );
+    private final SlaveUpdatePuller updatePuller = new SlaveUpdatePuller( requestContextFactory, master,
+            lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler, jobScheduler, monitor );
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
     @Before
-    public void setup() throws Throwable
+    public void setUp() throws Throwable
     {
         when( requestContextFactory.newRequestContext() ).thenReturn( new RequestContext( 42, 42, 42, 42, 42 ) );
-        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000l );
+        when( config.get( HaSettings.pull_interval ) ).thenReturn( 1000L );
         when( config.get( ClusterSettings.server_id ) ).thenReturn( instanceId );
         when( availabilityGuard.isAvailable( anyLong() ) ).thenReturn( true );
+        jobScheduler.init();
+        jobScheduler.start();
         updatePuller.init();
         updatePuller.start();
+    }
+
+    @After
+    public void tearDown() throws Throwable
+    {
+        updatePuller.stop();
+        updatePuller.shutdown();
+        jobScheduler.stop();
+        jobScheduler.shutdown();
+    }
+
+    @Test
+    public void initialisationMustBeIdempotent() throws Throwable
+    {
+        updatePuller.init();
+        updatePuller.start();
+        updatePuller.init();
+        updatePuller.start();
+        updatePuller.init();
+        updatePuller.start();
+        assertThat( scheduledJobs.get(), is( 1 ) );
     }
 
     @Test
@@ -218,5 +257,71 @@ public class SlaveUpdatePullerTest
 
         // WHEN that has passed THEN we should still be making pull attempts.
         updatePuller.pullUpdates();
+    }
+
+    @Test
+    public void shouldCapExcessiveComExceptionLogging() throws Exception
+    {
+        OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
+        updatePullStubbing.thenThrow( new ComException() );
+
+        for ( int i = 0; i < SlaveUpdatePuller.LOG_CAP + 20; i++ )
+        {
+            updatePuller.pullUpdates();
+        }
+
+        logProvider.assertContainsThrowablesMatching( 0, repeat( new ComException(), SlaveUpdatePuller.LOG_CAP ) );
+
+        // And we should be able to recover afterwards
+        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new ComException() );
+
+        updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
+        updatePuller.pullUpdates(); // And then we log another exception
+
+        logProvider.assertContainsThrowablesMatching( 0, repeat( new ComException(), SlaveUpdatePuller.LOG_CAP + 1 ) );
+    }
+
+    private Throwable[] repeat( Throwable throwable, int count )
+    {
+        Throwable[] throwables = new Throwable[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            throwables[i] = throwable;
+        }
+        return throwables;
+    }
+
+    @Test
+    public void shouldCapExcessiveInvalidEpochExceptionLogging() throws Exception
+    {
+        OngoingStubbing<Response<Void>> updatePullStubbing = when( master.pullUpdates( any( RequestContext.class ) ) );
+        updatePullStubbing.thenThrow( new InvalidEpochException( 2, 1 ) );
+
+        for ( int i = 0; i < SlaveUpdatePuller.LOG_CAP + 20; i++ )
+        {
+            updatePuller.pullUpdates();
+        }
+
+        logProvider.assertContainsThrowablesMatching( 0,
+                repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP ) );
+
+        // And we should be able to recover afterwards
+        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new InvalidEpochException( 2, 1 ) );
+
+        updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
+        updatePuller.pullUpdates(); // And then we log another exception
+
+        logProvider.assertContainsThrowablesMatching( 0,
+                repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP + 1 ) );
+    }
+
+    private AssertableLogProvider.LogMatcher[] repeat( AssertableLogProvider.LogMatcher item, int logCap )
+    {
+        AssertableLogProvider.LogMatcher[] items = new AssertableLogProvider.LogMatcher[logCap];
+        for ( int i = 0; i < logCap; i++ )
+        {
+            items[i] = item;
+        }
+        return items;
     }
 }

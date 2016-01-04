@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,95 +20,61 @@
 package org.neo4j.test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 
-public class DatabaseFunctions
+public final class DatabaseFunctions
 {
-    public static AlgebraicFunction<GraphDatabaseService, Node> createNode()
-    {
-        return new AlgebraicFunction<GraphDatabaseService, Node>()
-        {
-            @Override
-            public Node apply( GraphDatabaseService graphDb )
-            {
-                return graphDb.createNode();
-            }
-        };
-    }
-
-    public static AlgebraicFunction<Node, Node> addLabel( final Label label )
-    {
-        return new AlgebraicFunction<Node, Node>()
-        {
-            @Override
-            public Node apply( Node node )
-            {
-                node.addLabel( label );
-                return node;
-            }
-        };
-    }
-
-    public static AlgebraicFunction<Node, Node> setProperty( final String propertyKey, final Object value )
-    {
-        return new AlgebraicFunction<Node, Node>()
-        {
-            @Override
-            public Node apply( Node node )
-            {
-                node.setProperty( propertyKey, value );
-                return node;
-            }
-        };
-    }
-
-    public static AlgebraicFunction<GraphDatabaseService, Void> index(
-            final Label label, final String propertyKey )
-    {
-        return new AlgebraicFunction<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
-            {
-                graphDb.schema().indexFor( label ).on( propertyKey ).create();
-                return null;
-            }
-        };
-    }
-
-    public static AlgebraicFunction<GraphDatabaseService, Void> uniquenessConstraint(
-            final Label label, final String propertyKey )
-    {
-        return new AlgebraicFunction<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
-            {
-                graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-                return null;
-            }
-        };
-    }
-
-    public static AlgebraicFunction<GraphDatabaseService, Void> awaitIndexesOnline(
-            final long timeout, final TimeUnit unit )
-    {
-        return new AlgebraicFunction<GraphDatabaseService, Void>()
-        {
-            @Override
-            public Void apply( GraphDatabaseService graphDb )
-            {
-                graphDb.schema().awaitIndexesOnline( timeout, unit );
-                return null;
-            }
-        };
-    }
-
     private DatabaseFunctions()
     {
-        // no instances
+        throw new AssertionError( "Not for instantiation!" );
+    }
+
+    public static Function<GraphDatabaseService,Node> createNode()
+    {
+        return GraphDatabaseService::createNode;
+    }
+
+    public static Function<Node,Node> addLabel( Label label )
+    {
+        return node -> {
+            node.addLabel( label );
+            return node;
+        };
+    }
+
+    public static Function<Node,Node> setProperty( String propertyKey, Object value )
+    {
+        return node -> {
+            node.setProperty( propertyKey, value );
+            return node;
+        };
+    }
+
+    public static Function<GraphDatabaseService,Void> index( Label label, String propertyKey )
+    {
+        return graphDb -> {
+            graphDb.schema().indexFor( label ).on( propertyKey ).create();
+            return null;
+        };
+    }
+
+    public static Function<GraphDatabaseService,Void> uniquenessConstraint( Label label, String propertyKey )
+    {
+        return graphDb -> {
+            graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            return null;
+        };
+    }
+
+    public static Function<GraphDatabaseService,Void> awaitIndexesOnline( long timeout, TimeUnit unit )
+    {
+        return graphDb -> {
+            graphDb.schema().awaitIndexesOnline( timeout, unit );
+            return null;
+        };
     }
 }

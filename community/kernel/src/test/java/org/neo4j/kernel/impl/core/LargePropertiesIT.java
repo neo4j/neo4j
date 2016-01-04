@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,44 +19,60 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class LargePropertiesIT
 {
-    @ClassRule
-    public static DatabaseRule db = new ImpermanentDatabaseRule();
-
     @Rule
-    public GraphTransactionRule tx = new GraphTransactionRule( db );
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
-    private Node node;
-
-    @Before
-    public void createInitialNode()
-    {
-        node = db.getGraphDatabaseService().createNode();
-    }
-
-    @After
-    public void deleteInitialNode()
-    {
-        node.delete();
-    }
-    
     @Test
-    public void testLargeProperties()
+    public void readArrayAndStringPropertiesWithDifferentBlockSizes()
     {
-        byte[] bytes = new byte[10*1024*1024];
-        node.setProperty( "large_array", bytes );
-        node.setProperty( "large_string", new String( bytes ) );
+        String stringValue = RandomStringUtils.randomAlphanumeric( 10000 );
+        byte[] arrayValue = RandomStringUtils.randomAlphanumeric( 10000 ).getBytes();
+
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                .setFileSystem( fs.get() )
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.string_block_size, "1024" )
+                .setConfig( GraphDatabaseSettings.array_block_size, "2048" )
+                .newGraphDatabase();
+        try
+        {
+            long nodeId;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode();
+                nodeId = node.getId();
+                node.setProperty( "string", stringValue );
+                node.setProperty( "array", arrayValue );
+                tx.success();
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.getNodeById( nodeId );
+                assertEquals( stringValue, node.getProperty( "string" ) );
+                assertArrayEquals( arrayValue, (byte[]) node.getProperty( "array" ) );
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 }

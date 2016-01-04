@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,6 +32,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -280,9 +281,10 @@ public class TestLogPruning
                 try ( ReadableVersionableLogChannel channel =
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
-                    try (PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
+                    try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
                             new PhysicalTransactionCursor<>( channel,
-                                    new VersionAwareLogEntryReader<ReadableVersionableLogChannel>() ))
+                                    new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(
+                                            new RecordStorageCommandReaderFactory() ) ) )
                     {
                         while ( physicalTransactionCursor.next())
                         {

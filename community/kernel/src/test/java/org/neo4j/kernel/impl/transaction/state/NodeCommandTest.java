@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.logging.NullLogProvider;
@@ -64,7 +64,7 @@ public class NodeCommandTest
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
-    private final CommandReader commandReader = new PhysicalLogNeoCommandReaderV2_2();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV2_2();
     private final CommandWriter commandWriter = new CommandWriter( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
@@ -77,9 +77,7 @@ public class NodeCommandTest
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -91,9 +89,7 @@ public class NodeCommandTest
         after.setCreated();
         after.setInUse( true );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -105,9 +101,7 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -121,9 +115,7 @@ public class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -140,9 +132,7 @@ public class NodeCommandTest
             nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
         }
         // When
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( before, after );
-        assertSerializationWorksFor( nodeCommand );
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
     }
 
     @Test
@@ -161,8 +151,7 @@ public class NodeCommandTest
                 0, false, true, -1l, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
-        Command.NodeCommand cmd = new Command.NodeCommand();
-        cmd.init( before, after );
+        Command.NodeCommand cmd = new Command.NodeCommand( before, after );
         cmd.handle( commandWriter );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,6 +32,7 @@ import java.util.List;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -67,7 +69,8 @@ public class LogMatchers
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
         ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS );
-        return Iterables.toList( iterable( new LogEntryCursor( logChannel ) ) );
+        return Iterables.toList( iterable( new LogEntryCursor( new VersionAwareLogEntryReader<>(
+                new RecordStorageCommandReaderFactory() ), logChannel ) ) );
     }
 
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException

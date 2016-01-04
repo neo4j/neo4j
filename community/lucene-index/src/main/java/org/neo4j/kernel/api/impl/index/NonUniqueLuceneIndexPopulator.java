@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,12 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -54,7 +52,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IOException, IndexCapacityExceededException
+    public void add( long nodeId, Object propertyValue ) throws IOException
     {
         sampler.include( documentStructure.encodedStringValue( propertyValue ) );
         writer.addDocument( documentStructure.documentRepresentingProperty( nodeId, propertyValue ) );
@@ -71,12 +69,6 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     {
         return new IndexUpdater()
         {
-            @Override
-            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
-            {
-                return Reservation.EMPTY;
-            }
-
             @Override
             public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
@@ -106,7 +98,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            public void close() throws IOException, IndexEntryConflictException
             {
                 if ( updates.size() > queueThreshold )
                 {
@@ -131,7 +123,7 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    protected void flush() throws IOException, IndexCapacityExceededException
+    protected void flush() throws IOException
     {
         for ( NodePropertyUpdate update : this.updates )
         {

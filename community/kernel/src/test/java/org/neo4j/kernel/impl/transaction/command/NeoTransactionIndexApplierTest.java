@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,28 +19,32 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.impl.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Collections.singleton;
-
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
@@ -52,47 +56,64 @@ public class NeoTransactionIndexApplierTest
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
-            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
+
+    @Before
+    public void setup()
+    {
+        when( transactionToApply.transactionId() ).thenReturn( 1L );
+    }
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
-
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
         final NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, emptyDynamicRecords );
         final NodeRecord after = new NodeRecord( 12 );
         after.setLabelField( 18, emptyDynamicRecords );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
+        final Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         when( labelScanStore.get() ).thenReturn( mock( LabelScanWriter.class ) );
 
         // when
-        final boolean result = applier.visitNodeCommand( command );
-        applier.apply();
-
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitNodeCommand( command );
+        }
         // then
         assertFalse( result );
     }
 
+    private IndexBatchTransactionApplier newIndexTransactionApplier()
+    {
+        return new IndexBatchTransactionApplier( indexingService,
+                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( PropertyStore.class ), mock(
+                PropertyLoader.class ), TransactionApplicationMode.INTERNAL );
+    }
+
     @Test
-    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws IOException
+    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
+        final Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
 
         // When
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.apply();
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitSchemaRuleCommand( command );
+        }
 
         // Then
         assertFalse( result );
@@ -100,20 +121,22 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldDropIndexGivenDropSchemaRuleCommand() throws IOException
+    public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
         final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
-                labelScanStoreSynchronizer );
+        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
+                singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
 
         // When
-        final boolean result = applier.visitSchemaRuleCommand( command );
-        applier.apply();
+        boolean result;
+        try ( TransactionApplier txApplier = applier.startTx( transactionToApply ) )
+        {
+            result = txApplier.visitSchemaRuleCommand( command );
+        }
 
         // Then
         assertFalse( result );

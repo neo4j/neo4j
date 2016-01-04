@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NodeStillHasRelationshipsException, NewPlannerTestSupport, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
 
 class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
   test("should be able to delete nodes") {
@@ -61,7 +61,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(x, createNode())
     relate(x, createNode())
 
-    a [NodeStillHasRelationshipsException] should be thrownBy
+    a [ConstraintValidationException] should be thrownBy
       executeWithCostPlannerOnly(s"match (n:X) delete n")
   }
 

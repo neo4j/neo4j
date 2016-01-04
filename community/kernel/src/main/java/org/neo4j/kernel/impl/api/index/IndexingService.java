@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,16 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
@@ -47,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -56,6 +52,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
+import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -85,7 +83,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements PrimitiveLongVisitor<RuntimeException>
+public class IndexingService extends LifecycleAdapter
 {
     private final IndexSamplingController samplingController;
     private final IndexProxySetup proxySetup;
@@ -322,11 +320,11 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             IndexProxy proxy;
             try
             {
-                proxy = getIndexProxy( entry.getKey().longValue() );
+                proxy = getIndexProxy( entry.getKey() );
             }
             catch ( IndexNotFoundKernelException e )
             {
-                throw new ThisShouldNotHappenError( "Mattias",
+                throw new IllegalStateException(
                         "What? This index was seen during recovery just now, why isn't it available now?" );
             }
 
@@ -393,6 +391,108 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         }
     }
 
+    /**
+     * Applies updates from the given {@link IndexUpdates}, which may contain updates for one or more indexes.
+     * As long as index updates are derived from physical commands and store state there's special treatment
+     * during recovery since we cannot read from an unrecovered store, so in that case the nodes ids are simply
+     * noted and reindexed after recovery of the store has completed. That is also why {@link IndexUpdates}
+     * has one additional accessor method for getting the node ids.
+     *
+     * As far as {@link IndexingService} is concerned recovery happens between calls to {@link #init()} and
+     * {@link #start()}.
+     *
+     * @param updates {@link IndexUpdates} to apply.
+     * @throws IOException potentially thrown from index updating.
+     * @throws IndexEntryConflictException potentially thrown from index updating.
+     */
+    public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+    {
+        if ( state == State.NOT_STARTED )
+        {
+            // We're in recovery, which means we'll merely be noting which entity ids are to be refreshed
+            // and we'll refresh them completely after recovery completes.
+            updates.collectUpdatedNodeIds( recoveredNodeIds );
+        }
+        else if ( state == State.RUNNING || state == State.STARTING )
+        {
+            apply( updates, IndexUpdateMode.ONLINE );
+        }
+        else
+        {
+            throw new IllegalStateException(
+                    "Can't apply index updates " + toList( updates ) + " while indexing service is " + state );
+        }
+    }
+
+    private void apply( IndexUpdates updates, IndexUpdateMode updateMode )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
+        {
+            // TODO Sort the updates by index so that we don't have to create an IndexDescriptor object per update
+            for ( NodePropertyUpdate update : updates )
+            {
+                int propertyKeyId = update.getPropertyKeyId();
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                    for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelAfter( i ), propertyKeyId );
+                    }
+                    break;
+
+                case REMOVED:
+                    for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
+                    {
+                        processUpdate( update, updaterMap, update.getLabelBefore( i ), propertyKeyId );
+                    }
+                    break;
+
+                case CHANGED:
+                    int lenBefore = update.getNumberOfLabelsBefore();
+                    int lenAfter = update.getNumberOfLabelsAfter();
+
+                    for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
+                    {
+                        int labelBefore = update.getLabelBefore( i );
+                        int labelAfter = update.getLabelAfter( j );
+
+                        if ( labelBefore == labelAfter )
+                        {
+                            processUpdate( update, updaterMap, labelAfter, propertyKeyId );
+                            i++;
+                            j++;
+                        }
+                        else
+                        {
+                            if ( labelBefore < labelAfter )
+                            {
+                                i++;
+                            }
+                            else /* labelBefore > labelAfter */
+                            {
+                                j++;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private void processUpdate( NodePropertyUpdate update, IndexUpdaterMap updaterMap, int labelId,
+            int propertyKeyId ) throws IOException, IndexEntryConflictException
+    {
+        IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
+        IndexUpdater updater = updaterMap.getUpdater( descriptor );
+        if ( updater != null )
+        {
+            updater.process( update );
+        }
+    }
+
     /*
      * Creates an index.
      *
@@ -450,100 +550,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         indexMapRef.setIndexMap( indexMap );
     }
 
-    @Override
-    public boolean visited( long recoveredNodeId ) throws RuntimeException
-    {
-        if ( state != State.NOT_STARTED )
-        {
-            throw new IllegalStateException(
-                    "Can't queue recovered node ids " + recoveredNodeId + " while indexing service is " + state );
-        }
-
-        recoveredNodeIds.add( recoveredNodeId );
-        return false;
-    }
-
-    public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> updates, IndexUpdateMode updateMode )
-    {
-        if ( state != State.STARTING && state != State.RUNNING )
-        {
-            throw new IllegalStateException(
-                    "Can't validate index updates " + toList( updates ) + " while indexing service is " + state );
-        }
-
-        IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode );
-
-        boolean updaterMapShouldBeClosed = true;
-        try
-        {
-            Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex =
-                    groupUpdatesByIndexDescriptor( updates, updaterMap );
-
-            if ( updatesByIndex.isEmpty() )
-            {
-                return ValidatedIndexUpdates.NONE;
-            }
-
-            AggregatedReservation aggregatedReservation = new AggregatedReservation( updatesByIndex.size() );
-            for ( Map.Entry<IndexDescriptor,List<NodePropertyUpdate>> entry : updatesByIndex.entrySet() )
-            {
-                validateAndRecordReservation( entry.getValue(), aggregatedReservation, updaterMap,
-                        entry.getKey() );
-            }
-
-            ValidatedIndexUpdates validatedUpdates =
-                    newValidatedIndexUpdates( updaterMap, updatesByIndex, aggregatedReservation );
-
-            updaterMapShouldBeClosed = false;
-
-            return validatedUpdates;
-        }
-        finally
-        {
-            if ( updaterMapShouldBeClosed )
-            {
-                updaterMap.close();
-            }
-        }
-    }
-
-    private void validateAndRecordReservation( List<NodePropertyUpdate> indexUpdates,
-            AggregatedReservation aggregatedReservation, IndexUpdaterMap updaterMap, IndexDescriptor descriptor )
-    {
-        boolean exceptionThrown = false;
-        try
-        {
-            IndexUpdater updater = updaterMap.getUpdater( descriptor );
-            Reservation reservation = updater.validate( indexUpdates );
-            aggregatedReservation.add( reservation );
-        }
-        catch ( IOException | IndexCapacityExceededException e )
-        {
-            exceptionThrown = true;
-            String indexName = descriptor.userDescription( tokenNameLookup );
-            throw new UnderlyingStorageException( "Validation of updates for index " + indexName + " failed", e );
-        }
-        catch ( Throwable t )
-        {
-            exceptionThrown = true;
-            throw t;
-        }
-        finally
-        {
-            if ( exceptionThrown )
-            {
-                aggregatedReservation.release();
-            }
-        }
-    }
-
-    private static ValidatedIndexUpdates newValidatedIndexUpdates( final IndexUpdaterMap indexUpdaters,
-            final Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex, final Reservation reservation )
-    {
-        return new OnlineValidatedIndexUpdates( reservation, updatesByIndex, indexUpdaters );
-    }
-
-    private void applyRecoveredUpdates() throws IOException
+    private void applyRecoveredUpdates() throws IOException, IndexEntryConflictException
     {
         if ( log.isDebugEnabled() )
         {
@@ -552,33 +559,24 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.BATCHED ) )
+            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
                     updater.remove( recoveredNodeIds );
                 }
-            }
 
-            List<NodePropertyUpdate> recoveredUpdates = readRecoveredUpdatesFromStore();
-
-            try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates, IndexUpdateMode.BATCHED ) )
-            {
-                validatedUpdates.flush( new HashSet<>() );
-                monitor.appliedRecoveredData( recoveredUpdates );
-            }
-            catch ( IndexEntryConflictException | IndexCapacityExceededException e )
-            {
-                throw new UnderlyingStorageException( e );
+                IndexUpdates updates = readRecoveredUpdatesFromStore();
+                apply( updates, IndexUpdateMode.RECOVERY );
+                monitor.appliedRecoveredData( updates );
             }
         }
         recoveredNodeIds.clear();
     }
 
-    private List<NodePropertyUpdate> readRecoveredUpdatesFromStore()
+    private IndexUpdates readRecoveredUpdatesFromStore()
     {
         final List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
-
         recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
         {
             @Override
@@ -589,84 +587,7 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             }
         } );
 
-        return recoveredUpdates;
-    }
-
-    private static Map<IndexDescriptor,List<NodePropertyUpdate>> groupUpdatesByIndexDescriptor(
-            Iterable<NodePropertyUpdate> updates, IndexUpdaterMap updaterMap )
-    {
-        int numberOfIndexes = updaterMap.numberOfIndexes();
-        Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex = new HashMap<>( numberOfIndexes, 1 );
-
-        for ( NodePropertyUpdate update : updates )
-        {
-            int propertyKeyId = update.getPropertyKeyId();
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )
-                {
-                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelAfter( i ), propertyKeyId );
-                    storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                }
-                break;
-
-            case REMOVED:
-                for ( int len = update.getNumberOfLabelsBefore(), i = 0; i < len; i++ )
-                {
-                    IndexDescriptor descriptor = new IndexDescriptor( update.getLabelBefore( i ), propertyKeyId );
-                    storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                }
-                break;
-
-            case CHANGED:
-                int lenBefore = update.getNumberOfLabelsBefore();
-                int lenAfter = update.getNumberOfLabelsAfter();
-
-                for ( int i = 0, j = 0; i < lenBefore && j < lenAfter; )
-                {
-                    int labelBefore = update.getLabelBefore( i );
-                    int labelAfter = update.getLabelAfter( j );
-
-                    if ( labelBefore == labelAfter )
-                    {
-                        IndexDescriptor descriptor = new IndexDescriptor( labelAfter, propertyKeyId );
-                        storeUpdateIfIndexExists( updaterMap, update, descriptor, updatesByIndex );
-                        i++;
-                        j++;
-                    }
-                    else
-                    {
-                        if ( labelBefore < labelAfter )
-                        {
-                            i++;
-                        }
-                        else /* labelBefore > labelAfter */
-                        {
-                            j++;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        return updatesByIndex;
-    }
-
-    private static void storeUpdateIfIndexExists( IndexUpdaterMap updaterMap, NodePropertyUpdate update,
-            IndexDescriptor descriptor, Map<IndexDescriptor,List<NodePropertyUpdate>> updatesByIndex )
-    {
-        IndexUpdater updater = updaterMap.getUpdater( descriptor );
-        if ( updater != null )
-        {
-            List<NodePropertyUpdate> indexUpdates = updatesByIndex.get( descriptor );
-            if ( indexUpdates == null )
-            {
-                updatesByIndex.put( descriptor, indexUpdates = new ArrayList<>() );
-            }
-            indexUpdates.add( update );
-        }
+        return new DirectIndexUpdates( recoveredUpdates );
     }
 
     public void dropIndex( IndexRule rule )
@@ -784,25 +705,6 @@ public class IndexingService extends LifecycleAdapter implements PrimitiveLongVi
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException( "Unable to force " + index, e );
-            }
-        }
-    }
-
-    public void flushAll( Set<IndexDescriptor> affectedIndexes )
-    {
-        for ( IndexDescriptor indexDescriptor : affectedIndexes )
-        {
-            try
-            {
-                indexMapRef.getIndexProxy( indexDescriptor ).flush();
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                // This is really weird, although this index might just now have been concurrently deleted.
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Unable to force " + indexDescriptor, e );
             }
         }
     }

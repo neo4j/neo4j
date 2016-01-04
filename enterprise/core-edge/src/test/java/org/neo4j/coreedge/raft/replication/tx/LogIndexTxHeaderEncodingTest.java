@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,5 +34,22 @@ public class LogIndexTxHeaderEncodingTest
         long index = 123_456_789_012_567L;
         byte[] bytes = encodeLogIndexAsTxHeader( index );
         assertEquals( index, decodeLogIndexFromTxHeader( bytes ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionForAnEmptyByteArray() throws Exception
+    {
+        // given
+        try
+        {
+            // when
+            decodeLogIndexFromTxHeader( new byte[0] );
+            fail( "Should have thrown an exception because there's no way to decode this " );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+            assertEquals( "Unable to decode RAFT log index from transaction header", e.getMessage() );
+        }
     }
 }

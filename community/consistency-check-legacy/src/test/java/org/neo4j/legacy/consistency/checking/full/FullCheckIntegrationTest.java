@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -247,9 +246,10 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NeoStoreRecord record = new NeoStoreRecord();
-                record.setNextProp( next.property() );
-                tx.update( record );
+                NeoStoreRecord before = new NeoStoreRecord();
+                NeoStoreRecord after = new NeoStoreRecord();
+                after.setNextProp( next.property() );
+                tx.update( before, after );
                 // We get exceptions when only the above happens in a transaction...
                 tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
             }
@@ -409,7 +409,7 @@ public class FullCheckIntegrationTest
     }
 
     private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
-            throws IOException, IndexCapacityExceededException
+            throws IOException
     {
         try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,7 +34,7 @@ object CostBasedPipeBuilderFactory {
              tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
-             useErrorsOverWarnings: Boolean,
+             config: CypherCompilerConfiguration,
              updateStrategy: Option[UpdateStrategy]
     ) = {
 
@@ -51,6 +51,6 @@ object CostBasedPipeBuilderFactory {
     CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
       createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder,
       actualUpdateStrategy,
-      useErrorsOverWarnings)
+      config)
   }
 }

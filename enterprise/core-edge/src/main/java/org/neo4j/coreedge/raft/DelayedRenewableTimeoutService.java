@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,6 +33,8 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.nanoTime;
 
@@ -57,18 +59,15 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     private final SortedSet<ScheduledRenewableTimeout> timeouts = new TreeSet<>();
     private final Queue<ScheduledRenewableTimeout> pendingRenewals = new ConcurrentLinkedDeque<>();
     private final Clock clock;
+    private final Log log;
     private final Random random;
     private final JobScheduler scheduler;
     private JobScheduler.JobHandle jobHandle;
 
-    public DelayedRenewableTimeoutService()
-    {
-        this( Clock.SYSTEM_CLOCK );
-    }
-
-    public DelayedRenewableTimeoutService( Clock clock )
+    public DelayedRenewableTimeoutService( Clock clock, LogProvider logProvider )
     {
         this.clock = clock;
+        this.log = logProvider.getLog( getClass() );
         this.random = new Random( nanoTime() );
         this.scheduler = new Neo4jJobScheduler();
     }
@@ -117,7 +116,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     }
 
     @Override
-    public void run()
+    public synchronized void run()
     {
         try
         {
@@ -141,7 +140,6 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
                     if ( timeout.shouldTrigger( now ) )
                     {
                         triggered.add( timeout );
-                        timeout.trigger();
                     }
                     else
                     {
@@ -150,13 +148,21 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
                         break;
                     }
                 }
+            }
 
+            for ( ScheduledRenewableTimeout timeout : triggered )
+            {
+                timeout.trigger();
+            }
+
+            synchronized ( timeouts )
+            {
                 timeouts.removeAll( triggered );
             }
         }
         catch ( Throwable e )
         {
-            e.printStackTrace();
+            log.error( "Error handling timeouts", e );
         }
     }
 

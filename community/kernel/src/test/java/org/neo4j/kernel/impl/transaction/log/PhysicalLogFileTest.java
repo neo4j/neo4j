@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -190,7 +190,7 @@ public class PhysicalLogFileTest
         logFile.accept( new LogFileVisitor()
         {
             @Override
-            public boolean visit( LogPosition position, ReadableVersionableLogChannel channel ) throws IOException
+            public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
             {
                 for ( int i = 0; i < 5; i++ )
                 {

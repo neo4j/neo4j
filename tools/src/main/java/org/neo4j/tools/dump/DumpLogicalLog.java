@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,14 +34,18 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static java.util.TimeZone.getTimeZone;
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
@@ -92,8 +96,10 @@ public class DumpLogicalLog
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableVersionableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+            LogEntryReader<ReadableLogChannel> entryReader =
+                    new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
 
-            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
+            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( entryReader, logChannel ) )
             {
                 while (cursor.next())
                 {

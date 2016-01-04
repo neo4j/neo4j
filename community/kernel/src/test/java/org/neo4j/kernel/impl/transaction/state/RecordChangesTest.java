@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -60,7 +60,7 @@ public class RecordChangesTest
     public void shouldCountChanges() throws Exception
     {
         // Given
-        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, false, new IntCounter() );
+        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
 
         // When
         change.getOrLoad( "K1", null ).forChangingData();

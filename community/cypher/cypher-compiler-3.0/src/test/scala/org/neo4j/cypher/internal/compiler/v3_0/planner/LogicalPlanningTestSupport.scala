@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,11 +23,11 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{namePatternPredicatePatternElements, normalizeWithClauses, normalizeReturnClauses}
+import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
@@ -166,9 +166,17 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       plannerName = None,
       runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors)),
       semanticChecker = semanticChecker,
-      useErrorsOverWarnings = false,
-      updateStrategy = None)
+      updateStrategy = None,
+      config = config)
   }
+
+  val config = CypherCompilerConfiguration(
+    queryCacheSize = 100,
+    statsDivergenceThreshold = 0.5,
+    queryPlanTTL = 1000,
+    useErrorsOverWarnings = false,
+    nonIndexedLabelWarningThreshold = 10000
+  )
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)

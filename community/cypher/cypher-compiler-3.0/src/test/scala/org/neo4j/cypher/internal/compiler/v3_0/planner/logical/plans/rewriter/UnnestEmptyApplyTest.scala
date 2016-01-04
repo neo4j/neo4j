@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -106,6 +106,63 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // Then
     result should equal(Expand(lhs, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+  }
+
+  test("apply on apply should be extracted nicely 2") {
+    /*  Moves filtering on a LHS of inner Apply to the LHS of the outer
+
+                            Apply1                      Apply1
+                         LHS1     Apply2       =>  Filter    Apply2
+                              Filter   RHS        LHS1     LHS2   RHS
+                           LHS2
+     */
+
+    // Given
+    val lhs1 = newMockedLogicalPlan("a")
+    val lhs2 = newMockedLogicalPlan("a")
+    val rhs = newMockedLogicalPlan("a")
+    val predicates = Seq(propEquality("a", "prop", 42))
+    val filter = Selection(predicates, lhs2)(solved)
+    val apply2 = Apply(filter, rhs)(solved)
+    val apply1 = Apply(lhs1, apply2)(solved)
+
+    // When
+    val result = rewrite(apply1)
+
+    // Then
+    val filterNew = Selection(predicates, lhs1)(solved)
+    val apply2New = Apply(lhs2, rhs)(solved)
+    val apply1New = Apply(filterNew, apply2New)(solved)
+
+    result should equal(apply1New)
+  }
+
+  test("apply on apply should be left unchanged") {
+    /*  Does not moves filtering on a LHS of inner Apply to the LHS of the outer if Selection has a dependency on a
+    variable introduced in the source operator
+
+                            Apply1
+                         LHS1     Apply2       =>  remains unchanged
+                              Filter   RHS
+                           Expand
+                           LHS2
+     */
+
+    // Given
+    val lhs1 = newMockedLogicalPlan("a")
+    val lhs2 = newMockedLogicalPlan("a")
+    val rhs = newMockedLogicalPlan("a")
+    val expand = Expand(lhs2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val predicates = Seq(propEquality("r", "prop", 42))
+    val filter = Selection(predicates, expand)(solved)
+    val apply2 = Apply(filter, rhs)(solved)
+    val apply1 = Apply(lhs1, apply2)(solved)
+
+    // When
+    val result = rewrite(apply1)
+
+    // Then
+    result should equal(apply1)
   }
 
   test("unnesting varlength expands should work well") {

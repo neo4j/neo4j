@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,9 +25,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -38,7 +36,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.LogProvider;
@@ -89,7 +86,7 @@ public class PopulatingIndexProxy implements IndexProxy
         switch ( mode )
         {
             case ONLINE:
-            case BATCHED:
+            case RECOVERY:
                 return new PopulatingIndexUpdater()
                 {
                     @Override
@@ -104,7 +101,7 @@ public class PopulatingIndexProxy implements IndexProxy
                     @Override
                     public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                     {
-                        throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+                        throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }
                 };
         }
@@ -209,13 +206,6 @@ public class PopulatingIndexProxy implements IndexProxy
 
     private abstract class PopulatingIndexUpdater implements IndexUpdater
     {
-        @Override
-        public Reservation validate( Iterable<NodePropertyUpdate> updates )
-                throws IOException, IndexCapacityExceededException
-        {
-            return Reservation.EMPTY;
-        }
-
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,23 +24,10 @@ import org.junit.Test;
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.Strings.decamelize;
 import static org.neo4j.helpers.Strings.prettyPrint;
 
 public class StringsTest
 {
-    @Test
-    public void testDecamelize()
-    {
-        assertEquals( "foo", decamelize.apply( "foo" ) );
-        assertEquals( "foo", decamelize.apply( "Foo" ) );
-        assertEquals( "foo_bar", decamelize.apply( "FooBar" ) );
-        assertEquals( "f_b", decamelize.apply( "FB" ) );
-        assertEquals( "_", decamelize.apply( "_" ) );
-        // What is expected behaviour here?
-//        assertEquals( "f_b", decamelize.apply( "F_B" ) );
-    }
-
     @Test
     public void testPrettyPrint()
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -65,14 +64,14 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+    public void close() throws IOException, IndexEntryConflictException
     {
         // flush updates
         flushUpdates( updates );
     }
 
     protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
+            throws IOException, IndexEntryConflictException;
 
     private DiffSets<Long> propertyValueDiffSet( Object value )
     {

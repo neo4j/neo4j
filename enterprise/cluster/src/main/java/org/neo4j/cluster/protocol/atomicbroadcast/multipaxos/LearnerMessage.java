@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -38,6 +38,8 @@ public enum LearnerMessage
     public static class LearnState
             implements Serializable
     {
+        private static final long serialVersionUID = 3311287172384025589L;
+
         private final Object value;
 
         public LearnState( Object value )
@@ -100,6 +102,8 @@ public enum LearnerMessage
     public static class LearnRequestState
             implements Serializable
     {
+        private static final long serialVersionUID = -2577225800895578365L;
+
         public LearnRequestState()
         {
         }
@@ -130,6 +134,8 @@ public enum LearnerMessage
     public static class LearnFailedState
             implements Serializable
     {
+        private static final long serialVersionUID = -6587635550010611226L;
+
         public LearnFailedState()
         {
         }

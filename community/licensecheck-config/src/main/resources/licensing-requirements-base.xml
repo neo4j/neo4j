@@ -31,9 +31,6 @@
     <artifact id="org.codehaus.jettison:jettison:bundle:1.3">
       <license>ASL2.0</license>
     </artifact>
-    <artifact id="org.apache.zookeeper:zookeeper:jar:3.3.2">
-      <license>ASL2.0</license>
-    </artifact>
   </missing-licenses>
   <override-licenses>
     <artifact id="org.scala-lang:scala-library:">

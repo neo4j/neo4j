@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -81,10 +81,6 @@ public abstract class ActiveState<Key> extends ProgressiveState<Key>
     @Override
     final ProgressiveState<Key> stop() throws IOException
     {
-        if ( hasChanges() )
-        {
-            throw new IllegalStateException( "Cannot stop while there are changes." );
-        }
         close();
         return new DeadState.Stopped<>( keyFormat(), factory() );
     }

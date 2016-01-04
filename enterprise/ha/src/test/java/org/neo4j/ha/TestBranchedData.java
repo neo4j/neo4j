@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -50,12 +51,9 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.String.format;
-
-import static org.neo4j.helpers.SillyUtils.nonNull;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -299,7 +297,7 @@ public class TestBranchedData
         long timestamp = System.currentTimeMillis();
         File branchDir = new File( dir, "branched-" + timestamp );
         assertTrue( "create directory: " + branchDir, branchDir.mkdirs() );
-        for ( File file : nonNull( dir.listFiles() ) )
+        for ( File file : Objects.requireNonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
             if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )

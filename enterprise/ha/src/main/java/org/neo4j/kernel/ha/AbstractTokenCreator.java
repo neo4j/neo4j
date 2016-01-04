@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TokenCreator;
@@ -42,6 +44,12 @@ public abstract class AbstractTokenCreator implements TokenCreator
         try ( Response<Integer> response = create( master, requestContextFactory.newRequestContext(), name ) )
         {
             return response.response();
+        }
+        catch ( ComException e )
+        {
+            throw new TransientTransactionFailureException(
+                    "Cannot create identifier for token '" + name + "' on the master " + master + ". " +
+                    "The master is either down, or we have network connectivity problems", e );
         }
     }
 

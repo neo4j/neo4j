@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,11 +24,10 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.logging.Logger;
 
-public class LockManagerImpl implements LockManager
+public class LockManagerImpl
 {
     private final Map<Object,RWLock> resourceLockMap = new HashMap<>();
     private final RagManager ragManager;
@@ -38,55 +37,47 @@ public class LockManagerImpl implements LockManager
         this.ragManager = ragManager;
     }
 
-    @Override
     public long getDetectedDeadlockCount()
     {
         return ragManager.getDeadlockCount();
     }
 
-    @Override
     public boolean getReadLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tx ) );
     }
 
-    @Override
     public boolean tryReadLock( Object resource, Object tx )
         throws IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
-    @Override
     public boolean getWriteLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
         return unusedResourceGuard(resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx ) );
     }
 
-    @Override
     public boolean tryWriteLock( Object resource, Object tx )
         throws IllegalResourceException
     {
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
     }
 
-    @Override
     public void releaseReadLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
     }
 
-    @Override
     public void releaseWriteLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
     }
 
-    @Override
     public void dumpLocksOnResource( final Object resource, Logger logger )
     {
         final RWLock lock;

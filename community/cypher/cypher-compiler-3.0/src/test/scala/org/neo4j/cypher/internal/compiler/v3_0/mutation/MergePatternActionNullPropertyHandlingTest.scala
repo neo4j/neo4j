@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{RelatedTo, SingleNode, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, InvalidSemanticsException}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.frontend.v3_0.{InvalidSemanticsException, SemanticDirection}
 
 class MergePatternActionNullPropertyHandlingTest extends CypherFunSuite {
   import MergePatternAction.ensureNoNullRelationshipPropertiesInPatterns
@@ -41,13 +40,13 @@ class MergePatternActionNullPropertyHandlingTest extends CypherFunSuite {
     val pattern = VarLengthRelatedTo("p", SingleNode("a"), SingleNode("b"), None, None, Seq("X"), SemanticDirection.OUTGOING, Some("r"), Map("props" -> Literal(null)))
     evaluating {
       ensureNoNullRelationshipPropertiesInPatterns(Seq(pattern), ExecutionContext.empty, QueryStateHelper.empty)
-    } should produce[ThisShouldNotHappenError]
+    } should produce[IllegalStateException]
   }
 
   test("should throw when given a unique link") {
     val pattern = UniqueLink(NamedExpectation("a"), NamedExpectation("b"), NamedExpectation("r"), "X", SemanticDirection.OUTGOING)
     evaluating {
       ensureNoNullRelationshipPropertiesInPatterns(Seq(pattern), ExecutionContext.empty, QueryStateHelper.empty)
-    } should produce[ThisShouldNotHappenError]
+    } should produce[IllegalStateException]
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -48,7 +48,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
@@ -75,7 +74,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 @RunWith(Parameterized.class)
@@ -293,7 +292,7 @@ public class LuceneLabelScanStoreTest
         }
     }
 
-    private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException, IndexCapacityExceededException
+    private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
     {
         try ( LabelScanWriter writer = store.newWriter() )
         {
@@ -466,7 +465,7 @@ public class LuceneLabelScanStoreTest
         monitor = new TrackingMonitor();
         store = life.add( new LuceneLabelScanStore(
                 strategy,
-                directoryFactory, dir, new DefaultFileSystemAbstraction(), tracking(), asStream( existingData ),
+                directoryFactory, dir, new DefaultFileSystemAbstraction(), standard(), asStream( existingData ),
                 monitor ) );
         life.start();
         assertTrue( monitor.initCalled );

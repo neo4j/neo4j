@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,18 +25,19 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_0.ProfileMode
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EntityAccessor, Provider}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, plans}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.symbols
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
+import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -53,9 +54,12 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
       Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
     val statement = mock[Statement]
+    val queryContext = mock[QueryContext]
+    when(queryContext.statement).thenReturn(statement.asInstanceOf[queryContext.KernelStatement])
     val readOps = mock[ReadOperations]
-    val entityAccessor = mock[EntityAccessor]
-    when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[Node])
+    val entityAccessor = mock[NodeManager]
+    when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
+    when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
     when(statement.readOperations()).thenReturn(readOps)
     when(readOps.nodesGetAll()).thenReturn(new PrimitiveLongIterator {
       private var counter = 0
@@ -75,7 +79,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     // when
     val tracer = new ProfilingTracer()
-    newInstance(compiled, statement = statement, entityAccessor = entityAccessor, provider = provider, queryExecutionTracer = tracer).size
+    newInstance(compiled, queryContext = queryContext, provider = provider, queryExecutionTracer = tracer).size
 
     // then
     tracer.dbHitsOf(id1) should equal(3)

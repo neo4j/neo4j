@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.Monitor;
 import org.neo4j.kernel.configuration.Config;
@@ -31,7 +29,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 import static org.neo4j.kernel.api.impl.index.LuceneLabelScanStore.loggerMonitor;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
@@ -72,7 +70,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore(
                 new NodeRangeDocumentLabelScanStorageStrategy(),
                 directoryFactory, LabelScanStoreProvider.getStoreDirectory( context.storeDir() ),
-                context.fileSystem(), tracking(),
+                context.fileSystem(), standard(),
                 fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogService().getInternalLogProvider() ) );
 

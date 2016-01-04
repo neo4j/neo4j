@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,27 +22,21 @@ package org.neo4j.kernel.api.index;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 
 /**
- *  IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling
- *  each commit, created from {@link org.neo4j.kernel.api.index.IndexAccessor}.
+ * IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling
+ * each commit, created from {@link org.neo4j.kernel.api.index.IndexAccessor}.
  *
- *  First {@link #validate(Iterable)} is called with the tentative changes, in order to allow the index to check if
- *  there is enough space left (Lucene has a limitation on nr of entries). Then {@link #process(NodePropertyUpdate)} is
- *  called for each entry, wherein the actual insert is performed.
+ * {@link #process(NodePropertyUpdate)} is called for each entry, wherein the actual updates are applied.
  *
- *  Each IndexUpdater is not thread-safe, and is assumed to be instantiated per transaction.
+ * Each IndexUpdater is not thread-safe, and is assumed to be instantiated per transaction.
  */
 public interface IndexUpdater extends AutoCloseable
 {
-    Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexCapacityExceededException;
-
-    void process( NodePropertyUpdate update )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
+    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
 
     @Override
-    void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
+    void close() throws IOException, IndexEntryConflictException;
 
     void remove( PrimitiveLongSet nodeIds ) throws IOException;
 }

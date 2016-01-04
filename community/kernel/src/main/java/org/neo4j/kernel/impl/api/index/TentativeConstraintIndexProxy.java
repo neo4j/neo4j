@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,9 +24,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
@@ -78,7 +76,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 {
                     @Override
                     public void process( NodePropertyUpdate update )
-                            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+                            throws IOException, IndexEntryConflictException
                     {
                         try
                         {
@@ -91,7 +89,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
 
                     @Override
-                    public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+                    public void close() throws IOException, IndexEntryConflictException
                     {
                         try
                         {
@@ -104,11 +102,11 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
                 };
 
-            case BATCHED:
+            case RECOVERY:
                 return super.newUpdater( mode );
 
             default:
-                throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
+                throw new IllegalArgumentException( "Unsupported update mode: " + mode );
 
         }
     }

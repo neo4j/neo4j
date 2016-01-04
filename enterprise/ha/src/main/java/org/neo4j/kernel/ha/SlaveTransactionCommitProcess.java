@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,8 +21,11 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -67,7 +70,14 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new TransactionFailureException(
+                    Status.Transaction.CouldNotCommit, e, "Could not commit transaction on the master" );
+        }
+        catch ( ComException e )
+        {
+            throw new TransientTransactionFailureException(
+                    "Cannot commit this transaction on the master. " +
+                    "The master is either down, or we have network connectivity problems.", e );
         }
     }
 }

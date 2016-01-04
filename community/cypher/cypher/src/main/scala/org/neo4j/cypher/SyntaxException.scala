@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.api.exceptions.Status
 
 class SyntaxException(message: String, val query:String,  val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
@@ -39,7 +38,7 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
 
   private def findErrorLine(idx: Int, message: List[String]): String =
     message.toList match {
-      case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
+      case Nil => throw new IllegalArgumentException("message converted to empty list")
 
       case List(x) => {
         val spaces = if (x.size > idx)

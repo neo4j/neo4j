@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -206,7 +207,8 @@ public class CheckPointerIntegrationTest
         {
             this.fileSystem = fileSystem;
             this.logFiles = new PhysicalLogFiles( directory, fileSystem );
-            this.logEntryReader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode() );
+            this.logEntryReader = new VersionAwareLogEntryReader<>( LogEntryVersion.CURRENT.byteCode(),
+                    new RecordStorageCommandReaderFactory() );
         }
 
         public List<CheckPoint> find( long version ) throws IOException
@@ -236,6 +238,5 @@ public class CheckPointerIntegrationTest
             }
             return checkPoints;
         }
-
     }
 }

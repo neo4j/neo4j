@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,17 +25,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class UniqueLuceneIndexAccessorTest
 {
@@ -118,7 +119,7 @@ public class UniqueLuceneIndexAccessorTest
 
     private UniqueLuceneIndexAccessor createAccessor() throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), reserving(),
+        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(),
                 directoryFactory, indexDirectory );
     }
 
@@ -141,9 +142,9 @@ public class UniqueLuceneIndexAccessorTest
     {
         return AllNodesCollector.getAllNodes( directoryFactory, indexDirectory, propertyValue );
     }
-    
+
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
+            throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

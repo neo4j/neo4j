@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReader;
@@ -39,7 +40,7 @@ import static org.junit.Assert.fail;
 public class LogEntryParserV2_2Test
 {
     private final LogEntryVersion version = LogEntryVersion.V2_2;
-    private final CommandReader commandReader = version.newCommandReader();
+    private final CommandReader commandReader = new RecordStorageCommandReaderFactory().byVersion( version );
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 
@@ -93,8 +94,7 @@ public class LogEntryParserV2_2Test
     public void shouldParseCommandsUsingAGivenFactory() throws IOException
     {
         // given
-        Command.NodeCommand nodeCommand = new Command.NodeCommand();
-        nodeCommand.init( new NodeRecord( 0 ), new NodeRecord( 0 ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 0 ), new NodeRecord( 0 ) );
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryLogChannel channel = new InMemoryLogChannel();
 

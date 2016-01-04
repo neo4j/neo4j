@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2015 "Neo Technology,"
+ * Copyright (c) 2002-2016 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,18 @@
  */
 package org.neo4j.ha;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
@@ -35,7 +39,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -44,40 +48,45 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
-    @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
             .withSharedSetting( HaSettings.pull_interval, "0" );
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
     public void setup() throws Exception
     {
-        cluster = clusterRule.startCluster( );
+        cluster = clusterRule.startCluster();
+    }
+
+    @After
+    public void afterwards() throws Throwable
+    {
+        cluster.repairAll();
     }
 
     private static final String PROPERTY_KEY = "name";
     private static final String PROPERTY_VALUE = "yo";
-    private static final String LABEL = "Person";
+    private static final Label LABEL = Label.label( "Person" );
 
     @Test
     public void startTxAsSlaveAndFinishItAfterHavingSwitchedToMasterShouldNotSucceed() throws Exception
@@ -147,19 +156,16 @@ public class TransactionConstraintsIT
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
         Node node = createMiniTree( aSlave );
 
-        // WHEN
         Transaction tx = aSlave.beginTx();
-        try
-        {
-            // Deleting this node isn't allowed since it still has relationships
-            node.delete();
-            tx.success();
-        }
-        finally
-        {
-            // THEN
-            assertFinishGetsTransactionFailure( tx );
-        }
+        // Deleting this node isn't allowed since it still has relationships
+        node.delete();
+        tx.success();
+
+        // EXPECT
+        exception.expect( ConstraintViolationException.class );
+
+        // WHEN
+        tx.close();
     }
 
     @Test
@@ -169,19 +175,16 @@ public class TransactionConstraintsIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         Node node = createMiniTree( master );
 
-        // WHEN
         Transaction tx = master.beginTx();
-        try
-        {
-            // Deleting this node isn't allowed since it still has relationships
-            node.delete();
-            tx.success();
-        }
-        finally
-        {
-            // THEN
-            assertFinishGetsTransactionFailure( tx );
-        }
+        // Deleting this node isn't allowed since it still has relationships
+        node.delete();
+        tx.success();
+
+        // EXPECT
+        exception.expect( ConstraintViolationException.class );
+
+        // WHEN
+        tx.close();
     }
 
     @Test
@@ -226,7 +229,7 @@ public class TransactionConstraintsIT
         // GIVEN
         // -- node created on slave
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
-        Node node = createNode( aSlave );
+        Node node = createNode( aSlave, PROPERTY_VALUE );
         // -- that node delete on master, but the slave doesn't see it yet
         deleteNode( cluster.getMaster(), node.getId() );
 
@@ -316,7 +319,7 @@ public class TransactionConstraintsIT
         // -- a node with a label and a property, and a constraint on those
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createConstraint( master, LABEL, PROPERTY_KEY );
-        createNode( master, LABEL ).getId();
+        createNode( master, PROPERTY_VALUE, LABEL ).getId();
 
         // WHEN
         cluster.sync();
@@ -325,35 +328,38 @@ public class TransactionConstraintsIT
         takeTheLeadInAnEventualMasterSwitch( cluster.getMaster() );
         cluster.sync();
 
-        // TODO There is a bug, where the master does not notice that its followers have vanished.
-        // We have to do this sleep here to make sure that it times them out properly.
-        // See https://trello.com/c/hcTvl0bv
-        Thread.sleep( 30000 );
-
         originalMasterRepairKit.repair();
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
-        cluster.stop();
 
-        // THEN
-        // -- these fiddlings with the stores must not throw
+        // THEN the constraints should still be in place and enforced
+        int i = 0;
         for ( HighlyAvailableGraphDatabase instance : cluster.getAllMembers() )
         {
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( instance.getStoreDir() );
-            Label label = Label.label( LABEL );
-            try ( Transaction tx = db.beginTx() )
+            try
             {
-                Node node = db.createNode( label );
-                node.setProperty( PROPERTY_KEY, PROPERTY_VALUE + "1" );
-                tx.success();
+                createNode( instance, PROPERTY_VALUE, LABEL );
+                fail( "Node with " + PROPERTY_VALUE + " should already exist" );
             }
-            try ( Transaction tx = db.beginTx() )
+            catch ( ConstraintViolationException e )
             {
-                ConstraintDefinition constraint = single( db.schema().getConstraints( label ) );
-                constraint.drop();
-                tx.success();
+                // Good, this node should already exist
             }
-            db.shutdown();
+            for ( int p = 0; p < i - 1; p++ )
+            {
+                try
+                {
+                    createNode( instance, PROPERTY_VALUE + String.valueOf( p ), LABEL );
+                    fail( "Node with " + PROPERTY_VALUE + String.valueOf( p ) + " should already exist" );
+                }
+                catch ( ConstraintViolationException e )
+                {
+                    // Good
+                }
+            }
+
+            createNode( instance, PROPERTY_VALUE + String.valueOf( i ), LABEL );
+            i++;
         }
     }
 
@@ -365,7 +371,7 @@ public class TransactionConstraintsIT
         // -- a slave acquiring a lock on an ubiquitous node
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<>( "master worker", master );
-        final Node node = createNode( master );
+        final Node node = createNode( master, PROPERTY_VALUE );
         cluster.sync();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         try ( Transaction slaveTx = slave.beginTx() )
@@ -396,29 +402,29 @@ public class TransactionConstraintsIT
 
     private void takeTheLeadInAnEventualMasterSwitch( GraphDatabaseService db )
     {
-        createNode( db );
+        createNode( db, PROPERTY_VALUE );
     }
 
-    private Node createNode( GraphDatabaseService db, String... labels )
+    private Node createNode( GraphDatabaseService db, Object propertyValue, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            for ( String label : labels )
+            for ( Label label : labels )
             {
-                node.addLabel( Label.label( label ) );
+                node.addLabel( label );
             }
-            node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
+            node.setProperty( PROPERTY_KEY, propertyValue );
             tx.success();
             return node;
         }
     }
 
-    private void createConstraint( HighlyAvailableGraphDatabase db, String label, String propertyName )
+    private void createConstraint( HighlyAvailableGraphDatabase db, Label label, String propertyName )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( Label.label( label ) ).assertPropertyIsUnique( propertyName ).create();
+            db.schema().constraintFor( label ).assertPropertyIsUnique( propertyName ).create();
             tx.success();
         }
     }
@@ -451,7 +457,7 @@ public class TransactionConstraintsIT
             tx.close();
             fail( "Transaction shouldn't be able to finish" );
         }
-        catch ( TransactionFailureException e )
+        catch ( TransientTransactionFailureException | TransactionFailureException e )
         {   // Good
         }
     }
