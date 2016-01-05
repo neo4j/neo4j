@@ -44,8 +44,8 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     result.toList should equal(List(Map("count(*)" -> 3)))
 
     // then
-    result should use("Apply")
-    result should use("NodeIndexSeek")
+    result should use("Apply", "NodeIndexSeek")
+    result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
   }
 
   test("index seek planned in the presence of optional matches") {
@@ -69,7 +69,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     result.toList should equal(List(Map("count(*)" -> 3)))
 
     // then
-    result should use("Apply")
-    result should use("NodeIndexSeek")
+    result should use("Apply", "NodeIndexSeek")
+    result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
   }
 }
