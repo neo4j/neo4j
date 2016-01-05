@@ -24,6 +24,27 @@ SHUTDOWN_TIMEOUT=120
 CONFIG_FILES=("neo4j-wrapper.conf" "neo4j-server.properties")
 MAIN_CLASS="#{neo4j.mainClass}"
 MIN_ALLOWED_OPEN_FILES=40000
+CONSOLE_LOG_FILE="console.log"
+
+serverport() {
+  echo "${org_neo4j_server_webserver_port:-7474}"
+}
+
+printstartmessage() {
+  NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
+
+  echo "Started at http://${NEO4J_SERVER_ADDRESS}:$(serverport) (pid ${NEO4J_PID})."
+
+  if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
+    echo "This HA instance will be operational once it has joined the cluster."
+  else
+    echo "There may be a short delay until the server is ready."
+  fi
+}
+
+printextrainfo() {
+  echo "NEO4J_SERVER_PORT: $(serverport)"
+}
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -56,15 +77,15 @@ source bin/utils
 [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
 [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
 [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
+
 parseConfig
+
+CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
 
 JAVA_OPTS="-server"
 [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
 [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
-
-NEO4J_SERVER_PORT="${org_neo4j_server_webserver_port:-7474}"
-NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 
 buildclasspath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
@@ -86,7 +107,6 @@ startit() {
   buildclasspath
   checkandrepairenv
 
-  CONSOLE_LOG="${NEO4J_LOG}/console.log"
   nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
@@ -99,13 +119,8 @@ startit() {
     exit 1
   fi
 
-  echo "Started at http://${NEO4J_SERVER_ADDRESS}:${NEO4J_SERVER_PORT} (pid ${NEO4J_PID})."
-
-  if [ "${org_neo4j_server_database_mode:-}" = "HA" ] ; then
-    echo "This HA instance will be operational once it has joined the cluster. See ${CONSOLE_LOG} for current status."
-  else
-    echo "There may be a short delay until the server is ready."
-  fi
+  printstartmessage
+  echo "See ${CONSOLE_LOG} for current status."
 }
 
 console() {
@@ -134,10 +149,10 @@ showinfo() {
   buildclasspath
 
   echo "NEO4J_HOME:        ${NEO4J_HOME}"
-  echo "NEO4J_SERVER_PORT: ${NEO4J_SERVER_PORT}"
   echo "JAVA_HOME:         ${JAVA_HOME}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
   echo "CLASSPATH:         ${CLASSPATH}"
+  printextrainfo
 }
 
 case "$1" in

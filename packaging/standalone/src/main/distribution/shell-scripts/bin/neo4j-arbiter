@@ -24,6 +24,16 @@ SHUTDOWN_TIMEOUT=20
 CONFIG_FILES=("arbiter-wrapper.conf")
 MAIN_CLASS="org.neo4j.server.enterprise.StandaloneClusterClient"
 MIN_ALLOWED_OPEN_FILES=1
+CONSOLE_LOG_FILE="arbiter-console.log"
+
+printstartmessage() {
+  echo "Started."
+  echo "This instance is now joining the cluster."
+}
+
+printextrainfo() {
+  :
+}
 
 function findBaseDirAndCdThere {
 # This seems to not be safe to run at any time. If that
@@ -56,7 +66,10 @@ source bin/utils
 [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
 [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
 [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
+
 parseConfig
+
+CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
 
 JAVA_OPTS="-server"
 [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
@@ -64,7 +77,7 @@ JAVA_OPTS="-server"
 [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
 
 buildclasspath() {
-  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*"
+  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
 }
 
 startit() {
@@ -83,7 +96,6 @@ startit() {
   buildclasspath
   checkandrepairenv
 
-  CONSOLE_LOG="${NEO4J_LOG}/arbiter-console.log"
   nohup "${JAVACMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dneo4j.home="${NEO4J_HOME}" -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
     >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
@@ -96,8 +108,8 @@ startit() {
     exit 1
   fi
 
-  echo "Started."
-  echo "This instance is now joining the cluster. See ${CONSOLE_LOG} for current status."
+  printstartmessage
+  echo "See ${CONSOLE_LOG} for current status."
 }
 
 console() {
@@ -129,6 +141,7 @@ showinfo() {
   echo "JAVA_HOME:         ${JAVA_HOME}"
   echo "JAVA_OPTS:         ${JAVA_OPTS}"
   echo "CLASSPATH:         ${CLASSPATH}"
+  printextrainfo
 }
 
 case "$1" in
