@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.cartesianProductsOrValueJoins.T
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.planShortestPaths
 import scala.annotation.tailrec
@@ -76,36 +75,36 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       case (plan, _) => plan
     }
 
-  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[T] =
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[PlannedComponent] =
     components.map { qg =>
-      qg -> singleComponentSolver.planComponent(qg)
+      PlannedComponent(qg, singleComponentSolver.planComponent(qg))
     }
 
-  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[T] = {
+  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kit: QueryPlannerKit): Seq[PlannedComponent] = {
     val plan = if (queryGraph.argumentIds.isEmpty)
       context.logicalPlanProducer.planSingleRow()
     else
       context.logicalPlanProducer.planQueryArgumentRow(queryGraph)
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
-    Seq(queryGraph -> result)
+    Seq(PlannedComponent(queryGraph, result))
   }
 
-  private def connectComponentsAndSolveOptionalMatch(plans: Set[T], qg: QueryGraph)
+  private def connectComponentsAndSolveOptionalMatch(plans: Set[PlannedComponent], qg: QueryGraph)
                                                     (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
 
     @tailrec
-    def recurse(plans: Set[T], optionalMatches: Seq[QueryGraph]): (Set[T], Seq[QueryGraph]) = {
+    def recurse(plans: Set[PlannedComponent], optionalMatches: Seq[QueryGraph]): (Set[PlannedComponent], Seq[QueryGraph]) = {
       if (optionalMatches.nonEmpty) {
         // If we have optional matches left to solve - start with that
         val firstOptionalMatch = optionalMatches.head
-        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p._2.availableSymbols)
+        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.availableSymbols)
 
         applicablePlan match {
-          case Some(t@(solvedQg, p)) =>
+          case Some(t@PlannedComponent(solvedQg, p)) =>
             val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
             val best = kit.pickBest(candidates).get
-            recurse(plans - t + (solvedQg -> best), optionalMatches.tail)
+            recurse(plans - t + PlannedComponent(solvedQg, best), optionalMatches.tail)
 
           case None =>
             // If we couldn't find any optional match we can take on, produce the best cartesian product possible
@@ -120,7 +119,7 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
     val (resultingPlans, optionalMatches) = recurse(plans, qg.optionalMatches)
     assert(resultingPlans.size == 1)
     assert(optionalMatches.isEmpty)
-    resultingPlans.head._2
+    resultingPlans.head.plan
   }
 }
 

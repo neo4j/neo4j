@@ -40,8 +40,8 @@ class CartesianProductsOrValueJoinsTest
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b")),
       input = Set(
-        QueryGraph(patternNodes = Set("a")) -> planA,
-        QueryGraph(patternNodes = Set("b")) -> planB),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
       expectedPlan = CartesianProduct(
         planA,
         planB
@@ -53,9 +53,9 @@ class CartesianProductsOrValueJoinsTest
     testThis(
       graph = QueryGraph(patternNodes = Set("a", "b", "c")),
       input = Set(
-        QueryGraph(patternNodes = Set("a")) -> planA,
-        QueryGraph(patternNodes = Set("b")) -> planB,
-        QueryGraph(patternNodes = Set("c")) -> planC),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan = CartesianProduct(
         planA,
         CartesianProduct(
@@ -73,8 +73,8 @@ class CartesianProductsOrValueJoinsTest
         patternNodes = Set("a", "b"),
         selections = Selections.from(equality)),
       input = Set(
-        QueryGraph(patternNodes = Set("a")) -> planA,
-        QueryGraph(patternNodes = Set("b")) -> planB),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
       expectedPlan = ValueHashJoin(planA, planB, equality)(solved))
   }
 
@@ -88,16 +88,16 @@ class CartesianProductsOrValueJoinsTest
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(eq1, eq2, eq3)),
       input = Set(
-        QueryGraph(patternNodes = Set("a")) -> planA,
-        QueryGraph(patternNodes = Set("b")) -> planB,
-        QueryGraph(patternNodes = Set("c")) -> planC),
+        PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
+        PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
+        PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
       expectedPlan =
         Selection(Seq(eq3),
           ValueHashJoin(planC,
             ValueHashJoin(planB, planA, eq1)(solved), eq2.switchSides)(solved))(solved))
   }
 
-  private def testThis(graph: QueryGraph, input: Set[(QueryGraph, LogicalPlan)], expectedPlan: LogicalPlan) = {
+  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan) = {
     new given {
       qg = graph
       cardinality = mapCardinality {
@@ -110,12 +110,12 @@ class CartesianProductsOrValueJoinsTest
       implicit val x = ctx
       implicit val kit = ctx.config.toKit()
 
-      var plans: Set[(QueryGraph, LogicalPlan)] = input
+      var plans: Set[PlannedComponent] = input
       while (plans.size > 1) {
         plans = cartesianProductsOrValueJoins(plans, cfg.qg)(ctx, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
       }
 
-      val (_, result) = plans.head
+      val result = plans.head.plan
 
       result should equal(expectedPlan)
     }
