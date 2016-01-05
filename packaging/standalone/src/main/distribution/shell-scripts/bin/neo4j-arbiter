@@ -55,27 +55,29 @@ function findBaseDirAndCdThere {
   cd "${NEO4J_HOME}"
 }
 
+findBaseDirAndCdThere
+source bin/utils
+
 function parseConfig {
   for file in "${CONFIG_FILES[@]}"; do
     getconfig "${NEO4J_CONFIG}/${file}"
   done
 }
 
-findBaseDirAndCdThere
-source bin/utils
+setuppaths() {
+  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
+  [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
+  [[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
+  CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
+}
 
-[[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-[[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
-[[ "${NEO4J_PIDFILE:-}" ]] || NEO4J_PIDFILE="${NEO4J_HOME}/data/neo4j-service.pid"
-
-parseConfig
-
-CONSOLE_LOG="${NEO4J_LOG}/${CONSOLE_LOG_FILE}"
-
-JAVA_OPTS="-server"
-[[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
-[[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
-[[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
+setupjavaopts() {
+  JAVA_OPTS="-server"
+  [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
+  [[ "${wrapper_java_initmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xms${wrapper_java_initmemory}m"
+  [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_OPTS="${JAVA_OPTS} -Xmx${wrapper_java_maxmemory}m"
+  return 0
+}
 
 buildclasspath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/system/lib/*:${NEO4J_HOME}/plugins/*"
@@ -145,35 +147,41 @@ showinfo() {
   printextrainfo
 }
 
-case "$1" in
-  console)
-    console
-    ;;
+main() {
+  setuppaths
+  parseConfig
+  setupjavaopts
 
-  start)
-    startit
-    ;;
+  case "$1" in
+    console)
+      console
+      ;;
 
-  stop)
-    stopit
-    ;;
+    start)
+      startit
+      ;;
 
-  restart)
-    stopit
-    startit
-    ;;
+    stop)
+      stopit
+      ;;
 
-  status)
-    reportstatus
-    ;;
+    restart)
+      stopit
+      startit
+      ;;
 
-  info)
-    showinfo
-    ;;
+    status)
+      reportstatus
+      ;;
 
-  *)
-    echo "Usage: ${SCRIPT} { console | start | stop | restart | status | info }"
-    ;;
-esac
+    info)
+      showinfo
+      ;;
 
-exit $?
+    *)
+      echo "Usage: ${SCRIPT} { console | start | stop | restart | status | info }"
+      ;;
+  esac
+}
+
+main "$@"

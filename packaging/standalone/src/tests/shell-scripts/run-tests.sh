@@ -2,5 +2,5 @@
 set -e
 
 for test in test-*.sh; do
-  "./${test}"
+  "./${test}" "$@"
 done
